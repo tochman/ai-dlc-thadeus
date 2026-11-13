@@ -11,8 +11,10 @@ import {
   listSpaces,
   loadCost,
   loadIntentDetail,
-  loadIntentList
+  loadIntentList,
+  loadPendingQuestions
 } from './projectService.js';
+import { notifyQuestions } from './notify.js';
 import { summarizeLedger } from './parsers/ledger.js';
 import { getConfiguredModels } from './models.js';
 import { fetchRemote, getGitStatus, getRemoteChanges, listConflicts, showRemoteFile } from './git.js';
@@ -100,6 +102,46 @@ function watchForSetup(projectId) {
   });
 }
 
+// Waiting questions (US-0505). Ids seen in a project's first computation waited already when the app started
+// (or the project was opened): they are listed, but give no popup or notification (FR1.4).
+const startedWith = new Set();
+let activeProjectId = null; // told by the renderer; main does not know which tab is shown
+
+/** Every open project's waiting questions, newest first, each marked `early` when it waited from the start. */
+function allQuestions() {
+  return [...projects.values()]
+    .flatMap((p) => p.questions ?? [])
+    .map((q) => ({ ...q, early: startedWith.has(q.id) }))
+    .sort((a, b) => b.timeMs - a.timeMs);
+}
+
+function publishQuestions() {
+  const list = allQuestions();
+  const senders = new Set([...projects.values()].map((p) => p.sender));
+  for (const s of senders) if (!s.isDestroyed()) s.send('questions:changed', list);
+}
+
+/** Recomputes one project's questions (only `dirNames` when given), pushes the list and notifies new ones (FR1.4, FR3.1). */
+async function refreshQuestions(projectId, dirNames) {
+  const p = projects.get(projectId);
+  if (!p?.space) return;
+  const space = p.space;
+  try {
+    const list = await loadPendingQuestions({ root: p.root, space, projectId, name: path.basename(p.root) }, dirNames);
+    if (projects.get(projectId) !== p || p.space !== space) return; // closed or switched space meanwhile
+    if (!p.questions) for (const q of list) startedWith.add(q.id);
+    p.questions = list;
+    publishQuestions();
+    const fresh = list.filter((q) => !startedWith.has(q.id));
+    if (fresh.length) {
+      const win = p.sender.isDestroyed() ? null : BrowserWindow.fromWebContents(p.sender);
+      notifyQuestions(fresh, { settings: await getSettings(), win, activeProjectId });
+    }
+  } catch (err) {
+    console.error(`Väntande frågor kunde inte räknas om för ${p.root}:`, err);
+  }
+}
+
 /** (Re)starts the watcher when the renderer looks at a different space. */
 async function watchSpace(projectId, space) {
   const p = project(projectId);
@@ -108,11 +150,14 @@ async function watchSpace(projectId, space) {
   p.watcher = null;
   await w?.close();
   p.space = space;
+  p.questions = null; // a new space starts a new baseline
+  refreshQuestions(projectId); // not awaited, like the feature docs
   p.watcher = watchIntents({
     intentsDir: path.join(p.root, intentsDir(space)),
     ledgerFile: path.join(p.root, LEDGER_PATH),
     onChange: (change) => {
       if (!p.sender.isDestroyed()) p.sender.send('project:changed', { projectId, space, ...change });
+      if (change.dirNames.length || change.indexChanged) refreshQuestions(projectId, change.dirNames);
     },
     onError: (err) => {
       console.error(`Filbevakning misslyckades för ${p.root}:`, err);
@@ -144,7 +189,14 @@ const handlers = {
     if (!p) return;
     projects.delete(projectId);
     killProjectSessions(projectId);
+    if (!p.sender.isDestroyed()) p.sender.send('questions:changed', allQuestions()); // its questions leave the popup
     await closeWatcher(p);
+  },
+  // Waiting questions of the open projects (US-0505 FR1.4); with no project open the list is empty (NFR2).
+  'questions:list': async () => allQuestions(),
+  'questions:activeProject': async (_event, projectId) => {
+    if (projectId !== null && typeof projectId !== 'string') throw new Error('Ogiltigt projekt-id');
+    activeProjectId = projectId && projects.has(projectId) ? projectId : null;
   },
   'project:spaces': async (_event, projectId) => listSpaces(project(projectId).root),
   'project:intents': async (_event, projectId, space, onlyDirs) => {

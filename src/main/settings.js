@@ -9,6 +9,8 @@ const DEFAULTS = { openProjects: [], recentProjects: [], activeProject: null, pr
 export const PROJECT_DEFAULTS = { featureDocs: 'auto', featuresPath: DEFAULT_FEATURES_PATH };
 const FEATURE_DOCS = new Set(['auto', 'show', 'hide']);
 const ANIMATIONS = new Set(['full', 'reduced', 'off']); // "Animationer: Full / Dämpad / Av" (EPIC-04 FR4.2)
+// "Frågor från Claude: Popup och notis / Bara popup / Av" (EPIC-05 US-0505 FR4.1); unset means popup-notify.
+export const QUESTION_ALERTS = new Set(['popup-notify', 'popup', 'off']);
 const file = () => path.join(app.getPath('userData'), 'settings.json');
 
 const stringList = (v) => (Array.isArray(v) ? v.filter((s) => typeof s === 'string').slice(0, 50) : []);
@@ -31,6 +33,10 @@ function sanitize(raw) {
     ...(ANIMATIONS.has(raw?.animations) ? { animations: raw.animations } : {}),
     // The window's last mode, saved by main (EPIC-04 US-0404 FR1.3); left out unless it is a boolean.
     ...(typeof raw?.fullscreen === 'boolean' ? { fullscreen: raw.fullscreen } : {}),
+    // Waiting-question alerts and the notification sound (US-0505 FR4.1); left out when invalid, so the
+    // defaults (popup-notify, sound on) apply where they are read.
+    ...(QUESTION_ALERTS.has(raw?.questionAlerts) ? { questionAlerts: raw.questionAlerts } : {}),
+    ...(typeof raw?.notificationSound === 'boolean' ? { notificationSound: raw.notificationSound } : {}),
     // ponytail: capped at 200 projects, oldest kept; prune closed projects if that ever matters.
     projectSettings: Object.fromEntries(
       Object.entries(projects)

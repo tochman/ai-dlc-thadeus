@@ -8,7 +8,7 @@
 
 **Stories:** US-0501, US-0502, US-0503, US-0504, US-0505
 
-**Status (2026-11-13):** 🚧 US-0501–US-0503 built, not released. US-0504 and US-0505 📋 Planned (US-0505 after v0.2.0).
+**Status (2026-11-13):** 🚧 US-0501–US-0503 built, not released. US-0504 📋 Planned. US-0505 🚧 Built, not released.
 
 ---
 
@@ -103,19 +103,20 @@
   - [ ] Disabled while an AI-DLC workflow is running, as in US-0502.
 - **Dependencies:** US-0502, US-0503
 
-**US-0505: Get Claude's questions as a popup** 📋 Planned (after v0.2.0)
+**US-0505: Get Claude's questions as a popup** 🚧 Built, not released
 - As a **developer who lets AI-DLC run while I do something else**, in order to **not leave Claude waiting on a question I have not seen**, I would like to **see each AI-DLC question or approval as a popup in the app, and as a notification when the app is in the background**.
 - **Epic:** EPIC-05
 - **Priority:** High
 - **Complexity:** Medium
 - **Background:** AI-DLC writes every question to the audit log before it is shown: `DECISION_RECORDED` (with `Decision`, `Options`, `Question Id`, `Stage`), and `STAGE_AWAITING_APPROVAL` for approval gates. The answer comes later as `QUESTION_ANSWERED`, or as the stage's approval or rejection. The app already watches the audit log (EPIC-03), so it can tell a waiting question from an answered one without writing anything.
 - **Acceptance Criteria:**
-  - [ ] **Detection:** a question is *waiting* when its `DECISION_RECORDED` (or `STAGE_AWAITING_APPROVAL`) has no later answer, approval, rejection or skip for the same question id or stage. Only intents in flight count. Questions older than the app's start are shown once in a list, not as popups.
-  - [ ] **Popup in the LCARS style** (coral, pulsing, as "waiting for you" in US-0402) in the content frame. It shows the project, the intent, the stage, the question and its options, with the full text readable. Several waiting questions are stacked, with the newest first. It is not a modal: the person can keep working, and it can be closed with `Esc`.
-  - [ ] **"Svara i Claude"** switches to that project and its Claude tab and focuses the terminal. The popup closes by itself as soon as the answer is in the audit log.
-  - [ ] **System notification** (Electron `Notification`) when the window is not focused or another project is active: "<project>: Claude väntar på ditt svar" with the question. Clicking it brings the app forward with the popup. It is shown once per question.
-  - [ ] **Settings:** "Frågor från Claude: Popup och notis / Bara popup / Av" in the app settings (later the settings view, US-0405), saved in the app's own `settings.json`. The default is Popup och notis.
-  - [ ] **Read-only:** the app writes no AI-DLC or project files and sends nothing to the terminal in this story. Question text from the audit log is shown as text, never as HTML.
+  - [x] **Detection:** a question is *waiting* when its `DECISION_RECORDED` (or `STAGE_AWAITING_APPROVAL`) has no later answer, approval, rejection or skip for the same question id or stage. Only intents in flight count. Questions older than the app's start are shown once in a list, not as popups.
+  - [x] **Popup in the LCARS style** in the centre of the window, over everything else, like the settings dialog (decided in requirements analysis). It shows the project, the intent, the stage, the question and its options, with the full text readable. With several waiting questions the newest is first, with "1 of N". It closes with `Esc`.
+  - [x] **Escalation:** if the question is still unanswered after 20 seconds, the popup's header and title turn glowing red (following the Animationer setting).
+  - [x] **"Svara i Claude"** switches to that project and its Claude tab and focuses the terminal. The popup closes by itself as soon as the answer is in the audit log.
+  - [x] **System notification** (Electron `Notification`) when the window is not focused or another project is active: "<project>: Claude väntar på ditt svar" with the question. Clicking it brings the app forward with the popup. It is shown once per question.
+  - [x] **Settings:** "Ljud vid notis: På / Av" (default På), and "Frågor från Claude: Popup och notis / Bara popup / Av" in the app settings (later the settings view, US-0405), saved in the app's own `settings.json`. The default is Popup och notis.
+  - [x] **Read-only:** the app writes no AI-DLC or project files and sends nothing to the terminal in this story. Question text from the audit log is shown as text, never as HTML.
   - [ ] **Not covered:** free-text questions Claude asks in the chat, and Claude Code's own permission prompts. They are not in the audit log. They would need Claude Code's `Notification` hook, which is set in Claude's settings and is a separate choice (a later story).
   - [ ] **Later (not in this story):** answering straight from the popup by typing the chosen option into the Claude tab. This depends on how Claude Code's question picker takes keys, and is verified first.
 - **Dependencies:** US-0101 (watcher), EPIC-03 (audit parsing), US-0501 (Claude tab states), US-0402 (coral pulse)

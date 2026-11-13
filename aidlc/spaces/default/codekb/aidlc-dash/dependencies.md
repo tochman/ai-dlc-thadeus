@@ -6,12 +6,12 @@ Versioner finns i `technology-stack.md`. Här listas vem som använder vad.
 
 | Paket | Används i | Anmärkning |
 |-------|-----------|------------|
-| electron | `src/main/*`, `src/preload/index.js`, `scripts/make-icon.cjs` | `index.js` använder `app, BrowserWindow, shell`; `ipc.js` `BrowserWindow, dialog, ipcMain, shell`; preload `contextBridge, ipcRenderer`; `settings.js` `app`. `Menu` används inte någonstans |
+| electron | `src/main/*`, `src/preload/index.js`, `scripts/make-icon.cjs` | `index.js` använder `app, BrowserWindow, shell`; `ipc.js` `BrowserWindow, dialog, ipcMain, shell`; `menu.js` `Menu` och `BrowserWindow`; preload `contextBridge, ipcRenderer`; `settings.js` `app`. `Notification` används inte någonstans |
 | node-pty | `src/main/pty.js` (dynamisk import) | native; `fix-pty-perms.cjs` sätter körbit på `spawn-helper`; `check-glibc.mjs` kontrollerar Linux-paketet |
 | chokidar | `src/main/watcher.js` | v4 missar mappar som saknas vid start; därför bevakas föräldramappar |
 | react, react-dom | alla `src/renderer/*.jsx` | – |
 | @xterm/xterm, @xterm/addon-fit | `TerminalPanel.jsx` | tema via `tokens.js` (`xtermTheme()`) |
-| react-markdown, remark-gfm | `ArtifactReader.jsx` (`FileContent`) | återanvänds av RefreshPanel och FeaturesView |
+| react-markdown, remark-gfm | `ArtifactReader.jsx` (`FileContent`) | återanvänds av RefreshPanel, FeaturesView och DocsDialog |
 | @tanstack/react-virtual | `Timeline.jsx` | styr radplacering med inline `transform` |
 | @fontsource/antonio | `main.jsx` | – |
 
@@ -29,7 +29,10 @@ flowchart LR
   App --> AuctumMark
   App --> Lcars["Lcars.jsx (Bar, Frame)"]
   App --> AppSettingsDialog
+  App --> DocsDialog --> ArtifactReader
   App --> ProjectView
+  ProjectView --> useProject
+  ProjectView --> useFeatures
   ProjectView --> IntentList --> ResumeButton
   ProjectView --> IntentDetail
   IntentDetail --> Pipeline
@@ -45,6 +48,7 @@ flowchart LR
   ProjectView --> ProjectSettingsDialog
   ProjectView --> TerminalProvider["TerminalContext (TerminalProvider)"]
   ProjectView --> TerminalPanel --> TerminalProvider
+  TerminalProvider --> TerminalControl["terminalControl.js"]
   ResumeButton --> TerminalProvider
   RefreshPanel --> TerminalProvider
   SetupAidlc --> TerminalProvider
@@ -54,15 +58,15 @@ flowchart LR
   ProjectSettingsDialog --> FeaturesParser
 ```
 
-Text: App använder Splash, AuctumMark, LCARS-primitiverna, AppSettingsDialog och ProjectView. ProjectView sätter ihop alla vyer och äger terminal-contexten per projekt. ResumeButton, RefreshPanel, SetupAidlc och TerminalPanel går via TerminalContext. Timeline, CostTab, FeaturesView och ProjectSettingsDialog importerar rena parsers från main. Kopplingarna under ProjectView är från förra skanningen och inte omverifierade, utom att `TerminalProvider` importeras i `ProjectView.jsx`.
+Text: App använder Splash, AuctumMark, LCARS-primitiverna, AppSettingsDialog, DocsDialog och ProjectView. ProjectView sätter ihop alla vyer och äger terminal-contexten per projekt, som i sin tur använder `terminalControl.js`. ResumeButton, RefreshPanel, SetupAidlc och TerminalPanel går via TerminalContext. Timeline, CostTab, FeaturesView och ProjectSettingsDialog importerar rena parsers från main. Kopplingarna under ProjectView är från tidigare skanningar och inte omverifierade, utom `TerminalProvider` och `terminalCommand`.
 
-Main: `index.js` beror på `ipc.js` (`registerIpc`, `shutdown`). `ipc.js` beror på `projectService`, `projectAccess`, `watcher`, `pty`, `git`, `setup`, `models`, `features`, `settings` och `parsers/ledger.js`. `settings.js` beror på `parsers/features.js` (`DEFAULT_FEATURES_PATH`, `isValidFeaturesPath`). `git.js`, `setup.js` och `models.js` går via `exec.js`. Inga cirkulära importer hittades.
+Main: `index.js` beror på `ipc.js` (`registerIpc`, `shutdown`), `menu.js` (`applyMenu`) och `settings.js` (`getSettings`, `setSettings`). `ipc.js` beror på `projectService`, `projectAccess`, `watcher`, `pty`, `git`, `setup`, `models`, `features`, `settings`, `menu` (`AIDLC_DOCS_URL`, `applyMenu`, `parseMenuState`, `setMenuState`) och `parsers/ledger.js`. `projectService.js` beror på `projectAccess` och `parsers/intents`, `state`, `runtimeGraph`, `audit`, `pipeline`, `units`. `settings.js` beror på `parsers/features.js`. `git.js`, `setup.js` och `models.js` går via `exec.js`. Inga cirkulära importer hittades.
 
 ## Delade globala klasser (beroende via CSS)
 
-Eftersom stilen är global finns beroenden som inte syns i importer (från förra skanningen; `.lcars-block` är ny och används både i armen och i `AppSettingsDialog`):
-- `.lcars-block`, `.lcars-block--<ton>`: vänsterarmen i App och radioknapparna i AppSettingsDialog.
-- `.settings-dialog`, `.settings-group`, `.setup-actions`, `.refresh-error`: AppSettingsDialog och ProjectSettingsDialog.
-- `.intent-row`, `.intent-row-top`, `.intent-slug`, `.intent-row-meta`, `.intent-rows`: IntentList och FeaturesView.
-- `.detail-tab`: IntentDetail-flikar och terminalflikarna.
-- `.cost-panel-toggle`: CostPanel och RefreshPanel.
+Eftersom stilen är global finns beroenden som inte syns i importer:
+- `.lcars-block`, `.lcars-block--<ton>`, `.lcars-block--sm`: vänsterarmen och helskärmsknappen i App och radioknapparna i AppSettingsDialog.
+- `.settings-dialog`, `.settings-group`, `.setup-actions`, `.refresh-error`: AppSettingsDialog, ProjectSettingsDialog och (`.settings-dialog`) DocsDialog. En popup för US-0505 som återanvänder dem ärver dialogernas utseende.
+- `.intent-row`, `.intent-row-top`, `.intent-slug`, `.intent-row-meta`, `.intent-rows`: IntentList och FeaturesView (från tidigare skanning).
+- `.detail-tab`: IntentDetail-flikar och terminalflikarna (från tidigare skanning).
+- `.cost-panel-toggle`: CostPanel och RefreshPanel (från tidigare skanning).

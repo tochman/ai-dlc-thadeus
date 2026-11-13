@@ -7,6 +7,7 @@ import { parseRuntimeGraph } from './parsers/runtimeGraph.js';
 import { mergeAudits, categoryOf } from './parsers/audit.js';
 import { mergePipeline } from './parsers/pipeline.js';
 import { unitStatuses } from './parsers/units.js';
+import { pendingQuestions } from './questions.js';
 
 const PHASE_DIRS = ['initialization', 'ideation', 'inception', 'construction', 'operation', 'verification'];
 // ponytail: unbounded per-process cache keyed by root/space/intent; fine for a handful of projects.
@@ -134,6 +135,43 @@ async function loadAuditEvents(root, base) {
     files.map(async (f) => ({ source: f.name, text: await readText(root, `${base}/audit/${f.name}`) }))
   );
   return mergeAudits(texts).map((e) => ({ ...e, category: categoryOf(e.event) }));
+}
+
+/** An intent is in progress unless intents.json or aidlc-state.md says it is finished (US-0505 FR1.1). */
+function inProgress(intent) {
+  if (intent.missingOnDisk || intent.status === 'complete' || intent.status === 'archived') return false;
+  if (/^complete/i.test(intent.stateStatus ?? '')) return false;
+  return !(intent.executed > 0 && intent.done >= intent.executed);
+}
+
+const questionCache = new Map(); // `${root}|${space}|${dirName}` -> pending questions of that intent
+
+/**
+ * The questions and gates AI-DLC waits on in every in-progress intent of one space (US-0505 FR1.1, NFR3).
+ * Only the audit logs of in-progress intents are read, and with `onlyDirs` only those intents are re-read.
+ * A broken audit log keeps that intent's last result.
+ * @param {{root: string, space: string, projectId: string, name: string}} project
+ * @param {string[]} [onlyDirs]
+ */
+export async function loadPendingQuestions(project, onlyDirs) {
+  const { root, space } = project;
+  const { intents } = await loadIntentList(root, space, onlyDirs);
+  const lists = await Promise.all(
+    intents.filter(inProgress).map(async ({ dirName }) => {
+      const key = `${root}|${space}|${dirName}`;
+      if (questionCache.has(key) && Array.isArray(onlyDirs) && !onlyDirs.includes(dirName)) return questionCache.get(key);
+      try {
+        const events = await loadAuditEvents(root, `${intentsDir(space)}/${dirName}`);
+        const pending = pendingQuestions(events, { project, intent: dirName });
+        questionCache.set(key, pending);
+        return pending;
+      } catch (err) {
+        console.warn(`Väntande frågor kunde inte läsas för ${dirName}:`, err.message);
+        return questionCache.get(key) ?? [];
+      }
+    })
+  );
+  return lists.flat();
 }
 
 async function buildDetail(root, space, dirName, prev) {

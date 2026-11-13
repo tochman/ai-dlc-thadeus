@@ -6,9 +6,9 @@
 
 > Auctum AIDLC Control should look and behave like a proper Auctum desktop app wherever it shows up: in the Dock, the application menu, the window switcher, the installer and the Linux launcher. Inside the app it should feel like a living bridge console. EPIC-01 added the name, splash screen, in-app logo and the restrained LCARS theme. This epic covers the parts of the operating system that still show Electron defaults, and the motion and light that make the theme come alive without hurting readability.
 
-**Stories:** US-0401, US-0402, US-0403, US-0404, US-0405
+**Stories:** US-0401, US-0402, US-0403, US-0404, US-0405, US-0406
 
-**Status (2026-11-13):** US-0401 🚧 Built and released in v0.1.1, awaiting verification on an installed release. US-0402 🚧 Built, not released. US-0403 🚧 Built, not released. US-0404 🚧 Built, not released (intent `261113-fullscreen-menu`). US-0402 and US-0403 were built together (intent `261113-living-lcars`) from the approved mock-up (https://claude.ai/artifact/Ugk4woaPui4R3278LagRnD, copied to `aidlc/spaces/default/intents/261113-living-lcars/inception/requirements-analysis/mockup/`), which settles the exact palette and where it differs from the first draft below.
+**Status (2026-11-13):** US-0401 🚧 Built and released in v0.1.1, awaiting verification on an installed release. US-0402, US-0403 and US-0404 🚀 Released in v0.2.0 (US-0404: intent `261113-fullscreen-menu`). US-0402 and US-0403 were built together (intent `261113-living-lcars`) from the approved mock-up (https://claude.ai/artifact/Ugk4woaPui4R3278LagRnD, copied to `aidlc/spaces/default/intents/261113-living-lcars/inception/requirements-analysis/mockup/`), which settles the exact palette and where it differs from the first draft below.
 
 ---
 
@@ -81,7 +81,7 @@
 - **Notes:** Built together with US-0402 (glow and motion), since both touch `theme.css` and the frame components. Before code, a static mock-up of the project view is reviewed and approved.
 - **Dependencies:** US-0103, US-0104, US-0105, US-0402
 
-**US-0404: Full screen and an app menu of its own** 🚧 Built, not released (v0.2.0)
+**US-0404: Full screen and an app menu of its own** 🚀 Released in v0.2.0
 - As a **developer who keeps the console up on a screen of its own**, in order to **give the bridge view the whole screen and not see menu items that mean nothing in this app**, I would like to **a full-screen mode, and a menu with only the commands the app actually has instead of Electron's default menus**.
 - **Epic:** EPIC-04
 - **Priority:** Medium
@@ -129,3 +129,36 @@
   - [ ] Keyboard and screen readers: every field has a label, file buttons have names ("Välj sökväg till aidlc"), and focus moves into the view when it opens.
 - **Dependencies:** US-0402, US-0403, US-0404, EPIC-06
 
+**US-0406: Name the application T.H.A.D.E.U.S.** 📋 Planned (next after US-0505)
+- As **the product owner**, in order to **give the application an identity that says what it is: an environment where people and AI build software together, not just a dashboard**, I would like to **rename the application T.H.A.D.E.U.S. everywhere a user sees its name**.
+- **Epic:** EPIC-04
+- **Priority:** High
+- **Complexity:** Low
+- **Background:** Today the app is called "Auctum AIDLC Control" (repo `aidlc-dash`). The new name:
+  - **T.H.A.D.E.U.S.**: *Transformative Human-AI Development Environment for Ubiquitous Systems*
+  - Tagline: *AI-driven software development, under human direction.*
+  - Why the name fits:
+    - **Transformative:** the ambition to change how software is built.
+    - **Human-AI:** people and AI work together.
+    - **Development Environment:** more than a dashboard or a project tracker.
+    - **Ubiquitous Systems:** made for a world where intelligent, connected systems are everywhere.
+- **Acceptance Criteria:**
+  - [ ] **Name, spelled out and short:** the display name is "T.H.A.D.E.U.S." (with dots). Where dots do not work (file names, the app bundle, the deb package, bundle id), a fixed short form is used: "THADEUS" for the bundle and installer, `thadeus` for the package. The repo name `aidlc-dash` is unchanged.
+  - [ ] **Everywhere the user sees the name:**
+    - the splash
+    - the brand block in the header elbow
+    - the window title and `<title>`
+    - the macOS app menu: "Om T.H.A.D.E.U.S.", "Göm …" and "Avsluta …"
+    - the About panel
+    - the Dock and launcher name
+    - Linux `.desktop` entry
+    - `productName` in `package.json` and `electron-builder.yml`
+    - the release title in GitHub Actions
+    - the artifact names (`THADEUS-<version>-universal.dmg` and `thadeus_<version>_amd64.deb`)
+    - README
+  - [ ] **Full name and tagline:** the splash shows the spelled-out name ("Transformative Human-AI Development Environment for Ubiquitous Systems") and the tagline "AI-driven software development, under human direction." under the short name. The About panel shows the same, and the README introduces the app with them.
+  - [ ] **The Auctum symbol stays:** the Auctum mark (US-0401, US-0403) keeps its place in the header elbow, on the splash and as the app icon. How the name and Auctum stand together (for example "T.H.A.D.E.U.S. · by Auctum") is decided in requirements analysis.
+  - [ ] **Nothing is lost on upgrade:** saved settings, open projects and the window state survive. The userData folder stays `aidlc-dash`, as it did at the last rename. A user who installed v0.2.0 gets the new name without losing anything. On macOS the new app replaces the old one, or the README says to remove "Auctum AIDLC Control" from Applications.
+  - [ ] **Layout holds:** the new name and the longer sub-line fit the header elbow and the splash at 1100 px width without breaking the LCARS frames. They keep WCAG AA contrast.
+  - [ ] Tests that check the name (the splash `role="img"` contract, the menu labels in `menu.test.js`, settings paths) are updated to the new name. No old name is left in user-facing text. The design doc and feature docs mention the old name only in history.
+- **Dependencies:** US-0401, US-0403, US-0404

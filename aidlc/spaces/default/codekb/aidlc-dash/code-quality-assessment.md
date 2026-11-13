@@ -4,25 +4,25 @@
 
 | Område | Betyg | Kommentar |
 |--------|-------|-----------|
-| Namngivning | good | Tydliga komponent- och klassnamn, konsekventa `data-testid` |
-| Funktionsstorlek | fair | De flesta funktioner är små; `App` (render 185-348), `RefreshPanel`, `SetupAidlc`, `Timeline` och `ProjectContent` är långa men sammanhållna |
-| Felhantering | good | IPC-fel loggas i main och visas med `role="alert"`; trasig `settings.json` ger standardvärden; inga tysta catch utan kommentar |
-| Testnärvaro | fair | Main och de flesta stateful vyer testas; app-skalet har nu `AppShell.test.jsx` |
-| Duplicering | fair | `errorText()` i över 10 renderarfiler (nu även `App.jsx` och `AppSettingsDialog.jsx`); filåtgärdsknappar dupliceras i ArtifactReader och FeaturesView |
+| Namngivning | good | Tydliga komponent- och klassnamn, konsekventa `data-testid`; arm och meny delar namngivna funktioner |
+| Funktionsstorlek | fair | De flesta funktioner är små; `App` (433 rader, render 261-431), `RefreshPanel`, `SetupAidlc`, `Timeline` och `ProjectContent` är långa men sammanhållna |
+| Felhantering | good | IPC-fel loggas i main och visas med `role="alert"`; trasig `settings.json` ger standardvärden; halvskrivna AI-DLC-filer ger förra giltiga värdet; inga tysta catch utan kommentar |
+| Testnärvaro | fair | Main och de flesta stateful vyer testas; `windowOptions` och menyn har egna tester; `createWindow()`, fönsterhändelserna och `useProject` saknar egna tester |
+| Duplicering | fair | `errorText()` i över 10 renderarfiler (bl.a. `App.jsx`, `useProject.js`, `AppSettingsDialog.jsx`); två debounce-implementationer i `watcher.js`; dialogmönstret (`showModal`/`onCancel`) upprepas i tre dialoger |
 | Död kod | good | Inga TODO/FIXME, inga `eslint-disable` i de lästa filerna |
 
 ## Tester
 
 - **Ramverk**: Vitest 5 med två projekt (`main` i node, `renderer` i jsdom), Testing Library React.
-- **main** (15 filer): `check-glibc`, `configuredModels`, `features`, `git`, `icon`, `ledger`, `parsers`, `projectAccess`, `projectService`, `pty`, `ptyPerms`, `settings`, `setup`, `theme`, `watcher`.
+- **main** (17 filer): `check-glibc`, `configuredModels`, `features`, `git`, `icon`, `ledger`, `menu`, `parsers`, `projectAccess`, `projectService`, `pty`, `ptyPerms`, `settings`, `setup`, `theme`, `watcher`, `windowOptions`.
 - **renderer** (13 filer): `AppShell`, `CostPanel`, `FeaturesView`, `IntentDetail`, `IntentList`, `ProjectSettingsDialog`, `RefreshPanel`, `ResumeButton`, `SetupAidlc`, `Splash`, `TerminalPanel`, `Timeline`, `terminalControl`.
 - **Coverage**: ingen konfiguration eller tröskel.
 - **Körs i CI**: `npx vitest run tests/` i `verify`-jobbet (från tidigare skanning).
-- `src/main/index.js` saknar test (fönster och livscykel); det är där meny- och helskärmskoden hamnar. `settings.test.js` täcker `sanitize()` och är platsen för ett test av en ny nyckel.
+- **Platser för US-0505-tester**: en ren funktion för "öppna frågor" testas bäst i node bredvid `parsers.test.js` (audit-block som text in, öppna frågor ut); en ny inställningsnyckel i `settings.test.js`; popup och "Svara i Claude" i `AppShell.test.jsx`. Fixtures för audit-shards finns i `tests/fixtures/`.
 
 ### Tester som en ändring av gränssnittet kan bryta
 
-Listan nedan kommer från förra skanningen (före designlyftet) och är inte omverifierad; nya testfiler (`AppShell`, `IntentDetail`, `TerminalPanel`) har tillkommit.
+Från tidigare skanning (inte omverifierad):
 
 | Test | Beroende |
 |------|----------|
@@ -34,10 +34,12 @@ Listan nedan kommer från förra skanningen (före designlyftet) och är inte om
 | `RefreshPanel.test.jsx`, `ResumeButton.test.jsx` | exakt ett `role="status"` |
 | Alla renderartester | `data-testid` och svenska etiketttexter |
 
+En ny popup med `role="status"` eller `role="alert"` i App kan bryta tester som räknar exakt ett sådant element i hela dokumentet.
+
 ## Linting, formatering, CI
 
-- Ingen ESLint, Prettier eller EditorConfig i repot (`package.json` har inga sådana beroenden). Stilen är ändå enhetlig (2 blanksteg, enkla citattecken, semikolon).
-- CI (`.github/workflows/release.yml`): tester på PR mot `main` och på taggar; macOS- och Linux-bygge; glibc-kontroll; release med `gh release` (`publish: null` i `electron-builder.yml`). Ingen lint-steg.
+- Ingen ESLint, Prettier eller EditorConfig i repot. Stilen är ändå enhetlig (2 blanksteg, enkla citattecken, semikolon).
+- CI (`.github/workflows/release.yml`): tester på PR mot `main` och på taggar; macOS- och Linux-bygge; glibc-kontroll; release med `gh release`. Inget lint-steg.
 
 ## Dokumentation
 
@@ -48,15 +50,21 @@ Listan nedan kommer från förra skanningen (före designlyftet) och är inte om
 - Status alltid med text, aldrig bara färg (`format.js`, `.tag`, `StatusBadge`).
 - `:focus-visible`-outline globalt.
 - Rörelse: `data-motion` (`full | reduced | off`) med `prefers-reduced-motion` som standard för `reduced`.
-- ARIA i app-skalet: `nav.app-arm[aria-label="Projekt och vyer"]`, `aria-current` på aktivt projekt (`true`) och aktiv vy (`page`), `aria-expanded` på Kostnad/Github, `aria-label` på ⚙ och ×, `role="alert"` på felbannern, `aria-hidden` på dekor. App-inställningarna är en native modal `dialog` med `aria-labelledby`; Esc stänger via `onCancel`.
-- Kontrast: kommentaren i `theme.css` anger minst 4,5:1 för brödtext; `theme.test.js` finns (innehåll ej omläst).
+- ARIA i app-skalet: `nav.app-arm[aria-label="Projekt och vyer"]`, `aria-current` på aktivt projekt (`true`) och aktiv vy (`page`), `aria-expanded` på Kostnad/Github, `aria-pressed` på helskärmsknappen, `aria-label` på ⚙ och ×, `role="alert"` på felbannern, `aria-hidden` på dekor.
+- Dialoger: `AppSettingsDialog`, `DocsDialog` och `ProjectSettingsDialog` är native modala `dialog` (`showModal`, fokus fångas i dialogen) med `aria-labelledby` på en `h2`; Esc stänger via `onCancel` + `preventDefault` + App:s state; innehållet renderas bara när dialogen är öppen; fel visas i `p.refresh-error[role=alert]`; radioval som `label.lcars-block` runt `input.sr-only` så att tangentbord och skärmläsare får native radioknappar.
+- Kontrast: kommentaren i `theme.css` anger minst 4,5:1 för brödtext; `theme.test.js` finns.
 
 ## Teknisk skuld
 
-1. **Ingen egen meny**: Electrons standardmeny visas, med Reload, Force Reload, Toggle DevTools och Electron-länkar även i paketerad app (`src/main/index.js` importerar inte `Menu`). Linux visar en menyrad i fönstret (`autoHideMenuBar` saknas).
-2. **Armens åtgärder är inline-lambdor** i `App.jsx:229-291`; de måste lyftas till namngivna funktioner för att menyn ska kunna dela kodväg.
-3. **Terminalstyrningen** (`useTerminal()`) finns bara inne i varje `ProjectView`; App kan inte byta terminalflik eller starta om en flik.
-4. **`createWindow()` returnerar fönstret men ingen sparar det** (`index.js:43,56,58`); main saknar en referens att skicka menykommandon till eller läsa helskärmsläget från.
-5. `settings.js` vitlistar nycklar; en ny inställning kräver ändring i `sanitize()`.
-6. Färger utanför tokens: fönsterbakgrunden i `src/main/index.js:18` är fortfarande en litteral, men matchar nu `--bg` (`#05060a`) enligt kommentaren. Övriga punkter från förra skanningen (xterm-tema, banners, `flash`, `::backdrop`) är inte omverifierade; `tokens.js` exporterar nu `xtermTheme()`.
-7. `hidden` sätter `display: none !important`, så in/ut-övergångar på dolda flikar och projekt kräver annan teknik (från tidigare skanning).
+1. **Audit läses bara för den valda intenten** (`useProject.js:119-121`, `projectService.js:131-137`): det finns ingen översikt över händelser i andra intents eller dolda projekt, vilket US-0505 behöver.
+2. **Ingen fönsterreferens i main**: `createWindow()` håller `win` lokalt (`index.js:37-65`); `ipc.js` och `menu.js` slår upp fönstret per anrop. Notisklick och fokuskontroll måste göra samma uppslag eller spara en referens.
+3. **Ingen fokusdetektering**: inga `focus`/`blur`-lyssnare i main eller renderare.
+4. **`runTerminal` beror på det aktiva projektet** via closure (`App.jsx:219-221`); en åtgärd för ett annat projekt kräver `projectId` som argument.
+5. **Terminalstyrningen** (`useTerminal()`) finns bara inne i varje `ProjectView`; App når den bara via `terminalCommand`.
+6. `settings.js` vitlistar nycklar; en ny inställning kräver ändring i `sanitize()`.
+7. Två debounce-implementationer i `watcher.js` (rad 16-30 och 86-91).
+8. Bevakningen gäller en space per projekt (`ipc.js:106`); händelser i andra spaces syns inte.
+9. Färger utanför tokens: fönsterbakgrunden i `windowOptions()` är en litteral som matchar `--bg` (`#05060a`). Övriga punkter från tidigare skanning (banners, `flash`, `::backdrop`) är inte omverifierade.
+10. `hidden` sätter `display: none !important`, så in/ut-övergångar på dolda flikar och projekt kräver annan teknik (från tidigare skanning).
+
+US-0404:s tidigare skuldpunkter (standardmenyn med Reload/DevTools, inline-lambdor i armen, saknad `autoHideMenuBar`) är åtgärdade.

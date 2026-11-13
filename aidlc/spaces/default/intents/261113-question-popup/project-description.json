@@ -1,0 +1,1 @@
+"Implementera US-0505 enligt docs/features/epic-05-workflow-control.md: visa AI-DLC:s väntande frågor och godkännanden (DECISION_RECORDED / STAGE_AWAITING_APPROVAL utan svar i audit-loggen) som LCARS-popup i appen och som systemnotis när appen ligger i bakgrunden, med \"Svara i Claude\" och en inställning Popup och notis / Bara popup / Av."

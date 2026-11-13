@@ -53,5 +53,10 @@ contextBridge.exposeInMainWorld('bridge', {
   onFullscreen: subscribe('window:fullscreen'),
   sendMenuState: call('menu:state'),
   onMenuCommand: subscribe('menu:command'),
-  openDocsUrl: call('app:openDocsUrl')
+  openDocsUrl: call('app:openDocsUrl'),
+  // Questions AI-DLC waits on (EPIC-05 US-0505). Read-only: nothing here writes or answers.
+  listQuestions: call('questions:list'),
+  onQuestions: subscribe('questions:changed'),
+  onQuestionFocus: subscribe('questions:focus'),
+  setActiveProject: call('questions:activeProject')
 });

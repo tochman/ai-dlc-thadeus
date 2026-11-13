@@ -26,6 +26,7 @@
   --text-2: #c3c9d8;
   --muted: #9aa3b8;
   --on-light: #000000;
+  --alert: #ff3b3b; /* glowing red for a question left unanswered (US-0505 FR2.5); AA on --bg and with --on-light */
 
   /* The same tokens with alpha, for glows, the light sweep and the dialog backdrop. */
   --steel-a0: rgba(79, 163, 217, 0);
@@ -39,6 +40,9 @@
   --coral-a90: rgba(238, 108, 86, 0.9);
   --amber-a0: rgba(255, 158, 64, 0);
   --amber-a45: rgba(255, 158, 64, 0.45);
+  --alert-a0: rgba(255, 59, 59, 0);
+  --alert-a45: rgba(255, 59, 59, 0.45);
+  --alert-a90: rgba(255, 59, 59, 0.9);
   --backdrop: rgba(5, 6, 10, 0.78);
 
   /* Frame anatomy (Designsystem): arm 150, bar 18, inner frame 14, 6 px black gaps. */
@@ -787,7 +791,19 @@ button.lcars-chip:hover { border-color: var(--steel-text); color: var(--steel-li
 .settings-setup { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
 .settings-help { margin: 4px 0 0; font-size: 13px; max-width: 460px; }
 .lcars-radio-group { display: flex; gap: 5px; }
-.lcars-radio-group .lcars-block { width: 110px; height: 40px; padding-bottom: 5px; font-size: 15px; cursor: pointer; }
+.lcars-radio-group .lcars-block { min-width: 110px; height: 40px; padding-bottom: 5px; font-size: 15px; cursor: pointer; }
+
+/* ---------- Waiting questions (EPIC-05 US-0505 FR2.1–FR2.5): the settings dialog with a coral frame ---------- */
+.question-popup { max-width: min(640px, 92vw); border-left-color: var(--coral); border-top-color: var(--coral); border-bottom-color: var(--coral-soft); }
+.question-popup-head { margin: 0 0 12px; padding: 6px 16px; background: var(--coral); color: var(--on-light); border-radius: 0 22px 22px 0; }
+.question-popup .question-popup-head h2 { margin: 0; font-size: 26px; }
+.question-popup-early { margin: 0 0 6px; color: var(--coral-soft); font-size: 13px; text-transform: uppercase; letter-spacing: 0.04em; }
+.question-popup-where { margin: 0 0 8px; color: var(--muted); font-size: 14px; text-transform: uppercase; letter-spacing: 0.04em; }
+.question-popup-text { margin: 0 0 10px; font-family: var(--font-read); font-size: 16px; white-space: pre-wrap; overflow-wrap: anywhere; }
+.question-popup-options { margin: 0 0 12px; padding-left: 20px; font-family: var(--font-read); color: var(--text-2); }
+.question-popup-pager { display: flex; gap: 10px; align-items: center; margin: 0 0 12px; color: var(--text-2); }
+.question-popup.is-overdue { border-left-color: var(--alert); border-top-color: var(--alert); }
+.question-popup.is-overdue .question-popup-head { background: var(--alert); animation: lcars-alert 1.2s ease-in-out infinite; }
 .lcars-radio-group .lcars-block:has(input:focus-visible) { outline: 2px solid var(--amber); outline-offset: 2px; }
 
 /* ---------- Splash (FR3.7, Splash) ---------- */
@@ -844,6 +860,10 @@ button.lcars-chip:hover { border-color: var(--steel-text); color: var(--steel-li
   0%, 100% { filter: drop-shadow(0 0 0 var(--amber-a0)); }
   50% { filter: drop-shadow(0 0 18px var(--amber-a45)); }
 }
+@keyframes lcars-alert {
+  0%, 100% { box-shadow: 0 0 0 0 var(--alert-a0); }
+  50% { box-shadow: 0 0 0 2px var(--alert-a90), 0 0 24px var(--alert-a45); }
+}
 @keyframes lcars-glow-steel {
   0%, 100% { filter: drop-shadow(0 0 0 var(--steel-a0)); }
   50% { filter: drop-shadow(0 0 10px var(--steel-a60)); }
@@ -859,3 +879,5 @@ button.lcars-chip:hover { border-color: var(--steel-text); color: var(--steel-li
 :root:is([data-motion='reduced'], [data-motion='off']) .lcars-live-dot { box-shadow: 0 0 0 3px var(--steel-a25); }
 :root:is([data-motion='reduced'], [data-motion='off']) .splash-mark { filter: drop-shadow(0 0 12px var(--amber-a45)); }
 :root:is([data-motion='reduced'], [data-motion='off']) .dag-node.unit-running { filter: drop-shadow(0 0 6px var(--steel-a60)); }
+/* An unanswered question: Full pulses, Dämpad glows statically, Av is red without glow (US-0505 FR2.5). */
+:root[data-motion='reduced'] .question-popup.is-overdue .question-popup-head { box-shadow: 0 0 0 2px var(--alert-a90), 0 0 16px var(--alert-a45); }

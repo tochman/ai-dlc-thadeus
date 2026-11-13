@@ -67,6 +67,26 @@ describe('project settings', () => {
     expect(JSON.parse(await fs.readFile(FILE, 'utf8'))).not.toHaveProperty('fullscreen');
   });
 
+  it('keeps questionAlerts and notificationSound and leaves out invalid values (EPIC-05 US-0505 FR4.1)', async () => {
+    const s0 = await getSettings();
+    expect('questionAlerts' in s0 || 'notificationSound' in s0).toBe(false); // unset: Popup och notis, sound on
+    for (const mode of ['popup', 'off', 'popup-notify']) {
+      await setSettings({ questionAlerts: mode });
+      expect((await getSettings()).questionAlerts).toBe(mode);
+    }
+    await setSettings({ notificationSound: false });
+    await setSettings({ openProjects: ['/p/a'] }); // saving the tabs keeps both
+    expect(await getSettings()).toMatchObject({ questionAlerts: 'popup-notify', notificationSound: false });
+
+    await fs.writeFile(FILE, JSON.stringify({ openProjects: [], questionAlerts: 'always', notificationSound: 'yes' }));
+    const s = await getSettings();
+    expect('questionAlerts' in s).toBe(false);
+    expect('notificationSound' in s).toBe(false);
+    await setSettings({ questionAlerts: 7, notificationSound: null });
+    expect(JSON.parse(await fs.readFile(FILE, 'utf8'))).not.toHaveProperty('questionAlerts');
+    expect(JSON.parse(await fs.readFile(FILE, 'utf8'))).not.toHaveProperty('notificationSound');
+  });
+
   it('keeps both changes when two writes run at the same time (FR3.5)', async () => {
     await Promise.all([
       setSettings({ openProjects: ['/p/a', '/p/b'], activeProject: '/p/b' }),
