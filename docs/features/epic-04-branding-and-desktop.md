@@ -8,7 +8,7 @@
 
 **Stories:** US-0401, US-0402, US-0403, US-0404, US-0405, US-0406
 
-**Status (2026-11-13):** ✅ US-0401 released in v0.1.1. ✅ US-0402, US-0403 and US-0404 released in v0.2.0. US-0406 🚧 Built, not released (intent `261113-thadeus-name`). US-0405 📋 Planned.
+**Status (2026-11-14):** ✅ US-0401 released in v0.1.1. ✅ US-0402, US-0403 and US-0404 released in v0.2.0. US-0406 🚧 Built, merged to main, not released (intent `261113-thadeus-name`). US-0405 📋 Planned.
 
 ---
 
@@ -129,7 +129,7 @@
   - [ ] Keyboard and screen readers: every field has a label, file buttons have names ("Välj sökväg till aidlc"), and focus moves into the view when it opens.
 - **Dependencies:** US-0402, US-0403, US-0404, EPIC-06
 
-**US-0406: Name the application T.H.A.D.E.U.S.** 🚧 Built, not released (intent `261113-thadeus-name`)
+**US-0406: Name the application T.H.A.D.E.U.S.** 🚧 Built, merged to main, not released (intent `261113-thadeus-name`)
 - As **the product owner**, in order to **give the application an identity that says what it is: an environment where people and AI build software together, not just a dashboard**, I would like to **rename the application T.H.A.D.E.U.S. everywhere a user sees its name**.
 - **Epic:** EPIC-04
 - **Priority:** High
