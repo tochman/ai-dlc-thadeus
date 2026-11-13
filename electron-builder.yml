@@ -1,5 +1,7 @@
-appId: se.auctum.aidlc-control
-productName: Auctum AIDLC Control
+# US-0406: a new identity, so macOS sees a new app. userData stays in aidlc-dash (src/main/index.js).
+appId: se.auctum.thadeus
+# Without dots, so the bundle is THADEUS.app; the UI shows "T.H.A.D.E.U.S." (src/shared/appName.js).
+productName: THADEUS
 directories:
   output: dist
   buildResources: build
@@ -27,6 +29,8 @@ mac:
   x64ArchFiles: "Contents/Resources/app.asar.unpacked/node_modules/node-pty/prebuilds/**"
   # Unsigned internal build: no signing identity, no notarisation.
   identity: null
+dmg:
+  artifactName: THADEUS-${version}-${arch}.dmg
 linux:
   target:
     - target: deb
@@ -38,6 +42,16 @@ linux:
   files:
     - "!node_modules/node-pty/prebuilds/darwin-*/**"
     - "!node_modules/node-pty/prebuilds/win32-*/**"
-  executableName: auctum-aidlc-control
+  executableName: thadeus
+  # The launcher entry shows the dotted name; StartupWMClass stays productName, which is the window's WM_CLASS.
+  desktop:
+    entry:
+      Name: T.H.A.D.E.U.S.
   maintainer: Auctum Solutions AB <info@auctum.se>
   synopsis: Read-only AI-DLC console with an embedded Claude terminal
+deb:
+  artifactName: thadeus_${version}_${arch}.deb
+  # The package was called aidlc-dash before US-0406; installing thadeus removes it.
+  fpm:
+    - "--replaces=aidlc-dash"
+    - "--conflicts=aidlc-dash"

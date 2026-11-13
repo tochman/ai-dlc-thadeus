@@ -1,8 +1,8 @@
 // The app's own menu (EPIC-04 US-0404 FR2). Labels are the left arm's names. Everything that concerns the
 // content is sent to the renderer as `menu:command` and runs the same function as the arm's button (FR2.4).
 import { app, BrowserWindow, Menu, shell } from 'electron';
+import { APP_FULL_NAME, APP_NAME, APP_TAGLINE, APP_VENDOR } from '../shared/appName.js';
 
-const APP_NAME = 'Auctum AIDLC Control';
 // [assumption] AI-DLC's web page; the fallback when the project has no docs/README.md (FR2.1 Hjälp).
 export const AIDLC_DOCS_URL = 'https://github.com/awslabs/aidlc-workflows';
 export const ISSUES_URL = 'https://github.com/tochman/aidlc-dash/issues';
@@ -153,7 +153,13 @@ const actions = {
 
 /** (Re)builds the menu from the latest renderer state and the window's real fullscreen mode. */
 export function applyMenu(win) {
-  app.setAboutPanelOptions({ applicationName: APP_NAME, applicationVersion: app.getVersion() });
+  // macOS About panel (US-0406 FR2.4). `version` (the build number) is left to Info.plist's CFBundleVersion.
+  app.setAboutPanelOptions({
+    applicationName: APP_NAME,
+    applicationVersion: app.getVersion(),
+    copyright: `© ${APP_VENDOR}`,
+    credits: `${APP_FULL_NAME} — ${APP_TAGLINE}`
+  });
   const template = buildMenuTemplate({
     isMac: process.platform === 'darwin',
     isPackaged: app.isPackaged,

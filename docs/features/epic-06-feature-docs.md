@@ -8,7 +8,7 @@
 
 **Stories:** US-0601, US-0602
 
-**Status (2026-11-13):** 🚧 Built, not released. Both stories are built with AI-DLC in `express` scope (intent `261113-feature-docs`) and the unit tests are green. The manual checks in Electron (live updates, settings, setup offer, timing) are done in Build and Test.
+**Status (2026-11-13):** ✅ Released in v0.2.0. Both stories are built with AI-DLC in `express` scope (intent `261113-feature-docs`) and the unit tests are green. The manual checks in Electron (live updates, settings, setup offer, timing) are done in Build and Test.
 
 **Decisions:**
 - **Q1 (where the view lives):** a switch "Intents | Features" at the top of the project view. Features replaces the sidebar and content area; the terminal stays.
@@ -28,7 +28,7 @@
 
 ## User Stories
 
-**US-0601: Offer feature docs when setting up AI-DLC** 🚧 Built, not released
+**US-0601: Offer feature docs when setting up AI-DLC** ✅ Released in v0.2.0
 - As a **developer starting AI-DLC in a project**, in order to **keep a readable product description with epics and user stories alongside the AI-DLC records**, I would like to **be asked during setup whether the project should use separate feature descriptions, and get them created if I say yes**.
 - **Epic:** EPIC-06
 - **Priority:** Medium
@@ -43,7 +43,7 @@
 - **Notes:** Where the docs live (`docs/`) could be a setting, but `docs/FEATURES.md` is the default and enough for now.
 - **Dependencies:** US-0503, US-0102
 
-**US-0602: View epics and user stories in the console** 🚧 Built, not released
+**US-0602: View epics and user stories in the console** ✅ Released in v0.2.0
 - As a **developer or product owner following the work**, in order to **see what is planned, being built and done without opening Markdown files in an editor**, I would like to **a "Features" view that shows the epics and their stories with status and acceptance criteria**.
 - **Epic:** EPIC-06
 - **Priority:** Medium

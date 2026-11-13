@@ -1,9 +1,9 @@
 {
-  "name": "aidlc-dash",
-  "productName": "Auctum AIDLC Control",
+  "name": "thadeus",
+  "productName": "THADEUS",
   "version": "0.2.0",
   "private": true,
-  "description": "Bridge console for AI-DLC projects: read-only visualisation and an embedded Claude terminal",
+  "description": "T.H.A.D.E.U.S. (Transformative Human-AI Development Environment for Ubiquitous Systems): bridge console for AI-DLC projects with read-only visualisation and an embedded Claude terminal",
   "author": {
     "name": "Auctum Solutions AB",
     "email": "info@auctum.se"

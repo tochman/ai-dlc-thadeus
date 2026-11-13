@@ -1,6 +1,10 @@
-# Auctum AIDLC Control
+# T.H.A.D.E.U.S.
 
-Auctum AIDLC Control (repo: `aidlc-dash`) är en Electron-"bridge console" för AI-DLC-projekt: en sci-fi-vy (LCARS-inspirerad, men återhållsam) av vad agenterna gör, med Auctums logga på startskärmen och i sidhuvudet.
+**Transformative Human-AI Development Environment for Ubiquitous Systems**
+
+*AI-driven software development, under human direction.*
+
+T.H.A.D.E.U.S. (repo: `aidlc-dash`) är en Electron-"bridge console" för AI-DLC-projekt: en sci-fi-vy (LCARS-inspirerad, men återhållsam) av vad agenterna gör. Appen är gjord av Auctum, och Auctums symbol står på startskärmen, i sidhuvudet och som appikon.
 
 ![Projektvyn: intents, pipeline, kostnad och terminal](docs/screenshots/intents.png)
 
@@ -39,6 +43,16 @@ npx vitest run tests/  # kör enhetstesterna
 Linux-paketet (`.deb`) kräver Ubuntu 22.04 eller nyare. Appikonen genererar du om från `build/icon.svg` med `npm run icon`.
 
 Den osignerade appen öppnar du första gången med högerklick och sedan **Öppna**, eftersom Gatekeeper annars blockerar den.
+
+## Uppgradera från Auctum AIDLC Control
+
+Appen hette tidigare Auctum AIDLC Control. Dina inställningar och öppna projekt följer med, eftersom inställningsmappen fortfarande heter `aidlc-dash`.
+
+- **macOS:** T.H.A.D.E.U.S. är en ny app för macOS (nytt app-id, `THADEUS.app`), så den ersätter inte den gamla.
+  1. Avsluta den gamla appen och ta bort "Auctum AIDLC Control" från Program.
+  2. Öppna `THADEUS.app` första gången med högerklick och sedan **Öppna**, eftersom appen inte är signerad.
+  3. Fäst den nya appen i Dock igen och ge den behörighet för notiser när macOS frågar.
+- **Linux:** det nya paketet `thadeus` ersätter det gamla `aidlc-dash` automatiskt när du installerar det (`sudo apt install ./thadeus_<version>_amd64.deb`).
 
 I appen öppnar du ett projekt med **+ Öppna** i vänsterarmen eller med **Arkiv → Öppna projekt…** (`Cmd/Ctrl+O`). Varje projekt hamnar i vänsterarmen. Där väljer du också vy (Intents, Features), fäller ut Kostnad och Github, och öppnar Inställningar.
 

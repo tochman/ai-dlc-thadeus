@@ -318,8 +318,8 @@ button.lcars-chip:hover { border-color: var(--steel-text); color: var(--steel-li
   color: var(--on-light);
 }
 .app-mark { display: block; color: var(--on-light); flex-shrink: 0; }
-.app-brand-text { display: flex; flex-direction: column; line-height: 1; font-size: 15px; font-weight: 700; letter-spacing: 0.03em; text-transform: uppercase; }
-.app-brand-sub { font-size: 10px; font-weight: 600; letter-spacing: 0.08em; }
+/* "T.H.A.D.E.U.S." on one line in the ~84 px beside the mark (US-0406 FR2.1). */
+.app-brand-text { line-height: 1; font-size: 14px; font-weight: 700; letter-spacing: 0.02em; text-transform: uppercase; white-space: nowrap; }
 .app-header-main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
 .app-header-row { flex: 1; min-width: 0; display: flex; align-items: center; gap: 18px; padding-left: 44px; }
 .app-meta-label { font-size: 13px; color: var(--muted); letter-spacing: 0.06em; text-transform: uppercase; white-space: nowrap; }
@@ -830,9 +830,11 @@ button.lcars-chip:hover { border-color: var(--steel-text); color: var(--steel-li
 .splash-arm span:nth-child(3) { flex: 1; background: var(--slate-2); border-radius: 0 0 0 48px; }
 .splash-center { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 26px; }
 .splash-mark { display: block; color: var(--amber); animation: lcars-rise 500ms 100ms ease-out both, lcars-glow 3.2s 700ms ease-in-out infinite; }
-.splash-name { display: flex; flex-direction: column; align-items: center; gap: 6px; animation: lcars-rise 500ms 250ms ease-out both; }
-.splash-name-main { font-size: 64px; font-weight: 700; line-height: 1; letter-spacing: 0.08em; color: var(--text); }
-.splash-name-sub { font-size: 24px; font-weight: 600; color: var(--steel); letter-spacing: 0.18em; }
+/* The spelled-out name and tagline wrap in balanced lines instead of overflowing at 1100 px (US-0406 FR2.2). */
+.splash-name { display: flex; flex-direction: column; align-items: center; gap: 10px; max-width: min(100%, 760px); text-align: center; text-wrap: balance; animation: lcars-rise 500ms 250ms ease-out both; }
+.splash-name-main { font-size: 64px; font-weight: 700; line-height: 1; letter-spacing: 0.08em; color: var(--text); white-space: nowrap; }
+.splash-name-sub { font-size: 22px; font-weight: 600; line-height: 1.25; color: var(--steel); letter-spacing: 0.12em; }
+.splash-name-tagline { font-size: 16px; font-weight: 600; line-height: 1.3; color: var(--text-2); letter-spacing: 0.1em; }
 .splash-line { display: flex; gap: var(--gap); width: 360px; height: 6px; }
 .splash-line span { flex: 1; background: var(--amber); transform-origin: left; animation: lcars-draw 600ms 200ms ease-out both; }
 .splash-line span + span { flex: 0 0 40px; background: var(--slate-3); animation: none; }

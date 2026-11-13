@@ -3,8 +3,9 @@ import { join } from 'node:path';
 import { registerIpc, shutdown } from './ipc.js';
 import { applyMenu } from './menu.js';
 import { getSettings, setSettings } from './settings.js';
+import { APP_NAME } from '../shared/appName.js';
 
-// productName changed to "Auctum AIDLC Control"; keep the old userData folder so saved tabs survive.
+// The folder is still called aidlc-dash so settings and open projects survive renames (US-0406 FR4.1).
 app.setPath('userData', join(app.getPath('appData'), 'aidlc-dash'));
 
 // Packaged builds ship the icon via electron-builder (extraResources on Linux); dev runs use the source PNG.
@@ -23,7 +24,7 @@ export function windowOptions(settings, platform) {
     ...(settings?.fullscreen === true ? { fullscreen: true } : {}),
     autoHideMenuBar: true, // Linux: the menu bar shows on Alt (FR2.3)
     backgroundColor: '#05060a', // --bg in theme.css, so the window never flashes another colour (FR1.2)
-    title: 'Auctum AIDLC Control',
+    title: APP_NAME,
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
       contextIsolation: true,

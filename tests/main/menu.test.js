@@ -80,8 +80,10 @@ describe('app menu (EPIC-04 US-0404)', () => {
 
   it('has the app and Fönster menus on macOS only; Linux gets F11, Inställningar and Avsluta under Arkiv (FR2.1, FR1.1)', () => {
     const mac = build({ isMac: true }).template;
-    expect(mac.map((m) => m.label)).toEqual(['Auctum AIDLC Control', 'Arkiv', 'Redigera', 'Visa', 'Terminal', 'Fönster', 'Hjälp']);
-    expect(byLabel(mac, 'Om Auctum AIDLC Control').role).toBe('about');
+    expect(mac.map((m) => m.label)).toEqual(['T.H.A.D.E.U.S.', 'Arkiv', 'Redigera', 'Visa', 'Terminal', 'Fönster', 'Hjälp']);
+    expect(byLabel(mac, 'Om T.H.A.D.E.U.S.').role).toBe('about');
+    expect(byLabel(mac, 'Göm T.H.A.D.E.U.S.').role).toBe('hide'); // US-0406 FR2.4
+    expect(byLabel(mac, 'Avsluta T.H.A.D.E.U.S.').role).toBe('quit');
     expect(byLabel(mac, 'Fönster').role).toBe('windowMenu');
 
     const linux = build({ isMac: false }).template;

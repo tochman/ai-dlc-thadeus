@@ -11,10 +11,18 @@ afterEach(() => {
 const advance = (ms) => act(() => vi.advanceTimersByTime(ms));
 
 describe('Splash', () => {
-  it('shows the Auctum mark and the app name', () => {
+  it('shows the Auctum mark, the name, the spelled-out name and the tagline (US-0406 FR2.2)', () => {
     render(<Splash ready={false} />);
     expect(screen.getByRole('img', { name: 'Auctum' })).toBeTruthy();
-    expect(screen.getByText('Auctum AIDLC Control')).toBeTruthy();
+    expect(screen.getByText('T.H.A.D.E.U.S.')).toBeTruthy();
+    expect(screen.getByText('Transformative Human-AI Development Environment for Ubiquitous Systems')).toBeTruthy();
+    expect(screen.getByText('AI-driven software development, under human direction.')).toBeTruthy();
+    // Screen readers get it once, as one sentence; the lettering is aria-hidden.
+    expect(
+      screen.getByText(
+        'T.H.A.D.E.U.S. — Transformative Human-AI Development Environment for Ubiquitous Systems. AI-driven software development, under human direction.'
+      ).className
+    ).toBe('sr-only');
   });
 
   it('stays for the minimum time even when ready at once, then disappears', () => {

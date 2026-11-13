@@ -119,7 +119,8 @@ describe('App shell', () => {
     await renderApp({ openProjects: ['/p/aidlc-dash-a'], activeProject: '/p/aidlc-dash-a' });
     const header = screen.getByRole('banner');
     expect(within(header).getByRole('img', { name: 'Auctum' })).toBeTruthy();
-    expect(within(header).getByText('Aidlc control')).toBeTruthy();
+    expect(within(header).getByText('T.H.A.D.E.U.S.')).toBeTruthy(); // the name alone, no sub-line (US-0406 FR2.1)
+    expect(within(header).queryByText(/aidlc control/i)).toBeNull();
     expect(await within(header).findByText('feat/epic04-living-lcars')).toBeTruthy();
     // The arm's watermark is decoration: hidden, so the header's mark is the only named one outside the splash.
     expect(within(screen.getByTestId('project-tabs')).queryByRole('img')).toBeNull();

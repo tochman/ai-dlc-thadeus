@@ -8,13 +8,13 @@
 
 **Stories:** US-0501, US-0502, US-0503, US-0504, US-0505
 
-**Status (2026-11-13):** 🚧 US-0501–US-0503 built, not released. US-0504 📋 Planned. US-0505 🚧 Built, not released.
+**Status (2026-11-13):** ✅ US-0501–US-0503 released in v0.2.0. US-0505 🚧 Built, merged to main, not released. US-0504 📋 Planned.
 
 ---
 
 ## User Stories
 
-**US-0501: Resume an in-flight intent with one click** 🚧 Built, not released
+**US-0501: Resume an in-flight intent with one click** ✅ Released in v0.2.0
 - As a **developer using AI-DLC**, in order to **pick up work that stopped (closed terminal, crashed session, switched to other work) without remembering which slash commands to type**, I would like to **a "Resume" button on every in-flight intent that continues it in the Claude terminal**.
 - **Epic:** EPIC-05
 - **Priority:** High
@@ -31,7 +31,7 @@
 - **Notes:** Decided in requirements analysis (Q1: C): each terminal tab shows an idle/busy/exited signal from the pty output (idle after 1.5 s without output). Only the intent switch is submitted automatically; `/aidlc` itself waits for the person's Enter.
 - **Dependencies:** US-0102, US-0103, US-0108
 
-**US-0502: Refresh — bring in new AI-DLC work from GitHub, even with work in progress** 🚧 Built, not released
+**US-0502: Refresh — bring in new AI-DLC work from GitHub, even with work in progress** ✅ Released in v0.2.0
 - As a **developer who runs AI-DLC on more than one machine or with teammates**, in order to **see and continue work that was pushed to GitHub (new intents, audit entries and stage artifacts from another machine or person)**, I would like to **a "Refresh" that shows what is new on the remote and lets me bring it in safely, also when I have unfinished local work**.
 - **Epic:** EPIC-05
 - **Priority:** High
@@ -61,7 +61,7 @@
   - AI-DLC framework updates (a newer `aidlc` release, updated `.claude/` files) are a separate story, US-0504 (Q4: A).
 - **Dependencies:** US-0101, US-0102, US-0107, US-0108, US-0501
 
-**US-0503: Set up AI-DLC in a folder that does not have it yet** 🚧 Built, not released
+**US-0503: Set up AI-DLC in a folder that does not have it yet** ✅ Released in v0.2.0
 - As a **developer opening a project that does not use AI-DLC yet**, in order to **start working with AI-DLC from the console without leaving it to install and configure things by hand**, I would like to **an "Initiera AI-DLC" action on the "not an AI-DLC project" screen that sets AI-DLC up in that folder and then starts the first piece of work**.
 - **Epic:** EPIC-05
 - **Priority:** Medium
@@ -103,7 +103,7 @@
   - [ ] Disabled while an AI-DLC workflow is running, as in US-0502.
 - **Dependencies:** US-0502, US-0503
 
-**US-0505: Get Claude's questions as a popup** 🚧 Built, not released
+**US-0505: Get Claude's questions as a popup** 🚧 Built, merged to main, not released
 - As a **developer who lets AI-DLC run while I do something else**, in order to **not leave Claude waiting on a question I have not seen**, I would like to **see each AI-DLC question or approval as a popup in the app, and as a notification when the app is in the background**.
 - **Epic:** EPIC-05
 - **Priority:** High

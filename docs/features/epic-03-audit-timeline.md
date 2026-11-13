@@ -8,7 +8,7 @@
 
 **Stories:** US-0301, US-0302
 
-**Status (2026-11-13):** 🚧 Built, not released. The basic timeline was built in EPIC-01 (US-0104). The 20 000-event timing in a real Electron renderer is checked in Build and Test.
+**Status (2026-11-13):** ✅ Released in v0.2.0. The basic timeline was built in EPIC-01 (US-0104). The 20 000-event timing in a real Electron renderer is checked in Build and Test.
 
 **Dependency choice (Q1):** `@tanstack/react-virtual` `3.14.24`, pinned exactly. Hand-rolled windowing with variable row heights, measurement after expand and scroll anchoring would be more code to keep correct than this small, well-maintained library.
 
@@ -16,7 +16,7 @@
 
 ## User Stories
 
-**US-0301: Virtualised timeline for very long audit logs** 🚧 Built, not released
+**US-0301: Virtualised timeline for very long audit logs** ✅ Released in v0.2.0
 - As a **developer**, in order to **browse the full history of a long-running intent**, I would like to **the timeline to render any number of events smoothly, without a row cap**.
 - **Epic:** EPIC-03
 - **Priority:** High
@@ -30,7 +30,7 @@
   - [x] No new dependency unless a small, well-maintained one is clearly simpler than hand-rolled windowing. The choice is recorded in the plan.
 - **Dependencies:** US-0104
 
-**US-0302: Accurate "new event" highlighting** 🚧 Built, not released
+**US-0302: Accurate "new event" highlighting** ✅ Released in v0.2.0
 - As a **developer**, in order to **see exactly what just happened**, I would like to **only truly new audit events to be highlighted**.
 - **Epic:** EPIC-03
 - **Priority:** Medium

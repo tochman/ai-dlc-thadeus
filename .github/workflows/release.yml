@@ -1,4 +1,4 @@
-# Builds Auctum AIDLC Control for macOS (universal .dmg) and Linux (.deb, x64).
+# Builds T.H.A.D.E.U.S. for macOS (universal .dmg) and Linux (.deb, x64).
 # On a version tag it also publishes both to a GitHub Release in this private repo (unsigned internal builds).
 # On a pull request it only tests and builds, so packaging problems (e.g. the Linux glibc check) show up before a tag.
 name: Release
@@ -88,5 +88,5 @@ jobs:
         run: |
           gh release create "${GITHUB_REF_NAME}" artifacts/mac/*.dmg artifacts/linux/*.deb \
             --repo "${GITHUB_REPOSITORY}" \
-            --title "Auctum AIDLC Control ${GITHUB_REF_NAME}" \
+            --title "T.H.A.D.E.U.S. ${GITHUB_REF_NAME}" \
             --generate-notes
