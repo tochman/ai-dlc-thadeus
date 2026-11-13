@@ -15,7 +15,8 @@ export function useProject(projectId, initialSpace) {
   const [listWarning, setListWarning] = useState(null);
   const [selected, setSelected] = useState(null);
   const [detail, setDetail] = useState(null);
-  const [newSeqFrom, setNewSeqFrom] = useState(null);
+  const [newKeys, setNewKeys] = useState(null); // Set of audit event keys added by the last live updates (FR2.2)
+  const highlightTimer = useRef(null);
   const [error, setError] = useState(null);
   const [cost, setCost] = useState(null); // null while loading, then {available, ...}
   const [models, setModels] = useState(null);
@@ -38,6 +39,24 @@ export function useProject(projectId, initialSpace) {
     }
   }, [projectId, space]);
 
+  const clearHighlight = useCallback(() => {
+    clearTimeout(highlightTimer.current);
+    highlightTimer.current = null;
+    setNewKeys(null);
+  }, []);
+
+  // A new update extends the highlight and keeps keys that are still marked (FR2.5).
+  const highlight = useCallback((keys) => {
+    clearTimeout(highlightTimer.current);
+    setNewKeys((cur) => new Set([...(cur ?? []), ...keys]));
+    highlightTimer.current = setTimeout(() => {
+      highlightTimer.current = null;
+      setNewKeys(null);
+    }, HIGHLIGHT_MS);
+  }, []);
+
+  useEffect(() => () => clearTimeout(highlightTimer.current), []);
+
   const loadDetail = useCallback(
     async (dirName, { live = false } = {}) => {
       if (!dirName) return setDetail(null);
@@ -45,9 +64,10 @@ export function useProject(projectId, initialSpace) {
         const next = await bridge.getIntent(projectId, space, dirName);
         if (selectedRef.current !== dirName) return; // selection moved on while loading
         const prev = detailRef.current;
-        if (live && prev?.dirName === dirName && next.events.length > prev.events.length) {
-          setNewSeqFrom(prev.events.length);
-          setTimeout(() => setNewSeqFrom(null), HIGHLIGHT_MS);
+        if (live && prev?.dirName === dirName) {
+          const before = new Set(prev.events.map((e) => e.key));
+          const added = next.events.filter((e) => !before.has(e.key)).map((e) => e.key);
+          if (added.length > 0) highlight(added);
         }
         setDetail(next);
         setError(null);
@@ -55,7 +75,7 @@ export function useProject(projectId, initialSpace) {
         setError(`Kunde inte läsa ${dirName}: ${errorText(err)}`);
       }
     },
-    [projectId, space]
+    [projectId, space, highlight]
   );
 
   // A cost failure only affects the cost views (NFR3), so it never sets the shared error banner.
@@ -86,9 +106,9 @@ export function useProject(projectId, initialSpace) {
   }, [projectId]);
 
   useEffect(() => {
-    setNewSeqFrom(null);
+    clearHighlight();
     loadDetail(selected);
-  }, [selected, loadDetail]);
+  }, [selected, loadDetail, clearHighlight]);
 
   useEffect(() => {
     const offChange = bridge.onProjectChanged((c) => {
@@ -109,5 +129,5 @@ export function useProject(projectId, initialSpace) {
     };
   }, [projectId, space, loadList, loadDetail, loadCost]);
 
-  return { space, setSpace, intents, listWarning, selected, setSelected, detail, newSeqFrom, error, cost, models, lastIntentChangeAt };
+  return { space, setSpace, intents, listWarning, selected, setSelected, detail, newKeys, error, cost, models, lastIntentChangeAt };
 }

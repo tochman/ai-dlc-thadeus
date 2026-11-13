@@ -6,11 +6,13 @@
 
 En Electron-app med tre processlager: **huvudprocess** (Node, all fil- och processåtkomst), **preload** (smal namngiven brygga `window.bridge`) och **renderare** (React 19 i sandbox). Huvudprocessen läser AI-DLC:s filer i öppnade projektrötter, tolkar dem med rena parserfunktioner, bevakar ändringar med chokidar och kör pseudoterminaler med node-pty. Renderaren hämtar data via IPC och prenumererar på push-händelser.
 
+Sedan EPIC-05 finns också `exec.js` (externa kommandon utan skal), `git.js` och `setup.js` i huvudprocessen samt `TerminalContext.jsx`/`terminalControl.js` i renderaren, så att andra vyer kan skriva i terminalen. Dessa delar är bara ytligt skannade i den här körningen.
+
 ### Architectural Style
 
 **Monolitisk skrivbordsapp med lagrad processisolering.** Belägg: ett enda npm-paket; `electron.vite.config.mjs` bygger tre ingångar (main/preload/renderer); `index.js` sätter `contextIsolation: true`, `nodeIntegration: false`, `sandbox: true`; `preload/index.js` exponerar bara namngivna funktioner (ingen generisk invoke).
 
-Inom huvudprocessen: IPC-adapter (`ipc.js`) → tjänst (`projectService.js`, `models.js`, `pty.js`, `watcher.js`, `settings.js`) → säker åtkomst (`projectAccess.js`) och rena parsers (`parsers/*`).
+Inom huvudprocessen: IPC-adapter (`ipc.js`) → tjänst (`projectService.js`, `models.js`, `pty.js`, `watcher.js`, `settings.js`, `git.js`, `setup.js`) → säker åtkomst (`projectAccess.js`, `exec.js`) och rena parsers (`parsers/*`).
 
 ### Component Relationships
 
@@ -38,6 +40,7 @@ flowchart LR
     IPC --> PTY[pty.js]
     IPC --> WT[watcher.js]
     IPC --> ST[settings.js]
+    IPC --> GT[git.js / setup.js]
     PS --> PA[projectAccess.js]
     MD --> PA
     PS --> PR[parsers]
@@ -51,30 +54,34 @@ flowchart LR
   CT -.-> PR
 ```
 
-Textalternativ: App, useProject, TerminalPanel och ArtifactReader anropar `window.bridge`, som skickar till `ipc.js`. `ipc.js` delegerar till projectService (data), models (konfigurerade modeller), pty (terminaler), watcher (filbevakning) och settings (appens inställningar). projectService och models läser filer bara via projectAccess; projectService tolkar med parsers. Streckade pilar: Timeline och CostTab importerar rena parsermoduler direkt vid bundling (ingen IPC).
+Textalternativ: App, useProject, TerminalPanel och ArtifactReader anropar `window.bridge`, som skickar till `ipc.js`. `ipc.js` delegerar till projectService (data), models (konfigurerade modeller), pty (terminaler), watcher (filbevakning), settings (appens inställningar) och git/setup (EPIC-05, ytligt skannat). projectService och models läser filer bara via projectAccess; projectService tolkar med parsers. Streckade pilar: Timeline och CostTab importerar rena parsermoduler direkt vid bundling (ingen IPC). EPIC-05-vyerna (RefreshPanel, ResumeButton, SetupAidlc) och TerminalContext är utelämnade i diagrammet.
 
 ### Data Flow
 
-1. **Öppna projekt**: mappväljare → `project:open` → `openRoot` (realpath) → `detectProject` → watcher startas för den aktiva spacen (bara om AI-DLC).
-2. **Läsa**: `project:intents` → `loadIntentList` (intents.json + mappar + active-intent + per-intent state) med cache; `project:intent` → `loadIntentDetail` (state, runtime-graph, audit-shards, active-directive, artefaktlista); `project:cost` → `loadCost` + `summarizeLedger`.
-3. **Live**: chokidar → debounce (300 ms, max 800 ms) → `project:changed {dirNames, indexChanged, costChanged}` → `useProject` laddar om bara berörda delar och markerar nya audit-händelser.
-4. **Terminal**: `pty:spawn` → node-pty kör `$SHELL -l -i -c claude` eller `$SHELL -l` i roten → `pty:data`/`pty:exit` till renderaren; tangenttryck → `pty:write`.
-5. **Skriva**: endast `settings:set` → `settings.json` i userData.
+1. **Öppna projekt**: mappväljare → `project:open` → `openRoot` (realpath) → `detectProject` → watcher startas för den aktiva spacen (AI-DLC) eller `watchForAidlc` väntar på en första space (icke-AI-DLC, push `project:detected`).
+2. **Läsa**: `project:intents` → `loadIntentList` (intents.json + mappar + active-intent + per-intent state) med cache; `project:intent` → `loadIntentDetail` (state, runtime-graph, alla audit-shards, active-directive, artefaktlista); `project:cost` → `loadCost` + `summarizeLedger`.
+3. **Audit-händelser**: `loadAuditEvents` läser varje `audit/*.md` helt → `mergeAudits` tolkar block, sorterar på tidsstämpelsträng och numrerar `seq` efter sorteringen → `categoryOf` sätter kategori. Hela listan skickas till renderaren vid varje detaljladdning.
+4. **Live**: chokidar → debounce (300 ms, max 800 ms) → `project:changed {dirNames, indexChanged, costChanged}` → `useProject` laddar om bara berörda delar. Om vald intents händelseantal ökat sätts `newSeqFrom = tidigare antal` i 4 s, och `Timeline` markerar rader med `seq >= newSeqFrom`.
+5. **Terminal**: `pty:spawn` → node-pty kör `$SHELL -l -i -c claude` eller `$SHELL -l` i roten → `pty:data`/`pty:exit` till renderaren; tangenttryck → `pty:write`.
+6. **Skriva**: endast `settings:set` → `settings.json` i userData.
 
 ### Key Design Decisions
 
-- **Skrivskydd och rotinneslutning**: `projectAccess.js` saknar skrivanrop; `resolveInRoot` avvisar absoluta sökvägar, `..` och symlänkar ut ur roten. Konsekvens: säkert att peka på godtyckliga projekt; nya funktioner som ska ändra något måste gå via terminalen (EPIC-05:s princip).
+- **Skrivskydd och rotinneslutning**: `projectAccess.js` saknar skrivanrop; `resolveInRoot` avvisar absoluta sökvägar, `..` och symlänkar ut ur roten. Konsekvens: säkert att peka på godtyckliga projekt; funktioner som ändrar något går via terminalen (EPIC-05:s princip).
 - **Smal IPC-yta**: namngivna kanaler i både `ipc.js` och `preload/index.js`; varje handler slår upp `projectId`. Nya funktioner kräver ändring i båda filerna.
-- **Tålighet mot halvskrivna filer**: `readJsonSafe` kastar aldrig; cacher behåller senaste giltiga värde (`stale`-flagga).
+- **Tålighet mot halvskrivna filer**: `readJsonSafe` kastar aldrig; cacher behåller senaste giltiga värde (`stale`-flagga). Ett läsfel i en audit-shard ger hela föregående detalj med `stale: true`.
+- **Hela loggen i minnet**: audit-händelser läses om och skickas i sin helhet vid varje uppdatering; renderaren filtrerar och klipper. Enkelt, men kostnaden växer linjärt med loggen.
+- **Händelseidentitet = sorteringsposition**: `seq` är index i den sammanslagna, tidssorterade listan och används både som React-nyckel och för ny-markering. Det håller bara så länge nya händelser alltid sorteras sist.
 - **Lazy node-pty**: laddas vid första spawn så att en trasig native-binär bara slår ut terminalen.
-- **Externa kommandon utan skal**: `models.js` använder `execFile` med fasta argument och PATH från inloggningsskalet.
+- **Externa kommandon utan skal**: `models.js` och (sedan EPIC-05) `exec.js` använder `execFile` med fasta argument och PATH från inloggningsskalet.
 - **Allt hålls monterat**: projektflikar och terminalsessioner döljs i stället för att avmonteras, så pty-sessioner överlever flikbyten.
 
 ### Improvement Opportunities
 
-- Ingen delad tillståndskanal mellan intentvyer och terminal (behövs för EPIC-05); se [code-quality-assessment.md](code-quality-assessment.md).
-- Projektdetektering görs bara vid öppning; ingen omdetektering.
-- Gemensam modul för extern processkörning (skal/PATH) saknas; logiken finns i `models.js` och delvis `pty.js`.
+- **EPIC-03**: ge varje audit-händelse en stabil identitet (t.ex. `source` + position i sin shard) och jämför identiteter i stället för antal; fönstra tidslinjen i stället för att klippa vid 1 500 rader. Se [code-quality-assessment.md](code-quality-assessment.md) § Intent-relevanta luckor.
+- Inkrementell läsning av audit-shards (bara tillagda byte) om full omläsning blir för dyr för stora loggar.
+- Tidsstämplar sorteras som strängar; normalisering till epoch-tid skulle göra blandade zonformat kronologiska.
+- Projektdetektering vid öppning; sedan EPIC-05 finns `watchForAidlc` för mappar utan AI-DLC (ytligt skannat).
 
 ## Interaction Diagrams
 
@@ -108,7 +115,7 @@ sequenceDiagram
 
 Textalternativ: användaren väljer mapp; huvudprocessen validerar roten, detekterar AI-DLC och startar bevakning; renderaren hämtar sedan lista, detalj och kostnad som projectService läser via projectAccess.
 
-### Liveuppdatering
+### Liveuppdatering och ny-markering i tidslinjen
 
 ```mermaid
 sequenceDiagram
@@ -116,16 +123,25 @@ sequenceDiagram
   participant W as watcher.js
   participant I as ipc.js
   participant UP as useProject
-  FS->>W: ändring under intents/ eller usage-ledger.json
+  participant S as projectService
+  participant TL as Timeline
+  FS->>W: ändring i intents/X/audit/maskin-b.md
   W->>W: debounce 300 ms (max 800 ms)
-  W->>I: onChange dirNames, indexChanged, costChanged
+  W->>I: onChange dirNames=[X]
   I->>UP: project:changed
-  UP->>I: getIntents(onlyDirs) och vid behov getIntent / getCost
+  UP->>I: getIntents([X])
+  UP->>I: getIntent(X) om X är vald
+  I->>S: loadIntentDetail
+  S->>S: läs alla shards, mergeAudits, seq = index efter tidssortering
+  S-->>UP: detail.events (hela listan)
+  UP->>UP: antal ökat? newSeqFrom = tidigare antal, nollställ efter 4 s
+  UP->>TL: events, newSeqFrom
+  TL->>TL: filtrera, slice(-1500), reverse, markera seq >= newSeqFrom
 ```
 
-Textalternativ: en filändring samlas i watchern, skickas som `project:changed`, och useProject laddar om bara de intents som nämns, detaljen om den vald intent berörs, och kostnaden vid ledger- eller indexändring.
+Textalternativ: en skrivning i en shard samlas i watchern och blir `project:changed` med intentens mappnamn. useProject laddar om listan och, om intenten är vald, hela detaljen. projectService läser om alla shards och numrerar händelserna efter tidsordning. useProject jämför bara antalet händelser och sätter `newSeqFrom`; Timeline markerar de rader vars `seq` är minst det värdet. En ny händelse med äldre tidsstämpel hamnar därför mitt i listan medan de senaste raderna markeras.
 
-### Snabbkommando i terminalen (grunden för EPIC-05 Fortsätt)
+### Snabbkommando i terminalen
 
 ```mermaid
 sequenceDiagram
@@ -141,4 +157,4 @@ sequenceDiagram
   P-->>TS: pty:data (eko)
 ```
 
-Textalternativ: snabbknappen anropar claude-sessionens `insert`, som skriver texten utan Enter till pty:n; utdata kommer tillbaka som `pty:data`.
+Textalternativ: snabbknappen anropar claude-sessionens `insert`, som skriver texten utan Enter till pty:n; utdata kommer tillbaka som `pty:data`. Sedan EPIC-05 går andra vyers terminalskrivningar via `TerminalContext` (ytligt skannat, inte omverifierat här).

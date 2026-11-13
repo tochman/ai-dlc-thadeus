@@ -15,7 +15,7 @@ const TABS = [
   { id: 'files', label: 'Filer' }
 ];
 
-export default function IntentDetail({ projectId, detail, intent, activeDirName, newSeqFrom, cost, models }) {
+export default function IntentDetail({ projectId, detail, intent, activeDirName, newKeys, cost, models }) {
   const [tab, setTab] = useState('pipeline');
   const [openFile, setOpenFile] = useState(null);
   const { state, pipeline } = detail;
@@ -105,7 +105,7 @@ export default function IntentDetail({ projectId, detail, intent, activeDirName,
           <Pipeline pipeline={pipeline} files={detail.files} hasGraph={!!detail.graph} onOpenFile={showFile} cost={intentCost} />
         )}
         {tab === 'cost' && <CostTab cost={cost} intentCost={intentCost} pipeline={pipeline} models={models} />}
-        {tab === 'timeline' && <Timeline events={detail.events} newSeqFrom={newSeqFrom} />}
+        {tab === 'timeline' && <Timeline events={detail.events} newKeys={newKeys} />}
         {tab === 'units' && <BoltDag dag={detail.graph?.boltDag ?? null} statuses={detail.units} />}
         {tab === 'files' && (
           <ArtifactReader projectId={projectId} groups={detail.files} selected={openFile} onSelect={setOpenFile} />

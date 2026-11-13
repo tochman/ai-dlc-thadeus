@@ -247,8 +247,14 @@ input[type='search'], select {
 .stage-file-list { list-style: none; margin: 0.2rem 0 0.6rem 1.6rem; padding: 0; }
 
 /* Timeline */
-.events { list-style: none; margin: 0; padding: 0; }
-.event { border-left: 4px solid var(--line); margin-bottom: 2px; }
+/* Virtualised (EPIC-03): rows are absolutely placed by the virtualiser, which also adds the 2px gap and anchors scroll itself. */
+.timeline-scroll { max-height: calc(100vh - 280px); min-height: 240px; overflow: auto; overflow-anchor: none; }
+.events { list-style: none; margin: 0; padding: 0; position: relative; }
+.event { border-left: 4px solid var(--line); position: absolute; top: 0; left: 0; width: 100%; }
+.event-row:focus-visible { outline-offset: -2px; }
+.tag-new { color: var(--amber); margin-left: 0.4rem; }
+.timeline-nav { margin-top: -0.2rem; }
+.timeline-new-counter { text-transform: none; font-family: var(--font-body); font-size: 0.85rem; padding: 0.15rem 0.8rem; }
 .event-row { width: 100%; display: grid; grid-template-columns: 150px 110px minmax(200px, 1fr) 1fr; gap: 0.6rem; background: var(--panel); border: 0; padding: 0.3rem 0.6rem; text-align: left; align-items: center; }
 .event-time { color: var(--muted); font-size: 0.8rem; font-family: var(--font-mono); }
 .event-type { font-family: var(--font-mono); font-size: 0.85rem; overflow-wrap: anywhere; }
