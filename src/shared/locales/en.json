@@ -361,7 +361,20 @@
   },
   "setup": {
     "title": "Not an AI-DLC project",
-    "failed": "The setup failed — see the terminal. Run `aidlc doctor` to see what is missing.",
+    "addTitle": "Add harness",
+    "harnessLabel": "Harness",
+    "cliFound": "CLI found",
+    "cliNotFound": "CLI not found",
+    "filesOnly": "files only",
+    "harnessInstalled": "installed",
+    "notRunnable": "Installs AI-DLC files; can't run in the agent tab yet.",
+    "apply": "Apply",
+    "applying": "Setting up…",
+    "applied": "AI-DLC is set up for {harness}.",
+    "stepFailed": "The setup stopped: {command} failed.",
+    "runFailed": "The setup could not run: {error}",
+    "switchOffer": "Switch the agent tab to {harness}?",
+    "switch": "Switch",
     "preset": {
       "thorough": "Stronger models and more thinking: the best results, higher cost.",
       "balanced": "A mix that suits most projects.",
@@ -387,12 +400,9 @@
     "featureDocsExist": "Feature docs already exist. The choice only adds a project rule to keep them up to date.",
     "featureDocsNew": "An overview of epics in docs/FEATURES.md and one file per epic with user stories, for example docs/features/epic-01-login.md. {harness} creates them after the setup, once you have confirmed.",
     "checkFailed": "The prerequisites could not be read: {error}",
-    "buildFailed": "The command could not be built: {error}",
     "checking": "Checking…",
     "start": "Set up AI-DLC",
-    "run": "Set up",
     "recheck": "Check again",
-    "started": "The command is in the shell tab. Press Enter there to run it. The view switches once AI-DLC is in the folder.",
     "done": "AI-DLC is set up. {harness} restarts so that AI-DLC loads.",
     "runDoctor": "Run /aidlc --doctor",
     "firstWork": "Start the first work",
@@ -446,7 +456,9 @@
       "harnessLabel": "Agent terminal",
       "harnessUnsupported": "not supported yet",
       "harnessNotFound": "not found",
-      "harnessSwitchConfirm": "{from} is working. Switching to {to} closes the session. Switch anyway?"
+      "harnessSwitchConfirm": "{from} is working. Switching to {to} closes the session. Switch anyway?",
+      "addHarness": "Add harness…",
+      "installedHarnesses": "Installed: {list}"
     }
   },
   "menu": {
@@ -527,6 +539,9 @@
     "ptyLoadFailed": "The terminal module could not be loaded: {error}",
     "unknownTerminal": "Unknown terminal kind: {kind}",
     "unknownHarness": "Unknown or unsupported harness: {id}",
+    "previewFirst": "Run the preview for {harness} first.",
+    "setupTouchesExisting": "The preview shows files that clash or would be removed, so nothing was run.",
+    "setupRunning": "A setup is already running for this project.",
     "noSession": "No terminal session with id {id}",
     "ptyDataNotString": "Terminal data must be a string"
   }

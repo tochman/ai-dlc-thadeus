@@ -1380,3 +1380,149 @@
 **Context**: operation > deployment-execution > deployment-execution-questions.md
 
 ---
+
+## Artifact Created
+**Timestamp**: 2026-11-13T22:40:04Z
+**Event**: ARTIFACT_CREATED
+**Tool**: Write
+**File**: <project-dir>/aidlc/spaces/default/intents/261113-harness-choice/operation/deployment-execution/deployment-log.md
+**Context**: operation > deployment-execution > deployment-log.md
+
+---
+
+## Artifact Created
+**Timestamp**: 2026-11-13T22:40:06Z
+**Event**: ARTIFACT_CREATED
+**Tool**: Write
+**File**: <project-dir>/aidlc/spaces/default/intents/261113-harness-choice/operation/deployment-execution/smoke-test-results.md
+**Context**: operation > deployment-execution > smoke-test-results.md
+
+---
+
+## Artifact Created
+**Timestamp**: 2026-11-13T22:40:09Z
+**Event**: ARTIFACT_CREATED
+**Tool**: Write
+**File**: <project-dir>/aidlc/spaces/default/intents/261113-harness-choice/operation/deployment-execution/health-check-report.md
+**Context**: operation > deployment-execution > health-check-report.md
+
+---
+
+## Stage Awaiting Approval
+**Timestamp**: 2026-11-13T22:40:10Z
+**Event**: STAGE_AWAITING_APPROVAL
+**Stage**: deployment-execution
+**Next Stage**: observability-setup
+**Brief Digest**: none
+**Sensor State**: required-sections@aidlc/spaces/default/intents/261113-harness-choice/operation/deployment-execution/deployment-log.md=not-run; required-sections@aidlc/spaces/default/intents/261113-harness-choice/operation/deployment-execution/smoke-test-results.md=not-run; required-sections@aidlc/spaces/default/intents/261113-harness-choice/operation/deployment-execution/health-check-report.md=not-run; required-sections@aidlc/spaces/default/intents/261113-harness-choice/operation/deployment-execution/deployment-execution-questions.md=not-run; upstream-coverage@aidlc/spaces/default/intents/261113-harness-choice/operation/deployment-execution/deployment-log.md=not-run
+**Open Decisions**: 0
+**Question Id**: 36e24a65
+**Question Type**: gate
+**Question Chat**: fbb1a509-5bd1-4a16-bebd-4cb55d5dec00
+**Question Shows**: sha256:58a0a00871a8c32b606bf52cf0d6319124be33adbb89e26cf6383cf03e86ff4e
+
+---
+
+## Human Turn
+**Timestamp**: 2026-11-13T22:40:27Z
+**Event**: HUMAN_TURN
+**Session**: fbb1a509-5bd1-4a16-bebd-4cb55d5dec00
+**Origin**: person
+**Source**: picker
+**Picked**: ["Approve"]
+**Message Id**: b034e12f
+**Open Questions**: 36e24a65
+**Questions Digest**: {"file":"aidlc/spaces/default/intents/261113-harness-choice/operation/deployment-execution/deployment-execution-questions.md","entries":{"Q1":"e35cb461716a2f1c","Q2":"c6c028d308ed1df0","Q3":"9904a9c6dca8d2c4","Q4":"6981879653826e19"}}
+
+---
+
+## Question Replied
+**Timestamp**: 2026-11-13T22:40:28Z
+**Event**: QUESTION_REPLIED
+**Session**: fbb1a509-5bd1-4a16-bebd-4cb55d5dec00
+**Question**: Deployment Execution complete. How would you like to proceed?
+**Reply**: Approve
+**Options**: ["Approve","Request Changes"]
+
+---
+
+## Gate Approved
+**Timestamp**: 2026-11-13T22:40:33Z
+**Event**: GATE_APPROVED
+**Stage**: deployment-execution
+**User Input**: Approve
+**Person Reply**: Approve
+**Message Id**: b034e12f
+**Brief Digest**: none
+
+---
+
+## Stage Completion
+**Timestamp**: 2026-11-13T22:40:33Z
+**Event**: STAGE_COMPLETED
+**Stage**: deployment-execution
+**Validation Basis**: {"graphContract":"sha256:9324fac9ed5362e892b6f0c448c7cd3701eec134e2e24178d842efc36efe955a","inputs":[{"artifact":"build-test-results","contentHash":"sha256:f5939ad91eeac8f82459c9e204906a6a4bc8a54b8cc0c7e398d853d8755570da","instanceCount":1,"presentCount":1,"producer":"build-and-test","required":true,"structureHash":"sha256:286324484380a41944ab332f87cbabdf5a56835b7bff69d533e07cf9aff18740"},{"artifact":"cd-config","contentHash":"sha256:9facc16a4582b3da3b4cbb9fdc2d5e62e66e54bae083b238b15ca002c6a30978","instanceCount":1,"presentCount":1,"producer":"deployment-pipeline","required":true,"structureHash":"sha256:2a04e858cdfbc11dd81971046e3520dea3aae9524dc0221d467d702db46da63b"},{"artifact":"deployment-strategy","contentHash":"sha256:88226dc26dfcae099499cd14e9d6f76987a11262ccbdbfcb162a0b6149e75301","instanceCount":1,"presentCount":1,"producer":"deployment-pipeline","required":true,"structureHash":"sha256:4d607e079224152d808882ac3c057ebc222988ea2f296b69b04499ab8a20ef0e"},{"artifact":"environment-inventory","contentHash":"sha256:d1dc34ff1957cd77bcb8ceaba55e0a74d898b06949bec69a00fb244571df718e","instanceCount":1,"presentCount":0,"producer":"environment-provisioning","required":true,"structureHash":"sha256:ded499e1a346ec745630b47216c38aa8090e1fbddada77db60f5a08d87ac74d3"}],"outputs":[{"artifact":"deployment-execution-questions","contentHash":"sha256:e7e8efb6b02e200ce2b837d90efa8585b73edfefeece2235f76488ec922f70ba","instanceCount":1,"presentCount":1,"producer":"deployment-execution","required":true,"structureHash":"sha256:d85de46cef7c717db4a762bd23ab01c72009340aaaec6ddde9054ac85bc51026"},{"artifact":"deployment-log","contentHash":"sha256:b49ead1239b919926a777052366ed1d5914e9966f1d4a54a0225bd3cdc2289d6","instanceCount":1,"presentCount":1,"producer":"deployment-execution","required":true,"structureHash":"sha256:bce5fc7b50ad5b128bd4fb9100f0b425fe6058caf2b9831e728803459b55f06f"},{"artifact":"health-check-report","contentHash":"sha256:06c136e0def79951c4c48bd2ac2b8a7e7c5a31fc989c5c8ac107b629585a07e2","instanceCount":1,"presentCount":1,"producer":"deployment-execution","required":true,"structureHash":"sha256:6727d895497b503f5967f3a48b1ab38eaf57fafc12be43b4c75c710b1164f167"},{"artifact":"smoke-test-results","contentHash":"sha256:9f59d56a3eae2c2086a6b85591f354d8f195ccb890cd38ba5ca8e567e53cf713","instanceCount":1,"presentCount":1,"producer":"deployment-execution","required":true,"structureHash":"sha256:ca8d474e822f8da315782a51b23666e2df0f88bad2ee02f25665a2ffeebd7f6f"}],"projectType":"brownfield","schema":3}
+**Details**: Stage Deployment Execution approved by gate
+**Tokens In**: 22
+**Tokens Out**: 5639
+**Cache Read**: 6891537
+**Cache Write**: 15994
+**Cost USD**: 1.62
+**By Model**: opus-5-5=1.62
+**By Agent**: main=1.62
+**Tokens By Model**: opus-5-5=22/5.6k/6.9M/16k
+**Tokens By Agent**: main=22/5.6k/6.9M/16k
+
+---
+
+## Stage Start
+**Timestamp**: 2026-11-13T22:40:33Z
+**Event**: STAGE_STARTED
+**Stage**: observability-setup
+**Agent**: aidlc-operations-agent
+**Answer Mode**: guide (reused from requirements-analysis)
+
+---
+
+## Stage Skip
+**Timestamp**: 2026-11-13T22:41:18Z
+**Event**: STAGE_SKIPPED
+**Stage**: observability-setup
+**Reason**: No deployed target: THADEUS is a desktop app delivered by merging to main; there is no running service, dashboard or alarm surface to configure (same as earlier express stories).
+**Skip Kind**: conditional-runtime
+
+---
+
+## Phase Completion
+**Timestamp**: 2026-11-13T22:41:18Z
+**Event**: PHASE_COMPLETED
+**From phase**: operation
+**To phase**: (end)
+**Stages completed**: 9
+
+---
+
+## Phase Verification
+**Timestamp**: 2026-11-13T22:41:18Z
+**Event**: PHASE_VERIFIED
+**Phase boundary**: operation → end
+
+---
+
+## Workflow Completion
+**Timestamp**: 2026-11-13T22:41:18Z
+**Event**: WORKFLOW_COMPLETED
+**Scope**: express
+**Details**: Scope: express, final stage observability-setup skipped
+**Reason**: No deployed target: THADEUS is a desktop app delivered by merging to main; there is no running service, dashboard or alarm surface to configure (same as earlier express stories).
+**Tokens In**: 464
+**Tokens Out**: 243064
+**Cache Read**: 72501577
+**Cache Write**: 797950
+**Cost USD**: 23.93
+**By Model**: opus-5-5=23.93
+**By Agent**: main=12.48; general-purpose=0.55; aidlc-developer-agent=10.91
+**Tokens By Model**: opus-5-5=464/243.1k/72.5M/798k
+**Tokens By Agent**: main=180/78.6k/46.8M/192.3k; general-purpose=26/8.1k/1M/36.2k; aidlc-developer-agent=258/156.4k/24.6M/569.5k
+
+---

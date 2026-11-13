@@ -1,8 +1,8 @@
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import { openRoot } from '../../src/main/projectAccess.js';
-import { buildSetupCommand, getSetupInfo, parsePreview } from '../../src/main/setup.js';
+import { getSetupInfo, parsePreview, runSetup } from '../../src/main/setup.js';
 
 const TMP = path.resolve(__dirname, '../.tmp/setup');
 
@@ -53,6 +53,21 @@ describe('getSetupInfo', () => {
     expect(info.preview).toMatchObject({ create: 358, update: 0, conflict: 2, conflicts: ['.claude/settings.json', 'CLAUDE.md'] });
     expect(info.plugins).toEqual(['aidlc', 'feature-docs']);
     expect(info.presets).toEqual(['thorough', 'balanced', 'minimal']);
+    expect(info.harness).toBe('claude');
+  });
+
+  it('previews the chosen harness, and refuses one outside the table (US-0802 FR1.4, FR2.1)', async () => {
+    const root = await tmpRoot();
+    const exec = fakeExec({
+      'git rev-parse --is-inside-work-tree': 'true\n',
+      'aidlc --version': 'aidlc 2.11.3\n',
+      [`aidlc --project-dir ${root} config --harness opencode --dry-run`]: `config plan for ${root}: create=376 update=0 merge=0 preserve=0 remove=0 conflict=0\n`,
+      'aidlc config project --show --json': PLUGINS_OUTPUT
+    });
+    const info = await getSetupInfo(root, { harness: 'opencode', exec });
+    expect(info.harness).toBe('opencode');
+    expect(info.preview).toMatchObject({ create: 376, remove: 0, conflict: 0 });
+    await expect(getSetupInfo(root, { harness: '--yes', exec })).rejects.toThrow(/Okänd harness/);
   });
 });
 
@@ -77,14 +92,79 @@ describe('parsePreview (F-02)', () => {
   });
 });
 
-describe('buildSetupCommand', () => {
-  it('chains git init, the base command, plugins and preset with &&, and rejects unknown values (FR4.4, FR4.5)', () => {
-    expect(buildSetupCommand({})).toBe('aidlc --project-dir . config --harness claude --yes');
-    expect(buildSetupCommand({ needsGit: true, plugins: ['feature-docs'], preset: 'balanced' }, ['aidlc', 'feature-docs'])).toBe(
-      'git init -b main && aidlc --project-dir . config --harness claude --yes && aidlc config project --plugins feature-docs --yes && aidlc config models --preset balanced --project --yes'
-    );
-    expect(() => buildSetupCommand({ plugins: ['not-listed'] }, ['aidlc'])).toThrow(/Okänt plugin/);
-    expect(() => buildSetupCommand({ plugins: ['x; rm -rf ~'] }, ['x; rm -rf ~'])).toThrow(/Okänt plugin/);
-    expect(() => buildSetupCommand({ preset: 'max' })).toThrow(/Okänd modellnivå/);
+describe('runSetup (US-0802 FR2)', () => {
+  const ROOT = '/Users/me/new-app';
+  // Same shape getSetupInfo returns, with the real parser's preview.
+  const info = (harness = 'opencode', planLine = 'create=376 update=0 merge=0 preserve=0 remove=0 conflict=0') => ({
+    harness,
+    git: { isRepo: false },
+    preview: parsePreview(`config plan for ${ROOT}: ${planLine}\n`),
+    plugins: ['aidlc', 'feature-docs']
+  });
+
+  /** Records every call; a step whose "file args" is in `failing` fails like a CLI error exit. */
+  function recordingExec(failing = {}) {
+    const calls = [];
+    const exec = async (file, args) => {
+      if (file !== 'git' && file !== 'aidlc') return '__AIDLC_DASH_PATH__/usr/bin';
+      const key = `${file} ${args.join(' ')}`;
+      calls.push({ file, args });
+      if (key in failing) throw new Error(failing[key]);
+      return `${key}: ok\n`;
+    };
+    return { exec, calls };
+  }
+
+  it('runs git init, config for the chosen harness, plugins and preset in order, with fixed arguments (FR2.2, FR2.3)', async () => {
+    const { exec, calls } = recordingExec();
+    const result = await runSetup(ROOT, { harness: 'opencode', plugins: ['feature-docs'], preset: 'balanced' }, info(), { exec });
+    expect(calls).toEqual([
+      { file: 'git', args: ['init', '-b', 'main'] },
+      { file: 'aidlc', args: ['--project-dir', ROOT, 'config', '--harness', 'opencode', '--yes'] },
+      { file: 'aidlc', args: ['config', 'project', '--plugins', 'feature-docs', '--yes'] },
+      { file: 'aidlc', args: ['config', 'models', '--preset', 'balanced', '--project', '--yes'] }
+    ]);
+    expect(result.ok).toBe(true);
+    expect(result.steps.map((s) => s.ok)).toEqual([true, true, true, true]);
+  });
+
+  it('stops at the first failing step and returns the CLI error (FR2.2)', async () => {
+    const { exec, calls } = recordingExec({ [`aidlc --project-dir ${ROOT} config --harness opencode --yes`]: 'error: harness opencode is not installed' });
+    const result = await runSetup(ROOT, { harness: 'opencode', preset: 'balanced' }, info(), { exec });
+    expect(result.ok).toBe(false);
+    expect(result.steps.at(-1)).toEqual({ command: `aidlc --project-dir ${ROOT} config --harness opencode --yes`, ok: false, error: 'error: harness opencode is not installed' });
+    expect(calls).toHaveLength(2); // git init, then the failing config; the preset never ran
+  });
+
+  it('refuses unknown harnesses, plugins and presets, and a missing preview, before anything runs (FR1.4, FR2.4)', async () => {
+    const { exec, calls } = recordingExec();
+    await expect(runSetup(ROOT, { harness: 'rm -rf ~' }, info(), { exec })).rejects.toThrow(/Okänd harness/);
+    await expect(runSetup(ROOT, { harness: 'opencode', plugins: ['not-listed'] }, info(), { exec })).rejects.toThrow(/Okänt plugin/);
+    await expect(runSetup(ROOT, { harness: 'opencode', plugins: ['x; rm -rf ~'] }, { ...info(), plugins: ['x; rm -rf ~'] }, { exec })).rejects.toThrow(/Okänt plugin/);
+    await expect(runSetup(ROOT, { harness: 'opencode', preset: 'max' }, info(), { exec })).rejects.toThrow(/Okänd modellnivå/);
+    await expect(runSetup(ROOT, { harness: 'codex' }, info('opencode'), { exec })).rejects.toThrow(/förhandsvisningen/); // preview was for opencode
+    await expect(runSetup(ROOT, { harness: 'opencode' }, null, { exec })).rejects.toThrow(/förhandsvisningen/);
+    expect(calls).toEqual([]);
+  });
+
+  it('refuses a second run for the same project while one is running (NFR3)', async () => {
+    let release;
+    const exec = (file) => (file === 'git' || file === 'aidlc' ? new Promise((r) => (release = () => r('ok'))) : Promise.resolve('__AIDLC_DASH_PATH__/usr/bin'));
+    const first = runSetup(ROOT, { harness: 'opencode' }, { ...info(), git: { isRepo: true } }, { exec });
+    await expect(runSetup(ROOT, { harness: 'opencode' }, info(), { exec })).rejects.toThrow(/körs redan/);
+    await vi.waitFor(() => expect(release).toBeTypeOf('function'));
+    release();
+    expect((await first).ok).toBe(true);
+  });
+
+  it('in add mode skips git init, and refuses a preview that removes or clashes with anything (FR3.2)', async () => {
+    const { exec, calls } = recordingExec();
+    const add = { harness: 'opencode', mode: 'add' };
+    await expect(runSetup(ROOT, add, info('opencode', 'create=16 update=0 merge=1 preserve=360 remove=2 conflict=0'), { exec })).rejects.toThrow(/tas bort/);
+    await expect(runSetup(ROOT, add, info('opencode', 'create=16 update=0 merge=1 preserve=360 remove=0 conflict=1'), { exec })).rejects.toThrow(/tas bort/);
+    expect(calls).toEqual([]);
+
+    expect((await runSetup(ROOT, add, info('opencode', 'create=16 update=0 merge=1 preserve=360 remove=0 conflict=0'), { exec })).ok).toBe(true);
+    expect(calls.map((c) => c.args.join(' '))).toEqual([`--project-dir ${ROOT} config --harness opencode --yes`]);
   });
 });

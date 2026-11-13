@@ -92,7 +92,15 @@
     "slug": "harness-choice",
     "dirName": "261113-harness-choice",
     "scope": "express",
-    "status": "in-flight",
+    "status": "complete",
     "request": "abb719e0"
+  },
+  {
+    "uuid": "01a1d714-547d-742a-ae9c-14eea217daff",
+    "slug": "harness-setup",
+    "dirName": "261113-harness-setup",
+    "scope": "ultra-express",
+    "status": "in-flight",
+    "request": "c14c9140"
   }
 ]

@@ -104,4 +104,20 @@ describe('ProjectSettingsDialog', () => {
     await waitFor(() => expect(window.bridge.setProjectSettings).toHaveBeenCalledTimes(2));
     expect(confirm).not.toHaveBeenCalled();
   });
+
+  it('"Lägg till harness…" names the installed harnesses and opens setup in add mode (US-0802 FR3.1)', () => {
+    const onAddHarness = vi.fn();
+    const onClose = vi.fn();
+    render(<ProjectSettingsDialog open onClose={onClose} projectId="p1" settings={settings} harness="claude" harnesses={detected} onAddHarness={onAddHarness} />);
+    expect(screen.getByTestId('project-settings-installed-harnesses').textContent).toBe('Installerade: Claude Code, opencode, Codex');
+    const add = screen.getByTestId('project-settings-add-harness');
+    expect(add.textContent).toBe('Lägg till harness…');
+    fireEvent.click(add);
+    expect(onAddHarness).toHaveBeenCalledTimes(1);
+    expect(onClose).toHaveBeenCalledTimes(1);
+    cleanup();
+
+    render(<ProjectSettingsDialog open onClose={onClose} projectId="p1" settings={settings} />);
+    expect(screen.queryByTestId('project-settings-add-harness')).toBeNull(); // not an AI-DLC project: setup is the main view
+  });
 });

@@ -361,7 +361,20 @@
   },
   "setup": {
     "title": "Inget AI-DLC-projekt",
-    "failed": "Uppsättningen misslyckades — se terminalen. Kör `aidlc doctor` för att se vad som saknas.",
+    "addTitle": "Lägg till harness",
+    "harnessLabel": "Harness",
+    "cliFound": "kommandot hittades",
+    "cliNotFound": "kommandot hittades inte",
+    "filesOnly": "bara filer",
+    "harnessInstalled": "installerad",
+    "notRunnable": "Installerar AI-DLC:s filer; kan inte köras i agent-fliken än.",
+    "apply": "Verkställ",
+    "applying": "Sätter upp…",
+    "applied": "AI-DLC är uppsatt för {harness}.",
+    "stepFailed": "Uppsättningen stannade: {command} misslyckades.",
+    "runFailed": "Uppsättningen kunde inte köras: {error}",
+    "switchOffer": "Byta agent-fliken till {harness}?",
+    "switch": "Byt",
     "preset": {
       "thorough": "Starkare modeller och mer eftertanke: bäst resultat, högre kostnad.",
       "balanced": "En blandning som passar de flesta projekt.",
@@ -387,12 +400,9 @@
     "featureDocsExist": "Feature-beskrivningar finns redan. Valet lägger bara till en projektregel om att hålla dem uppdaterade.",
     "featureDocsNew": "En översikt med epics i docs/FEATURES.md och en fil per epic med user stories, till exempel docs/features/epic-01-inloggning.md. {harness} skapar dem efter uppsättningen, när du har bekräftat.",
     "checkFailed": "Förutsättningarna kunde inte läsas: {error}",
-    "buildFailed": "Kommandot kunde inte byggas: {error}",
     "checking": "Kontrollerar…",
     "start": "Initiera AI-DLC",
-    "run": "Initiera",
     "recheck": "Kontrollera igen",
-    "started": "Kommandot står i shell-fliken. Tryck Enter där för att köra det. Vyn växlar när AI-DLC finns i mappen.",
     "done": "AI-DLC är uppsatt. {harness} startas om så att AI-DLC laddas.",
     "runDoctor": "Kör /aidlc --doctor",
     "firstWork": "Starta första arbetet",
@@ -446,7 +456,9 @@
       "harnessLabel": "Agent-terminal",
       "harnessUnsupported": "stöds inte än",
       "harnessNotFound": "hittades inte",
-      "harnessSwitchConfirm": "{from} arbetar. Byter du till {to} stängs sessionen. Byta ändå?"
+      "harnessSwitchConfirm": "{from} arbetar. Byter du till {to} stängs sessionen. Byta ändå?",
+      "addHarness": "Lägg till harness…",
+      "installedHarnesses": "Installerade: {list}"
     }
   },
   "menu": {
@@ -527,6 +539,9 @@
     "ptyLoadFailed": "Terminalmodulen kunde inte laddas: {error}",
     "unknownTerminal": "Okänd terminaltyp: {kind}",
     "unknownHarness": "Okänd harness, eller en som inte stöds än: {id}",
+    "previewFirst": "Kör förhandsvisningen för {harness} först.",
+    "setupTouchesExisting": "Förhandsvisningen visar filer som krockar eller skulle tas bort, så ingenting kördes.",
+    "setupRunning": "En uppsättning körs redan för projektet.",
     "noSession": "Ingen terminalsession med id {id}",
     "ptyDataNotString": "Terminaldata måste vara en sträng"
   }

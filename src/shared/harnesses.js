@@ -8,6 +8,7 @@
 export const HARNESSES = [
   {
     id: 'claude',
+    setupId: 'claude',
     label: 'Claude Code',
     name: 'Claude',
     cli: 'claude',
@@ -17,6 +18,7 @@ export const HARNESSES = [
   },
   {
     id: 'opencode',
+    setupId: 'opencode',
     label: 'opencode',
     name: 'opencode',
     cli: 'opencode',
@@ -29,11 +31,12 @@ export const HARNESSES = [
     // later. A 4 s quiet keeps "ready" from firing before that.
     quietMs: 4000
   },
-  { id: 'codex', label: 'Codex', name: 'Codex', cli: 'codex', selectable: false, markers: { dirs: ['.codex'] }, commands: {} },
-  { id: 'kiro', label: 'Kiro', name: 'Kiro', cli: 'kiro-cli', selectable: false, markers: { dirs: ['.kiro'] }, commands: {} },
-  { id: 'cursor', label: 'Cursor', name: 'Cursor', cli: null, selectable: false, markers: { dirs: ['.cursor'] }, commands: {} },
+  { id: 'codex', setupId: 'codex', label: 'Codex', name: 'Codex', cli: 'codex', selectable: false, markers: { dirs: ['.codex'] }, commands: {} },
+  { id: 'kiro', setupId: 'kiro', label: 'Kiro', name: 'Kiro', cli: 'kiro-cli', selectable: false, markers: { dirs: ['.kiro'] }, commands: {} },
+  { id: 'cursor', setupId: 'cursor', label: 'Cursor', name: 'Cursor', cli: null, selectable: false, markers: { dirs: ['.cursor'] }, commands: {} },
   {
     id: 'copilot',
+    setupId: 'copilot',
     label: 'GitHub Copilot',
     name: 'Copilot',
     cli: null,
@@ -49,6 +52,26 @@ export const DEFAULT_HARNESS = 'claude';
 /** The selectable table entry for `id`, or null for anything else (unknown, not supported yet, not a string). */
 export function selectableHarness(id) {
   return HARNESSES.find((h) => h.selectable && h.id === id) ?? null;
+}
+
+/**
+ * The table entry AI-DLC setup can install for `id` (all six, US-0802 FR1.1), or null for anything else.
+ * Only its `setupId` reaches `aidlc config --harness` (FR1.4).
+ */
+export function setupHarness(id) {
+  return HARNESSES.find((h) => h.setupId && h.id === id) ?? null;
+}
+
+/**
+ * The harness setup starts on (US-0802 FR1.2): the only one whose CLI was found, else Claude Code, else the
+ * first found. With `add`, installed harnesses are left out (FR3.1). `detected` is detectHarnesses' list or null.
+ */
+export function defaultSetupHarness(detected, { add = false } = {}) {
+  const byId = Object.fromEntries((detected ?? []).map((d) => [d.id, d]));
+  const open = HARNESSES.filter((h) => h.setupId && !(add && byId[h.id]?.installed));
+  const found = open.filter((h) => byId[h.id]?.cli?.found);
+  const pick = found.length === 1 ? found[0] : open.find((h) => h.id === DEFAULT_HARNESS) ?? found[0] ?? open[0];
+  return pick?.id ?? null;
 }
 
 /**

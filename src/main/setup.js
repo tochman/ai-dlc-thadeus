@@ -1,15 +1,17 @@
-// Prerequisites and the command chain for "Initiera AI-DLC" (US-0503). The checks here are read-only
-// (FR4.2, FR4.3); the setup itself is typed into the visible shell tab by the renderer (FR4.4).
+// Prerequisites, preview and the setup run for "Initiera AI-DLC" (US-0503) and "Add harness" (US-0802).
+// getSetupInfo only reads (a `--dry-run` preview); runSetup runs the steps itself after the person pressed
+// Apply (US-0802 FR2.2), with fixed argument arrays through runFixed: no shell.
 import { runFixed } from './exec.js';
 import { isGitRepo } from './git.js';
 import { listDir } from './projectAccess.js';
+import { DEFAULT_HARNESS, setupHarness } from '../shared/harnesses.js';
 import { t } from '../shared/i18n.js';
 
 const OTHER_HARNESSES = ['.kiro', '.codex', '.cursor', '.aidlc'];
 export const PRESETS = ['thorough', 'balanced', 'minimal'];
 const PLUGIN_NAME = /^[a-z0-9-]+$/;
-// `--project-dir .` because aidlc refuses non-interactive config outside a recognised project (F-02).
-const BASE_COMMAND = 'aidlc --project-dir . config --harness claude --yes';
+// Writing ~400 files can take a while; still bounded, so a hung CLI cannot hang the dialog (NFR3).
+const STEP_TIMEOUT_MS = 120000;
 const COUNT_KEYS = ['create', 'update', 'merge', 'preserve', 'remove', 'conflict'];
 
 const errorText = (err) => (err.killed ? t('errors.timeout') : err.message);
@@ -41,14 +43,22 @@ async function readPlugins(root, exec) {
   }
 }
 
+/** The table entry for a setup harness id; anything else throws (US-0802 FR1.4). */
+function checkedHarness(id) {
+  const entry = setupHarness(id);
+  if (!entry) throw new Error(t('errors.unknownHarness', { id: String(id) }));
+  return entry;
+}
+
 /**
  * Never throws for a missing tool: a missing `aidlc` gives `{installed: false}` and stops there (FR4.2).
- * `exec` is injectable for tests.
+ * The preview is for `harness` (a table id, default Claude Code; US-0802 FR2.1). `exec` is injectable for tests.
  */
-export async function getSetupInfo(root, { exec } = {}) {
+export async function getSetupInfo(root, { harness = DEFAULT_HARNESS, exec } = {}) {
+  const { id, setupId } = checkedHarness(harness);
   const harnesses = (await listDir(root, '.')).filter((e) => e.isDir && OTHER_HARNESSES.includes(e.name)).map((e) => `${e.name}/`);
   const git = { isRepo: await isGitRepo(root, { exec }) };
-  const base = { git, harnesses, preview: null, plugins: [], presets: PRESETS };
+  const base = { harness: id, git, harnesses, preview: null, plugins: [], presets: PRESETS };
 
   let version;
   try {
@@ -59,7 +69,7 @@ export async function getSetupInfo(root, { exec } = {}) {
 
   let preview;
   try {
-    preview = parsePreview(await runFixed('aidlc', ['--project-dir', root, 'config', '--harness', 'claude', '--dry-run'], { cwd: root, exec }));
+    preview = parsePreview(await runFixed('aidlc', ['--project-dir', root, 'config', '--harness', setupId, '--dry-run'], { cwd: root, exec }));
   } catch (err) {
     preview = { ...parsePreview(''), raw: String(err.stdout ?? ''), error: t('errors.previewFailed', { error: errorText(err) }) };
   }
@@ -67,19 +77,68 @@ export async function getSetupInfo(root, { exec } = {}) {
 }
 
 /**
- * The visible command chain for the shell tab (FR4.4, FR4.5). Plugins must be among `availablePlugins`
- * (the list getSetupInfo read) and the preset one of PRESETS; anything else throws.
+ * The steps for one run, in the order the old typed chain had them (US-0503 FR4.4, US-0802 FR2.3):
+ *   1. `git init -b main`, only when setting up a folder that is no git repository (never in add mode);
+ *   2. `aidlc --project-dir <root> config --harness <id> --yes`;
+ *   3. `aidlc config project --plugins … --yes`, when plugins were chosen;
+ *   4. `aidlc config models --preset … --project --yes`, when a preset was chosen.
+ * Every value is checked here first; anything unknown throws before a step runs (FR1.4).
  */
-export function buildSetupCommand({ needsGit = false, plugins = [], preset = null } = {}, availablePlugins = []) {
+function setupSteps(root, { harness, mode = 'setup', plugins = [], preset = null } = {}, info) {
+  const { id, setupId } = checkedHarness(harness);
   if (!Array.isArray(plugins)) throw new Error(t('errors.pluginsNotList'));
   for (const p of plugins) {
-    if (typeof p !== 'string' || !PLUGIN_NAME.test(p) || !availablePlugins.includes(p)) throw new Error(t('errors.unknownPlugin', { name: String(p) }));
+    if (typeof p !== 'string' || !PLUGIN_NAME.test(p) || !info.plugins.includes(p)) throw new Error(t('errors.unknownPlugin', { name: String(p) }));
   }
   if (preset !== null && !PRESETS.includes(preset)) throw new Error(t('errors.unknownPreset', { name: String(preset) }));
-  const commands = [];
-  if (needsGit) commands.push('git init -b main');
-  commands.push(BASE_COMMAND);
-  if (plugins.length) commands.push(`aidlc config project --plugins ${plugins.join(',')} --yes`);
-  if (preset) commands.push(`aidlc config models --preset ${preset} --project --yes`);
-  return commands.join(' && ');
+  checkPreview(id, mode, info);
+  const steps = [];
+  if (mode !== 'add' && !info.git?.isRepo) steps.push(['git', ['init', '-b', 'main']]);
+  // `--project-dir` because aidlc refuses non-interactive config outside a recognised project (F-02).
+  steps.push(['aidlc', ['--project-dir', root, 'config', '--harness', setupId, '--yes']]);
+  if (plugins.length) steps.push(['aidlc', ['config', 'project', '--plugins', plugins.join(','), '--yes']]);
+  if (preset) steps.push(['aidlc', ['config', 'models', '--preset', preset, '--project', '--yes']]);
+  return steps;
+}
+
+/**
+ * Nothing runs without a preview for this very harness (FR2.4) that reported no conflict. Adding a harness to
+ * an AI-DLC project must leave what is there untouched, so add mode also refuses a preview that removes
+ * anything or could not be read (FR3.2).
+ */
+function checkPreview(id, mode, info) {
+  const preview = info?.harness === id ? info.preview : null;
+  if (!preview) throw new Error(t('errors.previewFirst', { harness: id }));
+  const touchesExisting = (preview.conflict ?? 0) > 0 || preview.conflicts.length > 0 || (mode === 'add' && (preview.error || (preview.remove ?? 0) > 0));
+  if (touchesExisting) throw new Error(t('errors.setupTouchesExisting'));
+}
+
+const running = new Set(); // roots with a setup in progress (NFR3)
+
+/**
+ * Runs the setup steps one after another and stops at the first failure (US-0802 FR2.2, FR2.3). `choices` is
+ * {harness, mode: 'setup'|'add', plugins, preset}; `info` is the last getSetupInfo result for this project
+ * (its preview, plugins and git state). Throws, before anything runs, for an invalid choice, a missing or
+ * refused preview, or a second run for the same root. `exec` is injectable for tests.
+ * @returns {Promise<{ok: boolean, steps: Array<{command: string, ok: boolean, output?: string, error?: string}>}>}
+ */
+export async function runSetup(root, choices, info, { exec } = {}) {
+  const planned = setupSteps(root, choices, info ?? {});
+  if (running.has(root)) throw new Error(t('errors.setupRunning'));
+  running.add(root);
+  const steps = [];
+  try {
+    for (const [file, args] of planned) {
+      const command = [file, ...args].join(' ');
+      try {
+        steps.push({ command, ok: true, output: await runFixed(file, args, { cwd: root, timeout: STEP_TIMEOUT_MS, exec }) });
+      } catch (err) {
+        steps.push({ command, ok: false, error: errorText(err) });
+        return { ok: false, steps };
+      }
+    }
+    return { ok: true, steps };
+  } finally {
+    running.delete(root);
+  }
 }
