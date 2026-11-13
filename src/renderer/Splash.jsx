@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import AuctumMark from './AuctumMark.jsx';
+import { Bar } from './Lcars.jsx';
 
 export const APP_NAME = 'Auctum AIDLC Control';
 export const SPLASH_MIN_MS = 900;
@@ -30,13 +31,34 @@ export default function Splash({ ready }) {
   }, [leaving]);
 
   if (gone) return null;
+  // The mockup's Splash: frames and bars draw out (≤ 600 ms) around the big amber mark with its slow glow.
+  // The name is read once from the hidden full text; the two-line lettering is decoration.
   return (
     <div className={`splash ${leaving ? 'is-leaving' : ''}`} data-testid="splash">
-      <AuctumMark size={160} className="splash-mark" />
-      <div className="splash-name">{APP_NAME}</div>
-      <div className="splash-bar" aria-hidden="true">
-        <span />
+      <div className="splash-top" aria-hidden="true">
+        <span className="splash-cap" />
+        <Bar segs={[['slate-3', 3], ['steel-deep', 90], ['slate-4', 1]]} />
       </div>
+      <div className="splash-mid">
+        <div className="splash-arm" aria-hidden="true">
+          <span />
+          <span />
+          <span />
+        </div>
+        <div className="splash-center">
+          <AuctumMark size={300} className="splash-mark" />
+          <div className="splash-name" aria-hidden="true">
+            <span className="splash-name-main">Auctum</span>
+            <span className="splash-name-sub">Aidlc control</span>
+          </div>
+          <span className="sr-only">{APP_NAME}</span>
+          <div className="splash-line" aria-hidden="true">
+            <span />
+            <span />
+          </div>
+        </div>
+      </div>
+      <Bar className="splash-bottom" segs={[['slate-2', 2], ['steel-deep', 70], ['slate-3', 1]]} />
     </div>
   );
 }

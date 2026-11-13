@@ -1,10 +1,12 @@
 // Features view (EPIC-06 US-0602): epics and user stories from the project's feature docs. Read-only.
 import { useEffect, useState } from 'react';
 import { FileContent } from './ArtifactReader.jsx';
+import { Frame } from './Lcars.jsx';
 import { STATUS_LABEL, STATUS_MARKER } from '../main/parsers/features.js';
 
 const errorText = (err) => String(err?.message ?? err).replace(/^Error invoking remote method '[^']+': (Error: )?/, '');
-const STATUS_CLASS = { planned: 'tag', progress: 'tag tag-warn', done: 'tag tag-live' };
+// Pågår is steel (active), Klar a light slate block, Planerad an outline (FR1.3).
+const STATUS_CLASS = { planned: 'tag', progress: 'tag tag-live', done: 'tag tag-done' };
 
 /** Status as marker and text, never colour alone (NFR3). */
 export function StatusBadge({ status, text }) {
@@ -93,7 +95,7 @@ function EpicDetail({ projectId, epic, links, storyId, setStoryId, onOpenIntent 
 
   return (
     <div className="features-epic">
-      <header className="panel elbow-top">
+      <header className="features-epic-head">
         <h2>
           {epic.id}: {epic.parsed?.title || epic.title}
         </h2>
@@ -206,7 +208,12 @@ export default function FeaturesView({ projectId, features, links = {}, focusSto
     const epic = epics.find((e) => e.id === epicId) ?? epics[0];
     body = (
       <div className="project-body">
-        <aside className="sidebar elbow-left">
+        <aside className="sidebar" aria-label="Epics">
+          <div className="lcars-heading">
+            <h2 className="section-title">Epics</h2>
+            <span className="lcars-heading-line" aria-hidden="true" />
+            <span className="lcars-heading-meta">{epics.length} st</span>
+          </div>
           {features.intro && <p className="muted features-intro">{features.intro}</p>}
           <ul className="intent-rows" aria-label="Epics">
             {epics.map((e) => {
@@ -239,7 +246,9 @@ export default function FeaturesView({ projectId, features, links = {}, focusSto
           </ul>
         </aside>
         <section className="content">
-          <EpicDetail key={epic.id} projectId={projectId} epic={epic} links={links} storyId={storyId} setStoryId={setStoryId} onOpenIntent={onOpenIntent} />
+          <Frame>
+            <EpicDetail key={epic.id} projectId={projectId} epic={epic} links={links} storyId={storyId} setStoryId={setStoryId} onOpenIntent={onOpenIntent} />
+          </Frame>
         </section>
       </div>
     );

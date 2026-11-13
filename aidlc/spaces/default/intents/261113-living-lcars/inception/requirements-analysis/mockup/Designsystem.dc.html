@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="sv">
+<head>
+<meta charset="utf-8">
+<title>Designsystem — palett, element och rörelse</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Antonio:wght@400;600;700&amp;display=swap">
+<style>
+body{margin:0;background:#05060a}
+a{color:#7cc0ea}a:hover{color:#a9d6f2}
+@keyframes lcars-breathe{0%,100%{box-shadow:0 0 0 1px rgba(79,163,217,.55),0 0 8px rgba(79,163,217,.25)}50%{box-shadow:0 0 0 1px rgba(124,192,234,.95),0 0 22px rgba(79,163,217,.6)}}
+@keyframes lcars-attn{0%,100%{box-shadow:0 0 0 0 rgba(238,108,86,0)}50%{box-shadow:0 0 0 2px rgba(238,108,86,.9),0 0 18px rgba(238,108,86,.45)}}
+@keyframes lcars-dot{0%,100%{box-shadow:0 0 0 0 rgba(79,163,217,0)}50%{box-shadow:0 0 0 4px rgba(79,163,217,.25)}}
+@keyframes lcars-sweep{from{background-position:-240px 0}to{background-position:640px 0}}
+@media (prefers-reduced-motion: reduce){*{animation:none !important}}
+</style>
+</helmet>
+<div style="width: 1440px; height: 1180px; box-sizing: border-box; padding: 40px 48px; background: #05060a; color: #e6e9f2; font-family: 'Antonio', 'Arial Narrow', sans-serif; text-transform: uppercase; letter-spacing: 0.03em; display: flex; flex-direction: column; gap: 30px">
+
+  <header style="display: flex; align-items: flex-end; gap: 20px">
+    <div style="width: 150px; height: 64px; background: #6f7894; border-radius: 40px 0 0 0; flex-shrink: 0"></div>
+    <div style="flex: 1; display: flex; flex-direction: column; gap: 10px">
+      <div style="display: flex; gap: 6px; height: 14px"><div style="flex: 3; background: #6f7894"></div><div style="width: 80px; background: #1f3b57"></div><div style="flex: 1; background: #4a5370"></div></div>
+      <div style="display: flex; align-items: baseline; gap: 16px">
+        <h1 style="margin: 0; font-size: 44px; font-weight: 600; color: #4fa3d9">Designsystem <span style="color: #6f7894">•</span> LCARS 2</h1>
+        <span style="font-size: 15px; color: #9aa3b8">Tokens, element och rörelse för Auctum AIDLC Control</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- Palette -->
+  <section aria-labelledby="pal-h" style="display: flex; flex-direction: column; gap: 10px">
+    <h2 id="pal-h" style="margin: 0; font-size: 18px; font-weight: 600; color: #4fa3d9">Palett · tokens på :root</h2>
+    <div style="display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px">
+      <div style="height: 92px; background: #05060a; border: 1px solid #2b3145; padding: 8px 10px; box-sizing: border-box; display: flex; flex-direction: column; justify-content: space-between"><span style="font-size: 12px; color: #9aa3b8; text-transform: none">--bg #05060a</span><span style="align-self: flex-end; font-size: 15px">Bakgrund</span></div>
+      <div style="height: 92px; background: #11151f; padding: 8px 10px; box-sizing: border-box; display: flex; flex-direction: column; justify-content: space-between"><span style="font-size: 12px; color: #9aa3b8; text-transform: none">--slate-1 #11151f</span><span style="align-self: flex-end; font-size: 15px">Rader, ytor</span></div>
+      <div style="height: 92px; background: #2b3145; padding: 8px 10px; box-sizing: border-box; display: flex; flex-direction: column; justify-content: space-between"><span style="font-size: 12px; color: #c3c9d8; text-transform: none">--slate-2 #2b3145</span><span style="align-self: flex-end; font-size: 15px; color: #c3c9d8">Fasetiketter · 7.7:1</span></div>
+      <div style="height: 92px; background: #4a5370; padding: 8px 10px; box-sizing: border-box; display: flex; flex-direction: column; justify-content: space-between"><span style="font-size: 12px; color: #e6e9f2; text-transform: none">--slate-3 #4a5370</span><span style="align-self: flex-end; font-size: 15px">Ramar · ljus text 6.2:1</span></div>
+      <div style="height: 92px; background: #6f7894; padding: 8px 10px; box-sizing: border-box; display: flex; flex-direction: column; justify-content: space-between; color: #000000"><span style="font-size: 12px; text-transform: none">--slate-4 #6f7894</span><span style="align-self: flex-end; font-size: 15px">Block · svart text 4.8:1</span></div>
+      <div style="height: 92px; background: #9aa2bb; padding: 8px 10px; box-sizing: border-box; display: flex; flex-direction: column; justify-content: space-between; color: #000000"><span style="font-size: 12px; text-transform: none">--slate-5 #9aa2bb</span><span style="align-self: flex-end; font-size: 15px">Klart · 8.3:1</span></div>
+      <div style="height: 92px; background: #1f3b57; padding: 8px 10px; box-sizing: border-box; display: flex; flex-direction: column; justify-content: space-between"><span style="font-size: 12px; color: #a9d6f2; text-transform: none">--steel-deep #1f3b57</span><span style="align-self: flex-end; font-size: 15px; color: #a9d6f2">Vald rad</span></div>
+      <div style="height: 92px; background: #4fa3d9; padding: 8px 10px; box-sizing: border-box; display: flex; flex-direction: column; justify-content: space-between; color: #000000"><span style="font-size: 12px; text-transform: none">--steel #4fa3d9</span><span style="align-self: flex-end; font-size: 15px">Aktivt, data · 7.6:1</span></div>
+      <div style="height: 92px; background: #11151f; padding: 8px 10px; box-sizing: border-box; display: flex; flex-direction: column; justify-content: space-between"><span style="font-size: 12px; color: #9aa3b8; text-transform: none">--steel-text #7cc0ea</span><span style="align-self: flex-end; font-size: 24px; color: #7cc0ea">$125.33 · 9.1:1</span></div>
+      <div style="height: 92px; background: #ee6c56; padding: 8px 10px; box-sizing: border-box; display: flex; flex-direction: column; justify-content: space-between; color: #000000"><span style="font-size: 12px; text-transform: none">--coral #ee6c56</span><span style="align-self: flex-end; font-size: 15px">Kräver dig, fel · 6.9:1</span></div>
+      <div style="height: 92px; background: #f2a389; padding: 8px 10px; box-sizing: border-box; display: flex; flex-direction: column; justify-content: space-between; color: #000000"><span style="font-size: 12px; text-transform: none">--coral-soft #f2a389</span><span style="align-self: flex-end; font-size: 15px">Varning</span></div>
+      <div style="height: 92px; background: #ff9e40; padding: 8px 10px; box-sizing: border-box; display: flex; flex-direction: column; justify-content: space-between; color: #000000"><span style="font-size: 12px; text-transform: none">--amber #ff9e40</span><span style="align-self: flex-end; font-size: 15px">Auctum · primär åtgärd</span></div>
+      <div style="height: 92px; background: #11151f; padding: 8px 10px; box-sizing: border-box; display: flex; flex-direction: column; justify-content: space-between"><span style="font-size: 12px; color: #9aa3b8; text-transform: none">--text #e6e9f2</span><span style="align-self: flex-end; font-size: 15px">Text</span></div>
+      <div style="height: 92px; background: #11151f; padding: 8px 10px; box-sizing: border-box; display: flex; flex-direction: column; justify-content: space-between"><span style="font-size: 12px; color: #9aa3b8; text-transform: none">--muted #9aa3b8</span><span style="align-self: flex-end; font-size: 15px; color: #9aa3b8">Dämpad · 7.0:1</span></div>
+    </div>
+    <p style="margin: 0; font-size: 14px; color: #9aa3b8; text-transform: none; letter-spacing: 0.01em">Regler: skiffer bär strukturen. Stålblått betyder bara aktivt eller pågående. Korall betyder bara att något kräver dig eller har gått fel. Amber används bara till Auctum-märket och den enda primära åtgärden. Ljusa block har svart text, mörka block ljus text, och alla par klarar WCAG AA.</p>
+  </section>
+
+  <div style="display: flex; gap: 40px">
+    <!-- Elements -->
+    <section aria-labelledby="el-h" style="flex: 1; display: flex; flex-direction: column; gap: 14px">
+      <h2 id="el-h" style="margin: 0; font-size: 18px; font-weight: 600; color: #4fa3d9">Element</h2>
+
+      <div style="display: flex; flex-direction: column; gap: 6px">
+        <span style="font-size: 13px; color: #9aa3b8">Etikettblock · etikett nere till höger</span>
+        <div style="display: flex; gap: 6px; flex-wrap: wrap">
+          <button style="all: unset; cursor: pointer; width: 140px; height: 48px; background: #6f7894; color: #000000; display: flex; align-items: flex-end; justify-content: flex-end; padding: 0 10px 6px 0; box-sizing: border-box; font-size: 16px">Normal</button>
+          <div style="display: flex; gap: 5px"><span aria-hidden="true" style="width: 6px; background: #4fa3d9"></span><button style="all: unset; cursor: pointer; width: 134px; height: 48px; background: #4fa3d9; color: #000000; display: flex; align-items: flex-end; justify-content: flex-end; padding: 0 10px 6px 0; box-sizing: border-box; font-size: 16px; font-weight: 600">Aktiv</button></div>
+          <div style="display: flex; gap: 5px"><span aria-hidden="true" style="width: 6px; background: #ee6c56"></span><button style="all: unset; cursor: pointer; width: 134px; height: 48px; background: #ee6c56; color: #000000; display: flex; align-items: flex-end; justify-content: flex-end; padding: 0 10px 6px 0; box-sizing: border-box; font-size: 16px; animation: lcars-attn 1.6s ease-in-out infinite">Väntar på dig</button></div>
+          <button disabled style="all: unset; width: 140px; height: 48px; background: #1a1f2d; color: #6f7894; display: flex; align-items: flex-end; justify-content: flex-end; padding: 0 10px 6px 0; box-sizing: border-box; font-size: 16px">Avstängd</button>
+          <button style="all: unset; cursor: pointer; display: flex; gap: 5px; height: 48px"><span style="background: #ff9e40; color: #000000; display: flex; align-items: flex-end; padding: 0 14px 6px 16px; font-size: 16px; font-weight: 600; border-radius: 24px 0 0 24px">Primär åtgärd</span><span style="background: #ff9e40; width: 20px"></span></button>
+        </div>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 6px">
+        <span style="font-size: 13px; color: #9aa3b8">Stage-block · varje status har text, inte bara färg</span>
+        <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px">
+          <div style="height: 60px; background: #6f7894; color: #000000; padding: 6px 10px; box-sizing: border-box; display: flex; flex-direction: column; justify-content: space-between"><span style="font-size: 12px">01 · Klar</span><span style="align-self: flex-end; font-size: 15px; text-transform: none">state-init</span></div>
+          <div style="height: 60px; background: #4fa3d9; color: #000000; padding: 6px 10px; box-sizing: border-box; display: flex; flex-direction: column; justify-content: space-between; animation: lcars-breathe 2.4s ease-in-out infinite"><span style="font-size: 12px">04 · Pågår</span><span style="align-self: flex-end; font-size: 15px; font-weight: 600; text-transform: none">reverse-engineering</span></div>
+          <div style="height: 60px; background: #ee6c56; color: #000000; padding: 6px 10px; box-sizing: border-box; display: flex; flex-direction: column; justify-content: space-between; animation: lcars-attn 1.6s ease-in-out infinite"><span style="font-size: 12px">05 · Väntar på godkännande</span><span style="align-self: flex-end; font-size: 15px; text-transform: none">requirements-analysis</span></div>
+          <div style="height: 60px; background: #11151f; border: 1px solid #4a5370; color: #9aa3b8; padding: 6px 10px; box-sizing: border-box; display: flex; flex-direction: column; justify-content: space-between"><span style="font-size: 12px">06 · Väntar</span><span style="align-self: flex-end; font-size: 15px; color: #c3c9d8; text-transform: none">code-generation</span></div>
+          <div style="height: 60px; background: #11151f; border: 2px solid #ee6c56; color: #f2a389; padding: 5px 9px; box-sizing: border-box; display: flex; flex-direction: column; justify-content: space-between"><span style="font-size: 12px">07 · Misslyckades</span><span style="align-self: flex-end; font-size: 15px; color: #e6e9f2; text-transform: none">build-and-test</span></div>
+          <div style="height: 60px; background: transparent; border: 1px dashed #2b3145; color: #9aa3b8; padding: 6px 10px; box-sizing: border-box; display: flex; flex-direction: column; justify-content: space-between"><span style="font-size: 12px">— · Ingår inte</span><span style="align-self: flex-end; font-size: 15px; text-transform: none">market-research</span></div>
+        </div>
+      </div>
+
+      <div style="display: flex; gap: 30px; flex-wrap: wrap">
+        <div style="display: flex; flex-direction: column; gap: 6px">
+          <span style="font-size: 13px; color: #9aa3b8">Prickindikator</span>
+          <div style="display: flex; gap: 6px; align-items: center">
+            <span style="width:12px;height:12px;border-radius:50%;background:#9aa2bb"></span><span style="width:12px;height:12px;border-radius:50%;background:#9aa2bb"></span><span style="width:12px;height:12px;border-radius:50%;background:#4fa3d9;animation:lcars-dot 2.4s ease-in-out infinite"></span><span style="width:12px;height:12px;border-radius:50%;background:#ee6c56"></span><span style="width:12px;height:12px;border-radius:50%;border:1px solid #6f7894;box-sizing:border-box"></span><span style="width:12px;height:12px;border-radius:50%;border:1px dashed #2b3145;box-sizing:border-box"></span>
+          </div>
+          <span style="font-size: 12px; color: #9aa3b8; text-transform: none">klar · klar · pågår · väntar på dig · kvar · ingår inte</span>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 6px">
+          <span style="font-size: 13px; color: #9aa3b8">Chips</span>
+          <div style="display: flex; gap: 6px; font-size: 13px">
+            <span style="border: 1px solid #6f7894; padding: 2px 8px; color: #c3c9d8">Express</span>
+            <span style="border: 1px solid #4fa3d9; padding: 2px 8px; color: #7cc0ea">US-0402</span>
+            <span style="border: 1px solid #2b3145; padding: 2px 8px; color: #9aa3b8; text-transform: none">261113-living-lcars</span>
+          </div>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 6px">
+          <span style="font-size: 13px; color: #9aa3b8">Dataavläsning</span>
+          <div style="display: grid; grid-template-columns: 14px 120px 70px 40px; gap: 4px 8px; align-items: center; font-size: 15px; font-variant-numeric: tabular-nums; text-transform: none">
+            <div aria-hidden="true" style="width: 10px; height: 10px; background: #4fa3d9"></div><span style="color: #c3c9d8">opus-5-5</span><span style="text-align: right; color: #7cc0ea">$124.67</span><span style="text-align: right; color: #9aa3b8">99 %</span>
+            <div aria-hidden="true" style="width: 10px; height: 10px; background: #9aa2bb"></div><span style="color: #c3c9d8">sonnet-5-5</span><span style="text-align: right; color: #7cc0ea">$0.66</span><span style="text-align: right; color: #9aa3b8">1 %</span>
+          </div>
+        </div>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 6px">
+        <span style="font-size: 13px; color: #9aa3b8">Armbåge · anatomi</span>
+        <div style="display: flex; gap: 24px; align-items: flex-start">
+          <div style="position: relative; width: 300px; height: 150px; border-left: 150px solid #4a5370; border-top: 18px solid #4a5370; border-radius: 44px 0 0 0; box-sizing: border-box"></div>
+          <div style="display: flex; flex-direction: column; gap: 4px; font-size: 14px; color: #c3c9d8; text-transform: none; letter-spacing: 0.01em">
+            <span>Arm 150 px · balk 18 px (ram 14 px)</span>
+            <span>Yttre radie 40–44 px · inre radie = yttre − balk</span>
+            <span>Balkar delas i segment med 6 px svarta glapp</span>
+            <span>Yttre ram runt appen, inre ram runt innehållet</span>
+            <span>Hårfina linjer: 2 px, i grupper, alltid aria-hidden</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Motion + type -->
+    <section aria-labelledby="mo-h" style="width: 520px; display: flex; flex-direction: column; gap: 14px">
+      <h2 id="mo-h" style="margin: 0; font-size: 18px; font-weight: 600; color: #4fa3d9">Rörelse · US-0402</h2>
+      <div style="display: grid; grid-template-columns: 150px 90px minmax(0, 1fr); gap: 6px 12px; font-size: 14px; text-transform: none; letter-spacing: 0.01em">
+        <span style="color: #9aa3b8; text-transform: uppercase; font-size: 12px">Effekt</span><span style="color: #9aa3b8; text-transform: uppercase; font-size: 12px">Tid</span><span style="color: #9aa3b8; text-transform: uppercase; font-size: 12px">Används för</span>
+        <span>Andning (glöd)</span><span style="font-variant-numeric: tabular-nums">2,4 s loop</span><span style="color: #c3c9d8">Pågående stage, aktiv prick</span>
+        <span>Puls (korall)</span><span style="font-variant-numeric: tabular-nums">1,6 s loop</span><span style="color: #c3c9d8">Väntar på godkännande</span>
+        <span>Ljussvep</span><span style="font-variant-numeric: tabular-nums">400 ms</span><span style="color: #c3c9d8">Ny audit-händelse, ny kostnad</span>
+        <span>Övergångar</span><span style="font-variant-numeric: tabular-nums">150–250 ms</span><span style="color: #c3c9d8">Hover, flikar, utfällning</span>
+        <span>Uppstart</span><span style="font-variant-numeric: tabular-nums">≤ 600 ms</span><span style="color: #c3c9d8">Ramarna ritas ut när ett projekt öppnas</span>
+      </div>
+      <div style="height: 36px; background-color: #11151f; background-image: linear-gradient(90deg, transparent 0, rgba(124,192,234,0.35) 50%, transparent 100%); background-size: 240px 100%; background-repeat: no-repeat; animation: lcars-sweep 2.8s linear infinite; display: flex; align-items: center; padding: 0 12px; font-size: 14px; color: #c3c9d8; text-transform: none">Ljussvep · ny händelse: STAGE_STARTED · reverse-engineering</div>
+      <div style="display: flex; flex-direction: column; gap: 6px">
+        <span style="font-size: 13px; color: #9aa3b8">Inställning · animationer</span>
+        <div role="radiogroup" aria-label="Animationer" style="display: flex; gap: 5px">
+          <button role="radio" aria-checked="true" style="all: unset; cursor: pointer; width: 110px; height: 40px; background: #4fa3d9; color: #000000; display: flex; align-items: flex-end; justify-content: flex-end; padding: 0 10px 5px 0; box-sizing: border-box; font-size: 15px; font-weight: 600">Full</button>
+          <button role="radio" aria-checked="false" style="all: unset; cursor: pointer; width: 110px; height: 40px; background: #6f7894; color: #000000; display: flex; align-items: flex-end; justify-content: flex-end; padding: 0 10px 5px 0; box-sizing: border-box; font-size: 15px">Dämpad</button>
+          <button role="radio" aria-checked="false" style="all: unset; cursor: pointer; width: 110px; height: 40px; background: #4a5370; color: #e6e9f2; display: flex; align-items: flex-end; justify-content: flex-end; padding: 0 10px 5px 0; box-sizing: border-box; font-size: 15px">Av</button>
+        </div>
+        <span style="font-size: 13px; color: #c3c9d8; text-transform: none; letter-spacing: 0.01em">Dämpad: statisk glöd, inga loopar och inget svep. Av: inga animationer. Med prefers-reduced-motion blir standardvalet Dämpad. Högst 3 blinkningar per sekund, och bara transform och opacity animeras (60 fps).</span>
+      </div>
+
+      <h2 style="margin: 10px 0 0; font-size: 18px; font-weight: 600; color: #4fa3d9">Typografi</h2>
+      <div style="display: flex; flex-direction: column; gap: 6px">
+        <span style="font-size: 44px; font-weight: 600; color: #4fa3d9; line-height: 1">Rubrik 44 · Antonio</span>
+        <span style="font-size: 18px; font-weight: 600">Sektion 18 · versaler</span>
+        <span style="font-size: 16px">Etikett 16 · versaler</span>
+        <span style="font-size: 13px; color: #9aa3b8">Meta 12–13 · dämpad</span>
+        <span style="font-size: 30px; color: #7cc0ea; font-variant-numeric: tabular-nums">$3.01 · 3/10 <span style="font-size: 14px; color: #9aa3b8">tabellsiffror</span></span>
+        <span style="font-family: ui-monospace, 'SF Mono', Menlo, monospace; font-size: 13px; color: #c3c9d8; text-transform: none; letter-spacing: 0">terminal · ui-monospace 13</span>
+      </div>
+      <p style="margin: 6px 0 0; font-size: 13px; color: #9aa3b8; text-transform: none; letter-spacing: 0.01em">Bara inspirerat av stilen: inga skepp, namn, logotyper eller ljud från Star Trek. Alla siffror i mockupen är riktiga data från aidlc-dash.</p>
+    </section>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1180}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

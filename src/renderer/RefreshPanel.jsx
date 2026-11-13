@@ -82,10 +82,15 @@ function StatusLine({ status, working }) {
   );
 }
 
-/** @param {{projectId: string, space: string, lastIntentChangeAt: number|null}} props */
-export default function RefreshPanel({ projectId, space, lastIntentChangeAt }) {
+/**
+ * @param {{projectId: string, space: string, lastIntentChangeAt: number|null, open?: boolean, onToggle?: () => void}} props
+ *   open/onToggle let the left arm's "Github" block drive the panel (FR2.2); without them it keeps its own state
+ */
+export default function RefreshPanel({ projectId, space, lastIntentChangeAt, open: openProp, onToggle }) {
   const terminal = useTerminal();
-  const [open, setOpen] = useState(false);
+  const [ownOpen, setOwnOpen] = useState(false);
+  const open = openProp ?? ownOpen;
+  const toggle = onToggle ?? (() => setOwnOpen((o) => !o));
   const [busy, setBusy] = useState(false);
   const [status, setStatus] = useState(null);
   const [changes, setChanges] = useState(null);
@@ -140,10 +145,14 @@ export default function RefreshPanel({ projectId, space, lastIntentChangeAt }) {
 
   return (
     <section className="refresh-panel" data-testid="refresh-panel">
-      <button className="cost-panel-toggle" onClick={() => setOpen((o) => !o)} aria-expanded={open} data-testid="refresh-panel-toggle">
+      <button className="cost-panel-toggle lcars-heading" onClick={toggle} aria-expanded={open} data-testid="refresh-panel-toggle">
         <span className="section-title">GitHub</span>
+        <span className="lcars-heading-line" aria-hidden="true" />
         {badge && <span className="tag tag-active">{changes.aidlcCommits} nya</span>}
-        <span aria-hidden="true">{open ? '▾' : '▸'}</span>
+        <span className="lcars-heading-meta">Gren · fjärr</span>
+        <span className="toggle-arrow" aria-hidden="true">
+          {open ? '▾' : '▸'}
+        </span>
       </button>
       {open && (
         <div className="refresh-body">

@@ -3,7 +3,7 @@ import { UNIT_STATUS_LABEL } from './format.js';
 const NODE_W = 200;
 const NODE_H = 64;
 const COL_GAP = 80;
-const ROW_GAP = 24;
+const ROW_GAP = 6;
 const PAD = 16;
 
 /** Columns from `batches`; units no batch mentions get a final column so none disappear. */
@@ -34,7 +34,7 @@ export default function BoltDag({ dag, statuses }) {
   const { pos, width, height } = layout(dag);
 
   return (
-    <div className="bolt-dag panel" data-testid="bolt-dag">
+    <div className="bolt-dag" data-testid="bolt-dag">
       <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`} role="img" aria-label="Unit-beroenden per batch">
         <defs>
           <marker id="dag-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto">
@@ -68,12 +68,13 @@ export default function BoltDag({ dag, statuses }) {
           return (
             <g key={u.name} transform={`translate(${p.x},${p.y})`} className={`dag-node unit-${status}`}>
               <title>{`${u.name} (${u.kind ?? 'okänd typ'}): ${UNIT_STATUS_LABEL[status]}`}</title>
-              <rect width={NODE_W} height={NODE_H} rx="16" />
-              <text x="14" y="24" className="dag-name">
-                {u.name}
-              </text>
-              <text x="14" y="46" className="dag-meta">
+              {/* An LCARS block: status at the top, the name at the bottom right. */}
+              <rect width={NODE_W} height={NODE_H} />
+              <text x="10" y="18" className="dag-meta">
                 {u.kind ?? '–'} · {UNIT_STATUS_LABEL[status]}
+              </text>
+              <text x={NODE_W - 10} y={NODE_H - 10} textAnchor="end" className="dag-name">
+                {u.name}
               </text>
             </g>
           );

@@ -1,0 +1,115 @@
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { useEffect } from 'react';
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+
+// The project view has its own tests; here it only reports what the left arm needs, as the real one does.
+vi.mock('../../src/renderer/ProjectView.jsx', () => ({
+  default: function ProjectViewStub({ project, onMeta }) {
+    useEffect(() => onMeta(project.projectId, { showFeatures: true, intentCount: 7 }), [project.projectId, onMeta]);
+    return <div data-testid={`project-view-${project.projectId}`} />;
+  }
+}));
+
+// Same shapes as settings:get and project:open.
+const projectInfo = (root, projectId) => ({
+  projectId,
+  root,
+  name: root.split('/').pop(),
+  detection: { isAidlc: true, activeSpace: 'default', spaces: ['default'] }
+});
+let saved;
+window.bridge = {}; // App keeps this object from import; each test fills in its methods
+const { default: App } = await import('../../src/renderer/App.jsx');
+
+function mockBridge(settings) {
+  saved = [];
+  Object.assign(window.bridge, {
+    getSettings: vi.fn(async () => ({ openProjects: [], recentProjects: [], activeProject: null, projectSettings: {}, ...settings })),
+    setSettings: vi.fn(async (partial) => saved.push(partial)),
+    openProject: vi.fn(async (dir) => projectInfo(dir, dir.endsWith('a') ? 'p1' : 'p2')),
+    closeProject: vi.fn(async () => {}),
+    pickProject: vi.fn(async () => null),
+    onProjectDetected: vi.fn(() => () => {}),
+    getGitStatus: vi.fn(async () => ({ isRepo: true, branch: 'feat/epic04-living-lcars' }))
+  });
+}
+
+function mockReducedMotion(matches) {
+  window.matchMedia = vi.fn((q) => ({ matches: matches && q.includes('reduce'), media: q, addEventListener() {}, removeEventListener() {} }));
+}
+
+async function renderApp(settings) {
+  mockBridge(settings);
+  render(<App />);
+}
+
+beforeEach(() => mockReducedMotion(false));
+afterEach(() => {
+  cleanup();
+  delete document.documentElement.dataset.motion;
+});
+
+describe('App shell', () => {
+  it('lists projects and views in the left arm with aria-current, settings and close per project (FR2.2, NFR1)', async () => {
+    await renderApp({ openProjects: ['/p/aidlc-dash-a', '/p/visinv'], activeProject: '/p/aidlc-dash-a' });
+    const arm = screen.getByTestId('project-tabs');
+    expect(arm.tagName).toBe('NAV');
+    await waitFor(() => expect(within(arm).getAllByTestId('project-tabs-tab')).toHaveLength(2));
+
+    const [first, second] = within(arm).getAllByTestId('project-tabs-tab');
+    await waitFor(() => expect(first.getAttribute('aria-current')).toBe('true'));
+    expect(second.hasAttribute('aria-current')).toBe(false);
+    expect(within(arm).getAllByTestId('project-settings-open')).toHaveLength(2);
+    expect(within(arm).getAllByTestId('project-tabs-close').map((b) => b.getAttribute('aria-label'))).toEqual([
+      'Stäng aidlc-dash-a',
+      'Stäng visinv'
+    ]);
+
+    // Views: Intents is the current page; Features shows because the project offers it (EPIC-06 rule).
+    const intents = await screen.findByTestId('project-view-switch-intents');
+    expect(intents.getAttribute('aria-current')).toBe('page');
+    expect(screen.getByRole('heading', { level: 1 }).textContent).toMatch(/aidlc-dash-a.*Intents/);
+    fireEvent.click(await screen.findByTestId('project-view-switch-features'));
+    expect(screen.getByTestId('project-view-switch-features').getAttribute('aria-current')).toBe('page');
+    expect(screen.getByTestId('project-view-switch-intents').hasAttribute('aria-current')).toBe(false);
+    expect(screen.getByRole('heading', { level: 1 }).textContent).toMatch(/Features/);
+    expect(within(arm).getByText('7 intents')).toBeTruthy();
+
+    fireEvent.click(second);
+    await waitFor(() => expect(second.getAttribute('aria-current')).toBe('true'));
+    expect(screen.getByTestId('project-view-switch-intents').getAttribute('aria-current')).toBe('page'); // views are per project
+  });
+
+  it('sets data-motion from the setting, Dämpad under prefers-reduced-motion without one, and saves a new choice (FR4.2)', async () => {
+    mockReducedMotion(true);
+    await renderApp({});
+    await waitFor(() => expect(window.bridge.getSettings).toHaveBeenCalled());
+    expect(document.documentElement.dataset.motion).toBe('reduced');
+    cleanup();
+
+    mockReducedMotion(false);
+    await renderApp({});
+    await waitFor(() => expect(document.documentElement.dataset.motion).toBe('full'));
+    cleanup();
+
+    mockReducedMotion(true);
+    await renderApp({ animations: 'full' }); // a saved choice wins over the OS setting
+    await waitFor(() => expect(document.documentElement.dataset.motion).toBe('full'));
+
+    fireEvent.click(screen.getByTestId('app-settings-open'));
+    expect(screen.getByTestId('app-settings-animations-full').checked).toBe(true);
+    fireEvent.click(screen.getByTestId('app-settings-animations-off'));
+    expect(document.documentElement.dataset.motion).toBe('off');
+    await waitFor(() => expect(saved).toContainEqual({ animations: 'off' }));
+  });
+
+  it('shows the Auctum mark in the header with its name, next to the project and view title (FR2.1)', async () => {
+    await renderApp({ openProjects: ['/p/aidlc-dash-a'], activeProject: '/p/aidlc-dash-a' });
+    const header = screen.getByRole('banner');
+    expect(within(header).getByRole('img', { name: 'Auctum' })).toBeTruthy();
+    expect(within(header).getByText('Aidlc control')).toBeTruthy();
+    expect(await within(header).findByText('feat/epic04-living-lcars')).toBeTruthy();
+    // The arm's watermark is decoration: hidden, so the header's mark is the only named one outside the splash.
+    expect(within(screen.getByTestId('project-tabs')).queryByRole('img')).toBeNull();
+  });
+});

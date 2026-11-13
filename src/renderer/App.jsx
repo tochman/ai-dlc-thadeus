@@ -1,12 +1,43 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import ProjectView from './ProjectView.jsx';
 import AuctumMark from './AuctumMark.jsx';
-import Splash, { APP_NAME } from './Splash.jsx';
+import Splash from './Splash.jsx';
+import AppSettingsDialog from './AppSettingsDialog.jsx';
+import { Bar, Frame } from './Lcars.jsx';
 
 const bridge = window.bridge;
+const UI_DEFAULT = { view: 'intents', cost: false, github: false };
 
 function errorText(err) {
   return String(err?.message ?? err).replace(/^Error invoking remote method '[^']+': (Error: )?/, '');
+}
+
+/** The saved "Animationer" choice, or Dämpad when the OS asks for reduced motion, else Full (FR4.2). */
+export function motionMode(saved) {
+  if (saved) return saved;
+  return window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches ? 'reduced' : 'full';
+}
+
+/** A labelled block in the left arm. The current or expanded one is light with a steel tab, as in the mockup. */
+function ArmBlock({ current = false, expanded, tone = 'mid', children, ...rest }) {
+  const lit = current || expanded === true;
+  const block = (
+    <button
+      className={`lcars-block lcars-block--${lit ? 'light' : tone}`}
+      aria-current={current ? 'page' : undefined}
+      aria-expanded={expanded}
+      {...rest}
+    >
+      {children}
+    </button>
+  );
+  if (!lit) return block;
+  return (
+    <div className="lcars-tabbed">
+      <span className="lcars-tab" aria-hidden="true" />
+      {block}
+    </div>
+  );
 }
 
 export default function App() {
@@ -15,7 +46,18 @@ export default function App() {
   const [error, setError] = useState(null);
   const [restored, setRestored] = useState(false);
   const [settingsFor, setSettingsFor] = useState(null); // projectId whose "Projektinställningar" is open (EPIC-06 FR3.1)
+  const [appSettingsOpen, setAppSettingsOpen] = useState(false);
+  const [animations, setAnimations] = useState(null); // saved choice; null means the default applies
+  const [ui, setUi] = useState({}); // projectId -> {view, cost, github}: what the arm has selected per project
+  const [meta, setMeta] = useState({}); // projectId -> {showFeatures, intentCount}, reported by ProjectView
+  const [branch, setBranch] = useState(null);
   const recentRef = useRef([]);
+  const motion = motionMode(animations);
+
+  // Before paint, so the first frame already runs in the chosen mode (FR4.2).
+  useLayoutEffect(() => {
+    document.documentElement.dataset.motion = motion;
+  }, [motion]);
 
   const openPath = useCallback(async (dir) => {
     const info = await bridge.openProject(dir);
@@ -31,6 +73,7 @@ export default function App() {
       try {
         const s = await bridge.getSettings();
         recentRef.current = s.recentProjects;
+        setAnimations(s.animations ?? null);
         const failed = [];
         let activeInfo = null;
         for (const dir of s.openProjects) {
@@ -73,6 +116,33 @@ export default function App() {
       .catch((err) => setError(`Kunde inte spara inställningar: ${errorText(err)}`));
   }, [tabs, activeId, restored]);
 
+  // The branch in the header. Read-only; it is only a label, so a failure just leaves it out.
+  useEffect(() => {
+    setBranch(null);
+    if (!activeId || !bridge.getGitStatus) return undefined;
+    let cancelled = false;
+    bridge
+      .getGitStatus(activeId)
+      .then((s) => !cancelled && setBranch(s?.isRepo ? s.branch ?? null : null))
+      .catch((err) => console.warn('Grenen kunde inte läsas:', errorText(err)));
+    return () => {
+      cancelled = true;
+    };
+  }, [activeId]);
+
+  const reportMeta = useCallback(
+    (projectId, partial) => setMeta((m) => ({ ...m, [projectId]: { ...m[projectId], ...partial } })),
+    []
+  );
+  const setUiOf = useCallback(
+    (projectId, change) =>
+      setUi((u) => {
+        const cur = { ...UI_DEFAULT, ...u[projectId] };
+        return { ...u, [projectId]: { ...cur, ...(typeof change === 'function' ? change(cur) : change) } };
+      }),
+    []
+  );
+
   async function addProject() {
     setError(null);
     try {
@@ -97,56 +167,138 @@ export default function App() {
     }
   }
 
+  async function saveAnimations(next) {
+    setAnimations(next);
+    await bridge.setSettings({ animations: next }); // a failure is shown in the dialog
+  }
+
+  const active = tabs.find((t) => t.projectId === activeId) ?? null;
+  const activeUi = active ? { ...UI_DEFAULT, ...ui[active.projectId] } : UI_DEFAULT;
+  const activeMeta = (active && meta[active.projectId]) || {};
+  const isAidlc = active?.detection.isAidlc === true;
+  const view = activeMeta.showFeatures ? activeUi.view : 'intents';
+  const firstLabel = isAidlc ? 'Intents' : 'Uppsättning';
+
+  /** Kostnad and Github fold their panel out in the sidebar; from Features they switch back to it first. */
+  const togglePanel = (key) => setUiOf(active.projectId, (c) => ({ view: 'intents', [key]: c.view === 'intents' ? !c[key] : true }));
+
   return (
     <div className="app">
       <Splash ready={restored} />
-      <header className="app-header elbow-top">
-        <h1 className="app-title">
-          <AuctumMark size={28} className="app-mark" decorative />
-          {APP_NAME}
-        </h1>
-        <nav className="project-tabs" role="tablist" aria-label="Projekt" data-testid="project-tabs">
-          {tabs.map((t) => (
-            <div key={t.projectId} className={`project-tab ${t.projectId === activeId ? 'is-active' : ''}`}>
+      <header className="app-header">
+        <div className="app-brand">
+          <AuctumMark size={46} className="app-mark" />
+          <span className="app-brand-text">
+            <span>Auctum</span>
+            <span className="app-brand-sub">Aidlc control</span>
+          </span>
+        </div>
+        <div className="app-header-main">
+          <Bar segs={[['slate-4', 3], ['steel-deep', 90], ['slate-3', 1], ['slate-5', 54]]} />
+          <div className="app-header-row">
+            {branch && (
+              <>
+                <span className="app-meta-label">Gren</span>
+                <span className="app-branch" title={branch}>
+                  {branch}
+                </span>
+              </>
+            )}
+            <h1 className="app-title">
+              {active ? (
+                <>
+                  {active.name} <span className="app-title-sep" aria-hidden="true">•</span> {view === 'features' ? 'Features' : firstLabel}
+                </>
+              ) : (
+                'Inget projekt'
+              )}
+            </h1>
+            <span className="app-header-deco" aria-hidden="true">
+              <span />
+              <span />
+            </span>
+          </div>
+        </div>
+      </header>
+
+      <nav className="app-arm" aria-label="Projekt och vyer" data-testid="project-tabs">
+        {tabs.map((t) => {
+          const on = t.projectId === activeId;
+          return (
+            <div key={t.projectId} className={`arm-project ${on ? 'is-active' : ''}`}>
               <button
-                role="tab"
-                aria-selected={t.projectId === activeId}
+                className={`lcars-block ${on ? 'lcars-block--active' : 'lcars-block--dark'}`}
+                aria-current={on ? 'true' : undefined}
                 title={t.root}
                 onClick={() => setActiveId(t.projectId)}
                 data-testid="project-tabs-tab"
               >
-                {t.name}
+                <span className="lcars-label">{t.name}</span>
               </button>
-              <button
-                className="project-tab-settings"
-                aria-label="Projektinställningar"
-                title={`Projektinställningar för ${t.name}`}
-                onClick={() => {
-                  setActiveId(t.projectId);
-                  setSettingsFor(t.projectId);
-                }}
-                data-testid="project-settings-open"
-              >
-                ⚙
-              </button>
-              <button
-                className="project-tab-close"
-                aria-label={`Stäng ${t.name}`}
-                onClick={() => closeTab(t.projectId)}
-                data-testid="project-tabs-close"
-              >
-                ×
-              </button>
+              <span className="arm-tools">
+                <button
+                  className="arm-tool"
+                  aria-label={`Projektinställningar för ${t.name}`}
+                  title={`Projektinställningar för ${t.name}`}
+                  onClick={() => {
+                    setActiveId(t.projectId);
+                    setSettingsFor(t.projectId);
+                  }}
+                  data-testid="project-settings-open"
+                >
+                  ⚙
+                </button>
+                <button className="arm-tool" aria-label={`Stäng ${t.name}`} title={`Stäng ${t.name}`} onClick={() => closeTab(t.projectId)} data-testid="project-tabs-close">
+                  ×
+                </button>
+              </span>
             </div>
-          ))}
-          <button className="btn btn-accent" onClick={addProject} data-testid="project-tabs-add">
-            + Öppna projekt
-          </button>
-        </nav>
-      </header>
+          );
+        })}
+        <button className="lcars-block lcars-block--sm lcars-block--deep" onClick={addProject} data-testid="project-tabs-add">
+          + Öppna
+        </button>
+        <span className="arm-spacer" aria-hidden="true" />
+        {active && (
+          <>
+            <ArmBlock current={view === 'intents'} onClick={() => setUiOf(active.projectId, { view: 'intents' })} data-testid="project-view-switch-intents">
+              {firstLabel}
+            </ArmBlock>
+            {activeMeta.showFeatures && (
+              <ArmBlock current={view === 'features'} onClick={() => setUiOf(active.projectId, { view: 'features' })} data-testid="project-view-switch-features">
+                Features
+              </ArmBlock>
+            )}
+            <ArmBlock
+              expanded={isAidlc ? view === 'intents' && activeUi.cost : undefined}
+              disabled={!isAidlc}
+              onClick={() => togglePanel('cost')}
+              data-testid="arm-cost"
+            >
+              Kostnad
+            </ArmBlock>
+            <ArmBlock
+              tone="dark"
+              expanded={isAidlc ? view === 'intents' && activeUi.github : undefined}
+              disabled={!isAidlc}
+              onClick={() => togglePanel('github')}
+              data-testid="arm-github"
+            >
+              Github
+            </ArmBlock>
+          </>
+        )}
+        <ArmBlock tone="dark" onClick={() => setAppSettingsOpen(true)} data-testid="app-settings-open">
+          Inställningar
+        </ArmBlock>
+        <div className="arm-foot">
+          <AuctumMark size={128} className="arm-foot-mark" decorative />
+          <span className="arm-foot-label">{isAidlc ? `${activeMeta.intentCount ?? 0} intents` : 'Auctum'}</span>
+        </div>
+      </nav>
 
       {error && (
-        <div className="banner banner-error" role="alert">
+        <div className="banner banner-error app-error" role="alert">
           <span>{error}</span>
           <button className="btn" onClick={() => setError(null)} data-testid="app-error-dismiss">
             Stäng
@@ -156,27 +308,43 @@ export default function App() {
 
       <main className="app-main">
         {tabs.length === 0 && restored && (
-          <div className="empty-state panel">
-            <AuctumMark size={64} className="empty-state-mark" />
-            <h2>Inget projekt öppet</h2>
-            <p>Öppna en projektmapp som innehåller <code>aidlc/spaces/</code>.</p>
-            <button className="btn btn-accent" onClick={addProject} data-testid="empty-state-open">
-              Öppna projekt
-            </button>
+          <div className="empty-state">
+            <Frame>
+              <AuctumMark size={96} className="empty-state-mark" />
+              <h2>Inget projekt öppet</h2>
+              <p>
+                Öppna en projektmapp som innehåller <code>aidlc/spaces/</code>.
+              </p>
+              <button className="btn btn-accent" onClick={addProject} data-testid="empty-state-open">
+                Öppna projekt
+              </button>
+            </Frame>
           </div>
         )}
         {/* Every tab stays mounted so its terminals and watchers survive tab switches (FR8.4). */}
-        {tabs.map((t) => (
-          <div key={t.projectId} className="project-pane" hidden={t.projectId !== activeId}>
-            <ProjectView
-              project={t}
-              visible={t.projectId === activeId}
-              settingsOpen={settingsFor === t.projectId}
-              onCloseSettings={() => setSettingsFor(null)}
-            />
-          </div>
-        ))}
+        {tabs.map((t) => {
+          const tabUi = { ...UI_DEFAULT, ...ui[t.projectId] };
+          return (
+            <div key={t.projectId} className="project-pane" hidden={t.projectId !== activeId}>
+              <ProjectView
+                project={t}
+                visible={t.projectId === activeId}
+                settingsOpen={settingsFor === t.projectId}
+                onCloseSettings={() => setSettingsFor(null)}
+                view={tabUi.view}
+                onView={(v) => setUiOf(t.projectId, { view: v })}
+                costOpen={tabUi.cost}
+                onToggleCost={() => setUiOf(t.projectId, (c) => ({ cost: !c.cost }))}
+                githubOpen={tabUi.github}
+                onToggleGithub={() => setUiOf(t.projectId, (c) => ({ github: !c.github }))}
+                onMeta={reportMeta}
+              />
+            </div>
+          );
+        })}
       </main>
+
+      <AppSettingsDialog open={appSettingsOpen} onClose={() => setAppSettingsOpen(false)} value={motion} onChange={saveAnimations} />
     </div>
   );
 }

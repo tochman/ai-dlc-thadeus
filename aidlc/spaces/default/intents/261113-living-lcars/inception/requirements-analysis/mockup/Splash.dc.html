@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="sv">
+<head>
+<meta charset="utf-8">
+<title>Splash — Auctum-symbolen</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Antonio:wght@400;600;700&amp;display=swap">
+<style>
+body{margin:0;background:#05060a}
+@keyframes lcars-draw{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+@keyframes lcars-rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@keyframes lcars-glow{0%,100%{filter:drop-shadow(0 0 0 rgba(255,158,64,0))}50%{filter:drop-shadow(0 0 18px rgba(255,158,64,.45))}}
+@media (prefers-reduced-motion: reduce){*{animation:none !important}}
+</style>
+</helmet>
+<div style="width: 1200px; height: 720px; box-sizing: border-box; padding: 40px; background: #05060a; color: #e6e9f2; font-family: 'Antonio', 'Arial Narrow', sans-serif; text-transform: uppercase; letter-spacing: 0.04em; display: flex; flex-direction: column; gap: 0">
+  <div style="display: flex; height: 70px">
+    <div style="width: 180px; background: #4a5370; border-radius: 48px 0 0 0"></div>
+    <div style="flex: 1; display: flex; gap: 6px; height: 20px">
+      <div style="flex: 3; background: #4a5370; transform-origin: left; animation: lcars-draw 420ms ease-out both"></div>
+      <div style="width: 90px; background: #1f3b57; transform-origin: left; animation: lcars-draw 420ms 80ms ease-out both"></div>
+      <div style="flex: 1; background: #6f7894; transform-origin: left; animation: lcars-draw 420ms 160ms ease-out both"></div>
+    </div>
+  </div>
+  <div style="flex: 1; display: flex">
+    <div style="width: 180px; display: flex; flex-direction: column; gap: 5px">
+      <div style="flex: 2; background: #4a5370"></div>
+      <div style="height: 40px; background: #6f7894"></div>
+      <div style="flex: 1; background: #2b3145; border-radius: 0 0 0 48px"></div>
+    </div>
+    <div style="flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 26px">
+      <svg viewBox="202 274 848 708" width="300" height="250" role="img" aria-label="Auctum" style="color: #ff9e40; animation: lcars-rise 500ms 100ms ease-out both, lcars-glow 3.2s 700ms ease-in-out infinite"><g fill="currentColor" fill-rule="evenodd"><path d="M 492 502 L 444 580 L 412 635 L 397 658 L 314 798 L 299 821 L 297 826 L 203 981 L 518 981 L 663 811 L 478 812 L 476 810 L 577 646 Z"></path><path d="M 627 275 L 574 364 L 533 430 L 533 432 L 622 581 L 646 624 L 717 743 L 761 820 L 800 884 L 813 908 L 851 971 L 856 981 L 1049 981 L 992 885 L 988 880 L 983 870 L 950 817 L 945 807 L 938 797 L 889 713 L 874 690 L 869 680 L 820 600 L 799 563 L 777 528 L 775 523 Z"></path></g></svg>
+      <div style="display: flex; flex-direction: column; align-items: center; gap: 6px; animation: lcars-rise 500ms 250ms ease-out both">
+        <span style="font-size: 64px; font-weight: 700; line-height: 1; letter-spacing: 0.08em; color: #e6e9f2">Auctum</span>
+        <span style="font-size: 24px; font-weight: 600; color: #4fa3d9; letter-spacing: 0.18em">Aidlc control</span>
+      </div>
+      <div aria-hidden="true" style="display: flex; gap: 6px; width: 360px; height: 6px">
+        <div style="flex: 1; background: #ff9e40; transform-origin: left; animation: lcars-draw 600ms 200ms ease-out both"></div>
+        <div style="width: 40px; background: #4a5370"></div>
+      </div>
+    </div>
+  </div>
+  <div style="display: flex; gap: 6px; height: 20px; margin-left: 186px">
+    <div style="flex: 2; background: #2b3145"></div><div style="width: 70px; background: #1f3b57"></div><div style="flex: 1; background: #4a5370"></div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1200,"height":720}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

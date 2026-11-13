@@ -85,7 +85,7 @@ export default function ArtifactReader({ projectId, groups, selected, onSelect }
   if (groups.length === 0) return <p className="muted">Inga artefakter i intentens fasmappar ännu.</p>;
   return (
     <div className="artifact-reader" data-testid="artifact-reader">
-      <nav className="file-tree panel elbow-left" aria-label="Artefakter">
+      <nav className="file-tree" aria-label="Artefakter">
         {groups.map((g) => (
           <section key={g.dir}>
             <h4 className="file-group">{g.dir}</h4>

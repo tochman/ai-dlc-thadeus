@@ -1,71 +1,64 @@
-# Code Quality Assessment — aidlc-dash
+# Kodkvalitet: aidlc-dash
 
-## Testtäckning
+## Snabbbedömning
 
-- **Ramverk**: Vitest med två projekt (`main` i Node, `renderer` i jsdom), Testing Library React.
-- **Testfiler**: 20 (`tests/main/` 12, `tests/renderer/` 8). Nytt sedan förra skanningen: `tests/renderer/Timeline.test.jsx` (EPIC-03); `tests/main/ptyPerms.test.js` hör till `scripts/fix-pty-perms.cjs`. Antalet testfall är inte omräknat.
-- **Täckt** (enligt fillistor och förra skanningen): alla parsers, `projectAccess` (inkl. `..`/absolut/symlänk-avvisning), `projectService` mot fixtureprojekt, ledger-sammanfattning och modelljämförelse, `getConfiguredModels` med injicerad exec, pty lazy-load-fel och rättigheter, watcher (debounce, ignorering, ledger, `watchForAidlc`), glibc-skriptet, ikonfilen, `IntentList`, `CostPanel`, `Splash`, `Timeline`, samt EPIC-05: `git`, `setup`, `RefreshPanel`, `ResumeButton`, `SetupAidlc`, `terminalControl`.
-- **Otäckt** (ingen testfil finns): `ipc.js`, `settings.js`, `index.js`, `preload/index.js`, `useProject.js`, `App.jsx`, `ProjectView.jsx` (inklusive `SetupDone` och bytet från icke-AI-DLC till AI-DLC), `TerminalPanel.jsx`, `IntentDetail.jsx`, `Pipeline.jsx`, `BoltDag.jsx`, `ArtifactReader.jsx` (inklusive `FileContent`).
-- **Coverage-konfiguration**: saknas (ingen provider, ingen tröskel).
+| Område | Betyg | Kommentar |
+|--------|-------|-----------|
+| Namngivning | good | Tydliga komponent- och klassnamn, konsekventa `data-testid` |
+| Funktionsstorlek | fair | De flesta funktioner är små; `RefreshPanel`, `SetupAidlc`, `Timeline` och `ProjectContent` är långa men sammanhållna |
+| Felhantering | good | IPC-fel visas med `role="alert"`; trasiga filer ger senaste giltiga värde; inga tysta catch utan kommentar |
+| Testnärvaro | fair | Main och de flesta stateful vyer testas; app-skalet, pipelinen, terminalpanelen, DAG och läsaren saknar test |
+| Duplicering | fair | `errorText()` i 9 renderarfiler; filåtgärdsknappar dupliceras i ArtifactReader och FeaturesView |
+| Död kod | good | Inga TODO/FIXME, inga `eslint-disable`; några klasser i JSX saknar CSS-regel (se nedan) |
 
-## Lint och formatering
+## Tester
 
-Ingen ESLint- eller Prettier-konfiguration. Stilen är ändå enhetlig (2 blanksteg, enkla citattecken, semikolon, ~120 tecken; `SetupAidlc.jsx` har några längre rader).
+- **Ramverk**: Vitest 5 med två projekt (`main` i node, `renderer` i jsdom), Testing Library React.
+- **main** (14 filer): parsers, ledger, modeller, features, git, setup, settings, watcher, pty, rättigheter, glibc, ikon (`build/icon.png` 1024x1024 RGBA), projectAccess, projectService.
+- **renderer** (10 filer): CostPanel, FeaturesView, IntentList, ProjectSettingsDialog, RefreshPanel, ResumeButton, SetupAidlc, Splash, Timeline, terminalControl.
+- **Coverage**: ingen konfiguration eller tröskel.
+- **Körs i CI**: `npx vitest run tests/` i `verify`-jobbet.
 
-## CI/CD
+### Tester som en omdesign kan bryta
 
-`.github/workflows/release.yml`: på PR mot `main` och på tagg `v*.*.*` körs `npx vitest run tests/`, sedan mac- och linux-bygge (med glibc-kontroll); på tagg skapas GitHub Release med `gh`. Taggen måste matcha `package.json`-versionen. Ingen lint-körning. (Från tidigare skanning, inte omläst.)
+| Test | Beroende |
+|------|----------|
+| `IntentList.test.jsx:13` | `.intent-slug` inuti `intent-list-row` |
+| `Splash.test.jsx:16,17,25` | `role="img"` med namnet `Auctum`, texten `Auctum AIDLC Control`, `is-leaving` i `className` |
+| `Timeline.test.jsx:44,53,56,77` | `[aria-posinset]`/`aria-setsize`, `.event.is-new`, `.event-row` med `aria-label`, `.event-fields` |
+| `CostPanel.test.jsx:24` | tabellrader (`closest('tr')`) |
+| `FeaturesView.test.jsx:30,70` | exakt ett `role="status"`; `h1` i fallback |
+| `RefreshPanel.test.jsx:73`, `ResumeButton.test.jsx:48` | exakt ett `role="status"` |
+| `ResumeButton.test.jsx:23` | knappen är ett `BUTTON` |
+| `SetupAidlc.test.jsx:94` | `a[href]` i `setup-aidlc-missing` |
+| Alla renderartester | `data-testid` och svenska etiketttexter |
+
+Nya dekorativa element (siffror, segment, ränder) bör vara `aria-hidden` och inte ha `role="status"`, annars får `getByRole('status')` flera träffar.
+
+## Linting, formatering, CI
+
+- Ingen ESLint, Prettier eller EditorConfig i repot. Stilen är ändå enhetlig (2 blanksteg, enkla citattecken, semikolon).
+- CI (`.github/workflows/release.yml`): tester på PR mot `main` och på taggar; macOS- och Linux-bygge; glibc-kontroll; release med `gh release`. Ingen lint- eller kontraststeg.
 
 ## Dokumentation
 
-- `README.md` (svenska): syfte, kom igång, säkerhetsmodell.
-- `docs/FEATURES.md` + epic-filer med stories och acceptanskriterier; EPIC-02, EPIC-03 och EPIC-05 🚧 byggda, ej releasade; EPIC-06 📋 Planned.
-- Varje modul börjar med en syfteskommentar; FR-nummer i kommentarer kopplar till epic-dokumenten.
+`README.md` (svenska) beskriver start, säkerhet och bygg. `docs/FEATURES.md` och epic-filer bär krav och acceptanskriterier. Koden har korta kommentarer med krav-ID:n.
 
-## Snabbedömning
+## Tillgänglighet (befintliga mönster)
 
-| Område | Betyg | Kommentar |
-|---|---|---|
-| Namngivning | good | självförklarande, konsekvent |
-| Funktionsstorlek | good | små funktioner; `TerminalPanel.jsx` och `SetupAidlc.jsx` störst |
-| Felhantering | good | fel loggas och visas, läsning tål halvskrivna filer, inga tysta fångster utom medvetna (`exists`, `prettyJson`) |
-| Testnärvaro | fair | logik väl täckt, IPC, inställningar och flera vyer otestade |
-| Duplicering | fair | se teknisk skuld |
-| Död kod | good | ingen hittad |
+- Status alltid med text, aldrig bara färg (`format.js`, `.tag`, `StatusBadge`).
+- `:focus-visible` 2px blå outline globalt.
+- `prefers-reduced-motion` stänger av alla animationer och transitions.
+- ARIA: `tablist/tab/aria-selected`, `listbox/option`, `aria-expanded`, `aria-pressed`, `aria-current`, `role="separator"` med tangentbord, native modal `dialog`, `role="status"`/`"alert"`, `aria-hidden` på dekor (`.stage-marker`, `.splash-bar`, dekorativt märke).
+- Kontrast: kommentaren i `theme.css` anger minst 4,5:1 för brödtext; inget automatiskt test kontrollerar det.
 
 ## Teknisk skuld
 
-| # | Signal | Plats |
-|---|---|---|
-| TD1 | `errorText` (tar bort IPC-prefixet) kopierad i flera filer | `App.jsx:8-10`, `ArtifactReader.jsx:6`, `SetupAidlc.jsx:14`, `useProject.js`, `TerminalPanel.jsx`; `setup.js:14` har en egen timeoutvariant |
-| TD2 | Skalval dubblerat (kan ha flyttat till `exec.js` med EPIC-05; ej omverifierat) | `pty.js`, `models.js` |
-| TD3 | Renderaren importerar från main-mappen | `Timeline.jsx`, `CostTab.jsx` |
-| TD4 | Obegränsade cacher (`ponytail:`) | `projectService.js` |
-| TD5 | ~~Tidslinje utan virtualisering, tak 1500~~ åtgärdat av EPIC-03 (`useVirtualizer`, ytligt verifierat) | `Timeline.jsx` |
-| TD6 | Osäker agent/modell-attribuering lämnas tom (`ponytail:`) | `ledger.js` |
-| TD7 | Ingen linter, ingen coverage | rot |
-| TD8 | `FEATURES.md` anger EPIC-02, EPIC-03 och EPIC-05 som byggda men ej releasade | `docs/FEATURES.md` |
-| TD9 | ~~Ny-markering på antal~~ åtgärdat av EPIC-03 (`newKeys`, ytligt verifierat) | `useProject.js`, `Timeline.jsx` |
-| TD10 | ~~`seq` som React-nyckel~~ åtgärdat av EPIC-03 (`key = <source>#<index>`, ytligt verifierat) | `audit.js:31-37` |
-| TD11 | Markeringstimer rensas aldrig (inte omverifierat efter EPIC-03) | `useProject.js` |
-| TD12 | Tidsstämplar sorteras som strängar | `audit.js` |
-| TD13 | Alla shards läses om helt vid varje liveuppdatering | `projectService.js` |
-| TD14 | `setSettings` läser–slår ihop–skriver utan serialisering; samtidiga anrop kan tappa en ändring | `settings.js:29-34`, anropas från `App.jsx:63-73` |
-| TD15 | `sanitize` tar tyst bort okända nycklar | `settings.js:12-18` |
-| TD16 | `exists` svarar `false` för alla fel, även sökvägar utanför roten | `projectAccess.js:67-74` |
-
-Inga TODO/FIXME/HACK, inga `eslint-disable`, inga hårdkodade hemligheter i fokusfilerna.
-
-## Intent-relevanta luckor
-
-Gäller EPIC-06; komponenterna listas i [component-inventory.md](component-inventory.md) § Intent-relevans.
-
-1. **Ingen plats för vyn** (US-0602): `ProjectContent` (`ProjectView.jsx:83-104`) har två lägen, AI-DLC-vyn och `SetupAidlc`. AI-DLC-vyns innehållsyta visar bara `IntentDetail` eller "Välj en intent i listan." (`:46-58`). Det finns ingen vyväxling, ingen projektmeny och ingen inställningsvy (`App.jsx:99-163`). Features-vyn, valet "Sätt upp feature-beskrivningar" och inställningen behöver nya UI-ytor.
-2. **Projekt utan AI-DLC** (US-0602, första AC): ett sådant projekt visar bara `SetupAidlc`, men AC säger "whether or not it was set up through the console". Om "set up through the console" betyder AI-DLC uppsatt på annat sätt räcker AI-DLC-vyn; ska vyn också finnas utan `aidlc/spaces/` måste `ProjectContent` ändras. Behöver klargöras i kraven.
-3. **Inställningar per projekt** (US-0602): `sanitize` behåller bara tre nycklar (`settings.js:12-18`), så en ny nyckel (t.ex. per projektrot: läge `auto|show|hide` och valfri sökväg) måste läggas till och saneras där. Projektroten är realpath från `openRoot`, samma värde som `openProjects` redan lagrar. Läs–skriv-loppet (TD14) bör serialiseras om en inställningsvy skriver samtidigt som `App.jsx` sparar flikar.
-4. **Läsa dokumenten** (US-0602): `project:file` läser valfri rotrelativ fil via `resolveInRoot`, så `docs/FEATURES.md`, `FEATURES.md` i roten och länkade epic-filer går att läsa utan ny kanal. En användarangiven sökväg måste vara rotrelativ; absoluta sökvägar och `..` avvisas. Det finns ingen kanal för att lista `docs/features/` eller fråga om en fil finns; i dag tolkas ett läsfel (`ENOENT`) som "saknas". Epic-filer kan hittas via länkarna i översiktstabellen; relativa länkar (`features/epic-…md`) måste lösas mot översiktsfilens mapp.
-5. **Rendering** (US-0602): `FileContent` (`ArtifactReader.jsx:24-34`) är exporterad och ger samma Markdown som artefaktläsaren (GFM, ingen rå HTML). Länkar blir icke-klickbara `<span>`, så navigering mellan översikt, epic och story måste byggas i vyn. GFM-uppgiftslistor renderas som inaktiverade checkboxar enligt biblioteksstandard (inte verifierat i appen). `FileView` med "Visa i Finder"/"Öppna i editor" är inte exporterad; `shell:openInEditor` tillåter redan `.md`.
-6. **Tolkning av formatet** (US-0602): ingen parser finns. En ren parser i `src/main/parsers/` (samma mönster som de andra, testbar i Node) med reserv till rå Markdown passar AC "never crashes and never shows a blank view".
-7. **Live** (US-0602): bevakarna täcker bara intents-mappen och ledgern (`ipc.js:64-82`) respektive roten fram till `aidlc/spaces/` (`ipc.js:43-61`). Ändringar under `docs/` ger ingen händelse. En ny bevakare per projekt behövs, med stängning i `closeWatcher` (`ipc.js:34-40`), och en ny push-kanal eller ett nytt fält, i både `ipc.js` och `preload/index.js`.
-8. **Uppsättningsvalet** (US-0601): `buildSetupCommand` (`setup.js:72-84`) bygger bara skalkommandon för shell-fliken, medan förfrågan till Claude ska skrivas i claude-fliken *efter* uppsättningen. Den naturliga platsen är `SetupDone` (`ProjectView.jsx:65-81`), som redan skriver i claude efter `terminal.restart('claude')`. Valet ligger i `SetupAidlc`:s lokala tillstånd och försvinner när komponenten avmonteras (`ProjectView.jsx:100`), så det måste lyftas till `ProjectContent`. Om `docs/FEATURES.md` redan finns kan `getSetupInfo` svara på det med `exists` (huvudprocessen), eftersom dialogen ska visa "Feature-beskrivningar finns redan".
-9. **Tester**: `settings.js`, `ipc.js`, `ProjectView.jsx` och `ArtifactReader.jsx` saknar tester; `setup.test.js` och `SetupAidlc.test.jsx` finns och kan utökas.
+1. Färger utanför tokens: `TerminalPanel.jsx:17-22` (xterm-tema), `src/main/index.js:18` (fönsterbakgrund), `theme.css:134,135,364,371`, `build/icon.svg`. US-0403 kräver att alla färger kommer från tokens.
+2. Magiska layoutmått: elbow-tjocklekar (6, 8, 22px) och radier (30px) upprepas; kolumnbredder i `.stage-row`, `.event-row`, `.project-body`, `.artifact-reader`.
+3. Klasser utan CSS-regel: `is-collapsed`, `detail-body`, `intent-header`, `phase`, `timeline`, `features-story`, `setup-feature-docs` (lediga krokar för omdesignen).
+4. Globala klasser delas mellan vyer (lista i `dependencies.md`); ändring av en ger effekt på flera ställen.
+5. `.project-tabs` är `role="tablist"` men innehåller knappar som inte är flikar; flikar saknar `aria-controls`, och `div.detail-body[role=tabpanel]` saknar `aria-labelledby`.
+6. `settings.js` vitlistar nycklar; en ny animationsinställning kräver ändring där.
+7. Tidslinjens rader placeras med inline `transform`; inträdesanimation på `transform` krockar med virtualiseraren.
+8. `hidden` sätter `display: none !important`, så in/ut-övergångar på dolda flikar och projekt kräver annan teknik (t.ex. animation vid visning).

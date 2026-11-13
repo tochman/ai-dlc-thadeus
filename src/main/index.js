@@ -15,7 +15,7 @@ function createWindow() {
     height: 900,
     minWidth: 960,
     minHeight: 600,
-    backgroundColor: '#0b0b10',
+    backgroundColor: '#05060a', // --bg in theme.css, so the window never flashes another colour (FR1.2)
     title: 'Auctum AIDLC Control',
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),

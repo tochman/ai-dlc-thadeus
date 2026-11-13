@@ -8,6 +8,7 @@ import { DEFAULT_FEATURES_PATH, isValidFeaturesPath } from './parsers/features.j
 const DEFAULTS = { openProjects: [], recentProjects: [], activeProject: null, projectSettings: {} };
 export const PROJECT_DEFAULTS = { featureDocs: 'auto', featuresPath: DEFAULT_FEATURES_PATH };
 const FEATURE_DOCS = new Set(['auto', 'show', 'hide']);
+const ANIMATIONS = new Set(['full', 'reduced', 'off']); // "Animationer: Full / Dämpad / Av" (EPIC-04 FR4.2)
 const file = () => path.join(app.getPath('userData'), 'settings.json');
 
 const stringList = (v) => (Array.isArray(v) ? v.filter((s) => typeof s === 'string').slice(0, 50) : []);
@@ -26,6 +27,8 @@ function sanitize(raw) {
     openProjects: stringList(raw?.openProjects),
     recentProjects: stringList(raw?.recentProjects),
     activeProject: typeof raw?.activeProject === 'string' ? raw.activeProject : null,
+    // Left out when missing or invalid, so the renderer's default (Full, or Dämpad under reduced motion) applies.
+    ...(ANIMATIONS.has(raw?.animations) ? { animations: raw.animations } : {}),
     // ponytail: capped at 200 projects, oldest kept; prune closed projects if that ever matters.
     projectSettings: Object.fromEntries(
       Object.entries(projects)

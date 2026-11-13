@@ -1,53 +1,53 @@
-# Technology Stack — aidlc-dash
+# Teknikstack: aidlc-dash
 
 ## Språk och runtime
 
-| Teknik | Version | Belägg |
-|---|---|---|
-| JavaScript (ESM) + JSX | – | alla filer under `src/` |
-| Node.js | 22 | `.nvmrc` (från tidigare skanning) |
-| Electron | ^45.3.1 | `package.json` devDependencies |
-| CSS (egen, ingen ramverk) | – | `src/renderer/theme.css` |
+| Del | Val | Version |
+|-----|-----|---------|
+| Språk | JavaScript (ESM), JSX; CommonJS i två skript | – |
+| Node | `.nvmrc` | 22 |
+| Skrivbordsruntime | Electron | ^45.3.1 |
+| Styling | Ren CSS, en global fil (`theme.css`), CSS custom properties | – |
 
-## Ramverk och bibliotek
+## Ramverk och bibliotek (runtime)
 
-| Bibliotek | Version | Användning |
-|---|---|---|
-| React / React DOM | ^19.3.1 | renderar-UI |
-| @tanstack/react-virtual | 3.14.24 | fönstrad tidslinje (EPIC-03) |
-| @xterm/xterm | ^6.0.0 | terminalemulering i renderaren |
-| @xterm/addon-fit | ^0.11.0 | anpassar terminalstorlek |
-| node-pty | ^1.1.0 | pseudoterminaler i huvudprocessen (native) |
+| Bibliotek | Version | Används till |
+|-----------|---------|--------------|
+| react, react-dom | ^19.3.1 | UI |
+| @xterm/xterm | ^6.0.0 | terminal i renderaren (tema i JS) |
+| @xterm/addon-fit | ^0.11.0 | terminalstorlek |
+| node-pty | ^1.1.0 | pseudoterminaler (native, `asarUnpack`) |
 | chokidar | ^4.0.3 | filbevakning |
-| react-markdown | ^10.1.0 | artefaktrendering |
-| remark-gfm | ^4.0.1 | GFM-tabeller, uppgiftslistor m.m. |
-| @fontsource/antonio | ^5.3.0 | rubriktypsnitt |
+| react-markdown | ^10.1.0 | artefakter utan rå HTML |
+| remark-gfm | ^4.0.1 | tabeller, kryssrutor |
+| @tanstack/react-virtual | 3.14.24 (låst) | virtualiserad tidslinje |
+| @fontsource/antonio | ^5.3.0 | rubrik- och etikettfont (400, 700), bundlad lokalt |
+
+Inga animations-, ikon- eller komponentbibliotek. All rörelse är CSS-keyframes och transitions.
 
 ## Bygg och paketering
 
 | Verktyg | Version | Roll |
-|---|---|---|
-| electron-vite | ^6.0.0 | bygger main, preload och renderer till `out/` |
-| Vite | ^8.3.8 | bundler |
+|---------|---------|------|
+| electron-vite | ^6.0.0 | bygger main, preload, renderer till `out/` |
+| vite | ^8.3.8 | bundlare |
 | @vitejs/plugin-react | ^6.3.0 | JSX |
-| electron-builder | ^26.18.0 | macOS universal `.dmg`, Linux x64 `.deb`, osignerat |
-
-Skript i `package.json`: `dev`, `build`/`build:mac`, `build:linux`, `test` (`vitest run tests/`), `icon`, `postinstall` (`electron-builder install-app-deps && node scripts/fix-pty-perms.cjs`).
+| electron-builder | ^26.18.0 | `.dmg` (universal, osignerad) och `.deb` (x64) |
 
 ## Test
 
 | Verktyg | Version |
-|---|---|
-| Vitest | ^5.1.0 (projekten `main`/node och `renderer`/jsdom, `vitest.config.mjs`) |
+|---------|---------|
+| vitest | ^5.1.0 (projekt `main`/node och `renderer`/jsdom) |
 | @testing-library/react | ^16.3.3 |
 | jsdom | ^29.1.1 |
 
-jsdom gör ingen layout (alla mått är 0), så tester av en virtualiserad lista måste ge behållarhöjd och radhöjder själva.
+## Typografi och färg i dag
 
-## Plattform och CI
+- Rubriker, etiketter, knappar, taggar: Antonio i versaler (`--font-head`). US-0403 behåller Antonio.
+- Brödtext: systemfont (`--font-body`); siffror och kod: `--font-mono`. Ingen `font-variant-numeric: tabular-nums` används ännu (önskas för dataavläsningar i US-0403).
+- Palett: amber, orange, lavendel, blå, röd, grön på nästan svart (detaljer i `code-structure.md`).
 
-- GitHub Actions (`.github/workflows/release.yml`): `ubuntu-latest` (test), `macos-latest` (mac-bygge), `ubuntu-22.04` (linux-bygge för glibc 2.35).
-- Mål: macOS (universal) och Ubuntu 22.04+.
-- Krav vid körning: `claude` och `aidlc` i användarens inloggningsskal (installeras inte av appen); `git` för EPIC-05.
+## Plattformar
 
-Versionerna är intervallen i `package.json`, ytligt omlästa i denna körning; låsta versioner finns i `package-lock.json` (inte läst). Beroenderelationer: [dependencies.md](dependencies.md).
+macOS (universal) och Ubuntu 22.04 eller nyare. Ingen Windows-målplattform.

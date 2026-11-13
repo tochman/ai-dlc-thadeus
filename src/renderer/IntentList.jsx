@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { COST_LABEL, NO_COST_ENTRY, formatCost, isInFlight, stagePosition } from './format.js';
 import ResumeButton from './ResumeButton.jsx';
+import { Dots, progressStates } from './Lcars.jsx';
 
 const ALL = '';
 const SORTS = [
@@ -55,7 +56,17 @@ export default function IntentList({ intents, selected, onSelect, cost }) {
 
   return (
     <div className="intent-list" data-testid="intent-list">
-      <h2 className="section-title">Intents</h2>
+      <div className="lcars-heading">
+        <h2 className="section-title">Intents</h2>
+        <span className="lcars-heading-line" aria-hidden="true" />
+        <select aria-label="Sortering" value={sort} onChange={(e) => setSort(e.target.value)} data-testid="intent-list-sort">
+          {SORTS.map((s) => (
+            <option key={s.id} value={s.id}>
+              Sortera: {s.label}
+            </option>
+          ))}
+        </select>
+      </div>
       <div className="filters">
         <input
           type="search"
@@ -81,13 +92,6 @@ export default function IntentList({ intents, selected, onSelect, cost }) {
             </option>
           ))}
         </select>
-        <select aria-label="Sortering" value={sort} onChange={(e) => setSort(e.target.value)} data-testid="intent-list-sort">
-          {SORTS.map((s) => (
-            <option key={s.id} value={s.id}>
-              Sortera: {s.label}
-            </option>
-          ))}
-        </select>
       </div>
 
       <ul className="intent-rows" role="listbox" aria-label="Intents">
@@ -99,22 +103,26 @@ export default function IntentList({ intents, selected, onSelect, cost }) {
               className={`intent-row status-${i.status ?? 'unknown'} ${i.dirName === selected ? 'is-selected' : ''}`}
               onClick={() => onSelect(i.dirName)}
               disabled={i.missingOnDisk}
+              title={i.date ?? undefined}
               data-testid="intent-list-row"
             >
               <span className="intent-row-top">
                 <span className="intent-slug">{i.slug}</span>
-                {i.active && <span className="tag tag-active">Aktiv</span>}
-                {isInFlight(i.status) && <span className="live-dot" aria-label="Live" title="Pågår" />}
+                {i.active && <span className="intent-badge">Aktiv</span>}
                 {costs && <RowCost c={costs[i.dirName]} />}
               </span>
               <span className="intent-row-meta">
-                <span className="status-text" data-testid="intent-list-row-status">
-                  {i.status ?? 'okänd status'}
+                <span>
+                  {i.scope ?? '–'} ·{' '}
+                  <span className="status-text" data-testid="intent-list-row-status">
+                    {i.status ?? 'okänd status'}
+                  </span>
                 </span>
-                <span>{i.scope ?? '–'}</span>
-                <span>{i.date ?? '–'}</span>
-                <span title="Klara av körda stages">
-                  {i.done ?? 0}/{i.executed ?? 0}
+                <span className="intent-steps">
+                  <Dots states={progressStates(i.done ?? 0, i.executed ?? 0, isInFlight(i.status))} small />
+                  <span title="Klara av körda stages">
+                    {i.done ?? 0}/{i.executed ?? 0}
+                  </span>
                 </span>
               </span>
               {(i.missingInIndex || i.missingOnDisk || i.error) && (

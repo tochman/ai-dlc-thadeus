@@ -8,8 +8,10 @@ import {
   formatCost,
   formatTokens,
   formatUsd,
+  shortModel,
   tokenBreakdown
 } from './format.js';
+import { Readout } from './Lcars.jsx';
 
 const SOURCE_LABEL = { 'aidlc-config': 'aidlc config', 'agent-files': 'agentfiler', none: 'ingen källa' };
 
@@ -133,6 +135,12 @@ export default function CostTab({ cost, intentCost, pipeline, models }) {
         <span className="cost-total-usd">{total.missingPrice ? MISSING_PRICE : formatUsd(total.usd)}</span>
         <span className="muted">{tokenBreakdown(total.tokens)}</span>
       </div>
+      <Readout
+        rows={[...intentCost.byModel]
+          .sort((a, b) => b.usd - a.usd)
+          .map((r, i) => ({ ...r, label: shortModel(r.name), key: i === 0 ? 'steel' : 'light' }))}
+        totalUsd={total.usd}
+      />
       <CostTable title="Per stage" rows={inPipelineOrder(intentCost.byStage, pipeline)} totalUsd={total.usd} testId="cost-tab-stages" />
       <CostTable title="Per agent" rows={intentCost.byAgent} totalUsd={total.usd} testId="cost-tab-agents" />
       <CostTable title="Per modell" rows={intentCost.byModel} totalUsd={total.usd} testId="cost-tab-models" />
