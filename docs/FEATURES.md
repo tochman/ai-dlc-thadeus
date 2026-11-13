@@ -9,7 +9,7 @@ Overview of all epics. Each epic lives in its own file under [features/](feature
 | [EPIC-03](features/epic-03-audit-timeline.md) | Audit Timeline: long histories and precise live updates | 🚧 Built, not released (US-0301, US-0302; 20 000-event timing in Electron pending) |
 | [EPIC-04](features/epic-04-branding-and-desktop.md) | Branding, Look & Desktop Integration: Auctum icon, OS integration, glow and motion | US-0401 🚧 released in v0.1.1 (awaiting verification) · US-0402 📋 Planned · US-0403 📋 Planned (design refresh) |
 | [EPIC-05](features/epic-05-workflow-control.md) | Workflow Control: steer AI-DLC from the console (resume, refresh from GitHub, set up AI-DLC, switch, answer) | 🚧 Built, not released (US-0501–US-0503) · US-0504 framework updates 📋 Planned |
-| [EPIC-06](features/epic-06-feature-docs.md) | Feature Docs: offer FEATURES.md + epic files at setup, and view epics and stories in the console | 📋 Planned (US-0601, US-0602 medium) |
+| [EPIC-06](features/epic-06-feature-docs.md) | Feature Docs: offer FEATURES.md + epic files at setup, and view epics and stories in the console | 🚧 Built, not released (US-0601, US-0602; manual checks in Electron pending) |
 
 ## Story numbering
 

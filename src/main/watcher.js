@@ -12,6 +12,55 @@ function isIgnored(p) {
   return i !== -1 && i < parts.length - 1 && parts[parts.length - 1] !== KEEP_IN_ENGINE;
 }
 
+/** Debounce, but never hold a change longer than maxWaitMs while an agent writes continuously (NFR1). */
+function debounce(flush, debounceMs, maxWaitMs) {
+  let timer = null;
+  let firstAt = 0;
+  return {
+    schedule() {
+      if (!timer) firstAt = Date.now();
+      clearTimeout(timer);
+      timer = setTimeout(() => {
+        timer = null;
+        flush();
+      }, Math.min(debounceMs, Math.max(0, firstAt + maxWaitMs - Date.now())));
+    },
+    cancel: () => clearTimeout(timer)
+  };
+}
+
+/**
+ * Watches a few root-relative paths: files (ending in .md) and folders (their direct .md files), and calls
+ * `onChange()` debounced (EPIC-06 FR2.7). The root itself is watched with everything else ignored, so paths
+ * whose folder does not exist yet are still seen once they appear (chokidar v4 misses those otherwise, F-01).
+ * @param {{root: string, paths: string[], onChange: () => void, onError?: (err: Error) => void, debounceMs?: number, maxWaitMs?: number}} opts
+ */
+export function watchFiles({ root, paths, onChange, onError = console.error, debounceMs = 300, maxWaitMs = 800 }) {
+  const base = path.resolve(root);
+  const targets = paths.map((p) => path.posix.normalize(p.split(path.sep).join('/')));
+  const relOf = (p) => path.relative(base, path.resolve(p)).split(path.sep).join('/');
+  const isFile = (t) => t.toLowerCase().endsWith('.md');
+  const matches = (rel) =>
+    targets.some((t) => (isFile(t) ? rel === t : path.posix.dirname(rel) === t && rel.toLowerCase().endsWith('.md')));
+  const keep = (rel) => rel === '' || targets.some((t) => t === rel || t.startsWith(`${rel}/`)) || matches(rel);
+  const { schedule, cancel } = debounce(onChange, debounceMs, maxWaitMs);
+
+  const depth = Math.max(...targets.map((t) => t.split('/').length + (isFile(t) ? 0 : 1)));
+  const watcher = chokidar.watch(base, { ignoreInitial: true, depth, ignored: (p) => !keep(relOf(p)) });
+  watcher.on('all', (_event, p) => {
+    if (matches(relOf(p))) schedule();
+  });
+  watcher.on('error', onError);
+  const ready = new Promise((resolve) => watcher.once('ready', resolve));
+  return {
+    ready,
+    close: async () => {
+      cancel();
+      await watcher.close();
+    }
+  };
+}
+
 /**
  * @param {{intentsDir: string, ledgerFile?: string,
  *          onChange: (c: {dirNames: string[], indexChanged: boolean, costChanged: boolean}) => void,

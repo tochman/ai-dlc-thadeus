@@ -36,7 +36,15 @@
     "slug": "audit-timeline",
     "dirName": "261113-audit-timeline",
     "scope": "express",
-    "status": "in-flight",
+    "status": "complete",
     "request": "b8b77c80"
+  },
+  {
+    "uuid": "01a1d4bd-5d47-7c3f-9f3a-73b084a96798",
+    "slug": "feature-docs",
+    "dirName": "261113-feature-docs",
+    "scope": "express",
+    "status": "in-flight",
+    "request": "ce6a447a"
   }
 ]

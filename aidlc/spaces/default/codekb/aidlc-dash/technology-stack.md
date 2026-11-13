@@ -5,7 +5,7 @@
 | Teknik | Version | Belägg |
 |---|---|---|
 | JavaScript (ESM) + JSX | – | alla filer under `src/` |
-| Node.js | 22 | `.nvmrc` |
+| Node.js | 22 | `.nvmrc` (från tidigare skanning) |
 | Electron | ^45.3.1 | `package.json` devDependencies |
 | CSS (egen, ingen ramverk) | – | `src/renderer/theme.css` |
 
@@ -14,15 +14,14 @@
 | Bibliotek | Version | Användning |
 |---|---|---|
 | React / React DOM | ^19.3.1 | renderar-UI |
+| @tanstack/react-virtual | 3.14.24 | fönstrad tidslinje (EPIC-03) |
 | @xterm/xterm | ^6.0.0 | terminalemulering i renderaren |
 | @xterm/addon-fit | ^0.11.0 | anpassar terminalstorlek |
 | node-pty | ^1.1.0 | pseudoterminaler i huvudprocessen (native) |
 | chokidar | ^4.0.3 | filbevakning |
 | react-markdown | ^10.1.0 | artefaktrendering |
-| remark-gfm | ^4.0.1 | GFM-tabeller m.m. |
+| remark-gfm | ^4.0.1 | GFM-tabeller, uppgiftslistor m.m. |
 | @fontsource/antonio | ^5.3.0 | rubriktypsnitt |
-
-Inget bibliotek för listvirtualisering eller fönstring (t.ex. react-window, @tanstack/react-virtual) används; tidslinjen är ren React. Relevant för EPIC-03 US-0301, vars AC kräver att ett eventuellt nytt beroende motiveras.
 
 ## Bygg och paketering
 
@@ -32,6 +31,8 @@ Inget bibliotek för listvirtualisering eller fönstring (t.ex. react-window, @t
 | Vite | ^8.3.8 | bundler |
 | @vitejs/plugin-react | ^6.3.0 | JSX |
 | electron-builder | ^26.18.0 | macOS universal `.dmg`, Linux x64 `.deb`, osignerat |
+
+Skript i `package.json`: `dev`, `build`/`build:mac`, `build:linux`, `test` (`vitest run tests/`), `icon`, `postinstall` (`electron-builder install-app-deps && node scripts/fix-pty-perms.cjs`).
 
 ## Test
 
@@ -49,4 +50,4 @@ jsdom gör ingen layout (alla mått är 0), så tester av en virtualiserad lista
 - Mål: macOS (universal) och Ubuntu 22.04+.
 - Krav vid körning: `claude` och `aidlc` i användarens inloggningsskal (installeras inte av appen); `git` för EPIC-05.
 
-Versionerna är intervallen i `package.json` från förra skanningen (inte omlästa i denna fokuserade körning); låsta versioner finns i `package-lock.json` (inte läst). Beroenderelationer: [dependencies.md](dependencies.md).
+Versionerna är intervallen i `package.json`, ytligt omlästa i denna körning; låsta versioner finns i `package-lock.json` (inte läst). Beroenderelationer: [dependencies.md](dependencies.md).
