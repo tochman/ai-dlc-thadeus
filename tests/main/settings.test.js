@@ -52,6 +52,21 @@ describe('project settings', () => {
     expect(JSON.parse(await fs.readFile(FILE, 'utf8'))).not.toHaveProperty('animations');
   });
 
+  it('keeps the fullscreen mode as a boolean and leaves out anything else (EPIC-04 US-0404 FR1.3)', async () => {
+    expect((await getSettings()).fullscreen).toBeUndefined();
+    await setSettings({ fullscreen: true });
+    expect((await getSettings()).fullscreen).toBe(true);
+    await setSettings({ openProjects: ['/p/a'], activeProject: '/p/a' }); // the renderer saving its tabs keeps it
+    expect((await getSettings()).fullscreen).toBe(true);
+    await setSettings({ fullscreen: false });
+    expect((await getSettings()).fullscreen).toBe(false);
+
+    await fs.writeFile(FILE, JSON.stringify({ openProjects: [], fullscreen: 'yes' }));
+    expect('fullscreen' in (await getSettings())).toBe(false);
+    await setSettings({ fullscreen: 1 });
+    expect(JSON.parse(await fs.readFile(FILE, 'utf8'))).not.toHaveProperty('fullscreen');
+  });
+
   it('keeps both changes when two writes run at the same time (FR3.5)', async () => {
     await Promise.all([
       setSettings({ openProjects: ['/p/a', '/p/b'], activeProject: '/p/b' }),

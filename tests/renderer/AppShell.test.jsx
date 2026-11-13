@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { useEffect } from 'react';
-import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 
 // The project view has its own tests; here it only reports what the left arm needs, as the real one does.
 vi.mock('../../src/renderer/ProjectView.jsx', () => ({
@@ -18,12 +18,24 @@ const projectInfo = (root, projectId) => ({
   detection: { isAidlc: true, activeSpace: 'default', spaces: ['default'] }
 });
 let saved;
+let push; // the main -> renderer channels the test fires: fullscreen, menuCommand
 window.bridge = {}; // App keeps this object from import; each test fills in its methods
 const { default: App } = await import('../../src/renderer/App.jsx');
 
 function mockBridge(settings) {
   saved = [];
+  push = {};
+  const listen = (name) => vi.fn((cb) => ((push[name] = cb), () => delete push[name]));
   Object.assign(window.bridge, {
+    isFullscreen: vi.fn(async () => false),
+    toggleFullscreen: vi.fn(async () => {}),
+    onFullscreen: listen('fullscreen'),
+    onMenuCommand: listen('menuCommand'),
+    sendMenuState: vi.fn(async () => {}),
+    readFile: vi.fn(async () => {
+      throw new Error('ENOENT');
+    }),
+    openDocsUrl: vi.fn(async () => {}),
     getSettings: vi.fn(async () => ({ openProjects: [], recentProjects: [], activeProject: null, projectSettings: {}, ...settings })),
     setSettings: vi.fn(async (partial) => saved.push(partial)),
     openProject: vi.fn(async (dir) => projectInfo(dir, dir.endsWith('a') ? 'p1' : 'p2')),
@@ -111,5 +123,53 @@ describe('App shell', () => {
     expect(await within(header).findByText('feat/epic04-living-lcars')).toBeTruthy();
     // The arm's watermark is decoration: hidden, so the header's mark is the only named one outside the splash.
     expect(within(screen.getByTestId('project-tabs')).queryByRole('img')).toBeNull();
+  });
+
+  it('labels the fullscreen block from the window\'s real mode, with aria-pressed, and toggles it on click (US-0404 FR1.2, NFR3)', async () => {
+    await renderApp({});
+    const button = await screen.findByTestId('fullscreen-toggle');
+    expect(button.tagName).toBe('BUTTON'); // reachable with the keyboard
+    expect(button.textContent).toBe('Helskärm');
+    expect(button.getAttribute('aria-pressed')).toBe('false');
+
+    fireEvent.click(button);
+    expect(window.bridge.toggleFullscreen).toHaveBeenCalledTimes(1);
+    expect(button.textContent).toBe('Helskärm'); // only main's event changes it
+
+    act(() => push.fullscreen(true)); // e.g. the green macOS button
+    expect(button.textContent).toBe('Lämna helskärm');
+    expect(button.getAttribute('aria-pressed')).toBe('true');
+    act(() => push.fullscreen(false));
+    expect(button.textContent).toBe('Helskärm');
+    expect(button.getAttribute('aria-pressed')).toBe('false');
+  });
+
+  it('runs a menu command through the same function as the arm button, reports the menu state and ignores unknown ones (US-0404 FR2.4–FR2.6)', async () => {
+    await renderApp({ openProjects: ['/p/aidlc-dash-a'], activeProject: '/p/aidlc-dash-a' });
+    await screen.findByTestId('project-view-switch-features');
+    await waitFor(() => expect(window.bridge.sendMenuState).toHaveBeenLastCalledWith({ hasProject: true, isAidlc: true, showFeatures: true }));
+
+    act(() => push.menuCommand({ command: 'view', view: 'features' }));
+    expect(screen.getByTestId('project-view-switch-features').getAttribute('aria-current')).toBe('page');
+    expect(screen.getByRole('heading', { level: 1 }).textContent).toMatch(/Features/);
+
+    act(() => push.menuCommand({ command: 'appSettings' }));
+    expect(screen.getByTestId('app-settings-animations-full')).toBeTruthy(); // the same dialog as the arm's Inställningar
+
+    act(() => push.menuCommand({ command: 'nope' }));
+    act(() => push.menuCommand({ command: 'view', view: 'elsewhere' }));
+    act(() => push.menuCommand(null));
+    expect(screen.getByTestId('project-view-switch-features').getAttribute('aria-current')).toBe('page');
+
+    // Hjälp without docs/README.md opens AI-DLC's fixed web page in main.
+    await act(async () => push.menuCommand({ command: 'docs' }));
+    await waitFor(() => expect(window.bridge.openDocsUrl).toHaveBeenCalledTimes(1));
+
+    // Cmd/Ctrl+W closes the active project like its ×, and then does nothing.
+    act(() => push.menuCommand({ command: 'closeProject' }));
+    await waitFor(() => expect(window.bridge.closeProject).toHaveBeenCalledWith('p1'));
+    await waitFor(() => expect(window.bridge.sendMenuState).toHaveBeenLastCalledWith({ hasProject: false, isAidlc: false, showFeatures: false }));
+    act(() => push.menuCommand({ command: 'closeProject' }));
+    expect(window.bridge.closeProject).toHaveBeenCalledTimes(1);
   });
 });

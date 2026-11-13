@@ -21,6 +21,7 @@ import { getProjectSettings, getSettings, setProjectSettings, setSettings } from
 import { watchFiles, watchForAidlc, watchIntents } from './watcher.js';
 import { featureWatchPaths, loadFeatures, loadStoryLinks } from './features.js';
 import { killAllSessions, killProjectSessions, killSession, resizeSession, spawnSession, writeSession } from './pty.js';
+import { AIDLC_DOCS_URL, applyMenu, parseMenuState, setMenuState } from './menu.js';
 
 const OPEN_IN_EDITOR_EXT = new Set(['.md', '.json', '.txt', '.yaml', '.yml']);
 // projectId -> { root, space, watcher, setupWatcher, featuresWatcher, featuresKey, sender, models, setupInfo }
@@ -217,7 +218,21 @@ const handlers = {
     spawnSession({ projectId, root: project(projectId).root, kind, cols, rows, sender: event.sender }),
   'pty:write': async (_event, id, data) => writeSession(id, data),
   'pty:resize': async (_event, id, cols, rows) => resizeSession(id, cols, rows),
-  'pty:kill': async (_event, id) => killSession(id)
+  'pty:kill': async (_event, id) => killSession(id),
+  // Fullscreen and the app menu (EPIC-04 US-0404). The new mode reaches the renderer as `window:fullscreen`.
+  'window:toggleFullscreen': async (event) => {
+    const win = BrowserWindow.fromWebContents(event.sender);
+    if (win) win.setFullScreen(!win.isFullScreen());
+  },
+  'window:isFullscreen': async (event) => BrowserWindow.fromWebContents(event.sender)?.isFullScreen() === true,
+  'menu:state': async (event, raw) => {
+    const state = parseMenuState(raw);
+    if (!state) return; // only three booleans are accepted (NFR1)
+    setMenuState(state);
+    applyMenu(BrowserWindow.fromWebContents(event.sender));
+  },
+  // A fixed https address; the renderer never names a URL (NFR1).
+  'app:openDocsUrl': async () => shell.openExternal(AIDLC_DOCS_URL)
 };
 
 export function registerIpc() {

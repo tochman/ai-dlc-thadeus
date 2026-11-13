@@ -8,7 +8,7 @@
 
 **Stories:** US-0401, US-0402, US-0403, US-0404, US-0405
 
-**Status (2026-11-13):** US-0401 🚧 Built and released in v0.1.1, awaiting verification on an installed release. US-0402 🚧 Built, not released. US-0403 🚧 Built, not released. Both were built together (intent `261113-living-lcars`) from the approved mock-up (https://claude.ai/artifact/Ugk4woaPui4R3278LagRnD, copied to `aidlc/spaces/default/intents/261113-living-lcars/inception/requirements-analysis/mockup/`), which settles the exact palette and where it differs from the first draft below.
+**Status (2026-11-13):** US-0401 🚧 Built and released in v0.1.1, awaiting verification on an installed release. US-0402 🚧 Built, not released. US-0403 🚧 Built, not released. US-0404 🚧 Built, not released (intent `261113-fullscreen-menu`). US-0402 and US-0403 were built together (intent `261113-living-lcars`) from the approved mock-up (https://claude.ai/artifact/Ugk4woaPui4R3278LagRnD, copied to `aidlc/spaces/default/intents/261113-living-lcars/inception/requirements-analysis/mockup/`), which settles the exact palette and where it differs from the first draft below.
 
 ---
 
@@ -81,16 +81,16 @@
 - **Notes:** Built together with US-0402 (glow and motion), since both touch `theme.css` and the frame components. Before code, a static mock-up of the project view is reviewed and approved.
 - **Dependencies:** US-0103, US-0104, US-0105, US-0402
 
-**US-0404: Full screen and an app menu of its own** 📋 Planned
+**US-0404: Full screen and an app menu of its own** 🚧 Built, not released (v0.2.0)
 - As a **developer who keeps the console up on a screen of its own**, in order to **give the bridge view the whole screen and not see menu items that mean nothing in this app**, I would like to **a full-screen mode, and a menu with only the commands the app actually has instead of Electron's default menus**.
 - **Epic:** EPIC-04
 - **Priority:** Medium
 - **Complexity:** Low
 - **Background:** The app has no menu of its own today, so Electron's default menus show (on macOS: Edit, View with Reload/Toggle DevTools, Window, Help with Electron links; on Linux a menu bar in the window). Several of them (Reload, Force Reload, Toggle Developer Tools, "Learn More" about Electron) are misleading or risky in a finished app.
 - **Acceptance Criteria:**
-  - [ ] **Full screen:** the person can switch to full screen and back with the menu item "Helskärm", with the standard shortcut (macOS `Ctrl+Cmd+F`, Linux `F11`) and with a button in the app (an LCARS block, for example in the top bar or under "Inställningar"). The view adapts without the frames breaking. On macOS the native full-screen mode is used.
-  - [ ] **The choice is remembered** in the app's own `settings.json`: the app opens in full screen if it was closed in full screen.
-  - [ ] **App menu of its own** (`Menu.setApplicationMenu`) replaces Electron's default. It contains only what the app does:
+  - [x] **Full screen:** the person can switch to full screen and back with the menu item "Helskärm", with the standard shortcut (macOS `Ctrl+Cmd+F`, Linux `F11`) and with a button in the app (an LCARS block, for example in the top bar or under "Inställningar"). The view adapts without the frames breaking. On macOS the native full-screen mode is used.
+  - [x] **The choice is remembered** in the app's own `settings.json`: the app opens in full screen if it was closed in full screen.
+  - [x] **App menu of its own** (`Menu.setApplicationMenu`) replaces Electron's default. It contains only what the app does:
     - **macOS app menu:** "Om Auctum AIDLC Control" (Auctum symbol, version), "Inställningar…" (`Cmd+,`), Hide / Hide others / Show all, "Avsluta Auctum AIDLC Control".
     - **Arkiv / Projekt:** "Öppna projekt…" (`Cmd/Ctrl+O`), "Stäng projekt" (`Cmd/Ctrl+W`), "Projektinställningar…".
     - **Redigera:** Undo, Redo, Cut, Copy, Paste, Select all (needed for text fields and the terminal).
@@ -98,10 +98,10 @@
     - **Terminal:** Claude, Shell, "Starta om flik".
     - **Fönster** (macOS): Minimize, Zoom, Bring all to front.
     - **Hjälp:** "AI-DLC-dokumentation" (opens the project's docs or the AI-DLC repo in the browser) and "Rapportera problem" (the repo's issues page).
-  - [ ] **Removed:** Reload, Force Reload, Toggle Developer Tools and the Electron links are not in the menu in a packaged app. In development (`npm run dev`) a "Utveckling" menu with Reload and DevTools stays available.
-  - [ ] **Linux:** the menu bar is hidden by default (`autoHideMenuBar`) and shown with `Alt`, so the LCARS frame owns the window. All functions are also reachable inside the app.
-  - [ ] Menu labels are in Swedish, with the same names as the left arm. Every menu command is handled by the same function as the button in the app (one code path).
-  - [ ] Menu items that need an open project are disabled when no project is open.
+  - [x] **Removed:** Reload, Force Reload, Toggle Developer Tools and the Electron links are not in the menu in a packaged app. In development (`npm run dev`) a "Utveckling" menu with Reload and DevTools stays available.
+  - [x] **Linux:** the menu bar is hidden by default (`autoHideMenuBar`) and shown with `Alt`, so the LCARS frame owns the window. All functions are also reachable inside the app.
+  - [x] Menu labels are in Swedish, with the same names as the left arm. Every menu command is handled by the same function as the button in the app (one code path).
+  - [x] Menu items that need an open project are disabled when no project is open.
 - **Dependencies:** US-0403 (the left arm and its views), US-0101
 
 **US-0405: Settings view with native file pickers** 📋 Planned (after v0.2.0)

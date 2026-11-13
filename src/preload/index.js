@@ -46,5 +46,12 @@ contextBridge.exposeInMainWorld('bridge', {
   onProjectDetected: subscribe('project:detected'),
   onWatchError: subscribe('project:watchError'),
   onPtyData: subscribe('pty:data'),
-  onPtyExit: subscribe('pty:exit')
+  onPtyExit: subscribe('pty:exit'),
+  // Fullscreen and the app menu (EPIC-04 US-0404). menu:command only ever goes from main to the renderer.
+  toggleFullscreen: call('window:toggleFullscreen'),
+  isFullscreen: call('window:isFullscreen'),
+  onFullscreen: subscribe('window:fullscreen'),
+  sendMenuState: call('menu:state'),
+  onMenuCommand: subscribe('menu:command'),
+  openDocsUrl: call('app:openDocsUrl')
 });

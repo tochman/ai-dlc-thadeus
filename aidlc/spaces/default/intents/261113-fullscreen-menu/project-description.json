@@ -1,0 +1,1 @@
+"Implementera US-0404 enligt docs/features/epic-04-branding-and-desktop.md: helskärmsläge (meny, kortkommando, knapp i appen, kom ihåg valet) och en egen appmeny som ersätter Electrons standardmenyer (inga Reload/DevTools/Electron-länkar i paketerad app; dold menyrad på Linux)."

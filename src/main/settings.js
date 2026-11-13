@@ -29,6 +29,8 @@ function sanitize(raw) {
     activeProject: typeof raw?.activeProject === 'string' ? raw.activeProject : null,
     // Left out when missing or invalid, so the renderer's default (Full, or Dämpad under reduced motion) applies.
     ...(ANIMATIONS.has(raw?.animations) ? { animations: raw.animations } : {}),
+    // The window's last mode, saved by main (EPIC-04 US-0404 FR1.3); left out unless it is a boolean.
+    ...(typeof raw?.fullscreen === 'boolean' ? { fullscreen: raw.fullscreen } : {}),
     // ponytail: capped at 200 projects, oldest kept; prune closed projects if that ever matters.
     projectSettings: Object.fromEntries(
       Object.entries(projects)
