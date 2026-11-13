@@ -1,6 +1,7 @@
-// Keeps the feature docs honest (project rule: feature docs are updated in Deployment Execution, before the PR).
-// CI runs this on every PR, so a story that was built but still says 📋 Planned, or an epic status line /
-// FEATURES.md row that doesn't mention a built story with its marker, blocks the merge.
+// Keeps the feature docs honest (project rule: feature docs are updated in Deployment Execution, before the PR,
+// and a delivered story never shows as in progress). CI runs this on every PR, so the merge is blocked when:
+// a built story still says 📋 Planned, a delivered story (its intent is complete) isn't ✅ Done, or an epic
+// status line / FEATURES.md row doesn't mention a 🚧/✅ story with its marker.
 import { describe, expect, it } from 'vitest';
 import { readFileSync, readdirSync, existsSync } from 'node:fs';
 import path from 'node:path';
@@ -30,10 +31,11 @@ export function mentionsWithStatus(text, id, status) {
 
 /**
  * @param {{overview: string, epics: Record<string, string>, built: Set<string>}} docs
- *   epics: link → markdown; built: story ids whose intent has finished Code Generation
+ *   epics: link → markdown; built: story ids whose intent has finished Code Generation;
+ *   delivered: story ids whose intent is complete (merged)
  * @returns {string[]} problems, empty when the docs are consistent
  */
-export function checkFeatureDocs({ overview, epics, built }) {
+export function checkFeatureDocs({ overview, epics, built, delivered = new Set() }) {
   const problems = [];
   for (const row of parseOverview(overview).epics) {
     const md = epics[row.link];
@@ -45,6 +47,7 @@ export function checkFeatureDocs({ overview, epics, built }) {
     const tracked = epic.stories.filter((s) => s.status); // ➡️ moved and unmarked stories are skipped
     const uniform = tracked.length > 0 && tracked.every((s) => s.status === tracked[0].status);
     for (const s of tracked) {
+      if (delivered.has(s.id) && s.status !== 'done') problems.push(`${s.id} is delivered (its intent is complete) but isn't marked ✅ Done`);
       if (s.status === 'planned') {
         if (built.has(s.id)) problems.push(`${s.id} is built (its intent finished Code Generation) but still says 📋 Planned`);
         continue;
@@ -62,9 +65,12 @@ export function checkFeatureDocs({ overview, epics, built }) {
   return problems;
 }
 
-function builtStories() {
+function intentStories() {
   const built = new Set();
-  if (!existsSync(INTENTS)) return built;
+  const delivered = new Set();
+  if (!existsSync(INTENTS)) return { built, delivered };
+  const index = existsSync(path.join(INTENTS, 'intents.json')) ? JSON.parse(readFileSync(path.join(INTENTS, 'intents.json'), 'utf8')) : [];
+  const complete = new Set(index.filter((e) => e.status === 'complete').map((e) => e.dirName));
   for (const dir of readdirSync(INTENTS, { withFileTypes: true }).filter((d) => d.isDirectory())) {
     const base = path.join(INTENTS, dir.name);
     const stateFile = path.join(base, 'aidlc-state.md');
@@ -72,21 +78,22 @@ function builtStories() {
     if (!existsSync(stateFile) || !existsSync(descFile)) continue;
     const state = parseState(readFileSync(stateFile, 'utf8'));
     const codeGen = state.phases.flatMap((p) => p.stages).find((st) => st.slug === 'code-generation');
-    if (codeGen?.status !== 'done') continue;
-    for (const id of storyIdsWithRanges(JSON.parse(readFileSync(descFile, 'utf8')))) built.add(id);
+    const ids = storyIdsWithRanges(JSON.parse(readFileSync(descFile, 'utf8')));
+    if (codeGen?.status === 'done') ids.forEach((id) => built.add(id));
+    if (complete.has(dir.name)) ids.forEach((id) => delivered.add(id));
   }
-  return built;
+  return { built, delivered };
 }
 
 describe('feature docs status', () => {
-  it('this repo: built stories are marked, and epic status lines and FEATURES.md rows match the story markers', () => {
+  it('this repo: built and delivered stories are marked, and epic status lines and FEATURES.md rows match', () => {
     const overview = readFileSync(path.join(ROOT, 'docs/FEATURES.md'), 'utf8');
     const epics = {};
     for (const row of parseOverview(overview).epics) {
       const file = path.join(ROOT, 'docs', row.link);
       if (existsSync(file)) epics[row.link] = readFileSync(file, 'utf8');
     }
-    expect(checkFeatureDocs({ overview, epics, built: builtStories() })).toEqual([]);
+    expect(checkFeatureDocs({ overview, epics, ...intentStories() })).toEqual([]);
   });
 
   const overview = '| Epic | Topic | Status |\n|---|---|---|\n| [EPIC-09](e.md) | T | 📋 Planned (US-0901) |\n';
@@ -100,6 +107,12 @@ describe('feature docs status', () => {
   it('fails when the epic status line and the FEATURES row lag behind a built story', () => {
     const problems = checkFeatureDocs({ overview, epics: { 'e.md': epic('🚧 Built', '📋 Planned.') }, built: new Set() });
     expect(problems).toHaveLength(2);
+  });
+
+  it('fails when a delivered story is still marked in progress', () => {
+    const ov = '| Epic | Topic | Status |\n|---|---|---|\n| [EPIC-09](e.md) | T | 🚧 US-0901 built |\n';
+    const problems = checkFeatureDocs({ overview: ov, epics: { 'e.md': epic('🚧 Built', '🚧 US-0901 built.') }, built: new Set(), delivered: new Set(['US-0901']) });
+    expect(problems).toEqual([expect.stringContaining('US-0901 is delivered')]);
   });
 
   it('passes ranges and uniform released epics', () => {
