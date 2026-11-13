@@ -2,6 +2,7 @@
 // content is sent to the renderer as `menu:command` and runs the same function as the arm's button (FR2.4).
 import { app, BrowserWindow, Menu, shell } from 'electron';
 import { APP_FULL_NAME, APP_NAME, APP_TAGLINE, APP_VENDOR } from '../shared/appName.js';
+import { t } from '../shared/i18n.js';
 
 // [assumption] AI-DLC's web page; the fallback when the project has no docs/README.md (FR2.1 Hjälp).
 export const AIDLC_DOCS_URL = 'https://github.com/awslabs/aidlc-workflows';
@@ -34,102 +35,102 @@ export function buildMenuTemplate({ isMac, isPackaged, state, fullscreen, send, 
   const isAidlc = hasProject && state?.isAidlc === true;
   const showFeatures = hasProject && state?.showFeatures === true;
   const cmd = (command, args = {}) => () => send({ command, ...args });
-  const appSettings = { label: 'Inställningar…', accelerator: 'CmdOrCtrl+,', click: cmd('appSettings') };
+  const appSettings = { label: t('menu.settings'), accelerator: 'CmdOrCtrl+,', click: cmd('appSettings') };
 
   const template = [];
   if (isMac) {
     template.push({
       label: APP_NAME,
       submenu: [
-        { role: 'about', label: `Om ${APP_NAME}` },
+        { role: 'about', label: t('menu.about', { app: APP_NAME }) },
         sep,
         appSettings,
         sep,
-        { role: 'hide', label: `Göm ${APP_NAME}` },
-        { role: 'hideOthers', label: 'Göm övriga' },
-        { role: 'unhide', label: 'Visa alla' },
+        { role: 'hide', label: t('menu.hide', { app: APP_NAME }) },
+        { role: 'hideOthers', label: t('menu.hideOthers') },
+        { role: 'unhide', label: t('menu.unhide') },
         sep,
-        { role: 'quit', label: `Avsluta ${APP_NAME}` }
+        { role: 'quit', label: t('menu.quitApp', { app: APP_NAME }) }
       ]
     });
   }
   template.push(
     {
-      label: 'Arkiv',
+      label: t('menu.file'),
       submenu: [
-        { label: 'Öppna projekt…', accelerator: 'CmdOrCtrl+O', click: cmd('openProject') },
+        { label: t('menu.openProject'), accelerator: 'CmdOrCtrl+O', click: cmd('openProject') },
         // Closes the active project, never the window (FR2.6).
-        { label: 'Stäng projekt', accelerator: 'CmdOrCtrl+W', enabled: hasProject, click: cmd('closeProject') },
-        { label: 'Projektinställningar…', enabled: hasProject, click: cmd('projectSettings') },
-        ...(isMac ? [] : [sep, appSettings, sep, { role: 'quit', label: 'Avsluta', accelerator: 'Ctrl+Q' }])
+        { label: t('menu.closeProject'), accelerator: 'CmdOrCtrl+W', enabled: hasProject, click: cmd('closeProject') },
+        { label: t('menu.projectSettings'), enabled: hasProject, click: cmd('projectSettings') },
+        ...(isMac ? [] : [sep, appSettings, sep, { role: 'quit', label: t('menu.quit'), accelerator: 'Ctrl+Q' }])
       ]
     },
     {
       // Without these roles copy and paste stop working in fields and the terminal on macOS.
-      label: 'Redigera',
+      label: t('menu.edit'),
       submenu: [
-        { role: 'undo', label: 'Ångra' },
-        { role: 'redo', label: 'Gör om' },
+        { role: 'undo', label: t('menu.undo') },
+        { role: 'redo', label: t('menu.redo') },
         sep,
-        { role: 'cut', label: 'Klipp ut' },
-        { role: 'copy', label: 'Kopiera' },
-        { role: 'paste', label: 'Klistra in' },
-        { role: 'selectAll', label: 'Markera allt' }
+        { role: 'cut', label: t('menu.cut') },
+        { role: 'copy', label: t('menu.copy') },
+        { role: 'paste', label: t('menu.paste') },
+        { role: 'selectAll', label: t('menu.selectAll') }
       ]
     },
     {
-      label: 'Visa',
+      label: t('menu.view'),
       submenu: [
-        { label: 'Intents', enabled: hasProject, click: cmd('view', { view: 'intents' }) },
-        { label: 'Features', visible: showFeatures, enabled: showFeatures, click: cmd('view', { view: 'features' }) },
-        { label: 'Kostnad', enabled: isAidlc, click: cmd('panel', { panel: 'cost' }) },
-        { label: 'Github', enabled: isAidlc, click: cmd('panel', { panel: 'github' }) },
+        { label: t('menu.intents'), enabled: hasProject, click: cmd('view', { view: 'intents' }) },
+        { label: t('menu.features'), visible: showFeatures, enabled: showFeatures, click: cmd('view', { view: 'features' }) },
+        { label: t('menu.cost'), enabled: isAidlc, click: cmd('panel', { panel: 'cost' }) },
+        { label: t('menu.github'), enabled: isAidlc, click: cmd('panel', { panel: 'github' }) },
         sep,
         {
-          label: 'Helskärm',
+          label: t('menu.fullscreen'),
           type: 'checkbox',
           checked: fullscreen === true,
           accelerator: isMac ? 'Ctrl+Cmd+F' : 'F11',
           click: () => actions.toggleFullscreen()
         },
         sep,
-        { role: 'zoomIn', label: 'Zooma in' },
-        { role: 'zoomOut', label: 'Zooma ut' },
-        { role: 'resetZoom', label: 'Återställ zoom' }
+        { role: 'zoomIn', label: t('menu.zoomIn') },
+        { role: 'zoomOut', label: t('menu.zoomOut') },
+        { role: 'resetZoom', label: t('menu.resetZoom') }
       ]
     },
     {
-      label: 'Terminal',
+      label: t('menu.terminal'),
       submenu: [
-        { label: 'Claude', enabled: hasProject, click: cmd('terminal', { action: 'claude' }) },
-        { label: 'Shell', enabled: hasProject, click: cmd('terminal', { action: 'shell' }) },
-        { label: 'Starta om flik', enabled: hasProject, click: cmd('terminal', { action: 'restart' }) }
+        { label: t('menu.claude'), enabled: hasProject, click: cmd('terminal', { action: 'claude' }) },
+        { label: t('menu.shell'), enabled: hasProject, click: cmd('terminal', { action: 'shell' }) },
+        { label: t('menu.restartTab'), enabled: hasProject, click: cmd('terminal', { action: 'restart' }) }
       ]
     }
   );
   if (isMac) {
     template.push({
-      label: 'Fönster',
+      label: t('menu.window'),
       role: 'windowMenu',
-      submenu: [{ role: 'minimize', label: 'Minimera' }, { role: 'zoom', label: 'Zooma' }, sep, { role: 'front', label: 'Lägg alla främst' }]
+      submenu: [{ role: 'minimize', label: t('menu.minimize') }, { role: 'zoom', label: t('menu.zoom') }, sep, { role: 'front', label: t('menu.front') }]
     });
   }
   template.push({
-    label: 'Hjälp',
+    label: t('menu.help'),
     role: 'help',
     submenu: [
-      { label: 'AI-DLC-dokumentation', click: cmd('docs') },
-      { label: 'Rapportera problem', click: () => actions.reportIssue() }
+      { label: t('menu.docs'), click: cmd('docs') },
+      { label: t('menu.reportIssue'), click: () => actions.reportIssue() }
     ]
   });
   // Reload and DevTools only while developing; the packaged app has neither (FR2.2).
   if (!isPackaged) {
     template.push({
-      label: 'Utveckling',
+      label: t('menu.develop'),
       submenu: [
-        { role: 'reload', label: 'Ladda om' },
-        { role: 'forceReload', label: 'Tvinga omladdning' },
-        { role: 'toggleDevTools', label: 'Utvecklarverktyg' }
+        { role: 'reload', label: t('menu.reload') },
+        { role: 'forceReload', label: t('menu.forceReload') },
+        { role: 'toggleDevTools', label: t('menu.devTools') }
       ]
     });
   }

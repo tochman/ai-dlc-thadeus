@@ -1,7 +1,10 @@
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import i18n from '../../src/shared/i18n.js';
 
 vi.mock('electron', () => ({ app: {}, BrowserWindow: {}, Menu: {}, shell: {} }));
 const { buildMenuTemplate, parseMenuState } = await import('../../src/main/menu.js');
+
+afterEach(() => i18n.changeLanguage('sv'));
 
 const ALL_ON = { hasProject: true, isAidlc: true, showFeatures: true };
 
@@ -93,5 +96,20 @@ describe('app menu (EPIC-04 US-0404)', () => {
     expect(arkiv).toEqual(['Öppna projekt…', 'Stäng projekt', 'Projektinställningar…', 'Inställningar…', 'Avsluta']);
     expect(byLabel(linux, 'Avsluta').accelerator).toBe('Ctrl+Q');
     expect(roles(linux)).toEqual(expect.arrayContaining(['undo', 'redo', 'cut', 'copy', 'paste', 'selectAll']));
+  });
+
+  it('is built in the current language, so a rebuild after a switch shows English (EPIC-07 US-0701 FR1.2, FR4.4)', async () => {
+    await i18n.changeLanguage('en');
+    const mac = build({ isMac: true, isPackaged: false }).template;
+    expect(mac.map((m) => m.label)).toEqual(['T.H.A.D.E.U.S.', 'File', 'Edit', 'View', 'Terminal', 'Window', 'Help', 'Develop']);
+    expect(byLabel(mac, 'About T.H.A.D.E.U.S.').role).toBe('about');
+    expect(byLabel(mac, 'Open project…').accelerator).toBe('CmdOrCtrl+O');
+    byLabel(mac, 'Close project').click();
+    const file = byLabel(build({ isMac: false }).template, 'File').submenu.map((i) => i.label).filter(Boolean);
+    expect(file).toEqual(['Open project…', 'Close project', 'Project settings…', 'Settings…', 'Quit']);
+    expect(items(mac).filter((i) => i.label).every((i) => !/[åäöÅÄÖ]/.test(i.label))).toBe(true);
+
+    await i18n.changeLanguage('sv');
+    expect(build().template.map((m) => m.label)).toContain('Arkiv');
   });
 });

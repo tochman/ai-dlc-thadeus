@@ -3,7 +3,8 @@ import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 
 const terminal = { state: vi.fn(() => 'idle'), type: vi.fn(), sequence: vi.fn() };
 vi.mock('../../src/renderer/TerminalContext.jsx', () => ({ useTerminal: () => terminal }));
-const { default: ResumeButton, BUSY_MESSAGE } = await import('../../src/renderer/ResumeButton.jsx');
+const { default: ResumeButton } = await import('../../src/renderer/ResumeButton.jsx');
+const BUSY_MESSAGE = 'Claude arbetar — vänta eller avbryt först'; // sv.json intents.resume.busy (EPIC-07)
 
 // Same shape as an intent row from loadIntentList.
 const intent = { dirName: '261113-workflow-control', slug: 'workflow-control', status: 'in-flight', active: true };

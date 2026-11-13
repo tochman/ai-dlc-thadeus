@@ -1,21 +1,14 @@
 // "Uppdatera från GitHub" in the sidebar (US-0502, FR3). The app only reads from git; every command that
 // changes the working tree is typed into the shell tab without Enter, for the person to run (NFR1).
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useTerminal } from './TerminalContext.jsx';
 import { FileContent } from './ArtifactReader.jsx';
 
 const WORKING_MS = 5 * 60 * 1000;
-export const WAIT_MESSAGE = 'Vänta tills AI-DLC-steget är klart eller parkera arbetet först';
 export const PULL = { rebase: 'git pull --rebase --autostash', merge: 'git pull --no-rebase --autostash' };
 export const FROM_MAIN = { rebase: 'git fetch && git rebase origin/main', merge: 'git fetch && git merge origin/main' };
-const STRATEGY_TEXT = {
-  rebase: 'Rebase lägger dina lokala commits ovanpå fjärrens, så historiken blir rak.',
-  merge: 'Merge förenar båda sidorna i en merge-commit och skriver inte om något.'
-};
-const CONFLICT_HELP = {
-  'intents.json': 'Behåll raderna från båda sidor: varje intent är en egen rad.',
-  'aidlc-state.md': 'Välj den sida som körde stegen senast, eller be Claude i claude-fliken att lösa konflikten.'
-};
+const CONFLICT_HELP_KEY = { 'intents.json': 'github.conflictIntents', 'aidlc-state.md': 'github.conflictState' };
 
 const errorText = (err) => String(err?.message ?? err).replace(/^Error invoking remote method '[^']+': (Error: )?/, '');
 const baseName = (rel) => rel.slice(rel.lastIndexOf('/') + 1);
@@ -26,22 +19,23 @@ function useRecent(at, windowMs) {
   useEffect(() => {
     const left = at ? at + windowMs - Date.now() : 0;
     if (left <= 0) return undefined;
-    const t = setTimeout(() => tick((n) => n + 1), left);
-    return () => clearTimeout(t);
+    const timer = setTimeout(() => tick((n) => n + 1), left);
+    return () => clearTimeout(timer);
   }, [at, windowMs]);
   return !!at && Date.now() - at < windowMs;
 }
 
 function Choice({ commands, disabled, onPick, testId }) {
+  const { t } = useTranslation();
   return (
     <div className="refresh-choice" data-testid={testId}>
       {['rebase', 'merge'].map((k) => (
         <div key={k} className="refresh-choice-row">
           <button className="btn" disabled={disabled} onClick={() => onPick(commands[k])} data-testid={`${testId}-${k}`}>
-            {k === 'rebase' ? 'Rebase' : 'Merge'}
+            {t(`github.${k}`)}
           </button>
           <span className="muted">
-            {STRATEGY_TEXT[k]} <code>{commands[k]}</code>
+            {t(`github.${k}Text`)} <code>{commands[k]}</code>
           </span>
         </div>
       ))}
@@ -50,33 +44,32 @@ function Choice({ commands, disabled, onPick, testId }) {
 }
 
 function StatusLine({ status, working }) {
+  const { t } = useTranslation();
   return (
     <dl className="refresh-status" data-testid="refresh-panel-status">
       <div>
-        <dt>Gren</dt>
+        <dt>{t('github.branch')}</dt>
         <dd>{status.branch ?? '–'}</dd>
       </div>
       <div>
-        <dt>Jämförs med</dt>
-        <dd>{status.upstream ?? 'ingen fjärr'}</dd>
+        <dt>{t('github.comparedWith')}</dt>
+        <dd>{status.upstream ?? t('github.noRemote')}</dd>
       </div>
       {status.upstream && (
         <div>
-          <dt>Före / efter</dt>
+          <dt>{t('github.aheadBehind')}</dt>
           <dd>
             {status.ahead} / {status.behind}
           </dd>
         </div>
       )}
       <div>
-        <dt>Ej committat</dt>
-        <dd>
-          aidlc/ {status.dirtyAidlc} · övrigt {status.dirtyOther}
-        </dd>
+        <dt>{t('github.uncommitted')}</dt>
+        <dd>{t('github.dirty', { aidlc: status.dirtyAidlc, other: status.dirtyOther })}</dd>
       </div>
       <div>
-        <dt>AI-DLC</dt>
-        <dd>{working ? 'arbetar' : 'vilar'}</dd>
+        <dt>{t('github.aidlc')}</dt>
+        <dd>{working ? t('github.working') : t('github.resting')}</dd>
       </div>
     </dl>
   );
@@ -87,6 +80,7 @@ function StatusLine({ status, working }) {
  *   open/onToggle let the left arm's "Github" block drive the panel (FR2.2); without them it keeps its own state
  */
 export default function RefreshPanel({ projectId, space, lastIntentChangeAt, open: openProp, onToggle }) {
+  const { t } = useTranslation();
   const terminal = useTerminal();
   const [ownOpen, setOwnOpen] = useState(false);
   const open = openProp ?? ownOpen;
@@ -109,7 +103,7 @@ export default function RefreshPanel({ projectId, space, lastIntentChangeAt, ope
     try {
       await fn();
     } catch (err) {
-      setError(`Git-kommandot misslyckades: ${errorText(err)}`); // shown here, never in the shared banner (NFR2)
+      setError(t('github.failed', { error: errorText(err) })); // shown here, never in the shared banner (NFR2)
     } finally {
       setBusy(false);
     }
@@ -136,20 +130,20 @@ export default function RefreshPanel({ projectId, space, lastIntentChangeAt, ope
     try {
       setRemoteFile({ rel, content: await bridge.showRemoteFile(projectId, changes.ref, rel) });
     } catch (err) {
-      setRemoteFile({ rel, error: `Filen kunde inte läsas från ${changes.ref}: ${errorText(err)}` });
+      setRemoteFile({ rel, error: t('github.remoteFileFailed', { ref: changes.ref, error: errorText(err) }) });
     }
   }
 
   const typeInShell = (cmd) => terminal?.type('shell', cmd, { submit: false });
-  const badge = changes?.aidlcCommits ? `${changes.aidlcCommits} nya ändringar i AI-DLC på ${changes.ref}` : null;
+  const badge = changes?.aidlcCommits ? t('github.badge', { n: changes.aidlcCommits, ref: changes.ref }) : null;
 
   return (
     <section className="refresh-panel" data-testid="refresh-panel">
       <button className="cost-panel-toggle lcars-heading" onClick={toggle} aria-expanded={open} data-testid="refresh-panel-toggle">
-        <span className="section-title">GitHub</span>
+        <span className="section-title">{t('github.title')}</span>
         <span className="lcars-heading-line" aria-hidden="true" />
-        {badge && <span className="tag tag-active">{changes.aidlcCommits} nya</span>}
-        <span className="lcars-heading-meta">Gren · fjärr</span>
+        {badge && <span className="tag tag-active">{t('github.newCount', { n: changes.aidlcCommits })}</span>}
+        <span className="lcars-heading-meta">{t('github.meta')}</span>
         <span className="toggle-arrow" aria-hidden="true">
           {open ? '▾' : '▸'}
         </span>
@@ -161,26 +155,24 @@ export default function RefreshPanel({ projectId, space, lastIntentChangeAt, ope
               {error}
             </p>
           )}
-          {status && !status.isRepo && <p className="muted">Mappen är inte ett git-repo, så det finns inget att hämta.</p>}
+          {status && !status.isRepo && <p className="muted">{t('github.notRepo')}</p>}
           {status?.isRepo && (
             <>
               <StatusLine status={status} working={working} />
               <button className="btn btn-accent" onClick={refresh} disabled={busy} data-testid="refresh-panel-update">
-                {busy ? 'Hämtar…' : 'Uppdatera'}
+                {busy ? t('github.fetching') : t('github.update')}
               </button>
-              {!status.upstream && (
-                <p className="muted">Ingen fjärr att jämföra med: grenen har ingen upstream och origin/main finns inte.</p>
-              )}
+              {!status.upstream && <p className="muted">{t('github.noUpstream')}</p>}
               {changes && (
                 <p className="refresh-badge" data-testid="refresh-panel-badge">
-                  {badge ?? `Inget nytt i AI-DLC på ${changes.ref}.`}
+                  {badge ?? t('github.nothingNew', { ref: changes.ref })}
                   <br />
-                  <span className="muted">{changes.otherFiles.length} ändrade filer utanför aidlc/ kommer också in.</span>
+                  <span className="muted">{t('github.otherFiles', { n: changes.otherFiles.length })}</span>
                 </p>
               )}
               {changes && (changes.aidlcFiles.length > 0 || changes.newIntents.length > 0) && (
                 <button className="btn" onClick={() => setDetails((d) => !d)} aria-expanded={details} data-testid="refresh-panel-details">
-                  {details ? 'Dölj' : 'Visa'}
+                  {details ? t('common.hide') : t('common.show')}
                 </button>
               )}
               {details && changes && (
@@ -189,12 +181,12 @@ export default function RefreshPanel({ projectId, space, lastIntentChangeAt, ope
                     <ul className="refresh-list">
                       {changes.newIntents.map((i) => (
                         <li key={i.dirName}>
-                          {i.slug ?? i.dirName} <span className="tag tag-live">på GitHub</span>
+                          {i.slug ?? i.dirName} <span className="tag tag-live">{t('github.onGithub')}</span>
                         </li>
                       ))}
                     </ul>
                   )}
-                  <p className="muted">{changes.auditLines} nya rader i audit-loggarna.</p>
+                  <p className="muted">{t('github.auditLines', { n: changes.auditLines })}</p>
                   <ul className="refresh-list">
                     {changes.aidlcFiles.map((rel) => (
                       <li key={rel}>
@@ -207,11 +199,9 @@ export default function RefreshPanel({ projectId, space, lastIntentChangeAt, ope
                   {remoteFile && (
                     <div className="refresh-remote-file">
                       <div className="file-actions">
-                        <code className="file-path">
-                          {changes.ref}:{remoteFile.rel} (skrivskyddad)
-                        </code>
+                        <code className="file-path">{t('github.readOnlyFile', { ref: changes.ref, rel: remoteFile.rel })}</code>
                         <button className="btn" onClick={() => setRemoteFile(null)}>
-                          Stäng
+                          {t('common.close')}
                         </button>
                       </div>
                       {remoteFile.error && <p className="refresh-error">{remoteFile.error}</p>}
@@ -224,17 +214,17 @@ export default function RefreshPanel({ projectId, space, lastIntentChangeAt, ope
                 <div className="refresh-actions">
                   {working && (
                     <p className="refresh-wait" role="status">
-                      {WAIT_MESSAGE}
+                      {t('github.wait')}
                     </p>
                   )}
                   {status.tracking && (
                     <button className="btn" disabled={working} onClick={() => setChoose((c) => (c === 'pull' ? null : 'pull'))} data-testid="refresh-panel-pull">
-                      Hämta in
+                      {t('github.pull')}
                     </button>
                   )}
                   {status.branch !== 'main' && (
                     <button className="btn" disabled={working} onClick={() => setChoose((c) => (c === 'main' ? null : 'main'))} data-testid="refresh-panel-from-main">
-                      Uppdatera från main
+                      {t('github.fromMain')}
                     </button>
                   )}
                   {choose && !working && (
@@ -243,20 +233,23 @@ export default function RefreshPanel({ projectId, space, lastIntentChangeAt, ope
                 </div>
               )}
               <button className="btn btn-quiet" onClick={() => act(async () => setConflicts(await bridge.getConflicts(projectId)))} data-testid="refresh-panel-conflicts">
-                Visa konflikter
+                {t('github.showConflicts')}
               </button>
-              {conflicts && conflicts.length === 0 && <p className="muted">Inga konflikter.</p>}
+              {conflicts && conflicts.length === 0 && <p className="muted">{t('github.noConflicts')}</p>}
               {conflicts && conflicts.length > 0 && (
                 <div className="refresh-conflicts" data-testid="refresh-panel-conflict-list">
                   <ul className="refresh-list">
-                    {conflicts.map((rel) => (
-                      <li key={rel}>
-                        <code>{rel}</code>
-                        {CONFLICT_HELP[baseName(rel)] && <span className="muted"> {CONFLICT_HELP[baseName(rel)]}</span>}
-                      </li>
-                    ))}
+                    {conflicts.map((rel) => {
+                      const help = CONFLICT_HELP_KEY[baseName(rel)];
+                      return (
+                        <li key={rel}>
+                          <code>{rel}</code>
+                          {help && <span className="muted"> {t(help)}</span>}
+                        </li>
+                      );
+                    })}
                   </ul>
-                  <p className="muted">Appen löser inga konflikter själv. Vill du avbryta, skriv kommandot i shell-fliken:</p>
+                  <p className="muted">{t('github.abortHelp')}</p>
                   <button className="btn btn-quiet" onClick={() => typeInShell('git rebase --abort')}>
                     git rebase --abort
                   </button>

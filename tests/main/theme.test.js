@@ -52,3 +52,20 @@ describe('theme tokens', () => {
     expect(main).toMatch(/backgroundColor: '#05060a'/); // --bg, so the window never flashes another colour
   });
 });
+
+const rule = (selector) => css.match(new RegExp(`(?:^|\\n)${selector.replace(/[.-]/g, '\\$&')}\\s*\\{([^}]*)\\}`))?.[1] ?? '';
+
+describe('LCARS labels in both languages (EPIC-07 US-0701 FR8)', () => {
+  it('lets a long word wrap or shrink inside its block instead of overflowing it (FR8.1, FR8.2)', () => {
+    const block = rule('.lcars-block');
+    expect(block).toMatch(/min-width: 0;/);
+    expect(block).toMatch(/overflow-wrap: anywhere;/);
+    expect(block).toMatch(/hyphens: auto;/);
+    const label = rule('.lcars-label');
+    expect(label).toMatch(/min-width: 0;/);
+    expect(label).toMatch(/overflow-wrap: anywhere;/);
+    // The fixed-width tabs shrink their text before it wraps.
+    expect(rule('.lcars-block--tab')).toMatch(/font-size: clamp\(/);
+    expect(rule('.lcars-block--tab')).toMatch(/max-width: 132px;/);
+  });
+});

@@ -3,6 +3,7 @@
 import { runFixed } from './exec.js';
 import { isGitRepo } from './git.js';
 import { listDir } from './projectAccess.js';
+import { t } from '../shared/i18n.js';
 
 const OTHER_HARNESSES = ['.kiro', '.codex', '.cursor', '.aidlc'];
 export const PRESETS = ['thorough', 'balanced', 'minimal'];
@@ -11,7 +12,7 @@ const PLUGIN_NAME = /^[a-z0-9-]+$/;
 const BASE_COMMAND = 'aidlc --project-dir . config --harness claude --yes';
 const COUNT_KEYS = ['create', 'update', 'merge', 'preserve', 'remove', 'conflict'];
 
-const errorText = (err) => (err.killed ? 'timeout efter 10 s' : err.message);
+const errorText = (err) => (err.killed ? t('errors.timeout') : err.message);
 
 /** Reads the counts from "create=N update=N ... conflict=N", lines that name a conflicting file, and "Note:" lines. */
 export function parsePreview(raw) {
@@ -33,10 +34,10 @@ async function readPlugins(root, exec) {
   try {
     const out = JSON.parse(await runFixed('aidlc', ['config', 'project', '--show', '--json'], { cwd: root, exec }));
     const installed = out?.data?.installedPlugins;
-    if (out?.ok !== true || !Array.isArray(installed)) throw new Error('svaret saknar data.installedPlugins');
+    if (out?.ok !== true || !Array.isArray(installed)) throw new Error(t('errors.missingField', { field: 'data.installedPlugins' }));
     return { plugins: installed.filter((p) => typeof p === 'string' && PLUGIN_NAME.test(p)) };
   } catch (err) {
-    return { plugins: [], warning: `Plugins kunde inte läsas: ${errorText(err)}` };
+    return { plugins: [], warning: t('errors.pluginsFailed', { error: errorText(err) }) };
   }
 }
 
@@ -60,7 +61,7 @@ export async function getSetupInfo(root, { exec } = {}) {
   try {
     preview = parsePreview(await runFixed('aidlc', ['--project-dir', root, 'config', '--harness', 'claude', '--dry-run'], { cwd: root, exec }));
   } catch (err) {
-    preview = { ...parsePreview(''), raw: String(err.stdout ?? ''), error: `Förhandsvisningen misslyckades: ${errorText(err)}` };
+    preview = { ...parsePreview(''), raw: String(err.stdout ?? ''), error: t('errors.previewFailed', { error: errorText(err) }) };
   }
   return { ...base, aidlc: { installed: true, version }, preview, ...(await readPlugins(root, exec)) };
 }
@@ -70,11 +71,11 @@ export async function getSetupInfo(root, { exec } = {}) {
  * (the list getSetupInfo read) and the preset one of PRESETS; anything else throws.
  */
 export function buildSetupCommand({ needsGit = false, plugins = [], preset = null } = {}, availablePlugins = []) {
-  if (!Array.isArray(plugins)) throw new Error('plugins måste vara en lista');
+  if (!Array.isArray(plugins)) throw new Error(t('errors.pluginsNotList'));
   for (const p of plugins) {
-    if (typeof p !== 'string' || !PLUGIN_NAME.test(p) || !availablePlugins.includes(p)) throw new Error(`Okänt plugin: ${p}`);
+    if (typeof p !== 'string' || !PLUGIN_NAME.test(p) || !availablePlugins.includes(p)) throw new Error(t('errors.unknownPlugin', { name: String(p) }));
   }
-  if (preset !== null && !PRESETS.includes(preset)) throw new Error(`Okänd modellnivå: ${preset}`);
+  if (preset !== null && !PRESETS.includes(preset)) throw new Error(t('errors.unknownPreset', { name: String(preset) }));
   const commands = [];
   if (needsGit) commands.push('git init -b main');
   commands.push(BASE_COMMAND);

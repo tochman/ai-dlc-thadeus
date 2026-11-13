@@ -4,6 +4,7 @@ import { app } from 'electron';
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import { DEFAULT_FEATURES_PATH, isValidFeaturesPath } from './parsers/features.js';
+import { LANGUAGE_SETTINGS, t } from '../shared/i18n.js';
 
 const DEFAULTS = { openProjects: [], recentProjects: [], activeProject: null, projectSettings: {} };
 export const PROJECT_DEFAULTS = { featureDocs: 'auto', featuresPath: DEFAULT_FEATURES_PATH };
@@ -37,6 +38,8 @@ function sanitize(raw) {
     // defaults (popup-notify, sound on) apply where they are read.
     ...(QUESTION_ALERTS.has(raw?.questionAlerts) ? { questionAlerts: raw.questionAlerts } : {}),
     ...(typeof raw?.notificationSound === 'boolean' ? { notificationSound: raw.notificationSound } : {}),
+    // "Språk / Language" (EPIC-07 US-0701 FR4.3); left out when invalid, so auto applies.
+    ...(LANGUAGE_SETTINGS.includes(raw?.language) ? { language: raw.language } : {}),
     // ponytail: capped at 200 projects, oldest kept; prune closed projects if that ever matters.
     projectSettings: Object.fromEntries(
       Object.entries(projects)
@@ -80,12 +83,12 @@ export async function getProjectSettings(root) {
 
 /** @returns {Promise<{featureDocs: 'auto'|'show'|'hide', featuresPath: string}>} */
 export async function setProjectSettings(root, partial) {
-  if (typeof root !== 'string' || !root) throw new Error('Projektroten saknas');
+  if (typeof root !== 'string' || !root) throw new Error(t('errors.projectRootMissing'));
   if (partial?.featureDocs !== undefined && !FEATURE_DOCS.has(partial.featureDocs)) {
-    throw new Error(`Okänt värde för feature-beskrivningar: ${partial.featureDocs}`);
+    throw new Error(t('errors.unknownFeatureDocs', { value: String(partial.featureDocs) }));
   }
   if (partial?.featuresPath !== undefined && !isValidFeaturesPath(partial.featuresPath)) {
-    throw new Error(`Ogiltig sökväg: ${partial.featuresPath}. Den ska vara relativ, sluta på .md och ligga i projektet.`);
+    throw new Error(t('errors.invalidFeaturesPath', { path: String(partial.featuresPath) }));
   }
   const given = Object.fromEntries(Object.entries(partial ?? {}).filter(([, v]) => v !== undefined));
   const next = await update((cur) => ({

@@ -25,9 +25,13 @@
     "@xterm/addon-fit": "^0.11.0",
     "@xterm/xterm": "^6.0.0",
     "chokidar": "^4.0.3",
+    "i18next": "^27.1.1",
+    "i18next-icu": "^2.7.0",
+    "intl-messageformat": "^12.1.5",
     "node-pty": "^1.1.0",
     "react": "^19.3.1",
     "react-dom": "^19.3.1",
+    "react-i18next": "^18.0.1",
     "react-markdown": "^10.1.0",
     "remark-gfm": "^4.0.1"
   },

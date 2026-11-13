@@ -1,34 +1,19 @@
 // Display helpers shared by the views. Status is always rendered as text as well as colour (FR9.3).
+// Texts come from the translation files (EPIC-07 US-0701); dates and numbers follow the chosen language.
+import { cloneElement } from 'react';
+import i18n, { locale, t } from '../shared/i18n.js';
 
-export const STAGE_STATUS_LABEL = {
-  'not-started': 'Ej startad',
-  'in-progress': 'Pågår',
-  'awaiting-approval': 'Väntar på godkännande',
-  revising: 'Revideras',
-  done: 'Klar',
-  skipped: 'Överhoppad',
-  unknown: 'Okänd'
-};
+/** The translated label `<group>.<id>`, or null when there is none (an unknown status is shown as it is). */
+const labelOf = (group, id) => (id != null && i18n.exists(`${group}.${id}`) ? t(`${group}.${id}`) : null);
 
-export const UNIT_STATUS_LABEL = { pending: 'Väntar', running: 'Pågår', done: 'Klar' };
-
-export const CATEGORY_LABEL = {
-  stage: 'Stage',
-  subagent: 'Subagent',
-  gate: 'Gate',
-  human: 'Människa',
-  unit: 'Unit',
-  error: 'Fel',
-  guard: 'Guard/sensor',
-  other: 'Övrigt'
-};
+export const stageStatusLabel = (status) => labelOf('common.stageStatus', status);
+export const unitStatusLabel = (status) => labelOf('common.unitStatus', status);
+export const categoryLabel = (category) => labelOf('common.category', category);
 
 export function formatTime(iso) {
   if (!iso) return '–';
   const d = new Date(iso);
-  return Number.isNaN(d.getTime())
-    ? iso
-    : d.toLocaleString('sv-SE', { dateStyle: 'short', timeStyle: 'medium' });
+  return Number.isNaN(d.getTime()) ? iso : d.toLocaleString(locale(), { dateStyle: 'short', timeStyle: 'medium' });
 }
 
 export function formatDuration(ms) {
@@ -55,25 +40,42 @@ export function stagePosition(currentStage, done, executed) {
 }
 
 // Cost is AI-DLC's own estimate (tokens x API price), never an invoice (FR6.1).
-export const COST_LABEL = 'Uppskattad kostnad (API-pris)';
-export const COST_EXPLANATION =
-  'Beräknad av AI-DLC från förbrukade tokens gånger API-priset per modell (USD). Det är ingen faktura och inte vad en prenumeration faktiskt kostar.';
-export const NO_COST_ENTRY = 'Ingen post i usage-ledger.json för den här intenten.';
-export const MISSING_PRICE = 'pris saknas';
-
+// ponytail: USD keeps its own "$1.23" form in every language; switch to Intl currency if a reader asks for it.
 export function formatUsd(n) {
   return n == null || !Number.isFinite(n) ? '–' : `$${n.toFixed(2)}`;
 }
 
 /** USD, or "pris saknas" when tokens were used but the ledger has no price (FR6.2). */
-export const formatCost = (c) => (!c ? '–' : c.missingPrice ? MISSING_PRICE : formatUsd(c.usd));
+export const formatCost = (c) => (!c ? '–' : c.missingPrice ? t('cost.missingPrice') : formatUsd(c.usd));
+
+const oneDecimal = (n) => n.toLocaleString(locale(), { minimumFractionDigits: 1, maximumFractionDigits: 1 });
 
 export function formatTokens(n) {
   if (n == null || !Number.isFinite(n)) return '–';
   if (n < 1000) return String(n);
-  if (n < 1e6) return `${(n / 1e3).toFixed(1)} k`;
-  return `${(n / 1e6).toFixed(1)} M`;
+  if (n < 1e6) return `${oneDecimal(n / 1e3)} k`;
+  return `${oneDecimal(n / 1e6)} M`;
 }
 
-export const tokenBreakdown = (t) =>
-  `input ${formatTokens(t.input)} · output ${formatTokens(t.output)} · cache write ${formatTokens(t.cacheWrite)} · cache read ${formatTokens(t.cacheRead)}`;
+export const tokenBreakdown = (tk) =>
+  t('cost.breakdown', {
+    input: formatTokens(tk.input),
+    output: formatTokens(tk.output),
+    cacheWrite: formatTokens(tk.cacheWrite),
+    cacheRead: formatTokens(tk.cacheRead)
+  });
+
+const SLOT = '\u0000';
+
+/**
+ * A translated text with React elements in place of its placeholders, e.g. `{path}` as a <code> element.
+ * The text stays plain text: nothing in it is parsed as markup (NFR4).
+ * @param {string} key @param {Record<string, import('react').ReactElement>} elements
+ */
+export function withSlots(key, elements) {
+  const names = Object.keys(elements);
+  const values = Object.fromEntries(names.map((name, i) => [name, `${SLOT}${i}${SLOT}`]));
+  return t(key, values)
+    .split(SLOT)
+    .map((part, i) => (i % 2 ? cloneElement(elements[names[Number(part)]], { key: i }) : part));
+}

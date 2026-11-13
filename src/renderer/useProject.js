@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { t } from '../shared/i18n.js';
 
 const bridge = window.bridge;
 const HIGHLIGHT_MS = 4000;
@@ -35,7 +36,7 @@ export function useProject(projectId, initialSpace) {
       setError(null);
       setSelected((cur) => cur ?? res.intents.find((i) => i.active)?.dirName ?? res.intents[0]?.dirName ?? null);
     } catch (err) {
-      setError(`Kunde inte läsa intents: ${errorText(err)}`);
+      setError(t('intents.loadFailed', { error: errorText(err) }));
     }
   }, [projectId, space]);
 
@@ -72,7 +73,7 @@ export function useProject(projectId, initialSpace) {
         setDetail(next);
         setError(null);
       } catch (err) {
-        setError(`Kunde inte läsa ${dirName}: ${errorText(err)}`);
+        setError(t('intents.detailFailed', { name: dirName, error: errorText(err) }));
       }
     },
     [projectId, space, highlight]
@@ -83,7 +84,7 @@ export function useProject(projectId, initialSpace) {
     try {
       setCost(await bridge.getCost(projectId, space));
     } catch (err) {
-      setCost({ available: false, reason: `Kostnaden kunde inte läsas: ${errorText(err)}` });
+      setCost({ available: false, reason: t('cost.loadFailed', { error: errorText(err) }) });
     }
   }, [projectId, space]);
 
@@ -121,7 +122,7 @@ export function useProject(projectId, initialSpace) {
       }
     });
     const offError = bridge.onWatchError((e) => {
-      if (e.projectId === projectId) setError(`Filbevakningen stannade: ${e.message}`);
+      if (e.projectId === projectId) setError(t('intents.watchStopped', { message: String(e.message ?? '') }));
     });
     return () => {
       offChange();

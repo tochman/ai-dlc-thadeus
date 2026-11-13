@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Terminal } from '@xterm/xterm';
 import { FitAddon } from '@xterm/addon-fit';
 import '@xterm/xterm/css/xterm.css';
@@ -7,14 +8,11 @@ import { useTerminal } from './TerminalContext.jsx';
 import AuctumMark from './AuctumMark.jsx';
 import { Bar } from './Lcars.jsx';
 import { xtermTheme } from './tokens.js';
+import { t as translate } from '../shared/i18n.js';
 
 const bridge = window.bridge;
 const QUICK_COMMANDS = ['/aidlc --status', '/aidlc --doctor', '/aidlc continue'];
-const KINDS = [
-  { id: 'claude', label: 'Claude' },
-  { id: 'shell', label: 'Shell' }
-];
-const STATE_LABEL = { idle: 'Ledig', busy: 'Arbetar', exited: 'Avslutad' };
+const KINDS = ['claude', 'shell'];
 const errorText = (err) => String(err?.message ?? err).replace(/^Error invoking remote method '[^']+': (Error: )?/, '');
 
 /**
@@ -23,6 +21,7 @@ const errorText = (err) => String(err?.message ?? err).replace(/^Error invoking 
  * `onInput` is told when the person types, which clears "Väntar på din Enter" (EPIC-04 FR3.6).
  */
 function TermSession({ projectId, kind, shown, register, onInput }) {
+  const { t } = useTranslation();
   const hostRef = useRef(null);
   const termRef = useRef(null);
   const fitRef = useRef(null);
@@ -54,7 +53,7 @@ function TermSession({ projectId, kind, shown, register, onInput }) {
         activity,
         spawn,
         write: (text) => {
-          if (!idRef.current) throw new Error(`${kind} körs inte.`);
+          if (!idRef.current) throw new Error(translate('terminal.notRunning', { kind }));
           bridge.ptyWrite(idRef.current, text).catch((err) => setError(errorText(err)));
         },
         focus: () => termRef.current?.focus(),
@@ -138,9 +137,9 @@ function TermSession({ projectId, kind, shown, register, onInput }) {
     <div className="term-session" hidden={!shown}>
       {(exited !== null || error) && (
         <div className="term-status" role="status">
-          <span>{error ? `Kunde inte starta ${kind}: ${error}` : `${kind} avslutades (kod ${exited}).`}</span>
+          <span>{error ? t('terminal.startFailed', { kind, error }) : t('terminal.exited', { kind, code: String(exited) })}</span>
           <button className="btn btn-accent" onClick={spawn} data-testid={`terminal-panel-restart-${kind}`}>
-            Starta om
+            {t('terminal.restart')}
           </button>
         </div>
       )}
@@ -151,6 +150,7 @@ function TermSession({ projectId, kind, shown, register, onInput }) {
 
 /** Must sit inside a TerminalProvider: which tab is open and active is shared with the other views (FR1.4). */
 export default function TerminalPanel({ projectId, visible }) {
+  const { t } = useTranslation();
   const terminal = useTerminal();
   const { open, active } = terminal.view;
   const setOpen = (next) => terminal.setView((v) => ({ ...v, open: typeof next === 'function' ? next(v.open) : next }));
@@ -186,14 +186,14 @@ export default function TerminalPanel({ projectId, visible }) {
       ref={panelRef}
       className={`terminal-panel ${open ? '' : 'is-collapsed'}`}
       style={open && height != null ? { height } : undefined}
-      aria-label="Terminal"
+      aria-label={t('terminal.label')}
     >
       {open && (
         <div
           className="terminal-resize"
           role="separator"
           aria-orientation="horizontal"
-          aria-label="Ändra terminalens höjd (pil upp/ned)"
+          aria-label={t('terminal.resize')}
           tabIndex={0}
           onPointerDown={startDrag}
           onKeyDown={nudgeHeight}
@@ -201,47 +201,47 @@ export default function TerminalPanel({ projectId, visible }) {
         />
       )}
       <div className="terminal-arm">
-        <div role="tablist" aria-label="Terminaler" className="terminal-tabs">
-          {KINDS.map((k) => {
-            const state = terminal.state(k.id);
-            const on = active === k.id;
-            const breathing = k.id === 'claude' && state === 'busy';
+        <div role="tablist" aria-label={t('terminal.tabsLabel')} className="terminal-tabs">
+          {KINDS.map((kind) => {
+            const state = terminal.state(kind);
+            const on = active === kind;
+            const breathing = kind === 'claude' && state === 'busy';
             return (
               <button
-                key={k.id}
+                key={kind}
                 role="tab"
                 aria-selected={on}
-                className={`lcars-block term-tab term-tab--${k.id} lcars-block--${on ? 'active' : 'mid'} ${breathing ? 'is-breathing' : ''}`}
+                className={`lcars-block term-tab term-tab--${kind} lcars-block--${on ? 'active' : 'mid'} ${breathing ? 'is-breathing' : ''}`}
                 onClick={() => {
-                  setActive(k.id);
+                  setActive(kind);
                   setOpen(true);
                 }}
-                data-testid={`terminal-panel-tab-${k.id}`}
+                data-testid={`terminal-panel-tab-${kind}`}
               >
-                <span className={`term-state term-state-${state}`} data-testid={`terminal-panel-state-${k.id}`}>
-                  {STATE_LABEL[state]}
+                <span className={`term-state term-state-${state}`} data-testid={`terminal-panel-state-${kind}`}>
+                  {t(`terminal.state.${state}`)}
                 </span>
-                <span className="term-tab-name">{k.label}</span>
+                <span className="term-tab-name">{t(`terminal.${kind}`)}</span>
               </button>
             );
           })}
         </div>
         <button className="terminal-elbow" onClick={() => setOpen((o) => !o)} aria-expanded={open} data-testid="terminal-panel-toggle">
           <AuctumMark size={96} className="terminal-elbow-mark" decorative />
-          <span className="terminal-elbow-label">{open ? 'Dölj terminal' : 'Visa terminal'}</span>
+          <span className="terminal-elbow-label">{open ? t('terminal.hide') : t('terminal.show')}</span>
         </button>
       </div>
       <div className="terminal-main">
         {open && <Bar segs={[['steel', 2], ['steel-deep', 90], ['slate-3', 1]]} />}
         <div className="terminal-body" hidden={!open}>
-          {KINDS.map((k) => (
+          {KINDS.map((kind) => (
             <TermSession
-              key={k.id}
+              key={kind}
               projectId={projectId}
-              kind={k.id}
-              shown={visible && open && active === k.id}
+              kind={kind}
+              shown={visible && open && active === kind}
               register={terminal.register}
-              onInput={() => terminal.input(k.id)}
+              onInput={() => terminal.input(kind)}
             />
           ))}
         </div>
@@ -251,7 +251,7 @@ export default function TerminalPanel({ projectId, visible }) {
               <button
                 key={cmd}
                 className="btn btn-quiet"
-                title="Skriver in kommandot i claude-fliken utan att skicka det"
+                title={t('terminal.quickTitle')}
                 onClick={() => terminal.type('claude', cmd, { submit: false })}
                 data-testid="terminal-panel-quick-command"
               >
@@ -259,12 +259,12 @@ export default function TerminalPanel({ projectId, visible }) {
               </button>
             ))}
           </div>
-          {KINDS.filter((k) => terminal.pending(k.id)).map((k) => (
-            <span key={k.id} className="term-pending-row">
-              <span className="term-pending is-attn" data-testid={`terminal-panel-pending-${k.id}`}>
-                Väntar på din Enter
+          {KINDS.filter((kind) => terminal.pending(kind)).map((kind) => (
+            <span key={kind} className="term-pending-row">
+              <span className="term-pending is-attn" data-testid={`terminal-panel-pending-${kind}`}>
+                {t('terminal.pending')}
               </span>
-              <span className="term-pending-hint">{k.label}: skrivet av appen. Inget körs förrän du trycker Enter.</span>
+              <span className="term-pending-hint">{t('terminal.pendingHint', { tab: t(`terminal.${kind}`) })}</span>
             </span>
           ))}
           {terminal.error && (

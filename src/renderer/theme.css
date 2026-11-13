@@ -167,11 +167,15 @@ input[type='checkbox'], input[type='radio'] { accent-color: var(--steel); }
   text-align: right;
   text-transform: uppercase;
   text-decoration: none;
+  /* A long word in either language wraps (hyphenated where the language allows) instead of overflowing (EPIC-07 FR8.1). */
+  overflow-wrap: anywhere;
+  hyphens: auto;
   transition: filter 150ms ease-out, background-color 200ms ease-out;
 }
 button.lcars-block:hover:not(:disabled), label.lcars-block:hover { filter: brightness(1.15); }
 .lcars-block--sm { height: 32px; padding-bottom: 5px; font-size: 14px; }
-.lcars-block--tab { flex: 1 1 96px; max-width: 132px; height: 40px; padding-bottom: 5px; }
+/* Fixed-width tabs also shrink their text a little before it wraps (FR8.1). */
+.lcars-block--tab { flex: 1 1 96px; max-width: 132px; height: 40px; padding-bottom: 5px; font-size: clamp(12px, 1.1vw, 16px); }
 .lcars-block--active { background: var(--steel); color: var(--on-light); font-weight: 600; }
 .lcars-block--attn { background: var(--coral); color: var(--on-light); }
 .lcars-block--light { background: var(--slate-5); color: var(--on-light); font-weight: 600; }
@@ -179,7 +183,7 @@ button.lcars-block:hover:not(:disabled), label.lcars-block:hover { filter: brigh
 .lcars-block--dark { background: var(--slate-3); color: var(--text); }
 .lcars-block--deep { background: var(--slate-2); color: var(--text-2); }
 .lcars-block:disabled, .lcars-block--disabled { background: var(--slate-0); color: var(--slate-4); filter: none; }
-.lcars-label { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lcars-label { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; overflow-wrap: anywhere; }
 
 /* A block with its 6 px status tab on the left. */
 .lcars-tabbed { display: flex; gap: 5px; flex-shrink: 0; }

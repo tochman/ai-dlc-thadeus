@@ -3,6 +3,7 @@ import { join } from 'node:path';
 import { registerIpc, shutdown } from './ipc.js';
 import { applyMenu } from './menu.js';
 import { getSettings, setSettings } from './settings.js';
+import { setLanguageFromSettings } from './i18n.js';
 import { APP_NAME } from '../shared/appName.js';
 
 // The folder is still called aidlc-dash so settings and open projects survive renames (US-0406 FR4.1).
@@ -65,7 +66,8 @@ async function createWindow() {
   return win;
 }
 
-app.whenReady().then(() => {
+app.whenReady().then(async () => {
+  setLanguageFromSettings(await getSettings()); // before the first menu and window (EPIC-07 FR4.2); never rejects
   // The packaged .app carries its .icns; in dev the Dock would otherwise show the Electron icon.
   if (process.platform === 'darwin' && !app.isPackaged) {
     try {

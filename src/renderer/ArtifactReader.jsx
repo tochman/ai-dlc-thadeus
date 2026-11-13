@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import { useTranslation } from 'react-i18next';
+import { t } from '../shared/i18n.js';
 
 const bridge = window.bridge;
 const errorText = (err) => String(err?.message ?? err).replace(/^Error invoking remote method '[^']+': (Error: )?/, '');
@@ -17,7 +19,7 @@ function prettyJson(text) {
 // Links do not navigate the app window (main blocks navigation); they are shown as plain text links.
 const markdownComponents = {
   a: ({ children, href }) => <span className="md-link" title={href}>{children}</span>,
-  img: ({ alt }) => <span className="muted">[bild: {alt}]</span>
+  img: ({ alt }) => <span className="muted">{t('intents.files.image', { alt: alt ?? '' })}</span>
 };
 
 /** Markdown without raw HTML, pretty JSON, or plain text. Also used for files read from git (RefreshPanel). */
@@ -34,6 +36,7 @@ export function FileContent({ rel, content }) {
 }
 
 function FileView({ projectId, rel }) {
+  const { t } = useTranslation();
   const [content, setContent] = useState(null);
   const [error, setError] = useState(null);
 
@@ -64,10 +67,10 @@ function FileView({ projectId, rel }) {
       <div className="file-actions">
         <code className="file-path">{rel}</code>
         <button className="btn" onClick={() => act(bridge.revealInFinder)} data-testid="artifact-reader-reveal">
-          {bridge.platform === 'darwin' ? 'Visa i Finder' : 'Visa i filhanteraren'}
+          {bridge.platform === 'darwin' ? t('common.revealFinder') : t('common.revealFiles')}
         </button>
         <button className="btn" onClick={() => act(bridge.openInEditor)} data-testid="artifact-reader-open-editor">
-          Öppna i editor
+          {t('common.openInEditor')}
         </button>
       </div>
       {error && (
@@ -75,17 +78,18 @@ function FileView({ projectId, rel }) {
           {error}
         </p>
       )}
-      {content == null && !error && <p className="muted">Läser…</p>}
+      {content == null && !error && <p className="muted">{t('common.reading')}</p>}
       {content != null && <FileContent rel={rel} content={content} />}
     </div>
   );
 }
 
 export default function ArtifactReader({ projectId, groups, selected, onSelect }) {
-  if (groups.length === 0) return <p className="muted">Inga artefakter i intentens fasmappar ännu.</p>;
+  const { t } = useTranslation();
+  if (groups.length === 0) return <p className="muted">{t('intents.files.none')}</p>;
   return (
     <div className="artifact-reader" data-testid="artifact-reader">
-      <nav className="file-tree" aria-label="Artefakter">
+      <nav className="file-tree" aria-label={t('intents.files.label')}>
         {groups.map((g) => (
           <section key={g.dir}>
             <h4 className="file-group">{g.dir}</h4>
@@ -106,7 +110,7 @@ export default function ArtifactReader({ projectId, groups, selected, onSelect }
           </section>
         ))}
       </nav>
-      {selected ? <FileView projectId={projectId} rel={selected} /> : <p className="muted">Välj en fil.</p>}
+      {selected ? <FileView projectId={projectId} rel={selected} /> : <p className="muted">{t('intents.files.pick')}</p>}
     </div>
   );
 }

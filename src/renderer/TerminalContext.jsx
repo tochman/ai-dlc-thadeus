@@ -2,9 +2,10 @@
 // through useTerminal() instead of reaching into TerminalPanel.
 import { createContext, useCallback, useContext, useMemo, useRef, useState } from 'react';
 import { READY_TIMEOUT_MS, runSequence, waitFor, withEnter } from './terminalControl.js';
+import { t } from '../shared/i18n.js';
 
 const TerminalCtx = createContext(null);
-const TAB_NAME = { claude: 'Claude', shell: 'Skalet' };
+const tabName = (tab) => t(`terminal.tabName.${tab}`);
 
 export function TerminalProvider({ children }) {
   const sessions = useRef({}); // tab -> { write, spawn, restart, focus, activity }
@@ -36,12 +37,12 @@ export function TerminalProvider({ children }) {
   /** Starts an exited tab and waits for its first idle (FR1.3). */
   const ready = useCallback(async (tab) => {
     const s = sessions.current[tab];
-    if (!s) throw new Error(`Terminalfliken ${tab} finns inte.`);
-    if (s.activity.state === 'exited' && !(await s.spawn())) throw new Error(`${TAB_NAME[tab]} kunde inte startas.`);
+    if (!s) throw new Error(t('terminal.noTab', { tab }));
+    if (s.activity.state === 'exited' && !(await s.spawn())) throw new Error(t('terminal.cannotStart', { name: tabName(tab) }));
     try {
       await waitFor(s.activity, 'idle', READY_TIMEOUT_MS);
     } catch {
-      throw new Error(`${TAB_NAME[tab]} svarade inte inom ${READY_TIMEOUT_MS / 1000} s`);
+      throw new Error(t('terminal.noResponse', { name: tabName(tab), seconds: READY_TIMEOUT_MS / 1000 }));
     }
     return s;
   }, []);
@@ -53,7 +54,7 @@ export function TerminalProvider({ children }) {
       show(tab);
       try {
         const s = sessions.current[tab]?.activity.state === 'exited' ? await ready(tab) : sessions.current[tab];
-        if (!s) throw new Error(`Terminalfliken ${tab} finns inte.`);
+        if (!s) throw new Error(t('terminal.noTab', { tab }));
         await fn(s);
         s.focus();
         return true;
@@ -92,7 +93,7 @@ export function TerminalProvider({ children }) {
       restart: async (tab) => {
         setError(null);
         markPending(tab, false);
-        if (!(await sessions.current[tab]?.restart())) setError(`${TAB_NAME[tab]} kunde inte startas om.`);
+        if (!(await sessions.current[tab]?.restart())) setError(t('terminal.cannotRestart', { name: tabName(tab) }));
       }
     }),
     [view, error, register, show, states, run, pending, markPending]

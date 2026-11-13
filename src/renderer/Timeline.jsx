@@ -1,6 +1,7 @@
 import { useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useVirtualizer } from '@tanstack/react-virtual';
-import { CATEGORY_LABEL, formatTime } from './format.js';
+import { categoryLabel, formatTime } from './format.js';
 import { NOISY_EVENTS as NOISY } from '../main/parsers/audit.js'; // pure module, safe to bundle
 
 const ALL = '';
@@ -9,22 +10,24 @@ const AT_NEWEST = 40; // px from the top that still counts as "at the newest end
 const NAV_KEYS = new Set(['ArrowDown', 'ArrowUp', 'Home', 'End']);
 
 function EventRow({ e, pos, total, isNew, open, onToggle }) {
-  const label = `Händelse ${pos} av ${total}${isNew ? ', ny' : ''}: ${e.event ?? 'utan typ'}, ${formatTime(e.timestamp)}`;
+  const { t } = useTranslation();
+  const values = { pos, total, type: e.event ?? t('intents.timeline.untyped'), time: formatTime(e.timestamp) };
+  const label = isNew ? t('intents.timeline.eventLabelNew', values) : t('intents.timeline.eventLabel', values);
   return (
     <>
       <button className="event-row" onClick={() => onToggle(e.key)} aria-expanded={open} aria-label={label} data-testid="timeline-event">
         <span className="event-time">{formatTime(e.timestamp)}</span>
-        <span className="tag cat-tag">{CATEGORY_LABEL[e.category]}</span>
+        <span className="tag cat-tag">{categoryLabel(e.category) ?? e.category}</span>
         <span className="event-type">
-          {e.event ?? '(utan typ)'}
-          {isNew && <span className="tag tag-new">ny</span>}
+          {e.event ?? `(${t('intents.timeline.untyped')})`}
+          {isNew && <span className="tag tag-new">{t('intents.timeline.new')}</span>}
         </span>
         <span className="event-title">{e.fields.Stage ? `${e.fields.Stage}` : e.title}</span>
       </button>
       {open && (
         <dl className="event-fields">
           <div>
-            <dt>Titel</dt>
+            <dt>{t('intents.timeline.titleField')}</dt>
             <dd>{e.title ?? '–'}</dd>
           </div>
           {Object.entries(e.fields).map(([k, v]) => (
@@ -34,7 +37,7 @@ function EventRow({ e, pos, total, isNew, open, onToggle }) {
             </div>
           ))}
           <div>
-            <dt>Källa</dt>
+            <dt>{t('intents.timeline.source')}</dt>
             <dd>{e.source}</dd>
           </div>
         </dl>
@@ -44,6 +47,7 @@ function EventRow({ e, pos, total, isNew, open, onToggle }) {
 }
 
 export default function Timeline({ events, newKeys }) {
+  const { t } = useTranslation();
   const [showNoise, setShowNoise] = useState(false);
   const [type, setType] = useState(ALL);
   const [stage, setStage] = useState(ALL);
@@ -151,43 +155,41 @@ export default function Timeline({ events, newKeys }) {
       <div className="filters">
         <label className="check">
           <input type="checkbox" checked={showNoise} onChange={(e) => setShowNoise(e.target.checked)} data-testid="timeline-noise-toggle" />
-          Visa brus (guards och sensorer)
+          {t('intents.timeline.showNoise')}
         </label>
-        <select aria-label="Händelsetyp" value={type} onChange={(e) => setType(e.target.value)} data-testid="timeline-type-filter">
-          <option value={ALL}>Alla typer</option>
-          {types.map((t) => (
-            <option key={t}>{t}</option>
+        <select aria-label={t('intents.timeline.typeLabel')} value={type} onChange={(e) => setType(e.target.value)} data-testid="timeline-type-filter">
+          <option value={ALL}>{t('intents.timeline.allTypes')}</option>
+          {types.map((x) => (
+            <option key={x}>{x}</option>
           ))}
         </select>
-        <select aria-label="Stage" value={stage} onChange={(e) => setStage(e.target.value)} data-testid="timeline-stage-filter">
-          <option value={ALL}>Alla stages</option>
+        <select aria-label={t('intents.timeline.stageLabel')} value={stage} onChange={(e) => setStage(e.target.value)} data-testid="timeline-stage-filter">
+          <option value={ALL}>{t('intents.timeline.allStages')}</option>
           {stages.map((s) => (
             <option key={s}>{s}</option>
           ))}
         </select>
-        <span className="muted">
-          {visible.length} av {events.length} händelser
-        </span>
+        <span className="muted">{t('intents.timeline.count', { shown: visible.length, total: events.length })}</span>
       </div>
       <div className="filters timeline-nav">
         <button className="btn btn-quiet" onClick={() => virtualizer.scrollToIndex(0)} data-testid="timeline-jump-newest">
-          Till senaste
+          {t('intents.timeline.jumpNewest')}
         </button>
-        <select aria-label="Till stage-start" value={ALL} onChange={(e) => jumpToStage(e.target.value)} data-testid="timeline-jump-stage">
-          <option value={ALL}>Till stage-start…</option>
+        <select aria-label={t('intents.timeline.jumpStage')} value={ALL} onChange={(e) => jumpToStage(e.target.value)} data-testid="timeline-jump-stage">
+          <option value={ALL}>{t('intents.timeline.jumpStageOption')}</option>
           {stages.map((s) => (
             <option key={s}>{s}</option>
           ))}
         </select>
         {unseen.length > 0 && (
           <button className="btn btn-accent timeline-new-counter" onClick={() => goTo(unseen[0], false)} data-testid="timeline-new-counter">
-            {unseen.length === 1 ? '1 ny händelse' : `${unseen.length} nya händelser`}
+            {t('intents.timeline.newCount', { n: unseen.length })}
           </button>
         )}
       </div>
-      {events.length === 0 && <p className="muted">Inga audit-händelser hittades i audit/.</p>}
+      {events.length === 0 && <p className="muted">{t('intents.timeline.none')}</p>}
       <div className="timeline-scroll" ref={scrollRef} onScroll={onScroll} data-testid="timeline-scroll">
-        <ol className="events" role="list" aria-label="Audit-händelser" style={{ height: virtualizer.getTotalSize() }} onKeyDown={onKeyDown}>
+        <ol className="events" role="list" aria-label={t('intents.timeline.listLabel')} style={{ height: virtualizer.getTotalSize() }} onKeyDown={onKeyDown}>
           {items.map((item) => {
             const e = visible[item.index];
             const isNew = !!newKeys?.has(e.key);

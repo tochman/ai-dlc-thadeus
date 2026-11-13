@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { t } from '../shared/i18n.js';
 
 const DEFAULT_SETTINGS = { featureDocs: 'auto', featuresPath: 'docs/FEATURES.md' };
 const errorText = (err) => String(err?.message ?? err).replace(/^Error invoking remote method '[^']+': (Error: )?/, '');
@@ -21,7 +22,7 @@ export function useFeatures(projectId, space) {
       setSettings(s);
       setFeatures(f);
     } catch (err) {
-      setFeatures({ available: false, reason: `Feature-dokumenten kunde inte läsas: ${errorText(err)}` });
+      setFeatures({ available: false, reason: t('features.loadFailed', { error: errorText(err) }) });
     }
   }, [projectId]);
 

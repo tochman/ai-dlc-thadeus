@@ -3,6 +3,7 @@
 // working tree is typed into the visible shell tab by the renderer instead.
 import { runFixed } from './exec.js';
 import { readJsonSafe } from './projectAccess.js';
+import { t } from '../shared/i18n.js';
 
 const FETCH_TIMEOUT_MS = 30000;
 const FALLBACK_REF = 'origin/main';
@@ -11,7 +12,7 @@ const AIDLC_PREFIX = 'aidlc/';
 /** An argument built from a value (ref, path, space) must not be read as an option. */
 function safeArg(value, what) {
   if (typeof value !== 'string' || value === '' || value.startsWith('-') || /[\0\n\r]/.test(value)) {
-    throw new Error(`Ogiltigt värde för ${what}: ${value}`);
+    throw new Error(t('errors.invalidValue', { what, value: String(value) }));
   }
   return value;
 }
@@ -68,7 +69,7 @@ async function compareRef(root, exec) {
 
 async function assertCompareRef(root, ref, exec) {
   safeArg(ref, 'ref');
-  if ((await compareRef(root, exec)).ref !== ref) throw new Error(`Bara upstream eller ${FALLBACK_REF} kan läsas: ${ref}`);
+  if ((await compareRef(root, exec)).ref !== ref) throw new Error(t('errors.onlyUpstream', { fallback: FALLBACK_REF, ref }));
 }
 
 /**
@@ -107,7 +108,7 @@ function countAuditLines(stdout) {
 export async function getRemoteChanges(root, ref, { space = 'default', exec } = {}) {
   await assertCompareRef(root, ref, exec);
   safeArg(space, 'space');
-  if (space.includes('/') || space.includes('..')) throw new Error(`Ogiltig space: ${space}`);
+  if (space.includes('/') || space.includes('..')) throw new Error(t('errors.invalidSpace', { space }));
   const range = `HEAD...${ref}`;
   const commits = parseRevCount(await git(root, ['rev-list', '--count', `HEAD..${ref}`, '--', AIDLC_PREFIX], exec));
   const files = splitPaths(lines(await git(root, ['diff', '--name-only', '--relative', range], exec)));
@@ -129,8 +130,8 @@ export async function getRemoteChanges(root, ref, { space = 'default', exec } = 
 
 /** A file under aidlc/ as it is on `ref`, read from git objects without touching the working tree (FR3.4). */
 export async function showRemoteFile(root, ref, rel, { exec } = {}) {
-  safeArg(rel, 'sökväg');
-  if (!rel.startsWith(AIDLC_PREFIX) || rel.split('/').includes('..')) throw new Error(`Bara filer under aidlc/ kan visas: ${rel}`);
+  safeArg(rel, t('errors.pathWord'));
+  if (!rel.startsWith(AIDLC_PREFIX) || rel.split('/').includes('..')) throw new Error(t('errors.onlyAidlcFiles', { rel }));
   await assertCompareRef(root, ref, exec);
   return git(root, ['show', `${ref}:./${rel}`], exec);
 }

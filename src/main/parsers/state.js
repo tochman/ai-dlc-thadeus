@@ -49,6 +49,8 @@ export function parseState(text) {
     sections,
     project: info.Project ?? null,
     scope: info.Scope ?? null,
+    // A custom plan's name; Scope then holds the base plan it was built on.
+    plan: info.Plan || null,
     startDate: info['Start Date'] ?? null,
     depth: scopeCfg.Depth ?? null,
     testStrategy: scopeCfg['Test Strategy'] ?? null,

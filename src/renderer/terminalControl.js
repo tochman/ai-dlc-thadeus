@@ -1,4 +1,5 @@
 // Activity signal and command sequencing for a terminal tab (FR1.2, FR1.3, FR2.3). Pure: no React, no bridge.
+import { t } from '../shared/i18n.js';
 
 export const QUIET_MS = 1500;
 export const READY_TIMEOUT_MS = 20000;
@@ -55,7 +56,7 @@ export function waitFor(activity, target, timeoutMs) {
     });
     const timer = setTimeout(() => {
       off();
-      reject(new Error(`Fliken blev inte ${target} inom ${Math.round(timeoutMs / 1000)} s`));
+      reject(new Error(t('terminal.timeout', { target, seconds: Math.round(timeoutMs / 1000) })));
     }, timeoutMs);
   });
 }

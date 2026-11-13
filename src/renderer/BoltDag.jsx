@@ -1,4 +1,5 @@
-import { UNIT_STATUS_LABEL } from './format.js';
+import { useTranslation } from 'react-i18next';
+import { unitStatusLabel } from './format.js';
 
 const NODE_W = 200;
 const NODE_H = 64;
@@ -24,10 +25,11 @@ function layout(dag) {
 }
 
 export default function BoltDag({ dag, statuses }) {
+  const { t } = useTranslation();
   if (!dag || dag.units.length === 0) {
     return (
       <p className="muted" data-testid="bolt-dag-empty">
-        Den här intenten har ingen bolt-DAG. Den finns bara när Units Generation har delat upp arbetet i units.
+        {t('intents.units.empty')}
       </p>
     );
   }
@@ -35,7 +37,7 @@ export default function BoltDag({ dag, statuses }) {
 
   return (
     <div className="bolt-dag" data-testid="bolt-dag">
-      <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`} role="img" aria-label="Unit-beroenden per batch">
+      <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`} role="img" aria-label={t('intents.units.label')}>
         <defs>
           <marker id="dag-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto">
             <path d="M0,0 L10,5 L0,10 z" className="dag-arrow" />
@@ -65,13 +67,14 @@ export default function BoltDag({ dag, statuses }) {
         {dag.units.map((u) => {
           const p = pos[u.name];
           const status = statuses?.[u.name] ?? 'pending';
+          const label = unitStatusLabel(status) ?? status;
           return (
             <g key={u.name} transform={`translate(${p.x},${p.y})`} className={`dag-node unit-${status}`}>
-              <title>{`${u.name} (${u.kind ?? 'okänd typ'}): ${UNIT_STATUS_LABEL[status]}`}</title>
+              <title>{`${u.name} (${u.kind ?? t('intents.units.unknownKind')}): ${label}`}</title>
               {/* An LCARS block: status at the top, the name at the bottom right. */}
               <rect width={NODE_W} height={NODE_H} />
               <text x="10" y="18" className="dag-meta">
-                {u.kind ?? '–'} · {UNIT_STATUS_LABEL[status]}
+                {u.kind ?? '–'} · {label}
               </text>
               <text x={NODE_W - 10} y={NODE_H - 10} textAnchor="end" className="dag-name">
                 {u.name}

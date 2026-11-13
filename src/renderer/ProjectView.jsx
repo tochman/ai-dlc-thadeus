@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import IntentList from './IntentList.jsx';
 import IntentDetail from './IntentDetail.jsx';
 import CostPanel from './CostPanel.jsx';
@@ -21,6 +22,7 @@ function invertLinks(links) {
 }
 
 function AidlcProject({ project, focusIntent, storiesByIntent, onOpenStory, panels, onMeta }) {
+  const { t } = useTranslation();
   const { detection, projectId } = project;
   const p = useProject(projectId, detection.activeSpace);
   const activeDirName = p.intents.find((i) => i.active)?.dirName ?? null;
@@ -37,10 +39,10 @@ function AidlcProject({ project, focusIntent, storiesByIntent, onOpenStory, pane
 
   return (
     <div className="project-body">
-      <aside className="sidebar" aria-label="Översikt">
+      <aside className="sidebar" aria-label={t('intents.overview')}>
         {detection.spaces.length > 1 && (
           <label className="field">
-            <span className="field-label">Space</span>
+            <span className="field-label">{t('intents.space')}</span>
             <select value={p.space} onChange={(e) => p.setSpace(e.target.value)} data-testid="project-space-select">
               {detection.spaces.map((s) => (
                 <option key={s} value={s}>
@@ -52,7 +54,7 @@ function AidlcProject({ project, focusIntent, storiesByIntent, onOpenStory, pane
         )}
         {p.listWarning && (
           <p className="banner banner-warn" role="status">
-            {p.listWarning} Visar senaste giltiga lista.
+            {t('intents.listStale', { warning: p.listWarning })}
           </p>
         )}
         <CostPanel cost={p.cost} models={p.models} open={panels.costOpen} onToggle={panels.onToggleCost} />
@@ -85,7 +87,7 @@ function AidlcProject({ project, focusIntent, storiesByIntent, onOpenStory, pane
           />
         ) : (
           <Frame>
-            <p className="muted">Välj en intent i listan.</p>
+            <p className="muted">{t('intents.pick')}</p>
           </Frame>
         )}
       </section>
@@ -95,24 +97,25 @@ function AidlcProject({ project, focusIntent, storiesByIntent, onOpenStory, pane
 
 /** Shown once AI-DLC appeared in this tab: restart Claude so it loads the hooks, then offer the first steps (FR4.7). */
 function SetupDone({ onClose, onFeatureDocs }) {
+  const { t } = useTranslation();
   const terminal = useTerminal();
   return (
     <div className="panel setup-done" role="status" data-testid="setup-aidlc-done">
-      <span>AI-DLC är uppsatt. Claude startas om så att AI-DLC laddas.</span>
+      <span>{t('setup.done')}</span>
       <button className="btn" onClick={() => terminal.type('claude', '/aidlc --doctor')} data-testid="setup-aidlc-doctor">
-        Kör /aidlc --doctor
+        {t('setup.runDoctor')}
       </button>
       <button className="btn btn-accent" onClick={() => terminal.type('claude', '/aidlc ')} data-testid="setup-aidlc-first-work">
-        Starta första arbetet
+        {t('setup.firstWork')}
       </button>
       {/* The feature-docs choice from the setup dialog (EPIC-06 FR4.4). */}
       {onFeatureDocs && (
         <button className="btn" onClick={onFeatureDocs} data-testid="setup-aidlc-feature-docs-run">
-          Skapa feature-beskrivningar
+          {t('setup.createFeatureDocs')}
         </button>
       )}
       <button className="btn btn-quiet" onClick={onClose}>
-        Stäng
+        {t('common.close')}
       </button>
     </div>
   );

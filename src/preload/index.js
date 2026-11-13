@@ -26,6 +26,7 @@ contextBridge.exposeInMainWorld('bridge', {
   openInEditor: call('shell:openInEditor'),
   getSettings: call('settings:get'),
   setSettings: call('settings:set'),
+  getLanguage: call('i18n:language'), // the language in effect, auto resolved (EPIC-07 FR4.4)
   ptySpawn: call('pty:spawn'),
   ptyWrite: call('pty:write'),
   ptyResize: call('pty:resize'),

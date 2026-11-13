@@ -1,9 +1,10 @@
 // Feature docs (EPIC-06): docs/FEATURES.md with an epic table, and one file per epic with user stories.
 // Pure functions without Node imports, so the renderer can use them too. They never throw (FR1.4):
-// what cannot be read gives empty fields and a warning.
+// what cannot be read gives empty fields and a warning. Warnings are texts in the current language (EPIC-07);
+// status labels are the keys `features.status.<status>`.
+import { t } from '../../shared/i18n.js';
 
 export const DEFAULT_FEATURES_PATH = 'docs/FEATURES.md';
-export const STATUS_LABEL = { planned: 'Planerad', progress: 'Pågår', done: 'Klar' };
 export const STATUS_MARKER = { planned: '📋', progress: '🚧', done: '✅' };
 const MARKERS = [
   ['✅', 'done'],
@@ -53,14 +54,14 @@ export function parseOverview(md) {
     .filter((l) => !/^#\s/.test(l))
     .join('\n')
     .trim();
-  if (head === -1) return { intro, epics: [], warnings: ['Översikten har ingen tabell med epics.'] };
+  if (head === -1) return { intro, epics: [], warnings: [t('features.warn.noTable')] };
 
   const cols = splitRow(lines[head]).map((c) => c.toLowerCase());
   const col = (re) => cols.findIndex((c) => re.test(c));
   const iEpic = col(/epic/);
   const iTopic = col(/topic|ämne|amne|beskrivning/);
   const iStatus = col(/status/);
-  if (iEpic === -1) warnings.push('Översiktens tabell saknar kolumnen Epic; första kolumnen används.');
+  if (iEpic === -1) warnings.push(t('features.warn.noEpicColumn'));
 
   const epics = [];
   for (const line of lines.slice(head + 2)) {
@@ -81,7 +82,7 @@ export function parseOverview(md) {
       statusKind: statusOf(status)
     });
   }
-  if (epics.length === 0) warnings.push('Översiktens tabell har inga rader.');
+  if (epics.length === 0) warnings.push(t('features.warn.noRows'));
   return { intro, epics, warnings };
 }
 
@@ -142,7 +143,7 @@ export function parseEpic(md) {
   const warnings = [];
   const heading = lines.find((l) => /^#\s/.test(l))?.replace(/^#\s+/, '').trim() ?? '';
   const hm = heading.match(/^(EPIC-\d+)\s*[:–-]\s*(.*)$/i);
-  if (!heading) warnings.push('Epic-filen saknar rubrik.');
+  if (!heading) warnings.push(t('features.warn.noHeading'));
 
   const quote = [];
   for (const l of lines) {
@@ -170,7 +171,7 @@ export function parseEpic(md) {
     }
   }
   if (current) stories.push(parseStory(...current));
-  if (stories.length === 0) warnings.push('Inga storys i formatet **US-XXYY: Titel** hittades.');
+  if (stories.length === 0) warnings.push(t('features.warn.noStories'));
 
   return {
     id: hm ? hm[1].toUpperCase() : null,

@@ -1,13 +1,7 @@
 import { useState } from 'react';
-import {
-  COST_LABEL,
-  STAGE_STATUS_LABEL,
-  formatCost,
-  formatDuration,
-  formatTime,
-  shortModel,
-  tokenBreakdown
-} from './format.js';
+import { useTranslation } from 'react-i18next';
+import { formatCost, formatDuration, formatTime, shortModel, stageStatusLabel, tokenBreakdown } from './format.js';
+import { t as translate } from '../shared/i18n.js';
 
 const filesForStage = (groups, slug) => groups.filter((g) => g.dir === slug || g.dir.endsWith(`/${slug}`));
 export const isSkipped = (s) => s.mode === 'SKIP' || s.status === 'skipped';
@@ -29,7 +23,7 @@ function stageDetails(stage, stageModels, fileCount) {
     [stage.agent, stageModels?.length ? stageModels.map(shortModel).join(', ') : null].filter(Boolean).join(' · ') || null,
     `${formatTime(stage.startedAt)} → ${stage.completedAt ? formatTime(stage.completedAt) : '…'}`,
     formatDuration(stage.durationMs),
-    fileCount ? `${fileCount} filer` : 'inga filer'
+    fileCount ? translate('pipeline.files', { n: fileCount }) : translate('pipeline.noFiles')
   ]
     .filter(Boolean)
     .join(' · ');
@@ -37,8 +31,9 @@ function stageDetails(stage, stageModels, fileCount) {
 
 /** "NN · Status" at the top, the name at the bottom right; model and cost on the stage in progress (FR3.4). */
 function StageBlock({ stage, index, open, onToggle, stageCost, stageModels, details }) {
-  const statusText = stage.mode === 'SKIP' ? 'Ingår inte' : STAGE_STATUS_LABEL[stage.status] ?? stage.status;
-  const extra = stage.current && stage.status !== 'in-progress' ? ' · Aktuell' : '';
+  const { t } = useTranslation();
+  const statusText = stage.mode === 'SKIP' ? t('pipeline.notIncluded') : stageStatusLabel(stage.status) ?? stage.status;
+  const extra = stage.current && stage.status !== 'in-progress' ? ` · ${t('pipeline.current')}` : '';
   const models = stage.current && stageModels?.length ? `${stageModels.map(shortModel).join(', ')} · ` : '';
   return (
     <li className={`stage status-${stage.status} ${isSkipped(stage) ? 'is-muted' : ''} ${stage.current ? 'is-current' : ''}`}>
@@ -48,15 +43,15 @@ function StageBlock({ stage, index, open, onToggle, stageCost, stageModels, deta
             {index ?? '—'} · {statusText}
             {extra}
             {stage.mismatch && (
-              <span className="stage-flag" title={`runtime-graph.json säger "${stage.graphStatus}", aidlc-state.md gäller`}>
+              <span className="stage-flag" title={t('pipeline.mismatchTitle', { status: String(stage.graphStatus) })}>
                 {' '}
-                · Avvikelse
+                · {t('pipeline.mismatch')}
               </span>
             )}
           </span>
           <span
             className="stage-cost"
-            title={stageCost ? `${COST_LABEL} · ${tokenBreakdown(stageCost.tokens)}` : undefined}
+            title={stageCost ? `${t('cost.label')} · ${tokenBreakdown(stageCost.tokens)}` : undefined}
             data-testid="pipeline-stage-cost"
           >
             {stageCost ? `${models}${formatCost(stageCost)}` : ''}
@@ -70,12 +65,13 @@ function StageBlock({ stage, index, open, onToggle, stageCost, stageModels, deta
 
 /** Details and files of the opened stage, under its phase row. */
 function StageFiles({ files, details, onOpenFile }) {
+  const { t } = useTranslation();
   const list = files.flatMap((g) => g.files.map((f) => ({ ...f, dir: g.dir })));
   return (
     <div className="stage-files">
       <p className="stage-files-meta">{details}</p>
       {list.length === 0 ? (
-        <p className="muted">Inga filer för den här stagen.</p>
+        <p className="muted">{t('pipeline.noStageFiles')}</p>
       ) : (
         <ul className="stage-file-list">
           {list.map((f) => (
@@ -92,10 +88,11 @@ function StageFiles({ files, details, onOpenFile }) {
 }
 
 export default function Pipeline({ pipeline, files, hasGraph, onOpenFile, cost }) {
+  const { t } = useTranslation();
   const [openSlug, setOpenSlug] = useState(null);
   const [showSkipped, setShowSkipped] = useState(false);
   const stageCost = new Map((cost?.byStage ?? []).map((r) => [r.name, r]));
-  if (pipeline.phases.length === 0) return <p className="muted">aidlc-state.md saknas eller har inga stages ännu.</p>;
+  if (pipeline.phases.length === 0) return <p className="muted">{t('pipeline.noStages')}</p>;
 
   // Executed stages are numbered across phases; those not included get "—" and hide behind "Visa".
   const numbers = new Map();
@@ -107,9 +104,7 @@ export default function Pipeline({ pipeline, files, hasGraph, onOpenFile, cost }
 
   return (
     <div className="pipeline" data-testid="pipeline">
-      {!hasGraph && (
-        <p className="muted">runtime-graph.json saknas (den är git-ignorerad). Status kommer från aidlc-state.md.</p>
-      )}
+      {!hasGraph && <p className="muted">{t('pipeline.noGraph')}</p>}
       {pipeline.phases.map((phase) => {
         const stages = showSkipped ? phase.stages : phase.stages.filter((s) => !isSkipped(s));
         if (stages.length === 0) return null;
@@ -139,11 +134,9 @@ export default function Pipeline({ pipeline, files, hasGraph, onOpenFile, cost }
       })}
       {skippedTotal > 0 && (
         <div className="pipeline-skipped">
-          <span>
-            {skipped.map(([name, n]) => `${name} · ${n}`).join(', ')} {skippedTotal === 1 ? 'stage ingår' : 'stages ingår'} inte
-          </span>
+          <span>{t('pipeline.skipped', { list: skipped.map(([name, n]) => `${name} · ${n}`).join(', '), n: skippedTotal })}</span>
           <button className="lcars-chip" onClick={() => setShowSkipped((v) => !v)} aria-expanded={showSkipped}>
-            {showSkipped ? 'Dölj' : 'Visa'}
+            {showSkipped ? t('common.hide') : t('common.show')}
           </button>
         </div>
       )}

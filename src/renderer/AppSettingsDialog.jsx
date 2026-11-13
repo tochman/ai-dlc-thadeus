@@ -1,39 +1,40 @@
 // "Inställningar" for the whole app (EPIC-04 FR4.2), opened from the left arm. Saved in the app's own
 // settings.json, like the open tabs. A native modal <dialog> keeps focus inside it and closes on Esc.
 import { useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import i18n, { LANGUAGE_SETTINGS } from '../shared/i18n.js';
 
-const OPTIONS = [
-  { id: 'full', label: 'Full' },
-  { id: 'reduced', label: 'Dämpad' },
-  { id: 'off', label: 'Av' }
-];
+const ANIMATION_IDS = ['full', 'reduced', 'off'];
 // Waiting questions from AI-DLC (EPIC-05 US-0505 FR4.1).
-const ALERT_OPTIONS = [
-  { id: 'popup-notify', label: 'Popup och notis' },
-  { id: 'popup', label: 'Bara popup' },
-  { id: 'off', label: 'Av' }
-];
-const SOUND_OPTIONS = [
-  { id: 'on', label: 'På' },
-  { id: 'off', label: 'Av' }
-];
+const ALERT_IDS = ['popup-notify', 'popup', 'off'];
+const SOUND_IDS = ['on', 'off'];
 const errorText = (err) => String(err?.message ?? err).replace(/^Error invoking remote method '[^']+': (Error: )?/, '');
 
+/**
+ * Saves the "Språk / Language" choice, then switches to the language main resolved from it (auto follows the
+ * OS). Every view re-renders in the new language, with no reload (EPIC-07 US-0701 FR4.4).
+ */
+export async function saveLanguage(language) {
+  await window.bridge.setSettings({ language });
+  await i18n.changeLanguage(await window.bridge.getLanguage());
+}
+
 /** LCARS radio blocks: a label.lcars-block around a visually hidden radio. */
-function RadioBlocks({ name, options, value, onPick }) {
+function RadioBlocks({ name, ids, labelKey, value, onPick }) {
+  const { t } = useTranslation();
   return (
     <div className="lcars-radio-group">
-      {options.map((o) => (
-        <label key={o.id} className={`lcars-block ${value === o.id ? 'lcars-block--active' : 'lcars-block--mid'}`}>
+      {ids.map((id) => (
+        <label key={id} className={`lcars-block ${value === id ? 'lcars-block--active' : 'lcars-block--mid'}`}>
           <input
             type="radio"
             className="sr-only"
             name={`app-${name}`}
-            checked={value === o.id}
-            onChange={() => onPick(o.id)}
-            data-testid={`app-settings-${name}-${o.id}`}
+            checked={value === id}
+            onChange={() => onPick(id)}
+            data-testid={`app-settings-${name}-${id}`}
           />
-          {o.label}
+          {t(`${labelKey}.${id}`)}
         </label>
       ))}
     </div>
@@ -44,8 +45,9 @@ function RadioBlocks({ name, options, value, onPick }) {
  * @param {{open: boolean, onClose: () => void, value: 'full'|'reduced'|'off',
  *          onChange: (value: string) => Promise<unknown>,
  *          questionAlerts?: 'popup-notify'|'popup'|'off', notificationSound?: boolean,
- *          onSave?: (partial: object) => Promise<unknown>}} props value is the mode in effect;
- *   onSave saves questionAlerts or notificationSound
+ *          onSave?: (partial: object) => Promise<unknown>,
+ *          language?: 'auto'|'sv'|'en', onLanguage?: (language: string) => Promise<unknown>}} props
+ *   value is the mode in effect; onSave saves questionAlerts or notificationSound; onLanguage saves the language
  */
 export default function AppSettingsDialog({
   open,
@@ -54,8 +56,11 @@ export default function AppSettingsDialog({
   onChange,
   questionAlerts = 'popup-notify',
   notificationSound = true,
-  onSave = async () => {}
+  onSave = async () => {},
+  language = 'auto',
+  onLanguage = saveLanguage
 }) {
+  const { t } = useTranslation();
   const ref = useRef(null);
   const [error, setError] = useState(null);
 
@@ -75,7 +80,7 @@ export default function AppSettingsDialog({
     try {
       await run();
     } catch (err) {
-      setError(`Inställningen kunde inte sparas: ${errorText(err)}`);
+      setError(t('settings.saveFailed', { error: errorText(err) }));
     }
   }
 
@@ -92,33 +97,44 @@ export default function AppSettingsDialog({
     >
       {open && (
         <div>
-          <h2 id="app-settings-title">Inställningar</h2>
+          <h2 id="app-settings-title">{t('settings.title')}</h2>
           <fieldset className="settings-group">
-            <legend>Animationer</legend>
-            <RadioBlocks name="animations" options={OPTIONS} value={value} onPick={(id) => save(() => onChange(id))} />
-            <p className="muted settings-help">
-              Dämpad: statisk glöd, inga loopar och inget svep. Av: inga animationer. Utan eget val blir det Dämpad när datorn ber om
-              mindre rörelse, annars Full.
-            </p>
+            <legend>{t('settings.languageLegend')}</legend>
+            <select
+              aria-label={t('settings.languageLegend')}
+              value={language}
+              onChange={(e) => save(() => onLanguage(e.target.value))}
+              data-testid="settings-language"
+            >
+              {LANGUAGE_SETTINGS.map((id) => (
+                <option key={id} value={id}>
+                  {t(`settings.language.${id}`)}
+                </option>
+              ))}
+            </select>
           </fieldset>
           <fieldset className="settings-group">
-            <legend>Frågor från Claude</legend>
+            <legend>{t('settings.animationsLegend')}</legend>
+            <RadioBlocks name="animations" ids={ANIMATION_IDS} labelKey="settings.animations" value={value} onPick={(id) => save(() => onChange(id))} />
+            <p className="muted settings-help">{t('settings.animationsHelp')}</p>
+          </fieldset>
+          <fieldset className="settings-group">
+            <legend>{t('settings.alertsLegend')}</legend>
             <RadioBlocks
               name="alerts"
-              options={ALERT_OPTIONS}
+              ids={ALERT_IDS}
+              labelKey="settings.alerts"
               value={questionAlerts}
               onPick={(id) => save(() => onSave({ questionAlerts: id }))}
             />
-            <p className="muted settings-help">
-              En popup när AI-DLC väntar på ditt svar, och en systemnotis när appen ligger i bakgrunden eller frågan gäller ett annat
-              projekt.
-            </p>
+            <p className="muted settings-help">{t('settings.alertsHelp')}</p>
           </fieldset>
           <fieldset className="settings-group">
-            <legend>Ljud vid notis</legend>
+            <legend>{t('settings.soundLegend')}</legend>
             <RadioBlocks
               name="sound"
-              options={SOUND_OPTIONS}
+              ids={SOUND_IDS}
+              labelKey="settings.sound"
               value={notificationSound ? 'on' : 'off'}
               onPick={(id) => save(() => onSave({ notificationSound: id === 'on' }))}
             />
@@ -130,7 +146,7 @@ export default function AppSettingsDialog({
           )}
           <div className="setup-actions">
             <button type="button" className="btn" onClick={onClose} data-testid="app-settings-close">
-              Stäng
+              {t('common.close')}
             </button>
           </div>
         </div>

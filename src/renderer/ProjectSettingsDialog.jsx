@@ -1,14 +1,11 @@
 // "Projektinställningar" for one project tab (EPIC-06 FR3). Saved in the app's own settings, never in the project.
 // A native modal <dialog> keeps focus inside it and closes on Esc (NFR3).
 import { useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { isValidFeaturesPath } from '../main/parsers/features.js';
 
 const errorText = (err) => String(err?.message ?? err).replace(/^Error invoking remote method '[^']+': (Error: )?/, '');
-const MODES = [
-  { id: 'auto', label: 'Automatiskt', help: 'Visas när översikten finns.' },
-  { id: 'show', label: 'Visa', help: 'Visas alltid. Utan dokument förklaras formatet.' },
-  { id: 'hide', label: 'Dölj', help: 'Visas aldrig.' }
-];
+const MODES = ['auto', 'show', 'hide'];
 
 /**
  * @param {{open: boolean, onClose: () => void, projectId: string, name?: string,
@@ -16,6 +13,7 @@ const MODES = [
  *   onSetup: given when the project uses AI-DLC but has no feature docs (FR3.6, FR4.5)
  */
 export default function ProjectSettingsDialog({ open, onClose, projectId, name, settings, onSetup }) {
+  const { t } = useTranslation();
   const ref = useRef(null);
   const [mode, setMode] = useState(settings.featureDocs);
   const [path, setPath] = useState(settings.featuresPath);
@@ -65,24 +63,26 @@ export default function ProjectSettingsDialog({ open, onClose, projectId, name, 
     >
       {open && (
         <form onSubmit={save}>
-          <h2 id={`project-settings-title-${projectId}`}>Projektinställningar{name ? `: ${name}` : ''}</h2>
+          <h2 id={`project-settings-title-${projectId}`}>
+            {name ? t('settings.project.titleFor', { name }) : t('settings.project.title')}
+          </h2>
           <fieldset className="settings-group">
-            <legend>Feature-beskrivningar</legend>
-            {MODES.map((m) => (
-              <label key={m.id} className="check">
+            <legend>{t('settings.project.featureDocsLegend')}</legend>
+            {MODES.map((id) => (
+              <label key={id} className="check">
                 <input
                   type="radio"
                   name={`feature-docs-${projectId}`}
-                  checked={mode === m.id}
-                  onChange={() => setMode(m.id)}
-                  data-testid={`project-settings-mode-${m.id}`}
+                  checked={mode === id}
+                  onChange={() => setMode(id)}
+                  data-testid={`project-settings-mode-${id}`}
                 />
-                {m.label} <span className="muted">{m.help}</span>
+                {t(`settings.project.mode.${id}`)} <span className="muted">{t(`settings.project.modeHelp.${id}`)}</span>
               </label>
             ))}
           </fieldset>
           <label className="field">
-            <span className="field-label">Sökväg till översikten</span>
+            <span className="field-label">{t('settings.project.pathLabel')}</span>
             <input
               type="text"
               value={path}
@@ -94,7 +94,7 @@ export default function ProjectSettingsDialog({ open, onClose, projectId, name, 
           </label>
           {!validPath && (
             <p className="refresh-error" id={`project-settings-path-error-${projectId}`} role="alert">
-              Sökvägen ska vara relativ till projektet, sluta på .md och inte innehålla ..
+              {t('settings.project.pathInvalid')}
             </p>
           )}
           {error && (
@@ -104,7 +104,7 @@ export default function ProjectSettingsDialog({ open, onClose, projectId, name, 
           )}
           {onSetup && (
             <p className="settings-setup">
-              <span className="muted">Projektet har inga feature-beskrivningar ännu.</span>
+              <span className="muted">{t('settings.project.noDocs')}</span>
               <button
                 type="button"
                 className="btn"
@@ -114,16 +114,16 @@ export default function ProjectSettingsDialog({ open, onClose, projectId, name, 
                 }}
                 data-testid="project-settings-setup"
               >
-                Sätt upp feature-beskrivningar
+                {t('features.setup')}
               </button>
             </p>
           )}
           <div className="setup-actions">
             <button type="submit" className="btn btn-accent" disabled={!validPath || saving} data-testid="project-settings-save">
-              Spara
+              {t('common.save')}
             </button>
             <button type="button" className="btn" onClick={onClose} data-testid="project-settings-cancel">
-              Avbryt
+              {t('common.cancel')}
             </button>
           </div>
         </form>

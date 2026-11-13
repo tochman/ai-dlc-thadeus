@@ -3,7 +3,8 @@ import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/re
 
 const terminal = { state: vi.fn(() => 'idle'), type: vi.fn() };
 vi.mock('../../src/renderer/TerminalContext.jsx', () => ({ useTerminal: () => terminal }));
-const { default: RefreshPanel, WAIT_MESSAGE } = await import('../../src/renderer/RefreshPanel.jsx');
+const { default: RefreshPanel } = await import('../../src/renderer/RefreshPanel.jsx');
+const WAIT_MESSAGE = 'Vänta tills AI-DLC-steget är klart eller parkera arbetet först'; // sv.json github.wait (EPIC-07)
 
 // Same shapes git:status and git:remoteChanges return.
 const status = { isRepo: true, branch: 'feature/x', upstream: 'origin/feature/x', tracking: true, ahead: 1, behind: 4, dirtyAidlc: 1, dirtyOther: 2 };

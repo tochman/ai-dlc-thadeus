@@ -8,26 +8,26 @@
 
 **Stories:** US-0701, US-0702
 
-**Status (2026-11-13):** 📋 Planned. Not part of v0.2.0.
+**Status (2026-11-13):** 🚧 US-0701 built, merged to main, not released. US-0702 📋 Planned.
 
 ---
 
 ## User Stories
 
-**US-0701: i18n foundation and English** 📋 Planned
+**US-0701: i18n foundation and English** 🚧 Built, merged to main, not released
 - As a **developer who does not read Swedish**, in order to **use the console in a language I understand**, I would like to **all interface text to come from translation files, with English and Swedish shipped**.
 - **Epic:** EPIC-07
 - **Priority:** Medium
 - **Complexity:** Medium
 - **Acceptance Criteria:**
-  - [ ] Every user-facing string in the renderer and in the main process (dialogs, menus from US-0404, error messages, notifications) is looked up by key, for example `t('intents.resume', { stage, n, m })`. No hard-coded interface text is left in the components.
-  - [ ] Two language files are shipped: `sv.json` (today's texts) and `en.json` (English). Keys are namespaced by view (`app.*`, `intents.*`, `pipeline.*`, `cost.*`, `terminal.*`, `features.*`, `setup.*`, `settings.*`, `menu.*`).
-  - [ ] Interpolation (`{stage}`) and plural forms (`{n, plural, one {# händelse} other {# händelser}}`, or a simple `one`/`other` pair per key) are supported. Numbers, money and dates are formatted with `Intl` for the chosen language.
-  - [ ] **Choosing a language:** "Språk / Language" in the app settings, with "Automatiskt" (from the operating system's language, `app.getLocale()`) as the default. The choice is saved in the app's own `settings.json`. The view switches language at once, with no restart.
-  - [ ] A key that is missing in the chosen language falls back to English, then to the key itself. It is never shown as empty. In development a missing key is logged once.
-  - [ ] **Not translated:** content from the project (intent names, stage names, audit events, file contents, Claude's output) and AI-DLC's own terms that are identifiers (`express`, `in-flight`, stage slugs).
-  - [ ] A test checks that `sv.json` and `en.json` have the same keys, and that every `t('…')` key used in the code exists in `en.json`.
-  - [ ] LCARS labels keep working in both languages: long English or Swedish words do not break blocks. Labels shrink or wrap instead of overflowing.
+  - [x] Every user-facing string in the renderer and in the main process (dialogs, menus from US-0404, error messages, notifications) is looked up by key, for example `t('intents.resume', { stage, n, m })`. No hard-coded interface text is left in the components.
+  - [x] Two language files are shipped: `sv.json` (today's texts) and `en.json` (English). Keys are namespaced by view (`app.*`, `intents.*`, `pipeline.*`, `cost.*`, `terminal.*`, `features.*`, `setup.*`, `settings.*`, `menu.*`).
+  - [x] Interpolation (`{stage}`) and plural forms (`{n, plural, one {# händelse} other {# händelser}}`, or a simple `one`/`other` pair per key) are supported. Numbers, money and dates are formatted with `Intl` for the chosen language.
+  - [x] **Choosing a language:** "Språk / Language" in the app settings, with "Automatiskt" (from the operating system's language, `app.getLocale()`) as the default. The choice is saved in the app's own `settings.json`. The view switches language at once, with no restart.
+  - [x] A key that is missing in the chosen language falls back to English, then to the key itself. It is never shown as empty. In development a missing key is logged once.
+  - [x] **Not translated:** content from the project (intent names, stage names, audit events, file contents, Claude's output) and AI-DLC's own terms that are identifiers (`express`, `in-flight`, stage slugs).
+  - [x] A test checks that `sv.json` and `en.json` have the same keys, and that every `t('…')` key used in the code exists in `en.json`.
+  - [x] LCARS labels keep working in both languages: long English or Swedish words do not break blocks. Labels shrink or wrap instead of overflowing.
 - **Dependencies:** US-0403 (the new UI), US-0404 (menus)
 
 **US-0702: Add your own language with a translation file** 📋 Planned
