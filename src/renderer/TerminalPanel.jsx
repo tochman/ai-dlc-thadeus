@@ -4,32 +4,31 @@ import { FitAddon } from '@xterm/addon-fit';
 import '@xterm/xterm/css/xterm.css';
 import { createActivity } from './terminalControl.js';
 import { useTerminal } from './TerminalContext.jsx';
+import AuctumMark from './AuctumMark.jsx';
+import { Bar } from './Lcars.jsx';
+import { xtermTheme } from './tokens.js';
 
 const bridge = window.bridge;
 const QUICK_COMMANDS = ['/aidlc --status', '/aidlc --doctor', '/aidlc continue'];
 const KINDS = [
-  { id: 'claude', label: 'claude' },
-  { id: 'shell', label: 'shell' }
+  { id: 'claude', label: 'Claude' },
+  { id: 'shell', label: 'Shell' }
 ];
-const STATE_LABEL = { idle: 'ledig', busy: 'arbetar', exited: 'avslutad' };
+const STATE_LABEL = { idle: 'Ledig', busy: 'Arbetar', exited: 'Avslutad' };
 const errorText = (err) => String(err?.message ?? err).replace(/^Error invoking remote method '[^']+': (Error: )?/, '');
-
-const THEME = {
-  background: '#0b0b10',
-  foreground: '#e8e6f0',
-  cursor: '#ff9c3a',
-  selectionBackground: '#4a3f6b'
-};
 
 /**
  * One xterm bound to one pty. Stays mounted while hidden so the session survives view switches.
  * Registers itself with the TerminalProvider so other views can type into it (FR1.1).
+ * `onInput` is told when the person types, which clears "Väntar på din Enter" (EPIC-04 FR3.6).
  */
-function TermSession({ projectId, kind, shown, register }) {
+function TermSession({ projectId, kind, shown, register, onInput }) {
   const hostRef = useRef(null);
   const termRef = useRef(null);
   const fitRef = useRef(null);
   const idRef = useRef(null);
+  const onInputRef = useRef(onInput);
+  onInputRef.current = onInput;
   const [activity] = useState(() => createActivity());
   const [exited, setExited] = useState(null);
   const [error, setError] = useState(null);
@@ -76,7 +75,7 @@ function TermSession({ projectId, kind, shown, register }) {
       fontSize: 13,
       cursorBlink: true,
       allowProposedApi: false,
-      theme: THEME
+      theme: xtermTheme()
     });
     const fit = new FitAddon();
     term.loadAddon(fit);
@@ -101,6 +100,7 @@ function TermSession({ projectId, kind, shown, register }) {
       activity.onExit(exitCode);
     });
     const input = term.onData((data) => {
+      onInputRef.current?.(data);
       if (idRef.current) bridge.ptyWrite(idRef.current, data).catch((err) => setError(errorText(err)));
     });
     const resize = term.onResize(({ cols, rows }) => {
@@ -155,13 +155,17 @@ export default function TerminalPanel({ projectId, visible }) {
   const { open, active } = terminal.view;
   const setOpen = (next) => terminal.setView((v) => ({ ...v, open: typeof next === 'function' ? next(v.open) : next }));
   const setActive = (tab) => terminal.setView((v) => ({ ...v, active: tab }));
-  const [height, setHeight] = useState(320);
+  // null = the CSS default clamp(180px, 24vh, 240px) on the open panel; a number once the person drags (F-01).
+  const [height, setHeight] = useState(null);
+  const panelRef = useRef(null);
+  const clampHeight = (h) => Math.round(Math.min(window.innerHeight * 0.6, Math.max(180, h)));
+  const currentHeight = () => height ?? panelRef.current?.offsetHeight ?? 220;
 
   function startDrag(e) {
     e.preventDefault();
     const startY = e.clientY;
-    const startH = height;
-    const move = (ev) => setHeight(Math.min(window.innerHeight - 160, Math.max(140, startH + startY - ev.clientY)));
+    const startH = currentHeight();
+    const move = (ev) => setHeight(clampHeight(startH + startY - ev.clientY));
     const up = () => {
       window.removeEventListener('pointermove', move);
       window.removeEventListener('pointerup', up);
@@ -171,12 +175,19 @@ export default function TerminalPanel({ projectId, visible }) {
   }
 
   function nudgeHeight(e) {
-    if (e.key === 'ArrowUp') setHeight((h) => Math.min(window.innerHeight - 160, h + 40));
-    if (e.key === 'ArrowDown') setHeight((h) => Math.max(140, h - 40));
+    if (e.key === 'ArrowUp') setHeight(clampHeight(currentHeight() + 40));
+    if (e.key === 'ArrowDown') setHeight(clampHeight(currentHeight() - 40));
   }
 
+  // The Konsol mockup: Claude and Shell as blocks in the bottom arm with their state on the block, segmented
+  // bars above and below the terminal, quick commands as outline buttons (EPIC-04 FR3.6).
   return (
-    <section className={`terminal-panel elbow-bottom ${open ? '' : 'is-collapsed'}`} aria-label="Terminal">
+    <section
+      ref={panelRef}
+      className={`terminal-panel ${open ? '' : 'is-collapsed'}`}
+      style={open && height != null ? { height } : undefined}
+      aria-label="Terminal"
+    >
       {open && (
         <div
           className="terminal-resize"
@@ -189,59 +200,80 @@ export default function TerminalPanel({ projectId, visible }) {
           data-testid="terminal-panel-resize"
         />
       )}
-      <div className="terminal-bar">
-        <button className="btn" onClick={() => setOpen((o) => !o)} aria-expanded={open} data-testid="terminal-panel-toggle">
-          {open ? 'Dölj terminal' : 'Visa terminal'}
-        </button>
+      <div className="terminal-arm">
         <div role="tablist" aria-label="Terminaler" className="terminal-tabs">
-          {KINDS.map((k) => (
-            <button
-              key={k.id}
-              role="tab"
-              aria-selected={active === k.id}
-              className={`detail-tab ${active === k.id ? 'is-active' : ''}`}
-              onClick={() => {
-                setActive(k.id);
-                setOpen(true);
-              }}
-              data-testid={`terminal-panel-tab-${k.id}`}
-            >
-              {k.label}
-              <span className={`term-state term-state-${terminal.state(k.id)}`} data-testid={`terminal-panel-state-${k.id}`}>
-                {STATE_LABEL[terminal.state(k.id)]}
-              </span>
-            </button>
-          ))}
+          {KINDS.map((k) => {
+            const state = terminal.state(k.id);
+            const on = active === k.id;
+            const breathing = k.id === 'claude' && state === 'busy';
+            return (
+              <button
+                key={k.id}
+                role="tab"
+                aria-selected={on}
+                className={`lcars-block term-tab term-tab--${k.id} lcars-block--${on ? 'active' : 'mid'} ${breathing ? 'is-breathing' : ''}`}
+                onClick={() => {
+                  setActive(k.id);
+                  setOpen(true);
+                }}
+                data-testid={`terminal-panel-tab-${k.id}`}
+              >
+                <span className={`term-state term-state-${state}`} data-testid={`terminal-panel-state-${k.id}`}>
+                  {STATE_LABEL[state]}
+                </span>
+                <span className="term-tab-name">{k.label}</span>
+              </button>
+            );
+          })}
         </div>
-        {terminal.error && (
-          <span className="term-error" role="alert" data-testid="terminal-panel-error">
-            {terminal.error}
-          </span>
-        )}
-        <div className="quick-actions">
-          {QUICK_COMMANDS.map((cmd) => (
-            <button
-              key={cmd}
-              className="btn btn-quiet"
-              title="Skriver in kommandot i claude-fliken utan att skicka det"
-              onClick={() => terminal.type('claude', cmd, { submit: false })}
-              data-testid="terminal-panel-quick-command"
-            >
-              {cmd}
-            </button>
-          ))}
-        </div>
+        <button className="terminal-elbow" onClick={() => setOpen((o) => !o)} aria-expanded={open} data-testid="terminal-panel-toggle">
+          <AuctumMark size={96} className="terminal-elbow-mark" decorative />
+          <span className="terminal-elbow-label">{open ? 'Dölj terminal' : 'Visa terminal'}</span>
+        </button>
       </div>
-      <div className="terminal-body" style={{ height: open ? height : 0 }} hidden={!open}>
-        {KINDS.map((k) => (
-          <TermSession
-            key={k.id}
-            projectId={projectId}
-            kind={k.id}
-            shown={visible && open && active === k.id}
-            register={terminal.register}
-          />
-        ))}
+      <div className="terminal-main">
+        {open && <Bar segs={[['steel', 2], ['steel-deep', 90], ['slate-3', 1]]} />}
+        <div className="terminal-body" hidden={!open}>
+          {KINDS.map((k) => (
+            <TermSession
+              key={k.id}
+              projectId={projectId}
+              kind={k.id}
+              shown={visible && open && active === k.id}
+              register={terminal.register}
+              onInput={() => terminal.input(k.id)}
+            />
+          ))}
+        </div>
+        <div className="terminal-foot">
+          <div className="quick-actions">
+            {QUICK_COMMANDS.map((cmd) => (
+              <button
+                key={cmd}
+                className="btn btn-quiet"
+                title="Skriver in kommandot i claude-fliken utan att skicka det"
+                onClick={() => terminal.type('claude', cmd, { submit: false })}
+                data-testid="terminal-panel-quick-command"
+              >
+                {cmd}
+              </button>
+            ))}
+          </div>
+          {KINDS.filter((k) => terminal.pending(k.id)).map((k) => (
+            <span key={k.id} className="term-pending-row">
+              <span className="term-pending is-attn" data-testid={`terminal-panel-pending-${k.id}`}>
+                Väntar på din Enter
+              </span>
+              <span className="term-pending-hint">{k.label}: skrivet av appen. Inget körs förrän du trycker Enter.</span>
+            </span>
+          ))}
+          {terminal.error && (
+            <span className="term-error" role="alert" data-testid="terminal-panel-error">
+              {terminal.error}
+            </span>
+          )}
+        </div>
+        <Bar segs={[['slate-3', 2], ['steel-deep', 70], ['slate-2', 1]]} />
       </div>
     </section>
   );

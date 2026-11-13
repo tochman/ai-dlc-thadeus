@@ -6,7 +6,7 @@
 
 > Make the price and the "brains" of AI-DLC work visible. For every intent, stage and agent the console shows what the run cost (tokens and USD) and which model did the work, next to which model each agent is *configured* to use. The goal is that the user can answer "what did this feature cost?", "where does the money go?" and "is the reviewer really running on the cheaper model?" without leaving the app. Read-only, like everything else.
 
-**Stories:** US-0201, US-0202, US-0203, US-0204, US-0205
+**Stories:** US-0201, US-0202, US-0203, US-0204, US-0205, US-0206
 
 **Status (2026-11-13):** 🚧 Built on `feat/epic02-cost-and-models`, not released. CSV export (US-0203) is deferred.
 
@@ -99,3 +99,18 @@ The key format of `workflows` was confirmed during requirements analysis (see ab
   - [x] An in-flight intent shows its running cost next to the live indicator
   - [x] A half-written ledger keeps the last good values (as in FR7.4)
 - **Dependencies:** US-0201, US-0107
+
+**US-0206: Choose models and effort per agent from the console** 📋 Planned (future)
+- As a **developer tuning how AI-DLC spends tokens**, in order to **choose which model and effort each agent uses without remembering `aidlc config` commands**, I would like to **a model view where I can see and change model and effort per agent, with the estimated cost of the choice beside it**.
+- **Epic:** EPIC-02
+- **Priority:** Low
+- **Complexity:** Medium
+- **Acceptance Criteria:**
+  - [ ] A "Modeller" view (from the left arm or the settings view in US-0405) lists every agent with its configured model and effort (`aidlc config models --show --json`), the model it actually ran on (from the ledger, US-0204) and its share of the cost.
+  - [ ] Model and effort are chosen from lists of what AI-DLC supports (models known to the installed `aidlc`, `inherit` for the session's model, effort `low` … `max`). The presets `thorough`, `balanced` and `minimal` can be applied to all agents at once.
+  - [ ] **Before applying:** the view shows the command it will run (`aidlc config models --agent <name> --model <id> --effort <level> --project --yes`, or `--preset …`) and an estimate of how cost changes, based on this project's ledger history and API prices. It is labelled as an estimate.
+  - [ ] **Applying** follows the app's principle: the commands are typed into the visible shell tab for the person to confirm with Enter. The app does not write AI-DLC config files itself. When the config changes, the view reloads.
+  - [ ] Scope is chosen explicitly: this project (`--project`) or only for me (`--local`).
+  - [ ] Agents that deviate from their configuration (US-0204) are marked, with a suggestion to align them.
+- **Dependencies:** US-0204, US-0405
+

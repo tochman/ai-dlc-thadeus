@@ -1,101 +1,56 @@
-# API Documentation — aidlc-dash
+# API-dokumentation: aidlc-dash
 
-Appen har inga HTTP-endpoints och ingen databas. API-ytorna är Electron-IPC, preload-bryggan och de filer och kommandon appen läser.
+Appen har inga HTTP-, GraphQL- eller nätverks-API:er. Dess API-yta är Electron-IPC mellan renderaren och huvudprocessen, exponerad som `window.bridge` i `src/preload/index.js`. Varje handler i `src/main/ipc.js` slår upp `projectId` (okänt id ger fel) och går via `projectAccess` för sökvägar. Fel loggas och skickas tillbaka som avvisat promise.
 
-## IPC request/response (`ipcMain.handle`, `src/main/ipc.js`)
+## Invoke-anrop (renderare → main), 28 st
 
-Alla handlers ligger i tabellen `handlers` (`ipc.js:84-162`), registreras i en loop och loggar fel och kastar vidare (renderaren får ett avvisat promise, med prefixet "Error invoking remote method" som vyerna tar bort). `projectId` slås upp i en in-memory-map `projects` (`{root, space, watcher, setupWatcher, sender, models, setupInfo}`); okänt id ger fel.
+| `window.bridge` | Kanal | Argument | Svar |
+|-----------------|-------|----------|------|
+| `pickProject` | `project:pick` | – | mappsökväg eller `null` |
+| `openProject` | `project:open` | `dir` | `{projectId, root, name, detection}` |
+| `closeProject` | `project:close` | `projectId` | – (dödar pty och bevakning) |
+| `getSpaces` | `project:spaces` | `projectId` | `string[]` |
+| `getIntents` | `project:intents` | `projectId, space, onlyDirs?` | `{intents, warning}` |
+| `getIntent` | `project:intent` | `projectId, space, dirName` | detalj: `state, graph, pipeline, events, units, directive, files, warnings, stale?` |
+| `getCost` | `project:cost` | `projectId, space` | `{available, project, perIntent, byScope, timeline, ...}` eller `{available:false, reason}` |
+| `getModels` | `project:models` | `projectId` | `{source, agents, error?}` |
+| `readFile` | `project:file` | `projectId, rel` | text |
+| `revealInFinder` | `shell:reveal` | `projectId, rel` | – |
+| `openInEditor` | `shell:openInEditor` | `projectId, rel` | – (endast `.md .json .txt .yaml .yml`) |
+| `getSettings` / `setSettings` | `settings:get` / `settings:set` | `partial` | `{openProjects, recentProjects, activeProject, projectSettings}` |
+| `ptySpawn` | `pty:spawn` | `{projectId, kind: 'claude'|'shell', cols, rows}` | session-id |
+| `ptyWrite` / `ptyResize` / `ptyKill` | `pty:write` / `pty:resize` / `pty:kill` | `id, data` / `id, cols, rows` / `id` | – |
+| `getGitStatus` | `git:status` | `projectId` | `{isRepo, branch, upstream, tracking, ahead, behind, dirtyAidlc, dirtyOther}` |
+| `gitFetch` | `git:fetch` | `projectId` | – |
+| `getRemoteChanges` | `git:remoteChanges` | `projectId, ref, space` | `{ref, aidlcCommits, aidlcFiles, otherFiles, auditLines, newIntents}` |
+| `showRemoteFile` | `git:showRemote` | `projectId, ref, rel` | text (bara under `aidlc/`) |
+| `getConflicts` | `git:conflicts` | `projectId` | `string[]` |
+| `getSetupInfo` | `setup:info` | `projectId` | förutsättningar, förhandsvisning, plugins, presets |
+| `buildSetupCommand` | `setup:command` | `projectId, {needsGit, plugins, preset}` | kommandosträng (körs inte) |
+| `loadFeatures` | `features:load` | `projectId` | översikt och epics |
+| `getStoryLinks` | `features:storyLinks` | `projectId, space` | `{storyId: dirName[]}` |
+| `getProjectSettings` / `setProjectSettings` | `projectSettings:get` / `projectSettings:set` | `projectId, partial` | `{featureDocs, featuresPath}` |
 
-| Kanal | Bridge-funktion | Argument | Svar |
-|---|---|---|---|
-| `project:pick` | `pickProject()` | – | vald mappsökväg eller `null` |
-| `project:open` | `openProject(dir)` | sökväg | `{projectId, root, name, detection}`; `root` är realpath; `detection = {isAidlc, activeSpace, spaces}` eller `{isAidlc:false, reason}`. Startar `watchSpace` (AI-DLC) eller `watchForSetup` (annars) |
-| `project:close` | `closeProject(id)` | projectId | – (dödar terminaler, stänger båda bevakarna) |
-| `project:spaces` | `getSpaces(id)` | projectId | `string[]` |
-| `project:intents` | `getIntents(id, space, onlyDirs?)` | | `{intents[], warning}` (se intent-fält nedan); startar om bevakaren vid spacebyte |
-| `project:intent` | `getIntent(id, space, dirName)` | | `{dirName, base, request, state, graph, pipeline, events, units, directive, files, warnings, stale?}` |
-| `project:cost` | `getCost(id, space)` | | `{available:false, reason}` eller `{available:true, project, perIntent, byScope, timeline, stale?, warning?}` |
-| `project:models` | `getModels(id)` | | `{source:'aidlc-config'|'agent-files'|'none', agents[{agent, model, effort}], error?}` (cachas per projectId, kastar aldrig) |
-| `project:file` | `readFile(id, rel)` | valfri rotrelativ sökväg | filtext (UTF-8). Inte begränsad till `aidlc/`: `docs/FEATURES.md` och `FEATURES.md` i roten går att läsa |
-| `shell:reveal` | `revealInFinder(id, rel)` | | – |
-| `shell:openInEditor` | `openInEditor(id, rel)` | endast `.md .json .txt .yaml .yml` | – |
-| `settings:get` | `getSettings()` | | `{openProjects[], recentProjects[], activeProject}` |
-| `settings:set` | `setSettings(partial)` | | sanerade inställningar; okända nycklar tas bort, listor max 50 |
-| `pty:spawn` | `ptySpawn({projectId, kind, cols, rows})` | `kind: 'claude'|'shell'` | session-id |
-| `pty:write` | `ptyWrite(id, data)` | sträng | – |
-| `pty:resize` | `ptyResize(id, cols, rows)` | heltal 1–999 | – |
-| `pty:kill` | `ptyKill(id)` | | – |
-| `git:status` | `getGitStatus(id)` | | git.js (svarsform ytligt skannad) |
-| `git:fetch` | `gitFetch(id)` | | git.js |
-| `git:remoteChanges` | `getRemoteChanges(id, ref, space)` | `ref` och `space` (standard `default`) som strängar | git.js |
-| `git:showRemote` | `showRemoteFile(id, ref, rel)` | | git.js; ref och sökväg kontrolleras mot grenens upstream |
-| `git:conflicts` | `getConflicts(id)` | | git.js |
-| `setup:info` | `getSetupInfo(id)` | | `{git:{isRepo}, harnesses[], presets[], plugins[], preview, aidlc:{installed, version} | {installed:false, error}, warning?}`; sparas som `setupInfo` i projektregistret |
-| `setup:command` | `buildSetupCommand(id, options)` | `{needsGit, plugins[], preset}` | kommandokedja (sträng, `&&`-sammanfogad); plugins måste finnas i senaste `setupInfo.plugins`, annars fel |
+Utöver detta exponeras `platform` (`process.platform`).
 
-**Ingen** kanal listar en katalog eller frågar om en fil finns; `listDir` och `exists` i `projectAccess.js` används bara i huvudprocessen.
+## Push-händelser (main → renderare), 6 st
 
-**Intent i listan** (`mergeIntents` + `summarizeIntent`): `uuid, slug, dirName, scope, status, date, active, missingOnDisk, missingInIndex, request, currentStage, stateStatus, done, executed, error?, stale?`.
+| `window.bridge` | Kanal | Payload |
+|-----------------|-------|---------|
+| `onProjectChanged` | `project:changed` | `{projectId, space, dirNames, indexChanged, costChanged}` |
+| `onProjectDetected` | `project:detected` | `{projectId, detection}` |
+| `onWatchError` | `project:watchError` | `{projectId, message}` |
+| `onFeaturesChanged` | `features:changed` | `{projectId}` |
+| `onPtyData` | `pty:data` | `{id, data}` |
+| `onPtyExit` | `pty:exit` | `{id, exitCode, signal}` |
 
-**Audit-händelse i `detail.events`** (`mergeAudits` + `categoryOf`): `{timestamp, event, title, fields, source, index, key, seq, category}`.
-- `timestamp` och `event` lyfts ur fälten `**Timestamp**` och `**Event**` (eller `null`); `fields` är övriga `**Nyckel**: värde`, flerradiga värden fortsätter på följande rader.
-- `title` är blockets `## Rubrik` (eller `null`); `source` är shardens filnamn (t.ex. `machine-a.md`).
-- Sedan EPIC-03 *(ytligt)*: `index` är blockets position i sin shard och `key` = `<source>#<index>`, stabil så länge shards bara växer i slutet. `seq` är fortfarande index i den sammanslagna, tidssorterade listan.
-- `category` ∈ `error | gate | subagent | unit | guard | human | stage | other`.
-- Listan är komplett och osorterad efter filter; renderaren filtrerar och vänder ordningen.
+Varje `on*` returnerar en avregistreringsfunktion.
 
-## IPC push-händelser (renderer-prenumerationer)
+## Inställningar (relevant för US-0402)
 
-| Kanal | Bridge | Payload |
-|---|---|---|
-| `project:changed` | `onProjectChanged(cb)` | `{projectId, space, dirNames[], indexChanged, costChanged}` — säger vilken intent, aldrig vilken fil; gäller bara intents-mappen och ledgern |
-| `project:watchError` | `onWatchError(cb)` | `{projectId, message}` |
-| `project:detected` | `onProjectDetected(cb)` | `{projectId, detection}`; skickas när `watchForAidlc` ser en första space och omdetekteringen ger `isAidlc` |
-| `pty:data` | `onPtyData(cb)` | `{id, data}` |
-| `pty:exit` | `onPtyExit(cb)` | `{id, exitCode, signal}` |
+`settings.js` sparar `settings.json` i userData och kör `sanitize()` på allt som läses och skrivs. Endast nycklarna `openProjects`, `recentProjects`, `activeProject` och `projectSettings` behålls. En ny global inställning som "Animationer: Full / Dämpad / Av" måste läggas till i `DEFAULTS` och `sanitize()`, annars tas den bort tyst vid nästa skrivning.
 
-`window.bridge.platform` exponerar `process.platform`. Bryggan har 24 anrop och 5 prenumerationer (`src/preload/index.js`); en ny kanal kräver ändring i både `ipc.js` och preload.
+## Interna renderar-API:er
 
-## Renderer-internt kontrakt: Timeline *(ytligt, efter EPIC-03)*
-
-`<Timeline events newKeys />` (`src/renderer/Timeline.jsx`), anropas från `IntentDetail.jsx:108` med `detail.events` och `newKeys` från `useProject` (via `ProjectView.jsx:52`).
-- `newKeys`: `Set` av händelsenycklar (`key`) som tillkommit vid de senaste liveuppdateringarna, eller `null`; raderna markeras på identitet, inte på antal.
-- Fönstring med `useVirtualizer` (`@tanstack/react-virtual`); radnyckel och mätning via virtualiseraren.
-- `data-testid` sedda: `timeline-jump-newest` (övriga från förra skanningen, inte omverifierade).
-
-## Renderer-internt kontrakt: FileContent
-
-`<FileContent rel content />` (exporterad från `src/renderer/ArtifactReader.jsx:24-34`): `.md` → react-markdown + remark-gfm med `skipHtml`, länkar som `<span class="md-link" title=href>` och bilder som `[bild: alt]`; `.json` → snyggformaterad, ogiltig JSON visas som den är; annat → `<pre>`. Används av ArtifactReader och RefreshPanel. Den interna `FileView` (läsning via `readFile`, knapparna "Visa i Finder"/"Visa i filhanteraren" och "Öppna i editor") är inte exporterad.
-
-## Lästa filkontrakt (rotrelativt)
-
-| Fil | Tolkas av |
-|---|---|
-| `aidlc/active-space` | `detectProject` |
-| `aidlc/spaces/<space>/intents/intents.json` | `parsers/intents.js` |
-| `.../intents/active-intent` | `loadIntentList` |
-| `.../<intent>/aidlc-state.md` | `parsers/state.js` (fält, `### <PHASE> PHASE`, checkboxar ` - ? R x S`) |
-| `.../<intent>/runtime-graph.json` | `parsers/runtimeGraph.js` (stages, `bolt_dag`) |
-| `.../<intent>/audit/*.md` | `parsers/audit.js`: block åtskilda av `---`-rader, `## Titel`, `**Nyckel**: värde`; varje block med titel eller fält behålls |
-| `.../<intent>/.aidlc-engine/active-directive.json` | `buildDetail` (kind, stage, delivery) |
-| `.../<intent>/project-description.json` | `loadDescription` |
-| `.../<intent>/<phase>/**` (djup 3) | `listArtifacts` |
-| `aidlc/.aidlc-sessions/usage-ledger.json` | `parsers/ledger.js` (schemaVersion 3) |
-| `.claude/agents/aidlc-*-agent.md` (frontmatter `model`, `effort`) | `models.js` (reserv) |
-| `.kiro/`, `.codex/`, `.cursor/`, `.aidlc/` (finns/finns inte) | `getSetupInfo` (`listDir(root, '.')`) |
-
-Feature-dokumenten (`docs/FEATURES.md`, `docs/features/epic-XX-<slug>.md`) läses inte av appen i dag. Formatet beskrivs i [business-overview.md](business-overview.md) § Aktiv intent.
-
-## Externa kommandon
-
-| Kommando | Var | Villkor |
-|---|---|---|
-| `$SHELL -l -i -c 'printf ...$PATH'` | `models.js` | en gång per process, 5 s timeout |
-| `aidlc config models --show --json --harness claude` | `models.js` | `execFile`, cwd = rot, 10 s timeout, svaret ska ha `ok:true` och `data.effective[]` |
-| `$SHELL -l -i -c claude` / `$SHELL -l` | `pty.js` | node-pty, cwd = rot, `TERM=xterm-256color` |
-| `aidlc --version` | `setup.js` via `runFixed` | saknas verktyget stannar `getSetupInfo` med `aidlc.installed:false` |
-| `aidlc --project-dir <root> config --harness claude --dry-run` | `setup.js` | förhandsvisning; `parsePreview` läser `create=N … conflict=N`, konfliktrader och `Note:`-rader |
-| `aidlc config project --show --json` | `setup.js` | `data.installedPlugins`, filtrerat mot `^[a-z0-9-]+$` |
-| `git fetch/rev-parse/rev-list/diff/status/show` | `exec.js` via `git.js` (EPIC-05) | ytligt: `execFile` utan skal, fasta argument, timeout |
-
-**Byggs men körs aldrig av appen** (`buildSetupCommand`, skrivs i shell-fliken utan Enter): `git init -b main` (om inget repo) `&& aidlc --project-dir . config --harness claude --yes` `[&& aidlc config project --plugins a,b --yes]` `[&& aidlc config models --preset <thorough|balanced|minimal> --project --yes]`.
+- `useTerminal()` (`TerminalContext.jsx`): `view`, `setView`, `error`, `register`, `show`, `state(tab)`, `exitCode(tab)`, `type(tab, text, {submit})`, `sequence(tab, steps)`, `restart(tab)`. Returnerar `null` utanför `TerminalProvider`.
+- `useProject(projectId, space)` och `useFeatures(projectId, space)`: se `component-inventory.md`.

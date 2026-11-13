@@ -34,10 +34,14 @@ export default function ResumeButton({ intent, activeDirName, position }) {
     ]);
   }
 
+  // The amber block in two parts (mockup): where it picks up, then the step. The text reads as one label.
+  const label = resumeLabel(position);
+  const cut = label.indexOf(' (steg');
   return (
     <span className="resume">
-      <button className="btn btn-accent resume-button" onClick={resume} data-testid="intent-resume">
-        {resumeLabel(position)}
+      <button className="resume-button" onClick={resume} data-testid="intent-resume">
+        <span className="resume-main">{cut < 0 ? label : label.slice(0, cut)}</span>
+        <span className="resume-step">{cut < 0 ? '' : label.slice(cut)}</span>
       </button>
       {message && (
         <span className="resume-message" role="status">

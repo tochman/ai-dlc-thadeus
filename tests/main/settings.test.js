@@ -38,6 +38,20 @@ describe('project settings', () => {
     expect((await getSettings()).projectSettings['/p/a']).toEqual({ featureDocs: 'auto', featuresPath: 'docs/FEATURES.md' });
   });
 
+  it('keeps the Animationer choice and leaves out an invalid one so the default applies (EPIC-04 FR4.2)', async () => {
+    expect((await getSettings()).animations).toBeUndefined(); // nothing saved: the renderer picks Full or Dämpad
+    await setSettings({ animations: 'off' });
+    expect((await getSettings()).animations).toBe('off');
+    await setSettings({ openProjects: ['/p/a'] }); // saving the tabs keeps the choice
+    expect((await getSettings()).animations).toBe('off');
+
+    await fs.writeFile(FILE, JSON.stringify({ openProjects: [], animations: 'blink' }));
+    const s = await getSettings();
+    expect('animations' in s).toBe(false);
+    await setSettings({ animations: 42 });
+    expect(JSON.parse(await fs.readFile(FILE, 'utf8'))).not.toHaveProperty('animations');
+  });
+
   it('keeps both changes when two writes run at the same time (FR3.5)', async () => {
     await Promise.all([
       setSettings({ openProjects: ['/p/a', '/p/b'], activeProject: '/p/b' }),

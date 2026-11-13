@@ -1,10 +1,11 @@
 // Collapsible project cost overview at the top of the intent list (FR3, FR4.6, FR6).
 import { useState } from 'react';
 import { CostLabel, CostTable, ModelTable } from './CostTab.jsx';
-import { MISSING_PRICE, formatCost, formatTokens, formatUsd, tokenBreakdown } from './format.js';
+import { Readout } from './Lcars.jsx';
+import { COST_LABEL, MISSING_PRICE, formatCost, formatTokens, formatUsd, shortModel, tokenBreakdown } from './format.js';
 
 const BAR_W = 14;
-const BAR_GAP = 4;
+const BAR_GAP = 6;
 const CHART_H = 60;
 
 /** Cost per intent over time as plain SVG bars, ordered by date prefix (FR3.2). */
@@ -18,7 +19,7 @@ function CostChart({ timeline }) {
         {timeline.map((t, i) => {
           const h = Math.max(1, (t.usd / max) * (CHART_H - 2));
           return (
-            <rect key={t.dirName} x={i * (BAR_W + BAR_GAP)} y={CHART_H - h} width={BAR_W} height={h} rx="2">
+            <rect key={t.dirName} x={i * (BAR_W + BAR_GAP)} y={CHART_H - h} width={BAR_W} height={h}>
               <title>{`${t.date ?? '–'} ${t.slug}: ${formatUsd(t.usd)}`}</title>
             </rect>
           );
@@ -60,24 +61,53 @@ function ScopeTable({ byScope }) {
   );
 }
 
-export default function CostPanel({ cost, models }) {
-  const [open, setOpen] = useState(false);
+const byUsd = (rows) => [...rows].sort((a, b) => b.usd - a.usd);
+
+/** The readout under the total: top models filled (the largest lit), top agents outlined (FR3.5). */
+function readoutRows(project) {
+  const models = byUsd(project.byModel)
+    .slice(0, 2)
+    .map((r, i) => ({ ...r, label: shortModel(r.name), key: i === 0 ? 'steel' : 'light' }));
+  const agents = byUsd(project.byAgent)
+    .slice(0, 2)
+    .map((r) => ({ ...r, key: 'outline' }));
+  return [...models, ...agents];
+}
+
+/**
+ * Total and readout always show; the tables fold out. `open`/`onToggle` let the left arm's "Kostnad" block
+ * drive it (FR2.2); without them the panel keeps its own state.
+ */
+export default function CostPanel({ cost, models, open: openProp, onToggle }) {
+  const [ownOpen, setOwnOpen] = useState(false);
+  const open = openProp ?? ownOpen;
+  const toggle = onToggle ?? (() => setOwnOpen((o) => !o));
   if (!cost) return null;
   const project = cost.available ? cost.project : null;
 
   return (
     <section className="cost-panel" data-testid="cost-panel">
-      <button className="cost-panel-toggle" onClick={() => setOpen((o) => !o)} aria-expanded={open} data-testid="cost-panel-toggle">
+      <button className="cost-panel-toggle lcars-heading" onClick={toggle} aria-expanded={open} data-testid="cost-panel-toggle">
         <span className="section-title">Kostnad</span>
-        {project && (
-          <span className="cost-panel-total">
-            {formatCost(project.total)}
-            {!project.complete && '*'}
-          </span>
-        )}
-        <span aria-hidden="true">{open ? '▾' : '▸'}</span>
+        <span className="lcars-heading-line" aria-hidden="true" />
+        <span className="lcars-heading-meta">Uppskattad · API-pris</span>
+        <span className="toggle-arrow" aria-hidden="true">
+          {open ? '▾' : '▸'}
+        </span>
       </button>
-      {open && !project && <p className="muted">{cost.reason}</p>}
+      {!project && <p className="muted">{cost.reason}</p>}
+      {project && (
+        <>
+          <p className="cost-big">
+            <span className="cost-big-usd" title={COST_LABEL}>
+              {formatCost(project.total)}
+              {!project.complete && '*'}
+            </span>
+            <span className="cost-big-tokens">{formatTokens(project.total.totalTokens)} tokens</span>
+          </p>
+          <Readout rows={readoutRows(project)} totalUsd={project.total.usd} />
+        </>
+      )}
       {open && project && (
         <div className="cost-panel-body">
           {cost.stale && <p className="banner banner-warn" role="status">{cost.warning} Visar senaste giltiga värden.</p>}

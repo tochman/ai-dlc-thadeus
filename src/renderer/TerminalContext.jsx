@@ -11,16 +11,22 @@ export function TerminalProvider({ children }) {
   const [view, setView] = useState({ open: true, active: 'claude' });
   const [states, setStates] = useState({ claude: 'exited', shell: 'exited' });
   const [error, setError] = useState(null);
+  // A tab the app typed into without Enter, until the person types there or the session ends (EPIC-04 FR3.6).
+  const [pending, setPending] = useState({ claude: false, shell: false });
+  const markPending = useCallback((tab, on) => setPending((p) => (p[tab] === on ? p : { ...p, [tab]: on })), []);
 
   const register = useCallback((tab, session) => {
     sessions.current[tab] = session;
     setStates((s) => ({ ...s, [tab]: session.activity.state }));
-    const off = session.activity.subscribe((next) => setStates((s) => ({ ...s, [tab]: next })));
+    const off = session.activity.subscribe((next) => {
+      setStates((s) => ({ ...s, [tab]: next }));
+      if (next === 'exited') markPending(tab, false);
+    });
     return () => {
       off();
       if (sessions.current[tab] === session) delete sessions.current[tab];
     };
-  }, []);
+  }, [markPending]);
 
   const show = useCallback((tab) => {
     setView({ open: true, active: tab });
@@ -68,14 +74,28 @@ export function TerminalProvider({ children }) {
       show,
       state: (tab) => states[tab] ?? 'exited',
       exitCode: (tab) => sessions.current[tab]?.activity.exitCode ?? null,
-      type: (tab, text, { submit = false } = {}) => run(tab, (s) => s.write(withEnter(text, submit))),
-      sequence: (tab, steps) => run(tab, (s) => runSequence(s, steps)),
+      /** True while text the app typed into `tab` waits for the person's Enter. */
+      pending: (tab) => pending[tab] === true,
+      /** The person typed in `tab` (any key, Enter included): nothing waits on the app's text any more. */
+      input: (tab) => markPending(tab, false),
+      type: async (tab, text, { submit = false } = {}) => {
+        const ok = await run(tab, (s) => s.write(withEnter(text, submit)));
+        if (ok) markPending(tab, !submit && text !== '');
+        return ok;
+      },
+      sequence: async (tab, steps) => {
+        const ok = await run(tab, (s) => runSequence(s, steps));
+        const last = steps.at(-1);
+        if (ok && last) markPending(tab, !last.submit && last.text !== '');
+        return ok;
+      },
       restart: async (tab) => {
         setError(null);
+        markPending(tab, false);
         if (!(await sessions.current[tab]?.restart())) setError(`${TAB_NAME[tab]} kunde inte startas om.`);
       }
     }),
-    [view, error, register, show, states, run]
+    [view, error, register, show, states, run, pending, markPending]
   );
 
   return <TerminalCtx.Provider value={value}>{children}</TerminalCtx.Provider>;

@@ -42,6 +42,9 @@ export function formatDuration(ms) {
 
 export const isInFlight = (status) => status === 'in-flight';
 
+/** "claude-opus-5-5" -> "opus-5-5", as the readouts show model names. */
+export const shortModel = (name) => String(name).replace(/^claude-/, '');
+
 /** "code-generation" -> "Code Generation" */
 export const stageTitle = (slug) => String(slug).split('-').map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
 

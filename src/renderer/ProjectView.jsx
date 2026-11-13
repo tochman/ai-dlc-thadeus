@@ -7,6 +7,7 @@ import SetupAidlc from './SetupAidlc.jsx';
 import TerminalPanel from './TerminalPanel.jsx';
 import FeaturesView from './FeaturesView.jsx';
 import ProjectSettingsDialog from './ProjectSettingsDialog.jsx';
+import { Frame } from './Lcars.jsx';
 import { featureDocsPrompt } from './featureDocsPrompt.js';
 import { TerminalProvider, useTerminal } from './TerminalContext.jsx';
 import { useProject } from './useProject.js';
@@ -19,30 +20,7 @@ function invertLinks(links) {
   return out;
 }
 
-/** "Intents | Features" at the top of the project view (EPIC-06 FR2.1); plain buttons, so it works with the keyboard. */
-function ViewSwitch({ mode, setMode, firstLabel }) {
-  const options = [
-    ['intents', firstLabel],
-    ['features', 'Features']
-  ];
-  return (
-    <div className="view-switch" role="group" aria-label="Vy" data-testid="project-view-switch">
-      {options.map(([id, label]) => (
-        <button
-          key={id}
-          className={`detail-tab ${mode === id ? 'is-active' : ''}`}
-          aria-pressed={mode === id}
-          onClick={() => setMode(id)}
-          data-testid={`project-view-switch-${id}`}
-        >
-          {label}
-        </button>
-      ))}
-    </div>
-  );
-}
-
-function AidlcProject({ project, focusIntent, storiesByIntent, onOpenStory }) {
+function AidlcProject({ project, focusIntent, storiesByIntent, onOpenStory, panels, onMeta }) {
   const { detection, projectId } = project;
   const p = useProject(projectId, detection.activeSpace);
   const activeDirName = p.intents.find((i) => i.active)?.dirName ?? null;
@@ -52,9 +30,14 @@ function AidlcProject({ project, focusIntent, storiesByIntent, onOpenStory }) {
     if (focusIntent) p.setSelected(focusIntent.dirName);
   }, [focusIntent]);
 
+  // "N intents" at the foot of the left arm (FR2.2).
+  useEffect(() => {
+    onMeta?.(projectId, { intentCount: p.intents.length });
+  }, [projectId, p.intents.length, onMeta]);
+
   return (
     <div className="project-body">
-      <aside className="sidebar elbow-left">
+      <aside className="sidebar" aria-label="Översikt">
         {detection.spaces.length > 1 && (
           <label className="field">
             <span className="field-label">Space</span>
@@ -72,8 +55,14 @@ function AidlcProject({ project, focusIntent, storiesByIntent, onOpenStory }) {
             {p.listWarning} Visar senaste giltiga lista.
           </p>
         )}
-        <CostPanel cost={p.cost} models={p.models} />
-        <RefreshPanel projectId={projectId} space={p.space} lastIntentChangeAt={p.lastIntentChangeAt} />
+        <CostPanel cost={p.cost} models={p.models} open={panels.costOpen} onToggle={panels.onToggleCost} />
+        <RefreshPanel
+          projectId={projectId}
+          space={p.space}
+          lastIntentChangeAt={p.lastIntentChangeAt}
+          open={panels.githubOpen}
+          onToggle={panels.onToggleGithub}
+        />
         <IntentList intents={p.intents} selected={p.selected} onSelect={p.setSelected} cost={p.cost} />
       </aside>
       <section className="content">
@@ -95,7 +84,9 @@ function AidlcProject({ project, focusIntent, storiesByIntent, onOpenStory }) {
             onOpenStory={onOpenStory}
           />
         ) : (
-          <p className="muted">Välj en intent i listan.</p>
+          <Frame>
+            <p className="muted">Välj en intent i listan.</p>
+          </Frame>
         )}
       </section>
     </div>
@@ -127,7 +118,11 @@ function SetupDone({ onClose, onFeatureDocs }) {
   );
 }
 
-function ProjectContent({ project, visible, settingsOpen = false, onCloseSettings }) {
+/**
+ * The selected view and the open sidebar panels live in App, because the left arm selects them (FR2.2).
+ * This reports back what the arm needs: whether Features is offered and how many intents there are.
+ */
+function ProjectContent({ project, visible, settingsOpen = false, onCloseSettings, view: chosenView = 'intents', onView, panels, onMeta }) {
   const terminal = useTerminal();
   const isAidlc = project.detection.isAidlc;
   const wasAidlc = useRef(isAidlc);
@@ -141,61 +136,67 @@ function ProjectContent({ project, visible, settingsOpen = false, onCloseSetting
     wasAidlc.current = isAidlc;
   }, [isAidlc]); // only the switch from "not AI-DLC" to AI-DLC matters here
 
-  // Feature docs (EPIC-06): the switch follows the project setting and whether the overview exists (FR2.1, FR3.2).
+  // Feature docs (EPIC-06): the view follows the project setting and whether the overview exists (FR2.1, FR3.2).
   const { features, settings, links } = useFeatures(project.projectId, isAidlc ? project.detection.activeSpace : null);
-  const [mode, setMode] = useState('intents'); // kept per project tab for as long as it is open
   const [featureDocsChoice, setFeatureDocsChoice] = useState(false); // lifted from SetupAidlc so it survives the switch (FR4.3)
   const [focusIntent, setFocusIntent] = useState(null);
   const [focusStory, setFocusStory] = useState(null);
   const storiesByIntent = useMemo(() => invertLinks(links), [links]);
   const docsExist = features?.available === true;
-  const showSwitch = settings.featureDocs === 'show' || (settings.featureDocs === 'auto' && docsExist);
-  const view = showSwitch ? mode : 'intents';
+  const showFeatures = settings.featureDocs === 'show' || (settings.featureDocs === 'auto' && docsExist);
+  const view = showFeatures ? chosenView : 'intents';
   const setupDocs = () =>
     terminal?.type('claude', featureDocsPrompt({ exists: docsExist, path: settings.featuresPath }), { submit: false });
   const offerSetup = isAidlc && !docsExist ? setupDocs : undefined; // FR3.6, FR4.5
 
+  useEffect(() => {
+    onMeta?.(project.projectId, { showFeatures });
+  }, [project.projectId, showFeatures, onMeta]);
+
   function openIntent(dirName) {
-    setMode('intents');
+    onView?.('intents');
     setFocusIntent({ dirName });
   }
   function openStory(id) {
-    setMode('features');
+    onView?.('features');
     setFocusStory({ id });
   }
 
   return (
     <div className="project-view">
-      {justSetUp && <SetupDone onClose={() => setJustSetUp(false)} onFeatureDocs={featureDocsChoice ? setupDocs : undefined} />}
-      {showSwitch && <ViewSwitch mode={view} setMode={setMode} firstLabel={isAidlc ? 'Intents' : 'Uppsättning'} />}
-      {/* Kept mounted while Features is shown, so the intents view keeps its state (FR2.1). */}
-      <div className="project-mode" hidden={view === 'features'}>
-        {isAidlc ? (
-          <AidlcProject
-            project={project}
-            focusIntent={focusIntent}
-            storiesByIntent={storiesByIntent}
-            onOpenStory={showSwitch ? openStory : undefined}
-          />
-        ) : (
-          <SetupAidlc
-            project={project}
-            featureDocs={featureDocsChoice}
-            onFeatureDocsChange={setFeatureDocsChoice}
-            featureDocsExist={docsExist}
+      <div className="project-main">
+        {justSetUp && <SetupDone onClose={() => setJustSetUp(false)} onFeatureDocs={featureDocsChoice ? setupDocs : undefined} />}
+        {/* Kept mounted while Features is shown, so the intents view keeps its state (FR2.1). */}
+        <div className="project-mode" hidden={view === 'features'}>
+          {isAidlc ? (
+            <AidlcProject
+              project={project}
+              focusIntent={focusIntent}
+              storiesByIntent={storiesByIntent}
+              onOpenStory={showFeatures ? openStory : undefined}
+              panels={panels}
+              onMeta={onMeta}
+            />
+          ) : (
+            <SetupAidlc
+              project={project}
+              featureDocs={featureDocsChoice}
+              onFeatureDocsChange={setFeatureDocsChoice}
+              featureDocsExist={docsExist}
+            />
+          )}
+        </div>
+        {view === 'features' && (
+          <FeaturesView
+            projectId={project.projectId}
+            features={features}
+            links={links}
+            focusStory={focusStory}
+            onOpenIntent={isAidlc ? openIntent : undefined}
+            onSetup={offerSetup}
           />
         )}
       </div>
-      {view === 'features' && (
-        <FeaturesView
-          projectId={project.projectId}
-          features={features}
-          links={links}
-          focusStory={focusStory}
-          onOpenIntent={isAidlc ? openIntent : undefined}
-          onSetup={offerSetup}
-        />
-      )}
       <TerminalPanel projectId={project.projectId} visible={visible} />
       <ProjectSettingsDialog
         open={settingsOpen}
@@ -209,10 +210,32 @@ function ProjectContent({ project, visible, settingsOpen = false, onCloseSetting
   );
 }
 
-export default function ProjectView({ project, visible, settingsOpen, onCloseSettings }) {
+export default function ProjectView({
+  project,
+  visible,
+  settingsOpen,
+  onCloseSettings,
+  view,
+  onView,
+  costOpen,
+  onToggleCost,
+  githubOpen,
+  onToggleGithub,
+  onMeta
+}) {
+  const panels = { costOpen, onToggleCost, githubOpen, onToggleGithub };
   return (
     <TerminalProvider>
-      <ProjectContent project={project} visible={visible} settingsOpen={settingsOpen} onCloseSettings={onCloseSettings} />
+      <ProjectContent
+        project={project}
+        visible={visible}
+        settingsOpen={settingsOpen}
+        onCloseSettings={onCloseSettings}
+        view={view}
+        onView={onView}
+        panels={panels}
+        onMeta={onMeta}
+      />
     </TerminalProvider>
   );
 }

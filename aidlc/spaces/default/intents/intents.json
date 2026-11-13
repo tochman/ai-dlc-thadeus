@@ -44,7 +44,15 @@
     "slug": "feature-docs",
     "dirName": "261113-feature-docs",
     "scope": "express",
-    "status": "in-flight",
+    "status": "complete",
     "request": "ce6a447a"
+  },
+  {
+    "uuid": "01a1d54f-7d7b-7c2d-957a-35d9b984baf2",
+    "slug": "living-lcars",
+    "dirName": "261113-living-lcars",
+    "scope": "express",
+    "status": "in-flight",
+    "request": "54be1d4d"
   }
 ]
