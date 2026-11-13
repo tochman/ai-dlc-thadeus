@@ -1,43 +1,13 @@
 // Configured model per AI-DLC agent. Primary source: `aidlc config models` (fixed arguments,
 // execFile without a shell). Fallback: the `model:` frontmatter of .claude/agents/aidlc-*-agent.md (FR4.1, FR4.2).
-import { execFile } from 'node:child_process';
+import { defaultExec, runFixed } from './exec.js';
 import { listDir, readText } from './projectAccess.js';
 import { agentName } from './parsers/ledger.js';
 
 const AIDLC_ARGS = ['config', 'models', '--show', '--json', '--harness', 'claude'];
 const AIDLC_TIMEOUT_MS = 10000;
-const PATH_TIMEOUT_MS = 5000;
 const AGENTS_DIR = '.claude/agents';
 const AGENT_FILE = /^aidlc-.+-agent\.md$/;
-// A marker keeps rc-file output (greetings, nvm notices) from leaking into the PATH value.
-const PATH_MARKER = '__AIDLC_DASH_PATH__';
-const PATH_PROBE = `printf '${PATH_MARKER}%s' "$PATH"`;
-
-let loginPathPromise = null;
-
-function defaultExec(file, args, options) {
-  return new Promise((resolve, reject) => {
-    execFile(file, args, options, (err, stdout) => (err ? reject(err) : resolve(String(stdout))));
-  });
-}
-
-/** PATH from the login shell (as for the terminal tabs), probed once per process with a fixed command. */
-function loginPath(exec) {
-  if (!loginPathPromise) {
-    const shell = process.env.SHELL || (process.platform === 'darwin' ? '/bin/zsh' : '/bin/bash');
-    loginPathPromise = exec(shell, ['-l', '-i', '-c', PATH_PROBE], { timeout: PATH_TIMEOUT_MS })
-      .then((out) => {
-        const i = out.lastIndexOf(PATH_MARKER);
-        if (i === -1) throw new Error('inget PATH i svaret');
-        return out.slice(i + PATH_MARKER.length).trim() || process.env.PATH;
-      })
-      .catch((err) => {
-        console.warn('Kunde inte läsa PATH från inloggningsskalet, använder appens PATH:', err.message);
-        return process.env.PATH;
-      });
-  }
-  return loginPathPromise;
-}
 
 function parseAidlcOutput(stdout) {
   const out = JSON.parse(stdout);
@@ -79,8 +49,7 @@ async function readAgentFiles(root) {
 export async function getConfiguredModels(root, { exec = defaultExec } = {}) {
   let error;
   try {
-    const env = { ...process.env, PATH: await loginPath(exec) };
-    const stdout = await exec('aidlc', AIDLC_ARGS, { cwd: root, timeout: AIDLC_TIMEOUT_MS, env });
+    const stdout = await runFixed('aidlc', AIDLC_ARGS, { cwd: root, timeout: AIDLC_TIMEOUT_MS, exec });
     return { source: 'aidlc-config', agents: parseAidlcOutput(stdout) };
   } catch (err) {
     error = `aidlc config models misslyckades: ${err.killed ? 'timeout efter 10 s' : err.message}`;

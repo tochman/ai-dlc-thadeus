@@ -1,43 +1,48 @@
-# Teknikstack: aidlc-dash
-
-Versionerna är intervallen i `package.json`; exakta låsta versioner finns i `package-lock.json` (inte läst).
+# Technology Stack — aidlc-dash
 
 ## Språk och runtime
 
-| Teknik | Version | Anmärkning |
+| Teknik | Version | Belägg |
 |---|---|---|
-| JavaScript (ESM) + JSX | – | ingen TypeScript |
-| Node.js | 22 (`.nvmrc`) | utveckling och CI |
-| Electron | ^45.3.1 | runtime, devDependency |
+| JavaScript (ESM) + JSX | – | alla filer under `src/` |
+| Node.js | 22 | `.nvmrc` |
+| Electron | ^45.3.1 | `package.json` devDependencies |
+| CSS (egen, ingen ramverk) | – | `src/renderer/theme.css` |
 
-## Ramverk och bibliotek (runtime)
+## Ramverk och bibliotek
 
-| Paket | Version | Syfte |
+| Bibliotek | Version | Användning |
 |---|---|---|
-| react, react-dom | ^19.3.1 | UI |
+| React / React DOM | ^19.3.1 | renderar-UI |
+| @xterm/xterm | ^6.0.0 | terminalemulering i renderaren |
+| @xterm/addon-fit | ^0.11.0 | anpassar terminalstorlek |
+| node-pty | ^1.1.0 | pseudoterminaler i huvudprocessen (native) |
 | chokidar | ^4.0.3 | filbevakning |
-| node-pty | ^1.1.0 | terminalsessioner (native) |
-| @xterm/xterm | ^6.0.0 | terminal i UI |
-| @xterm/addon-fit | ^0.11.0 | terminalstorlek |
-| react-markdown | ^10.1.0 | markdownvisning |
+| react-markdown | ^10.1.0 | artefaktrendering |
 | remark-gfm | ^4.0.1 | GFM-tabeller m.m. |
-| @fontsource/antonio | ^5.3.0 | typsnitt |
+| @fontsource/antonio | ^5.3.0 | rubriktypsnitt |
 
-## Bygg, paketering och test
+## Bygg och paketering
 
-| Paket | Version | Syfte |
+| Verktyg | Version | Roll |
 |---|---|---|
-| electron-vite | ^6.0.0 | bygge av main/preload/renderer till `out/` |
-| vite | ^8.3.8 | bundler |
+| electron-vite | ^6.0.0 | bygger main, preload och renderer till `out/` |
+| Vite | ^8.3.8 | bundler |
 | @vitejs/plugin-react | ^6.3.0 | JSX |
-| electron-builder | ^26.18.0 | dmg (mac universal) och deb (linux x64) till `dist/` |
-| vitest | ^5.1.0 | testkörare |
-| @testing-library/react | ^16.3.3 | komponenttester |
-| jsdom | ^29.1.1 | DOM i tester |
+| electron-builder | ^26.18.0 | macOS universal `.dmg`, Linux x64 `.deb`, osignerat |
 
-## Plattform
+## Test
 
-- macOS (osignerad, ingen notarisering) och Linux (deb). Kräver `claude` och `aidlc` i användarens inloggningsskal.
-- CI/CD: GitHub Actions (`actions/checkout@v4`, `setup-node@v4`, `upload/download-artifact@v4`, `gh release`).
+| Verktyg | Version |
+|---|---|
+| Vitest | ^5.1.0 (projekten `main`/node och `renderer`/jsdom) |
+| @testing-library/react | ^16.3.3 |
+| jsdom | ^29.1.1 |
 
-Saknas: linter, formatterare, diagrambibliotek, state-bibliotek, router.
+## Plattform och CI
+
+- GitHub Actions (`.github/workflows/release.yml`): `ubuntu-latest` (test), `macos-latest` (mac-bygge), `ubuntu-22.04` (linux-bygge för glibc 2.35).
+- Mål: macOS (universal) och Ubuntu 22.04+.
+- Krav vid körning: `claude` och `aidlc` i användarens inloggningsskal (installeras inte av appen).
+
+Versionerna är intervallen i `package.json`; låsta versioner finns i `package-lock.json` (inte läst). Beroenderelationer: [dependencies.md](dependencies.md).

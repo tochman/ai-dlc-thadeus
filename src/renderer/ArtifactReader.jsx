@@ -20,6 +20,19 @@ const markdownComponents = {
   img: ({ alt }) => <span className="muted">[bild: {alt}]</span>
 };
 
+/** Markdown without raw HTML, pretty JSON, or plain text. Also used for files read from git (RefreshPanel). */
+export function FileContent({ rel, content }) {
+  return rel.endsWith('.md') ? (
+    <div className="markdown">
+      <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents} skipHtml>
+        {content}
+      </ReactMarkdown>
+    </div>
+  ) : (
+    <pre className="code-block">{rel.endsWith('.json') ? prettyJson(content) : content}</pre>
+  );
+}
+
 function FileView({ projectId, rel }) {
   const [content, setContent] = useState(null);
   const [error, setError] = useState(null);
@@ -63,16 +76,7 @@ function FileView({ projectId, rel }) {
         </p>
       )}
       {content == null && !error && <p className="muted">Läser…</p>}
-      {content != null &&
-        (rel.endsWith('.md') ? (
-          <div className="markdown">
-            <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents} skipHtml>
-              {content}
-            </ReactMarkdown>
-          </div>
-        ) : (
-          <pre className="code-block">{rel.endsWith('.json') ? prettyJson(content) : content}</pre>
-        ))}
+      {content != null && <FileContent rel={rel} content={content} />}
     </div>
   );
 }

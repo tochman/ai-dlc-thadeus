@@ -19,6 +19,8 @@ export function useProject(projectId, initialSpace) {
   const [error, setError] = useState(null);
   const [cost, setCost] = useState(null); // null while loading, then {available, ...}
   const [models, setModels] = useState(null);
+  // When AI-DLC last wrote under intents/ (active-directive.json included); "AI-DLC arbetar" in RefreshPanel (FR3.5).
+  const [lastIntentChangeAt, setLastIntentChangeAt] = useState(null);
   const selectedRef = useRef(selected);
   const detailRef = useRef(detail);
   selectedRef.current = selected;
@@ -91,6 +93,7 @@ export function useProject(projectId, initialSpace) {
   useEffect(() => {
     const offChange = bridge.onProjectChanged((c) => {
       if (c.projectId !== projectId || c.space !== space) return;
+      if (c.dirNames.length > 0) setLastIntentChangeAt(Date.now());
       loadList(c.indexChanged ? undefined : c.dirNames);
       if (c.costChanged || c.indexChanged) loadCost(); // a new intent can claim an existing ledger entry
       if (c.indexChanged || c.dirNames.includes(selectedRef.current)) {
@@ -106,5 +109,5 @@ export function useProject(projectId, initialSpace) {
     };
   }, [projectId, space, loadList, loadDetail, loadCost]);
 
-  return { space, setSpace, intents, listWarning, selected, setSelected, detail, newSeqFrom, error, cost, models };
+  return { space, setSpace, intents, listWarning, selected, setSelected, detail, newSeqFrom, error, cost, models, lastIntentChangeAt };
 }

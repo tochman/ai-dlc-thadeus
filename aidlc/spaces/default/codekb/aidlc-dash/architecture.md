@@ -1,139 +1,144 @@
-# Arkitektur: aidlc-dash
+# Architecture — aidlc-dash
 
 ## Architecture Analysis
 
 ### System Overview
 
-En Electron-app i tre lager: huvudprocessen (Node) läser och tolkar AI-DLC-filer och kör terminaler, preload exponerar ett smalt namngivet API, och en sandboxad React-renderer visar data. Ingen server, inget nätverk, ingen databas. Komponenterna listas i `component-inventory.md`.
+En Electron-app med tre processlager: **huvudprocess** (Node, all fil- och processåtkomst), **preload** (smal namngiven brygga `window.bridge`) och **renderare** (React 19 i sandbox). Huvudprocessen läser AI-DLC:s filer i öppnade projektrötter, tolkar dem med rena parserfunktioner, bevakar ändringar med chokidar och kör pseudoterminaler med node-pty. Renderaren hämtar data via IPC och prenumererar på push-händelser.
 
 ### Architectural Style
 
-Monolitisk skrivbordsapp med Electrons process-isolering (`contextIsolation: true`, `nodeIntegration: false`, `sandbox: true`, `src/main/index.js:16-21`). Main-sidan är lagerindelad: IPC-yta → tjänst → rena parsers → root-begränsad filåtkomst.
+**Monolitisk skrivbordsapp med lagrad processisolering.** Belägg: ett enda npm-paket; `electron.vite.config.mjs` bygger tre ingångar (main/preload/renderer); `index.js` sätter `contextIsolation: true`, `nodeIntegration: false`, `sandbox: true`; `preload/index.js` exponerar bara namngivna funktioner (ingen generisk invoke).
+
+Inom huvudprocessen: IPC-adapter (`ipc.js`) → tjänst (`projectService.js`, `models.js`, `pty.js`, `watcher.js`, `settings.js`) → säker åtkomst (`projectAccess.js`) och rena parsers (`parsers/*`).
 
 ### Component Relationships
 
 ```mermaid
 flowchart LR
-  subgraph Renderer["Renderer (React, sandbox)"]
-    App --> ProjectView
-    ProjectView --> useProject
-    ProjectView --> TerminalPanel
-    ProjectView --> IntentList
-    ProjectView --> IntentDetail
-    IntentDetail --> Pipeline
-    IntentDetail --> Timeline
-    IntentDetail --> BoltDag
-    IntentDetail --> ArtifactReader
+  subgraph Renderer
+    App[App.jsx] --> PV[ProjectView.jsx]
+    PV --> UP[useProject.js]
+    PV --> IL[IntentList.jsx]
+    PV --> CP[CostPanel.jsx]
+    PV --> ID[IntentDetail.jsx]
+    PV --> TP[TerminalPanel.jsx]
+    ID --> PL[Pipeline.jsx]
+    ID --> TL[Timeline.jsx]
+    ID --> BD[BoltDag.jsx]
+    ID --> CT[CostTab.jsx]
+    ID --> AR[ArtifactReader.jsx]
   end
   subgraph Preload
-    bridge["window.bridge"]
+    BR[window.bridge]
   end
-  subgraph Main["Main (Node)"]
-    ipc --> projectService
-    ipc --> watcher
-    ipc --> pty
-    ipc --> settings
-    ipc --> projectAccess
-    projectService --> parsers
-    projectService --> projectAccess
+  subgraph Main
+    IPC[ipc.js] --> PS[projectService.js]
+    IPC --> MD[models.js]
+    IPC --> PTY[pty.js]
+    IPC --> WT[watcher.js]
+    IPC --> ST[settings.js]
+    PS --> PA[projectAccess.js]
+    MD --> PA
+    PS --> PR[parsers]
   end
-  useProject --> bridge
-  TerminalPanel --> bridge
-  ArtifactReader --> bridge
-  App --> bridge
-  bridge -->|invoke| ipc
-  ipc -->|project:changed| bridge
-  pty -->|pty:data / pty:exit| bridge
-  watcher -.->|chokidar| FS[("aidlc/spaces/space/intents/")]
-  projectAccess -.->|fs read| FS
+  App --> BR
+  UP --> BR
+  TP --> BR
+  AR --> BR
+  BR --> IPC
+  TL -.-> PR
+  CT -.-> PR
 ```
 
-Textalternativ: Renderern (App, ProjectView, useProject, IntentList, IntentDetail med Pipeline/Timeline/BoltDag/ArtifactReader, TerminalPanel) anropar bara `window.bridge`. Preload översätter till `ipcRenderer.invoke` mot `ipc` i main. `ipc` delegerar till `projectService` (som använder `parsers` och `projectAccess`), `watcher`, `pty` och `settings`. Händelser går tillbaka som `project:changed`, `project:watchError`, `pty:data` och `pty:exit`. Endast `watcher` och `projectAccess` rör projektets filer.
+Textalternativ: App, useProject, TerminalPanel och ArtifactReader anropar `window.bridge`, som skickar till `ipc.js`. `ipc.js` delegerar till projectService (data), models (konfigurerade modeller), pty (terminaler), watcher (filbevakning) och settings (appens inställningar). projectService och models läser filer bara via projectAccess; projectService tolkar med parsers. Streckade pilar: Timeline och CostTab importerar rena parsermoduler direkt vid bundling (ingen IPC).
 
 ### Data Flow
 
-1. Användaren väljer mapp (`project:pick`) → `project:open` realpath-validerar roten, kör `detectProject` och startar bevakning av aktiv space.
-2. `useProject` hämtar `project:intents` (lista) och `project:intent` (detalj). `projectService` läser filer via `projectAccess`, tolkar dem med `parsers` och cachar resultatet per root/space/intent.
-3. Vid filändring skickar `watcher` (debounce 300 ms, max 800 ms) `{dirNames, indexChanged}`; `useProject` laddar om bara de namngivna intenterna och detaljen om den berörs.
-4. Trasig eller halvskriven JSON ger `{ok:false}` från `readJsonSafe`; tjänsten returnerar då senaste giltiga värde.
+1. **Öppna projekt**: mappväljare → `project:open` → `openRoot` (realpath) → `detectProject` → watcher startas för den aktiva spacen (bara om AI-DLC).
+2. **Läsa**: `project:intents` → `loadIntentList` (intents.json + mappar + active-intent + per-intent state) med cache; `project:intent` → `loadIntentDetail` (state, runtime-graph, audit-shards, active-directive, artefaktlista); `project:cost` → `loadCost` + `summarizeLedger`.
+3. **Live**: chokidar → debounce (300 ms, max 800 ms) → `project:changed {dirNames, indexChanged, costChanged}` → `useProject` laddar om bara berörda delar och markerar nya audit-händelser.
+4. **Terminal**: `pty:spawn` → node-pty kör `$SHELL -l -i -c claude` eller `$SHELL -l` i roten → `pty:data`/`pty:exit` till renderaren; tangenttryck → `pty:write`.
+5. **Skriva**: endast `settings:set` → `settings.json` i userData.
 
 ### Key Design Decisions
 
-- **Skrivskydd och rotbegränsning**: `projectAccess.js` innehåller inga skrivanrop; `resolveInRoot` avvisar absoluta sökvägar, `..` och symlänkar ut ur roten. Alternativet att låta renderern läsa filer direkt valdes bort av säkerhetsskäl.
-- **state-filen vinner över runtime-graph** (`parsers/pipeline.js`): `runtime-graph.json` är git-ignorerad och kan saknas; avvikelser flaggas i stället för att döljas.
-- **Inkrementell omladdning**: watcher rapporterar intent-mappar, så bara dessa läses om (FR7.2).
-- **Delade rena moduler**: renderern importerar `NOISY_EVENTS` direkt från `main/parsers/audit.js` (ren modul, säker att bunta).
-- **Inget diagrambibliotek**: `BoltDag` ritar SVG för hand.
+- **Skrivskydd och rotinneslutning**: `projectAccess.js` saknar skrivanrop; `resolveInRoot` avvisar absoluta sökvägar, `..` och symlänkar ut ur roten. Konsekvens: säkert att peka på godtyckliga projekt; nya funktioner som ska ändra något måste gå via terminalen (EPIC-05:s princip).
+- **Smal IPC-yta**: namngivna kanaler i både `ipc.js` och `preload/index.js`; varje handler slår upp `projectId`. Nya funktioner kräver ändring i båda filerna.
+- **Tålighet mot halvskrivna filer**: `readJsonSafe` kastar aldrig; cacher behåller senaste giltiga värde (`stale`-flagga).
+- **Lazy node-pty**: laddas vid första spawn så att en trasig native-binär bara slår ut terminalen.
+- **Externa kommandon utan skal**: `models.js` använder `execFile` med fasta argument och PATH från inloggningsskalet.
+- **Allt hålls monterat**: projektflikar och terminalsessioner döljs i stället för att avmonteras, så pty-sessioner överlever flikbyten.
 
 ### Improvement Opportunities
 
-- **EPIC-02-anslutning**: `usage-ledger.json` ligger i `aidlc/.aidlc-sessions/`, utanför bevakad mapp (`ipc.js:33-34`). Behöver en andra bevakning (eller en bredare med filter), en ledger-parser bredvid övriga parsers, en ny `project:*`-kanal och en ny flagga i `project:changed`. Detaljer i `code-quality-assessment.md`.
-- Ingen kapabilitet för att köra icke-interaktiva kommandon (`aidlc config models`) finns; bara node-pty.
-- CSV-export bryter löftet om en enda skrivning; kräver ett medvetet beslut och en dialog (`dialog.showSaveDialog`).
+- Ingen delad tillståndskanal mellan intentvyer och terminal (behövs för EPIC-05); se [code-quality-assessment.md](code-quality-assessment.md).
+- Projektdetektering görs bara vid öppning; ingen omdetektering.
+- Gemensam modul för extern processkörning (skal/PATH) saknas; logiken finns i `models.js` och delvis `pty.js`.
 
 ## Interaction Diagrams
 
-### Öppna projekt och visa intent
+### Öppna projekt och ladda en intent
 
 ```mermaid
 sequenceDiagram
+  participant U as Användare
   participant R as Renderer (App/useProject)
   participant B as window.bridge
   participant I as ipc.js
   participant S as projectService
   participant A as projectAccess
   participant W as watcher
+  U->>R: + Öppna projekt
+  R->>B: pickProject()
+  B->>I: project:pick
+  I-->>R: sökväg
   R->>B: openProject(dir)
   B->>I: project:open
   I->>A: openRoot(dir)
   I->>S: detectProject(root)
-  I->>W: watchIntents(intentsDir)
-  I-->>R: {projectId, root, detection}
-  R->>B: getIntents(projectId, space)
-  B->>I: project:intents
-  I->>S: loadIntentList
-  S->>A: readJsonSafe / listDir / readText
-  S-->>R: {intents, warning}
-  R->>B: getIntent(projectId, space, dirName)
-  B->>I: project:intent
-  I->>S: loadIntentDetail
-  S-->>R: {state, graph, pipeline, events, units, files, warnings}
+  I->>W: watchIntents (om AI-DLC)
+  I-->>R: projectId, detection
+  R->>B: getIntents / getIntent / getCost
+  B->>I: project:intents / project:intent / project:cost
+  I->>S: loadIntentList / loadIntentDetail / loadCost
+  S->>A: readText / readJsonSafe / listDir
+  S-->>R: tolkad data
 ```
 
-Textalternativ: Renderern öppnar ett projekt via `project:open`, som validerar roten, identifierar projektet och startar bevakning. Därefter hämtas listan (`project:intents`) och vald intents detalj (`project:intent`); båda läses via `projectAccess` och tolkas av parsers.
+Textalternativ: användaren väljer mapp; huvudprocessen validerar roten, detekterar AI-DLC och startar bevakning; renderaren hämtar sedan lista, detalj och kostnad som projectService läser via projectAccess.
 
 ### Liveuppdatering
 
 ```mermaid
 sequenceDiagram
   participant FS as Filsystem
-  participant W as watcher
+  participant W as watcher.js
   participant I as ipc.js
-  participant U as useProject
-  FS->>W: ändring i intents/<dir>/...
+  participant UP as useProject
+  FS->>W: ändring under intents/ eller usage-ledger.json
   W->>W: debounce 300 ms (max 800 ms)
-  W->>I: onChange({dirNames, indexChanged})
-  I->>U: project:changed {projectId, space, dirNames, indexChanged}
-  U->>I: project:intents (onlyDirs = dirNames)
-  U->>I: project:intent (om vald intent berörs)
-  U->>U: markera nya audit-händelser 4 s
+  W->>I: onChange dirNames, indexChanged, costChanged
+  I->>UP: project:changed
+  UP->>I: getIntents(onlyDirs) och vid behov getIntent / getCost
 ```
 
-Textalternativ: En filändring under `intents/` samlas av watcher, skickas som `project:changed`, och `useProject` laddar om bara de berörda intenterna samt detaljen om den vald intent ändrats. Nya audit-händelser markeras i fyra sekunder.
+Textalternativ: en filändring samlas i watchern, skickas som `project:changed`, och useProject laddar om bara de intents som nämns, detaljen om den vald intent berörs, och kostnaden vid ledger- eller indexändring.
 
-### Terminalsession
+### Snabbkommando i terminalen (grunden för EPIC-05 Fortsätt)
 
 ```mermaid
 sequenceDiagram
-  participant T as TerminalPanel
+  participant U as Användare
+  participant TP as TerminalPanel
+  participant TS as TermSession (claude)
   participant I as ipc.js
   participant P as pty.js
-  T->>I: pty:spawn {projectId, kind, cols, rows}
-  I->>P: spawnSession (cwd = projektrot)
-  P-->>T: id
-  T->>I: pty:write / pty:resize
-  P-->>T: pty:data {id, data}
-  P-->>T: pty:exit {id, exitCode}
+  U->>TP: klick på /aidlc --status
+  TP->>TS: claudeRef.insert(text)
+  TS->>I: pty:write(id, text)
+  I->>P: writeSession
+  P-->>TS: pty:data (eko)
 ```
 
-Textalternativ: TerminalPanel startar en `claude`- eller `shell`-session via `pty:spawn`, skriver och ändrar storlek via `pty:write`/`pty:resize`, och tar emot utdata och avslut som `pty:data`/`pty:exit`.
+Textalternativ: snabbknappen anropar claude-sessionens `insert`, som skriver texten utan Enter till pty:n; utdata kommer tillbaka som `pty:data`.

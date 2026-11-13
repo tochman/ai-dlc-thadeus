@@ -6,9 +6,9 @@
 
 > Auctum AIDLC Control should look and behave like a proper Auctum desktop app wherever it shows up: in the Dock, the application menu, the window switcher, the installer and the Linux launcher. Inside the app it should feel like a living bridge console. EPIC-01 added the name, splash screen, in-app logo and the restrained LCARS theme. This epic covers the parts of the operating system that still show Electron defaults, and the motion and light that make the theme come alive without hurting readability.
 
-**Stories:** US-0401, US-0402
+**Stories:** US-0401, US-0402, US-0403
 
-**Status (2026-11-13):** US-0401 🚧 Built and released in v0.1.1, awaiting verification on an installed release. US-0402 📋 Planned.
+**Status (2026-11-13):** US-0401 🚧 Built and released in v0.1.1, awaiting verification on an installed release. US-0402 📋 Planned. US-0403 📋 Planned.
 
 ---
 
@@ -47,3 +47,36 @@
   - [ ] **Performance:** animations use CSS transforms, opacity and `filter`/`box-shadow` only (no layout thrash). The app stays at 60 fps on an ordinary laptop with a project of 25 intents and 2 000 timeline events, and idle CPU does not rise noticeably from the ambient effects.
   - [ ] No Star Trek trademarks, sounds or copied assets: the effects are inspired by LCARS only (as in US-0109).
 - **Dependencies:** US-0109, US-0103, US-0104, US-0107
+
+**US-0403: LCARS design refresh — palette, frames and data elements** 📋 Planned
+- As a **developer who keeps the console open all day**, in order to **read the state of the work at a glance in an interface that feels calm, precise and coherent**, I would like to **the LCARS look reworked into a richer, more restrained design language: a slate-and-steel-blue palette with coral accents, nested frames, labelled blocks and dense data readouts**.
+- **Epic:** EPIC-04
+- **Priority:** Medium
+- **Complexity:** Medium
+- **Inspiration (reference images shared 2026-11-13, used for style only):** modern LCARS-style screens with mostly slate grey-blue structure, steel blue for live data and coral reserved for alerts and emphasis, on a near-black background with plenty of empty space.
+- **Design language:**
+  - **Palette (tokens on `:root`):**
+    - structure in three slate steps (about `#2e3448`, `#4f5873`, `#6e7591`)
+    - steel blue for data and the active state (about `#4fa3d9`, dark `#24405c`)
+    - coral for attention and errors (about `#ef6f5a`, soft `#f2a389`)
+    - text near-white and grey-blue
+    - Auctum amber is kept for the brand mark and the single primary action
+    - the exact values are settled in design and checked for WCAG AA contrast
+  - **Frames:** thick rounded elbows nested inside each other (outer frame around the app, inner frame around the content area), joined by bars of different lengths with small gaps, like the reference images.
+  - **Labelled blocks:** buttons and tiles are solid blocks with the label in condensed capitals, right-aligned at the bottom edge. A thin coloured tab sits beside a block to mark its state (blue = active, coral = needs attention).
+  - **Data readouts:** numbers in tabular, condensed type in tidy columns with small square colour markers, used for cost, tokens, stage counts and audit totals.
+  - **Rules and stripes:** groups of hairlines as dividers and decoration, sparingly.
+  - **Indicators:** a row of dots for pipeline progress (filled = done, outlined = left, blue = current, coral = waiting for approval). A tick-scale rail for progress bars.
+  - **Small outlined chips** for IDs and metadata (for example `US-0501`, `261113-workflow-control`, the scope).
+  - **Typography:** Antonio (already bundled) in capitals for headings and labels. Large headings in steel blue, as in the references.
+- **Acceptance Criteria:**
+  - [ ] **Given** the new tokens, **then** every colour in `theme.css` comes from them. No hard-coded colours are left in components, and the old amber/lavender LCARS palette is replaced, except the Auctum mark and the primary action.
+  - [ ] **Given** the project view, **then** the sidebar and the content area sit inside nested elbow frames, and the terminal panel is framed by the bottom elbow, consistent at window widths from 1100 px to 2560 px.
+  - [ ] **Given** the intent list, the pipeline and the cost panel, **then** they use labelled blocks, the dot progress indicator, tick rails and data-readout columns as described above.
+  - [ ] Coral is used only for errors, failed stages and "waiting for your approval". Blue marks only the active or current item.
+  - [ ] All text meets WCAG AA contrast against its background, and no state is shown by colour alone (each also has a label, shape or icon).
+  - [ ] Decorative elements (stripes, numeric decoration) are `aria-hidden` and never contain invented data that could be taken for real. Every number shown is a real value from the project.
+  - [ ] No Star Trek assets, ships, names, logos or sounds. The look is inspired by the style only.
+  - [ ] Existing tests stay green, and existing `data-testid`s are kept.
+- **Notes:** Built together with US-0402 (glow and motion), since both touch `theme.css` and the frame components. Before code, a static mock-up of the project view is reviewed and approved.
+- **Dependencies:** US-0103, US-0104, US-0105, US-0402

@@ -42,6 +42,15 @@ export function formatDuration(ms) {
 
 export const isInFlight = (status) => status === 'in-flight';
 
+/** "code-generation" -> "Code Generation" */
+export const stageTitle = (slug) => String(slug).split('-').map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+
+/** Where resuming picks up: the current stage and its step among the executed stages (FR2.5). */
+export function stagePosition(currentStage, done, executed) {
+  if (!currentStage) return null;
+  return { stage: stageTitle(currentStage), step: Math.min((done ?? 0) + 1, executed || 1), total: executed || 0 };
+}
+
 // Cost is AI-DLC's own estimate (tokens x API price), never an invoice (FR6.1).
 export const COST_LABEL = 'Uppskattad kostnad (API-pris)';
 export const COST_EXPLANATION =

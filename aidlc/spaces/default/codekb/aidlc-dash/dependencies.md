@@ -1,36 +1,40 @@
-# Beroenden: aidlc-dash
+# Dependencies — aidlc-dash
 
-## Externa beroenden
+Versioner står i [technology-stack.md](technology-stack.md); det interna importschemat i [code-structure.md](code-structure.md) § Beroendeschema.
 
-Paketlista och versioner finns i `technology-stack.md`. Anmärkningar som påverkar ändringar:
+## Externa beroenden per användare
 
-- **node-pty** är native: byggs om för Electron i `postinstall` (`electron-builder install-app-deps`), packas upp ur asar (`asarUnpack`) och dess prebuilds hålls som de är i universal-bygget (`x64ArchFiles`).
-- **chokidar** och node-pty externaliseras ur main-bunten (`externalizeDeps: true`).
-- **Externa verktyg vid körning**: användarens `$SHELL`, `claude` (startas i terminalfliken). `aidlc` används inte av appens kod i dag.
-- **Externa datafiler** (skrivskyddade): se `api-documentation.md`, "Externa datakontrakt".
+| Paket | Används av | Not |
+|---|---|---|
+| electron | `src/main/*`, `src/preload/index.js`, `scripts/make-icon.cjs` | `app`, `BrowserWindow`, `ipcMain`, `dialog`, `shell`, `contextBridge` |
+| node-pty | `src/main/pty.js` | dynamisk `import()`; native, packas upp ur asar; `postinstall` bygger om för Electron; CI kontrollerar glibc |
+| chokidar | `src/main/watcher.js` | v4 missar filer vars mapp saknas vid start, därför bevakas `aidlc/` för ledgern |
+| react, react-dom | alla `src/renderer/*.jsx` | |
+| @xterm/xterm, @xterm/addon-fit | `src/renderer/TerminalPanel.jsx` | importerar även xterm.css |
+| react-markdown, remark-gfm | `src/renderer/ArtifactReader.jsx` | `skipHtml`, ingen rehype-raw |
+| @fontsource/antonio | `src/renderer/main.jsx` | 400 och 700 |
 
-## Interna beroenden (importgraf)
+Utvecklingsberoenden (vitest, testing-library, jsdom, electron-vite, vite, plugin-react, electron-builder) används bara i bygge och test.
 
-```
-main/index.js        -> main/ipc.js
-main/ipc.js          -> projectAccess, projectService, settings, watcher, pty
-main/projectService  -> projectAccess, parsers/{intents,state,runtimeGraph,audit,pipeline,units}
-main/watcher         -> chokidar
-main/pty             -> node-pty
-main/settings        -> electron(app), node:fs
-main/parsers/*       -> (inga)
-preload/index.js     -> electron(contextBridge, ipcRenderer)
-renderer/main.jsx    -> App, theme.css, @fontsource/antonio
-renderer/App         -> ProjectView, AuctumMark, Splash
-renderer/ProjectView -> IntentList, IntentDetail, TerminalPanel, useProject
-renderer/IntentDetail-> Pipeline, Timeline, BoltDag, ArtifactReader, format
-renderer/Timeline    -> format, main/parsers/audit.js (NOISY_EVENTS)
-renderer/Pipeline, BoltDag, IntentList -> format
-renderer/ArtifactReader -> react-markdown, remark-gfm
-renderer/TerminalPanel  -> @xterm/xterm, @xterm/addon-fit
-renderer/Splash      -> AuctumMark
-```
+## Node-stdlib
 
-Renderer-komponenter som pratar med main gör det bara via den globala `window.bridge` (App, useProject, ArtifactReader, TerminalPanel), aldrig via import.
+`node:fs` (promises), `node:path`, `node:crypto` (`randomUUID`), `node:child_process` (`execFile`), `node:url` (skript).
 
-Inga cirkulära beroenden.
+## Externa program vid körning
+
+| Program | Används av | Krav |
+|---|---|---|
+| användarens `$SHELL` (zsh/bash) | `pty.js`, `models.js` | inloggnings- och interaktivt läge för PATH/nvm |
+| `claude` | `pty.js` (claude-fliken) | i inloggningsskalets PATH |
+| `aidlc` | `models.js` | valfritt; saknas det används agentfilerna |
+| `git` | inget i dag | krävs av EPIC-05 US-0502/US-0503 |
+
+## Interna beroenden mellan lager
+
+- Renderer → Main endast via `window.bridge` (IPC), med två undantag vid bundling: `Timeline.jsx` → `src/main/parsers/audit.js` och `CostTab.jsx` → `src/main/parsers/ledger.js` (rena moduler).
+- Tester importerar källmoduler direkt och `scripts/check-glibc.mjs`.
+
+## Risker
+
+- node-pty är den enda native-modulen; plattforms- och glibc-problem hanteras med lazy-laddning och CI-kontroll.
+- Inga kända säkerhetsrådgivningar kontrollerades (ingen `npm audit` kördes, enligt skanningsreglerna).

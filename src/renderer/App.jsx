@@ -50,6 +50,15 @@ export default function App() {
     })();
   }, [openPath]);
 
+  // A folder that got AI-DLC set up switches to the project view in the same tab (FR4.6).
+  useEffect(
+    () =>
+      bridge.onProjectDetected(({ projectId, detection }) =>
+        setTabs((t) => t.map((tab) => (tab.projectId === projectId ? { ...tab, detection } : tab)))
+      ),
+    []
+  );
+
   // Persist open tabs after every change, but only once the restore has finished.
   useEffect(() => {
     if (!restored) return;
