@@ -21,6 +21,7 @@ contextBridge.exposeInMainWorld('bridge', {
   getIntent: call('project:intent'),
   getCost: call('project:cost'),
   getModels: call('project:models'),
+  detectHarnesses: call('harness:detect'), // installed harnesses and CLI versions (EPIC-08 US-0801)
   readFile: call('project:file'),
   revealInFinder: call('shell:reveal'),
   openInEditor: call('shell:openInEditor'),

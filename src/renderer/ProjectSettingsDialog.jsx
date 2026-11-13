@@ -3,20 +3,39 @@
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { isValidFeaturesPath } from '../main/parsers/features.js';
+import { HARNESSES, selectableHarness } from '../shared/harnesses.js';
+import { useTerminal } from './TerminalContext.jsx';
 
 const errorText = (err) => String(err?.message ?? err).replace(/^Error invoking remote method '[^']+': (Error: )?/, '');
 const MODES = ['auto', 'show', 'hide'];
 
 /**
- * @param {{open: boolean, onClose: () => void, projectId: string, name?: string,
- *          settings: {featureDocs: string, featuresPath: string}, onSetup?: () => void}} props
- *   onSetup: given when the project uses AI-DLC but has no feature docs (FR3.6, FR4.5)
+ * The "Agent-terminal" options (US-0801 FR2.1): the selectable harnesses with their CLI version, and the
+ * detected ones that are not supported yet, disabled.
  */
-export default function ProjectSettingsDialog({ open, onClose, projectId, name, settings, onSetup }) {
+function harnessOptions(detected, t) {
+  const byId = Object.fromEntries((detected ?? []).map((d) => [d.id, d]));
+  return HARNESSES.filter((h) => h.selectable || byId[h.id]?.installed || byId[h.id]?.cli?.found).map((h) => {
+    const cli = byId[h.id]?.cli;
+    const note = !h.selectable ? t('settings.project.harnessUnsupported') : cli?.found ? cli.version : cli ? t('settings.project.harnessNotFound') : null;
+    return { id: h.id, disabled: !h.selectable, text: note ? `${h.label} (${note})` : h.label };
+  });
+}
+
+/**
+ * @param {{open: boolean, onClose: () => void, projectId: string, name?: string,
+ *          settings: {featureDocs: string, featuresPath: string}, onSetup?: () => void,
+ *          harness?: string|null, harnesses?: Array<object>|null}} props
+ *   onSetup: given when the project uses AI-DLC but has no feature docs (FR3.6, FR4.5)
+ *   harness: the harness the agent tab runs now; harnesses: the detection, null while it runs (US-0801)
+ */
+export default function ProjectSettingsDialog({ open, onClose, projectId, name, settings, onSetup, harness = null, harnesses = null }) {
   const { t } = useTranslation();
+  const terminal = useTerminal();
   const ref = useRef(null);
   const [mode, setMode] = useState(settings.featureDocs);
   const [path, setPath] = useState(settings.featuresPath);
+  const [chosen, setChosen] = useState(harness);
   const [error, setError] = useState(null);
   const [saving, setSaving] = useState(false);
 
@@ -26,6 +45,7 @@ export default function ProjectSettingsDialog({ open, onClose, projectId, name, 
     if (open) {
       setMode(settings.featureDocs);
       setPath(settings.featuresPath);
+      setChosen(harness);
       setError(null);
       if (!d.open) d.showModal ? d.showModal() : d.setAttribute('open', '');
     } else if (d.open) {
@@ -33,15 +53,24 @@ export default function ProjectSettingsDialog({ open, onClose, projectId, name, 
     }
   }, [open]); // the form starts from the saved settings each time it opens
 
+  useEffect(() => setChosen((c) => c ?? harness), [harness]); // detection finished while the dialog was open
+
   const validPath = isValidFeaturesPath(path);
 
   async function save(e) {
     e.preventDefault();
     if (!validPath) return;
+    // Only a changed harness is saved, so the detected default is not pinned by saving other settings.
+    const switching = chosen && chosen !== harness;
+    // Switching closes the agent session: ask first while it works; Ledig or Avslutad switch at once (FR6.1).
+    if (switching && terminal?.state('agent') === 'busy') {
+      const from = selectableHarness(harness)?.label ?? harness;
+      if (!window.confirm(t('settings.project.harnessSwitchConfirm', { from, to: selectableHarness(chosen).label }))) return;
+    }
     setSaving(true);
     setError(null);
     try {
-      await window.bridge.setProjectSettings(projectId, { featureDocs: mode, featuresPath: path });
+      await window.bridge.setProjectSettings(projectId, { featureDocs: mode, featuresPath: path, ...(switching ? { harness: chosen } : {}) });
       onClose();
     } catch (err) {
       setError(errorText(err));
@@ -97,6 +126,22 @@ export default function ProjectSettingsDialog({ open, onClose, projectId, name, 
               {t('settings.project.pathInvalid')}
             </p>
           )}
+          <label className="field">
+            <span className="field-label">{t('settings.project.harnessLabel')}</span>
+            <select
+              value={chosen ?? ''}
+              onChange={(e) => setChosen(e.target.value)}
+              disabled={!harness}
+              data-testid="project-settings-harness"
+            >
+              {!harness && <option value="">{t('terminal.checking')}</option>}
+              {harnessOptions(harnesses, t).map((o) => (
+                <option key={o.id} value={o.id} disabled={o.disabled}>
+                  {o.text}
+                </option>
+              ))}
+            </select>
+          </label>
           {error && (
             <p className="refresh-error" role="alert">
               {error}

@@ -94,7 +94,7 @@ export default function RefreshPanel({ projectId, space, lastIntentChangeAt, ope
   const [conflicts, setConflicts] = useState(null);
   const [remoteFile, setRemoteFile] = useState(null); // {rel, content?, error?}
   const recentWrite = useRecent(lastIntentChangeAt, WORKING_MS);
-  const working = terminal?.state('claude') === 'busy' || recentWrite; // FR3.5
+  const working = terminal?.state('agent') === 'busy' || recentWrite; // FR3.5
   const bridge = window.bridge;
 
   async function act(fn) {
@@ -244,7 +244,7 @@ export default function RefreshPanel({ projectId, space, lastIntentChangeAt, ope
                       return (
                         <li key={rel}>
                           <code>{rel}</code>
-                          {help && <span className="muted"> {t(help)}</span>}
+                          {help && <span className="muted"> {t(help, { harness: terminal?.harness?.name ?? t('terminal.agent') })}</span>}
                         </li>
                       );
                     })}

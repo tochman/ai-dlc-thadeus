@@ -48,6 +48,25 @@ describe('pty lazy loading (FR2)', () => {
     pty.killAllSessions();
   });
 
+  it('starts the agent from the fixed table by harness id and refuses anything else (US-0801 FR3.2, FR3.3, NFR4)', async () => {
+    const working = fakePty();
+    vi.doMock('node-pty', () => working);
+    const pty = await import('../../src/main/pty.js');
+
+    await pty.spawnSession({ ...spawnArgs, kind: 'agent', harness: 'claude' });
+    await pty.spawnSession({ ...spawnArgs, kind: 'agent', harness: 'opencode' });
+    expect(working.spawn.mock.calls.map((c) => c[1])).toEqual([
+      ['-l', '-i', '-c', 'claude'],
+      ['-l', '-i', '-c', 'opencode']
+    ]);
+    for (const harness of ['codex', 'claude; rm -rf ~', undefined, { id: 'claude' }]) {
+      await expect(pty.spawnSession({ ...spawnArgs, kind: 'agent', harness })).rejects.toThrow(/harness/);
+    }
+    await expect(pty.spawnSession({ ...spawnArgs, kind: 'claude' })).rejects.toThrow(/terminaltyp/); // the old kind is gone
+    expect(working.spawn).toHaveBeenCalledTimes(2);
+    pty.killAllSessions();
+  });
+
   it('does not load node-pty when pty.js is imported', async () => {
     const factory = vi.fn(fakePty);
     vi.doMock('node-pty', factory);

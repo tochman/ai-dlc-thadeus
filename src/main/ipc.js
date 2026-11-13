@@ -19,6 +19,7 @@ import { summarizeLedger } from './parsers/ledger.js';
 import { getConfiguredModels } from './models.js';
 import { fetchRemote, getGitStatus, getRemoteChanges, listConflicts, showRemoteFile } from './git.js';
 import { buildSetupCommand, getSetupInfo } from './setup.js';
+import { detectHarnesses } from './harness.js';
 import { getProjectSettings, getSettings, setProjectSettings, setSettings } from './settings.js';
 import { watchFiles, watchForAidlc, watchIntents } from './watcher.js';
 import { featureWatchPaths, loadFeatures, loadStoryLinks } from './features.js';
@@ -28,7 +29,7 @@ import { currentLanguage, setLanguageFromSettings } from './i18n.js';
 import { t } from '../shared/i18n.js';
 
 const OPEN_IN_EDITOR_EXT = new Set(['.md', '.json', '.txt', '.yaml', '.yml']);
-// projectId -> { root, space, watcher, setupWatcher, featuresWatcher, featuresKey, sender, models, setupInfo }
+// projectId -> { root, space, watcher, setupWatcher, featuresWatcher, featuresKey, sender, models, setupInfo, harnesses }
 const projects = new Map();
 
 function project(projectId) {
@@ -180,7 +181,9 @@ const handlers = {
     const root = await openRoot(dir);
     const detection = await detectProject(root);
     const projectId = randomUUID();
-    projects.set(projectId, { root, space: null, watcher: null, setupWatcher: null, sender: event.sender });
+    // Harness detection starts now, in the background; harness:detect returns the same promise (US-0801 NFR3).
+    const harnesses = detectHarnesses(root);
+    projects.set(projectId, { root, space: null, watcher: null, setupWatcher: null, sender: event.sender, harnesses });
     if (detection.isAidlc) await watchSpace(projectId, detection.activeSpace);
     else watchForSetup(projectId);
     syncFeaturesWatch(projectId); // not awaited: opening a project never waits on the feature docs
@@ -221,6 +224,8 @@ const handlers = {
     p.models ??= getConfiguredModels(p.root);
     return p.models;
   },
+  // Cached per opened project like the models; detectHarnesses never rejects (US-0801 FR1.2, FR1.3).
+  'harness:detect': async (_event, projectId) => project(projectId).harnesses,
   'project:file': async (_event, projectId, rel) => readText(project(projectId).root, rel),
   'shell:reveal': async (_event, projectId, rel) => {
     shell.showItemInFolder(await resolveInRoot(project(projectId).root, rel));
@@ -271,13 +276,18 @@ const handlers = {
   'projectSettings:get': async (_event, projectId) => getProjectSettings(project(projectId).root),
   'projectSettings:set': async (_event, projectId, partial) => {
     const p = project(projectId);
-    const next = await setProjectSettings(p.root, { featureDocs: partial?.featureDocs, featuresPath: partial?.featuresPath });
+    const next = await setProjectSettings(p.root, {
+      featureDocs: partial?.featureDocs,
+      featuresPath: partial?.featuresPath,
+      harness: partial?.harness
+    });
     await syncFeaturesWatch(projectId);
     sendFeaturesChanged(projectId, p); // the open view reloads with the new setting
     return next;
   },
-  'pty:spawn': async (event, { projectId, kind, cols, rows }) =>
-    spawnSession({ projectId, root: project(projectId).root, kind, cols, rows, sender: event.sender }),
+  // `harness` is only an id; pty.js refuses any id outside the fixed table (US-0801 NFR4).
+  'pty:spawn': async (event, { projectId, kind, harness, cols, rows }) =>
+    spawnSession({ projectId, root: project(projectId).root, kind, harness, cols, rows, sender: event.sender }),
   'pty:write': async (_event, id, data) => writeSession(id, data),
   'pty:resize': async (_event, id, cols, rows) => resizeSession(id, cols, rows),
   'pty:kill': async (_event, id) => killSession(id),

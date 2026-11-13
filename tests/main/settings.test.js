@@ -38,6 +38,20 @@ describe('project settings', () => {
     expect((await getSettings()).projectSettings['/p/a']).toEqual({ featureDocs: 'auto', featuresPath: 'docs/FEATURES.md' });
   });
 
+  it('keeps the harness per project and drops an invalid one, so the default applies (EPIC-08 US-0801 FR2.3, FR2.4)', async () => {
+    expect(await setProjectSettings('/p/a', { harness: 'opencode' })).toMatchObject({ harness: 'opencode' });
+    expect(await getProjectSettings('/p/b')).not.toHaveProperty('harness'); // project B keeps the default
+    await setProjectSettings('/p/b', { featureDocs: 'show' });
+    expect((await getSettings()).projectSettings['/p/a'].harness).toBe('opencode'); // read back from the file
+    await expect(setProjectSettings('/p/a', { harness: 'codex' })).rejects.toThrow(/codex/);
+    await expect(setProjectSettings('/p/a', { harness: 'claude; rm -rf /' })).rejects.toThrow();
+
+    await fs.writeFile(FILE, JSON.stringify({ projectSettings: { '/p/a': { harness: 'bogus' }, '/p/b': { harness: 'claude' } } }));
+    const s = await getSettings();
+    expect(s.projectSettings['/p/a']).not.toHaveProperty('harness');
+    expect(s.projectSettings['/p/b'].harness).toBe('claude');
+  });
+
   it('keeps the Animationer choice and leaves out an invalid one so the default applies (EPIC-04 FR4.2)', async () => {
     expect((await getSettings()).animations).toBeUndefined(); // nothing saved: the renderer picks Full or Dämpad
     await setSettings({ animations: 'off' });

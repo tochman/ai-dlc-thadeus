@@ -5,6 +5,7 @@ import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import { DEFAULT_FEATURES_PATH, isValidFeaturesPath } from './parsers/features.js';
 import { LANGUAGE_SETTINGS, t } from '../shared/i18n.js';
+import { selectableHarness } from '../shared/harnesses.js';
 
 const DEFAULTS = { openProjects: [], recentProjects: [], activeProject: null, projectSettings: {} };
 export const PROJECT_DEFAULTS = { featureDocs: 'auto', featuresPath: DEFAULT_FEATURES_PATH };
@@ -20,7 +21,9 @@ const stringList = (v) => (Array.isArray(v) ? v.filter((s) => typeof s === 'stri
 function sanitizeProject(raw) {
   return {
     featureDocs: FEATURE_DOCS.has(raw?.featureDocs) ? raw.featureDocs : PROJECT_DEFAULTS.featureDocs,
-    featuresPath: isValidFeaturesPath(raw?.featuresPath) ? raw.featuresPath : PROJECT_DEFAULTS.featuresPath
+    featuresPath: isValidFeaturesPath(raw?.featuresPath) ? raw.featuresPath : PROJECT_DEFAULTS.featuresPath,
+    // "Agent-terminal" (EPIC-08 US-0801 FR2.3); left out when invalid, so the detected default applies.
+    ...(selectableHarness(raw?.harness) ? { harness: raw.harness } : {})
   };
 }
 
@@ -81,9 +84,12 @@ export async function getProjectSettings(root) {
   return (await getSettings()).projectSettings[root] ?? { ...PROJECT_DEFAULTS };
 }
 
-/** @returns {Promise<{featureDocs: 'auto'|'show'|'hide', featuresPath: string}>} */
+/** @returns {Promise<{featureDocs: 'auto'|'show'|'hide', featuresPath: string, harness?: 'claude'|'opencode'}>} */
 export async function setProjectSettings(root, partial) {
   if (typeof root !== 'string' || !root) throw new Error(t('errors.projectRootMissing'));
+  if (partial?.harness !== undefined && !selectableHarness(partial.harness)) {
+    throw new Error(t('errors.unknownHarness', { id: String(partial.harness) }));
+  }
   if (partial?.featureDocs !== undefined && !FEATURE_DOCS.has(partial.featureDocs)) {
     throw new Error(t('errors.unknownFeatureDocs', { value: String(partial.featureDocs) }));
   }

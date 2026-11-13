@@ -215,12 +215,12 @@ export default function App() {
     setPopupOpen(false);
     setPopupFocus(null);
   }
-  /** "Svara i Claude": that project, its Claude tab open and focused (FR2.3). Sets projectId directly, since
+  /** "Svara i terminalen": that project, its agent tab open and focused (FR2.3). Sets projectId directly, since
    *  runTerminal reads the active project from this render (developer scan, finding 6). */
-  function answerInClaude(q) {
+  function answerInAgent(q) {
     closePopup();
     setActiveId(q.projectId);
-    setTerminalCommand((c) => ({ seq: (c?.seq ?? 0) + 1, action: 'claude', projectId: q.projectId }));
+    setTerminalCommand((c) => ({ seq: (c?.seq ?? 0) + 1, action: 'agent', projectId: q.projectId }));
   }
   async function saveAlertSettings(partial) {
     setAlertSettings((s) => ({ ...s, ...partial }));
@@ -313,7 +313,7 @@ export default function App() {
     appSettings: () => openAppSettings(),
     view: ({ view: v }) => pick(v, ['intents', 'features'], showView),
     panel: ({ panel }) => pick(panel, ['cost', 'github'], togglePanel),
-    terminal: ({ action }) => pick(action, ['claude', 'shell', 'restart'], runTerminal),
+    terminal: ({ action }) => pick(action, ['agent', 'shell', 'restart'], runTerminal),
     docs: () => openDocs()
   };
   menuCommandRef.current = (payload) => {
@@ -513,7 +513,7 @@ export default function App() {
         onLanguage={changeLanguage}
       />
       <DocsDialog doc={docs} onClose={() => setDocs(null)} />
-      <QuestionPopup open={popupOpen} questions={popupQuestions} focus={popupFocus} onAnswer={answerInClaude} onClose={closePopup} />
+      <QuestionPopup open={popupOpen} questions={popupQuestions} focus={popupFocus} onAnswer={answerInAgent} onClose={closePopup} />
     </div>
   );
 }

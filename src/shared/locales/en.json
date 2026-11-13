@@ -60,7 +60,7 @@
     "openProject": "Open project",
     "pickFolder": "Open project folder",
     "question": {
-      "waiting": "Claude is waiting for your answer",
+      "waiting": "AI-DLC is waiting for your answer",
       "stillWaiting": "Still waiting for your answer",
       "early": "Was already waiting when the app started",
       "gate": "Approval: {stage}",
@@ -68,10 +68,10 @@
       "previous": "Previous",
       "next": "Next",
       "position": "{i} of {n}",
-      "answer": "Answer in Claude"
+      "answer": "Answer in the agent tab"
     },
     "notification": {
-      "title": "{project}: Claude is waiting for your answer"
+      "title": "{project}: AI-DLC is waiting for your answer"
     }
   },
   "intents": {
@@ -140,7 +140,7 @@
       "label": "Resume",
       "atStage": "Resume at {stage}",
       "step": "(step {step} of {total})",
-      "busy": "Claude is working — wait or interrupt it first",
+      "busy": "{harness} is working — wait or interrupt it first",
       "invalidName": "Invalid intent name: {name}"
     },
     "files": {
@@ -196,6 +196,7 @@
     "breakdown": "input {input} · output {output} · cache write {cacheWrite} · cache read {cacheRead}",
     "loadFailed": "The cost could not be read: {error}",
     "estimateMeta": "Estimated · API price",
+    "coversClaude": "Covers Claude Code: the cost ledger is filled by the Claude hooks.",
     "tokens": "{amount} tokens",
     "stale": "{warning} Showing the last valid values.",
     "legacyTitle": "Runs under record:<space>/legacy, from before intent ids. Included in the total.",
@@ -251,7 +252,7 @@
     "rebaseText": "Rebase puts your local commits on top of the remote ones, so the history stays straight.",
     "mergeText": "Merge joins both sides in a merge commit and rewrites nothing.",
     "conflictIntents": "Keep the lines from both sides: every intent is a line of its own.",
-    "conflictState": "Pick the side that ran the steps last, or ask Claude in the claude tab to resolve the conflict.",
+    "conflictState": "Pick the side that ran the steps last, or ask {harness} in the agent tab to resolve the conflict.",
     "branch": "Branch",
     "comparedWith": "Compared with",
     "noRemote": "no remote",
@@ -280,7 +281,7 @@
   },
   "terminal": {
     "label": "Terminal",
-    "claude": "Claude",
+    "agent": "Agent",
     "shell": "Shell",
     "tabsLabel": "Terminals",
     "state": {
@@ -289,7 +290,6 @@
       "exited": "Exited"
     },
     "tabName": {
-      "claude": "Claude",
       "shell": "The shell"
     },
     "notRunning": "{kind} is not running.",
@@ -299,7 +299,12 @@
     "resize": "Change the terminal's height (arrow up/down)",
     "hide": "Hide terminal",
     "show": "Show terminal",
-    "quickTitle": "Types the command into the claude tab without sending it",
+    "quickTitle": "Types the command into the {harness} tab without sending it",
+    "noCommand": "{harness} has no AI-DLC command in the app's table, so nothing is typed.",
+    "checking": "Checking…",
+    "chooseHarness": "Choose another harness",
+    "cliMissing": "{harness} was not found: the command {cli} is not on the PATH, so nothing was started.",
+    "notInstalled": "AI-DLC is not installed for {harness} in this project, so nothing was started.",
     "pending": "Waiting for your Enter",
     "pendingHint": "{tab}: typed by the app. Nothing runs until you press Enter.",
     "noTab": "The terminal tab {tab} does not exist.",
@@ -380,7 +385,7 @@
     "installTool": "Install AI-DLC's command-line tool first, as described at {link}. Then check again.",
     "featureDocs": "Use separate feature docs (FEATURES.md + one file per epic)",
     "featureDocsExist": "Feature docs already exist. The choice only adds a project rule to keep them up to date.",
-    "featureDocsNew": "An overview of epics in docs/FEATURES.md and one file per epic with user stories, for example docs/features/epic-01-login.md. Claude creates them after the setup, once you have confirmed.",
+    "featureDocsNew": "An overview of epics in docs/FEATURES.md and one file per epic with user stories, for example docs/features/epic-01-login.md. {harness} creates them after the setup, once you have confirmed.",
     "checkFailed": "The prerequisites could not be read: {error}",
     "buildFailed": "The command could not be built: {error}",
     "checking": "Checking…",
@@ -388,7 +393,7 @@
     "run": "Set up",
     "recheck": "Check again",
     "started": "The command is in the shell tab. Press Enter there to run it. The view switches once AI-DLC is in the folder.",
-    "done": "AI-DLC is set up. Claude restarts so that AI-DLC loads.",
+    "done": "AI-DLC is set up. {harness} restarts so that AI-DLC loads.",
     "runDoctor": "Run /aidlc --doctor",
     "firstWork": "Start the first work",
     "createFeatureDocs": "Create feature docs"
@@ -403,7 +408,7 @@
       "reduced": "Reduced",
       "off": "Off"
     },
-    "alertsLegend": "Questions from Claude",
+    "alertsLegend": "Questions from AI-DLC",
     "alertsHelp": "A popup when AI-DLC is waiting for your answer, and a system notification when the app is in the background or the question is about another project.",
     "alerts": {
       "popup-notify": "Popup and notification",
@@ -437,7 +442,11 @@
       },
       "pathLabel": "Path to the overview",
       "pathInvalid": "The path must be relative to the project, end in .md and not contain ..",
-      "noDocs": "The project has no feature docs yet."
+      "noDocs": "The project has no feature docs yet.",
+      "harnessLabel": "Agent terminal",
+      "harnessUnsupported": "not supported yet",
+      "harnessNotFound": "not found",
+      "harnessSwitchConfirm": "{from} is working. Switching to {to} closes the session. Switch anyway?"
     }
   },
   "menu": {
@@ -469,7 +478,7 @@
     "zoomOut": "Zoom Out",
     "resetZoom": "Reset Zoom",
     "terminal": "Terminal",
-    "claude": "Claude",
+    "agent": "Agent",
     "shell": "Shell",
     "restartTab": "Restart tab",
     "window": "Window",
@@ -517,6 +526,7 @@
     "invalidJson": "Invalid JSON in {rel}: {error}",
     "ptyLoadFailed": "The terminal module could not be loaded: {error}",
     "unknownTerminal": "Unknown terminal kind: {kind}",
+    "unknownHarness": "Unknown or unsupported harness: {id}",
     "noSession": "No terminal session with id {id}",
     "ptyDataNotString": "Terminal data must be a string"
   }

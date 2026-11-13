@@ -8,7 +8,7 @@
 
 **Stories:** US-0201, US-0202, US-0203, US-0204, US-0205, US-0206
 
-**Status (2026-11-13):** ✅ US-0201–US-0205 released in v0.2.0. CSV export (US-0203) is deferred. US-0206 📋 Planned.
+**Status (2026-11-13):** ✅ US-0201–US-0205 released in v0.2.0. CSV export (US-0203) is deferred. US-0206 moved to US-0904 in EPIC-09.
 
 ---
 
@@ -100,7 +100,7 @@ The key format of `workflows` was confirmed during requirements analysis (see ab
   - [x] A half-written ledger keeps the last good values (as in FR7.4)
 - **Dependencies:** US-0201, US-0107
 
-**US-0206: Choose models and effort per agent from the console** 📋 Planned (future)
+**US-0206: Choose models and effort per agent from the console** ➡️ Moved to [US-0904](epic-09-aidlc-configuration.md) (EPIC-09)
 - As a **developer tuning how AI-DLC spends tokens**, in order to **choose which model and effort each agent uses without remembering `aidlc config` commands**, I would like to **a model view where I can see and change model and effort per agent, with the estimated cost of the choice beside it**.
 - **Epic:** EPIC-02
 - **Priority:** Low

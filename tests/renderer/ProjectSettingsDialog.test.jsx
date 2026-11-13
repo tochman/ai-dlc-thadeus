@@ -1,8 +1,21 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
-import ProjectSettingsDialog from '../../src/renderer/ProjectSettingsDialog.jsx';
+
+// The agent tab's state, as the TerminalProvider gives it; null outside a provider.
+let terminal = null;
+vi.mock('../../src/renderer/TerminalContext.jsx', () => ({ useTerminal: () => terminal }));
+const { default: ProjectSettingsDialog } = await import('../../src/renderer/ProjectSettingsDialog.jsx');
 
 const settings = { featureDocs: 'auto', featuresPath: 'docs/FEATURES.md' };
+// Same shape as harness:detect returns (detectHarnesses).
+const detected = [
+  { id: 'claude', label: 'Claude Code', selectable: true, installed: true, cli: { found: true, version: '2.1.0 (Claude Code)' } },
+  { id: 'opencode', label: 'opencode', selectable: true, installed: true, cli: { found: true, version: 'opencode v2.1.4' } },
+  { id: 'codex', label: 'Codex', selectable: false, installed: true, cli: { found: false, version: null } },
+  { id: 'kiro', label: 'Kiro', selectable: false, installed: false, cli: { found: false, version: null } },
+  { id: 'cursor', label: 'Cursor', selectable: false, installed: false, cli: null },
+  { id: 'copilot', label: 'GitHub Copilot', selectable: false, installed: false, cli: null }
+];
 
 beforeEach(() => {
   // Same shape projectSettings:set returns.
@@ -12,6 +25,8 @@ beforeEach(() => {
 afterEach(() => {
   cleanup();
   vi.clearAllMocks();
+  vi.restoreAllMocks();
+  terminal = null;
 });
 
 describe('ProjectSettingsDialog', () => {
@@ -50,5 +65,43 @@ describe('ProjectSettingsDialog', () => {
     fireEvent.click(screen.getByTestId('project-settings-setup'));
     expect(onSetup).toHaveBeenCalledTimes(1);
     expect(onClose).toHaveBeenCalledTimes(1);
+  });
+
+  it('lists the harnesses, disables the unsupported ones, and saves opencode for this project (US-0801 FR2.1, FR2.3)', async () => {
+    const onClose = vi.fn();
+    render(<ProjectSettingsDialog open onClose={onClose} projectId="p1" settings={settings} harness="claude" harnesses={detected} />);
+    const select = screen.getByTestId('project-settings-harness');
+    expect(select.value).toBe('claude');
+    expect([...select.options].map((o) => [o.textContent, o.disabled])).toEqual([
+      ['Claude Code (2.1.0 (Claude Code))', false],
+      ['opencode (opencode v2.1.4)', false],
+      ['Codex (stöds inte än)', true] // detected, not selectable; undetected ones are not listed
+    ]);
+
+    fireEvent.change(select, { target: { value: 'opencode' } });
+    fireEvent.click(screen.getByTestId('project-settings-save'));
+    await waitFor(() => expect(onClose).toHaveBeenCalledTimes(1));
+    expect(window.bridge.setProjectSettings).toHaveBeenCalledWith('p1', { ...settings, harness: 'opencode' });
+  });
+
+  it('asks before switching while the agent tab works, and switches at once when it is idle (FR6.1)', async () => {
+    terminal = { state: vi.fn(() => 'busy') };
+    const confirm = vi.spyOn(window, 'confirm').mockReturnValue(false);
+    const onClose = vi.fn();
+    render(<ProjectSettingsDialog open onClose={onClose} projectId="p1" settings={settings} harness="claude" harnesses={detected} />);
+    fireEvent.change(screen.getByTestId('project-settings-harness'), { target: { value: 'opencode' } });
+    fireEvent.click(screen.getByTestId('project-settings-save'));
+    expect(confirm).toHaveBeenCalledWith('Claude Code arbetar. Byter du till opencode stängs sessionen. Byta ändå?');
+    expect(window.bridge.setProjectSettings).not.toHaveBeenCalled(); // declined: the session keeps running
+
+    confirm.mockReturnValue(true);
+    fireEvent.click(screen.getByTestId('project-settings-save'));
+    await waitFor(() => expect(window.bridge.setProjectSettings).toHaveBeenCalledWith('p1', { ...settings, harness: 'opencode' }));
+
+    terminal.state.mockReturnValue('idle');
+    confirm.mockClear();
+    fireEvent.click(screen.getByTestId('project-settings-save'));
+    await waitFor(() => expect(window.bridge.setProjectSettings).toHaveBeenCalledTimes(2));
+    expect(confirm).not.toHaveBeenCalled();
   });
 });

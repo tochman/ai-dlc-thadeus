@@ -12,7 +12,7 @@ const errorText = (err) => String(err?.message ?? err).replace(/^Error invoking 
  */
 export function useFeatures(projectId, space) {
   const [features, setFeatures] = useState(null); // null while loading
-  const [settings, setSettings] = useState(DEFAULT_SETTINGS);
+  const [settings, setSettings] = useState(null); // null until the saved project settings are read
   const [links, setLinks] = useState({});
   const bridge = window.bridge;
 
@@ -22,6 +22,7 @@ export function useFeatures(projectId, space) {
       setSettings(s);
       setFeatures(f);
     } catch (err) {
+      setSettings((s) => s ?? DEFAULT_SETTINGS); // the agent tab still starts, on the default harness
       setFeatures({ available: false, reason: t('features.loadFailed', { error: errorText(err) }) });
     }
   }, [projectId]);
@@ -49,5 +50,6 @@ export function useFeatures(projectId, space) {
     };
   }, [projectId, loadDocs, loadLinks]);
 
-  return { features, settings, links };
+  // settingsLoaded: the agent tab waits for the saved harness choice before it starts anything (US-0801).
+  return { features, settings: settings ?? DEFAULT_SETTINGS, settingsLoaded: settings !== null, links };
 }

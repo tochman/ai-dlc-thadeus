@@ -13,6 +13,34 @@ import { featureDocsPrompt } from './featureDocsPrompt.js';
 import { TerminalProvider, useTerminal } from './TerminalContext.jsx';
 import { useProject } from './useProject.js';
 import { useFeatures } from './useFeatures.js';
+import { harnessCommand, resolveHarness, selectableHarness } from '../shared/harnesses.js';
+
+/** Why the chosen harness cannot start, in one sentence, or null (US-0801 FR5.1). */
+function harnessProblem(entry, detected, t) {
+  const found = detected.find((d) => d.id === entry.id);
+  if (found?.cli && !found.cli.found) return t('terminal.cliMissing', { harness: entry.label, cli: entry.cli });
+  // A project with no harness at all is one AI-DLC is not set up in yet; the CLI then starts as before.
+  if (!found?.installed && detected.some((d) => d.installed)) return t('terminal.notInstalled', { harness: entry.label });
+  return null;
+}
+
+/** Installed harnesses and CLI versions, detected in main when the project opened; null while that runs (NFR3). */
+function useDetectedHarnesses(projectId) {
+  const [detected, setDetected] = useState(null);
+  useEffect(() => {
+    let live = true;
+    Promise.resolve(window.bridge.detectHarnesses?.(projectId) ?? [])
+      .then((list) => live && setDetected(Array.isArray(list) ? list : []))
+      .catch((err) => {
+        console.error('Harness detection failed:', err); // the agent tab falls back to the default harness
+        if (live) setDetected([]);
+      });
+    return () => {
+      live = false;
+    };
+  }, [projectId]);
+  return detected;
+}
 
 /** storyId -> dirNames turned into dirName -> storyIds, for the links back from an intent (FR2.6). */
 function invertLinks(links) {
@@ -95,17 +123,19 @@ function AidlcProject({ project, focusIntent, storiesByIntent, onOpenStory, pane
   );
 }
 
-/** Shown once AI-DLC appeared in this tab: restart Claude so it loads the hooks, then offer the first steps (FR4.7). */
+/** Shown once AI-DLC appeared in this tab: restart the agent so it loads the hooks, then offer the first steps (FR4.7). */
 function SetupDone({ onClose, onFeatureDocs }) {
   const { t } = useTranslation();
   const terminal = useTerminal();
+  const doctor = harnessCommand(terminal.harness, ' --doctor');
+  const firstWork = harnessCommand(terminal.harness, ' ');
   return (
     <div className="panel setup-done" role="status" data-testid="setup-aidlc-done">
-      <span>{t('setup.done')}</span>
-      <button className="btn" onClick={() => terminal.type('claude', '/aidlc --doctor')} data-testid="setup-aidlc-doctor">
+      <span>{t('setup.done', { harness: terminal.harness?.name ?? t('terminal.agent') })}</span>
+      <button className="btn" disabled={!doctor} onClick={() => terminal.type('agent', doctor)} data-testid="setup-aidlc-doctor">
         {t('setup.runDoctor')}
       </button>
-      <button className="btn btn-accent" onClick={() => terminal.type('claude', '/aidlc ')} data-testid="setup-aidlc-first-work">
+      <button className="btn btn-accent" disabled={!firstWork} onClick={() => terminal.type('agent', firstWork)} data-testid="setup-aidlc-first-work">
         {t('setup.firstWork')}
       </button>
       {/* The feature-docs choice from the setup dialog (EPIC-06 FR4.4). */}
@@ -126,6 +156,7 @@ function SetupDone({ onClose, onFeatureDocs }) {
  * This reports back what the arm needs: whether Features is offered and how many intents there are.
  */
 function ProjectContent({ project, visible, settingsOpen = false, onCloseSettings, view: chosenView = 'intents', onView, panels, onMeta, terminalCommand }) {
+  const { t } = useTranslation();
   const terminal = useTerminal();
 
   // The Terminal menu (EPIC-04 US-0404 FR2.4): only the project it was sent for reacts; seq lets it repeat.
@@ -141,13 +172,23 @@ function ProjectContent({ project, visible, settingsOpen = false, onCloseSetting
   useEffect(() => {
     if (isAidlc && !wasAidlc.current) {
       setJustSetUp(true);
-      terminal.restart('claude');
+      terminal.restart('agent');
     }
     wasAidlc.current = isAidlc;
   }, [isAidlc]); // only the switch from "not AI-DLC" to AI-DLC matters here
 
   // Feature docs (EPIC-06): the view follows the project setting and whether the overview exists (FR2.1, FR3.2).
-  const { features, settings, links } = useFeatures(project.projectId, isAidlc ? project.detection.activeSpace : null);
+  const { features, settings, settingsLoaded, links } = useFeatures(project.projectId, isAidlc ? project.detection.activeSpace : null);
+
+  // The agent tab's harness (US-0801 FR2.2): known once the saved choice and the detection are both in.
+  const detected = useDetectedHarnesses(project.projectId);
+  const harnessId = settingsLoaded && detected ? resolveHarness(settings.harness, detected) : null;
+  const harness = harnessId ? selectableHarness(harnessId) : null;
+  const problem = harness ? harnessProblem(harness, detected, t) : null;
+  useEffect(() => {
+    terminal.setAgent({ harness, problem });
+  }, [harness, problem]); // setAgent is stable
+  const [choosingHarness, setChoosingHarness] = useState(false); // opened from the agent tab's warning (FR5.1)
   const [featureDocsChoice, setFeatureDocsChoice] = useState(false); // lifted from SetupAidlc so it survives the switch (FR4.3)
   const [focusIntent, setFocusIntent] = useState(null);
   const [focusStory, setFocusStory] = useState(null);
@@ -156,7 +197,7 @@ function ProjectContent({ project, visible, settingsOpen = false, onCloseSetting
   const showFeatures = settings.featureDocs === 'show' || (settings.featureDocs === 'auto' && docsExist);
   const view = showFeatures ? chosenView : 'intents';
   const setupDocs = () =>
-    terminal?.type('claude', featureDocsPrompt({ exists: docsExist, path: settings.featuresPath }), { submit: false });
+    terminal?.type('agent', featureDocsPrompt({ exists: docsExist, path: settings.featuresPath }), { submit: false });
   const offerSetup = isAidlc && !docsExist ? setupDocs : undefined; // FR3.6, FR4.5
 
   useEffect(() => {
@@ -207,13 +248,18 @@ function ProjectContent({ project, visible, settingsOpen = false, onCloseSetting
           />
         )}
       </div>
-      <TerminalPanel projectId={project.projectId} visible={visible} />
+      <TerminalPanel projectId={project.projectId} visible={visible} onChooseHarness={() => setChoosingHarness(true)} />
       <ProjectSettingsDialog
-        open={settingsOpen}
-        onClose={() => onCloseSettings?.()}
+        open={settingsOpen || choosingHarness}
+        onClose={() => {
+          setChoosingHarness(false);
+          onCloseSettings?.();
+        }}
         projectId={project.projectId}
         name={project.name}
         settings={settings}
+        harness={harnessId}
+        harnesses={detected}
         onSetup={offerSetup}
       />
     </div>

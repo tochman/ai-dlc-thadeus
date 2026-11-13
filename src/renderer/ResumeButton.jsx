@@ -1,9 +1,10 @@
-// "Fortsätt" for an in-flight intent (US-0501, FR2). Types into the claude tab; only the intent switch
+// "Fortsätt" for an in-flight intent (US-0501, FR2). Types into the agent tab; only the intent switch
 // is submitted, `/aidlc` itself waits for the person's Enter (Q1: C).
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useTerminal } from './TerminalContext.jsx';
 import { t as translate } from '../shared/i18n.js';
+import { harnessCommand } from '../shared/harnesses.js';
 
 const SAFE_DIR_NAME = /^[A-Za-z0-9][A-Za-z0-9._-]*$/;
 
@@ -23,17 +24,21 @@ export default function ResumeButton({ intent, activeDirName, position }) {
   const terminal = useTerminal();
   const [message, setMessage] = useState(null);
   if (!terminal || intent?.status !== 'in-flight') return null;
+  const harnessName = terminal.harness?.name ?? t('terminal.agent');
+  const command = harnessCommand(terminal.harness); // the harness's AI-DLC command (US-0801 FR4.1)
+  // Nothing is typed when the table lacks the command, or while detection runs (FR4.2).
+  const unavailable = command ? null : terminal.harness ? t('terminal.noCommand', { harness: harnessName }) : t('terminal.checking');
 
   function resume(e) {
     e.stopPropagation();
-    if (terminal.state('claude') === 'busy') return setMessage(t('intents.resume.busy')); // FR2.4
+    if (terminal.state('agent') === 'busy') return setMessage(t('intents.resume.busy', { harness: harnessName })); // FR2.4
     setMessage(null);
-    if (intent.dirName === activeDirName) return terminal.type('claude', '/aidlc', { submit: false });
+    if (intent.dirName === activeDirName) return terminal.type('agent', command, { submit: false });
     // The name is submitted with Enter, so it must not carry anything a terminal would act on.
     if (!SAFE_DIR_NAME.test(intent.dirName)) return setMessage(t('intents.resume.invalidName', { name: intent.dirName }));
-    return terminal.sequence('claude', [
-      { text: `/aidlc intent ${intent.dirName}`, submit: true },
-      { text: '/aidlc', submit: false }
+    return terminal.sequence('agent', [
+      { text: `${command} intent ${intent.dirName}`, submit: true },
+      { text: command, submit: false }
     ]);
   }
 
@@ -41,7 +46,13 @@ export default function ResumeButton({ intent, activeDirName, position }) {
   const [main, step] = resumeLabel(position);
   return (
     <span className="resume">
-      <button className="resume-button" onClick={resume} data-testid="intent-resume">
+      <button
+        className="resume-button"
+        onClick={resume}
+        disabled={!!unavailable}
+        title={unavailable ?? undefined}
+        data-testid="intent-resume"
+      >
         <span className="resume-main">{main}</span>
         <span className="resume-step">{step ? ` ${step}` : ''}</span>
       </button>
