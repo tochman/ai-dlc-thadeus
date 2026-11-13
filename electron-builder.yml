@@ -3,9 +3,15 @@ productName: Auctum AIDLC Control
 directories:
   output: dist
   buildResources: build
+# 1024x1024 source; electron-builder derives the macOS .icns and the Linux icon sizes from it.
+icon: build/icon.png
 files:
   - out/**
   - package.json
+# Linux has no app-bundle icon, so the main process passes this file to BrowserWindow.
+extraResources:
+  - from: build/icon.png
+    to: icon.png
 # node-pty loads a native binary and spawn-helper; they cannot run from inside the asar archive.
 asarUnpack:
   - node_modules/node-pty/**
@@ -26,6 +32,11 @@ linux:
     - target: deb
       arch: x64
   category: Development
+  icon: build/icon.png
+  # Keep macOS/Windows node-pty prebuilds out of the .deb; scripts/check-glibc.mjs verifies this in CI.
+  files:
+    - "!node_modules/node-pty/prebuilds/darwin-*/**"
+    - "!node_modules/node-pty/prebuilds/win32-*/**"
   executableName: auctum-aidlc-control
   maintainer: Auctum Solutions AB <info@auctum.se>
   synopsis: Read-only AI-DLC console with an embedded Claude terminal

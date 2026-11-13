@@ -14,5 +14,13 @@
     "scope": "express",
     "status": "in-flight",
     "request": "cd3e517e"
+  },
+  {
+    "uuid": "01a1d3f5-30c8-77f3-aafd-01cc263bf201",
+    "slug": "linux-compat-icon",
+    "dirName": "261113-linux-compat-icon",
+    "scope": "bugfix",
+    "status": "in-flight",
+    "request": "4b9100de"
   }
 ]

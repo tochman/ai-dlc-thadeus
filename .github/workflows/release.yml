@@ -1,10 +1,13 @@
-# Builds Auctum AIDLC Control for macOS (universal .dmg) and Linux (.deb, x64) when a version tag is pushed,
-# and publishes both to a GitHub Release in this private repo. Unsigned internal builds.
+# Builds Auctum AIDLC Control for macOS (universal .dmg) and Linux (.deb, x64).
+# On a version tag it also publishes both to a GitHub Release in this private repo (unsigned internal builds).
+# On a pull request it only tests and builds, so packaging problems (e.g. the Linux glibc check) show up before a tag.
 name: Release
 
 on:
   push:
     tags: ['v*.*.*']
+  pull_request:
+    branches: [main]
 
 permissions:
   contents: read
@@ -19,6 +22,7 @@ jobs:
           node-version-file: .nvmrc
           cache: npm
       - name: Tag matches package.json version
+        if: startsWith(github.ref, 'refs/tags/')
         run: |
           version="$(node -p "require('./package.json').version")"
           if [ "v${version}" != "${GITHUB_REF_NAME}" ]; then
@@ -49,7 +53,9 @@ jobs:
 
   build-linux:
     needs: verify
-    runs-on: ubuntu-latest
+    # node-pty is compiled on the runner and links against its glibc/libstdc++. Building on 22.04 keeps the
+    # .deb runnable on Ubuntu 22.04 and newer; ubuntu-latest produced a pty.node that needed GLIBC_2.42 (v0.1.0).
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -58,6 +64,8 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run build:linux
+      - name: Native binaries run on Ubuntu 22.04 (glibc 2.35, GLIBCXX_3.4.30)
+        run: node scripts/check-glibc.mjs dist/linux-unpacked
       - uses: actions/upload-artifact@v4
         with:
           name: linux
@@ -66,6 +74,7 @@ jobs:
 
   release:
     needs: [build-mac, build-linux]
+    if: startsWith(github.ref, 'refs/tags/')
     runs-on: ubuntu-latest
     permissions:
       contents: write

@@ -1,0 +1,19 @@
+{
+  "stage": "code-generation",
+  "upstream_ids": ["FR1.1", "FR1.2", "FR1.3", "FR2.1", "FR2.2", "FR2.3", "FR3.1", "FR3.2", "FR3.3", "FR3.4", "FR3.5", "NFR1", "NFR2"],
+  "coverage": [
+    { "id": "FR1.1", "status": "OK", "target": ".github/workflows/release.yml" },
+    { "id": "FR1.2", "status": "OK", "target": "scripts/check-glibc.mjs" },
+    { "id": "FR1.3", "status": "OK", "target": "electron-builder.yml" },
+    { "id": "FR2.1", "status": "OK", "target": "src/main/pty.js" },
+    { "id": "FR2.2", "status": "OK", "target": "tests/main/pty.test.js" },
+    { "id": "FR2.3", "status": "OK", "target": "src/main/pty.js" },
+    { "id": "FR3.1", "status": "OK", "target": "build/icon.svg" },
+    { "id": "FR3.2", "status": "OK", "target": "electron-builder.yml" },
+    { "id": "FR3.3", "status": "OK", "target": "src/main/index.js" },
+    { "id": "FR3.4", "status": "OK", "target": "src/main/index.js" },
+    { "id": "FR3.5", "status": "OK", "target": "scripts/make-icon.cjs" },
+    { "id": "NFR1", "status": "Deferred", "target": "Verifieras i Build and Test och release: CI-körning på ubuntu-22.04 med grön glibc-kontroll samt manuell start på användarens Ubuntu 22.04" },
+    { "id": "NFR2", "status": "OK", "target": "tests/main/pty.test.js" }
+  ]
+}
