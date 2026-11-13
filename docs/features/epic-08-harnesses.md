@@ -8,7 +8,7 @@
 
 **Stories:** US-0801, US-0802
 
-**Status (2026-11-13):** 🚧 US-0801 built, merged to main, not released (Claude Code and opencode selectable; Codex, Kiro, Cursor and Copilot detected only). US-0802 📋 Planned.
+**Status (2026-11-14):** 🚧 US-0801 and US-0802 built, merged to main, not released (Claude Code and opencode selectable in the agent tab; all six harnesses can be set up from the app).
 
 ---
 
@@ -30,14 +30,15 @@
 - **Notes:** Built for Claude Code and opencode; Codex, Kiro, Cursor and Copilot are detected and listed as "not supported yet" (decided in requirements). opencode waits 4 s of quiet output before the app types into it (measured on opencode v2.1.4).
 - **Dependencies:** US-0501, US-0503, EPIC-06 (Projektinställningar)
 
-**US-0802: Set up AI-DLC for another harness** 📋 Planned
+**US-0802: Set up AI-DLC for another harness** 🚧 Built, merged to main, not released
 - As a **developer starting AI-DLC in a project with opencode (or another harness)**, in order to **get the right engine files without running the CLI by hand**, I would like to **choose the harness in the setup dialog and add more harnesses to a project later**.
 - **Epic:** EPIC-08
 - **Priority:** Medium
 - **Complexity:** Low
 - **Acceptance Criteria:**
-  - [ ] The setup dialog (US-0503) gets "Harness: Claude Code / opencode / Codex / Kiro / Cursor / Copilot". The default is the one whose CLI is found, or Claude Code. The preview and the command use it: `aidlc --project-dir . config --harness <harness> --dry-run` and then `… --yes`, typed into the visible shell tab for the person to confirm with Enter.
-  - [ ] **Adding a harness** to a project that already uses AI-DLC, from Projektinställningar: "Lägg till harness…" shows the preview for the chosen harness and types the same command. Existing harnesses and the `aidlc/` records are untouched (AI-DLC's own config merges).
-  - [ ] After setup, the new harness can be chosen for the agent tab (US-0801), and the app offers to restart the tab with it.
-  - [ ] The app still writes no AI-DLC files itself. Everything goes through the official `aidlc` CLI in the visible terminal.
+  - [x] The setup dialog (US-0503) gets "Harness: Claude Code / opencode / Codex / Kiro / Cursor / Copilot". The default is the one whose CLI is found, or Claude Code. The preview runs `aidlc --project-dir . config --harness <harness> --dry-run`; **Apply** then runs `… --yes` from the app itself and shows the result (changed 2026-11-14: the app runs setup instead of typing it into the shell tab).
+  - [x] **Adding a harness** to a project that already uses AI-DLC, from Projektinställningar: "Lägg till harness…" shows the preview for the chosen harness and applies it. Existing harnesses and the `aidlc/` records are untouched; the app refuses to apply a preview that would remove anything or has conflicts.
+  - [x] After setup, the new harness can be chosen for the agent tab (US-0801), and the app offers to switch the tab to it.
+  - [x] The app writes no AI-DLC files itself. Everything goes through the official `aidlc` CLI, run by the app with fixed arguments (no shell).
+- **Notes:** All six harness ids were checked against aidlc 2.11.3 with `--dry-run`. Codex, Kiro, Cursor and Copilot install AI-DLC's files but can't run in the agent tab yet.
 - **Dependencies:** US-0503, US-0801

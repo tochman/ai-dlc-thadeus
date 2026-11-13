@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import { HARNESSES, detectHarnesses, resolveHarness, selectableHarness } from '../../src/main/harness.js';
+import { defaultSetupHarness, setupHarness } from '../../src/shared/harnesses.js';
 
 const TMP = path.resolve(__dirname, '../.tmp/harness');
 
@@ -71,5 +72,20 @@ describe('resolveHarness and the table (FR2.1, FR2.2, FR3.3)', () => {
     expect(HARNESSES.filter((h) => h.selectable).map((h) => h.id)).toEqual(['claude', 'opencode']);
     expect(selectableHarness('kiro')).toBeNull();
     expect(selectableHarness({ id: 'claude' })).toBeNull();
+  });
+
+  it('setupHarness accepts the six harnesses AI-DLC installs and nothing else (US-0802 FR1.1, FR1.4)', () => {
+    const ids = ['claude', 'opencode', 'codex', 'kiro', 'cursor', 'copilot'];
+    expect(ids.map((id) => setupHarness(id)?.setupId)).toEqual(ids);
+    for (const bad of ['bogus', '--yes', '', null, { id: 'claude' }]) expect(setupHarness(bad)).toBeNull();
+  });
+
+  it('defaultSetupHarness picks the only harness whose CLI was found, else Claude Code; add mode skips installed ones (FR1.2, FR3.1)', () => {
+    const d = (id, { cli = false, installed = false } = {}) => ({ id, installed, cli: { found: cli, version: null } });
+    expect(defaultSetupHarness([d('claude'), d('opencode', { cli: true })])).toBe('opencode');
+    expect(defaultSetupHarness([d('claude', { cli: true }), d('opencode', { cli: true })])).toBe('claude');
+    expect(defaultSetupHarness([])).toBe('claude');
+    expect(defaultSetupHarness(null)).toBe('claude');
+    expect(defaultSetupHarness([d('claude', { cli: true, installed: true }), d('opencode', { cli: true })], { add: true })).toBe('opencode');
   });
 });

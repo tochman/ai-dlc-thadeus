@@ -38,7 +38,7 @@ contextBridge.exposeInMainWorld('bridge', {
   showRemoteFile: call('git:showRemote'),
   getConflicts: call('git:conflicts'),
   getSetupInfo: call('setup:info'),
-  buildSetupCommand: call('setup:command'),
+  runSetup: call('setup:run'), // runs the setup after the preview (US-0802 FR2.2)
   loadFeatures: call('features:load'),
   getStoryLinks: call('features:storyLinks'),
   getProjectSettings: call('projectSettings:get'),

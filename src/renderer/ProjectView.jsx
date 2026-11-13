@@ -7,7 +7,7 @@ import RefreshPanel from './RefreshPanel.jsx';
 import SetupAidlc from './SetupAidlc.jsx';
 import TerminalPanel from './TerminalPanel.jsx';
 import FeaturesView from './FeaturesView.jsx';
-import ProjectSettingsDialog from './ProjectSettingsDialog.jsx';
+import ProjectSettingsDialog, { confirmHarnessSwitch } from './ProjectSettingsDialog.jsx';
 import { Frame } from './Lcars.jsx';
 import { featureDocsPrompt } from './featureDocsPrompt.js';
 import { TerminalProvider, useTerminal } from './TerminalContext.jsx';
@@ -24,8 +24,11 @@ function harnessProblem(entry, detected, t) {
   return null;
 }
 
-/** Installed harnesses and CLI versions, detected in main when the project opened; null while that runs (NFR3). */
-function useDetectedHarnesses(projectId) {
+/**
+ * Installed harnesses and CLI versions, detected in main when the project opened; null while that runs (NFR3).
+ * A new `refresh` reads them again, after a setup that main re-detected for (US-0802 FR4.1).
+ */
+function useDetectedHarnesses(projectId, refresh) {
   const [detected, setDetected] = useState(null);
   useEffect(() => {
     let live = true;
@@ -38,7 +41,7 @@ function useDetectedHarnesses(projectId) {
     return () => {
       live = false;
     };
-  }, [projectId]);
+  }, [projectId, refresh]);
   return detected;
 }
 
@@ -181,7 +184,8 @@ function ProjectContent({ project, visible, settingsOpen = false, onCloseSetting
   const { features, settings, settingsLoaded, links } = useFeatures(project.projectId, isAidlc ? project.detection.activeSpace : null);
 
   // The agent tab's harness (US-0801 FR2.2): known once the saved choice and the detection are both in.
-  const detected = useDetectedHarnesses(project.projectId);
+  const [detectRun, setDetectRun] = useState(0);
+  const detected = useDetectedHarnesses(project.projectId, detectRun);
   const harnessId = settingsLoaded && detected ? resolveHarness(settings.harness, detected) : null;
   const harness = harnessId ? selectableHarness(harnessId) : null;
   const problem = harness ? harnessProblem(harness, detected, t) : null;
@@ -189,6 +193,24 @@ function ProjectContent({ project, visible, settingsOpen = false, onCloseSetting
     terminal.setAgent({ harness, problem });
   }, [harness, problem]); // setAgent is stable
   const [choosingHarness, setChoosingHarness] = useState(false); // opened from the agent tab's warning (FR5.1)
+  const [addingHarness, setAddingHarness] = useState(false); // setup in add mode, from Projektinställningar (US-0802 FR3.1)
+  // The switch offer after setup goes the same way as the dialog's: asked first while the tab works (FR4.2).
+  async function switchHarness(id) {
+    if (!confirmHarnessSwitch(terminal, harnessId, id, t)) return;
+    try {
+      await window.bridge.setProjectSettings(project.projectId, { harness: id });
+    } catch (err) {
+      console.error('Harness switch failed:', err);
+      window.alert(t('settings.saveFailed', { error: String(err?.message ?? err) }));
+    }
+  }
+  const setupProps = {
+    project,
+    harnesses: detected,
+    currentHarness: harnessId,
+    onApplied: () => setDetectRun((n) => n + 1),
+    onSwitchHarness: switchHarness
+  };
   const [featureDocsChoice, setFeatureDocsChoice] = useState(false); // lifted from SetupAidlc so it survives the switch (FR4.3)
   const [focusIntent, setFocusIntent] = useState(null);
   const [focusStory, setFocusStory] = useState(null);
@@ -217,6 +239,7 @@ function ProjectContent({ project, visible, settingsOpen = false, onCloseSetting
     <div className="project-view">
       <div className="project-main">
         {justSetUp && <SetupDone onClose={() => setJustSetUp(false)} onFeatureDocs={featureDocsChoice ? setupDocs : undefined} />}
+        {isAidlc && addingHarness && <SetupAidlc {...setupProps} mode="add" onClose={() => setAddingHarness(false)} />}
         {/* Kept mounted while Features is shown, so the intents view keeps its state (FR2.1). */}
         <div className="project-mode" hidden={view === 'features'}>
           {isAidlc ? (
@@ -230,7 +253,7 @@ function ProjectContent({ project, visible, settingsOpen = false, onCloseSetting
             />
           ) : (
             <SetupAidlc
-              project={project}
+              {...setupProps}
               featureDocs={featureDocsChoice}
               onFeatureDocsChange={setFeatureDocsChoice}
               featureDocsExist={docsExist}
@@ -261,6 +284,7 @@ function ProjectContent({ project, visible, settingsOpen = false, onCloseSetting
         harness={harnessId}
         harnesses={detected}
         onSetup={offerSetup}
+        onAddHarness={isAidlc ? () => setAddingHarness(true) : undefined}
       />
     </div>
   );

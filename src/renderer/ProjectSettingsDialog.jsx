@@ -23,13 +23,35 @@ function harnessOptions(detected, t) {
 }
 
 /**
+ * Switching the agent tab closes its session: true at once while it is free or ended, else the person is
+ * asked first (US-0801 FR6.1). Shared with the switch offer after setup (US-0802 FR4.2).
+ */
+export function confirmHarnessSwitch(terminal, from, to, t) {
+  if (terminal?.state('agent') !== 'busy') return true;
+  return window.confirm(
+    t('settings.project.harnessSwitchConfirm', { from: selectableHarness(from)?.label ?? from, to: selectableHarness(to)?.label ?? to })
+  );
+}
+
+/**
  * @param {{open: boolean, onClose: () => void, projectId: string, name?: string,
  *          settings: {featureDocs: string, featuresPath: string}, onSetup?: () => void,
- *          harness?: string|null, harnesses?: Array<object>|null}} props
+ *          harness?: string|null, harnesses?: Array<object>|null, onAddHarness?: () => void}} props
  *   onSetup: given when the project uses AI-DLC but has no feature docs (FR3.6, FR4.5)
  *   harness: the harness the agent tab runs now; harnesses: the detection, null while it runs (US-0801)
+ *   onAddHarness: given in an AI-DLC project; opens setup in add mode (US-0802 FR3.1)
  */
-export default function ProjectSettingsDialog({ open, onClose, projectId, name, settings, onSetup, harness = null, harnesses = null }) {
+export default function ProjectSettingsDialog({
+  open,
+  onClose,
+  projectId,
+  name,
+  settings,
+  onSetup,
+  harness = null,
+  harnesses = null,
+  onAddHarness
+}) {
   const { t } = useTranslation();
   const terminal = useTerminal();
   const ref = useRef(null);
@@ -62,11 +84,7 @@ export default function ProjectSettingsDialog({ open, onClose, projectId, name, 
     if (!validPath) return;
     // Only a changed harness is saved, so the detected default is not pinned by saving other settings.
     const switching = chosen && chosen !== harness;
-    // Switching closes the agent session: ask first while it works; Ledig or Avslutad switch at once (FR6.1).
-    if (switching && terminal?.state('agent') === 'busy') {
-      const from = selectableHarness(harness)?.label ?? harness;
-      if (!window.confirm(t('settings.project.harnessSwitchConfirm', { from, to: selectableHarness(chosen).label }))) return;
-    }
+    if (switching && !confirmHarnessSwitch(terminal, harness, chosen, t)) return;
     setSaving(true);
     setError(null);
     try {
@@ -142,6 +160,26 @@ export default function ProjectSettingsDialog({ open, onClose, projectId, name, 
               ))}
             </select>
           </label>
+          {onAddHarness && (
+            <p className="settings-setup">
+              <span className="muted" data-testid="project-settings-installed-harnesses">
+                {t('settings.project.installedHarnesses', {
+                  list: (harnesses ?? []).filter((d) => d.installed).map((d) => d.label).join(', ') || '–'
+                })}
+              </span>
+              <button
+                type="button"
+                className="btn"
+                onClick={() => {
+                  onAddHarness();
+                  onClose();
+                }}
+                data-testid="project-settings-add-harness"
+              >
+                {t('settings.project.addHarness')}
+              </button>
+            </p>
+          )}
           {error && (
             <p className="refresh-error" role="alert">
               {error}

@@ -18,7 +18,7 @@ import { notifyQuestions } from './notify.js';
 import { summarizeLedger } from './parsers/ledger.js';
 import { getConfiguredModels } from './models.js';
 import { fetchRemote, getGitStatus, getRemoteChanges, listConflicts, showRemoteFile } from './git.js';
-import { buildSetupCommand, getSetupInfo } from './setup.js';
+import { getSetupInfo, runSetup } from './setup.js';
 import { detectHarnesses } from './harness.js';
 import { getProjectSettings, getSettings, setProjectSettings, setSettings } from './settings.js';
 import { watchFiles, watchForAidlc, watchIntents } from './watcher.js';
@@ -245,13 +245,19 @@ const handlers = {
     getRemoteChanges(project(projectId).root, String(ref), { space: String(space ?? 'default') }),
   'git:showRemote': async (_event, projectId, ref, rel) => showRemoteFile(project(projectId).root, String(ref), String(rel)),
   'git:conflicts': async (_event, projectId) => listConflicts(project(projectId).root),
-  // Setup (US-0503): the command is only built here, never run; plugins must be ones setup:info read.
-  'setup:info': async (_event, projectId) => {
+  // Setup (US-0503, US-0802): setup:run only runs after a setup:info preview for the same harness, and only
+  // with plugins that preview read; runSetup checks every value.
+  'setup:info': async (_event, projectId, options) => {
     const p = project(projectId);
-    p.setupInfo = await getSetupInfo(p.root);
+    p.setupInfo = await getSetupInfo(p.root, { harness: options?.harness });
     return p.setupInfo;
   },
-  'setup:command': async (_event, projectId, options) => buildSetupCommand(options, project(projectId).setupInfo?.plugins ?? []),
+  'setup:run': async (_event, projectId, choices) => {
+    const p = project(projectId);
+    const result = await runSetup(p.root, choices, p.setupInfo);
+    if (result.ok) p.harnesses = detectHarnesses(p.root); // the new harness shows as installed at once (FR4.1)
+    return result;
+  },
   'settings:get': async () => getSettings(),
   // A changed language applies at once: later dialogs and notifications, and the rebuilt menu (EPIC-07 FR4.4).
   'settings:set': async (event, partial) => {
