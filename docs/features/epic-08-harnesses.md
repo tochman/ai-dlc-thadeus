@@ -8,13 +8,13 @@
 
 **Stories:** US-0801, US-0802
 
-**Status (2026-11-14):** 🚧 US-0801 and US-0802 built, merged to main, not released (Claude Code and opencode selectable in the agent tab; all six harnesses can be set up from the app).
+**Status (2026-11-14):** ✅ US-0801 and US-0802 done, merged to main (not released yet) (Claude Code and opencode selectable in the agent tab; all six harnesses can be set up from the app).
 
 ---
 
 ## User Stories
 
-**US-0801: Choose the harness per project (for example opencode instead of Claude)** 🚧 Built, merged to main, not released
+**US-0801: Choose the harness per project (for example opencode instead of Claude)** ✅ Done, merged to main (not released yet)
 - As a **developer who uses opencode (or Codex, Kiro) instead of Claude Code**, in order to **drive AI-DLC from the console with the tool I actually use**, I would like to **choose which harness the agent terminal runs for each project**.
 - **Epic:** EPIC-08
 - **Priority:** High
@@ -30,7 +30,7 @@
 - **Notes:** Built for Claude Code and opencode; Codex, Kiro, Cursor and Copilot are detected and listed as "not supported yet" (decided in requirements). opencode waits 4 s of quiet output before the app types into it (measured on opencode v2.1.4).
 - **Dependencies:** US-0501, US-0503, EPIC-06 (Projektinställningar)
 
-**US-0802: Set up AI-DLC for another harness** 🚧 Built, merged to main, not released
+**US-0802: Set up AI-DLC for another harness** ✅ Done, merged to main (not released yet)
 - As a **developer starting AI-DLC in a project with opencode (or another harness)**, in order to **get the right engine files without running the CLI by hand**, I would like to **choose the harness in the setup dialog and add more harnesses to a project later**.
 - **Epic:** EPIC-08
 - **Priority:** Medium

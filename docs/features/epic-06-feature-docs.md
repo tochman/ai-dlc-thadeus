@@ -21,7 +21,7 @@
 
 - `docs/FEATURES.md`: a short introduction and a table with one row per epic (link, topic, status).
 - `docs/features/epic-XX-<slug>.md`: an epic description, a `**Stories:**` line, a `**Status (date):**` line, and stories as `**US-XXYY: Title** <status>` followed by As a / in order to / I would like to, Epic, Priority, Complexity, Acceptance Criteria (checkboxes, preferably Given/When/Then), Notes and Dependencies.
-- Status markers: 📋 Planned, 🚧 In progress / built not released, ✅ Done.
+- Status markers: 📋 Planned, 🚧 In progress, ✅ Done (merged; "Released in vX.Y.Z" is added when a release includes it).
 - Epics are organised by topic, not by release.
 
 ---

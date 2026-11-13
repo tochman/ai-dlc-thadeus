@@ -8,7 +8,7 @@
 
 **Stories:** US-0501, US-0502, US-0503, US-0504, US-0505
 
-**Status (2026-11-13):** ✅ US-0501–US-0503 released in v0.2.0. US-0505 🚧 Built, merged to main, not released. US-0504 📋 Planned.
+**Status (2026-11-14):** ✅ US-0501–US-0503 released in v0.2.0. ✅ US-0505 done, merged to main (not released yet). US-0504 📋 Planned.
 
 ---
 
@@ -103,7 +103,7 @@
   - [ ] Disabled while an AI-DLC workflow is running, as in US-0502.
 - **Dependencies:** US-0502, US-0503
 
-**US-0505: Get Claude's questions as a popup** 🚧 Built, merged to main, not released
+**US-0505: Get Claude's questions as a popup** ✅ Done, merged to main (not released yet)
 - As a **developer who lets AI-DLC run while I do something else**, in order to **not leave Claude waiting on a question I have not seen**, I would like to **see each AI-DLC question or approval as a popup in the app, and as a notification when the app is in the background**.
 - **Epic:** EPIC-05
 - **Priority:** High
