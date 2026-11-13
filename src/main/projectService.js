@@ -8,6 +8,7 @@ import { mergeAudits, categoryOf } from './parsers/audit.js';
 import { mergePipeline } from './parsers/pipeline.js';
 import { unitStatuses } from './parsers/units.js';
 import { pendingQuestions } from './questions.js';
+import { t } from '../shared/i18n.js';
 
 const PHASE_DIRS = ['initialization', 'ideation', 'inception', 'construction', 'operation', 'verification'];
 // ponytail: unbounded per-process cache keyed by root/space/intent; fine for a handful of projects.
@@ -22,7 +23,7 @@ export const intentsDir = (space) => `${spacesDir(space)}/intents`;
 
 function assertName(name, what) {
   if (typeof name !== 'string' || !/^[^/\\]+$/.test(name) || name.startsWith('.')) {
-    throw new Error(`Ogiltigt namn på ${what}: ${name}`);
+    throw new Error(t('errors.invalidName', { what, name: String(name) }));
   }
 }
 
@@ -41,10 +42,10 @@ export async function listSpaces(root) {
 
 export async function detectProject(root) {
   if (!(await exists(root, 'aidlc/spaces'))) {
-    return { isAidlc: false, reason: 'Mappen saknar aidlc/spaces/ och är inget AI-DLC-projekt.' };
+    return { isAidlc: false, reason: t('errors.notAidlc') };
   }
   const spaces = await listSpaces(root);
-  if (spaces.length === 0) return { isAidlc: false, reason: 'aidlc/spaces/ innehåller ingen space.' };
+  if (spaces.length === 0) return { isAidlc: false, reason: t('errors.noSpace') };
   const named = (await readTextOrNull(root, 'aidlc/active-space'))?.trim();
   const activeSpace = spaces.includes(named) ? named : spaces.includes('default') ? 'default' : spaces[0];
   return { isAidlc: true, activeSpace, spaces };
@@ -63,6 +64,7 @@ async function summarizeIntent(root, space, dirName) {
   const pipeline = mergePipeline(state, null);
   return {
     stateScope: state?.scope ?? null,
+    plan: state?.plan ?? null,
     request: await loadDescription(root, base),
     currentStage: state?.currentStage ?? null,
     stateStatus: state?.currentStatus ?? null,
@@ -219,13 +221,13 @@ export async function loadCost(root) {
   }
   if (res.missing) {
     costCache.delete(root);
-    return { available: false, reason: `${LEDGER_PATH} finns inte. AI-DLC skriver den när en session har körts på den här maskinen.` };
+    return { available: false, reason: t('errors.ledgerMissing', { path: LEDGER_PATH }) };
   }
-  const error = res.ok ? `${LEDGER_PATH} har oväntad form.` : res.error;
+  const error = res.ok ? t('errors.ledgerShape', { path: LEDGER_PATH }) : res.error;
   const prev = costCache.get(root);
   if (prev) return { ...prev, stale: true, warning: error };
   console.warn(`Kunde inte läsa ${LEDGER_PATH}:`, error);
-  return { available: false, reason: `Kostnaden kunde inte läsas: ${error}` };
+  return { available: false, reason: t('cost.loadFailed', { error }) };
 }
 
 export async function loadIntentDetail(root, space, dirName) {

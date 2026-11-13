@@ -1,18 +1,22 @@
 // Features view (EPIC-06 US-0602): epics and user stories from the project's feature docs. Read-only.
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { FileContent } from './ArtifactReader.jsx';
 import { Frame } from './Lcars.jsx';
-import { STATUS_LABEL, STATUS_MARKER } from '../main/parsers/features.js';
+import { withSlots } from './format.js';
+import { STATUS_MARKER } from '../main/parsers/features.js';
 
 const errorText = (err) => String(err?.message ?? err).replace(/^Error invoking remote method '[^']+': (Error: )?/, '');
 // Pågår is steel (active), Klar a light slate block, Planerad an outline (FR1.3).
 const STATUS_CLASS = { planned: 'tag', progress: 'tag tag-live', done: 'tag tag-done' };
+const STATUSES = Object.keys(STATUS_MARKER);
 
 /** Status as marker and text, never colour alone (NFR3). */
 export function StatusBadge({ status, text }) {
+  const { t } = useTranslation();
   return (
     <span className={STATUS_CLASS[status] ?? 'tag'} title={text || undefined}>
-      {status ? `${STATUS_MARKER[status]} ${STATUS_LABEL[status]}` : text || 'Okänd status'}
+      {status ? `${STATUS_MARKER[status]} ${t(`features.status.${status}`)}` : text || t('features.unknownStatus')}
     </span>
   );
 }
@@ -20,18 +24,20 @@ export function StatusBadge({ status, text }) {
 const storiesDone = (epic) => (epic.parsed?.stories ?? []).filter((s) => s.status === 'done').length;
 
 function FormatHelp({ path, reason, onSetup }) {
+  const { t } = useTranslation();
   return (
     <div className="panel features-empty" data-testid="features-view-empty">
-      <h2>Inga feature-beskrivningar</h2>
-      {reason ? <p className="refresh-error">{reason}</p> : <p>Projektet har ingen översikt i <code>{path}</code>.</p>}
+      <h2>{t('features.emptyTitle')}</h2>
+      {reason ? <p className="refresh-error">{reason}</p> : <p>{withSlots('features.noOverview', { path: <code>{path}</code> })}</p>}
       <p>
-        Formatet är en översikt med en tabell över epics (länk, ämne, status) och en fil per epic i <code>docs/features/</code>. Varje
-        epic har storys som <code>**US-XXYY: Titel** 📋</code> med som/för att/vill, prioritet, komplexitet och acceptanskriterier som
-        kryssrutor. Status: 📋 Planerad, 🚧 Pågår, ✅ Klar.
+        {withSlots('features.formatHelp', {
+          folder: <code>docs/features/</code>,
+          example: <code>{t('features.exampleStory')}</code>
+        })}
       </p>
       {onSetup && (
         <button className="btn btn-accent" onClick={onSetup} data-testid="features-view-setup">
-          Sätt upp feature-beskrivningar
+          {t('features.setup')}
         </button>
       )}
     </div>
@@ -39,6 +45,7 @@ function FormatHelp({ path, reason, onSetup }) {
 }
 
 function FileActions({ projectId, rel }) {
+  const { t } = useTranslation();
   const [error, setError] = useState(null);
   const bridge = window.bridge;
   async function act(fn) {
@@ -53,10 +60,10 @@ function FileActions({ projectId, rel }) {
     <div className="file-actions">
       <code className="file-path">{rel}</code>
       <button className="btn" onClick={() => act(bridge.revealInFinder)} data-testid="features-view-reveal">
-        {bridge.platform === 'darwin' ? 'Visa i Finder' : 'Visa i filhanteraren'}
+        {bridge.platform === 'darwin' ? t('common.revealFinder') : t('common.revealFiles')}
       </button>
       <button className="btn" onClick={() => act(bridge.openInEditor)} data-testid="features-view-open-editor">
-        Öppna i editor
+        {t('common.openInEditor')}
       </button>
       {error && (
         <p className="refresh-error" role="alert">
@@ -68,11 +75,12 @@ function FileActions({ projectId, rel }) {
 }
 
 function StoryDetail({ story, links, onOpenIntent }) {
+  const { t } = useTranslation();
   return (
     <div className="file-view features-story" data-testid="features-view-story-detail">
       {links.length > 0 && (
         <p className="features-links">
-          <span className="field-label">Intents</span>
+          <span className="field-label">{t('features.intents')}</span>
           {links.map((dir) => (
             <button key={dir} className="btn btn-quiet" onClick={() => onOpenIntent?.(dir)} data-testid="features-view-intent-link">
               {dir}
@@ -86,6 +94,7 @@ function StoryDetail({ story, links, onOpenIntent }) {
 }
 
 function EpicDetail({ projectId, epic, links, storyId, setStoryId, onOpenIntent }) {
+  const { t } = useTranslation();
   const [status, setStatus] = useState('');
   const [priority, setPriority] = useState('');
   const stories = epic.parsed?.stories ?? [];
@@ -108,7 +117,7 @@ function EpicDetail({ projectId, epic, links, storyId, setStoryId, onOpenIntent 
           </p>
         ))}
       </header>
-      {!epic.parsed && <p className="muted">Epic-filen kunde inte läsas.</p>}
+      {!epic.parsed && <p className="muted">{t('features.epicUnreadable')}</p>}
       {epic.parsed && stories.length === 0 && (
         <div className="file-view" data-testid="features-view-fallback">
           <FileContent rel={epic.file} content={epic.parsed.raw} />
@@ -118,20 +127,20 @@ function EpicDetail({ projectId, epic, links, storyId, setStoryId, onOpenIntent 
         <>
           <div className="filters">
             <label className="field">
-              <span className="field-label">Status</span>
+              <span className="field-label">{t('features.statusLabel')}</span>
               <select value={status} onChange={(e) => setStatus(e.target.value)} data-testid="features-view-filter-status">
-                <option value="">Alla</option>
-                {Object.entries(STATUS_LABEL).map(([k, label]) => (
+                <option value="">{t('features.all')}</option>
+                {STATUSES.map((k) => (
                   <option key={k} value={k}>
-                    {label}
+                    {t(`features.status.${k}`)}
                   </option>
                 ))}
               </select>
             </label>
             <label className="field">
-              <span className="field-label">Prioritet</span>
+              <span className="field-label">{t('features.priority')}</span>
               <select value={priority} onChange={(e) => setPriority(e.target.value)} data-testid="features-view-filter-priority">
-                <option value="">Alla</option>
+                <option value="">{t('features.all')}</option>
                 {priorities.map((p) => (
                   <option key={p} value={p}>
                     {p}
@@ -156,17 +165,15 @@ function EpicDetail({ projectId, epic, links, storyId, setStoryId, onOpenIntent 
                     <StatusBadge status={s.status} text={s.statusText} />
                   </span>
                   <span className="intent-row-meta">
-                    {s.priority && <span>Prioritet: {s.priority}</span>}
-                    {s.complexity && <span>Komplexitet: {s.complexity}</span>}
-                    <span>
-                      {s.done}/{s.total} kriterier
-                    </span>
-                    {links[s.id] && <span>{links[s.id].length} intent</span>}
+                    {s.priority && <span>{t('features.priorityValue', { value: s.priority })}</span>}
+                    {s.complexity && <span>{t('features.complexityValue', { value: s.complexity })}</span>}
+                    <span>{t('features.criteria', { done: s.done, total: s.total })}</span>
+                    {links[s.id] && <span>{t('features.intentCount', { n: links[s.id].length })}</span>}
                   </span>
                 </button>
               </li>
             ))}
-            {shown.length === 0 && <li className="muted">Inga storys matchar filtret.</li>}
+            {shown.length === 0 && <li className="muted">{t('features.noMatch')}</li>}
           </ul>
           {story && <StoryDetail story={story} links={links[story.id] ?? []} onOpenIntent={onOpenIntent} />}
         </>
@@ -180,6 +187,7 @@ function EpicDetail({ projectId, epic, links, storyId, setStoryId, onOpenIntent 
  *          onOpenIntent?: (dirName: string) => void, onSetup?: () => void}} props
  */
 export default function FeaturesView({ projectId, features, links = {}, focusStory = null, onOpenIntent, onSetup }) {
+  const { t } = useTranslation();
   const epics = features?.available ? features.epics : [];
   const [epicId, setEpicId] = useState(null);
   const [storyId, setStoryId] = useState(null);
@@ -192,7 +200,7 @@ export default function FeaturesView({ projectId, features, links = {}, focusSto
     setStoryId(focusStory.id);
   }, [focusStory, features]);
 
-  if (!features) return <p className="muted" data-testid="features-view">Läser feature-dokumenten…</p>;
+  if (!features) return <p className="muted" data-testid="features-view">{t('features.reading')}</p>;
 
   let body;
   if (!features.available) {
@@ -208,14 +216,14 @@ export default function FeaturesView({ projectId, features, links = {}, focusSto
     const epic = epics.find((e) => e.id === epicId) ?? epics[0];
     body = (
       <div className="project-body">
-        <aside className="sidebar" aria-label="Epics">
+        <aside className="sidebar" aria-label={t('features.epics')}>
           <div className="lcars-heading">
-            <h2 className="section-title">Epics</h2>
+            <h2 className="section-title">{t('features.epics')}</h2>
             <span className="lcars-heading-line" aria-hidden="true" />
-            <span className="lcars-heading-meta">{epics.length} st</span>
+            <span className="lcars-heading-meta">{t('features.count', { n: epics.length })}</span>
           </div>
           {features.intro && <p className="muted features-intro">{features.intro}</p>}
-          <ul className="intent-rows" aria-label="Epics">
+          <ul className="intent-rows" aria-label={t('features.epics')}>
             {epics.map((e) => {
               const total = e.parsed?.stories.length ?? 0;
               return (
@@ -237,7 +245,7 @@ export default function FeaturesView({ projectId, features, links = {}, focusSto
                     <span className="muted">{e.topic}</span>
                     <span className="intent-row-meta">
                       <StatusBadge status={e.statusKind} text={e.status} />
-                      <span>{e.parsed ? `${storiesDone(e)}/${total} storys klara` : 'kunde inte läsas'}</span>
+                      <span>{e.parsed ? t('features.storiesDone', { done: storiesDone(e), total }) : t('features.unreadable')}</span>
                     </span>
                   </button>
                 </li>

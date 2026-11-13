@@ -27,6 +27,18 @@ describe('IntentList', () => {
     expect(rowSlugs()).toEqual(['epic29-small-k2-fixes']);
   });
 
+  it('shows and filters a custom plan by its own name, with the base scope on hover', () => {
+    const custom = { ...base, dirName: '261113-i18n-foundation', slug: 'i18n-foundation', scope: 'bugfix', plan: 'i18n-express', status: 'in-flight', date: '2026-11-13' };
+    render(<IntentList intents={[...intents, custom]} selected={null} onSelect={vi.fn()} />);
+    const row = screen.getAllByTestId('intent-list-row').find((r) => r.textContent.includes('i18n-foundation'));
+    const label = [...row.querySelectorAll('span[title]')].find((s) => s.textContent === 'i18n-express');
+    expect(label.getAttribute('title')).toContain('bugfix');
+    expect(row.textContent).not.toContain('bugfix');
+
+    fireEvent.change(screen.getByTestId('intent-list-scope-filter'), { target: { value: 'i18n-express' } });
+    expect(rowSlugs()).toEqual(['i18n-foundation']);
+  });
+
   it('shows status, active and missing-in-index as text, not colour alone (FR9.3, FR2.3, FR2.5)', () => {
     const onSelect = vi.fn();
     render(<IntentList intents={intents} selected={null} onSelect={onSelect} />);

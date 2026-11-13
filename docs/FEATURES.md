@@ -10,7 +10,7 @@ Overview of all epics. Each epic lives in its own file under [features/](feature
 | [EPIC-04](features/epic-04-branding-and-desktop.md) | Branding, Look & Desktop Integration: Auctum icon, OS integration, glow and motion | ✅ US-0401 released in v0.1.1 · ✅ US-0402–US-0404 released in v0.2.0 (motion, design refresh, full screen and app menu) · 🚧 US-0406 built, not released (name T.H.A.D.E.U.S.) · 📋 US-0405 Planned (settings view) |
 | [EPIC-05](features/epic-05-workflow-control.md) | Workflow Control: steer AI-DLC from the console (resume, refresh from GitHub, set up AI-DLC, switch, answer) | ✅ US-0501–US-0503 released in v0.2.0 · 🚧 US-0505 built, merged, not released (questions as a popup) · 📋 US-0504 Planned (framework updates) |
 | [EPIC-06](features/epic-06-feature-docs.md) | Feature Docs: offer FEATURES.md + epic files at setup, and view epics and stories in the console | ✅ Released in v0.2.0 (US-0601, US-0602) |
-| [EPIC-07](features/epic-07-internationalisation.md) | Internationalisation: translation files, English, and languages users add themselves | 📋 Planned (US-0701 medium, US-0702 low) |
+| [EPIC-07](features/epic-07-internationalisation.md) | Internationalisation: translation files, English, and languages users add themselves | 🚧 US-0701 built, merged, not released (Swedish and English, language setting) · 📋 US-0702 Planned (own translation files) |
 | [EPIC-08](features/epic-08-harnesses.md) | Harnesses: choose opencode, Codex or Kiro instead of Claude per project, and set them up | 📋 Planned (US-0801 high, US-0802 medium) |
 
 ## Story numbering

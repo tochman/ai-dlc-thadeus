@@ -13,7 +13,12 @@ export default defineConfig({
       },
       {
         extends: true,
-        test: { name: 'renderer', include: ['tests/renderer/**/*.test.jsx'], environment: 'jsdom' }
+        test: {
+          name: 'renderer',
+          include: ['tests/renderer/**/*.test.jsx'],
+          environment: 'jsdom',
+          setupFiles: ['tests/renderer/setup-i18n.js'] // i18n in Swedish (EPIC-07 US-0701)
+        }
       }
     ]
   }

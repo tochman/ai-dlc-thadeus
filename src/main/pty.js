@@ -2,6 +2,7 @@
 // node-pty is loaded on the first spawn, not at import: a native binary that cannot load on this
 // system (e.g. built against a newer glibc) must break the terminal tab, not the whole app.
 import { randomUUID } from 'node:crypto';
+import { t } from '../shared/i18n.js';
 
 const sessions = new Map(); // id -> { proc, projectId, sender }
 let ptyModule = null; // cached only after a successful load, so a failed load is retried next spawn
@@ -14,7 +15,7 @@ async function loadPty() {
     return ptyModule;
   } catch (err) {
     console.error('Kunde inte ladda node-pty:', err);
-    throw new Error(`Terminalmodulen kunde inte laddas: ${err.message}`);
+    throw new Error(t('errors.ptyLoadFailed', { error: err.message }));
   }
 }
 
@@ -22,7 +23,7 @@ function shellArgs(kind) {
   // -i makes zsh/bash read the interactive rc files (nvm usually lives in .zshrc), -l the login profile.
   if (kind === 'claude') return ['-l', '-i', '-c', 'claude'];
   if (kind === 'shell') return ['-l'];
-  throw new Error(`Okänd terminaltyp: ${kind}`);
+  throw new Error(t('errors.unknownTerminal', { kind: String(kind) }));
 }
 
 function clampSize(n, fallback) {
@@ -55,12 +56,12 @@ export async function spawnSession({ projectId, root, kind, cols, rows, sender }
 
 function get(id) {
   const s = sessions.get(id);
-  if (!s) throw new Error(`Ingen terminalsession med id ${id}`);
+  if (!s) throw new Error(t('errors.noSession', { id: String(id) }));
   return s;
 }
 
 export function writeSession(id, data) {
-  if (typeof data !== 'string') throw new Error('Terminaldata måste vara en sträng');
+  if (typeof data !== 'string') throw new Error(t('errors.ptyDataNotString'));
   get(id).proc.write(data);
 }
 

@@ -87,6 +87,22 @@ describe('project settings', () => {
     expect(JSON.parse(await fs.readFile(FILE, 'utf8'))).not.toHaveProperty('notificationSound');
   });
 
+  it('keeps a valid language and leaves out an invalid one, so auto applies (EPIC-07 US-0701 FR4.3)', async () => {
+    expect('language' in (await getSettings())).toBe(false); // nothing saved: auto
+    for (const language of ['en', 'sv', 'auto']) {
+      await setSettings({ language });
+      expect((await getSettings()).language).toBe(language);
+    }
+    await setSettings({ language: 'en' });
+    await setSettings({ openProjects: ['/p/a'] }); // saving the tabs keeps the choice
+    expect((await getSettings()).language).toBe('en');
+
+    await fs.writeFile(FILE, JSON.stringify({ openProjects: [], language: 'de' }));
+    expect('language' in (await getSettings())).toBe(false);
+    await setSettings({ language: 42 });
+    expect(JSON.parse(await fs.readFile(FILE, 'utf8'))).not.toHaveProperty('language');
+  });
+
   it('keeps both changes when two writes run at the same time (FR3.5)', async () => {
     await Promise.all([
       setSettings({ openProjects: ['/p/a', '/p/b'], activeProject: '/p/b' }),

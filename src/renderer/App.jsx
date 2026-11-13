@@ -1,8 +1,10 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import ProjectView from './ProjectView.jsx';
 import AuctumMark from './AuctumMark.jsx';
 import Splash from './Splash.jsx';
-import AppSettingsDialog from './AppSettingsDialog.jsx';
+import AppSettingsDialog, { saveLanguage } from './AppSettingsDialog.jsx';
+import { withSlots } from './format.js';
 import DocsDialog from './DocsDialog.jsx';
 import QuestionPopup from './QuestionPopup.jsx';
 import { Bar, Frame } from './Lcars.jsx';
@@ -44,6 +46,7 @@ function ArmBlock({ current = false, expanded, tone = 'mid', children, ...rest }
 }
 
 export default function App() {
+  const { t } = useTranslation(); // a language switch re-renders the whole app, state kept (EPIC-07 NFR3)
   const [tabs, setTabs] = useState([]); // { projectId, root, name, detection }
   const [activeId, setActiveId] = useState(null);
   const [error, setError] = useState(null);
@@ -51,6 +54,7 @@ export default function App() {
   const [settingsFor, setSettingsFor] = useState(null); // projectId whose "Projektinställningar" is open (EPIC-06 FR3.1)
   const [appSettingsOpen, setAppSettingsOpen] = useState(false);
   const [animations, setAnimations] = useState(null); // saved choice; null means the default applies
+  const [language, setLanguage] = useState('auto'); // saved "Språk / Language" choice (EPIC-07 FR4.1)
   const [ui, setUi] = useState({}); // projectId -> {view, cost, github}: what the arm has selected per project
   const [meta, setMeta] = useState({}); // projectId -> {showFeatures, intentCount}, reported by ProjectView
   const [branch, setBranch] = useState(null);
@@ -88,6 +92,7 @@ export default function App() {
         const s = await bridge.getSettings();
         recentRef.current = s.recentProjects;
         setAnimations(s.animations ?? null);
+        setLanguage(s.language ?? 'auto');
         setAlertSettings({ questionAlerts: s.questionAlerts, notificationSound: s.notificationSound });
         const failed = [];
         let activeInfo = null;
@@ -100,9 +105,9 @@ export default function App() {
           }
         }
         if (activeInfo) setActiveId(activeInfo.projectId);
-        if (failed.length) setError(`Kunde inte öppna igen: ${failed.join('; ')}`);
+        if (failed.length) setError(t('app.reopenFailed', { list: failed.join('; ') }));
       } catch (err) {
-        setError(`Kunde inte läsa inställningar: ${errorText(err)}`);
+        setError(t('app.settingsReadFailed', { error: errorText(err) }));
       } finally {
         setRestored(true);
       }
@@ -128,7 +133,7 @@ export default function App() {
         recentProjects: recentRef.current,
         activeProject: active?.root ?? null
       })
-      .catch((err) => setError(`Kunde inte spara inställningar: ${errorText(err)}`));
+      .catch((err) => setError(t('app.settingsSaveFailed', { error: errorText(err) })));
   }, [tabs, activeId, restored]);
 
   // The branch in the header. Read-only; it is only a label, so a failure just leaves it out.
@@ -253,13 +258,17 @@ export default function App() {
     setAnimations(next);
     await bridge.setSettings({ animations: next }); // a failure is shown in the dialog
   }
+  async function changeLanguage(next) {
+    setLanguage(next);
+    await saveLanguage(next); // a failure is shown in the dialog
+  }
 
   const active = tabs.find((t) => t.projectId === activeId) ?? null;
   const activeUi = active ? { ...UI_DEFAULT, ...ui[active.projectId] } : UI_DEFAULT;
   const activeMeta = (active && meta[active.projectId]) || {};
   const isAidlc = active?.detection.isAidlc === true;
   const view = activeMeta.showFeatures ? activeUi.view : 'intents';
-  const firstLabel = isAidlc ? 'Intents' : 'Uppsättning';
+  const firstLabel = isAidlc ? t('app.intents') : t('app.setup');
 
   const showFeatures = activeMeta.showFeatures === true;
 
@@ -294,7 +303,7 @@ export default function App() {
         console.info('Ingen docs/README.md i projektet, öppnar AI-DLC:s webbsida:', errorText(err));
       }
     }
-    bridge.openDocsUrl().catch((err) => setError(`Webbläsaren kunde inte öppnas: ${errorText(err)}`));
+    bridge.openDocsUrl().catch((err) => setError(t('app.browserFailed', { error: errorText(err) })));
   }
   const pick = (value, allowed, fn) => allowed.includes(value) && fn(value);
   const menuCommands = {
@@ -320,7 +329,7 @@ export default function App() {
   }, [hasProject, isAidlc, showFeatures]);
 
   function toggleFullscreen() {
-    bridge.toggleFullscreen().catch((err) => setError(`Helskärm kunde inte växlas: ${errorText(err)}`));
+    bridge.toggleFullscreen().catch((err) => setError(t('app.fullscreenFailed', { error: errorText(err) })));
   }
 
   return (
@@ -336,7 +345,7 @@ export default function App() {
           <div className="app-header-row">
             {branch && (
               <>
-                <span className="app-meta-label">Gren</span>
+                <span className="app-meta-label">{t('app.branch')}</span>
                 <span className="app-branch" title={branch}>
                   {branch}
                 </span>
@@ -345,10 +354,10 @@ export default function App() {
             <h1 className="app-title">
               {active ? (
                 <>
-                  {active.name} <span className="app-title-sep" aria-hidden="true">•</span> {view === 'features' ? 'Features' : firstLabel}
+                  {active.name} <span className="app-title-sep" aria-hidden="true">•</span> {view === 'features' ? t('app.features') : firstLabel}
                 </>
               ) : (
-                'Inget projekt'
+                t('app.noProject')
               )}
             </h1>
             <span className="app-header-deco" aria-hidden="true">
@@ -361,37 +370,43 @@ export default function App() {
               onClick={toggleFullscreen}
               data-testid="fullscreen-toggle"
             >
-              {fullscreen ? 'Lämna helskärm' : 'Helskärm'}
+              {fullscreen ? t('app.leaveFullscreen') : t('app.fullscreen')}
             </button>
           </div>
         </div>
       </header>
 
-      <nav className="app-arm" aria-label="Projekt och vyer" data-testid="project-tabs">
-        {tabs.map((t) => {
-          const on = t.projectId === activeId;
+      <nav className="app-arm" aria-label={t('app.armLabel')} data-testid="project-tabs">
+        {tabs.map((tab) => {
+          const on = tab.projectId === activeId;
           return (
-            <div key={t.projectId} className={`arm-project ${on ? 'is-active' : ''}`}>
+            <div key={tab.projectId} className={`arm-project ${on ? 'is-active' : ''}`}>
               <button
                 className={`lcars-block ${on ? 'lcars-block--active' : 'lcars-block--dark'}`}
                 aria-current={on ? 'true' : undefined}
-                title={t.root}
-                onClick={() => setActiveId(t.projectId)}
+                title={tab.root}
+                onClick={() => setActiveId(tab.projectId)}
                 data-testid="project-tabs-tab"
               >
-                <span className="lcars-label">{t.name}</span>
+                <span className="lcars-label">{tab.name}</span>
               </button>
               <span className="arm-tools">
                 <button
                   className="arm-tool"
-                  aria-label={`Projektinställningar för ${t.name}`}
-                  title={`Projektinställningar för ${t.name}`}
-                  onClick={() => openProjectSettings(t.projectId)}
+                  aria-label={t('app.projectSettingsFor', { name: tab.name })}
+                  title={t('app.projectSettingsFor', { name: tab.name })}
+                  onClick={() => openProjectSettings(tab.projectId)}
                   data-testid="project-settings-open"
                 >
                   ⚙
                 </button>
-                <button className="arm-tool" aria-label={`Stäng ${t.name}`} title={`Stäng ${t.name}`} onClick={() => closeTab(t.projectId)} data-testid="project-tabs-close">
+                <button
+                  className="arm-tool"
+                  aria-label={t('app.closeProject', { name: tab.name })}
+                  title={t('app.closeProject', { name: tab.name })}
+                  onClick={() => closeTab(tab.projectId)}
+                  data-testid="project-tabs-close"
+                >
                   ×
                 </button>
               </span>
@@ -399,7 +414,7 @@ export default function App() {
           );
         })}
         <button className="lcars-block lcars-block--sm lcars-block--deep" onClick={openProject} data-testid="project-tabs-add">
-          + Öppna
+          {t('app.open')}
         </button>
         <span className="arm-spacer" aria-hidden="true" />
         {active && (
@@ -409,7 +424,7 @@ export default function App() {
             </ArmBlock>
             {showFeatures && (
               <ArmBlock current={view === 'features'} onClick={() => showView('features')} data-testid="project-view-switch-features">
-                Features
+                {t('app.features')}
               </ArmBlock>
             )}
             <ArmBlock
@@ -418,7 +433,7 @@ export default function App() {
               onClick={() => togglePanel('cost')}
               data-testid="arm-cost"
             >
-              Kostnad
+              {t('app.cost')}
             </ArmBlock>
             <ArmBlock
               tone="dark"
@@ -427,16 +442,16 @@ export default function App() {
               onClick={() => togglePanel('github')}
               data-testid="arm-github"
             >
-              Github
+              {t('app.github')}
             </ArmBlock>
           </>
         )}
         <ArmBlock tone="dark" onClick={openAppSettings} data-testid="app-settings-open">
-          Inställningar
+          {t('app.settings')}
         </ArmBlock>
         <div className="arm-foot">
           <AuctumMark size={128} className="arm-foot-mark" decorative />
-          <span className="arm-foot-label">{isAidlc ? `${activeMeta.intentCount ?? 0} intents` : 'Auctum'}</span>
+          <span className="arm-foot-label">{isAidlc ? t('app.intentCount', { n: activeMeta.intentCount ?? 0 }) : 'Auctum'}</span>
         </div>
       </nav>
 
@@ -444,7 +459,7 @@ export default function App() {
         <div className="banner banner-error app-error" role="alert">
           <span>{error}</span>
           <button className="btn" onClick={() => setError(null)} data-testid="app-error-dismiss">
-            Stäng
+            {t('common.close')}
           </button>
         </div>
       )}
@@ -454,32 +469,30 @@ export default function App() {
           <div className="empty-state">
             <Frame>
               <AuctumMark size={96} className="empty-state-mark" />
-              <h2>Inget projekt öppet</h2>
-              <p>
-                Öppna en projektmapp som innehåller <code>aidlc/spaces/</code>.
-              </p>
+              <h2>{t('app.emptyTitle')}</h2>
+              <p>{withSlots('app.emptyText', { path: <code>aidlc/spaces/</code> })}</p>
               <button className="btn btn-accent" onClick={openProject} data-testid="empty-state-open">
-                Öppna projekt
+                {t('app.openProject')}
               </button>
             </Frame>
           </div>
         )}
         {/* Every tab stays mounted so its terminals and watchers survive tab switches (FR8.4). */}
-        {tabs.map((t) => {
-          const tabUi = { ...UI_DEFAULT, ...ui[t.projectId] };
+        {tabs.map((tab) => {
+          const tabUi = { ...UI_DEFAULT, ...ui[tab.projectId] };
           return (
-            <div key={t.projectId} className="project-pane" hidden={t.projectId !== activeId}>
+            <div key={tab.projectId} className="project-pane" hidden={tab.projectId !== activeId}>
               <ProjectView
-                project={t}
-                visible={t.projectId === activeId}
-                settingsOpen={settingsFor === t.projectId}
+                project={tab}
+                visible={tab.projectId === activeId}
+                settingsOpen={settingsFor === tab.projectId}
                 onCloseSettings={() => setSettingsFor(null)}
                 view={tabUi.view}
-                onView={(v) => setUiOf(t.projectId, { view: v })}
+                onView={(v) => setUiOf(tab.projectId, { view: v })}
                 costOpen={tabUi.cost}
-                onToggleCost={() => setUiOf(t.projectId, (c) => ({ cost: !c.cost }))}
+                onToggleCost={() => setUiOf(tab.projectId, (c) => ({ cost: !c.cost }))}
                 githubOpen={tabUi.github}
-                onToggleGithub={() => setUiOf(t.projectId, (c) => ({ github: !c.github }))}
+                onToggleGithub={() => setUiOf(tab.projectId, (c) => ({ github: !c.github }))}
                 onMeta={reportMeta}
                 terminalCommand={terminalCommand}
               />
@@ -496,6 +509,8 @@ export default function App() {
         questionAlerts={alertSettings.questionAlerts ?? 'popup-notify'}
         notificationSound={alertSettings.notificationSound !== false}
         onSave={saveAlertSettings}
+        language={language}
+        onLanguage={changeLanguage}
       />
       <DocsDialog doc={docs} onClose={() => setDocs(null)} />
       <QuestionPopup open={popupOpen} questions={popupQuestions} focus={popupFocus} onAnswer={answerInClaude} onClose={closePopup} />

@@ -2,6 +2,7 @@
 import path from 'node:path';
 import { readText } from './projectAccess.js';
 import { DEFAULT_FEATURES_PATH, isValidFeaturesPath, parseEpic, parseOverview, storyIdsIn } from './parsers/features.js';
+import { t } from '../shared/i18n.js';
 
 const posix = path.posix;
 
@@ -26,14 +27,14 @@ function epicPath(overviewRel, link) {
  */
 export async function loadFeatures(root, overviewRel = DEFAULT_FEATURES_PATH) {
   if (!isValidFeaturesPath(overviewRel)) {
-    return { available: false, overviewPath: String(overviewRel), reason: `Ogiltig sökväg till översikten: ${overviewRel}` };
+    return { available: false, overviewPath: String(overviewRel), reason: t('features.invalidPath', { path: String(overviewRel) }) };
   }
   let overviewText;
   try {
     overviewText = await readText(root, overviewRel);
   } catch (err) {
     if (err.code === 'ENOENT') return { available: false, overviewPath: overviewRel };
-    return { available: false, overviewPath: overviewRel, reason: `Översikten kunde inte läsas: ${err.message}` };
+    return { available: false, overviewPath: overviewRel, reason: t('features.overviewUnreadable', { error: err.message }) };
   }
   const overview = parseOverview(overviewText);
   const warnings = [...overview.warnings];
@@ -41,7 +42,7 @@ export async function loadFeatures(root, overviewRel = DEFAULT_FEATURES_PATH) {
   for (const row of overview.epics) {
     const target = epicPath(overviewRel, row.link);
     if (target?.outside) {
-      warnings.push(`${row.id}: länken ${row.link} pekar utanför projektet och hoppas över.`);
+      warnings.push(t('features.linkOutside', { id: row.id, link: row.link }));
       continue;
     }
     let parsed = null;
@@ -49,7 +50,8 @@ export async function loadFeatures(root, overviewRel = DEFAULT_FEATURES_PATH) {
       try {
         parsed = parseEpic(await readText(root, target.rel));
       } catch (err) {
-        warnings.push(`${row.id}: ${target.rel} kunde inte läsas (${err.code === 'ENOENT' ? 'filen finns inte' : err.message}).`);
+        const error = err.code === 'ENOENT' ? t('features.fileMissing') : err.message;
+        warnings.push(t('features.epicFileUnreadable', { id: row.id, file: target.rel, error }));
       }
     }
     epics.push({ ...row, file: target?.rel ?? null, parsed });

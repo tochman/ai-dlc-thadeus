@@ -1,0 +1,40 @@
+{
+  "stage": "code-generation",
+  "upstream_ids": ["FR1.1","FR1.2","FR1.3","FR1.4","FR2.1","FR2.2","FR2.3","FR2.4","FR3.1","FR3.2","FR3.3","FR3.4","FR3.5","FR4.1","FR4.2","FR4.3","FR4.4","FR4.5","FR5.1","FR5.2","FR6.1","FR6.2","FR7.1","FR7.2","FR7.3","FR8.1","FR8.2","NFR1","NFR2","NFR3","NFR4"],
+  "coverage": [
+    { "id": "FR1.1", "status": "OK", "target": "src/renderer/format.js" },
+    { "id": "FR1.2", "status": "OK", "target": "src/main/menu.js" },
+    { "id": "FR1.3", "status": "OK", "target": "src/renderer/featureDocsPrompt.js" },
+    { "id": "FR1.4", "status": "OK", "target": "tests/main/i18nKeys.test.js" },
+    { "id": "FR2.1", "status": "OK", "target": "src/shared/locales/en.json" },
+    { "id": "FR2.2", "status": "OK", "target": "src/shared/locales/sv.json" },
+    { "id": "FR2.3", "status": "OK", "target": "src/shared/locales/en.json" },
+    { "id": "FR2.4", "status": "OK", "target": "src/shared/i18n.js" },
+    { "id": "FR3.1", "status": "OK", "target": "src/shared/i18n.js" },
+    { "id": "FR3.2", "status": "OK", "target": "tests/main/i18n.test.js" },
+    { "id": "FR3.3", "status": "OK", "target": "tests/main/i18n.test.js" },
+    { "id": "FR3.4", "status": "OK", "target": "src/renderer/format.js" },
+    { "id": "FR3.5", "status": "OK", "target": "tests/renderer/format.test.jsx" },
+    { "id": "FR4.1", "status": "OK", "target": "src/renderer/AppSettingsDialog.jsx" },
+    { "id": "FR4.2", "status": "OK", "target": "src/main/i18n.js" },
+    { "id": "FR4.3", "status": "OK", "target": "src/main/settings.js" },
+    { "id": "FR4.4", "status": "OK", "target": "src/main/ipc.js" },
+    { "id": "FR4.5", "status": "OK", "target": "tests/renderer/AppSettingsDialog.test.jsx" },
+    { "id": "FR5.1", "status": "OK", "target": "src/shared/i18n.js" },
+    { "id": "FR5.2", "status": "OK", "target": "src/shared/i18n.js" },
+    { "id": "FR6.1", "status": "N/A", "target": "Constraint on what is not translated: project content is rendered as it is; no code of its own" },
+    { "id": "FR6.2", "status": "N/A", "target": "Constraint on what is not translated: identifier terms stay as they are; no code of its own" },
+    { "id": "FR7.1", "status": "OK", "target": "tests/main/i18nKeys.test.js" },
+    { "id": "FR7.2", "status": "OK", "target": "tests/main/i18nKeys.test.js" },
+    { "id": "FR7.3", "status": "OK", "target": "tests/main/i18nKeys.test.js" },
+    { "id": "FR8.1", "status": "OK", "target": "src/renderer/theme.css" },
+    { "id": "FR8.2", "status": "OK", "target": "tests/main/theme.test.js" },
+    { "id": "NFR1", "status": "OK", "target": "package.json" },
+    { "id": "NFR2", "status": "OK", "target": "vitest.config.mjs" },
+    { "id": "NFR3", "status": "OK", "target": "src/renderer/main.jsx" },
+    { "id": "NFR4", "status": "OK", "target": "src/preload/index.js" }
+  ],
+  "reverse": [
+    { "id": "custom-plan-name", "status": "ORPHAN", "target": "Requested by the person during this stage: show a custom plan's own name instead of its base scope (src/main/parsers/state.js, src/renderer/IntentList.jsx)" }
+  ]
+}

@@ -2,10 +2,16 @@
 // like the settings dialog: on top of everything, Esc closes it. The question is plain text, never HTML (NFR2).
 // After 20 s without an answer the head turns glowing red and the title says so in words too (FR2.5, NFR5).
 import { useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import { t as translate } from '../shared/i18n.js';
 
 export const OVERDUE_MS = 20_000;
 
-const gateText = (q) => `Godkännande: ${q.stage ?? '?'}${q.nextStage ? ` → ${q.nextStage}` : ''}`;
+/** "Godkännande: a → b"; the same keys as the system notification. */
+const gateText = (q) =>
+  q.nextStage
+    ? translate('app.question.gateNext', { stage: q.stage ?? '?', next: q.nextStage })
+    : translate('app.question.gate', { stage: q.stage ?? '?' });
 
 /**
  * @param {{open: boolean, questions: object[], focus?: {id: string}|null,
@@ -13,6 +19,7 @@ const gateText = (q) => `Godkännande: ${q.stage ?? '?'}${q.nextStage ? ` → ${
  *   focus is a fresh object each time a notification names a question
  */
 export default function QuestionPopup({ open, questions, focus = null, onAnswer, onClose }) {
+  const { t } = useTranslation();
   const ref = useRef(null);
   const answerRef = useRef(null);
   const [index, setIndex] = useState(0);
@@ -71,10 +78,10 @@ export default function QuestionPopup({ open, questions, focus = null, onAnswer,
         <div>
           <div className="question-popup-head">
             <h2 id="question-popup-title" data-testid="question-popup-title">
-              {overdue ? 'Väntar fortfarande på ditt svar' : 'Claude väntar på ditt svar'}
+              {overdue ? t('app.question.stillWaiting') : t('app.question.waiting')}
             </h2>
           </div>
-          {q.early && <p className="question-popup-early">Väntade redan när appen startade</p>}
+          {q.early && <p className="question-popup-early">{t('app.question.early')}</p>}
           <p className="question-popup-where">
             {q.projectName} · {q.intent} · {q.stage ?? '?'}
           </p>
@@ -88,21 +95,19 @@ export default function QuestionPopup({ open, questions, focus = null, onAnswer,
           )}
           <div className="question-popup-pager">
             <button type="button" className="btn" disabled={i === 0} onClick={() => setIndex(i - 1)}>
-              Föregående
+              {t('app.question.previous')}
             </button>
-            <span>
-              {i + 1} av {count}
-            </span>
+            <span>{t('app.question.position', { i: i + 1, n: count })}</span>
             <button type="button" className="btn" disabled={i >= count - 1} onClick={() => setIndex(i + 1)}>
-              Nästa
+              {t('app.question.next')}
             </button>
           </div>
           <div className="setup-actions">
             <button ref={answerRef} type="button" className="btn btn-accent" onClick={answer} data-testid="question-popup-answer">
-              Svara i Claude
+              {t('app.question.answer')}
             </button>
             <button type="button" className="btn" onClick={onClose} data-testid="question-popup-close">
-              Stäng
+              {t('common.close')}
             </button>
           </div>
         </div>

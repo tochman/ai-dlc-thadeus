@@ -2,6 +2,7 @@
 // Colour always comes from classes in theme.css; decorative parts are aria-hidden and never role="status" (FR2.4).
 import { Fragment } from 'react';
 import { formatCost } from './format.js';
+import { t } from '../shared/i18n.js';
 
 /**
  * Segmented bar. `segs` is a list of [tone, size]: a size up to 12 grows (flex), a larger one is a fixed px width.
@@ -54,11 +55,11 @@ export function progressStates(done = 0, total = 0, live = false) {
 /** Text for the dots, so status is never colour alone (NFR1). */
 export function dotsLabel(states) {
   const n = (s) => states.filter((x) => x === s).length;
-  const parts = [`${n('done')} steg klara`];
+  const parts = [t('intents.dots.done', { n: n('done') })];
   const current = states.indexOf('current');
-  if (current >= 0) parts.push(`steg ${current + 1} pågår`);
-  if (n('attn')) parts.push(`${n('attn')} väntar på dig`);
-  parts.push(`${n('todo')} kvar`);
+  if (current >= 0) parts.push(t('intents.dots.current', { n: current + 1 }));
+  if (n('attn')) parts.push(t('intents.dots.attn', { n: n('attn') }));
+  parts.push(t('intents.dots.todo', { n: n('todo') }));
   return parts.join(', ');
 }
 

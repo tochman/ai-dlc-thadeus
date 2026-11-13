@@ -1,6 +1,7 @@
 // Summarises AI-DLC's usage-ledger.json (schemaVersion 3) per project, intent, stage, agent and model.
 // Only the ledger's own `usd` values are used; no prices are computed here (FR2.4).
 // Pure functions with no Node imports: the renderer imports compareModels too.
+import { t } from '../../shared/i18n.js';
 
 const INTENT_KEY = 'intent:';
 const LEGACY_KEY = /^record:.+\/legacy$/;
@@ -115,7 +116,7 @@ export function summarizeLedger(ledger, intents) {
   for (const intent of intents) {
     const c = perIntent[intent.dirName];
     if (!c) continue;
-    const s = (byScope[intent.scope ?? 'okänd'] ??= { usd: 0, count: 0, missingPrice: false });
+    const s = (byScope[intent.scope ?? t('cost.unknown')] ??= { usd: 0, count: 0, missingPrice: false });
     s.usd += c.total.usd;
     s.count += 1;
     s.missingPrice ||= !c.complete;

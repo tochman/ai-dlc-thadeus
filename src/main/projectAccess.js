@@ -2,6 +2,7 @@
 // through resolveInRoot. This module intentionally contains no fs write calls.
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
+import { t } from '../shared/i18n.js';
 
 function isInside(root, candidate) {
   const rel = path.relative(root, candidate);
@@ -10,10 +11,10 @@ function isInside(root, candidate) {
 
 /** Validates a folder the user picked and returns its real (symlink-free) path. */
 export async function openRoot(dir) {
-  if (typeof dir !== 'string' || dir.trim() === '') throw new Error('Ingen mapp angiven');
+  if (typeof dir !== 'string' || dir.trim() === '') throw new Error(t('errors.noFolder'));
   const real = await fs.realpath(dir);
   const stat = await fs.stat(real);
-  if (!stat.isDirectory()) throw new Error(`Inte en mapp: ${dir}`);
+  if (!stat.isDirectory()) throw new Error(t('errors.notAFolder', { dir }));
   return real;
 }
 
@@ -23,12 +24,12 @@ export async function openRoot(dir) {
  * `root` must be a value returned by openRoot.
  */
 export async function resolveInRoot(root, rel) {
-  if (typeof rel !== 'string') throw new Error('Sökvägen måste vara en sträng');
-  if (path.isAbsolute(rel)) throw new Error(`Absoluta sökvägar tillåts inte: ${rel}`);
+  if (typeof rel !== 'string') throw new Error(t('errors.pathNotString'));
+  if (path.isAbsolute(rel)) throw new Error(t('errors.absolutePath', { rel }));
   const candidate = path.resolve(root, rel);
-  if (!isInside(root, candidate)) throw new Error(`Sökvägen ligger utanför projektroten: ${rel}`);
+  if (!isInside(root, candidate)) throw new Error(t('errors.outsideRoot', { rel }));
   const real = await fs.realpath(candidate);
-  if (!isInside(root, real)) throw new Error(`Sökvägen pekar ut ur projektroten: ${rel}`);
+  if (!isInside(root, real)) throw new Error(t('errors.escapesRoot', { rel }));
   return real;
 }
 
@@ -47,7 +48,7 @@ export async function readJsonSafe(root, rel) {
   try {
     return { ok: true, value: JSON.parse(text) };
   } catch (err) {
-    return { ok: false, missing: false, error: `Ogiltig JSON i ${rel}: ${err.message}` };
+    return { ok: false, missing: false, error: t('errors.invalidJson', { rel, error: err.message }) };
   }
 }
 

@@ -3,6 +3,7 @@
 import { defaultExec, runFixed } from './exec.js';
 import { listDir, readText } from './projectAccess.js';
 import { agentName } from './parsers/ledger.js';
+import { t } from '../shared/i18n.js';
 
 const AIDLC_ARGS = ['config', 'models', '--show', '--json', '--harness', 'claude'];
 const AIDLC_TIMEOUT_MS = 10000;
@@ -12,7 +13,7 @@ const AGENT_FILE = /^aidlc-.+-agent\.md$/;
 function parseAidlcOutput(stdout) {
   const out = JSON.parse(stdout);
   const effective = out?.data?.effective;
-  if (out?.ok !== true || !Array.isArray(effective)) throw new Error('svaret saknar data.effective');
+  if (out?.ok !== true || !Array.isArray(effective)) throw new Error(t('errors.missingField', { field: 'data.effective' }));
   return effective
     .filter((e) => e && typeof e.agent === 'string')
     .map((e) => ({ agent: agentName(e.agent), model: e.model ?? null, effort: e.effort ?? null }));

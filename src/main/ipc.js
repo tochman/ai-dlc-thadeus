@@ -24,6 +24,8 @@ import { watchFiles, watchForAidlc, watchIntents } from './watcher.js';
 import { featureWatchPaths, loadFeatures, loadStoryLinks } from './features.js';
 import { killAllSessions, killProjectSessions, killSession, resizeSession, spawnSession, writeSession } from './pty.js';
 import { AIDLC_DOCS_URL, applyMenu, parseMenuState, setMenuState } from './menu.js';
+import { currentLanguage, setLanguageFromSettings } from './i18n.js';
+import { t } from '../shared/i18n.js';
 
 const OPEN_IN_EDITOR_EXT = new Set(['.md', '.json', '.txt', '.yaml', '.yml']);
 // projectId -> { root, space, watcher, setupWatcher, featuresWatcher, featuresKey, sender, models, setupInfo }
@@ -31,7 +33,7 @@ const projects = new Map();
 
 function project(projectId) {
   const p = projects.get(projectId);
-  if (!p) throw new Error(`Okänt projekt: ${projectId}`);
+  if (!p) throw new Error(t('errors.unknownProject', { id: String(projectId) }));
   return p;
 }
 
@@ -169,7 +171,7 @@ async function watchSpace(projectId, space) {
 const handlers = {
   'project:pick': async (event) => {
     const res = await dialog.showOpenDialog(BrowserWindow.fromWebContents(event.sender), {
-      title: 'Öppna projektmapp',
+      title: t('app.pickFolder'),
       properties: ['openDirectory']
     });
     return res.canceled ? null : res.filePaths[0] ?? null;
@@ -195,7 +197,7 @@ const handlers = {
   // Waiting questions of the open projects (US-0505 FR1.4); with no project open the list is empty (NFR2).
   'questions:list': async () => allQuestions(),
   'questions:activeProject': async (_event, projectId) => {
-    if (projectId !== null && typeof projectId !== 'string') throw new Error('Ogiltigt projekt-id');
+    if (projectId !== null && typeof projectId !== 'string') throw new Error(t('errors.invalidProjectId'));
     activeProjectId = projectId && projects.has(projectId) ? projectId : null;
   },
   'project:spaces': async (_event, projectId) => listSpaces(project(projectId).root),
@@ -226,7 +228,7 @@ const handlers = {
   'shell:openInEditor': async (_event, projectId, rel) => {
     // openPath launches the default handler; limit it to document types so it can never run a script or app.
     if (!OPEN_IN_EDITOR_EXT.has(path.extname(String(rel)).toLowerCase())) {
-      throw new Error(`Filtypen öppnas inte från appen: ${rel}`);
+      throw new Error(t('errors.fileTypeBlocked', { rel: String(rel) }));
     }
     const err = await shell.openPath(await resolveInRoot(project(projectId).root, rel));
     if (err) throw new Error(err);
@@ -246,7 +248,15 @@ const handlers = {
   },
   'setup:command': async (_event, projectId, options) => buildSetupCommand(options, project(projectId).setupInfo?.plugins ?? []),
   'settings:get': async () => getSettings(),
-  'settings:set': async (_event, partial) => setSettings(partial),
+  // A changed language applies at once: later dialogs and notifications, and the rebuilt menu (EPIC-07 FR4.4).
+  'settings:set': async (event, partial) => {
+    const next = await setSettings(partial);
+    const before = currentLanguage();
+    if (setLanguageFromSettings(next) !== before) applyMenu(BrowserWindow.fromWebContents(event.sender));
+    return next;
+  },
+  // The language in effect (auto already resolved); the renderer switches to it (FR4.4).
+  'i18n:language': async () => currentLanguage(),
   // Feature docs (EPIC-06). The root is always looked up here; the renderer never names one.
   'features:load': async (_event, projectId) => {
     const p = project(projectId);

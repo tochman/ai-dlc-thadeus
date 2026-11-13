@@ -1,16 +1,21 @@
 // System notifications for questions AI-DLC waits on (EPIC-05 US-0505 FR3.1–FR3.3, FR4.2).
 // Each question id is notified at most once per app run; a click brings the window up and opens the popup.
 import { Notification } from 'electron';
+import { t } from '../shared/i18n.js';
 
 const notified = new Set();
 const live = new Set();
 const MAX_BODY = 120;
 
-export const notificationTitle = (q) => `${q.projectName}: Claude väntar på ditt svar`;
+export const notificationTitle = (q) => t('app.notification.title', { project: String(q.projectName ?? '') });
 
-/** The question, or "Godkännande: a → b" for a gate, cut to about 120 characters. */
+/** "Godkännande: a → b" for a gate; the same keys as the popup's text. */
+export const gateText = (q) =>
+  q.nextStage ? t('app.question.gateNext', { stage: q.stage ?? '?', next: q.nextStage }) : t('app.question.gate', { stage: q.stage ?? '?' });
+
+/** The question, or the gate text for a gate, cut to about 120 characters. */
 export function notificationBody(q) {
-  const text = q.kind === 'gate' ? `Godkännande: ${q.stage ?? '?'}${q.nextStage ? ` → ${q.nextStage}` : ''}` : String(q.text ?? '');
+  const text = q.kind === 'gate' ? gateText(q) : String(q.text ?? '');
   const flat = text.replace(/\s+/g, ' ').trim();
   return flat.length > MAX_BODY ? `${flat.slice(0, MAX_BODY - 1)}…` : flat;
 }

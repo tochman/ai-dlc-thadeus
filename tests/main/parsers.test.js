@@ -36,9 +36,14 @@ describe('mergeIntents', () => {
 });
 
 describe('parseState', () => {
+  it('reads a custom plan name beside its base scope', () => {
+    const s = parseState('## Project Information\n- **Scope**: bugfix\n- **Plan**: i18n-express\n');
+    expect(s).toMatchObject({ scope: 'bugfix', plan: 'i18n-express' });
+  });
+
   it('reads depth, test strategy and every checkbox status (FR3.1, FR3.2)', () => {
     const s = parseState(read(path.join(epic29, 'aidlc-state.md')));
-    expect(s).toMatchObject({ depth: 'Minimal', testStrategy: 'Minimal', scope: 'express', currentStage: 'build-and-test' });
+    expect(s).toMatchObject({ depth: 'Minimal', testStrategy: 'Minimal', scope: 'express', plan: null, currentStage: 'build-and-test' });
     expect(s.phases.map((p) => p.name)).toEqual(['initialization', 'ideation', 'inception', 'construction', 'operation']);
 
     const orphan = parseState(read(path.join(INTENTS, '261111-orphan-notes/aidlc-state.md')));

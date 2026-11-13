@@ -1236,3 +1236,31 @@
 **Tokens By Agent**: main=128/55.2k/31.8M/106.7k; aidlc-developer-agent=144/113k/11.4M/446.6k
 
 ---
+
+## Question Asked
+**Timestamp**: 2026-11-13T20:48:35Z
+**Event**: QUESTION_ASKED
+**Question Id**: 1357c65d
+**Question Type**: scope-confirm
+**Question Chat**: fbb1a509-5bd1-4a16-bebd-4cb55d5dec00
+**Question Shows**: sha256:1bc65f0d07e97db23fe84afe94d3062b89c7267ad71e8e79cadeecfcc2a7e0a2
+**Stage**: observability-setup
+**Options**: ["Go ahead with the \"express\" plan","Use a different plan","Tailor a plan to this task"]
+**State Digest**: 6ecec0d308d4306b77cdca64ebd4977c8cf95a77eac8c8ade5e02460c7928619
+**Question Text SHA-256**: 73605631b9536d287ef868b621743b7146b92ac6b6c069d773157db6665920b2
+
+---
+
+## Question Asked
+**Timestamp**: 2026-11-13T20:48:52Z
+**Event**: QUESTION_ASKED
+**Question Id**: 07a6382f
+**Question Type**: scope-confirm
+**Question Chat**: fbb1a509-5bd1-4a16-bebd-4cb55d5dec00
+**Question Shows**: sha256:a76bdc90bfa9ce95276067be35b5218b92583acd64681cf47a9ec8e11acbe537
+**Stage**: observability-setup
+**Options**: ["Go ahead with the \"express\" plan","Use a different plan","Tailor a plan to this task"]
+**State Digest**: 6ecec0d308d4306b77cdca64ebd4977c8cf95a77eac8c8ade5e02460c7928619
+**Question Text SHA-256**: 6a7d9b7513449c4cb87f8cd0e8df14078e835a54f64c6c95a4196b987b1062b7
+
+---

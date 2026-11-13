@@ -1,35 +1,33 @@
 // "Initiera AI-DLC" on the "not an AI-DLC project" screen (US-0503, FR4). Nothing in the folder changes
 // until the person presses Enter on the command chain typed into the shell tab.
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useTerminal } from './TerminalContext.jsx';
+import { withSlots } from './format.js';
 
 export const INSTALL_URL = 'https://github.com/awslabs/aidlc-workflows';
-export const FAILED_MESSAGE = 'Uppsättningen misslyckades — se terminalen. Kör `aidlc doctor` för att se vad som saknas.';
-const PRESET_TEXT = {
-  thorough: 'Starkare modeller och mer eftertanke: bäst resultat, högre kostnad.',
-  balanced: 'En blandning som passar de flesta projekt.',
-  minimal: 'Snabbare och billigare modeller för små ändringar.'
-};
 
 const errorText = (err) => String(err?.message ?? err).replace(/^Error invoking remote method '[^']+': (Error: )?/, '');
 
 function Prerequisites({ info }) {
+  const { t } = useTranslation();
   return (
     <ul className="setup-checks" data-testid="setup-aidlc-checks">
       <li>
-        <strong>AI-DLC:</strong> {info.aidlc.installed ? `installerat (${info.aidlc.version})` : 'saknas'}
+        <strong>{t('setup.aidlcLabel')}</strong> {info.aidlc.installed ? t('setup.installed', { version: info.aidlc.version }) : t('setup.missing')}
       </li>
       <li>
-        <strong>Git:</strong> {info.git.isRepo ? 'mappen är ett git-repo' : 'inget git-repo, så git init -b main läggs först'}
+        <strong>{t('setup.gitLabel')}</strong> {info.git.isRepo ? t('setup.isRepo') : t('setup.notRepo')}
       </li>
       <li>
-        <strong>Andra harnesses:</strong> {info.harnesses.length ? info.harnesses.join(', ') : 'inga'}
+        <strong>{t('setup.harnessesLabel')}</strong> {info.harnesses.length ? info.harnesses.join(', ') : t('setup.noHarnesses')}
       </li>
     </ul>
   );
 }
 
 function Preview({ preview }) {
+  const { t } = useTranslation();
   if (!preview) return null;
   const counts = ['create', 'update', 'merge', 'preserve', 'remove', 'conflict'].filter((k) => preview[k] != null);
   return (
@@ -43,7 +41,7 @@ function Preview({ preview }) {
       {counts.length > 0 && <p>{counts.map((k) => `${k}: ${preview[k]}`).join(' · ')}</p>}
       {preview.conflicts.length > 0 && (
         <>
-          <p className="refresh-error">Dessa filer krockar med befintliga filer. Lös det innan AI-DLC sätts upp:</p>
+          <p className="refresh-error">{t('setup.conflicts')}</p>
           <ul className="refresh-list">
             {preview.conflicts.map((f) => (
               <li key={f}>
@@ -55,7 +53,7 @@ function Preview({ preview }) {
       )}
       {preview.raw && (
         <details>
-          <summary>Hela förhandsvisningen</summary>
+          <summary>{t('setup.fullPreview')}</summary>
           <pre className="code-block">{preview.raw}</pre>
         </details>
       )}
@@ -64,13 +62,14 @@ function Preview({ preview }) {
 }
 
 function Advanced({ plugins, presets, chosen, setChosen, preset, setPreset }) {
+  const { t } = useTranslation();
   const toggle = (p) => setChosen((c) => (c.includes(p) ? c.filter((x) => x !== p) : [...c, p]));
   return (
     <details className="setup-advanced" data-testid="setup-aidlc-advanced">
-      <summary>Avancerade inställningar</summary>
+      <summary>{t('setup.advanced')}</summary>
       <fieldset>
-        <legend>Plugins</legend>
-        {plugins.length === 0 && <p className="muted">Inga plugins att välja.</p>}
+        <legend>{t('setup.plugins')}</legend>
+        {plugins.length === 0 && <p className="muted">{t('setup.noPlugins')}</p>}
         {plugins.map((p) => (
           <label key={p} className="check">
             <input type="checkbox" checked={chosen.includes(p)} onChange={() => toggle(p)} data-testid="setup-aidlc-plugin" />
@@ -79,15 +78,15 @@ function Advanced({ plugins, presets, chosen, setChosen, preset, setPreset }) {
         ))}
       </fieldset>
       <fieldset>
-        <legend>Modellnivå</legend>
+        <legend>{t('setup.modelLevel')}</legend>
         <label className="check">
           <input type="radio" name="preset" checked={preset === null} onChange={() => setPreset(null)} />
-          Standard (ingen förinställning)
+          {t('setup.noPreset')}
         </label>
         {presets.map((p) => (
           <label key={p} className="check">
             <input type="radio" name="preset" checked={preset === p} onChange={() => setPreset(p)} data-testid={`setup-aidlc-preset-${p}`} />
-            {p} <span className="muted">{PRESET_TEXT[p]}</span>
+            {p} <span className="muted">{t(`setup.preset.${p}`)}</span>
           </label>
         ))}
       </fieldset>
@@ -99,28 +98,27 @@ function Advanced({ plugins, presets, chosen, setChosen, preset, setPreset }) {
 function MissingTool() {
   return (
     <p data-testid="setup-aidlc-missing">
-      Installera AI-DLC:s kommandoverktyg först, enligt anvisningen på{' '}
-      <a href={INSTALL_URL} target="_blank" rel="noreferrer">
-        {INSTALL_URL}
-      </a>
-      . Kontrollera sedan igen.
+      {withSlots('setup.installTool', {
+        link: (
+          <a href={INSTALL_URL} target="_blank" rel="noreferrer">
+            {INSTALL_URL}
+          </a>
+        )
+      })}
     </p>
   );
 }
 
 /** Offer separate feature docs (EPIC-06 FR4.1, FR4.2). Nothing is created here; SetupDone offers the request afterwards. */
 function FeatureDocsChoice({ checked, onChange, exist }) {
+  const { t } = useTranslation();
   return (
     <div className="setup-feature-docs">
       <label className="check">
         <input type="checkbox" checked={checked} onChange={(e) => onChange(e.target.checked)} data-testid="setup-aidlc-feature-docs" />
-        Använd separata feature-beskrivningar (FEATURES.md + en fil per epic)
+        {t('setup.featureDocs')}
       </label>
-      <p className="muted">
-        {exist
-          ? 'Feature-beskrivningar finns redan. Valet lägger bara till en projektregel om att hålla dem uppdaterade.'
-          : 'En översikt med epics i docs/FEATURES.md och en fil per epic med user stories, till exempel docs/features/epic-01-inloggning.md. Claude skapar dem efter uppsättningen, när du har bekräftat.'}
-      </p>
+      <p className="muted">{exist ? t('setup.featureDocsExist') : t('setup.featureDocsNew')}</p>
     </div>
   );
 }
@@ -131,6 +129,7 @@ function FeatureDocsChoice({ checked, onChange, exist }) {
  *   featureDocs is held by ProjectContent so the choice survives the switch to the project view (FR4.3)
  */
 export default function SetupAidlc({ project, featureDocs = false, onFeatureDocsChange, featureDocsExist = false }) {
+  const { t } = useTranslation();
   const terminal = useTerminal();
   const [info, setInfo] = useState(null);
   const [error, setError] = useState(null);
@@ -146,7 +145,7 @@ export default function SetupAidlc({ project, featureDocs = false, onFeatureDocs
     try {
       setInfo(await bridge.getSetupInfo(project.projectId));
     } catch (err) {
-      setError(`Förutsättningarna kunde inte läsas: ${errorText(err)}`);
+      setError(t('setup.checkFailed', { error: errorText(err) }));
     } finally {
       setLoading(false);
     }
@@ -158,7 +157,7 @@ export default function SetupAidlc({ project, featureDocs = false, onFeatureDocs
       const cmd = await bridge.buildSetupCommand(project.projectId, { needsGit: !info.git.isRepo, plugins: chosen, preset });
       if (await terminal?.type('shell', cmd, { submit: false })) setStarted(true);
     } catch (err) {
-      setError(`Kommandot kunde inte byggas: ${errorText(err)}`);
+      setError(t('setup.buildFailed', { error: errorText(err) }));
     }
   }
 
@@ -171,12 +170,12 @@ export default function SetupAidlc({ project, featureDocs = false, onFeatureDocs
 
   return (
     <div className="panel empty-state setup-panel" role="status" data-testid="project-not-aidlc">
-      <h2>Inget AI-DLC-projekt</h2>
+      <h2>{t('setup.title')}</h2>
       <p>{project.detection.reason}</p>
       <p className="muted">{project.root}</p>
       {!info && (
         <button className="btn btn-accent" onClick={check} disabled={loading} data-testid="setup-aidlc-start">
-          {loading ? 'Kontrollerar…' : 'Initiera AI-DLC'}
+          {loading ? t('setup.checking') : t('setup.start')}
         </button>
       )}
       {error && (
@@ -199,18 +198,16 @@ export default function SetupAidlc({ project, featureDocs = false, onFeatureDocs
           )}
           <div className="setup-actions">
             <button className="btn btn-accent" onClick={initiate} disabled={blocked} data-testid="setup-aidlc-run">
-              Initiera
+              {t('setup.run')}
             </button>
             <button className="btn" onClick={check} disabled={loading}>
-              Kontrollera igen
+              {t('setup.recheck')}
             </button>
           </div>
-          {started && !failed && (
-            <p className="muted">Kommandot står i shell-fliken. Tryck Enter där för att köra det. Vyn växlar när AI-DLC finns i mappen.</p>
-          )}
+          {started && !failed && <p className="muted">{t('setup.started')}</p>}
           {failed && (
             <p className="refresh-error" role="alert" data-testid="setup-aidlc-failed">
-              {FAILED_MESSAGE}
+              {t('setup.failed')}
             </p>
           )}
         </>
