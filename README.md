@@ -4,68 +4,81 @@
 
 *AI-driven software development, under human direction.*
 
-T.H.A.D.E.U.S. (repo: `aidlc-dash`) är en Electron-"bridge console" för AI-DLC-projekt: en sci-fi-vy (LCARS-inspirerad, men återhållsam) av vad agenterna gör. Appen är gjord av Auctum, och Auctums symbol står på startskärmen, i sidhuvudet och som appikon.
+T.H.A.D.E.U.S. is a desktop bridge console for [AI-DLC](https://github.com/awslabs/aidlc-workflows) projects. It shows what the AI agents are doing as it happens: the work in progress, every stage and decision, cost, and the feature roadmap. An embedded agent terminal lets you steer the work from the same window. It is built by Auctum Solutions AB (repository: `aidlc-dash`).
 
-![Projektvyn: intents, pipeline, kostnad och terminal](docs/screenshots/intents.png)
+**[Download the latest release →](https://github.com/tochman/aidlc-dash/releases/latest)** · [All releases](https://github.com/tochman/aidlc-dash/releases)
 
-## Skärmbilder
+![Project view: intents, pipeline, cost and terminal](docs/screenshots/intents.png)
+
+## Features
+
+- **Intents and pipeline:** every piece of AI-DLC work in a project, with its plan, status and stage-by-stage progress. Custom plans are shown by their own name.
+- **Live timeline:** stages, agent dispatches, approval gates, questions and decisions, streamed from the AI-DLC audit log.
+- **Units and artifacts:** the unit/bolt graph, and every stage artifact rendered inline.
+- **Cost:** estimated cost per model, agent and intent, from AI-DLC's usage ledger. These figures are estimates at API prices, not invoices.
+- **Feature docs:** the project's epics and user stories from `docs/FEATURES.md` and `docs/features/`.
+- **Agent terminal:** a terminal for the project's agent harness (Claude Code or opencode, chosen per project) and a shell. It also offers one-click resume and quick commands.
+- **Questions as pop-ups:** when AI-DLC waits for an answer or an approval, you get a pop-up and a system notification.
+- **AI-DLC setup:** set up AI-DLC in a project for any of its six harnesses (Claude Code, opencode, Codex, Kiro, Cursor, GitHub Copilot), or add a harness to an existing project. You see a preview before anything changes.
+- **English and Swedish:** the interface language follows the operating system, or you choose it in Settings.
 
 | | |
 |---|---|
-| ![Tidslinjen från audit-loggen](docs/screenshots/timeline.png) | ![Kostnad per modell och intent](docs/screenshots/cost.png) |
-| **Tidslinje:** allt som hänt i en intent, live från audit-loggen | **Kostnad:** uppskattad kostnad per modell, agent och intent |
-| ![Features: epics och användarstories](docs/screenshots/features.png) | ![Startskärmen med Auctum-symbolen](docs/screenshots/splash.png) |
-| **Features:** projektets epics och stories från `docs/features/` | **Startskärm** med Auctum-symbolen |
+| ![Timeline from the audit log](docs/screenshots/timeline.png) | ![Cost per model and intent](docs/screenshots/cost.png) |
+| **Timeline:** everything that happened in an intent, live from the audit log | **Cost:** estimated cost per model, agent and intent |
+| ![Features: epics and user stories](docs/screenshots/features.png) | ![Start screen](docs/screenshots/splash.png) |
+| **Features:** the project's epics and stories | **Start screen** |
 
-## Vision
+## Installation
 
-- Open any project folder that contains `aidlc/spaces/<space>/intents/`
-- Browse intents (`intents.json`), their scope, status and stage progress (`runtime-graph.json`, `aidlc-state.md`)
-- Live timeline from the audit log (`audit/*.md`): stages, subagent dispatches, gates, questions, decisions
-- Bolt / unit DAG view (`bolt_dag` in `runtime-graph.json`)
-- Read stage artifacts (markdown) inline
-- Watch files and update live while agents work
-- Interactive: send commands to Claude (e.g. `/aidlc ...`, answer gate questions) from the console
+Download the build for your platform from the [releases page](https://github.com/tochman/aidlc-dash/releases):
 
-Built with AI-DLC itself, see `aidlc/spaces/default/intents/`.
+- **macOS** (universal `.dmg`): open the disk image and drag `THADEUS.app` to Applications. The build is unsigned, so the first time, right-click the app and choose **Open**.
+- **Linux** (`.deb`, x64, Ubuntu 22.04 or later): `sudo apt install ./thadeus_<version>_amd64.deb`.
 
-## Kom igång
+The app expects `aidlc` and your agent CLI (`claude` or `opencode`) to be available in your login shell. It does not install them.
 
-Kräver macOS eller Linux, Node 22 och npm. `claude` och `aidlc` ska finnas i ditt inloggningsskal. Appen installerar dem inte.
+## Usage
+
+1. Open a project with **+ Open** in the left arm, or **File → Open project…** (`Cmd/Ctrl+O`). Any folder that contains `aidlc/spaces/` works, and so does a folder where you want to set AI-DLC up.
+2. Pick a view in the left arm (Intents, Features), and expand Cost and GitHub as needed.
+3. Use the agent terminal at the bottom to run `/aidlc`, or click **Resume** on an intent.
+4. Choose the project's agent harness under **Project settings → Agent terminal**.
+
+Open projects are restored on the next start. **Full screen:** `Ctrl+Cmd+F` on macOS, `F11` on Linux.
+
+## Development
+
+Requires macOS or Linux, Node 22 and npm.
 
 ```bash
-npm install          # installerar beroenden och bygger om node-pty för Electron
-npm run dev          # startar appen med hot reload
-npm run build        # bygger en osignerad macOS-app (.app och .dmg) i dist/
-npx vitest run tests/  # kör enhetstesterna
+npm install            # install dependencies and rebuild node-pty for Electron
+npm run dev            # run the app with hot reload
+npx vitest run tests/  # run the test suite
+npm run build          # build an unsigned macOS app (.app and .dmg) in dist/
+npm run build:linux    # build the Linux .deb in dist/
+npm run icon           # regenerate the app icon from build/icon.svg
 ```
 
-Linux-paketet (`.deb`) kräver Ubuntu 22.04 eller nyare. Appikonen genererar du om från `build/icon.svg` med `npm run icon`.
+Releases are built by GitHub Actions when a `vX.Y.Z` tag matching `package.json` is pushed. This project is developed with AI-DLC itself; its records are in `aidlc/spaces/default/intents/`, and the roadmap is in [docs/FEATURES.md](docs/FEATURES.md).
 
-Den osignerade appen öppnar du första gången med högerklick och sedan **Öppna**, eftersom Gatekeeper annars blockerar den.
+## Security
 
-## Uppgradera från Auctum AIDLC Control
+- **File access:** all file access goes through the main process and is limited to the project roots you have opened. Paths with `..`, absolute paths, and symlinks pointing out of the root are refused.
+- **What the app writes:**
+  - The app only writes its own settings: `~/Library/Application Support/aidlc-dash/settings.json` on macOS, `~/.config/aidlc-dash/settings.json` on Linux.
+  - It never edits AI-DLC files directly. Setting up or adding a harness runs the official `aidlc` CLI with fixed arguments and no shell, only after a preview and your explicit **Apply**.
+- **Renderer:** the renderer runs sandboxed with `contextIsolation` and without `nodeIntegration`. It reaches only a narrow preload API of named functions.
+- **Artifacts:** Markdown is rendered without raw HTML, so no script in an artifact can run. "Open in editor" is limited to document files (`.md`, `.json`, `.txt`, `.yaml`, `.yml`).
+- **Terminal:** the terminal tabs run with your normal environment and permissions, like a terminal you start yourself.
 
-Appen hette tidigare Auctum AIDLC Control. Dina inställningar och öppna projekt följer med, eftersom inställningsmappen fortfarande heter `aidlc-dash`.
+## Upgrading from Auctum AIDLC Control
 
-- **macOS:** T.H.A.D.E.U.S. är en ny app för macOS (nytt app-id, `THADEUS.app`), så den ersätter inte den gamla.
-  1. Avsluta den gamla appen och ta bort "Auctum AIDLC Control" från Program.
-  2. Öppna `THADEUS.app` första gången med högerklick och sedan **Öppna**, eftersom appen inte är signerad.
-  3. Fäst den nya appen i Dock igen och ge den behörighet för notiser när macOS frågar.
-- **Linux:** det nya paketet `thadeus` ersätter det gamla `aidlc-dash` automatiskt när du installerar det (`sudo apt install ./thadeus_<version>_amd64.deb`).
+The app was previously named Auctum AIDLC Control. Your settings and open projects carry over, because the settings folder is still named `aidlc-dash`.
 
-I appen öppnar du ett projekt med **+ Öppna** i vänsterarmen eller med **Arkiv → Öppna projekt…** (`Cmd/Ctrl+O`). Varje projekt hamnar i vänsterarmen. Där väljer du också vy (Intents, Features), fäller ut Kostnad och Github, och öppnar Inställningar.
+- **macOS:** T.H.A.D.E.U.S. has a new app id, so it does not replace the old app. Quit the old app and remove it from Applications.
+- **Linux:** the `thadeus` package replaces `aidlc-dash` automatically.
 
-Projektvyn har en intent-lista och en detaljvy (Pipeline, Tidslinje, Units, Kostnad, Filer). I den nedre armen finns en terminalpanel med två flikar, Claude och Shell. Båda startar i projektroten. Panelens höjd ändrar du genom att dra i kanten. Projekten öppnas igen nästa gång appen startar.
+## License
 
-- **Helskärm:** knappen längst upp till höger, **Visa → Helskärm**, `Ctrl+Cmd+F` på macOS eller `F11` på Linux. Appen kommer ihåg läget.
-- **Menyn** innehåller bara det appen kan göra, på svenska. **Stäng projekt** är `Cmd/Ctrl+W`. På Linux är menyraden dold och visas med `Alt`.
-- **Animationer** (Full / Dämpad / Av) ställer du in under Inställningar.
-
-## Säkerhet
-
-- Appen är skrivskyddad mot AI-DLC-filer och skriver aldrig till dem. Den enda fil appen skriver är sina egna inställningar i `~/Library/Application Support/aidlc-dash/settings.json` (på Linux `~/.config/aidlc-dash/settings.json`).
-- All filåtkomst går via huvudprocessen och begränsas till de projektrötter du har öppnat. Sökvägar med `..`, absoluta sökvägar och symlänkar som pekar ut ur roten avvisas.
-- Renderaren körs med `contextIsolation`, utan `nodeIntegration` och i sandbox. Den når bara ett smalt preload-API med namngivna funktioner.
-- Markdown från artefakter renderas utan rå HTML, så inget skript i en artefakt körs. "Öppna i editor" fungerar bara för dokumentfiler (`.md`, `.json`, `.txt`, `.yaml`, `.yml`).
-- Terminalflikarna kör med din vanliga miljö och dina vanliga rättigheter, precis som en terminal du startar själv.
+[MIT](LICENSE) © 2026 Auctum Solutions AB
