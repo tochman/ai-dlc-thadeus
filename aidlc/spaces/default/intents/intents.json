@@ -78,5 +78,13 @@
     "scope": "express",
     "status": "complete",
     "request": "1bc33c06"
+  },
+  {
+    "uuid": "01a1d6b3-2b56-7c3f-a715-7d4ac859803e",
+    "slug": "i18n-foundation",
+    "dirName": "261113-i18n-foundation",
+    "scope": "bugfix",
+    "status": "in-flight",
+    "request": "07a6382f"
   }
 ]
