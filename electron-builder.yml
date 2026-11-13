@@ -16,6 +16,9 @@ mac:
     - target: dmg
       arch: universal
   category: public.app-category.developer-tools
+  # node-pty ships per-arch prebuilt binaries that are identical in the x64 and arm64 builds;
+  # tell @electron/universal to keep them as-is instead of failing the merge.
+  x64ArchFiles: "Contents/Resources/app.asar.unpacked/node_modules/node-pty/prebuilds/**"
   # Unsigned internal build: no signing identity, no notarisation.
   identity: null
 linux:
