@@ -78,3 +78,7 @@ The app was previously named Auctum AIDLC Control. Your settings and open projec
 
 - **macOS:** T.H.A.D.E.U.S. has a new app id, so it does not replace the old app. Quit the old app and remove it from Applications.
 - **Linux:** the `thadeus` package replaces `aidlc-dash` automatically.
+
+## License
+
+[MIT](LICENSE) © 2026 Auctum Solutions AB
