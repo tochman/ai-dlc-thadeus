@@ -4,13 +4,23 @@ import { BrowserWindow, dialog, ipcMain, shell } from 'electron';
 import { randomUUID } from 'node:crypto';
 import path from 'node:path';
 import { openRoot, readText, resolveInRoot } from './projectAccess.js';
-import { detectProject, intentsDir, listSpaces, loadIntentDetail, loadIntentList } from './projectService.js';
+import {
+  LEDGER_PATH,
+  detectProject,
+  intentsDir,
+  listSpaces,
+  loadCost,
+  loadIntentDetail,
+  loadIntentList
+} from './projectService.js';
+import { summarizeLedger } from './parsers/ledger.js';
+import { getConfiguredModels } from './models.js';
 import { getSettings, setSettings } from './settings.js';
 import { watchIntents } from './watcher.js';
 import { killAllSessions, killProjectSessions, killSession, resizeSession, spawnSession, writeSession } from './pty.js';
 
 const OPEN_IN_EDITOR_EXT = new Set(['.md', '.json', '.txt', '.yaml', '.yml']);
-const projects = new Map(); // projectId -> { root, space, watcher, sender }
+const projects = new Map(); // projectId -> { root, space, watcher, sender, models }
 
 function project(projectId) {
   const p = projects.get(projectId);
@@ -32,6 +42,7 @@ async function watchSpace(projectId, space) {
   p.space = space;
   p.watcher = watchIntents({
     intentsDir: path.join(p.root, intentsDir(space)),
+    ledgerFile: path.join(p.root, LEDGER_PATH),
     onChange: (change) => {
       if (!p.sender.isDestroyed()) p.sender.send('project:changed', { projectId, space, ...change });
     },
@@ -72,6 +83,20 @@ const handlers = {
     return loadIntentList(p.root, space, Array.isArray(onlyDirs) ? onlyDirs.map(String) : undefined);
   },
   'project:intent': async (_event, projectId, space, dirName) => loadIntentDetail(project(projectId).root, space, dirName),
+  'project:cost': async (_event, projectId, space) => {
+    const p = project(projectId);
+    const cost = await loadCost(p.root);
+    if (!cost.available) return cost;
+    const { intents } = await loadIntentList(p.root, space, []); // cached list; only new folders are read
+    const { ledger, ...rest } = cost;
+    return { ...rest, ...summarizeLedger(ledger, intents) };
+  },
+  // Cached per opened project (a reopen gets a new projectId); getConfiguredModels never rejects.
+  'project:models': async (_event, projectId) => {
+    const p = project(projectId);
+    p.models ??= getConfiguredModels(p.root);
+    return p.models;
+  },
   'project:file': async (_event, projectId, rel) => readText(project(projectId).root, rel),
   'shell:reveal': async (_event, projectId, rel) => {
     shell.showItemInFolder(await resolveInRoot(project(projectId).root, rel));

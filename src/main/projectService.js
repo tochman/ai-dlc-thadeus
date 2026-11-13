@@ -12,6 +12,9 @@ const PHASE_DIRS = ['initialization', 'ideation', 'inception', 'construction', '
 // ponytail: unbounded per-process cache keyed by root/space/intent; fine for a handful of projects.
 const listCache = new Map();
 const detailCache = new Map();
+const costCache = new Map();
+
+export const LEDGER_PATH = 'aidlc/.aidlc-sessions/usage-ledger.json';
 
 const spacesDir = (space) => `aidlc/spaces/${space}`;
 export const intentsDir = (space) => `${spacesDir(space)}/intents`;
@@ -161,6 +164,30 @@ async function buildDetail(root, space, dirName, prev) {
     files: await listArtifacts(root, base),
     warnings
   };
+}
+
+/**
+ * Reads AI-DLC's usage ledger (read-only, root-confined). Never throws: a missing or broken
+ * ledger only hides the cost views (FR1.5, NFR3); a half-written one keeps the last good value (FR5.3).
+ * @returns {Promise<{available: true, ledger: object, stale?: boolean, warning?: string} | {available: false, reason: string}>}
+ */
+export async function loadCost(root) {
+  const res = await readJsonSafe(root, LEDGER_PATH);
+  const valid = res.ok && res.value && typeof res.value === 'object' && !Array.isArray(res.value);
+  if (valid) {
+    const cost = { available: true, ledger: res.value };
+    costCache.set(root, cost);
+    return cost;
+  }
+  if (res.missing) {
+    costCache.delete(root);
+    return { available: false, reason: `${LEDGER_PATH} finns inte. AI-DLC skriver den när en session har körts på den här maskinen.` };
+  }
+  const error = res.ok ? `${LEDGER_PATH} har oväntad form.` : res.error;
+  const prev = costCache.get(root);
+  if (prev) return { ...prev, stale: true, warning: error };
+  console.warn(`Kunde inte läsa ${LEDGER_PATH}:`, error);
+  return { available: false, reason: `Kostnaden kunde inte läsas: ${error}` };
 }
 
 export async function loadIntentDetail(root, space, dirName) {

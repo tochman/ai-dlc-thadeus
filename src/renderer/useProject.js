@@ -17,6 +17,8 @@ export function useProject(projectId, initialSpace) {
   const [detail, setDetail] = useState(null);
   const [newSeqFrom, setNewSeqFrom] = useState(null);
   const [error, setError] = useState(null);
+  const [cost, setCost] = useState(null); // null while loading, then {available, ...}
+  const [models, setModels] = useState(null);
   const selectedRef = useRef(selected);
   const detailRef = useRef(detail);
   selectedRef.current = selected;
@@ -54,11 +56,32 @@ export function useProject(projectId, initialSpace) {
     [projectId, space]
   );
 
+  // A cost failure only affects the cost views (NFR3), so it never sets the shared error banner.
+  const loadCost = useCallback(async () => {
+    try {
+      setCost(await bridge.getCost(projectId, space));
+    } catch (err) {
+      setCost({ available: false, reason: `Kostnaden kunde inte läsas: ${errorText(err)}` });
+    }
+  }, [projectId, space]);
+
   useEffect(() => {
     setSelected(null);
     setDetail(null);
     loadList();
-  }, [loadList]);
+    loadCost();
+  }, [loadList, loadCost]);
+
+  useEffect(() => {
+    let cancelled = false;
+    bridge
+      .getModels(projectId)
+      .then((m) => !cancelled && setModels(m))
+      .catch((err) => !cancelled && setModels({ source: 'none', agents: [], error: errorText(err) }));
+    return () => {
+      cancelled = true;
+    };
+  }, [projectId]);
 
   useEffect(() => {
     setNewSeqFrom(null);
@@ -69,6 +92,7 @@ export function useProject(projectId, initialSpace) {
     const offChange = bridge.onProjectChanged((c) => {
       if (c.projectId !== projectId || c.space !== space) return;
       loadList(c.indexChanged ? undefined : c.dirNames);
+      if (c.costChanged || c.indexChanged) loadCost(); // a new intent can claim an existing ledger entry
       if (c.indexChanged || c.dirNames.includes(selectedRef.current)) {
         loadDetail(selectedRef.current, { live: true });
       }
@@ -80,7 +104,7 @@ export function useProject(projectId, initialSpace) {
       offChange();
       offError();
     };
-  }, [projectId, space, loadList, loadDetail]);
+  }, [projectId, space, loadList, loadDetail, loadCost]);
 
-  return { space, setSpace, intents, listWarning, selected, setSelected, detail, newSeqFrom, error };
+  return { space, setSpace, intents, listWarning, selected, setSelected, detail, newSeqFrom, error, cost, models };
 }

@@ -15,6 +15,10 @@ beforeEach(async () => {
   await fs.rm(TMP, { recursive: true, force: true });
   await fs.cp(SOURCE, path.join(INTENTS, DIR), { recursive: true });
   await fs.mkdir(path.join(INTENTS, DIR, '.aidlc-engine'), { recursive: true });
+  await fs.mkdir(path.join(TMP, '.aidlc-sessions'), { recursive: true });
+  await fs.writeFile(path.join(TMP, '.aidlc-sessions', 'usage-ledger.json'), '{"schemaVersion":3}');
+  // macOS FSEvents can deliver the copy above after the watcher is ready; let it settle first.
+  await wait(300);
 });
 
 afterEach(async () => {
@@ -37,10 +41,37 @@ describe('watchIntents', () => {
     await wait(30);
     await fs.appendFile(state, '\n');
     await wait(600);
-    expect(calls).toEqual([{ dirNames: [DIR], indexChanged: false }]);
+    expect(calls).toEqual([{ dirNames: [DIR], indexChanged: false, costChanged: false }]);
 
     await fs.writeFile(path.join(INTENTS, DIR, '.aidlc-engine', 'active-directive.json'), '{"kind":"run-stage"}');
     await wait(600);
-    expect(calls[1]).toEqual({ dirNames: [DIR], indexChanged: false });
+    expect(calls[1]).toEqual({ dirNames: [DIR], indexChanged: false, costChanged: false });
+  });
+
+  it('reports a usage-ledger.json write as costChanged in the same debounced event (FR5.1)', async () => {
+    const ledgerFile = path.join(TMP, '.aidlc-sessions', 'usage-ledger.json');
+    const calls = [];
+    watcher = watchIntents({ intentsDir: INTENTS, ledgerFile, onChange: (c) => calls.push(c), debounceMs: 150 });
+    await watcher.ready;
+
+    await fs.writeFile(ledgerFile, '{"schemaVersion":3,"totals":{}}');
+    await wait(600);
+    expect(calls).toEqual([{ dirNames: [], indexChanged: false, costChanged: true }]);
+  });
+
+  it('reports a ledger created after watching started, folder included, as costChanged (F-01, FR5.1)', async () => {
+    const sessionsDir = path.join(TMP, ['.aidlc', 'sessions'].join('-'));
+    const ledgerFile = path.join(sessionsDir, 'usage-ledger.json');
+    await fs.rm(sessionsDir, { recursive: true, force: true });
+    await wait(300);
+    const calls = [];
+    watcher = watchIntents({ intentsDir: INTENTS, ledgerFile, onChange: (c) => calls.push(c), debounceMs: 150 });
+    await watcher.ready;
+
+    await fs.mkdir(sessionsDir);
+    await fs.writeFile(path.join(sessionsDir, 'other.json'), '{}');
+    await fs.writeFile(ledgerFile, '{"schemaVersion":3,"totals":{}}');
+    await wait(600);
+    expect(calls).toEqual([{ dirNames: [], indexChanged: false, costChanged: true }]);
   });
 });

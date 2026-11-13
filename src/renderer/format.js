@@ -41,3 +41,27 @@ export function formatDuration(ms) {
 }
 
 export const isInFlight = (status) => status === 'in-flight';
+
+// Cost is AI-DLC's own estimate (tokens x API price), never an invoice (FR6.1).
+export const COST_LABEL = 'Uppskattad kostnad (API-pris)';
+export const COST_EXPLANATION =
+  'Beräknad av AI-DLC från förbrukade tokens gånger API-priset per modell (USD). Det är ingen faktura och inte vad en prenumeration faktiskt kostar.';
+export const NO_COST_ENTRY = 'Ingen post i usage-ledger.json för den här intenten.';
+export const MISSING_PRICE = 'pris saknas';
+
+export function formatUsd(n) {
+  return n == null || !Number.isFinite(n) ? '–' : `$${n.toFixed(2)}`;
+}
+
+/** USD, or "pris saknas" when tokens were used but the ledger has no price (FR6.2). */
+export const formatCost = (c) => (!c ? '–' : c.missingPrice ? MISSING_PRICE : formatUsd(c.usd));
+
+export function formatTokens(n) {
+  if (n == null || !Number.isFinite(n)) return '–';
+  if (n < 1000) return String(n);
+  if (n < 1e6) return `${(n / 1e3).toFixed(1)} k`;
+  return `${(n / 1e6).toFixed(1)} M`;
+}
+
+export const tokenBreakdown = (t) =>
+  `input ${formatTokens(t.input)} · output ${formatTokens(t.output)} · cache write ${formatTokens(t.cacheWrite)} · cache read ${formatTokens(t.cacheRead)}`;

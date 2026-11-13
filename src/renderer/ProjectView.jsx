@@ -1,5 +1,6 @@
 import IntentList from './IntentList.jsx';
 import IntentDetail from './IntentDetail.jsx';
+import CostPanel from './CostPanel.jsx';
 import TerminalPanel from './TerminalPanel.jsx';
 import { useProject } from './useProject.js';
 
@@ -27,7 +28,8 @@ function AidlcProject({ project }) {
             {p.listWarning} Visar senaste giltiga lista.
           </p>
         )}
-        <IntentList intents={p.intents} selected={p.selected} onSelect={p.setSelected} />
+        <CostPanel cost={p.cost} models={p.models} />
+        <IntentList intents={p.intents} selected={p.selected} onSelect={p.setSelected} cost={p.cost} />
       </aside>
       <section className="content">
         {p.error && (
@@ -41,6 +43,8 @@ function AidlcProject({ project }) {
             detail={p.detail}
             intent={p.intents.find((i) => i.dirName === p.detail.dirName)}
             newSeqFrom={p.newSeqFrom}
+            cost={p.cost}
+            models={p.models}
           />
         ) : (
           <p className="muted">Välj en intent i listan.</p>

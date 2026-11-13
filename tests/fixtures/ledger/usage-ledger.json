@@ -1,0 +1,114 @@
+{
+  "schemaVersion": 3,
+  "totals": { "tokens": { "input": 4800, "output": 2200, "cacheCreate5m": 200, "cacheCreate1h": 100, "cacheRead": 8000 }, "usd": 5.5 },
+  "byStage": {
+    "functional-design": {
+      "totals": { "tokens": { "input": 2000, "output": 1000, "cacheCreate5m": 100, "cacheCreate1h": 50, "cacheRead": 3000 }, "usd": 2.5 },
+      "byModel": { "opus-5-5": { "tokens": { "input": 2000, "output": 1000, "cacheCreate5m": 100, "cacheCreate1h": 50, "cacheRead": 3000 }, "usd": 2.5 } },
+      "byAgent": { "aidlc-architect-agent": { "tokens": { "input": 2000, "output": 1000, "cacheCreate5m": 100, "cacheCreate1h": 50, "cacheRead": 3000 }, "usd": 2.5 } }
+    },
+    "code-generation": {
+      "totals": { "tokens": { "input": 1500, "output": 700, "cacheCreate5m": 100, "cacheCreate1h": 50, "cacheRead": 3000 }, "usd": 2.0 },
+      "byModel": {
+        "sonnet-5-5": { "tokens": { "input": 1000, "output": 500, "cacheCreate5m": 100, "cacheCreate1h": 50, "cacheRead": 2000 }, "usd": 1.5 },
+        "opus-5-5": { "tokens": { "input": 500, "output": 200, "cacheCreate5m": 0, "cacheCreate1h": 0, "cacheRead": 1000 }, "usd": 0.5 }
+      },
+      "byAgent": {
+        "aidlc-developer-agent": { "tokens": { "input": 1000, "output": 500, "cacheCreate5m": 100, "cacheCreate1h": 50, "cacheRead": 2000 }, "usd": 1.5 },
+        "main": { "tokens": { "input": 500, "output": 200, "cacheCreate5m": 0, "cacheCreate1h": 0, "cacheRead": 1000 }, "usd": 0.5 }
+      }
+    },
+    "requirements-analysis": {
+      "totals": { "tokens": { "input": 1300, "output": 500, "cacheCreate5m": 0, "cacheCreate1h": 0, "cacheRead": 2000 }, "usd": 1.0 },
+      "byModel": {
+        "opus-5-5": { "tokens": { "input": 1000, "output": 400, "cacheCreate5m": 0, "cacheCreate1h": 0, "cacheRead": 2000 }, "usd": 1.0 },
+        "claude-haiku-5-5": { "tokens": { "input": 300, "output": 100, "cacheCreate5m": 0, "cacheCreate1h": 0, "cacheRead": 0 }, "usd": 0 }
+      },
+      "byAgent": {
+        "main": { "tokens": { "input": 1000, "output": 400, "cacheCreate5m": 0, "cacheCreate1h": 0, "cacheRead": 2000 }, "usd": 1.0 },
+        "aidlc-quality-agent": { "tokens": { "input": 300, "output": 100, "cacheCreate5m": 0, "cacheCreate1h": 0, "cacheRead": 0 }, "usd": 0 }
+      }
+    }
+  },
+  "byModel": {
+    "opus-5-5": { "tokens": { "input": 3500, "output": 1600, "cacheCreate5m": 100, "cacheCreate1h": 50, "cacheRead": 6000 }, "usd": 4.0 },
+    "sonnet-5-5": { "tokens": { "input": 1000, "output": 500, "cacheCreate5m": 100, "cacheCreate1h": 50, "cacheRead": 2000 }, "usd": 1.5 },
+    "claude-haiku-5-5": { "tokens": { "input": 300, "output": 100, "cacheCreate5m": 0, "cacheCreate1h": 0, "cacheRead": 0 }, "usd": 0 }
+  },
+  "byAgent": {
+    "main": { "tokens": { "input": 1500, "output": 600, "cacheCreate5m": 0, "cacheCreate1h": 0, "cacheRead": 3000 }, "usd": 1.5 },
+    "aidlc-architect-agent": { "tokens": { "input": 2000, "output": 1000, "cacheCreate5m": 100, "cacheCreate1h": 50, "cacheRead": 3000 }, "usd": 2.5 },
+    "aidlc-developer-agent": { "tokens": { "input": 1000, "output": 500, "cacheCreate5m": 100, "cacheCreate1h": 50, "cacheRead": 2000 }, "usd": 1.5 },
+    "aidlc-quality-agent": { "tokens": { "input": 300, "output": 100, "cacheCreate5m": 0, "cacheCreate1h": 0, "cacheRead": 0 }, "usd": 0 }
+  },
+  "workflows": {
+    "intent:01a1c625-50f3-7f83-9755-b096bf4025e6": {
+      "totals": { "tokens": { "input": 3000, "output": 1500, "cacheCreate5m": 200, "cacheCreate1h": 100, "cacheRead": 5000 }, "usd": 4.0 },
+      "byStage": {
+        "functional-design": {
+          "totals": { "tokens": { "input": 2000, "output": 1000, "cacheCreate5m": 100, "cacheCreate1h": 50, "cacheRead": 3000 }, "usd": 2.5 },
+          "byModel": { "opus-5-5": { "tokens": { "input": 2000, "output": 1000, "cacheCreate5m": 100, "cacheCreate1h": 50, "cacheRead": 3000 }, "usd": 2.5 } },
+          "byAgent": { "aidlc-architect-agent": { "tokens": { "input": 2000, "output": 1000, "cacheCreate5m": 100, "cacheCreate1h": 50, "cacheRead": 3000 }, "usd": 2.5 } }
+        },
+        "code-generation": {
+          "totals": { "tokens": { "input": 1000, "output": 500, "cacheCreate5m": 100, "cacheCreate1h": 50, "cacheRead": 2000 }, "usd": 1.5 },
+          "byModel": { "sonnet-5-5": { "tokens": { "input": 1000, "output": 500, "cacheCreate5m": 100, "cacheCreate1h": 50, "cacheRead": 2000 }, "usd": 1.5 } },
+          "byAgent": { "aidlc-developer-agent": { "tokens": { "input": 1000, "output": 500, "cacheCreate5m": 100, "cacheCreate1h": 50, "cacheRead": 2000 }, "usd": 1.5 } }
+        }
+      },
+      "byModel": {
+        "opus-5-5": { "tokens": { "input": 2000, "output": 1000, "cacheCreate5m": 100, "cacheCreate1h": 50, "cacheRead": 3000 }, "usd": 2.5 },
+        "sonnet-5-5": { "tokens": { "input": 1000, "output": 500, "cacheCreate5m": 100, "cacheCreate1h": 50, "cacheRead": 2000 }, "usd": 1.5 }
+      },
+      "byAgent": {
+        "aidlc-architect-agent": { "tokens": { "input": 2000, "output": 1000, "cacheCreate5m": 100, "cacheCreate1h": 50, "cacheRead": 3000 }, "usd": 2.5 },
+        "aidlc-developer-agent": { "tokens": { "input": 1000, "output": 500, "cacheCreate5m": 100, "cacheCreate1h": 50, "cacheRead": 2000 }, "usd": 1.5 }
+      },
+      "sessions": {}
+    },
+    "intent:01a1d000-0000-7000-8000-000000000003": {
+      "totals": { "tokens": { "input": 1300, "output": 500, "cacheCreate5m": 0, "cacheCreate1h": 0, "cacheRead": 2000 }, "usd": 1.0 },
+      "byStage": {
+        "requirements-analysis": {
+          "totals": { "tokens": { "input": 1300, "output": 500, "cacheCreate5m": 0, "cacheCreate1h": 0, "cacheRead": 2000 }, "usd": 1.0 },
+          "byModel": {
+            "opus-5-5": { "tokens": { "input": 1000, "output": 400, "cacheCreate5m": 0, "cacheCreate1h": 0, "cacheRead": 2000 }, "usd": 1.0 },
+            "claude-haiku-5-5": { "tokens": { "input": 300, "output": 100, "cacheCreate5m": 0, "cacheCreate1h": 0, "cacheRead": 0 }, "usd": 0 }
+          },
+          "byAgent": {
+            "main": { "tokens": { "input": 1000, "output": 400, "cacheCreate5m": 0, "cacheCreate1h": 0, "cacheRead": 2000 }, "usd": 1.0 },
+            "aidlc-quality-agent": { "tokens": { "input": 300, "output": 100, "cacheCreate5m": 0, "cacheCreate1h": 0, "cacheRead": 0 }, "usd": 0 }
+          }
+        },
+        "practices-discovery": {
+          "totals": { "tokens": { "input": 0, "output": 0, "cacheCreate5m": 0, "cacheCreate1h": 0, "cacheRead": 0 }, "usd": 0 },
+          "byModel": {},
+          "byAgent": { "main": { "tokens": { "input": 0, "output": 0, "cacheCreate5m": 0, "cacheCreate1h": 0, "cacheRead": 0 }, "usd": 0 } }
+        }
+      },
+      "byModel": {
+        "opus-5-5": { "tokens": { "input": 1000, "output": 400, "cacheCreate5m": 0, "cacheCreate1h": 0, "cacheRead": 2000 }, "usd": 1.0 },
+        "claude-haiku-5-5": { "tokens": { "input": 300, "output": 100, "cacheCreate5m": 0, "cacheCreate1h": 0, "cacheRead": 0 }, "usd": 0 }
+      },
+      "byAgent": {
+        "main": { "tokens": { "input": 1000, "output": 400, "cacheCreate5m": 0, "cacheCreate1h": 0, "cacheRead": 2000 }, "usd": 1.0 },
+        "aidlc-quality-agent": { "tokens": { "input": 300, "output": 100, "cacheCreate5m": 0, "cacheCreate1h": 0, "cacheRead": 0 }, "usd": 0 }
+      },
+      "sessions": {}
+    },
+    "record:default/legacy": {
+      "totals": { "tokens": { "input": 500, "output": 200, "cacheCreate5m": 0, "cacheCreate1h": 0, "cacheRead": 1000 }, "usd": 0.5 },
+      "byStage": {
+        "code-generation": {
+          "totals": { "tokens": { "input": 500, "output": 200, "cacheCreate5m": 0, "cacheCreate1h": 0, "cacheRead": 1000 }, "usd": 0.5 },
+          "byModel": { "opus-5-5": { "tokens": { "input": 500, "output": 200, "cacheCreate5m": 0, "cacheCreate1h": 0, "cacheRead": 1000 }, "usd": 0.5 } },
+          "byAgent": { "main": { "tokens": { "input": 500, "output": 200, "cacheCreate5m": 0, "cacheCreate1h": 0, "cacheRead": 1000 }, "usd": 0.5 } }
+        }
+      },
+      "byModel": { "opus-5-5": { "tokens": { "input": 500, "output": 200, "cacheCreate5m": 0, "cacheCreate1h": 0, "cacheRead": 1000 }, "usd": 0.5 } },
+      "byAgent": { "main": { "tokens": { "input": 500, "output": 200, "cacheCreate5m": 0, "cacheCreate1h": 0, "cacheRead": 1000 }, "usd": 0.5 } },
+      "sessions": {}
+    }
+  },
+  "cursors": {}
+}
