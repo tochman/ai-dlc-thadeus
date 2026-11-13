@@ -32,7 +32,8 @@ linux:
     - target: deb
       arch: x64
   category: Development
-  icon: build/icon.png
+  # Folder of NxN.png files (16-512): Ubuntu's hicolor theme does not look up a lone 1024 px icon.
+  icon: build/icons
   # Keep macOS/Windows node-pty prebuilds out of the .deb; scripts/check-glibc.mjs verifies this in CI.
   files:
     - "!node_modules/node-pty/prebuilds/darwin-*/**"

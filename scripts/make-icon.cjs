@@ -8,6 +8,8 @@ const path = require('node:path');
 const SIZE = 1024;
 const svgPath = path.join(__dirname, '..', 'build', 'icon.svg');
 const pngPath = path.join(__dirname, '..', 'build', 'icon.png');
+const iconsDir = path.join(__dirname, '..', 'build', 'icons');
+const LINUX_SIZES = [16, 24, 32, 48, 64, 128, 256, 512];
 
 app.disableHardwareAcceleration();
 app.commandLine.appendSwitch('force-device-scale-factor', '1'); // capture exactly 1024 px on Retina too
@@ -30,6 +32,14 @@ async function render() {
   if (image.getSize().width !== SIZE) image = image.resize({ width: SIZE, height: SIZE, quality: 'best' });
   fs.writeFileSync(pngPath, image.toPNG());
   console.log(`Skrev ${path.relative(process.cwd(), pngPath)} (${image.getSize().width}x${image.getSize().height})`);
+
+  // Linux: the hicolor theme on Ubuntu 22.04 looks up the standard sizes (up to 512), not 1024,
+  // so electron-builder gets a build/icons/ folder with each size (linux.icon points there).
+  fs.mkdirSync(iconsDir, { recursive: true });
+  for (const s of LINUX_SIZES) {
+    fs.writeFileSync(path.join(iconsDir, `${s}x${s}.png`), image.resize({ width: s, height: s, quality: 'best' }).toPNG());
+  }
+  console.log(`Skrev ${path.relative(process.cwd(), iconsDir)}/{${LINUX_SIZES.join(',')}}`);
 }
 
 app
