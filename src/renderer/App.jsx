@@ -4,6 +4,7 @@ import AuctumMark from './AuctumMark.jsx';
 import Splash from './Splash.jsx';
 import AppSettingsDialog from './AppSettingsDialog.jsx';
 import DocsDialog from './DocsDialog.jsx';
+import QuestionPopup from './QuestionPopup.jsx';
 import { Bar, Frame } from './Lcars.jsx';
 
 const bridge = window.bridge;
@@ -55,8 +56,15 @@ export default function App() {
   const [fullscreen, setFullscreen] = useState(false); // the window's real mode, from main (US-0404 FR1.2)
   const [terminalCommand, setTerminalCommand] = useState(null); // {seq, action, projectId} from the Terminal menu
   const [docs, setDocs] = useState(null); // {name, content} of the docs/README.md shown from Hjälp
+  const [alertSettings, setAlertSettings] = useState({}); // {questionAlerts, notificationSound} as saved (US-0505 FR4.1)
+  const [questions, setQuestions] = useState([]); // waiting questions of every open project, from main (FR1.4)
+  const [popupOpen, setPopupOpen] = useState(false);
+  const [popupFocus, setPopupFocus] = useState(null); // {id} named by a clicked notification (FR3.2)
   const recentRef = useRef([]);
   const menuCommandRef = useRef(null);
+  const seenQuestionsRef = useRef(new Set());
+  const questionAlertsRef = useRef('popup-notify');
+  questionAlertsRef.current = alertSettings.questionAlerts ?? 'popup-notify';
   const motion = motionMode(animations);
 
   // Before paint, so the first frame already runs in the chosen mode (FR4.2).
@@ -79,6 +87,7 @@ export default function App() {
         const s = await bridge.getSettings();
         recentRef.current = s.recentProjects;
         setAnimations(s.animations ?? null);
+        setAlertSettings({ questionAlerts: s.questionAlerts, notificationSound: s.notificationSound });
         const failed = [];
         let activeInfo = null;
         for (const dir of s.openProjects) {
@@ -156,6 +165,61 @@ export default function App() {
       .catch((err) => console.warn('Helskärmsläget kunde inte läsas:', errorText(err)));
     return bridge.onFullscreen((on) => setFullscreen(on === true));
   }, []);
+
+  // Waiting questions (US-0505). Only an id not seen before and not waiting since the start opens the popup
+  // (FR1.4); with "Av" it never opens by itself (FR4.2). Optional: an older preload has no question API.
+  useEffect(() => {
+    const receive = (list) => {
+      if (!Array.isArray(list)) return;
+      const seen = seenQuestionsRef.current;
+      const fresh = list.some((q) => !q.early && !seen.has(q.id));
+      for (const q of list) seen.add(q.id);
+      setQuestions(list);
+      if (fresh && questionAlertsRef.current !== 'off') setPopupOpen(true);
+    };
+    bridge.listQuestions?.()
+      .then(receive)
+      .catch((err) => console.warn('Väntande frågor kunde inte läsas:', errorText(err)));
+    const offQuestions = bridge.onQuestions?.(receive);
+    const offFocus = bridge.onQuestionFocus?.((id) => {
+      if (typeof id !== 'string') return;
+      setPopupFocus({ id });
+      setPopupOpen(true);
+    });
+    return () => {
+      offQuestions?.();
+      offFocus?.();
+    };
+  }, []);
+
+  // Main decides on notifications and needs to know which project is shown (FR3.1).
+  useEffect(() => {
+    bridge.setActiveProject?.(activeId).catch((err) => console.warn('Aktivt projekt kunde inte skickas:', errorText(err)));
+  }, [activeId]);
+
+  // New questions first, then the ones that waited from the start (FR2.2). The popup closes by itself once
+  // none of the questions that opened it waits any longer (FR2.4).
+  const popupQuestions = [...questions.filter((q) => !q.early), ...questions.filter((q) => q.early)];
+  const hasNewQuestion = questions.some((q) => !q.early);
+  useEffect(() => {
+    if (!hasNewQuestion) setPopupOpen(false);
+  }, [hasNewQuestion]);
+
+  function closePopup() {
+    setPopupOpen(false);
+    setPopupFocus(null);
+  }
+  /** "Svara i Claude": that project, its Claude tab open and focused (FR2.3). Sets projectId directly, since
+   *  runTerminal reads the active project from this render (developer scan, finding 6). */
+  function answerInClaude(q) {
+    closePopup();
+    setActiveId(q.projectId);
+    setTerminalCommand((c) => ({ seq: (c?.seq ?? 0) + 1, action: 'claude', projectId: q.projectId }));
+  }
+  async function saveAlertSettings(partial) {
+    setAlertSettings((s) => ({ ...s, ...partial }));
+    await bridge.setSettings(partial); // a failure is shown in the dialog
+  }
 
   // Every menu command runs the same named function as the arm's button (US-0404 FR2.4); unknown ones are ignored.
   useEffect(() => bridge.onMenuCommand((payload) => menuCommandRef.current?.(payload)), []);
@@ -426,8 +490,17 @@ export default function App() {
         })}
       </main>
 
-      <AppSettingsDialog open={appSettingsOpen} onClose={() => setAppSettingsOpen(false)} value={motion} onChange={saveAnimations} />
+      <AppSettingsDialog
+        open={appSettingsOpen}
+        onClose={() => setAppSettingsOpen(false)}
+        value={motion}
+        onChange={saveAnimations}
+        questionAlerts={alertSettings.questionAlerts ?? 'popup-notify'}
+        notificationSound={alertSettings.notificationSound !== false}
+        onSave={saveAlertSettings}
+      />
       <DocsDialog doc={docs} onClose={() => setDocs(null)} />
+      <QuestionPopup open={popupOpen} questions={popupQuestions} focus={popupFocus} onAnswer={answerInClaude} onClose={closePopup} />
     </div>
   );
 }
