@@ -49,7 +49,7 @@ function AidlcProject({ project }) {
             detail={p.detail}
             intent={p.intents.find((i) => i.dirName === p.detail.dirName)}
             activeDirName={activeDirName}
-            newSeqFrom={p.newSeqFrom}
+            newKeys={p.newKeys}
             cost={p.cost}
             models={p.models}
           />

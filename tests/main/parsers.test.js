@@ -117,6 +117,37 @@ describe('audit parser', () => {
     // Equal timestamps keep shard order (stable sort).
     expect(merged.slice(1, 4).map((e) => e.event)).toEqual(['STAGE_STARTED', 'STAGE_COMPLETED', 'STAGE_STARTED']);
   });
+
+  const block = (event, ts) => `## ${event}\n${ts ? `**Timestamp**: ${ts}\n` : ''}**Event**: ${event}\n`;
+
+  it('gives every block a stable <file>#<index> key, unique across files (FR2.1)', () => {
+    const text = [block('A', '2026-11-13T10:00:00Z'), block('B', '2026-11-13T10:01:00Z')].join('---\n');
+    expect(parseAudit(text, 'a.md').map((e) => e.key)).toEqual(['a.md#0', 'a.md#1']);
+    const merged = mergeAudits([
+      { source: 'a.md', text },
+      { source: 'b.md', text }
+    ]);
+    expect(new Set(merged.map((e) => e.key)).size).toBe(4);
+    // Equal times: source, then index.
+    expect(merged.map((e) => e.key)).toEqual(['a.md#0', 'b.md#0', 'a.md#1', 'b.md#1']);
+  });
+
+  it('sorts mixed time zones chronologically, not as text (FR3.1)', () => {
+    const merged = mergeAudits([
+      { source: 'a.md', text: block('LATER', '2026-11-13T10:00:00Z') },
+      { source: 'b.md', text: block('EARLIER', '2026-11-13T10:30:00+01:00') } // 09:30Z
+    ]);
+    expect(merged.map((e) => e.event)).toEqual(['EARLIER', 'LATER']);
+  });
+
+  it('places an event without timestamp right after its predecessor in the same file (FR3.2)', () => {
+    const a = [block('A1', '2026-11-13T10:00:00Z'), block('A2', null)].join('---\n');
+    const merged = mergeAudits([
+      { source: 'a.md', text: a },
+      { source: 'b.md', text: [block('B0', '2026-11-13T09:00:00Z'), block('B1', '2026-11-13T11:00:00Z')].join('---\n') }
+    ]);
+    expect(merged.map((e) => e.event)).toEqual(['B0', 'A1', 'A2', 'B1']);
+  });
 });
 
 describe('unitStatuses', () => {

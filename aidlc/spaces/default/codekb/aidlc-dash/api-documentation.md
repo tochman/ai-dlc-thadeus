@@ -25,19 +25,35 @@ Alla handlers loggar fel och kastar vidare (renderaren får ett avvisat promise)
 | `pty:write` | `ptyWrite(id, data)` | sträng | – |
 | `pty:resize` | `ptyResize(id, cols, rows)` | heltal 1–999 | – |
 | `pty:kill` | `ptyKill(id)` | | – |
+| `git:fetch`, `git:status`, `git:remoteChanges`, `git:showRemote`, `git:conflicts` | (EPIC-05 US-0502) | | ytligt skannat: bara kanalnamnen i `preload/index.js` är verifierade |
+| `setup:info`, `setup:command` | (EPIC-05 US-0503) | | ytligt skannat |
 
 **Intent i listan** (`mergeIntents` + `summarizeIntent`): `uuid, slug, dirName, scope, status, date, active, missingOnDisk, missingInIndex, request, currentStage, stateStatus, done, executed, error?, stale?`.
+
+**Audit-händelse i `detail.events`** (`mergeAudits` + `categoryOf`, verifierat): `{timestamp, event, title, fields, source, seq, category}`.
+- `timestamp` och `event` lyfts ur fälten `**Timestamp**` och `**Event**` (eller `null`); `fields` är övriga `**Nyckel**: värde`, flerradiga värden fortsätter på följande rader.
+- `title` är blockets `## Rubrik` (eller `null`); `source` är shardens filnamn (t.ex. `machine-a.md`).
+- `seq` är heltalsindex i den sammanslagna listan efter stabil sortering på `timestamp` som sträng (`null` räknas som `''`). Det är **inte** stabilt mellan laddningar om en händelse med äldre tidsstämpel tillkommer.
+- `category` ∈ `error | gate | subagent | unit | guard | human | stage | other`.
+- Listan är komplett och osorterad efter filter; renderaren filtrerar och vänder ordningen.
 
 ## IPC push-händelser (renderer-prenumerationer)
 
 | Kanal | Bridge | Payload |
 |---|---|---|
-| `project:changed` | `onProjectChanged(cb)` | `{projectId, space, dirNames[], indexChanged, costChanged}` |
+| `project:changed` | `onProjectChanged(cb)` | `{projectId, space, dirNames[], indexChanged, costChanged}` — säger vilken intent, aldrig vilken fil |
 | `project:watchError` | `onWatchError(cb)` | `{projectId, message}` |
+| `project:detected` | (EPIC-05) | ytligt: utlöses när `watchForAidlc` ser en första space |
 | `pty:data` | `onPtyData(cb)` | `{id, data}` |
 | `pty:exit` | `onPtyExit(cb)` | `{id, exitCode, signal}` |
 
 `window.bridge.platform` exponerar `process.platform`.
+
+## Renderer-internt kontrakt: Timeline
+
+`<Timeline events newSeqFrom />` (`src/renderer/Timeline.jsx`), anropas från `IntentDetail.jsx:108` med `detail.events` och `newSeqFrom` från `useProject` (via `ProjectView.jsx:52`).
+- `newSeqFrom`: `number | null`; rader med `seq >= newSeqFrom` får klassen `is-new` (CSS-animation `flash 4s`, `theme.css:267`).
+- `data-testid`: `timeline`, `timeline-event`, `timeline-noise-toggle`, `timeline-type-filter`, `timeline-stage-filter`.
 
 ## Lästa filkontrakt (AI-DLC-format, rotrelativt)
 
@@ -48,7 +64,7 @@ Alla handlers loggar fel och kastar vidare (renderaren får ett avvisat promise)
 | `.../intents/active-intent` | `loadIntentList` |
 | `.../<intent>/aidlc-state.md` | `parsers/state.js` (fält, `### <PHASE> PHASE`, checkboxar ` - ? R x S`) |
 | `.../<intent>/runtime-graph.json` | `parsers/runtimeGraph.js` (stages, `bolt_dag`) |
-| `.../<intent>/audit/*.md` | `parsers/audit.js` |
+| `.../<intent>/audit/*.md` | `parsers/audit.js`: block åtskilda av `---`-rader, `## Titel`, `**Nyckel**: värde`; varje block med titel eller fält behålls |
 | `.../<intent>/.aidlc-engine/active-directive.json` | `buildDetail` (kind, stage, delivery) |
 | `.../<intent>/project-description.json` | `loadDescription` |
 | `.../<intent>/<phase>/**` (djup 3) | `listArtifacts` |
@@ -62,5 +78,4 @@ Alla handlers loggar fel och kastar vidare (renderaren får ett avvisat promise)
 | `$SHELL -l -i -c 'printf ...$PATH'` | `models.js` | en gång per process, 5 s timeout |
 | `aidlc config models --show --json --harness claude` | `models.js` | `execFile`, cwd = rot, 10 s timeout, svaret ska ha `ok:true` och `data.effective[]` |
 | `$SHELL -l -i -c claude` / `$SHELL -l` | `pty.js` | node-pty, cwd = rot, `TERM=xterm-256color` |
-
-EPIC-05 planerar fler (git fetch/show/rev-list/log/diff, `aidlc --version`, `aidlc config --dry-run`); inga finns i dag.
+| `git fetch/rev-parse/rev-list/diff/status/show`, `aidlc …` | `exec.js` via `git.js`/`setup.js` (EPIC-05) | ytligt: `execFile` utan skal, fasta argument, timeout (enligt filkommentarer) |

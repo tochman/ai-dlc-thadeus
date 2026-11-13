@@ -28,18 +28,32 @@ function parseBlock(block, source) {
   return { timestamp, event, title, fields: rest, source };
 }
 
+/** Each kept block gets `index` (file order) and a stable `key` `<source>#<index>`; shards only grow at the end. */
 export function parseAudit(text, source) {
   return String(text ?? '')
     .split(/^---\s*$/m)
     .map((block) => parseBlock(block, source))
-    .filter(Boolean);
+    .filter(Boolean)
+    .map((e, index) => ({ ...e, index, key: `${source}#${index}` }));
 }
 
-/** Merges shards ({source, text}) into one timeline; Array.sort is stable, so ties keep file order. */
+/** Parsed time per event; one without a valid timestamp inherits its predecessor's in the same file. */
+function withTimes(events) {
+  let prev = -Infinity;
+  return events.map((e) => {
+    const t = Date.parse(e.timestamp ?? '');
+    if (!Number.isNaN(t)) prev = t;
+    return { ...e, timeMs: prev };
+  });
+}
+
+const bySource = (a, b) => (a.source < b.source ? -1 : a.source > b.source ? 1 : 0);
+
+/** Merges shards ({source, text}) into one timeline, by parsed time, then source, then block index. */
 export function mergeAudits(files) {
   return files
-    .flatMap((f) => parseAudit(f.text, f.source))
-    .sort((a, b) => (a.timestamp ?? '').localeCompare(b.timestamp ?? ''))
+    .flatMap((f) => withTimes(parseAudit(f.text, f.source)))
+    .sort((a, b) => a.timeMs - b.timeMs || bySource(a, b) || a.index - b.index)
     .map((e, seq) => ({ ...e, seq }));
 }
 
