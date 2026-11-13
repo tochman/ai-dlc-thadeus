@@ -25,6 +25,8 @@ npm run build        # bygger en osignerad macOS-app (.app och .dmg) i dist/
 npx vitest run tests/  # kör enhetstesterna
 ```
 
+Linux-paketet (`.deb`) kräver Ubuntu 22.04 eller nyare. Appikonen genererar du om från `build/icon.svg` med `npm run icon`.
+
 Den osignerade appen öppnar du första gången med högerklick och sedan **Öppna**, eftersom Gatekeeper annars blockerar den.
 
 I appen öppnar du ett projekt med **+ Öppna projekt**. Varje projekt får en egen flik med intent-lista, detaljvy (Pipeline, Tidslinje, Units, Filer) och en terminalpanel med två flikar: `claude` och `shell`. Båda startar i projektroten. Flikarna öppnas igen nästa gång appen startar.

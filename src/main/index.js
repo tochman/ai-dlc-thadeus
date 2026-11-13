@@ -5,8 +5,12 @@ import { registerIpc, shutdown } from './ipc.js';
 // productName changed to "Auctum AIDLC Control"; keep the old userData folder so saved tabs survive.
 app.setPath('userData', join(app.getPath('appData'), 'aidlc-dash'));
 
+// Packaged builds ship the icon via electron-builder (extraResources on Linux); dev runs use the source PNG.
+const iconPath = app.isPackaged ? join(process.resourcesPath, 'icon.png') : join(app.getAppPath(), 'build/icon.png');
+
 function createWindow() {
   const win = new BrowserWindow({
+    ...(process.platform === 'linux' ? { icon: iconPath } : {}),
     width: 1440,
     height: 900,
     minWidth: 960,
@@ -40,6 +44,14 @@ function createWindow() {
 }
 
 app.whenReady().then(() => {
+  // The packaged .app carries its .icns; in dev the Dock would otherwise show the Electron icon.
+  if (process.platform === 'darwin' && !app.isPackaged) {
+    try {
+      app.dock.setIcon(iconPath);
+    } catch (err) {
+      console.error('Kunde inte sätta Dock-ikonen:', err);
+    }
+  }
   registerIpc();
   createWindow();
   app.on('activate', () => {

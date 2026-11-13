@@ -1,8 +1,22 @@
 // Terminal sessions per project: a `claude` session and a login shell, both in the project root.
-import { spawn as spawnPty } from 'node-pty'; // CJS module without a default export
+// node-pty is loaded on the first spawn, not at import: a native binary that cannot load on this
+// system (e.g. built against a newer glibc) must break the terminal tab, not the whole app.
 import { randomUUID } from 'node:crypto';
 
 const sessions = new Map(); // id -> { proc, projectId, sender }
+let ptyModule = null; // cached only after a successful load, so a failed load is retried next spawn
+
+async function loadPty() {
+  if (ptyModule) return ptyModule;
+  try {
+    const mod = await import('node-pty');
+    ptyModule = mod.spawn ? mod : mod.default; // CJS module: named export or default, depending on the loader
+    return ptyModule;
+  } catch (err) {
+    console.error('Kunde inte ladda node-pty:', err);
+    throw new Error(`Terminalmodulen kunde inte laddas: ${err.message}`);
+  }
+}
 
 function shellArgs(kind) {
   // -i makes zsh/bash read the interactive rc files (nvm usually lives in .zshrc), -l the login profile.
@@ -15,9 +29,11 @@ function clampSize(n, fallback) {
   return Number.isInteger(n) && n > 0 && n < 1000 ? n : fallback;
 }
 
-export function spawnSession({ projectId, root, kind, cols, rows, sender }) {
+export async function spawnSession({ projectId, root, kind, cols, rows, sender }) {
+  const args = shellArgs(kind); // validate before loading the native module
+  const { spawn: spawnPty } = await loadPty();
   const shell = process.env.SHELL || (process.platform === 'darwin' ? '/bin/zsh' : '/bin/bash');
-  const proc = spawnPty(shell, shellArgs(kind), {
+  const proc = spawnPty(shell, args, {
     name: 'xterm-256color',
     cols: clampSize(cols, 100),
     rows: clampSize(rows, 30),

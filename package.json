@@ -1,7 +1,7 @@
 {
   "name": "aidlc-dash",
   "productName": "Auctum AIDLC Control",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "private": true,
   "description": "Bridge console for AI-DLC projects: read-only visualisation and an embedded Claude terminal",
   "author": {
@@ -14,6 +14,7 @@
     "dev": "electron-vite dev",
     "build": "electron-vite build && electron-builder --mac",
     "test": "vitest run tests/",
+    "icon": "electron scripts/make-icon.cjs",
     "postinstall": "electron-builder install-app-deps",
     "build:mac": "electron-vite build && electron-builder --mac",
     "build:linux": "electron-vite build && electron-builder --linux"

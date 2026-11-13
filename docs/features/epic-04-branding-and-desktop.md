@@ -8,22 +8,23 @@
 
 **Stories:** US-0401
 
-**Status (2026-11-13):** 📋 Planned.
+**Status (2026-11-13):** 🚧 Built, not released (v0.1.1).
 
 ---
 
 ## User Stories
 
-**US-0401: Auctum app icon on macOS and Linux** 📋 Planned
+**US-0401: Auctum app icon on macOS and Linux** 🚧 Built, not released
 - As a **user at Auctum**, in order to **recognise the app at a glance**, I would like to **the Auctum mark as the app icon everywhere the operating system shows it**.
 - **Epic:** EPIC-04
 - **Priority:** Medium
 - **Complexity:** Low
 - **Acceptance Criteria:**
-  - [ ] The icon is generated from the new geometric mark (`visinv/public/auctum.svg`, the same paths as `src/renderer/AuctumMark.jsx`), not the older variants in `public/logos/`. It is centred on a background that works in light and dark Docks, and the design is checked with the user before release.
-  - [ ] macOS: an `icon.icns` in `build/` with all required sizes. Dock, Finder, the app switcher and the `.dmg` window show the Auctum icon, and electron-builder no longer warns "default Electron icon is used".
-  - [ ] Linux: PNG icons (16–512 px) in `build/icons/`, used by the `.deb`'s `.desktop` entry, so the application menu and window list show the Auctum icon
-  - [ ] In development (`npm run dev`) the Dock icon is also Auctum (`app.dock.setIcon` on macOS)
-  - [ ] The icon sources and the command that generates them are committed, so the icon can be regenerated
+  - [x] The icon is generated from the new geometric mark (`visinv/public/auctum.svg`, the same paths as `src/renderer/AuctumMark.jsx`), not the older variants in `public/logos/`. It is centred on a background that works in light and dark Docks (`build/icon.svg`: amber mark on a dark rounded square, macOS icon grid).
+  - [ ] The design is checked with the user before release.
+  - [x] macOS: the `.icns` with all required sizes is derived by electron-builder from `build/icon.png` (1024×1024), so Dock, Finder, the app switcher and the `.dmg` window show the Auctum icon and electron-builder no longer warns "default Electron icon is used".
+  - [x] Linux: the PNG sizes for the `.deb`'s `.desktop` entry are derived by electron-builder from `build/icon.png`, and the window gets the icon via `BrowserWindow` (`resources/icon.png`), so the application menu and window list show the Auctum icon
+  - [x] In development (`npm run dev`) the Dock icon is also Auctum (`app.dock.setIcon` on macOS)
+  - [x] The icon sources (`build/icon.svg`, `build/icon.png`) and the command that generates them (`npm run icon`, `scripts/make-icon.cjs`) are committed, so the icon can be regenerated
   - [ ] Verified on an installed release on macOS and on Linux
 - **Dependencies:** US-0109, US-0110
