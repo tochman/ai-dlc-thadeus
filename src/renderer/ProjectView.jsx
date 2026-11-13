@@ -122,8 +122,15 @@ function SetupDone({ onClose, onFeatureDocs }) {
  * The selected view and the open sidebar panels live in App, because the left arm selects them (FR2.2).
  * This reports back what the arm needs: whether Features is offered and how many intents there are.
  */
-function ProjectContent({ project, visible, settingsOpen = false, onCloseSettings, view: chosenView = 'intents', onView, panels, onMeta }) {
+function ProjectContent({ project, visible, settingsOpen = false, onCloseSettings, view: chosenView = 'intents', onView, panels, onMeta, terminalCommand }) {
   const terminal = useTerminal();
+
+  // The Terminal menu (EPIC-04 US-0404 FR2.4): only the project it was sent for reacts; seq lets it repeat.
+  useEffect(() => {
+    if (!terminalCommand || terminalCommand.projectId !== project.projectId) return;
+    if (terminalCommand.action === 'restart') terminal.restart(terminal.view.active);
+    else terminal.show(terminalCommand.action);
+  }, [terminalCommand]); // runs once per command, not when the terminal state changes
   const isAidlc = project.detection.isAidlc;
   const wasAidlc = useRef(isAidlc);
   const [justSetUp, setJustSetUp] = useState(false);
@@ -221,7 +228,8 @@ export default function ProjectView({
   onToggleCost,
   githubOpen,
   onToggleGithub,
-  onMeta
+  onMeta,
+  terminalCommand
 }) {
   const panels = { costOpen, onToggleCost, githubOpen, onToggleGithub };
   return (
@@ -235,6 +243,7 @@ export default function ProjectView({
         onView={onView}
         panels={panels}
         onMeta={onMeta}
+        terminalCommand={terminalCommand}
       />
     </TerminalProvider>
   );

@@ -5,40 +5,39 @@
 | Område | Betyg | Kommentar |
 |--------|-------|-----------|
 | Namngivning | good | Tydliga komponent- och klassnamn, konsekventa `data-testid` |
-| Funktionsstorlek | fair | De flesta funktioner är små; `RefreshPanel`, `SetupAidlc`, `Timeline` och `ProjectContent` är långa men sammanhållna |
-| Felhantering | good | IPC-fel visas med `role="alert"`; trasiga filer ger senaste giltiga värde; inga tysta catch utan kommentar |
-| Testnärvaro | fair | Main och de flesta stateful vyer testas; app-skalet, pipelinen, terminalpanelen, DAG och läsaren saknar test |
-| Duplicering | fair | `errorText()` i 9 renderarfiler; filåtgärdsknappar dupliceras i ArtifactReader och FeaturesView |
-| Död kod | good | Inga TODO/FIXME, inga `eslint-disable`; några klasser i JSX saknar CSS-regel (se nedan) |
+| Funktionsstorlek | fair | De flesta funktioner är små; `App` (render 185-348), `RefreshPanel`, `SetupAidlc`, `Timeline` och `ProjectContent` är långa men sammanhållna |
+| Felhantering | good | IPC-fel loggas i main och visas med `role="alert"`; trasig `settings.json` ger standardvärden; inga tysta catch utan kommentar |
+| Testnärvaro | fair | Main och de flesta stateful vyer testas; app-skalet har nu `AppShell.test.jsx` |
+| Duplicering | fair | `errorText()` i över 10 renderarfiler (nu även `App.jsx` och `AppSettingsDialog.jsx`); filåtgärdsknappar dupliceras i ArtifactReader och FeaturesView |
+| Död kod | good | Inga TODO/FIXME, inga `eslint-disable` i de lästa filerna |
 
 ## Tester
 
 - **Ramverk**: Vitest 5 med två projekt (`main` i node, `renderer` i jsdom), Testing Library React.
-- **main** (14 filer): parsers, ledger, modeller, features, git, setup, settings, watcher, pty, rättigheter, glibc, ikon (`build/icon.png` 1024x1024 RGBA), projectAccess, projectService.
-- **renderer** (10 filer): CostPanel, FeaturesView, IntentList, ProjectSettingsDialog, RefreshPanel, ResumeButton, SetupAidlc, Splash, Timeline, terminalControl.
+- **main** (15 filer): `check-glibc`, `configuredModels`, `features`, `git`, `icon`, `ledger`, `parsers`, `projectAccess`, `projectService`, `pty`, `ptyPerms`, `settings`, `setup`, `theme`, `watcher`.
+- **renderer** (13 filer): `AppShell`, `CostPanel`, `FeaturesView`, `IntentDetail`, `IntentList`, `ProjectSettingsDialog`, `RefreshPanel`, `ResumeButton`, `SetupAidlc`, `Splash`, `TerminalPanel`, `Timeline`, `terminalControl`.
 - **Coverage**: ingen konfiguration eller tröskel.
-- **Körs i CI**: `npx vitest run tests/` i `verify`-jobbet.
+- **Körs i CI**: `npx vitest run tests/` i `verify`-jobbet (från tidigare skanning).
+- `src/main/index.js` saknar test (fönster och livscykel); det är där meny- och helskärmskoden hamnar. `settings.test.js` täcker `sanitize()` och är platsen för ett test av en ny nyckel.
 
-### Tester som en omdesign kan bryta
+### Tester som en ändring av gränssnittet kan bryta
+
+Listan nedan kommer från förra skanningen (före designlyftet) och är inte omverifierad; nya testfiler (`AppShell`, `IntentDetail`, `TerminalPanel`) har tillkommit.
 
 | Test | Beroende |
 |------|----------|
-| `IntentList.test.jsx:13` | `.intent-slug` inuti `intent-list-row` |
-| `Splash.test.jsx:16,17,25` | `role="img"` med namnet `Auctum`, texten `Auctum AIDLC Control`, `is-leaving` i `className` |
-| `Timeline.test.jsx:44,53,56,77` | `[aria-posinset]`/`aria-setsize`, `.event.is-new`, `.event-row` med `aria-label`, `.event-fields` |
-| `CostPanel.test.jsx:24` | tabellrader (`closest('tr')`) |
-| `FeaturesView.test.jsx:30,70` | exakt ett `role="status"`; `h1` i fallback |
-| `RefreshPanel.test.jsx:73`, `ResumeButton.test.jsx:48` | exakt ett `role="status"` |
-| `ResumeButton.test.jsx:23` | knappen är ett `BUTTON` |
-| `SetupAidlc.test.jsx:94` | `a[href]` i `setup-aidlc-missing` |
+| `IntentList.test.jsx` | `.intent-slug` inuti `intent-list-row` |
+| `Splash.test.jsx` | `role="img"` med namnet `Auctum`, texten `Auctum AIDLC Control`, `is-leaving` i `className` |
+| `Timeline.test.jsx` | `[aria-posinset]`/`aria-setsize`, `.event.is-new`, `.event-row` med `aria-label`, `.event-fields` |
+| `CostPanel.test.jsx` | tabellrader (`closest('tr')`) |
+| `FeaturesView.test.jsx` | exakt ett `role="status"`; `h1` i fallback |
+| `RefreshPanel.test.jsx`, `ResumeButton.test.jsx` | exakt ett `role="status"` |
 | Alla renderartester | `data-testid` och svenska etiketttexter |
-
-Nya dekorativa element (siffror, segment, ränder) bör vara `aria-hidden` och inte ha `role="status"`, annars får `getByRole('status')` flera träffar.
 
 ## Linting, formatering, CI
 
-- Ingen ESLint, Prettier eller EditorConfig i repot. Stilen är ändå enhetlig (2 blanksteg, enkla citattecken, semikolon).
-- CI (`.github/workflows/release.yml`): tester på PR mot `main` och på taggar; macOS- och Linux-bygge; glibc-kontroll; release med `gh release`. Ingen lint- eller kontraststeg.
+- Ingen ESLint, Prettier eller EditorConfig i repot (`package.json` har inga sådana beroenden). Stilen är ändå enhetlig (2 blanksteg, enkla citattecken, semikolon).
+- CI (`.github/workflows/release.yml`): tester på PR mot `main` och på taggar; macOS- och Linux-bygge; glibc-kontroll; release med `gh release` (`publish: null` i `electron-builder.yml`). Ingen lint-steg.
 
 ## Dokumentation
 
@@ -47,18 +46,17 @@ Nya dekorativa element (siffror, segment, ränder) bör vara `aria-hidden` och i
 ## Tillgänglighet (befintliga mönster)
 
 - Status alltid med text, aldrig bara färg (`format.js`, `.tag`, `StatusBadge`).
-- `:focus-visible` 2px blå outline globalt.
-- `prefers-reduced-motion` stänger av alla animationer och transitions.
-- ARIA: `tablist/tab/aria-selected`, `listbox/option`, `aria-expanded`, `aria-pressed`, `aria-current`, `role="separator"` med tangentbord, native modal `dialog`, `role="status"`/`"alert"`, `aria-hidden` på dekor (`.stage-marker`, `.splash-bar`, dekorativt märke).
-- Kontrast: kommentaren i `theme.css` anger minst 4,5:1 för brödtext; inget automatiskt test kontrollerar det.
+- `:focus-visible`-outline globalt.
+- Rörelse: `data-motion` (`full | reduced | off`) med `prefers-reduced-motion` som standard för `reduced`.
+- ARIA i app-skalet: `nav.app-arm[aria-label="Projekt och vyer"]`, `aria-current` på aktivt projekt (`true`) och aktiv vy (`page`), `aria-expanded` på Kostnad/Github, `aria-label` på ⚙ och ×, `role="alert"` på felbannern, `aria-hidden` på dekor. App-inställningarna är en native modal `dialog` med `aria-labelledby`; Esc stänger via `onCancel`.
+- Kontrast: kommentaren i `theme.css` anger minst 4,5:1 för brödtext; `theme.test.js` finns (innehåll ej omläst).
 
 ## Teknisk skuld
 
-1. Färger utanför tokens: `TerminalPanel.jsx:17-22` (xterm-tema), `src/main/index.js:18` (fönsterbakgrund), `theme.css:134,135,364,371`, `build/icon.svg`. US-0403 kräver att alla färger kommer från tokens.
-2. Magiska layoutmått: elbow-tjocklekar (6, 8, 22px) och radier (30px) upprepas; kolumnbredder i `.stage-row`, `.event-row`, `.project-body`, `.artifact-reader`.
-3. Klasser utan CSS-regel: `is-collapsed`, `detail-body`, `intent-header`, `phase`, `timeline`, `features-story`, `setup-feature-docs` (lediga krokar för omdesignen).
-4. Globala klasser delas mellan vyer (lista i `dependencies.md`); ändring av en ger effekt på flera ställen.
-5. `.project-tabs` är `role="tablist"` men innehåller knappar som inte är flikar; flikar saknar `aria-controls`, och `div.detail-body[role=tabpanel]` saknar `aria-labelledby`.
-6. `settings.js` vitlistar nycklar; en ny animationsinställning kräver ändring där.
-7. Tidslinjens rader placeras med inline `transform`; inträdesanimation på `transform` krockar med virtualiseraren.
-8. `hidden` sätter `display: none !important`, så in/ut-övergångar på dolda flikar och projekt kräver annan teknik (t.ex. animation vid visning).
+1. **Ingen egen meny**: Electrons standardmeny visas, med Reload, Force Reload, Toggle DevTools och Electron-länkar även i paketerad app (`src/main/index.js` importerar inte `Menu`). Linux visar en menyrad i fönstret (`autoHideMenuBar` saknas).
+2. **Armens åtgärder är inline-lambdor** i `App.jsx:229-291`; de måste lyftas till namngivna funktioner för att menyn ska kunna dela kodväg.
+3. **Terminalstyrningen** (`useTerminal()`) finns bara inne i varje `ProjectView`; App kan inte byta terminalflik eller starta om en flik.
+4. **`createWindow()` returnerar fönstret men ingen sparar det** (`index.js:43,56,58`); main saknar en referens att skicka menykommandon till eller läsa helskärmsläget från.
+5. `settings.js` vitlistar nycklar; en ny inställning kräver ändring i `sanitize()`.
+6. Färger utanför tokens: fönsterbakgrunden i `src/main/index.js:18` är fortfarande en litteral, men matchar nu `--bg` (`#05060a`) enligt kommentaren. Övriga punkter från förra skanningen (xterm-tema, banners, `flash`, `::backdrop`) är inte omverifierade; `tokens.js` exporterar nu `xtermTheme()`.
+7. `hidden` sätter `display: none !important`, så in/ut-övergångar på dolda flikar och projekt kräver annan teknik (från tidigare skanning).

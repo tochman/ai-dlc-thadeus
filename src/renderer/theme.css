@@ -325,6 +325,10 @@ button.lcars-chip:hover { border-color: var(--steel-text); color: var(--steel-li
 .app-header-deco { display: flex; gap: 4px; align-items: center; flex-shrink: 0; }
 .app-header-deco span { width: 26px; height: 10px; background: var(--slate-3); }
 .app-header-deco span + span { width: 10px; background: var(--slate-2); }
+/* Helskärm / Lämna helskärm: the last block of the header row, as tall as the row (US-0404 FR1.2, NFR3). */
+.app-fullscreen { align-self: stretch; height: auto; min-width: 128px; padding-left: 16px; cursor: pointer; }
+.app-fullscreen:focus-visible { outline: 2px solid var(--amber); outline-offset: 2px; }
+.docs-dialog { width: min(860px, 90vw); max-height: 85vh; overflow-y: auto; }
 
 /* Left arm: projects and views as labelled blocks (FR2.2). */
 .app-arm { grid-area: arm; display: flex; flex-direction: column; gap: 5px; min-height: 0; overflow-y: auto; overflow-x: hidden; scrollbar-width: none; }

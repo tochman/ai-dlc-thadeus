@@ -3,63 +3,41 @@
 ## Run Record
 
 - Date: 2026-11-13
-- Commit: b30f69abec7775f2ceb0c67fb1765349cd88055f
+- Commit: fec505b24db5db906c25efb2c170119078bbff16
 
-Full omskanning av hela repot för intent `261113-living-lcars` (EPIC-04 US-0402 och US-0403). Byggutdata (`out/`, `dist/`), beroenden (`node_modules/`), testutdata (`tests/.tmp/`), innehållet i `package-lock.json` och AI-DLC:s egen installation lämnades oöppnade.
+Fokuserad skanning för intent `261113-fullscreen-menu` (EPIC-04 US-0404: helskärm och egen appmeny) ovanpå en STALE store från intent `261113-living-lcars` (byggd vid commit `b30f69abec7775f2ceb0c67fb1765349cd88055f`, före designlyftet). Djupt lästes bara fönster, IPC, inställningar, preload, app-skalet, app-inställningsdialogen och paketeringskonfigurationen. Tidigare prosa utanför det området är bevarad, med korta noteringar om designlyftet där det syntes; den tidigare fullständiga täckningen (`./`) är nedflyttad till skummad eftersom den inte kunde omverifieras. Byggutdata (`out/`, `dist/`), beroenden (`node_modules/`), testutdata (`tests/.tmp/`) och AI-DLC:s egen installation lämnades oöppnade.
 
 ## Scope of Analysis
 
 ```yaml
 scope_version: 1
-kind: full
-intent: 261113-living-lcars
-fingerprint: 21055b3e245b1514539f3988c4a802ca5a01fe16
+kind: partial
+intent: 261113-fullscreen-menu
+fingerprint: 4d14947228ff88b329a881518eec34dec17241bc
 analyzed:
   paths:
-    - ./
+    - src/main/index.js
+    - src/main/ipc.js
+    - src/main/settings.js
+    - src/preload/index.js
+    - src/renderer/App.jsx
+    - src/renderer/AppSettingsDialog.jsx
+    - electron-builder.yml
+    - package.json
   components:
-    - Theme Stylesheet
     - App Shell
-    - Splash
-    - AuctumMark
-    - ProjectView
-    - IntentList
-    - IntentDetail
-    - Pipeline
-    - Timeline
-    - BoltDag
-    - ArtifactReader
-    - CostPanel
-    - CostTab
-    - RefreshPanel
-    - ResumeButton
-    - SetupAidlc
-    - FeaturesView
-    - ProjectSettingsDialog
-    - TerminalPanel
-    - TerminalContext
-    - Renderer Hooks
-    - Renderer Utilities
+    - AppSettingsDialog
     - Preload Bridge
     - Main Entry
     - IPC Router
-    - Project Service
-    - Project Access
-    - PTY Manager
-    - Exec Runner
     - Settings Store
-    - File Watcher
-    - Git Reader
-    - Setup Helper
-    - Model Config Reader
-    - Feature Docs Loader
-    - Parsers
-    - Build Scripts
-    - Release Pipeline
-    - Test Suite
+    - Packaging Config
 shallow:
   paths:
+    - ./
+    - src/renderer/
     - tests/main/
+    - tests/renderer/
     - tests/fixtures/
     - docs/features/
     - build/icons/

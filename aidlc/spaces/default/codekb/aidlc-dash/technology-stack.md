@@ -7,14 +7,14 @@
 | Språk | JavaScript (ESM), JSX; CommonJS i två skript | – |
 | Node | `.nvmrc` | 22 |
 | Skrivbordsruntime | Electron | ^45.3.1 |
-| Styling | Ren CSS, en global fil (`theme.css`), CSS custom properties | – |
+| Styling | Ren CSS, en global fil (`theme.css`), CSS custom properties; `tokens.js` läser dem i JS | – |
 
 ## Ramverk och bibliotek (runtime)
 
 | Bibliotek | Version | Används till |
 |-----------|---------|--------------|
 | react, react-dom | ^19.3.1 | UI |
-| @xterm/xterm | ^6.0.0 | terminal i renderaren (tema i JS) |
+| @xterm/xterm | ^6.0.0 | terminal i renderaren |
 | @xterm/addon-fit | ^0.11.0 | terminalstorlek |
 | node-pty | ^1.1.0 | pseudoterminaler (native, `asarUnpack`) |
 | chokidar | ^4.0.3 | filbevakning |
@@ -23,16 +23,18 @@
 | @tanstack/react-virtual | 3.14.24 (låst) | virtualiserad tidslinje |
 | @fontsource/antonio | ^5.3.0 | rubrik- och etikettfont (400, 700), bundlad lokalt |
 
-Inga animations-, ikon- eller komponentbibliotek. All rörelse är CSS-keyframes och transitions.
+Inga animations-, ikon-, meny- eller komponentbibliotek. All rörelse är CSS-keyframes och transitions. Electrons inbyggda `Menu`, `MenuItem` och fönsterroller (`role: 'togglefullscreen'`, `'undo'`, `'paste'` med flera) räcker för US-0404 utan nya beroenden.
 
 ## Bygg och paketering
 
 | Verktyg | Version | Roll |
 |---------|---------|------|
-| electron-vite | ^6.0.0 | bygger main, preload, renderer till `out/` |
+| electron-vite | ^6.0.0 | bygger main, preload, renderer till `out/`; `dev` sätter `ELECTRON_RENDERER_URL` |
 | vite | ^8.3.8 | bundlare |
 | @vitejs/plugin-react | ^6.3.0 | JSX |
-| electron-builder | ^26.18.0 | `.dmg` (universal, osignerad) och `.deb` (x64) |
+| electron-builder | ^26.18.0 | `.dmg` (universal, osignerad, `identity: null`) och `.deb` (x64, `executableName auctum-aidlc-control`) |
+
+Paketidentitet: `appId se.auctum.aidlc-control`, `productName Auctum AIDLC Control` (i både `package.json` och `electron-builder.yml`), `version 0.1.1`, `author Auctum Solutions AB`, `homepage https://github.com/tochman/aidlc-dash`.
 
 ## Test
 
@@ -44,9 +46,9 @@ Inga animations-, ikon- eller komponentbibliotek. All rörelse är CSS-keyframes
 
 ## Typografi och färg i dag
 
-- Rubriker, etiketter, knappar, taggar: Antonio i versaler (`--font-head`). US-0403 behåller Antonio.
-- Brödtext: systemfont (`--font-body`); siffror och kod: `--font-mono`. Ingen `font-variant-numeric: tabular-nums` används ännu (önskas för dataavläsningar i US-0403).
-- Palett: amber, orange, lavendel, blå, röd, grön på nästan svart (detaljer i `code-structure.md`).
+- Rubriker, etiketter, knappar, block: Antonio i versaler (`--font-head`).
+- Brödtext: systemfont (`--font-body`); siffror och kod: `--font-mono`.
+- Palett efter designlyftet: bakgrund `#05060a` (`--bg`, även fönstrets `backgroundColor`), skiffer, stålblå, korall; Auctum-amber för märket och den primära åtgärden. Fullständig tokenlista finns i `theme.css` (ej omläst i denna skanning).
 
 ## Plattformar
 

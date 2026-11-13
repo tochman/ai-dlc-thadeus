@@ -52,7 +52,15 @@
     "slug": "living-lcars",
     "dirName": "261113-living-lcars",
     "scope": "express",
-    "status": "in-flight",
+    "status": "complete",
     "request": "54be1d4d"
+  },
+  {
+    "uuid": "01a1d599-a6a1-799c-a7ad-bfe3996c4667",
+    "slug": "fullscreen-menu",
+    "dirName": "261113-fullscreen-menu",
+    "scope": "express",
+    "status": "complete",
+    "request": "65bb96d5"
   }
 ]

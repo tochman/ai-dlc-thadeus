@@ -1,0 +1,95 @@
+{
+  "stage": "code-generation",
+  "upstream_ids": [
+    "FR1.1",
+    "FR1.2",
+    "FR1.3",
+    "FR1.4",
+    "FR2.1",
+    "FR2.2",
+    "FR2.3",
+    "FR2.4",
+    "FR2.5",
+    "FR2.6",
+    "NFR1",
+    "NFR2",
+    "NFR3"
+  ],
+  "coverage": [
+    {
+      "id": "FR1.1",
+      "status": "OK",
+      "target": "src/main/menu.js"
+    },
+    {
+      "id": "FR1.1",
+      "status": "OK",
+      "target": "tests/main/windowOptions.test.js"
+    },
+    {
+      "id": "FR1.2",
+      "status": "OK",
+      "target": "tests/renderer/AppShell.test.jsx"
+    },
+    {
+      "id": "FR1.3",
+      "status": "OK",
+      "target": "tests/main/settings.test.js"
+    },
+    {
+      "id": "FR1.3",
+      "status": "OK",
+      "target": "tests/main/windowOptions.test.js"
+    },
+    {
+      "id": "FR1.4",
+      "status": "OK",
+      "target": "src/renderer/theme.css"
+    },
+    {
+      "id": "FR2.1",
+      "status": "OK",
+      "target": "tests/main/menu.test.js"
+    },
+    {
+      "id": "FR2.2",
+      "status": "OK",
+      "target": "tests/main/menu.test.js"
+    },
+    {
+      "id": "FR2.3",
+      "status": "OK",
+      "target": "src/main/index.js"
+    },
+    {
+      "id": "FR2.4",
+      "status": "OK",
+      "target": "tests/renderer/AppShell.test.jsx"
+    },
+    {
+      "id": "FR2.5",
+      "status": "OK",
+      "target": "tests/main/menu.test.js"
+    },
+    {
+      "id": "FR2.6",
+      "status": "OK",
+      "target": "tests/renderer/AppShell.test.jsx"
+    },
+    {
+      "id": "NFR1",
+      "status": "OK",
+      "target": "src/main/ipc.js"
+    },
+    {
+      "id": "NFR2",
+      "status": "OK",
+      "target": "tests/renderer/AppShell.test.jsx"
+    },
+    {
+      "id": "NFR3",
+      "status": "OK",
+      "target": "tests/renderer/AppShell.test.jsx"
+    }
+  ]
+}
