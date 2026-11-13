@@ -6,6 +6,7 @@ import AppSettingsDialog from './AppSettingsDialog.jsx';
 import DocsDialog from './DocsDialog.jsx';
 import QuestionPopup from './QuestionPopup.jsx';
 import { Bar, Frame } from './Lcars.jsx';
+import { APP_NAME } from '../shared/appName.js';
 
 const bridge = window.bridge;
 const UI_DEFAULT = { view: 'intents', cost: false, github: false };
@@ -328,10 +329,7 @@ export default function App() {
       <header className="app-header">
         <div className="app-brand">
           <AuctumMark size={46} className="app-mark" />
-          <span className="app-brand-text">
-            <span>Auctum</span>
-            <span className="app-brand-sub">Aidlc control</span>
-          </span>
+          <span className="app-brand-text">{APP_NAME}</span>
         </div>
         <div className="app-header-main">
           <Bar segs={[['slate-4', 3], ['steel-deep', 90], ['slate-3', 1], ['slate-5', 54]]} />

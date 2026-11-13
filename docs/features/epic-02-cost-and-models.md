@@ -8,7 +8,7 @@
 
 **Stories:** US-0201, US-0202, US-0203, US-0204, US-0205, US-0206
 
-**Status (2026-11-13):** 🚧 Built on `feat/epic02-cost-and-models`, not released. CSV export (US-0203) is deferred.
+**Status (2026-11-13):** ✅ US-0201–US-0205 released in v0.2.0. CSV export (US-0203) is deferred. US-0206 📋 Planned.
 
 ---
 
@@ -36,7 +36,7 @@ The key format of `workflows` was confirmed during requirements analysis (see ab
 
 ## User Stories
 
-**US-0201: Cost per intent** 🚧 Built, not released
+**US-0201: Cost per intent** ✅ Released in v0.2.0
 - As a **developer using AI-DLC**, in order to **know what a piece of work cost**, I would like to **see the total cost of each intent in the list and in the detail view**.
 - **Epic:** EPIC-02
 - **Priority:** High
@@ -49,7 +49,7 @@ The key format of `workflows` was confirmed during requirements analysis (see ab
   - [x] The intent list can be sorted by cost (also by date, the default, and by name)
 - **Dependencies:** US-0102, US-0103
 
-**US-0202: Cost breakdown by stage, agent and model** 🚧 Built, not released
+**US-0202: Cost breakdown by stage, agent and model** ✅ Released in v0.2.0
 - As a **developer**, in order to **see where the money goes**, I would like to **a breakdown of an intent's cost by stage, by agent and by model**.
 - **Epic:** EPIC-02
 - **Priority:** High
@@ -62,7 +62,7 @@ The key format of `workflows` was confirmed during requirements analysis (see ab
   - [x] Values come straight from the ledger. The app does not compute prices itself.
 - **Dependencies:** US-0201
 
-**US-0203: Project cost overview** 🚧 Built, not released (CSV export deferred)
+**US-0203: Project cost overview** ✅ Released in v0.2.0 (CSV export deferred)
 - As a **developer**, in order to **follow AI spend for the whole project over time**, I would like to **a project-level cost view**.
 - **Epic:** EPIC-02
 - **Priority:** Medium
@@ -75,7 +75,7 @@ The key format of `workflows` was confirmed during requirements analysis (see ab
   - [ ] Can be exported as CSV, to a location the user picks. This is the only write, and it is outside the AI-DLC files. **Deferred** to a later round (requirements analysis, Q2).
 - **Dependencies:** US-0201
 
-**US-0204: Models per agent: configured and actual** 🚧 Built, not released
+**US-0204: Models per agent: configured and actual** ✅ Released in v0.2.0
 - As a **developer**, in order to **know which model each agent sees**, I would like to **a view of every agent's configured model and effort next to the models it actually ran on**.
 - **Epic:** EPIC-02
 - **Priority:** High
@@ -89,7 +89,7 @@ The key format of `workflows` was confirmed during requirements analysis (see ab
   - [x] The pipeline shows the model next to the agent for each stage, when the ledger has it
 - **Dependencies:** US-0103
 
-**US-0205: Live cost while a workflow runs** 🚧 Built, not released
+**US-0205: Live cost while a workflow runs** ✅ Released in v0.2.0
 - As a **developer**, in order to **keep an eye on spend while agents work**, I would like to **the cost of an in-flight intent to update live**.
 - **Epic:** EPIC-02
 - **Priority:** Medium

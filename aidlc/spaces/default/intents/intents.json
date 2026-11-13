@@ -70,5 +70,13 @@
     "scope": "express",
     "status": "complete",
     "request": "cb4955ea"
+  },
+  {
+    "uuid": "01a1d67c-fe48-7df2-ae9a-b63e01571e0d",
+    "slug": "thadeus-name",
+    "dirName": "261113-thadeus-name",
+    "scope": "express",
+    "status": "complete",
+    "request": "1bc33c06"
   }
 ]

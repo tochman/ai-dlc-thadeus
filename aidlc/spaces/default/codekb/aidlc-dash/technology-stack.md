@@ -1,13 +1,13 @@
 # Teknikstack: aidlc-dash
 
-Versionerna kommer från en tidigare skanning av `package.json`; filen är inte omläst i denna skanning.
+Versionerna är omlästa ur `package.json` i denna skanning (commit `8623af4`).
 
 ## Språk och runtime
 
 | Del | Val | Version |
 |-----|-----|---------|
 | Språk | JavaScript (ESM), JSX; CommonJS i två skript | – |
-| Node | `.nvmrc` | 22 |
+| Node | `.nvmrc` (läses av CI via `node-version-file`) | 22 |
 | Skrivbordsruntime | Electron | ^45.3.1 |
 | Styling | Ren CSS, en global fil (`theme.css`), CSS custom properties; `tokens.js` läser dem i JS | – |
 
@@ -23,9 +23,9 @@ Versionerna kommer från en tidigare skanning av `package.json`; filen är inte 
 | react-markdown | ^10.1.0 | artefakter utan rå HTML |
 | remark-gfm | ^4.0.1 | tabeller, kryssrutor |
 | @tanstack/react-virtual | 3.14.24 (låst) | virtualiserad tidslinje |
-| @fontsource/antonio | ^5.3.0 | rubrik- och etikettfont (400, 700), bundlad lokalt |
+| @fontsource/antonio | ^5.3.0 | rubrik- och etikettfont (400, 700), bundlad lokalt; appnamnet i sidhuvudet och på splashen sätts i den, i versaler |
 
-Inga animations-, ikon-, meny-, notis- eller komponentbibliotek. All rörelse är CSS-keyframes och transitions. Appmenyn (US-0404) byggs med Electrons inbyggda `Menu`. För US-0505 räcker Electrons inbyggda `Notification` (main-processen, `Notification.isSupported()`, `click`-händelse) och `BrowserWindow.isFocused()`/`focus`/`blur`; inget av dem används i dag. Popupen kan byggas med native `<dialog>` som de befintliga dialogerna.
+Inga animations-, ikon-, meny-, notis- eller komponentbibliotek. All rörelse är CSS-keyframes och transitions. Appmenyn och About-panelen byggs med Electrons inbyggda `Menu` och `app.setAboutPanelOptions`; systemnotiserna (US-0505) med Electrons `Notification`. Ett namnbyte (US-0406) kräver inget nytt beroende.
 
 ## Bygg och paketering
 
@@ -34,9 +34,13 @@ Inga animations-, ikon-, meny-, notis- eller komponentbibliotek. All rörelse ä
 | electron-vite | ^6.0.0 | bygger main, preload, renderer till `out/`; `dev` sätter `ELECTRON_RENDERER_URL` |
 | vite | ^8.3.8 | bundlare |
 | @vitejs/plugin-react | ^6.3.0 | JSX |
-| electron-builder | ^26.18.0 | `.dmg` (universal, osignerad, `identity: null`) och `.deb` (x64, `executableName auctum-aidlc-control`) |
+| electron-builder | ^26.18.0 | `.dmg` (universal, osignerad, `identity: null`) och `.deb` (x64, `executableName auctum-aidlc-control`); utdata i `dist/`, inga uttryckliga `artifactName` |
 
-Paketidentitet: `appId se.auctum.aidlc-control`, `productName Auctum AIDLC Control`, `author Auctum Solutions AB`, `homepage https://github.com/tochman/aidlc-dash`. Versionen var `0.1.1` vid förra läsningen; US-0404:s commit anger v0.2.0.
+Paketidentitet: `name aidlc-dash`, `productName Auctum AIDLC Control` (i både `package.json` och `electron-builder.yml`), `version 0.2.0`, `appId se.auctum.aidlc-control`, `author Auctum Solutions AB <info@auctum.se>`, `homepage https://github.com/tochman/aidlc-dash`. Detaljer och vad varje nyckel styr i `component-inventory.md` (Packaging Config).
+
+## CI
+
+GitHub Actions (`.github/workflows/release.yml`): `actions/checkout@v4`, `actions/setup-node@v4` (npm-cache), `actions/upload-artifact@v4`, `actions/download-artifact@v4`, `gh release create`. Runners: ubuntu-latest (verify, release), macos-latest (mac-bygge), ubuntu-22.04 (Linux-bygge, för glibc 2.35).
 
 ## Test
 
@@ -48,10 +52,10 @@ Paketidentitet: `appId se.auctum.aidlc-control`, `productName Auctum AIDLC Contr
 
 ## Typografi och färg
 
-- Rubriker, etiketter, knappar, block: Antonio i versaler (`--font-head`).
-- Brödtext: systemfont (`--font-body`); siffror och kod: `--font-mono`.
-- Palett efter designlyftet: bakgrund `#05060a` (`--bg`, även fönstrets `backgroundColor`), skiffer, stålblå, korall; Auctum-amber för märket och den primära åtgärden. Fullständig tokenlista finns i `theme.css` (ej omläst).
+- Rubriker, etiketter, knappar, block och appnamnet: Antonio i versaler (`--font-head`, med `'Arial Narrow'` som reserv).
+- Brödtext: systemfont (`--font-read`); siffror och kod: `--font-mono`.
+- Palett: bakgrund `#05060a` (`--bg`, även fönstrets `backgroundColor`), skiffer, stålblå, korall, `--alert #ff3b3b` för obesvarade frågor; Auctum-amber `#ff9e40` för märket, sidhuvudets märkesblock och den primära åtgärden. Fullständig tokenlista i `component-inventory.md` (Theme Stylesheet).
 
 ## Plattformar
 
-macOS (universal) och Ubuntu 22.04 eller nyare. Ingen Windows-målplattform. Systemnotiser går via macOS Notification Center respektive Linux libnotify (Electron), så beteendet kan skilja sig mellan plattformarna (t.ex. om klick på notisen stöds).
+macOS (universal) och Ubuntu 22.04 eller nyare. Ingen Windows-målplattform. Systemnotiser går via macOS Notification Center respektive Linux libnotify (Electron). På macOS knyts notisbehörighet, Dock-fästning och Gatekeeper-beslut till appens `appId` och bundle; Linux-paketet identifieras av `.deb`-paketnamnet.

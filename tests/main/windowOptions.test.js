@@ -18,6 +18,7 @@ vi.mock('../../src/main/menu.js', () => ({ applyMenu: () => {} }));
 vi.mock('../../src/main/settings.js', () => ({ getSettings: async () => ({}), setSettings: async () => {} }));
 
 const { windowOptions } = await import('../../src/main/index.js');
+const { APP_NAME } = await import('../../src/shared/appName.js');
 
 describe('windowOptions (US-0404 F-01)', () => {
   it('leaves out fullscreen when nothing is saved, so macOS still allows full screen (FR1.1)', () => {
@@ -38,6 +39,10 @@ describe('windowOptions (US-0404 F-01)', () => {
     const o = windowOptions({ fullscreen: true }, 'darwin');
     expect(o.fullscreen).toBe(true);
     expect(o.fullscreenable).toBe(true);
+  });
+
+  it('takes the window title from the name module (US-0406 FR2.3)', () => {
+    expect(windowOptions({}, 'darwin').title).toBe(APP_NAME);
   });
 
   it('adds the window icon only on Linux', () => {

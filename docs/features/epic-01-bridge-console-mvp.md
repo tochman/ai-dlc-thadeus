@@ -8,7 +8,7 @@
 
 **Stories:** US-0101, US-0102, US-0103, US-0104, US-0105, US-0106, US-0107, US-0108, US-0109, US-0110
 
-**Status (2026-11-13):** 🚧 Byggd, ej releasad. Alla tio stories är byggda med AI-DLC i `express`-scope på grenen `feat/epic01-bridge-console-mvp`. Enhetstesterna är gröna. Kvar är Build and Test: de manuella kontrollerna i Electron (terminal, mappväljare, liveuppdatering, tema) och paketeringen med `npm run build`.
+**Status (2026-11-13):** ✅ Released in v0.1.0. All ten stories were built with AI-DLC in `express` scope; the release pipeline (US-0110) has since shipped v0.1.0, v0.1.1 and v0.2.0.
 
 **Beslut från kravanalysen:** React med vanlig JavaScript och electron-vite (Q1). Både en `claude`-flik och en skalflik i terminalen (Q2). Flera projekt som flikar i samma fönster (Q3). Osignerat lokalt macOS-bygge (Q4).
 
@@ -36,7 +36,7 @@ Reference project with real data: `~/Projects/visinv` (20+ intents, `261110-epic
 
 ## User Stories
 
-**US-0101: Open AI-DLC projects as tabs** 🚧 Byggd, ej releasad
+**US-0101: Open AI-DLC projects as tabs** ✅ Released in v0.1.0
 - As a **developer using AI-DLC**, in order to **look at any of my projects**, I would like to **pick project folders, have the app find their AI-DLC workspaces and keep each project in its own tab**.
 - **Epic:** EPIC-01
 - **Priority:** High
@@ -50,7 +50,7 @@ Reference project with real data: `~/Projects/visinv` (20+ intents, `261110-epic
   - [x] Remembers recently opened projects and reopens the same tabs on start
 - **Dependencies:** None
 
-**US-0102: Intent list** 🚧 Byggd, ej releasad
+**US-0102: Intent list** ✅ Released in v0.1.0
 - As a **developer**, in order to **see all work at a glance**, I would like to **a list of all intents with scope, status and progress**.
 - **Epic:** EPIC-01
 - **Priority:** High
@@ -63,7 +63,7 @@ Reference project with real data: `~/Projects/visinv` (20+ intents, `261110-epic
   - [x] Intents present on disk but missing in `intents.json` (or vice versa) are shown, not hidden
 - **Dependencies:** US-0101
 
-**US-0103: Intent detail — phase & stage pipeline** 🚧 Byggd, ej releasad
+**US-0103: Intent detail — phase & stage pipeline** ✅ Released in v0.1.0
 - As a **developer**, in order to **understand where a workflow is right now**, I would like to **see the phases and stages of an intent as a pipeline**.
 - **Epic:** EPIC-01
 - **Priority:** High
@@ -76,7 +76,7 @@ Reference project with real data: `~/Projects/visinv` (20+ intents, `261110-epic
   - [x] Works when `runtime-graph.json` is missing (e.g. a fresh clone, since it is git-ignored)
 - **Dependencies:** US-0102
 
-**US-0104: Audit timeline** 🚧 Byggd, ej releasad
+**US-0104: Audit timeline** ✅ Released in v0.1.0
 - As a **developer**, in order to **follow what the agents actually did**, I would like to **a chronological timeline of audit events**.
 - **Epic:** EPIC-01
 - **Priority:** High
@@ -90,7 +90,7 @@ Reference project with real data: `~/Projects/visinv` (20+ intents, `261110-epic
   - [x] Parser tolerates unknown event types and fields
 - **Dependencies:** US-0102
 
-**US-0105: Bolt / unit DAG** 🚧 Byggd, ej releasad
+**US-0105: Bolt / unit DAG** ✅ Released in v0.1.0
 - As a **developer**, in order to **see how construction work is split up**, I would like to **a graph of units, their dependencies and batches**.
 - **Epic:** EPIC-01
 - **Priority:** Medium
@@ -101,7 +101,7 @@ Reference project with real data: `~/Projects/visinv` (20+ intents, `261110-epic
   - [x] Hidden (with a short note) when the intent has no `bolt_dag`
 - **Dependencies:** US-0103, US-0104
 
-**US-0106: Artifact reader** 🚧 Byggd, ej releasad
+**US-0106: Artifact reader** ✅ Released in v0.1.0
 - As a **developer**, in order to **read what a stage produced without hunting for files**, I would like to **open stage artifacts inside the app**.
 - **Epic:** EPIC-01
 - **Priority:** High
@@ -113,7 +113,7 @@ Reference project with real data: `~/Projects/visinv` (20+ intents, `261110-epic
   - [x] Rendered markdown is sanitised (no script execution from artifact content)
 - **Dependencies:** US-0103
 
-**US-0107: Live updates** 🚧 Byggd, ej releasad
+**US-0107: Live updates** ✅ Released in v0.1.0
 - As a **developer**, in order to **watch agents work in real time**, I would like to **the views to update automatically when AI-DLC writes files**.
 - **Epic:** EPIC-01
 - **Priority:** High
@@ -125,7 +125,7 @@ Reference project with real data: `~/Projects/visinv` (20+ intents, `261110-epic
   - [x] Half-written files (invalid JSON mid-write) do not crash the UI; the last good state stays visible
 - **Dependencies:** US-0102, US-0103, US-0104
 
-**US-0108: Embedded Claude and shell terminal** 🚧 Byggd, ej releasad
+**US-0108: Embedded Claude and shell terminal** ✅ Released in v0.1.0
 - As a **developer**, in order to **give Claude commands and answer AI-DLC gate questions from the console**, I would like to **a terminal panel inside each project tab with one tab running `claude` and one with my login shell, both in the project folder**.
 - **Epic:** EPIC-01
 - **Priority:** High
@@ -140,7 +140,7 @@ Reference project with real data: `~/Projects/visinv` (20+ intents, `261110-epic
   - [x] Closing a project tab ends its terminal processes
 - **Dependencies:** US-0101
 
-**US-0109: Bridge UI theme** 🚧 Byggd, ej releasad
+**US-0109: Bridge UI theme** ✅ Released in v0.1.0
 - As a **nerdy developer**, in order to **enjoy using the tool**, I would like to **a restrained LCARS-inspired sci-fi look**.
 - **Epic:** EPIC-01
 - **Priority:** Medium
@@ -154,7 +154,7 @@ Reference project with real data: `~/Projects/visinv` (20+ intents, `261110-epic
   - [x] Auctum-profilering: appen heter "Auctum AIDLC Control" (fönstertitel, sidhuvud, `productName`, `appId: se.auctum.aidlc-control`). Den geometriska Auctum-loggan visas på en startskärm medan flikarna återställs (minst 900 ms, högst 4 s, utan animation vid `prefers-reduced-motion`), i sidhuvudet och i tomläget. Loggan har det tillgängliga namnet "Auctum".
 - **Dependencies:** None
 
-**US-0110: Security & packaging baseline** 🚧 Byggd, ej releasad
+**US-0110: Security & packaging baseline** ✅ Released in v0.1.0
 - As a **developer**, in order to **trust the app with my project files**, I would like to **a secure Electron setup that I can run and build locally**.
 - **Epic:** EPIC-01
 - **Priority:** High
@@ -164,5 +164,5 @@ Reference project with real data: `~/Projects/visinv` (20+ intents, `261110-epic
   - [x] All AI-DLC file access is read-only and limited to the opened project root
   - [x] `npm run dev` starts the app with hot reload; `npm run build` produces an unsigned macOS app (.app/.dmg). Verifierat i Build and Test 2026-11-13.
   - [x] Parsers (intents, state, audit, runtime graph) have unit tests against fixtures copied from a real AI-DLC project
-  - [ ] Release pipeline (beslut 2026-11-13): when a `vX.Y.Z` tag is pushed, `.github/workflows/release.yml` builds an unsigned universal macOS `.dmg` and a Linux `.deb` (x64) and publishes them to a GitHub Release in the private repo. Linux is a new target, so NFR5 now covers macOS and Linux. Konfigurationen finns. Den första releasen verifieras i Deployment Execution.
+  - [x] Release pipeline (beslut 2026-11-13): when a `vX.Y.Z` tag is pushed, `.github/workflows/release.yml` builds an unsigned universal macOS `.dmg` and a Linux `.deb` (x64) and publishes them to a GitHub Release in the private repo. Linux is a new target, so NFR5 now covers macOS and Linux. Konfigurationen finns. Den första releasen verifieras i Deployment Execution.
 - **Dependencies:** None
