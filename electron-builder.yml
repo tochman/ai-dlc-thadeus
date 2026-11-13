@@ -1,0 +1,28 @@
+appId: se.auctum.aidlc-control
+productName: Auctum AIDLC Control
+directories:
+  output: dist
+  buildResources: build
+files:
+  - out/**
+  - package.json
+# node-pty loads a native binary and spawn-helper; they cannot run from inside the asar archive.
+asarUnpack:
+  - node_modules/node-pty/**
+# Releases are uploaded by .github/workflows/release.yml with `gh release`, not by electron-builder.
+publish: null
+mac:
+  target:
+    - target: dmg
+      arch: universal
+  category: public.app-category.developer-tools
+  # Unsigned internal build: no signing identity, no notarisation.
+  identity: null
+linux:
+  target:
+    - target: deb
+      arch: x64
+  category: Development
+  executableName: auctum-aidlc-control
+  maintainer: Auctum Solutions AB <info@auctum.se>
+  synopsis: Read-only AI-DLC console with an embedded Claude terminal

@@ -1,0 +1,42 @@
+{
+  "name": "aidlc-dash",
+  "productName": "Auctum AIDLC Control",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Bridge console for AI-DLC projects: read-only visualisation and an embedded Claude terminal",
+  "author": {
+    "name": "Auctum Solutions AB",
+    "email": "info@auctum.se"
+  },
+  "homepage": "https://github.com/tochman/aidlc-dash",
+  "main": "out/main/index.js",
+  "scripts": {
+    "dev": "electron-vite dev",
+    "build": "electron-vite build && electron-builder --mac",
+    "test": "vitest run tests/",
+    "postinstall": "electron-builder install-app-deps",
+    "build:mac": "electron-vite build && electron-builder --mac",
+    "build:linux": "electron-vite build && electron-builder --linux"
+  },
+  "dependencies": {
+    "@fontsource/antonio": "^5.3.0",
+    "@xterm/addon-fit": "^0.11.0",
+    "@xterm/xterm": "^6.0.0",
+    "chokidar": "^4.0.3",
+    "node-pty": "^1.1.0",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
+    "react-markdown": "^10.1.0",
+    "remark-gfm": "^4.0.1"
+  },
+  "devDependencies": {
+    "@testing-library/react": "^16.3.3",
+    "@vitejs/plugin-react": "^6.3.0",
+    "electron": "^45.3.1",
+    "electron-builder": "^26.18.0",
+    "electron-vite": "^6.0.0",
+    "jsdom": "^29.1.1",
+    "vite": "^8.3.8",
+    "vitest": "^5.1.0"
+  }
+}

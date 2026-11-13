@@ -1,0 +1,63 @@
+{
+  "workflow_id": "2026-11-12T20:51:25Z",
+  "scope": "express",
+  "started_at": "2026-11-12T20:51:25Z",
+  "stages": [
+    {
+      "stage_slug": "workspace-scaffold",
+      "started_at": "2026-11-12T20:51:25Z",
+      "completed_at": "2026-11-12T20:51:25Z",
+      "agent": "orchestrator",
+      "sensor_firings": [],
+      "outcome": "approved"
+    },
+    {
+      "stage_slug": "workspace-detection",
+      "started_at": "2026-11-12T20:51:25Z",
+      "completed_at": "2026-11-12T20:51:25Z",
+      "agent": "orchestrator",
+      "sensor_firings": [],
+      "outcome": "approved"
+    },
+    {
+      "stage_slug": "state-init",
+      "started_at": "2026-11-12T20:51:25Z",
+      "completed_at": "2026-11-12T20:51:25Z",
+      "agent": "orchestrator",
+      "sensor_firings": [],
+      "outcome": "approved"
+    },
+    {
+      "stage_slug": "reverse-engineering",
+      "started_at": "2026-11-12T20:51:25Z",
+      "completed_at": "2026-11-12T21:14:14Z",
+      "agent": "aidlc-developer-agent",
+      "sensor_firings": [],
+      "outcome": "approved"
+    },
+    {
+      "stage_slug": "requirements-analysis",
+      "started_at": "2026-11-12T21:14:14Z",
+      "completed_at": "2026-11-12T21:18:02Z",
+      "agent": "aidlc-product-agent",
+      "sensor_firings": [],
+      "outcome": "approved"
+    },
+    {
+      "stage_slug": "code-generation",
+      "started_at": "2026-11-12T21:18:04Z",
+      "completed_at": "2026-11-12T21:51:16Z",
+      "agent": "aidlc-developer-agent",
+      "sensor_firings": [],
+      "outcome": "approved"
+    },
+    {
+      "stage_slug": "build-and-test",
+      "started_at": "2026-11-12T21:51:16Z",
+      "completed_at": null,
+      "agent": "aidlc-quality-agent",
+      "sensor_firings": [],
+      "outcome": "pending"
+    }
+  ]
+}
