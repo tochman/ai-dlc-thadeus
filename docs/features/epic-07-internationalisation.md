@@ -8,13 +8,13 @@
 
 **Stories:** US-0701, US-0702
 
-**Status (2026-11-14):** ✅ US-0701 done, merged to main (not released yet). US-0702 📋 Planned.
+**Status (2026-11-14):** ✅ US-0701 released in v0.2.1. US-0702 📋 Planned.
 
 ---
 
 ## User Stories
 
-**US-0701: i18n foundation and English** ✅ Done, merged to main (not released yet)
+**US-0701: i18n foundation and English** ✅ Released in v0.2.1
 - As a **developer who does not read Swedish**, in order to **use the console in a language I understand**, I would like to **all interface text to come from translation files, with English and Swedish shipped**.
 - **Epic:** EPIC-07
 - **Priority:** Medium
