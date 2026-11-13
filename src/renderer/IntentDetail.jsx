@@ -15,7 +15,7 @@ const TABS = [
   { id: 'files', label: 'Filer' }
 ];
 
-export default function IntentDetail({ projectId, detail, intent, activeDirName, newKeys, cost, models }) {
+export default function IntentDetail({ projectId, detail, intent, activeDirName, newKeys, cost, models, stories = [], onOpenStory }) {
   const [tab, setTab] = useState('pipeline');
   const [openFile, setOpenFile] = useState(null);
   const { state, pipeline } = detail;
@@ -78,6 +78,17 @@ export default function IntentDetail({ projectId, detail, intent, activeDirName,
           )}
         </dl>
         {detail.request && <p className="request-text">{detail.request}</p>}
+        {/* Stories in the feature docs that this intent mentions (EPIC-06 FR2.6). */}
+        {onOpenStory && stories.length > 0 && (
+          <p className="features-links">
+            <span className="field-label">Storys</span>
+            {stories.map((id) => (
+              <button key={id} className="btn btn-quiet" onClick={() => onOpenStory(id)} data-testid="intent-detail-story-link">
+                {id}
+              </button>
+            ))}
+          </p>
+        )}
         {detail.warnings.map((w) => (
           <p key={w} className="banner banner-warn" role="status">
             {w}

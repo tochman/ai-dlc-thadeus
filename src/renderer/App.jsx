@@ -14,6 +14,7 @@ export default function App() {
   const [activeId, setActiveId] = useState(null);
   const [error, setError] = useState(null);
   const [restored, setRestored] = useState(false);
+  const [settingsFor, setSettingsFor] = useState(null); // projectId whose "Projektinställningar" is open (EPIC-06 FR3.1)
   const recentRef = useRef([]);
 
   const openPath = useCallback(async (dir) => {
@@ -117,6 +118,18 @@ export default function App() {
                 {t.name}
               </button>
               <button
+                className="project-tab-settings"
+                aria-label="Projektinställningar"
+                title={`Projektinställningar för ${t.name}`}
+                onClick={() => {
+                  setActiveId(t.projectId);
+                  setSettingsFor(t.projectId);
+                }}
+                data-testid="project-settings-open"
+              >
+                ⚙
+              </button>
+              <button
                 className="project-tab-close"
                 aria-label={`Stäng ${t.name}`}
                 onClick={() => closeTab(t.projectId)}
@@ -155,7 +168,12 @@ export default function App() {
         {/* Every tab stays mounted so its terminals and watchers survive tab switches (FR8.4). */}
         {tabs.map((t) => (
           <div key={t.projectId} className="project-pane" hidden={t.projectId !== activeId}>
-            <ProjectView project={t} visible={t.projectId === activeId} />
+            <ProjectView
+              project={t}
+              visible={t.projectId === activeId}
+              settingsOpen={settingsFor === t.projectId}
+              onCloseSettings={() => setSettingsFor(null)}
+            />
           </div>
         ))}
       </main>

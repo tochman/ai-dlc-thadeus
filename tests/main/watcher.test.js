@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
-import { watchForAidlc, watchIntents } from '../../src/main/watcher.js';
+import { watchFiles, watchForAidlc, watchIntents } from '../../src/main/watcher.js';
 
 const SOURCE = path.resolve(__dirname, '../fixtures/project/aidlc/spaces/default/intents/261110-epic02-finish');
 const TMP = path.resolve(__dirname, '../.tmp/watcher');
@@ -73,6 +73,28 @@ describe('watchIntents', () => {
     await fs.writeFile(ledgerFile, '{"schemaVersion":3,"totals":{}}');
     await wait(600);
     expect(calls).toEqual([{ dirNames: [], indexChanged: false, costChanged: true }]);
+  });
+});
+
+describe('watchFiles', () => {
+  it('reports .md changes in the watched file and folder, also when the folder appears later (EPIC-06 FR2.7)', async () => {
+    const root = path.join(TMP, 'docs-project');
+    await fs.mkdir(path.join(root, 'src'), { recursive: true });
+    await wait(300); // same FSEvents settling as above
+    let changes = 0;
+    watcher = watchFiles({ root, paths: ['docs/FEATURES.md', 'docs/features'], onChange: () => changes++, debounceMs: 150 });
+    await watcher.ready;
+
+    await fs.writeFile(path.join(root, 'src', 'x.md'), 'ignored');
+    await wait(400);
+    expect(changes).toBe(0);
+
+    await fs.mkdir(path.join(root, 'docs', 'features'), { recursive: true });
+    await fs.writeFile(path.join(root, 'docs', 'FEATURES.md'), '# F');
+    await fs.writeFile(path.join(root, 'docs', 'features', 'epic-01-a.md'), '# EPIC-01: A');
+    await fs.writeFile(path.join(root, 'docs', 'features', 'notes.txt'), 'ignored');
+    await wait(900);
+    expect(changes).toBe(1);
   });
 });
 

@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { buildSetupCommand, parsePreview } from '../../src/main/setup.js';
+import { featureDocsPrompt } from '../../src/renderer/featureDocsPrompt.js';
 
 const terminal = { state: vi.fn(() => 'idle'), exitCode: vi.fn(() => null), type: vi.fn(async () => true) };
 vi.mock('../../src/renderer/TerminalContext.jsx', () => ({ useTerminal: () => terminal }));
@@ -48,6 +49,34 @@ describe('SetupAidlc', () => {
     await waitFor(() =>
       expect(terminal.type).toHaveBeenCalledWith('shell', 'git init -b main && aidlc --project-dir . config --harness claude --yes', { submit: false })
     );
+  });
+
+  it('offers feature docs, reports the choice upwards, and builds the matching one-line request (EPIC-06 FR4.1–FR4.4)', async () => {
+    stubBridge(readyInfo);
+    const onFeatureDocsChange = vi.fn();
+    render(<SetupAidlc project={project} featureDocs={false} onFeatureDocsChange={onFeatureDocsChange} />);
+    fireEvent.click(screen.getByTestId('setup-aidlc-start'));
+    const choice = await screen.findByTestId('setup-aidlc-feature-docs');
+    expect(choice.checked).toBe(false);
+    expect(choice.closest('.setup-feature-docs').textContent).toMatch(/separata feature-beskrivningar \(FEATURES\.md \+ en fil per epic\).*docs\/features\/epic-01/);
+    fireEvent.click(choice);
+    expect(onFeatureDocsChange).toHaveBeenCalledWith(true);
+    cleanup();
+
+    render(<SetupAidlc project={project} featureDocs onFeatureDocsChange={onFeatureDocsChange} featureDocsExist />);
+    fireEvent.click(screen.getByTestId('setup-aidlc-start'));
+    expect((await screen.findByTestId('setup-aidlc-feature-docs')).checked).toBe(true);
+    expect(screen.getByText(/^Feature-beskrivningar finns redan\./)).toBeTruthy();
+
+    const create = featureDocsPrompt({ exists: false });
+    const ruleOnly = featureDocsPrompt({ exists: true, path: 'FEATURES.md' });
+    for (const text of [create, ruleOnly]) {
+      expect(text).not.toMatch(/[\r\n]/);
+      expect(text).toMatch(/projektregel genom AI-DLC:s eget sätt att spara regler.*storys i rätt epic-fil.*byggs och släpps/);
+    }
+    expect(create).toMatch(/^Skapa feature-beskrivningar.*docs\/FEATURES\.md.*docs\/features\/epic-XX-<slug>\.md.*Given\/When\/Then.*📋.*🚧.*✅/);
+    expect(ruleOnly).toMatch(/^Projektet har redan feature-beskrivningar i FEATURES\.md/);
+    expect(ruleOnly).not.toMatch(/Skapa/);
   });
 
   it('disables Initiera on conflicts, and stops with the install link when aidlc is missing (FR4.2, FR4.3)', async () => {

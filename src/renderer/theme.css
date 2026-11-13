@@ -347,6 +347,26 @@ input[type='search'], select {
 .setup-actions { display: flex; gap: 0.5rem; }
 .setup-done { display: flex; flex-wrap: wrap; gap: 0.6rem; align-items: center; border-left: 8px solid var(--green); }
 
+/* Feature docs (EPIC-06) */
+.project-tab-settings { border-left: 1px solid var(--line) !important; }
+.project-mode { display: contents; }
+.view-switch { display: flex; gap: 0.3rem; flex-shrink: 0; }
+.features-view { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+.features-view > .project-body { flex: 1; min-height: 0; }
+.features-intro { margin-top: 0; font-size: 0.85rem; }
+.features-epic { display: flex; flex-direction: column; gap: 8px; }
+.features-epic header h2 { margin: 0 0 0.4rem; }
+.features-epic .filters .field { margin-bottom: 0; }
+.features-empty { display: flex; flex-direction: column; gap: 0.6rem; align-items: flex-start; max-width: 680px; }
+.features-empty h2, .features-empty p { margin: 0; }
+.features-links { display: flex; flex-wrap: wrap; gap: 0.4rem; align-items: center; margin: 0.4rem 0 0; }
+.settings-dialog { color: var(--text); border: 1px solid var(--line); min-width: min(520px, 90vw); }
+.settings-dialog::backdrop { background: rgba(0, 0, 0, 0.6); }
+.settings-dialog h2 { margin-top: 0; }
+.settings-group { border: 1px solid var(--line); border-radius: 8px; margin: 0 0 0.8rem; display: flex; flex-direction: column; gap: 0.3rem; }
+.settings-group legend { font-family: var(--font-head); text-transform: uppercase; color: var(--lavender); }
+.settings-setup { display: flex; flex-wrap: wrap; gap: 0.6rem; align-items: center; }
+
 @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.45; } }
 @keyframes flash { from { background: #3a2f12; } to { background: var(--panel); } }
 

@@ -108,8 +108,29 @@ function MissingTool() {
   );
 }
 
-/** @param {{project: {projectId: string, root: string, detection: {reason: string}}}} props */
-export default function SetupAidlc({ project }) {
+/** Offer separate feature docs (EPIC-06 FR4.1, FR4.2). Nothing is created here; SetupDone offers the request afterwards. */
+function FeatureDocsChoice({ checked, onChange, exist }) {
+  return (
+    <div className="setup-feature-docs">
+      <label className="check">
+        <input type="checkbox" checked={checked} onChange={(e) => onChange(e.target.checked)} data-testid="setup-aidlc-feature-docs" />
+        Använd separata feature-beskrivningar (FEATURES.md + en fil per epic)
+      </label>
+      <p className="muted">
+        {exist
+          ? 'Feature-beskrivningar finns redan. Valet lägger bara till en projektregel om att hålla dem uppdaterade.'
+          : 'En översikt med epics i docs/FEATURES.md och en fil per epic med user stories, till exempel docs/features/epic-01-inloggning.md. Claude skapar dem efter uppsättningen, när du har bekräftat.'}
+      </p>
+    </div>
+  );
+}
+
+/**
+ * @param {{project: {projectId: string, root: string, detection: {reason: string}},
+ *          featureDocs?: boolean, onFeatureDocsChange?: (on: boolean) => void, featureDocsExist?: boolean}} props
+ *   featureDocs is held by ProjectContent so the choice survives the switch to the project view (FR4.3)
+ */
+export default function SetupAidlc({ project, featureDocs = false, onFeatureDocsChange, featureDocsExist = false }) {
   const terminal = useTerminal();
   const [info, setInfo] = useState(null);
   const [error, setError] = useState(null);
@@ -171,6 +192,7 @@ export default function SetupAidlc({ project }) {
               <Preview preview={info.preview} />
               {info.warning && <p className="muted">{info.warning}</p>}
               <Advanced plugins={info.plugins} presets={info.presets} chosen={chosen} setChosen={setChosen} preset={preset} setPreset={setPreset} />
+              {onFeatureDocsChange && <FeatureDocsChoice checked={featureDocs} onChange={onFeatureDocsChange} exist={featureDocsExist} />}
             </>
           ) : (
             <MissingTool />
