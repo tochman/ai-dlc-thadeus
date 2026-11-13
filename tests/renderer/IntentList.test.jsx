@@ -42,4 +42,41 @@ describe('IntentList', () => {
     fireEvent.click(screen.getAllByTestId('intent-list-row')[2]);
     expect(onSelect).toHaveBeenCalledWith('261110-epic02-finish');
   });
+
+  // perIntent shape from summarizeLedger: null means the ledger has no entry for that intent.
+  const costEntry = (usd) => ({
+    total: { usd, tokens: { input: 1, output: 1, cacheWrite: 0, cacheRead: 0 }, totalTokens: 2, missingPrice: false },
+    complete: true
+  });
+  const cost = {
+    available: true,
+    perIntent: {
+      '261112-epic29-small-k2-fixes': costEntry(5),
+      '261111-orphan-notes': null,
+      '261110-epic02-finish': costEntry(4)
+    }
+  };
+
+  it('sorts by cost with intents without an entry last, and by name (FR1.6)', () => {
+    render(<IntentList intents={intents} selected={null} onSelect={vi.fn()} cost={cost} />);
+    fireEvent.change(screen.getByTestId('intent-list-sort'), { target: { value: 'cost' } });
+    expect(rowSlugs()).toEqual(['epic29-small-k2-fixes', 'epic02-finish', 'orphan-notes']);
+
+    fireEvent.change(screen.getByTestId('intent-list-sort'), { target: { value: 'name' } });
+    expect(rowSlugs()).toEqual(['epic02-finish', 'epic29-small-k2-fixes', 'orphan-notes']);
+
+    fireEvent.change(screen.getByTestId('intent-list-sort'), { target: { value: 'date' } });
+    expect(rowSlugs()).toEqual(['epic29-small-k2-fixes', 'orphan-notes', 'epic02-finish']);
+  });
+
+  it('shows the cost in USD, "–" with an explanation when there is no entry, and nothing without a ledger (FR1.2, FR1.4, FR1.5)', () => {
+    const { rerender } = render(<IntentList intents={intents} selected={null} onSelect={vi.fn()} cost={cost} />);
+    const cells = screen.getAllByTestId('intent-list-row-cost');
+    expect(cells.map((c) => c.textContent)).toEqual(['$5.00', '–', '$4.00']);
+    expect(cells[1].title).toMatch(/Ingen post i usage-ledger.json/);
+    expect(cells[0].title).toBe('Uppskattad kostnad (API-pris)');
+
+    rerender(<IntentList intents={intents} selected={null} onSelect={vi.fn()} cost={{ available: false, reason: 'saknas' }} />);
+    expect(screen.queryAllByTestId('intent-list-row-cost')).toEqual([]);
+  });
 });

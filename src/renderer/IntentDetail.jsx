@@ -3,19 +3,22 @@ import Pipeline from './Pipeline.jsx';
 import Timeline from './Timeline.jsx';
 import BoltDag from './BoltDag.jsx';
 import ArtifactReader from './ArtifactReader.jsx';
+import CostTab from './CostTab.jsx';
 import { isInFlight } from './format.js';
 
 const TABS = [
   { id: 'pipeline', label: 'Pipeline' },
   { id: 'timeline', label: 'Tidslinje' },
   { id: 'units', label: 'Units' },
+  { id: 'cost', label: 'Kostnad' },
   { id: 'files', label: 'Filer' }
 ];
 
-export default function IntentDetail({ projectId, detail, intent, newSeqFrom }) {
+export default function IntentDetail({ projectId, detail, intent, newSeqFrom, cost, models }) {
   const [tab, setTab] = useState('pipeline');
   const [openFile, setOpenFile] = useState(null);
   const { state, pipeline } = detail;
+  const intentCost = cost?.available ? cost.perIntent[detail.dirName] ?? null : null;
 
   function showFile(rel) {
     setOpenFile(rel);
@@ -90,7 +93,10 @@ export default function IntentDetail({ projectId, detail, intent, newSeqFrom }) 
       </div>
 
       <div className="detail-body" role="tabpanel">
-        {tab === 'pipeline' && <Pipeline pipeline={pipeline} files={detail.files} hasGraph={!!detail.graph} onOpenFile={showFile} />}
+        {tab === 'pipeline' && (
+          <Pipeline pipeline={pipeline} files={detail.files} hasGraph={!!detail.graph} onOpenFile={showFile} cost={intentCost} />
+        )}
+        {tab === 'cost' && <CostTab cost={cost} intentCost={intentCost} pipeline={pipeline} models={models} />}
         {tab === 'timeline' && <Timeline events={detail.events} newSeqFrom={newSeqFrom} />}
         {tab === 'units' && <BoltDag dag={detail.graph?.boltDag ?? null} statuses={detail.units} />}
         {tab === 'files' && (

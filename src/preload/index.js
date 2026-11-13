@@ -19,6 +19,8 @@ contextBridge.exposeInMainWorld('bridge', {
   getSpaces: call('project:spaces'),
   getIntents: call('project:intents'),
   getIntent: call('project:intent'),
+  getCost: call('project:cost'),
+  getModels: call('project:models'),
   readFile: call('project:file'),
   revealInFinder: call('shell:reveal'),
   openInEditor: call('shell:openInEditor'),

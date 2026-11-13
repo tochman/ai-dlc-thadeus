@@ -1,7 +1,22 @@
 import { useMemo, useState } from 'react';
-import { isInFlight } from './format.js';
+import { COST_LABEL, NO_COST_ENTRY, formatCost, isInFlight } from './format.js';
 
 const ALL = '';
+const SORTS = [
+  { id: 'date', label: 'Datum' },
+  { id: 'cost', label: 'Kostnad' },
+  { id: 'name', label: 'Namn' }
+];
+
+const usdOf = (costs, i) => costs?.[i.dirName]?.total.usd ?? null;
+
+/** Date (newest first, the order intents arrive in), cost (highest first, no entry last) or name (FR1.6). */
+export function sortIntents(intents, sort, costs) {
+  const list = [...intents];
+  if (sort === 'name') return list.sort((a, b) => a.slug.localeCompare(b.slug));
+  if (sort === 'cost') return list.sort((a, b) => (usdOf(costs, b) ?? -1) - (usdOf(costs, a) ?? -1));
+  return list;
+}
 
 export function filterIntents(intents, { status, scope, query }) {
   const q = query.trim().toLowerCase();
@@ -13,15 +28,28 @@ export function filterIntents(intents, { status, scope, query }) {
   );
 }
 
+/** Running cost next to the live dot; "–" with an explanation when the ledger has no entry (FR1.2, FR1.4, FR5.2). */
+function RowCost({ c }) {
+  const title = !c ? NO_COST_ENTRY : c.complete ? COST_LABEL : `${COST_LABEL} – ofullständig: pris saknas för någon modell`;
+  return (
+    <span className="intent-cost" title={title} data-testid="intent-list-row-cost">
+      {c ? `${formatCost(c.total)}${c.complete ? '' : '*'}` : '–'}
+    </span>
+  );
+}
+
 const unique = (values) => [...new Set(values.filter(Boolean))].sort();
 
-export default function IntentList({ intents, selected, onSelect }) {
+/** @param {{cost?: {available: boolean, perIntent?: object}|null}} props cost hidden entirely when unavailable (FR1.5) */
+export default function IntentList({ intents, selected, onSelect, cost }) {
   const [status, setStatus] = useState(ALL);
   const [scope, setScope] = useState(ALL);
   const [query, setQuery] = useState('');
+  const [sort, setSort] = useState('date');
   const statuses = useMemo(() => unique(intents.map((i) => i.status)), [intents]);
   const scopes = useMemo(() => unique(intents.map((i) => i.scope)), [intents]);
-  const visible = filterIntents(intents, { status, scope, query });
+  const costs = cost?.available ? cost.perIntent : null;
+  const visible = sortIntents(filterIntents(intents, { status, scope, query }), sort, costs);
 
   return (
     <div className="intent-list" data-testid="intent-list">
@@ -51,6 +79,13 @@ export default function IntentList({ intents, selected, onSelect }) {
             </option>
           ))}
         </select>
+        <select aria-label="Sortering" value={sort} onChange={(e) => setSort(e.target.value)} data-testid="intent-list-sort">
+          {SORTS.map((s) => (
+            <option key={s.id} value={s.id}>
+              Sortera: {s.label}
+            </option>
+          ))}
+        </select>
       </div>
 
       <ul className="intent-rows" role="listbox" aria-label="Intents">
@@ -68,6 +103,7 @@ export default function IntentList({ intents, selected, onSelect }) {
                 <span className="intent-slug">{i.slug}</span>
                 {i.active && <span className="tag tag-active">Aktiv</span>}
                 {isInFlight(i.status) && <span className="live-dot" aria-label="Live" title="Pågår" />}
+                {costs && <RowCost c={costs[i.dirName]} />}
               </span>
               <span className="intent-row-meta">
                 <span className="status-text" data-testid="intent-list-row-status">
