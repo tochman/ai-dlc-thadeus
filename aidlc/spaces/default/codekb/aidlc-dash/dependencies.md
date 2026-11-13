@@ -1,99 +1,93 @@
-# Beroenden: aidlc-dash
+# Dependencies: aidlc-dash
 
-## Externa paket
+## External packages
 
-Versioner finns i `technology-stack.md`. Här listas vem som använder vad.
+Versions are in `technology-stack.md`. This lists who uses what.
 
-| Paket | Används i | Anmärkning |
-|-------|-----------|------------|
-| electron | `src/main/*`, `src/preload/index.js`, `scripts/make-icon.cjs` | `index.js` använder `app, BrowserWindow, shell` (userData, fönster, titel); `menu.js` `app, BrowserWindow, Menu, shell` (meny, About-panel); `ipc.js` `BrowserWindow, dialog, ipcMain, shell`; `notify.js` `Notification` (US-0505); preload `contextBridge, ipcRenderer`; `settings.js` `app` |
-| electron-builder | `package.json`-skript, `electron-builder.yml` | läser `appId`, `productName`, `executableName` och `name`/`version` för bundle, installationsfiler och artefaktnamn |
-| node-pty | `src/main/pty.js` (dynamisk import) | native; `fix-pty-perms.cjs` sätter körbit på `spawn-helper`; `check-glibc.mjs` kontrollerar Linux-paketet |
-| chokidar | `src/main/watcher.js` | v4 missar mappar som saknas vid start; därför bevakas föräldramappar |
-| react, react-dom | alla `src/renderer/*.jsx` | – |
-| @xterm/xterm, @xterm/addon-fit | `TerminalPanel.jsx` | tema via `tokens.js` (`xtermTheme()`) |
-| react-markdown, remark-gfm | `ArtifactReader.jsx` (`FileContent`) | återanvänds av RefreshPanel, FeaturesView och DocsDialog |
-| @tanstack/react-virtual | `Timeline.jsx` | styr radplacering med inline `transform` |
-| @fontsource/antonio | `main.jsx` | rubrikfonten, även för appnamnet |
+| Package | Used in | Note |
+|---------|---------|------|
+| electron | `src/main/*`, `src/preload/index.js` | `index.js` `app, BrowserWindow, shell`; `ipc.js` `BrowserWindow, dialog, ipcMain, shell`; `menu.js` `app, BrowserWindow, Menu, shell`; `notify.js` `Notification`; `settings.js` and `main/i18n.js` `app` (`getPath`, `getLocale`); preload `contextBridge, ipcRenderer` |
+| i18next, i18next-icu | `src/shared/i18n.js` | one instance per process bundle |
+| react-i18next | renderer components (`useTranslation`), `main.jsx` (`I18nextProvider`), `tests/renderer/setup-i18n.js` (`setI18n`) | – |
+| intl-messageformat | `tests/main/i18nKeys.test.js` | placeholder comparison |
+| node-pty | `src/main/pty.js` (dynamic import on first spawn) | native; `fix-pty-perms.cjs` sets the exec bit on `spawn-helper` |
+| chokidar | `src/main/watcher.js` | – |
+| react, react-dom | all `src/renderer/*.jsx` | – |
+| @xterm/xterm, @xterm/addon-fit | `TerminalPanel.jsx` | theme through `tokens.js` |
+| react-markdown, remark-gfm | `ArtifactReader.jsx` (`FileContent`) | reused by RefreshPanel, FeaturesView, DocsDialog |
+| @tanstack/react-virtual | `Timeline.jsx` | – |
+| @fontsource/antonio | `main.jsx` | – |
 
-## Externa program (körs av main)
+## External programs (run by main)
 
-- `git` (`src/main/git.js`): endast `rev-parse`, `rev-list`, `diff`, `status`, `show`, `fetch`.
-- `aidlc` (`src/main/setup.js`, `models.js`): `--version`, `config --dry-run`, `config project --show --json`, `config models --show --json`.
-- `$SHELL` (`pty.js`, `exec.js`): terminalsessioner och PATH-probe.
+- `$SHELL` (`pty.js`): `-l -i -c claude` (agent tab), `-l` (shell tab), `cwd` = project root. `exec.loginPath`: `-l -i -c "printf <marker>$PATH"` once per process.
+- `claude` (`pty.js:24`): started through the shell, so the login PATH applies.
+- `aidlc` (`setup.js`, `models.js`, via `runFixed`): `--version`; `--project-dir <root> config --harness claude --dry-run`; `config project --show --json`; `config models --show --json --harness claude`.
+- `git` (`git.js`, `setup.js`, via `runFixed`): `rev-parse`, `rev-list`, `diff`, `status`, `show`, `fetch`.
 
-## Externa tjänster i CI
+## Files outside the app that it reads (all root-confined, read-only)
 
-- GitHub Actions (`actions/checkout`, `setup-node`, `upload-artifact`, `download-artifact`, alla `@v4`) och GitHub CLI `gh release create` (`.github/workflows/release.yml`). Releasetiteln och artefakterna är det enda i CI som bär appens namn.
+| Path in the project | Reader | Harness-specific? |
+|---------------------|--------|-------------------|
+| `aidlc/spaces/`, `aidlc/active-space` | `projectService.detectProject`, `listSpaces` | no |
+| `aidlc/spaces/<space>/intents/**` (`intents.json`, `active-intent`, `aidlc-state.md`, `project-description.json`, `runtime-graph.json`, `audit/*.md`, `.aidlc-engine/active-directive.json`, phase folders) | `projectService`, `watcher` | no |
+| `aidlc/.aidlc-sessions/usage-ledger.json` | `projectService.loadCost`, `watcher` | the shared path is harness-neutral; the content is filled by the Claude hooks today (EPIC-08) |
+| `.claude/agents/aidlc-*-agent.md` | `models.readAgentFiles` (fallback) | yes, Claude |
+| `.kiro/`, `.codex/`, `.cursor/`, `.aidlc/` (presence only) | `setup.getSetupInfo` | yes, used as markers |
+| feature docs (`docs/FEATURES.md`, epic files) | `features.js` | no |
 
-## Interna beroenden
+## Internal dependencies
 
 ```mermaid
 flowchart LR
   App --> Splash --> AuctumMark
-  App --> AuctumMark
-  App --> Lcars["Lcars.jsx (Bar, Frame)"]
-  Splash --> Lcars
   App --> AppSettingsDialog
   App --> DocsDialog --> ArtifactReader
   App --> QuestionPopup
   App --> ProjectView
+  App --> AppName["shared/appName.js"]
+  ProjectView --> TerminalProvider["TerminalContext"]
+  ProjectView --> TerminalPanel
+  ProjectView --> SetupAidlc
+  ProjectView --> ProjectSettingsDialog
+  ProjectView --> CostPanel --> CostTab
+  ProjectView --> IntentList --> ResumeButton
+  ProjectView --> IntentDetail --> CostTab
+  IntentDetail --> ResumeButton
+  ProjectView --> RefreshPanel
+  ProjectView --> FeaturesView
+  ProjectView --> FDP["featureDocsPrompt.js"]
   ProjectView --> useProject
   ProjectView --> useFeatures
-  ProjectView --> IntentList --> ResumeButton
-  ProjectView --> IntentDetail
-  IntentDetail --> Pipeline
-  IntentDetail --> Timeline
-  IntentDetail --> BoltDag
-  IntentDetail --> ArtifactReader
-  IntentDetail --> CostTab
-  IntentDetail --> ResumeButton
-  ProjectView --> CostPanel --> CostTab
-  ProjectView --> RefreshPanel --> ArtifactReader
-  ProjectView --> SetupAidlc
-  ProjectView --> FeaturesView --> ArtifactReader
-  ProjectView --> ProjectSettingsDialog
-  ProjectView --> TerminalProvider["TerminalContext (TerminalProvider)"]
-  ProjectView --> TerminalPanel --> TerminalProvider
-  TerminalPanel --> AuctumMark
-  TerminalPanel --> Lcars
-  TerminalProvider --> TerminalControl["terminalControl.js"]
+  TerminalPanel --> TerminalProvider
+  TerminalPanel --> TerminalControl["terminalControl.js"]
+  TerminalProvider --> TerminalControl
   ResumeButton --> TerminalProvider
-  RefreshPanel --> TerminalProvider
   SetupAidlc --> TerminalProvider
-  Timeline --> AuditParser["main/parsers/audit.js"]
+  RefreshPanel --> TerminalProvider
   CostTab --> LedgerParser["main/parsers/ledger.js"]
-  FeaturesView --> FeaturesParser["main/parsers/features.js"]
-  ProjectSettingsDialog --> FeaturesParser
+  ProjectSettingsDialog --> FeaturesParser["main/parsers/features.js"]
+  Renderer["all renderer modules"] --> SharedI18n["shared/i18n.js + locales"]
 ```
 
-Text: App använder Splash, AuctumMark, LCARS-primitiverna, AppSettingsDialog, DocsDialog, QuestionPopup och ProjectView. Splash och TerminalPanel använder också AuctumMark och `Bar`. ProjectView sätter ihop alla vyer och äger terminal-contexten per projekt. ResumeButton, RefreshPanel, SetupAidlc och TerminalPanel går via TerminalContext. Timeline, CostTab, FeaturesView och ProjectSettingsDialog importerar rena parsers från main. Kopplingarna under ProjectView är från tidigare skanningar och inte omverifierade, utom TerminalPanel.
+Text: App uses the splash, the dialogs, ProjectView and the shared app name. ProjectView puts the views together, owns one terminal context per project, and mounts TerminalPanel, SetupAidlc and ProjectSettingsDialog. ResumeButton, SetupAidlc, RefreshPanel and TerminalPanel reach the terminals only through the context. CostTab and ProjectSettingsDialog import pure parsers from main. Every renderer module that shows text imports the shared i18n.
 
-Main: `index.js` beror på `ipc.js` (`registerIpc`, `shutdown`), `menu.js` (`applyMenu`) och `settings.js` (`getSettings`, `setSettings`). `ipc.js` beror på `projectService`, `projectAccess`, `watcher`, `pty`, `git`, `setup`, `models`, `features`, `settings`, `menu`, `notify` (`notifyQuestions`) och `parsers/ledger.js` (från förra skanningen plus grep). `projectService.js` beror på `projectAccess` och parsers. `git.js`, `setup.js` och `models.js` går via `exec.js`. Inga cirkulära importer hittades.
+Main: `index.js` → `ipc.js`, `menu.js`, `settings.js`, `main/i18n.js`, `shared/appName.js`. `ipc.js` → `projectAccess`, `projectService`, `notify`, `parsers/ledger`, `models`, `git`, `setup`, `settings`, `watcher`, `features`, `pty`, `menu`, `main/i18n`, `shared/i18n`. `projectService` → `projectAccess`, parsers, `questions`. `setup` → `exec`, `git`, `projectAccess`. `models` → `exec`, `projectAccess`, `parsers/ledger`. `settings` → `parsers/features`, `shared/i18n`. `pty` → `shared/i18n` only. No circular imports were found.
 
-## Namnberoenden utan import (US-0406)
+## Coupling to Claude (for US-0801)
 
-Appens namn är inte en delad konstant, så dessa filer hänger ihop bara genom att de måste säga samma sak:
+These parts depend on Claude through strings, not through imports, so they only hold together because they say the same thing:
 
-| Källa | Beroende |
-|-------|----------|
-| `package.json` `productName` ↔ `electron-builder.yml` `productName` | båda måste ändras lika; filen `electron-builder.yml` vinner för electron-builder |
-| `package.json` `name` ↔ `package-lock.json` (`name` på rad 2 och 8) | lockfilen måste följa om `name` ändras |
-| `productName` → `.dmg`-filnamnet; `name` → `.deb`-paketet och filnamnet | ingen `artifactName` frikopplar dem |
-| `src/main/menu.js` `APP_NAME` ↔ `tests/main/menu.test.js:83-84` | testet hävdar etiketterna ordagrant |
-| `src/renderer/Splash.jsx` `APP_NAME` ↔ `tests/renderer/Splash.test.jsx:17` | testet hävdar `sr-only`-texten ordagrant |
-| `src/renderer/App.jsx:333` "Aidlc control" ↔ `tests/renderer/AppShell.test.jsx:122` | testet hävdar underraden ordagrant |
-| `src/renderer/index.html:9` `<title>` ↔ `src/main/index.js:26` `title` | `<title>` skriver över fönstertiteln efter laddning |
-| `src/main/index.js:8` userData `aidlc-dash` ↔ `README.md:53` sökvägar | README beskriver mappen; ändras inte så länge låset står kvar |
-| `.github/workflows/release.yml:91` `--title` | fristående sträng |
-| `AuctumMark` `aria-label="Auctum"` ↔ `Splash.test.jsx:16`, `AppShell.test.jsx:121` | ska stå kvar (märket byts inte) |
+| Source | Depends on |
+|--------|------------|
+| `pty.js:24` `'claude'` → `-c claude` | `TerminalPanel.jsx:15` `KINDS`, `TerminalContext.jsx:12-16`, `ipc.js` `pty:spawn` passthrough |
+| tab id `'claude'` | `ResumeButton.jsx:29-37`, `TerminalPanel.jsx:208`, `:255`, `ProjectView.jsx:105`, `:108`, `:144`, `:159`, `RefreshPanel.jsx:97`, `App.jsx:223`, `:316`, `menu.js:105` |
+| `terminal-panel-*-claude` test ids, `.term-tab--claude` | `TerminalPanel.test.jsx`, `theme.css:687` |
+| `--harness claude` | `setup.js:12`, `:62`, `models.js:8`; `setup.test.js`, `SetupAidlc.test.jsx`, `configuredModels.test.js` |
+| `.claude/agents` | `models.js:10` |
+| "Claude" in texts | 11+ keys in `en.json`/`sv.json` (see `component-inventory.md`, Locale Files) |
+| `claude-` model prefix | `ledger.js:149`, `format.js:31` |
 
-## Delade globala klasser (beroende via CSS)
+## Shared global classes (dependency through CSS)
 
-Eftersom stilen är global finns beroenden som inte syns i importer:
-- `.lcars-block`, `.lcars-block--<ton>`, `.lcars-block--sm`: vänsterarmen, helskärmsknappen, terminalflikarna och radioknapparna i AppSettingsDialog.
-- `.settings-dialog`, `.settings-group`, `.setup-actions`, `.refresh-error`: AppSettingsDialog, ProjectSettingsDialog, DocsDialog och QuestionPopup (`.settings-dialog.question-popup`).
-- `.sr-only`: splashens dolda appnamn och de dolda radioknapparna.
-- `.intent-row`, `.intent-row-top`, `.intent-slug`, `.intent-row-meta`, `.intent-rows`: IntentList och FeaturesView (från tidigare skanning).
-- `.detail-tab`: IntentDetail-flikar (från tidigare skanning).
-- `.cost-panel-toggle`: CostPanel och RefreshPanel (från tidigare skanning).
+*Earlier scan.* `.lcars-block*` (arm, fullscreen button, terminal tabs, radios), `.settings-dialog`, `.settings-group`, `.setup-actions`, `.refresh-error` (all dialogs), `.sr-only`, `.intent-row*`, `.detail-tab`, `.cost-panel-toggle`.

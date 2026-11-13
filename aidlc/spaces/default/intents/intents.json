@@ -84,7 +84,15 @@
     "slug": "i18n-foundation",
     "dirName": "261113-i18n-foundation",
     "scope": "bugfix",
-    "status": "in-flight",
+    "status": "complete",
     "request": "07a6382f"
+  },
+  {
+    "uuid": "01a1d6e3-b170-78c8-bb85-8370aa57e44f",
+    "slug": "harness-choice",
+    "dirName": "261113-harness-choice",
+    "scope": "express",
+    "status": "in-flight",
+    "request": "abb719e0"
   }
 ]

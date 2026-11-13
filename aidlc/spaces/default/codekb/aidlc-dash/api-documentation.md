@@ -1,113 +1,127 @@
-# API-dokumentation: aidlc-dash
+# API Documentation: aidlc-dash
 
-Appen har inga HTTP-, GraphQL- eller nätverks-API:er. Dess API-yta är Electron-IPC mellan renderaren och huvudprocessen, exponerad som `window.bridge` i `src/preload/index.js`. Invoke-funktioner byggs med `call(channel)` och prenumerationer med `subscribe(channel)`. Varje projekt-handler i `src/main/ipc.js` slår upp `projectId` (okänt id ger fel) och går via `projectAccess` för sökvägar. Fel loggas med `[ipc] <kanal> misslyckades` och skickas tillbaka som avvisat promise; renderaren rensar meddelandet med en lokal `errorText()`.
+The app has no HTTP, GraphQL or network APIs. Its API surface is Electron IPC between the renderer and the main process, exposed as `window.bridge` in `src/preload/index.js` (read in full in this scan). Invoke functions are built with `call(channel)` and subscriptions with `subscribe(channel)`. Every project handler in `src/main/ipc.js` looks up `projectId` (an unknown id throws `errors.unknownProject`) and routes paths through `projectAccess`. Errors are logged as `[ipc] <channel> misslyckades` and returned as a rejected promise. The renderer strips Electron's prefix with a local `errorText()`. Error messages from main are translated in main's current language (`t('errors.…')`).
 
-Preload och `ipc.js` är inte omlästa i denna skanning. Kanalerna från US-0505 (`questions:*`) är bekräftade med grep i `src/preload/index.js:58-61` och `src/main/ipc.js`; deras payloads beskrivs från `App.jsx`, som lästes på djupet. Ingen kanal bär appens namn, så US-0406 ändrar inget här.
+## Invoke calls (renderer → main), 35
 
-## Invoke-anrop (renderare → main), 34 st
-
-| `window.bridge` | Kanal | Argument | Svar |
-|-----------------|-------|----------|------|
-| `pickProject` | `project:pick` | – | mappsökväg eller `null` (dialog modal mot `BrowserWindow.fromWebContents(event.sender)`) |
-| `openProject` | `project:open` | `dir` | `{projectId, root, name, detection}`; startar bevakning av aktiv space (eller väntan på AI-DLC) |
-| `closeProject` | `project:close` | `projectId` | – (dödar pty och bevakning; projektets frågor lämnar popupen) |
+| `window.bridge` | Channel | Arguments | Result |
+|-----------------|---------|-----------|--------|
+| `pickProject` | `project:pick` | – | folder path or `null` (dialog title `app.pickFolder`) |
+| `openProject` | `project:open` | `dir` | `{projectId, root, name, detection}`; `detection` = `{isAidlc: true, activeSpace, spaces}` or `{isAidlc: false, reason}`. Starts watching the space, or waits for AI-DLC |
+| `closeProject` | `project:close` | `projectId` | – (kills the project's ptys and watchers; pushes `questions:changed`) |
 | `getSpaces` | `project:spaces` | `projectId` | `string[]` |
-| `getIntents` | `project:intents` | `projectId, space, onlyDirs?` | `{intents, warning}`; byter bevakad space om den skiljer sig. Varje intent: `uuid, slug, dirName, scope, status, missingOnDisk, missingInIndex, active` (från index/disk) plus `stateScope, request, currentStage, stateStatus, done, executed` (från `aidlc-state.md`), ev. `error`/`stale`. Inga audit-händelser |
-| `getIntent` | `project:intent` | `projectId, space, dirName` | detalj: `dirName, base, request, state, graph, pipeline, events, units, directive, files, warnings, stale?` |
-| `getCost` | `project:cost` | `projectId, space` | `{available, project, perIntent, byScope, timeline, ...}` eller `{available:false, reason}` |
-| `getModels` | `project:models` | `projectId` | `{source, agents, error?}` (cachas per öppnat projekt) |
+| `getIntents` | `project:intents` | `projectId, space, onlyDirs?` | `{intents, warning}`; switches the watched space if it differs |
+| `getIntent` | `project:intent` | `projectId, space, dirName` | `{dirName, base, request, state, graph, pipeline, events, units, directive, files, warnings, stale?}` |
+| `getCost` | `project:cost` | `projectId, space` | `{available: true, project, perIntent, byScope, timeline, stale?, warning?}` or `{available: false, reason}` |
+| `getModels` | `project:models` | `projectId` | `{source: 'aidlc-config'|'agent-files'|'none', agents: [{agent, model, effort}], error?}`; cached per opened project; Claude-only (see below) |
 | `readFile` | `project:file` | `projectId, rel` | text |
 | `revealInFinder` | `shell:reveal` | `projectId, rel` | – |
-| `openInEditor` | `shell:openInEditor` | `projectId, rel` | – (endast `.md .json .txt .yaml .yml`) |
-| `getSettings` / `setSettings` | `settings:get` / `settings:set` | `partial` | `{openProjects, recentProjects, activeProject, animations?, fullscreen?, questionAlerts?, notificationSound?, projectSettings}` |
-| `ptySpawn` | `pty:spawn` | `{projectId, kind: 'claude'|'shell', cols, rows}` | session-id |
-| `ptyWrite` / `ptyResize` / `ptyKill` | `pty:write` / `pty:resize` / `pty:kill` | `id, data` / `id, cols, rows` / `id` | – |
+| `openInEditor` | `shell:openInEditor` | `projectId, rel` | – (only `.md .json .txt .yaml .yml`) |
+| `getSettings` / `setSettings` | `settings:get` / `settings:set` | `partial` | sanitised settings (table below). `settings:set` switches main's language and rebuilds the menu when `language` changed |
+| `getLanguage` | `i18n:language` | – | `'sv' | 'en'` (auto already resolved); new with US-0701 |
+| `ptySpawn` | `pty:spawn` | `{projectId, kind: 'claude'|'shell', cols, rows}` | session id (UUID). An unknown kind throws `errors.unknownTerminal`; node-pty failing to load throws `errors.ptyLoadFailed` |
+| `ptyWrite` | `pty:write` | `id, data` | – (`data` must be a string; unknown id throws `errors.noSession`) |
+| `ptyResize` | `pty:resize` | `id, cols, rows` | – (clamped to 1-999; defaults 100x30) |
+| `ptyKill` | `pty:kill` | `id` | – (unknown id is ignored) |
 | `getGitStatus` | `git:status` | `projectId` | `{isRepo, branch, upstream, tracking, ahead, behind, dirtyAidlc, dirtyOther}` |
 | `gitFetch` | `git:fetch` | `projectId` | – |
 | `getRemoteChanges` | `git:remoteChanges` | `projectId, ref, space` | `{ref, aidlcCommits, aidlcFiles, otherFiles, auditLines, newIntents}` |
-| `showRemoteFile` | `git:showRemote` | `projectId, ref, rel` | text (bara under `aidlc/`) |
+| `showRemoteFile` | `git:showRemote` | `projectId, ref, rel` | text (only under `aidlc/`) |
 | `getConflicts` | `git:conflicts` | `projectId` | `string[]` |
-| `getSetupInfo` | `setup:info` | `projectId` | förutsättningar, förhandsvisning, plugins, presets |
-| `buildSetupCommand` | `setup:command` | `projectId, {needsGit, plugins, preset}` | kommandosträng (körs inte) |
-| `loadFeatures` | `features:load` | `projectId` | översikt och epics |
+| `getSetupInfo` | `setup:info` | `projectId` | `{git: {isRepo}, harnesses: string[], preview, plugins, presets, aidlc: {installed, version?, error?}, warning?}`; stored on the project for `setup:command` |
+| `buildSetupCommand` | `setup:command` | `projectId, {needsGit, plugins, preset}` | command string (never run here) |
+| `loadFeatures` | `features:load` | `projectId` | overview and epics |
 | `getStoryLinks` | `features:storyLinks` | `projectId, space` | `{storyId: dirName[]}` |
-| `getProjectSettings` / `setProjectSettings` | `projectSettings:get` / `projectSettings:set` | `projectId, partial` | `{featureDocs, featuresPath}` |
-| `toggleFullscreen` | `window:toggleFullscreen` | – | – (växlar avsändarens fönster) |
+| `getProjectSettings` | `projectSettings:get` | `projectId` | `{featureDocs, featuresPath}` |
+| `setProjectSettings` | `projectSettings:set` | `projectId, partial` | `{featureDocs, featuresPath}`; the handler passes only these two fields on (`ipc.js:274`), then restarts the feature-docs watch and pushes `features:changed` |
+| `toggleFullscreen` | `window:toggleFullscreen` | – | – |
 | `isFullscreen` | `window:isFullscreen` | – | `boolean` |
-| `sendMenuState` | `menu:state` | `{hasProject, isAidlc, showFeatures}` | – (bara tre booleans godtas, `parseMenuState`) |
-| `openDocsUrl` | `app:openDocsUrl` | – | – (fast adress `AIDLC_DOCS_URL`) |
-| `listQuestions` | `questions:list` | – | lista med väntande frågor från alla öppna projekt (US-0505); varje post har bl.a. `id`, `projectId`, `projectName`, `kind`, `early` |
-| `setActiveProject` | `questions:activeProject` | `projectId | null` | – (main använder det för att avgöra om en notis ska visas) |
+| `sendMenuState` | `menu:state` | `{hasProject, isAidlc, showFeatures}` | – (only three booleans accepted, `parseMenuState`) |
+| `openDocsUrl` | `app:openDocsUrl` | – | – (fixed `AIDLC_DOCS_URL`) |
+| `listQuestions` | `questions:list` | – | waiting questions of every open project, newest first, each with `early` |
+| `setActiveProject` | `questions:activeProject` | `projectId | null` | – (decides whether a notification shows) |
 
-Utöver detta exponeras `platform` (`process.platform`). App anropar `listQuestions`, `onQuestions`, `onQuestionFocus` och `setActiveProject` valfritt (`?.`), så en äldre preload utan dem fungerar.
+`platform` (`process.platform`) is exposed besides these.
 
-## Push-händelser (main → renderare), 10 st
+## Push events (main → renderer), 10
 
-| `window.bridge` | Kanal | Payload |
-|-----------------|-------|---------|
-| `onProjectChanged` | `project:changed` | `{projectId, space, dirNames, indexChanged, costChanged}` – bara vilka intents som ändrats, inget innehåll |
+| `window.bridge` | Channel | Payload |
+|-----------------|---------|---------|
+| `onProjectChanged` | `project:changed` | `{projectId, space, dirNames, indexChanged, costChanged}` |
 | `onProjectDetected` | `project:detected` | `{projectId, detection}` |
 | `onWatchError` | `project:watchError` | `{projectId, message}` |
 | `onFeaturesChanged` | `features:changed` | `{projectId}` |
 | `onPtyData` | `pty:data` | `{id, data}` |
 | `onPtyExit` | `pty:exit` | `{id, exitCode, signal}` |
-| `onFullscreen` | `window:fullscreen` | `boolean` (skickas från `index.js` vid `enter-/leave-full-screen`) |
-| `onMenuCommand` | `menu:command` | `{command, ...args}`; kommandon: `openProject`, `closeProject`, `projectSettings`, `appSettings`, `view {view}`, `panel {panel}`, `terminal {action: 'claude'|'shell'|'restart'}`, `docs`. Skickas till `getFocusedWindow() ?? getAllWindows()[0]` |
-| `onQuestions` | `questions:changed` | samma lista som `questions:list`, skickad när frågorna ändras |
-| `onQuestionFocus` | `questions:focus` | frågans `id` (sträng) när personen klickar på en systemnotis; App öppnar popupen på den frågan |
+| `onFullscreen` | `window:fullscreen` | `boolean` |
+| `onMenuCommand` | `menu:command` | `{command, ...args}`; `terminal {action: 'claude'|'shell'|'restart'}` among them |
+| `onQuestions` | `questions:changed` | same list as `questions:list` |
+| `onQuestionFocus` | `questions:focus` | the question's `id` when a notification is clicked |
 
-Varje `on*` returnerar en avregistreringsfunktion. Projektens push går till det `webContents` som öppnade projektet (`p.sender.send(...)` efter `isDestroyed()`-kontroll).
+Every `on*` returns an unsubscribe function. Project pushes go to the `webContents` that opened the project, after an `isDestroyed()` check.
 
-## Electron-API:er som bär appens namn (US-0406)
+## External commands the main process runs
 
-Ingen IPC, men det är här main ger operativsystemet namnet:
+All through `runFixed(file, args, {cwd: project root, timeout})` (`src/main/exec.js`): `execFile`, no shell, string arguments only, default timeout 10 s, PATH from the login shell. Missing tools reject with ENOENT; callers turn that into a state, not a crash.
 
-| Anrop | Plats | Värde i dag | Verkan |
-|-------|-------|-------------|--------|
-| `app.setPath('userData', join(app.getPath('appData'), 'aidlc-dash'))` | `src/main/index.js:8` | `aidlc-dash` | inställningsmappen, oberoende av `productName` |
-| `new BrowserWindow({title})` | `src/main/index.js:26` | `'Auctum AIDLC Control'` | fönstertitel tills sidan laddats; därefter vinner `<title>` i `src/renderer/index.html:9` |
-| `app.setAboutPanelOptions({applicationName, applicationVersion})` | `src/main/menu.js:156` | `APP_NAME`, `app.getVersion()` | macOS About-panel (Om …); inga `credits`, `copyright` eller `website` satta |
-| `{ role: 'about' | 'hide' | 'quit', label }` | `src/main/menu.js:44`, `:48`, `:52` | `Om/Göm/Avsluta Auctum AIDLC Control` | macOS-appmenyns poster |
-| appmenyns `label` | `src/main/menu.js:42` | `APP_NAME` | etikett i mallen; i paketerad app visar macOS menyradens fetstilta appnamn från bundlens namn (`productName`), inte denna etikett |
+| Caller | Command | Use |
+|--------|---------|-----|
+| `setup.getSetupInfo` | `aidlc --version` | installed or not |
+| `setup.getSetupInfo` | `aidlc --project-dir <root> config --harness claude --dry-run` | preview counts, conflicts, notes |
+| `setup.readPlugins` | `aidlc config project --show --json` | `data.installedPlugins` |
+| `models.getConfiguredModels` | `aidlc config models --show --json --harness claude` | `data.effective[]` |
+| `git.js` (earlier scan) | `git rev-parse`, `rev-list`, `diff`, `status`, `show`, `fetch` | read-only git |
+| `exec.loginPath` | `$SHELL -l -i -c "printf <marker>$PATH"` | PATH once per process |
 
-## Audit-händelser som renderaren får (`detail.events`)
+The pty (`pty.js`) is the only place that runs a CLI through the shell: `$SHELL -l -i -c claude` for the agent tab, `$SHELL -l` for the shell tab, both with `cwd` = project root.
 
-Från `projectService.loadAuditEvents` + `parsers/audit.js` (tidigare skanning), en post per block i varje `<intent>/audit/*.md`:
+## Commands the app types into a terminal (never run without the person's Enter, except a safe intent switch)
 
-| Fält | Innehåll |
-|------|----------|
-| `timestamp` | `**Timestamp**`-värdet (sträng) eller `null` |
-| `event` | `**Event**`-värdet, t.ex. `DECISION_RECORDED`, `STAGE_AWAITING_APPROVAL`, `QUESTION_ANSWERED`, `GATE_APPROVED`, `GATE_REJECTED` |
-| `title` | `## Rubrik` i blocket eller `null` |
-| `fields` | alla övriga `**Nyckel**: värde` ordagrant som strängar (flerradiga värden sammanfogade med `\n`), t.ex. `Stage`, `Decision`, `Options`, `Details`, `Question Id`, `Question Type`, `Unit` |
-| `source` | shardens filnamn |
-| `index` | blockets ordning i sharden |
-| `key` | `<source>#<index>` (stabil, shards växer bara i slutet) |
-| `timeMs` | tolkad tid; utan giltig tidsstämpel ärvs föregående blocks tid i samma shard (`-Infinity` först) |
-| `seq` | position efter sammanslagning (tid, sedan källa, sedan index) |
-| `category` | `categoryOf(event)`: `DECISION_*`/`QUESTION_*`/`HUMAN_*` → `human`, `GATE_*` och allt med `APPROV` → `gate` |
+| Where | Tab | Text | Enter |
+|-------|-----|------|-------|
+| `ResumeButton` | `claude` | `/aidlc` (active intent) | no |
+| `ResumeButton` | `claude` | `/aidlc intent <dirName>` then `/aidlc` | first yes (only when `dirName` matches `SAFE_DIR_NAME`), second no |
+| `TerminalPanel` quick commands | `claude` | `/aidlc --status`, `/aidlc --doctor`, `/aidlc continue` | no |
+| `SetupDone` (`ProjectView`) | `claude` | `/aidlc --doctor`, `/aidlc ` | no |
+| feature docs (`ProjectView` via `featureDocsPrompt`) | `claude` | one-line request in the current language | no |
+| `SetupAidlc` | `shell` | `buildSetupCommand` chain | no |
+| `RefreshPanel` (earlier scan) | `shell` | git pull / from-main chains | no |
 
-## Inställningar (`settings.json`)
+These are the strings US-0801 makes harness-dependent (Resume, quick commands, setup offers).
 
-`settings.js` sparar `settings.json` i userData (mappen `aidlc-dash`, `~/Library/Application Support/aidlc-dash/` på macOS och `~/.config/aidlc-dash/` på Linux enligt `README.md:53`) och kör `sanitize()` på allt som läses och skrivs:
+## Settings (`settings.json`)
 
-| Nyckel | Typ | Regel |
-|--------|-----|-------|
-| `openProjects`, `recentProjects` | `string[]` | bara strängar, högst 50 |
-| `activeProject` | `string | null` | annars `null` |
-| `animations` | `'full' | 'reduced' | 'off'` | vitlista; utelämnas när den saknas eller är ogiltig, så renderarens standard gäller (FR4.2) |
-| `fullscreen` | `boolean` | sparas av main vid helskärmsbyte; utelämnas om inte boolean (US-0404 FR1.3) |
-| `questionAlerts` | `'popup-notify' | 'popup' | 'off'` | vitlista `QUESTION_ALERTS` (`settings.js:13`, US-0505); renderarens standard är `popup-notify` |
-| `notificationSound` | `boolean` | utelämnas om inte boolean; renderaren tolkar saknat som på |
-| `projectSettings` | `{[root]: {featureDocs, featuresPath}}` | högst 200 projekt; ogiltiga värden faller tillbaka på standard |
+`settings.js` keeps `settings.json` in userData (folder `aidlc-dash`) and runs `sanitize()` on every read and write:
 
-Alla andra nycklar tas bort tyst. Skrivningar köas seriellt och slår ihop över senast skrivna värde. `setSettings` rör aldrig `projectSettings`; de ändras bara via `setProjectSettings`. Ett namnbyte flyttar inte filen så länge `index.js:8` står kvar.
+| Key | Type | Rule |
+|-----|------|------|
+| `openProjects`, `recentProjects` | `string[]` | strings only, at most 50 |
+| `activeProject` | `string | null` | else `null` |
+| `animations` | `'full' | 'reduced' | 'off'` | left out when missing or invalid |
+| `fullscreen` | `boolean` | saved by main |
+| `questionAlerts` | `'popup-notify' | 'popup' | 'off'` | whitelist `QUESTION_ALERTS` |
+| `notificationSound` | `boolean` | missing means on |
+| `language` | `'auto' | 'sv' | 'en'` | whitelist `LANGUAGE_SETTINGS`; missing means auto (US-0701) |
+| `projectSettings` | `{[realpath root]: {featureDocs: 'auto'|'show'|'hide', featuresPath}}` | at most 200 projects; invalid values fall back per field; unknown fields dropped |
 
-## Interna API:er
+Every other key is dropped silently. `setSettings` never touches `projectSettings`; only `setProjectSettings(root, partial)` does, with validation that throws `errors.unknownFeatureDocs` or `errors.invalidFeaturesPath`. A new per-project key (such as the harness choice) needs `sanitizeProject`, `setProjectSettings`'s validation and the `projectSettings:set` field pick to change together.
 
-- `useTerminal()` (`TerminalContext.jsx`): `view`, `setView`, `error`, `register`, `show(tab)`, `state(tab)`, `exitCode(tab)`, `pending(tab)`, `input(tab)`, `type(tab, text, {submit})`, `sequence(tab, steps)`, `restart(tab)`. Returnerar `null` utanför `TerminalProvider`. Providern ligger per projekt i `ProjectView.jsx`; App når den via propen `terminalCommand {seq, action, projectId}`.
-- `motionMode(saved)` (`App.jsx:18`): sparat val, annars `reduced` under `prefers-reduced-motion`, annars `full`.
-- `windowOptions(settings, platform)` (`src/main/index.js:14`): ren funktion för fönstrets options inklusive `title`; testas i `windowOptions.test.js`.
-- `buildMenuTemplate({isMac, isPackaged, state, fullscreen, send, actions})` och `parseMenuState(raw)` (`src/main/menu.js:32`, `:14`): ren menymall respektive validering; testas i `tests/main/menu.test.js`.
-- `APP_NAME` (`src/renderer/Splash.jsx:5`, exporterad) och `APP_NAME` (`src/main/menu.js:5`, inte exporterad): två separata konstanter med samma namn.
-- `useProject(projectId, space)` och `useFeatures(projectId, space)`: se `component-inventory.md`.
+## Translation API (`src/shared/i18n.js`)
+
+- `t(key, values)`: ICU MessageFormat text; `{name}` placeholders and `{n, plural, …}`. Falls back to English, then to the key.
+- `resolveLanguage(setting, osLocale)`: `sv`/`en` as chosen, else Swedish when the locale starts with `sv`, else English.
+- `LANGUAGES`, `LANGUAGE_SETTINGS`, `locale()` (Intl locale for dates and numbers), default export: the process's i18next instance.
+- Main: `currentLanguage()`, `setLanguageFromSettings(settings)` (`src/main/i18n.js`).
+
+## Audit events the renderer receives (`detail.events`)
+
+From `projectService.loadAuditEvents` + `parsers/audit.js` (earlier scan, not re-read): one entry per block in each `<intent>/audit/*.md` with `timestamp`, `event`, `title`, `fields` (every `**Key**: value` verbatim), `source`, `index`, `key` (`<source>#<index>`), `timeMs`, `seq`, `category` (`categoryOf(event)`).
+
+## Internal APIs
+
+- `useTerminal()` (`TerminalContext.jsx`): `view`, `setView`, `error`, `register(tab, session)`, `show(tab)`, `state(tab)`, `exitCode(tab)`, `pending(tab)`, `input(tab)`, `type(tab, text, {submit})`, `sequence(tab, steps)`, `restart(tab)`. Tabs are `'claude'` and `'shell'`. Returns `null` outside a `TerminalProvider`.
+- `createActivity({quietMs})`, `waitFor(activity, target, ms)`, `runSequence(term, steps)`, `withEnter(text, submit)` (`terminalControl.js`).
+- `summarizeLedger(ledger, intents)` and `compareModels(configured, actualByAgent, {onlyParticipants})` (`parsers/ledger.js`): pure; the renderer imports `compareModels`.
+- `featureDocsPrompt({exists, path})` (`featureDocsPrompt.js`): one line, current language.
+- `APP_NAME`, `APP_FULL_NAME`, `APP_TAGLINE`, `APP_SHORT`, `APP_VENDOR` (`src/shared/appName.js`).
+- `motionMode(saved)` (`App.jsx`), `windowOptions(settings, platform)` (`src/main/index.js`), `buildMenuTemplate`, `parseMenuState` (`src/main/menu.js`).
