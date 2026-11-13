@@ -1618,3 +1618,198 @@
 **Answer Mode**: guide (reused from requirements-analysis)
 
 ---
+
+## Artifact Created
+**Timestamp**: 2026-11-13T09:38:40Z
+**Event**: ARTIFACT_CREATED
+**Tool**: Write
+**File**: <project-dir>/aidlc/spaces/default/intents/261113-cost-and-models/operation/deployment-execution/deployment-execution-questions.md
+**Context**: operation > deployment-execution > deployment-execution-questions.md
+
+---
+
+## Artifact Created
+**Timestamp**: 2026-11-13T09:38:40Z
+**Event**: ARTIFACT_CREATED
+**Tool**: Write
+**File**: <project-dir>/aidlc/spaces/default/intents/261113-cost-and-models/operation/deployment-execution/deployment-log.md
+**Context**: operation > deployment-execution > deployment-log.md
+
+---
+
+## Artifact Created
+**Timestamp**: 2026-11-13T09:38:41Z
+**Event**: ARTIFACT_CREATED
+**Tool**: Write
+**File**: <project-dir>/aidlc/spaces/default/intents/261113-cost-and-models/operation/deployment-execution/smoke-test-results.md
+**Context**: operation > deployment-execution > smoke-test-results.md
+
+---
+
+## Artifact Created
+**Timestamp**: 2026-11-13T09:38:41Z
+**Event**: ARTIFACT_CREATED
+**Tool**: Write
+**File**: <project-dir>/aidlc/spaces/default/intents/261113-cost-and-models/operation/deployment-execution/health-check-report.md
+**Context**: operation > deployment-execution > health-check-report.md
+
+---
+
+## Stage Awaiting Approval
+**Timestamp**: 2026-11-13T09:38:45Z
+**Event**: STAGE_AWAITING_APPROVAL
+**Stage**: deployment-execution
+**Next Stage**: observability-setup
+**Brief Digest**: none
+**Sensor State**: required-sections@aidlc/spaces/default/intents/261113-cost-and-models/operation/deployment-execution/deployment-log.md=not-run; required-sections@aidlc/spaces/default/intents/261113-cost-and-models/operation/deployment-execution/smoke-test-results.md=not-run; required-sections@aidlc/spaces/default/intents/261113-cost-and-models/operation/deployment-execution/health-check-report.md=not-run; required-sections@aidlc/spaces/default/intents/261113-cost-and-models/operation/deployment-execution/deployment-execution-questions.md=not-run; upstream-coverage@aidlc/spaces/default/intents/261113-cost-and-models/operation/deployment-execution/deployment-log.md=not-run
+**Open Decisions**: 0
+**Question Id**: 364a5c1b
+**Question Type**: gate
+**Question Chat**: 9494c4f1-b3db-40d1-90f0-5844274da5a1
+**Question Shows**: sha256:a46703277dd3e05cc2f66d2b9eaf6510e199435452b0027827742d2079cb6516
+
+---
+
+## Human Turn
+**Timestamp**: 2026-11-13T09:38:58Z
+**Event**: HUMAN_TURN
+**Session**: 9494c4f1-b3db-40d1-90f0-5844274da5a1
+**Origin**: person
+**Source**: picker
+**Picked**: ["Approve"]
+**Message Id**: 3a16d3aa
+**Open Questions**: 364a5c1b
+**Questions Digest**: {"file":"aidlc/spaces/default/intents/261113-cost-and-models/operation/deployment-execution/deployment-execution-questions.md","entries":{"Fråga 1":"cf891f31acb5b538"}}
+
+---
+
+## Question Replied
+**Timestamp**: 2026-11-13T09:38:58Z
+**Event**: QUESTION_REPLIED
+**Session**: 9494c4f1-b3db-40d1-90f0-5844274da5a1
+**Question**: EPIC-02 ligger i PR #5. Godkänner du leveransen? När du har mergat PR:en börjar jag på EPIC-05 (US-0501 "Fortsätt" först) på en ny gren från main.
+**Reply**: Approve
+**Options**: ["Approve","Request Changes"]
+
+---
+
+## Gate Approved
+**Timestamp**: 2026-11-13T09:39:04Z
+**Event**: GATE_APPROVED
+**Stage**: deployment-execution
+**User Input**: Approve
+**Person Reply**: Approve
+**Message Id**: 3a16d3aa
+**Brief Digest**: none
+
+---
+
+## Stage Completion
+**Timestamp**: 2026-11-13T09:39:04Z
+**Event**: STAGE_COMPLETED
+**Stage**: deployment-execution
+**Validation Basis**: {"graphContract":"sha256:9324fac9ed5362e892b6f0c448c7cd3701eec134e2e24178d842efc36efe955a","inputs":[{"artifact":"build-test-results","contentHash":"sha256:d9308c2414db23bb1aac30a585ab1367be4f898fc14f395f4efacd838948b1a9","instanceCount":1,"presentCount":1,"producer":"build-and-test","required":true,"structureHash":"sha256:979a3303b5484aee11f94d9fdfafb4eb08b1ddfe156a76f0006efe588301ddd9"},{"artifact":"cd-config","contentHash":"sha256:f554d5ccf6b6d4af64304c50622cbec810518716b23f76c685a30f4b598e5081","instanceCount":1,"presentCount":1,"producer":"deployment-pipeline","required":true,"structureHash":"sha256:4a8f6a81fc3f93c4b7ee92914edfb7567cb794b86884827fa0d5a5cb4aad5f12"},{"artifact":"deployment-strategy","contentHash":"sha256:183d54ebda1fe75fad258db486ac8a03f0c41d18545bd1abb34b20684c71e8cf","instanceCount":1,"presentCount":1,"producer":"deployment-pipeline","required":true,"structureHash":"sha256:6027c74f3e36de148dee14ae369534b8106fc7fbb6b98d538e5829b30b1cc916"},{"artifact":"environment-inventory","contentHash":"sha256:46abe9895ed6f2d4bb7bd54d9c9b8e7c1e94e6759aa781a7330e9756179a787b","instanceCount":1,"presentCount":0,"producer":"environment-provisioning","required":true,"structureHash":"sha256:84b5a152d98c1b4615830c5d310e4fc4ae588159d81a99005f6071f988a238c2"}],"outputs":[{"artifact":"deployment-execution-questions","contentHash":"sha256:b55ddf9a1bcb4b0463e9f4e9eb70b43775df4c3ae608e05a264187757737edd6","instanceCount":1,"presentCount":1,"producer":"deployment-execution","required":true,"structureHash":"sha256:f1492018612ceb5bdf7c49e6db0f8ef66ec20d07027d6dfe1a8864b845ac86f3"},{"artifact":"deployment-log","contentHash":"sha256:4a32a8f455da85897b485018eab604b99fcc35a914117c007283222bedab49a1","instanceCount":1,"presentCount":1,"producer":"deployment-execution","required":true,"structureHash":"sha256:c560f8c896f8f5ee25c92ed9d13326f463a37484860c617f8f2a1e29c97d1e18"},{"artifact":"health-check-report","contentHash":"sha256:caebf48914084863f8b824494804cbbc7179cd2dd7ec724dfab10ed2d27e9b7b","instanceCount":1,"presentCount":1,"producer":"deployment-execution","required":true,"structureHash":"sha256:efd04a0d46dc4a72992e38c3dbdaef544eef59677d7fdf2677d7d7d84bb81c17"},{"artifact":"smoke-test-results","contentHash":"sha256:846033b1503aab18a2fb3b4fb51970353057991853e404c1751daee143215900","instanceCount":1,"presentCount":1,"producer":"deployment-execution","required":true,"structureHash":"sha256:7ef628e9dd39809255b1e81104597d1570613e5e4e918a76d1f6354dfc2e3e4f"}],"projectType":"brownfield","schema":3}
+**Details**: Stage Deployment Execution approved by gate
+**Tokens In**: 14
+**Tokens Out**: 3614
+**Cache Read**: 1137291
+**Cache Write**: 5621
+**Cost USD**: 0.34
+**By Model**: opus-5-5=0.34
+**By Agent**: main=0.34
+**Tokens By Model**: opus-5-5=14/3.6k/1.1M/5.6k
+**Tokens By Agent**: main=14/3.6k/1.1M/5.6k
+
+---
+
+## Stage Start
+**Timestamp**: 2026-11-13T09:39:04Z
+**Event**: STAGE_STARTED
+**Stage**: observability-setup
+**Agent**: aidlc-operations-agent
+**Answer Mode**: guide (reused from requirements-analysis)
+
+---
+
+## Human Turn
+**Timestamp**: 2026-11-13T09:40:38Z
+**Event**: HUMAN_TURN
+**Session**: 9494c4f1-b3db-40d1-90f0-5844274da5a1
+**Origin**: person
+**Source**: typed
+**Message Id**: b5ed02a6
+
+---
+
+## Human Turn
+**Timestamp**: 2026-11-13T09:41:15Z
+**Event**: HUMAN_TURN
+**Session**: 9494c4f1-b3db-40d1-90f0-5844274da5a1
+**Origin**: person
+**Source**: typed
+**Message Id**: c90b3c0a
+
+---
+
+## Human Turn
+**Timestamp**: 2026-11-13T09:41:51Z
+**Event**: HUMAN_TURN
+**Session**: 9494c4f1-b3db-40d1-90f0-5844274da5a1
+**Origin**: person
+**Source**: typed
+**Message Id**: 75581a0e
+
+---
+
+## Human Turn
+**Timestamp**: 2026-11-13T09:42:16Z
+**Event**: HUMAN_TURN
+**Session**: 9494c4f1-b3db-40d1-90f0-5844274da5a1
+**Origin**: person
+**Source**: typed
+**Message Id**: 5341907a
+
+---
+
+## Stage Skip
+**Timestamp**: 2026-11-13T09:42:21Z
+**Event**: STAGE_SKIPPED
+**Stage**: observability-setup
+**Reason**: Skrivbordsapp utan driftmiljö; användaren godkände att observability hoppas över (som i tidigare intents)
+**Skip Kind**: conditional-runtime
+
+---
+
+## Phase Completion
+**Timestamp**: 2026-11-13T09:42:21Z
+**Event**: PHASE_COMPLETED
+**From phase**: operation
+**To phase**: (end)
+**Stages completed**: 9
+
+---
+
+## Phase Verification
+**Timestamp**: 2026-11-13T09:42:21Z
+**Event**: PHASE_VERIFIED
+**Phase boundary**: operation → end
+
+---
+
+## Workflow Completion
+**Timestamp**: 2026-11-13T09:42:21Z
+**Event**: WORKFLOW_COMPLETED
+**Scope**: express
+**Details**: Scope: express, final stage observability-setup skipped
+**Reason**: Skrivbordsapp utan driftmiljö; användaren godkände att observability hoppas över (som i tidigare intents)
+**Tokens In**: 386
+**Tokens Out**: 208590
+**Cache Read**: 73840565
+**Cache Write**: 784373
+**Cost USD**: 23.86
+**By Model**: opus-5-5=23.86
+**By Agent**: main=17.31; aidlc-developer-agent=6.54
+**Tokens By Model**: opus-5-5=386/208.6k/73.8M/784.4k
+**Tokens By Agent**: main=214/107.4k/62.6M/331.2k; aidlc-developer-agent=172/101.2k/11.3M/453.2k
+
+---

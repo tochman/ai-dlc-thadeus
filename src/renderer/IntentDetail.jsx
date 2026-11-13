@@ -4,7 +4,8 @@ import Timeline from './Timeline.jsx';
 import BoltDag from './BoltDag.jsx';
 import ArtifactReader from './ArtifactReader.jsx';
 import CostTab from './CostTab.jsx';
-import { isInFlight } from './format.js';
+import ResumeButton from './ResumeButton.jsx';
+import { isInFlight, stagePosition } from './format.js';
 
 const TABS = [
   { id: 'pipeline', label: 'Pipeline' },
@@ -14,7 +15,7 @@ const TABS = [
   { id: 'files', label: 'Filer' }
 ];
 
-export default function IntentDetail({ projectId, detail, intent, newSeqFrom, cost, models }) {
+export default function IntentDetail({ projectId, detail, intent, activeDirName, newSeqFrom, cost, models }) {
   const [tab, setTab] = useState('pipeline');
   const [openFile, setOpenFile] = useState(null);
   const { state, pipeline } = detail;
@@ -36,6 +37,13 @@ export default function IntentDetail({ projectId, detail, intent, newSeqFrom, co
             </span>
           )}
           {detail.stale && <span className="tag tag-warn">Visar senaste giltiga data</span>}
+          {intent && (
+            <ResumeButton
+              intent={intent}
+              activeDirName={activeDirName}
+              position={stagePosition(state?.currentStage, pipeline.done, pipeline.executed)}
+            />
+          )}
         </div>
         <dl className="facts">
           <div>

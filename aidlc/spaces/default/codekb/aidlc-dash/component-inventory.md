@@ -1,92 +1,133 @@
-# Komponentinventering: aidlc-dash
+# Component Inventory — aidlc-dash
 
-Detta är den enda förteckningen över komponenter; övriga artefakter hänvisar hit.
+Varje komponent med ansvar och beroenden. Filkategorier finns i [code-structure.md](code-structure.md); kanaler i [api-documentation.md](api-documentation.md).
 
-## Main-process (`src/main/`)
+## Main Entry
 
-### main-entry
-`src/main/index.js`. Skapar fönstret med säkra webPreferences, blockerar navigering och nya fönster, behåller userData-mappen `aidlc-dash`, registrerar IPC och stänger ner vid avslut. Beror på: ipc.
+`src/main/index.js`. Sätter userData till `aidlc-dash`, skapar `BrowserWindow` med sandbox/contextIsolation, blockerar navigering och nya fönster (http(s) till OS-webbläsaren), Dock-ikon i dev, registrerar IPC, stänger ner vid `before-quit`.
+Beror på: ipc.js, electron.
 
-### ipc
-`src/main/ipc.js`. Hela IPC-ytan (se `api-documentation.md`). Håller `projects`-kartan `projectId → {root, space, watcher, sender}` och startar om bevakningen när space byts. Beror på: projectAccess, projectService, settings, watcher, pty.
+## IPC Router
 
-### projectAccess
-`src/main/projectAccess.js`. Skrivskyddad, rotbegränsad filåtkomst: `openRoot`, `resolveInRoot`, `readText`, `readJsonSafe` (kastar aldrig), `listDir`, `exists`. Beror på: `node:fs`.
+`src/main/ipc.js`. Handler-tabell för alla kanaler, projektregister `projects` (root, space, watcher, sender, models), startar om watcher vid spacebyte, stänger allt vid `shutdown`.
+Beror på: projectAccess, projectService, parsers/ledger, models, settings, watcher, pty.
 
-### projectService
-`src/main/projectService.js`. `detectProject`, `listSpaces`, `loadIntentList` (inkrementell via `onlyDirs`), `loadIntentDetail` (state, graph, pipeline, audit, units, direktiv, artefaktlista). Cachar per root/space/intent och returnerar senaste giltiga data vid fel. Beror på: projectAccess, parsers.
+## Project Access
 
-### watcher
-`src/main/watcher.js`. `watchIntents` med chokidar över en space:s `intents/`; ignorerar `.aidlc-engine/` utom `active-directive.json`; debounce 300 ms, max 800 ms; rapporterar `{dirNames, indexChanged}`. Beror på: chokidar.
+`src/main/projectAccess.js`. `openRoot`, `resolveInRoot`, `readText`, `readJsonSafe`, `listDir`, `exists`. Skrivskyddad och rotinnesluten.
+Beror på: node:fs, node:path.
 
-### pty
-`src/main/pty.js`. Terminalsessioner via node-pty i projektroten (`$SHELL -l -i -c claude` eller `$SHELL -l`), clamping av storlek, avslut per projekt eller alla. Beror på: node-pty.
+## Project Service
 
-### settings
-`src/main/settings.js`. Läser/skriver `userData/settings.json` (`openProjects`, `recentProjects`, `activeProject`, max 50 poster). Appens enda skrivning. Beror på: electron `app`, `node:fs`.
+`src/main/projectService.js`. `detectProject`, `listSpaces`, `loadIntentList` (cache, omläsning per intent), `loadIntentDetail` (state, graf, audit, direktiv, artefakter), `loadCost`. Konstanter `LEDGER_PATH`, `intentsDir`.
+Beror på: projectAccess, parsers.
 
-### parsers
-`src/main/parsers/`. Rena funktioner:
-- `state.js`: `parseState` för `aidlc-state.md` (sektioner med `- **Nyckel**: värde`, fas-checkboxar `[ ] [-] [?] [R] [x] [S]`).
-- `audit.js`: `parseAudit`, `mergeAudits` (stabil sortering på Timestamp), `categoryOf`, `NOISY_EVENTS`.
-- `runtimeGraph.js`: `parseRuntimeGraph` (stages med agent, tider, utfall, sensorantal; `bolt_dag`).
-- `intents.js`: `mergeIntents` (index mot disk, saknas-flaggor, datum från mappnamn).
-- `pipeline.js`: `mergePipeline` (state vinner, avvikelseflagga, klara/körda).
-- `units.js`: `unitStatuses` från `UNIT_STARTED`/`UNIT_COMPLETED`.
+## Configured Models
 
-## Preload (`src/preload/`)
+`src/main/models.js`. `getConfiguredModels(root, {exec})`: kör `aidlc config models` med inloggningsskalets PATH, faller tillbaka på agentfilernas frontmatter. Kastar aldrig.
+Beror på: node:child_process, projectAccess, parsers/ledger.
 
-### preload-bridge
-`src/preload/index.js`. Exponerar `window.bridge` med namngivna anrop och prenumerationer, ingen generisk invoke. Beror på: electron `contextBridge`, `ipcRenderer`.
+## PTY Sessions
 
-## Renderer (`src/renderer/`)
+`src/main/pty.js`. `spawnSession` (claude eller shell), `writeSession`, `resizeSession`, `killSession`, `killProjectSessions`, `killAllSessions`. Lazy-laddar node-pty.
+Beror på: node-pty, node:crypto.
 
-### App
-`App.jsx`. Projektflikar, återställning och sparande av öppna flikar, felbanner. Håller alla flikar monterade. Beror på: preload-bridge, ProjectView, Splash, AuctumMark.
+## File Watcher
 
-### ProjectView
-`ProjectView.jsx`. Sidopanel (space-väljare, IntentList), innehåll (IntentDetail) och TerminalPanel; visar "Inget AI-DLC-projekt" för vanliga mappar. Beror på: useProject, IntentList, IntentDetail, TerminalPanel.
+`src/main/watcher.js`. `watchIntents({intentsDir, ledgerFile, onChange})`: chokidar på intents/ (ignorerar `.aidlc-engine/` utom `active-directive.json`) och på ledgern via `aidlc/`; debounce med maxväntan.
+Beror på: chokidar.
 
-### useProject
-`useProject.js`. Datahook per projektflik: laddar lista och detalj, lyssnar på `project:changed`/`project:watchError`, laddar om bara berörda intents och markerar nya audit-händelser i 4 s. Beror på: preload-bridge.
+## App Settings
 
-### IntentList
-`IntentList.jsx`. Lista med fritext-, status- och scope-filter (`filterIntents`), flaggor för saknas/läsfel. Ingen sortering. Beror på: format.
+`src/main/settings.js`. `getSettings`/`setSettings` för öppna och senaste projekt samt aktivt projekt. Enda filskrivaren.
+Beror på: electron app, node:fs.
 
-### IntentDetail
-`IntentDetail.jsx`. Rubrik med fakta (scope, depth, test strategy, stages, direktiv) och flikarna Pipeline, Tidslinje, Units, Filer. Beror på: Pipeline, Timeline, BoltDag, ArtifactReader, format.
+## Parsers
 
-### Pipeline
-`Pipeline.jsx`. Faser och stages med status, agent, tider, varaktighet, avvikelse och filer per stage. Beror på: format.
+`src/main/parsers/`:
+- `audit.js` — `parseAudit`, `mergeAudits`, `categoryOf`, `NOISY_EVENTS`
+- `intents.js` — `mergeIntents`, `dateFromDirName`
+- `ledger.js` — `summarizeLedger`, `costOf`, `compareModels`, `agentName`
+- `pipeline.js` — `mergePipeline` (state vinner, avvikelse flaggas)
+- `runtimeGraph.js` — `parseRuntimeGraph` (stages, bolt-DAG)
+- `state.js` — `parseState`, `CHECKBOX_STATUS`
+- `units.js` — `unitStatuses`
 
-### Timeline
-`Timeline.jsx`. Audit-händelser nyast först, filter på typ/stage, brusfilter, max 1500 rader. Beror på: format, parsers (`NOISY_EVENTS`).
+Beror på: inget (rena funktioner).
 
-### BoltDag
-`BoltDag.jsx`. Handritad SVG av units per batch med beroendepilar och status. Beror på: format.
+## Preload Bridge
 
-### ArtifactReader
-`ArtifactReader.jsx`. Filträd och filvy; markdown utan rå HTML, JSON snyggt formaterad; Visa i Finder och Öppna i editor. Beror på: preload-bridge, react-markdown, remark-gfm.
+`src/preload/index.js`. `window.bridge` med 17 anrop, 4 prenumerationer och `platform`.
+Beror på: electron contextBridge/ipcRenderer.
 
-### TerminalPanel
-`TerminalPanel.jsx`. Två xterm-sessioner (`claude`, `shell`), höjdjustering, snabbkommandon som skrivs in utan Enter. Beror på: preload-bridge, @xterm/xterm, @xterm/addon-fit.
+## App Shell
 
-### Splash
-`Splash.jsx`. Startskärm, minst 900 ms, högst 4000 ms, 300 ms uttoning; exporterar `APP_NAME`. Beror på: AuctumMark.
+`src/renderer/App.jsx`. Projektflikar, öppna/stäng projekt, återställ och spara flikar, felbanner, tomt läge. Alla flikar hålls monterade.
+Beror på: ProjectView, Splash, AuctumMark, bridge.
 
-### AuctumMark
-`AuctumMark.jsx`. Auctums logga som SVG med `currentColor`.
+## Project View
 
-### format
-`format.js`. Statusetiketter, kategorietiketter, `formatTime` (sv-SE), `formatDuration`, `isInFlight`.
+`src/renderer/ProjectView.jsx`. Väljer mellan AI-DLC-vy (sidopanel med space-val, CostPanel, IntentList; innehåll med IntentDetail) och skärmen "Inget AI-DLC-projekt". Visar alltid TerminalPanel.
+Beror på: useProject, IntentList, IntentDetail, CostPanel, TerminalPanel.
 
-### theme
-`theme.css` och `main.jsx`. Tema (LCARS-inspirerat), typsnittet Antonio, React-rot.
+## useProject Hook
 
-## Bygg och test
+`src/renderer/useProject.js`. Laddar lista, vald detalj, kostnad och modeller; reagerar på `project:changed`; markerar nya audit-händelser i 4 s.
+Beror på: bridge.
 
-### release-workflow
-`.github/workflows/release.yml`. Vid tagg `v*.*.*`: kontrollera att taggen matchar `package.json`, kör vitest, bygg mac (universal dmg) och linux (deb), skapa GitHub Release.
+## Intent List
 
-### test-suite
-`tests/`. Vitest-projekten `main` (node) och `renderer` (jsdom) med fixturer; se `code-quality-assessment.md`.
+`src/renderer/IntentList.jsx`. Sök, filter (status, scope), sortering; rad med aktiv-tagg, live-prick (`isInFlight`), kostnad, klara/körda stages, flaggor. Exporterar `sortIntents`, `filterIntents`.
+Beror på: format.
+
+## Intent Detail
+
+`src/renderer/IntentDetail.jsx`. Rubrik med fakta (scope, depth, test strategy, stages, aktuell stage, direktiv) och flikarna Pipeline, Tidslinje, Units, Kostnad, Filer.
+Beror på: Pipeline, Timeline, BoltDag, CostTab, ArtifactReader, format.
+
+## Pipeline View
+
+`src/renderer/Pipeline.jsx`. Faser och stages med status, aktuell, avvikelse, agent/modell, tider, kostnad och filer.
+
+## Timeline View
+
+`src/renderer/Timeline.jsx`. Audit-händelser nyast först, filter för typ/stage/brus, tak 1500 rader.
+
+## Bolt DAG View
+
+`src/renderer/BoltDag.jsx`. SVG-layout per batch med beroendepilar och unitstatus.
+
+## Cost Views
+
+`src/renderer/CostPanel.jsx` (projektöversikt: total, stapeldiagram, per modell/agent/scope, modelltabell) och `src/renderer/CostTab.jsx` (intentens kostnad; exporterar `CostLabel`, `CostTable`, `ModelTable`).
+Beror på: format, parsers/ledger.
+
+## Artifact Reader
+
+`src/renderer/ArtifactReader.jsx`. Filträd per stagemapp, markdown utan rå HTML och utan aktiva länkar, JSON snyggformaterad, "Visa i Finder" och "Öppna i editor".
+Beror på: react-markdown, remark-gfm, bridge.
+
+## Terminal Panel
+
+`src/renderer/TerminalPanel.jsx`. Två `TermSession` (claude, shell) som hålls monterade, ändringsbar höjd, omstart vid avslut, snabbkommandon (`/aidlc --status`, `/aidlc --doctor`, `/aidlc continue`) som skrivs in i claude-fliken utan Enter via `claudeRef.insert`.
+Beror på: @xterm/xterm, @xterm/addon-fit, bridge.
+
+## Branding
+
+`src/renderer/Splash.jsx` (startskärm 0,9–4 s, `APP_NAME`), `src/renderer/AuctumMark.jsx` (SVG-logga), `src/renderer/theme.css` (LCARS-tema, CSS-variabler).
+
+## Format Helpers
+
+`src/renderer/format.js`. Statusetiketter, tid/varaktighet, USD/tokens, kostnadstexter, `isInFlight`.
+
+## Build Scripts
+
+`scripts/check-glibc.mjs` (CI-kontroll av native-binärer mot Ubuntu 22.04), `scripts/make-icon.cjs` (SVG till PNG och Linux-storlekar via Electron).
+
+## Intent-relevans (EPIC-05)
+
+| Story | Berörda komponenter |
+|---|---|
+| US-0501 Fortsätt | Terminal Panel (insert med Enter, upptagen-signal, insert utifrån), Project View (dela terminalref), Intent List / Intent Detail (knapp), Format Helpers (`isInFlight`), Pipeline View-data (position) |
+| US-0502 Uppdatera från GitHub | ny git-tjänst i main (mönster från Configured Models), IPC Router + Preload Bridge (nya kanaler), Intent List ("på GitHub"), Terminal Panel (insert i shell-fliken) |
+| US-0503 Initiera AI-DLC | Project View (icke-AI-DLC-skärmen), IPC Router (omdetektering, watcher även för icke-AI-DLC), Project Service (`detectProject`), Terminal Panel (omstart av claude) |

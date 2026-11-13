@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
-import { watchIntents } from '../../src/main/watcher.js';
+import { watchForAidlc, watchIntents } from '../../src/main/watcher.js';
 
 const SOURCE = path.resolve(__dirname, '../fixtures/project/aidlc/spaces/default/intents/261110-epic02-finish');
 const TMP = path.resolve(__dirname, '../.tmp/watcher');
@@ -73,5 +73,26 @@ describe('watchIntents', () => {
     await fs.writeFile(ledgerFile, '{"schemaVersion":3,"totals":{}}');
     await wait(600);
     expect(calls).toEqual([{ dirNames: [], indexChanged: false, costChanged: true }]);
+  });
+});
+
+describe('watchForAidlc', () => {
+  it('calls onFound once when a space appears under aidlc/spaces/, ignoring other folders (FR4.6)', async () => {
+    const root = path.join(TMP, 'plain');
+    await fs.mkdir(path.join(root, 'src'), { recursive: true });
+    await wait(300); // same FSEvents settling as above
+    let found = 0;
+    watcher = watchForAidlc({ root, onFound: () => found++ });
+    await watcher.ready;
+
+    await fs.mkdir(path.join(root, 'src', 'spaces'), { recursive: true });
+    await fs.mkdir(path.join(root, 'aidlc'));
+    await wait(300);
+    expect(found).toBe(0);
+
+    await fs.mkdir(path.join(root, 'aidlc', 'spaces', 'default', 'intents'), { recursive: true });
+    await fs.mkdir(path.join(root, 'aidlc', 'spaces', 'other'));
+    await wait(600);
+    expect(found).toBe(1);
   });
 });

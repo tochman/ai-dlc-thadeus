@@ -2,6 +2,8 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { Terminal } from '@xterm/xterm';
 import { FitAddon } from '@xterm/addon-fit';
 import '@xterm/xterm/css/xterm.css';
+import { createActivity } from './terminalControl.js';
+import { useTerminal } from './TerminalContext.jsx';
 
 const bridge = window.bridge;
 const QUICK_COMMANDS = ['/aidlc --status', '/aidlc --doctor', '/aidlc continue'];
@@ -9,6 +11,7 @@ const KINDS = [
   { id: 'claude', label: 'claude' },
   { id: 'shell', label: 'shell' }
 ];
+const STATE_LABEL = { idle: 'ledig', busy: 'arbetar', exited: 'avslutad' };
 const errorText = (err) => String(err?.message ?? err).replace(/^Error invoking remote method '[^']+': (Error: )?/, '');
 
 const THEME = {
@@ -18,25 +21,54 @@ const THEME = {
   selectionBackground: '#4a3f6b'
 };
 
-/** One xterm bound to one pty. Stays mounted while hidden so the session survives view switches. */
-function TermSession({ projectId, kind, shown, sessionRef }) {
+/**
+ * One xterm bound to one pty. Stays mounted while hidden so the session survives view switches.
+ * Registers itself with the TerminalProvider so other views can type into it (FR1.1).
+ */
+function TermSession({ projectId, kind, shown, register }) {
   const hostRef = useRef(null);
   const termRef = useRef(null);
   const fitRef = useRef(null);
   const idRef = useRef(null);
+  const [activity] = useState(() => createActivity());
   const [exited, setExited] = useState(null);
   const [error, setError] = useState(null);
 
+  /** Resolves true once the pty runs; output then drives the activity signal (FR1.2). */
   const spawn = useCallback(async () => {
     setExited(null);
     setError(null);
     const term = termRef.current;
     try {
       idRef.current = await bridge.ptySpawn({ projectId, kind, cols: term.cols, rows: term.rows });
+      activity.onData(); // counts as busy until the first quiet period
+      return true;
     } catch (err) {
       setError(errorText(err));
+      return false;
     }
-  }, [projectId, kind]);
+  }, [projectId, kind, activity]);
+
+  useEffect(
+    () =>
+      register(kind, {
+        activity,
+        spawn,
+        write: (text) => {
+          if (!idRef.current) throw new Error(`${kind} körs inte.`);
+          bridge.ptyWrite(idRef.current, text).catch((err) => setError(errorText(err)));
+        },
+        focus: () => termRef.current?.focus(),
+        restart: async () => {
+          const id = idRef.current;
+          idRef.current = null; // the old session's exit event is ignored
+          if (id) await bridge.ptyKill(id).catch(() => {});
+          activity.onExit(null);
+          return spawn();
+        }
+      }),
+    [register, kind, activity, spawn]
+  );
 
   useEffect(() => {
     const term = new Terminal({
@@ -57,11 +89,16 @@ function TermSession({ projectId, kind, shown, sessionRef }) {
       /* host not laid out yet; the ResizeObserver fits it later */
     }
 
-    const offData = bridge.onPtyData(({ id, data }) => id === idRef.current && term.write(data));
+    const offData = bridge.onPtyData(({ id, data }) => {
+      if (id !== idRef.current) return;
+      term.write(data);
+      activity.onData();
+    });
     const offExit = bridge.onPtyExit(({ id, exitCode }) => {
       if (id !== idRef.current) return;
       idRef.current = null;
       setExited(exitCode);
+      activity.onExit(exitCode);
     });
     const input = term.onData((data) => {
       if (idRef.current) bridge.ptyWrite(idRef.current, data).catch((err) => setError(errorText(err)));
@@ -82,9 +119,10 @@ function TermSession({ projectId, kind, shown, sessionRef }) {
       offData();
       offExit();
       if (idRef.current) bridge.ptyKill(idRef.current).catch(() => {});
+      activity.onExit(null);
       term.dispose();
     };
-  }, [spawn]);
+  }, [spawn, activity]);
 
   useEffect(() => {
     if (!shown) return;
@@ -95,17 +133,6 @@ function TermSession({ projectId, kind, shown, sessionRef }) {
     }
     termRef.current?.focus();
   }, [shown]);
-
-  // Quick actions type into the claude session without pressing Enter (FR8.5).
-  if (sessionRef) {
-    sessionRef.current = {
-      insert: (text) => {
-        if (!idRef.current) return;
-        bridge.ptyWrite(idRef.current, text).catch((err) => setError(errorText(err)));
-        termRef.current?.focus();
-      }
-    };
-  }
 
   return (
     <div className="term-session" hidden={!shown}>
@@ -122,11 +149,13 @@ function TermSession({ projectId, kind, shown, sessionRef }) {
   );
 }
 
+/** Must sit inside a TerminalProvider: which tab is open and active is shared with the other views (FR1.4). */
 export default function TerminalPanel({ projectId, visible }) {
-  const [open, setOpen] = useState(true);
+  const terminal = useTerminal();
+  const { open, active } = terminal.view;
+  const setOpen = (next) => terminal.setView((v) => ({ ...v, open: typeof next === 'function' ? next(v.open) : next }));
+  const setActive = (tab) => terminal.setView((v) => ({ ...v, active: tab }));
   const [height, setHeight] = useState(320);
-  const [active, setActive] = useState('claude');
-  const claudeRef = useRef(null);
 
   function startDrag(e) {
     e.preventDefault();
@@ -178,20 +207,24 @@ export default function TerminalPanel({ projectId, visible }) {
               data-testid={`terminal-panel-tab-${k.id}`}
             >
               {k.label}
+              <span className={`term-state term-state-${terminal.state(k.id)}`} data-testid={`terminal-panel-state-${k.id}`}>
+                {STATE_LABEL[terminal.state(k.id)]}
+              </span>
             </button>
           ))}
         </div>
+        {terminal.error && (
+          <span className="term-error" role="alert" data-testid="terminal-panel-error">
+            {terminal.error}
+          </span>
+        )}
         <div className="quick-actions">
           {QUICK_COMMANDS.map((cmd) => (
             <button
               key={cmd}
               className="btn btn-quiet"
               title="Skriver in kommandot i claude-fliken utan att skicka det"
-              onClick={() => {
-                setActive('claude');
-                setOpen(true);
-                claudeRef.current?.insert(cmd);
-              }}
+              onClick={() => terminal.type('claude', cmd, { submit: false })}
               data-testid="terminal-panel-quick-command"
             >
               {cmd}
@@ -206,7 +239,7 @@ export default function TerminalPanel({ projectId, visible }) {
             projectId={projectId}
             kind={k.id}
             shown={visible && open && active === k.id}
-            sessionRef={k.id === 'claude' ? claudeRef : null}
+            register={terminal.register}
           />
         ))}
       </div>

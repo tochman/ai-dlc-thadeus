@@ -1,48 +1,66 @@
-# API-dokumentation: aidlc-dash
+# API Documentation — aidlc-dash
 
-Appen har inga HTTP-API:er och gör inga nätverksanrop. Dess API-yta är Electron-IPC mellan renderer och main, exponerad via preload som `window.bridge`. Alla anrop är `ipcRenderer.invoke` och returnerar ett Promise; ett fel i main loggas och blir ett avvisat Promise (`ipc.js:96-107`).
+Appen har inga HTTP-endpoints och ingen databas. API-ytorna är Electron-IPC, preload-bryggan och de filer och kommandon appen läser.
 
-## Anrop (renderer → main)
+## IPC request/response (`ipcMain.handle`, `src/main/ipc.js`)
 
-| `window.bridge` | Kanal | Argument | Returnerar |
+Alla handlers loggar fel och kastar vidare (renderaren får ett avvisat promise). `projectId` slås upp i en in-memory-map; okänt id ger fel.
+
+| Kanal | Bridge-funktion | Argument | Svar |
 |---|---|---|---|
-| `pickProject()` | `project:pick` | – | vald mapp eller `null` |
-| `openProject(dir)` | `project:open` | mappsökväg | `{projectId, root, name, detection}` där `detection = {isAidlc, activeSpace, spaces}` eller `{isAidlc:false, reason}` |
-| `closeProject(id)` | `project:close` | projectId | – (stänger pty-sessioner och bevakning) |
-| `getSpaces(id)` | `project:spaces` | projectId | `string[]` |
-| `getIntents(id, space, onlyDirs?)` | `project:intents` | projectId, space, valfri lista intent-mappar att läsa om | `{intents[], warning}`; startar om bevakning om space byts |
-| `getIntent(id, space, dirName)` | `project:intent` | projectId, space, intent-mapp | `{dirName, base, request, state, graph, pipeline, events, units, directive, files, warnings, stale?}` |
-| `readFile(id, rel)` | `project:file` | projectId, rotrelativ sökväg | filens text |
-| `revealInFinder(id, rel)` | `shell:reveal` | projectId, rotrelativ sökväg | – |
-| `openInEditor(id, rel)` | `shell:openInEditor` | projectId, rotrelativ sökväg | – ; bara `.md .json .txt .yaml .yml` |
-| `getSettings()` | `settings:get` | – | `{openProjects, recentProjects, activeProject}` |
-| `setSettings(partial)` | `settings:set` | delobjekt | sanerade inställningar |
-| `ptySpawn({projectId, kind, cols, rows})` | `pty:spawn` | `kind` = `claude` eller `shell` | sessions-id |
-| `ptyWrite(id, data)` | `pty:write` | id, sträng | – |
-| `ptyResize(id, cols, rows)` | `pty:resize` | id, heltal 1–999 | – |
-| `ptyKill(id)` | `pty:kill` | id | – |
+| `project:pick` | `pickProject()` | – | vald mappsökväg eller `null` |
+| `project:open` | `openProject(dir)` | sökväg | `{projectId, root, name, detection}`; `detection = {isAidlc, activeSpace, spaces}` eller `{isAidlc:false, reason}` |
+| `project:close` | `closeProject(id)` | projectId | – (dödar terminaler, stänger watcher) |
+| `project:spaces` | `getSpaces(id)` | projectId | `string[]` |
+| `project:intents` | `getIntents(id, space, onlyDirs?)` | | `{intents[], warning}` (se intent-fält nedan) |
+| `project:intent` | `getIntent(id, space, dirName)` | | `{dirName, base, request, state, graph, pipeline, events, units, directive, files, warnings, stale?}` |
+| `project:cost` | `getCost(id, space)` | | `{available:false, reason}` eller `{available:true, project, perIntent, byScope, timeline, stale?, warning?}` |
+| `project:models` | `getModels(id)` | | `{source:'aidlc-config'|'agent-files'|'none', agents[{agent, model, effort}], error?}` (cachas per projectId, kastar aldrig) |
+| `project:file` | `readFile(id, rel)` | rotrelativ sökväg | filtext |
+| `shell:reveal` | `revealInFinder(id, rel)` | | – |
+| `shell:openInEditor` | `openInEditor(id, rel)` | endast `.md .json .txt .yaml .yml` | – |
+| `settings:get` | `getSettings()` | | `{openProjects[], recentProjects[], activeProject}` |
+| `settings:set` | `setSettings(partial)` | | sanerade inställningar (listor max 50) |
+| `pty:spawn` | `ptySpawn({projectId, kind, cols, rows})` | `kind: 'claude'|'shell'` | session-id |
+| `pty:write` | `ptyWrite(id, data)` | sträng | – |
+| `pty:resize` | `ptyResize(id, cols, rows)` | heltal 1–999 | – |
+| `pty:kill` | `ptyKill(id)` | | – |
 
-## Händelser (main → renderer)
+**Intent i listan** (`mergeIntents` + `summarizeIntent`): `uuid, slug, dirName, scope, status, date, active, missingOnDisk, missingInIndex, request, currentStage, stateStatus, done, executed, error?, stale?`.
 
-| Prenumeration | Kanal | Payload |
+## IPC push-händelser (renderer-prenumerationer)
+
+| Kanal | Bridge | Payload |
 |---|---|---|
-| `onProjectChanged(cb)` | `project:changed` | `{projectId, space, dirNames: string[], indexChanged: boolean}` |
-| `onWatchError(cb)` | `project:watchError` | `{projectId, message}` |
-| `onPtyData(cb)` | `pty:data` | `{id, data}` |
-| `onPtyExit(cb)` | `pty:exit` | `{id, exitCode, signal}` |
+| `project:changed` | `onProjectChanged(cb)` | `{projectId, space, dirNames[], indexChanged, costChanged}` |
+| `project:watchError` | `onWatchError(cb)` | `{projectId, message}` |
+| `pty:data` | `onPtyData(cb)` | `{id, data}` |
+| `pty:exit` | `onPtyExit(cb)` | `{id, exitCode, signal}` |
 
-Varje prenumeration returnerar en avregistreringsfunktion. `window.bridge.platform` är `process.platform`.
+`window.bridge.platform` exponerar `process.platform`.
 
-## Validering och säkerhet
+## Lästa filkontrakt (AI-DLC-format, rotrelativt)
 
-- `projectId` måste vara ett öppnat projekt (`Okänt projekt`-fel annars).
-- `space` och `dirName` valideras av `assertName` (ingen `/`, `\`, inte punktprefix).
-- Sökvägar går genom `resolveInRoot` (ingen absolut sökväg, ingen `..`, ingen symlänk ut ur roten).
-- Renderer-CSP i `index.html`: `default-src 'self'`, ingen `object-src`, `connect-src 'self' ws:`.
-- Fönstret blockerar navigering; externa `http(s)`-länkar öppnas i OS-webbläsaren.
+| Fil | Tolkas av |
+|---|---|
+| `aidlc/active-space` | `detectProject` |
+| `aidlc/spaces/<space>/intents/intents.json` | `parsers/intents.js` |
+| `.../intents/active-intent` | `loadIntentList` |
+| `.../<intent>/aidlc-state.md` | `parsers/state.js` (fält, `### <PHASE> PHASE`, checkboxar ` - ? R x S`) |
+| `.../<intent>/runtime-graph.json` | `parsers/runtimeGraph.js` (stages, `bolt_dag`) |
+| `.../<intent>/audit/*.md` | `parsers/audit.js` |
+| `.../<intent>/.aidlc-engine/active-directive.json` | `buildDetail` (kind, stage, delivery) |
+| `.../<intent>/project-description.json` | `loadDescription` |
+| `.../<intent>/<phase>/**` (djup 3) | `listArtifacts` |
+| `aidlc/.aidlc-sessions/usage-ledger.json` | `parsers/ledger.js` (schemaVersion 3) |
+| `.claude/agents/aidlc-*-agent.md` (frontmatter `model`, `effort`) | `models.js` (reserv) |
 
-## Externa datakontrakt (filer som läses)
+## Externa kommandon
 
-`aidlc/spaces/<space>/intents/intents.json`, `active-intent`, `<dir>/aidlc-state.md`, `<dir>/runtime-graph.json`, `<dir>/project-description.json`, `<dir>/audit/*.md`, `<dir>/.aidlc-engine/active-directive.json`, `aidlc/active-space`. Parsningsreglerna finns i `component-inventory.md` (parsers).
+| Kommando | Var | Villkor |
+|---|---|---|
+| `$SHELL -l -i -c 'printf ...$PATH'` | `models.js` | en gång per process, 5 s timeout |
+| `aidlc config models --show --json --harness claude` | `models.js` | `execFile`, cwd = rot, 10 s timeout, svaret ska ha `ok:true` och `data.effective[]` |
+| `$SHELL -l -i -c claude` / `$SHELL -l` | `pty.js` | node-pty, cwd = rot, `TERM=xterm-256color` |
 
-**Läses inte i dag (EPIC-02):** `aidlc/.aidlc-sessions/usage-ledger.json` (`schemaVersion: 3`; `totals`, `byStage`, `byModel`, `byAgent`, `workflows["record:<space>/<dir>"]`), `aidlc config models --show --json` och `.claude/agents/aidlc-*-agent.md`-frontmatter.
+EPIC-05 planerar fler (git fetch/show/rev-list/log/diff, `aidlc --version`, `aidlc config --dry-run`); inga finns i dag.

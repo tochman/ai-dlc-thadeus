@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
-import { COST_LABEL, NO_COST_ENTRY, formatCost, isInFlight } from './format.js';
+import { COST_LABEL, NO_COST_ENTRY, formatCost, isInFlight, stagePosition } from './format.js';
+import ResumeButton from './ResumeButton.jsx';
 
 const ALL = '';
 const SORTS = [
@@ -50,6 +51,7 @@ export default function IntentList({ intents, selected, onSelect, cost }) {
   const scopes = useMemo(() => unique(intents.map((i) => i.scope)), [intents]);
   const costs = cost?.available ? cost.perIntent : null;
   const visible = sortIntents(filterIntents(intents, { status, scope, query }), sort, costs);
+  const activeDirName = intents.find((i) => i.active)?.dirName ?? null;
 
   return (
     <div className="intent-list" data-testid="intent-list">
@@ -123,6 +125,7 @@ export default function IntentList({ intents, selected, onSelect, cost }) {
                 </span>
               )}
             </button>
+            <ResumeButton intent={i} activeDirName={activeDirName} position={stagePosition(i.currentStage, i.done, i.executed)} />
           </li>
         ))}
       </ul>

@@ -15,12 +15,15 @@ import {
 } from './projectService.js';
 import { summarizeLedger } from './parsers/ledger.js';
 import { getConfiguredModels } from './models.js';
+import { fetchRemote, getGitStatus, getRemoteChanges, listConflicts, showRemoteFile } from './git.js';
+import { buildSetupCommand, getSetupInfo } from './setup.js';
 import { getSettings, setSettings } from './settings.js';
-import { watchIntents } from './watcher.js';
+import { watchForAidlc, watchIntents } from './watcher.js';
 import { killAllSessions, killProjectSessions, killSession, resizeSession, spawnSession, writeSession } from './pty.js';
 
 const OPEN_IN_EDITOR_EXT = new Set(['.md', '.json', '.txt', '.yaml', '.yml']);
-const projects = new Map(); // projectId -> { root, space, watcher, sender, models }
+// projectId -> { root, space, watcher, setupWatcher, sender, models, setupInfo }
+const projects = new Map();
 
 function project(projectId) {
   const p = projects.get(projectId);
@@ -30,15 +33,40 @@ function project(projectId) {
 
 async function closeWatcher(p) {
   const w = p.watcher;
+  const s = p.setupWatcher;
   p.watcher = null;
-  if (w) await w.close();
+  p.setupWatcher = null;
+  await Promise.all([w?.close(), s?.close()]);
+}
+
+/** A folder without AI-DLC is watched until a space appears, then it is detected again (FR4.6). */
+function watchForSetup(projectId) {
+  const p = project(projectId);
+  p.setupWatcher = watchForAidlc({
+    root: p.root,
+    onFound: async () => {
+      try {
+        const detection = await detectProject(p.root);
+        if (!detection.isAidlc || !projects.has(projectId)) return;
+        await p.setupWatcher?.close();
+        p.setupWatcher = null;
+        await watchSpace(projectId, detection.activeSpace);
+        if (!p.sender.isDestroyed()) p.sender.send('project:detected', { projectId, detection });
+      } catch (err) {
+        console.error(`Omdetektering misslyckades för ${p.root}:`, err);
+      }
+    },
+    onError: (err) => console.error(`Bevakning efter AI-DLC misslyckades för ${p.root}:`, err)
+  });
 }
 
 /** (Re)starts the watcher when the renderer looks at a different space. */
 async function watchSpace(projectId, space) {
   const p = project(projectId);
   if (p.watcher && p.space === space) return;
-  await closeWatcher(p);
+  const w = p.watcher;
+  p.watcher = null;
+  await w?.close();
   p.space = space;
   p.watcher = watchIntents({
     intentsDir: path.join(p.root, intentsDir(space)),
@@ -65,8 +93,9 @@ const handlers = {
     const root = await openRoot(dir);
     const detection = await detectProject(root);
     const projectId = randomUUID();
-    projects.set(projectId, { root, space: null, watcher: null, sender: event.sender });
+    projects.set(projectId, { root, space: null, watcher: null, setupWatcher: null, sender: event.sender });
     if (detection.isAidlc) await watchSpace(projectId, detection.activeSpace);
+    else watchForSetup(projectId);
     return { projectId, root, name: path.basename(root), detection };
   },
   'project:close': async (_event, projectId) => {
@@ -109,6 +138,20 @@ const handlers = {
     const err = await shell.openPath(await resolveInRoot(project(projectId).root, rel));
     if (err) throw new Error(err);
   },
+  // Read-only git (US-0502). The ref and path are checked in git.js against the branch's own upstream.
+  'git:status': async (_event, projectId) => getGitStatus(project(projectId).root),
+  'git:fetch': async (_event, projectId) => fetchRemote(project(projectId).root),
+  'git:remoteChanges': async (_event, projectId, ref, space) =>
+    getRemoteChanges(project(projectId).root, String(ref), { space: String(space ?? 'default') }),
+  'git:showRemote': async (_event, projectId, ref, rel) => showRemoteFile(project(projectId).root, String(ref), String(rel)),
+  'git:conflicts': async (_event, projectId) => listConflicts(project(projectId).root),
+  // Setup (US-0503): the command is only built here, never run; plugins must be ones setup:info read.
+  'setup:info': async (_event, projectId) => {
+    const p = project(projectId);
+    p.setupInfo = await getSetupInfo(p.root);
+    return p.setupInfo;
+  },
+  'setup:command': async (_event, projectId, options) => buildSetupCommand(options, project(projectId).setupInfo?.plugins ?? []),
   'settings:get': async () => getSettings(),
   'settings:set': async (_event, partial) => setSettings(partial),
   'pty:spawn': async (event, { projectId, kind, cols, rows }) =>

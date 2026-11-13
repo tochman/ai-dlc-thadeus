@@ -12,7 +12,7 @@
     "slug": "cost-and-models",
     "dirName": "261113-cost-and-models",
     "scope": "express",
-    "status": "in-flight",
+    "status": "complete",
     "request": "cd3e517e"
   },
   {
@@ -22,5 +22,13 @@
     "scope": "bugfix",
     "status": "complete",
     "request": "4b9100de"
+  },
+  {
+    "uuid": "01a1d449-c5cb-73d1-8ce4-7b5329b68f56",
+    "slug": "workflow-control",
+    "dirName": "261113-workflow-control",
+    "scope": "express",
+    "status": "in-flight",
+    "request": "2af448e9"
   }
 ]

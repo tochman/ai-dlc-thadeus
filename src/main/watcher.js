@@ -88,3 +88,29 @@ export function watchIntents({ intentsDir, ledgerFile, onChange, onError = conso
     }
   };
 }
+
+/**
+ * Watches a folder that is not an AI-DLC project yet and calls `onFound` once, when the first space
+ * folder appears under aidlc/spaces/ (that is when detectProject accepts it, FR4.6). Only root, aidlc/,
+ * aidlc/spaces/ and its direct children are let through, so a large project is not scanned.
+ */
+export function watchForAidlc({ root, onFound, onError = console.error }) {
+  const base = path.resolve(root);
+  const spaces = path.join(base, 'aidlc', 'spaces');
+  const keep = (p) => {
+    const abs = path.resolve(p);
+    return abs === base || abs === path.dirname(spaces) || abs === spaces || path.dirname(abs) === spaces;
+  };
+  let found = false;
+  // ignoreInitial is off so a space created between detectProject and this watcher still counts.
+  const watcher = chokidar.watch(base, { depth: 2, ignored: (p) => !keep(p) });
+  watcher.on('addDir', (p) => {
+    const abs = path.resolve(p);
+    if (found || path.dirname(abs) !== spaces || path.basename(abs).startsWith('.')) return;
+    found = true;
+    onFound();
+  });
+  watcher.on('error', onError);
+  const ready = new Promise((resolve) => watcher.once('ready', resolve));
+  return { ready, close: () => watcher.close() };
+}
