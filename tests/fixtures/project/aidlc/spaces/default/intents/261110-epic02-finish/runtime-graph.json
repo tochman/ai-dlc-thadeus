@@ -1,0 +1,43 @@
+{
+  "workflow_id": "2026-11-10T15:48:21Z",
+  "scope": "feature",
+  "started_at": "2026-11-10T15:48:21Z",
+  "stages": [
+    {
+      "stage_slug": "units-generation",
+      "started_at": "2026-11-10T19:30:00Z",
+      "completed_at": "2026-11-10T19:55:00Z",
+      "agent": "aidlc-architect-agent",
+      "sensor_firings": [],
+      "outcome": "approved"
+    },
+    {
+      "stage_slug": "code-generation",
+      "started_at": "2026-11-10T20:27:40Z",
+      "completed_at": "2026-11-10T23:28:30Z",
+      "agent": "aidlc-developer-agent",
+      "sensor_firings": [],
+      "outcome": "approved"
+    }
+  ],
+  "bolt_dag": {
+    "units": [
+      { "name": "u1-departments", "depends_on": [], "kind": "service" },
+      { "name": "u2-visibility-rls", "depends_on": ["u1-departments"], "kind": "service" },
+      { "name": "u3-reports-assistant", "depends_on": ["u2-visibility-rls"], "kind": "service" },
+      { "name": "u4-department-ui", "depends_on": ["u1-departments", "u2-visibility-rls"], "kind": "ui" },
+      { "name": "u5-privilege-templates", "depends_on": [], "kind": "service" },
+      {
+        "name": "u6-epic-docs",
+        "depends_on": ["u1-departments", "u2-visibility-rls", "u3-reports-assistant", "u4-department-ui", "u5-privilege-templates"],
+        "kind": "spec"
+      }
+    ],
+    "batches": [
+      ["u1-departments", "u5-privilege-templates"],
+      ["u2-visibility-rls"],
+      ["u3-reports-assistant", "u4-department-ui"],
+      ["u6-epic-docs"]
+    ]
+  }
+}

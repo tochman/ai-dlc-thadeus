@@ -25,3 +25,9 @@ aidlc/spaces/*/intents/*/.aidlc-*
 aidlc/diagnostics/
 .claude/settings.local.json
 # END AI-DLC:gitignore
+
+# aidlc-dash build and test output
+node_modules/
+out/
+dist/
+tests/.tmp/

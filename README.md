@@ -1,6 +1,6 @@
-# aidlc-dash
+# Auctum AIDLC Control
 
-An Electron "bridge console" for AI-DLC projects: a sci-fi (LCARS-inspired, kept tasteful) view of what the agents are doing.
+Auctum AIDLC Control (repo: `aidlc-dash`) är en Electron-"bridge console" för AI-DLC-projekt: en sci-fi-vy (LCARS-inspirerad, men återhållsam) av vad agenterna gör, med Auctums logga på startskärmen och i sidhuvudet.
 
 ## Vision
 
@@ -13,3 +13,26 @@ An Electron "bridge console" for AI-DLC projects: a sci-fi (LCARS-inspired, kept
 - Interactive: send commands to Claude (e.g. `/aidlc ...`, answer gate questions) from the console
 
 Built with AI-DLC itself, see `aidlc/spaces/default/intents/`.
+
+## Kom igång
+
+Kräver macOS, Node 22 och npm. `claude` och `aidlc` ska finnas i ditt inloggningsskal. Appen installerar dem inte.
+
+```bash
+npm install          # installerar beroenden och bygger om node-pty för Electron
+npm run dev          # startar appen med hot reload
+npm run build        # bygger en osignerad macOS-app (.app och .dmg) i dist/
+npx vitest run tests/  # kör enhetstesterna
+```
+
+Den osignerade appen öppnar du första gången med högerklick och sedan **Öppna**, eftersom Gatekeeper annars blockerar den.
+
+I appen öppnar du ett projekt med **+ Öppna projekt**. Varje projekt får en egen flik med intent-lista, detaljvy (Pipeline, Tidslinje, Units, Filer) och en terminalpanel med två flikar: `claude` och `shell`. Båda startar i projektroten. Flikarna öppnas igen nästa gång appen startar.
+
+## Säkerhet
+
+- Appen är skrivskyddad mot AI-DLC-filer och skriver aldrig till dem. Den enda fil appen skriver är sina egna inställningar i `~/Library/Application Support/aidlc-dash/settings.json`.
+- All filåtkomst går via huvudprocessen och begränsas till de projektrötter du har öppnat. Sökvägar med `..`, absoluta sökvägar och symlänkar som pekar ut ur roten avvisas.
+- Renderaren körs med `contextIsolation`, utan `nodeIntegration` och i sandbox. Den når bara ett smalt preload-API med namngivna funktioner.
+- Markdown från artefakter renderas utan rå HTML, så inget skript i en artefakt körs. "Öppna i editor" fungerar bara för dokumentfiler (`.md`, `.json`, `.txt`, `.yaml`, `.yml`).
+- Terminalflikarna kör med din vanliga miljö och dina vanliga rättigheter, precis som en terminal du startar själv.
