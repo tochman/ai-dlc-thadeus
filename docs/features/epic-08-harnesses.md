@@ -8,25 +8,26 @@
 
 **Stories:** US-0801, US-0802
 
-**Status (2026-11-13):** 📋 Planned. Not part of v0.2.0.
+**Status (2026-11-13):** 🚧 US-0801 built, merged to main, not released (Claude Code and opencode selectable; Codex, Kiro, Cursor and Copilot detected only). US-0802 📋 Planned.
 
 ---
 
 ## User Stories
 
-**US-0801: Choose the harness per project (for example opencode instead of Claude)** 📋 Planned
+**US-0801: Choose the harness per project (for example opencode instead of Claude)** 🚧 Built, merged to main, not released
 - As a **developer who uses opencode (or Codex, Kiro) instead of Claude Code**, in order to **drive AI-DLC from the console with the tool I actually use**, I would like to **choose which harness the agent terminal runs for each project**.
 - **Epic:** EPIC-08
 - **Priority:** High
 - **Complexity:** Medium
 - **Acceptance Criteria:**
-  - [ ] **Detection:** when a project opens, the app sees which harnesses are installed in it (`.claude/`, `.aidlc/` for opencode, `.codex/`, `.kiro/`, `.cursor/`, `.github/` with AI-DLC files) and which CLIs are on the PATH (`claude`, `opencode`, `codex`, `kiro-cli`, each version read with `--version`, fixed arguments, no shell).
-  - [ ] **Choice per project** in Projektinställningar (and later in the settings view, US-0405): "Agent-terminal: Claude Code / opencode / Codex / Kiro". The default is the only installed harness, or Claude Code when there are several. Saved in the app's own `settings.json`, never in the project.
-  - [ ] **The agent tab** is named after the chosen harness ("opencode" instead of "claude"), starts that CLI in the project root through the login shell, and has the same states (Ledig / Arbetar / Avslutad, US-0501).
-  - [ ] **Commands follow the harness:** Fortsätt (US-0501), the quick commands and the setup offers use the harness's own way of running AI-DLC, from one table per harness (for example `/aidlc` in Claude Code and opencode, the skill or prompt form in Codex and Kiro). No command is ever sent to a harness that does not have it.
-  - [ ] **Warnings, no surprises:** if the chosen harness is not installed in the project or its CLI is not found, the tab says so in one sentence and offers to set it up (US-0802) or to choose another. Nothing is started.
-  - [ ] **The dashboard is unchanged:** intents, pipeline, timeline, cost and features keep reading the shared `aidlc/` records, whichever harness wrote them. Where a figure is harness-specific (for example the cost ledger, which today is filled by the Claude hooks), the view says which harness it covers.
-  - [ ] A project can have several harnesses installed. Switching is instant, and the old tab is closed only after the person confirms if it is working.
+  - [x] **Detection:** when a project opens, the app sees which harnesses are installed in it (`.claude/`, `.aidlc/` for opencode, `.codex/`, `.kiro/`, `.cursor/`, `.github/` with AI-DLC files) and which CLIs are on the PATH (`claude`, `opencode`, `codex`, `kiro-cli`, each version read with `--version`, fixed arguments, no shell).
+  - [x] **Choice per project** in Projektinställningar (and later in the settings view, US-0405): "Agent-terminal: Claude Code / opencode / Codex / Kiro". The default is the only installed harness, or Claude Code when there are several. Saved in the app's own `settings.json`, never in the project.
+  - [x] **The agent tab** is named after the chosen harness ("opencode" instead of "claude"), starts that CLI in the project root through the login shell, and has the same states (Ledig / Arbetar / Avslutad, US-0501).
+  - [x] **Commands follow the harness:** Fortsätt (US-0501), the quick commands and the setup offers use the harness's own way of running AI-DLC, from one table per harness (for example `/aidlc` in Claude Code and opencode, the skill or prompt form in Codex and Kiro). No command is ever sent to a harness that does not have it.
+  - [x] **Warnings, no surprises:** if the chosen harness is not installed in the project or its CLI is not found, the tab says so in one sentence and offers to set it up (US-0802) or to choose another. Nothing is started.
+  - [x] **The dashboard is unchanged:** intents, pipeline, timeline, cost and features keep reading the shared `aidlc/` records, whichever harness wrote them. Where a figure is harness-specific (for example the cost ledger, which today is filled by the Claude hooks), the view says which harness it covers.
+  - [x] A project can have several harnesses installed. Switching is instant, and the old tab is closed only after the person confirms if it is working.
+- **Notes:** Built for Claude Code and opencode; Codex, Kiro, Cursor and Copilot are detected and listed as "not supported yet" (decided in requirements). opencode waits 4 s of quiet output before the app types into it (measured on opencode v2.1.4).
 - **Dependencies:** US-0501, US-0503, EPIC-06 (Projektinställningar)
 
 **US-0802: Set up AI-DLC for another harness** 📋 Planned

@@ -133,6 +133,7 @@ export default function CostTab({ cost, intentCost, pipeline, models }) {
 
   return (
     <div className="cost-tab" data-testid="cost-tab">
+      <p className="muted" data-testid="cost-tab-harness">{t('cost.coversClaude')}</p>
       {cost.stale && <p className="banner banner-warn" role="status">{t('cost.stale', { warning: cost.warning })}</p>}
       <div className="cost-total">
         <CostLabel complete={intentCost.complete} />

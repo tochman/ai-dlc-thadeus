@@ -1,10 +1,12 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { HARNESSES } from '../../src/shared/harnesses.js';
 
-const terminal = { state: vi.fn(() => 'idle'), type: vi.fn(), sequence: vi.fn() };
+const CLAUDE = HARNESSES.find((h) => h.id === 'claude');
+const terminal = { state: vi.fn(() => 'idle'), type: vi.fn(), sequence: vi.fn(), harness: CLAUDE };
 vi.mock('../../src/renderer/TerminalContext.jsx', () => ({ useTerminal: () => terminal }));
 const { default: ResumeButton } = await import('../../src/renderer/ResumeButton.jsx');
-const BUSY_MESSAGE = 'Claude arbetar — vänta eller avbryt först'; // sv.json intents.resume.busy (EPIC-07)
+const BUSY_MESSAGE = 'Claude arbetar — vänta eller avbryt först'; // sv.json intents.resume.busy with {harness} (EPIC-07, US-0801)
 
 // Same shape as an intent row from loadIntentList.
 const intent = { dirName: '261113-workflow-control', slug: 'workflow-control', status: 'in-flight', active: true };
@@ -14,6 +16,7 @@ afterEach(() => {
   cleanup();
   vi.clearAllMocks();
   terminal.state.mockImplementation(() => 'idle');
+  terminal.harness = CLAUDE;
 });
 
 describe('ResumeButton', () => {
@@ -24,7 +27,7 @@ describe('ResumeButton', () => {
     expect(button.tagName).toBe('BUTTON'); // focusable and keyboard-operable as a native button
 
     fireEvent.click(button);
-    expect(terminal.type).toHaveBeenCalledWith('claude', '/aidlc', { submit: false });
+    expect(terminal.type).toHaveBeenCalledWith('agent', '/aidlc', { submit: false });
     expect(terminal.sequence).not.toHaveBeenCalled();
   });
 
@@ -33,7 +36,7 @@ describe('ResumeButton', () => {
     expect(screen.getByTestId('intent-resume').textContent).toBe('Fortsätt');
 
     fireEvent.click(screen.getByTestId('intent-resume'));
-    expect(terminal.sequence).toHaveBeenCalledWith('claude', [
+    expect(terminal.sequence).toHaveBeenCalledWith('agent', [
       { text: '/aidlc intent 261113-workflow-control', submit: true },
       { text: '/aidlc', submit: false }
     ]);
@@ -50,5 +53,19 @@ describe('ResumeButton', () => {
 
     rerender(<ResumeButton intent={{ ...intent, status: 'complete' }} activeDirName="261113-workflow-control" />);
     expect(screen.queryByTestId('intent-resume')).toBeNull();
+  });
+
+  it('is disabled with a reason when the harness table lacks the AI-DLC command, and types nothing (US-0801 FR4.2)', () => {
+    terminal.harness = HARNESSES.find((h) => h.id === 'codex'); // a table entry without commands
+    const { rerender } = render(<ResumeButton intent={intent} activeDirName="261113-workflow-control" />);
+    const button = screen.getByTestId('intent-resume');
+    expect(button.disabled).toBe(true);
+    expect(button.title).toBe('Codex har inget AI-DLC-kommando i appens tabell, så inget skrivs in.');
+    fireEvent.click(button);
+    expect(terminal.type).not.toHaveBeenCalled();
+
+    terminal.harness = null; // detection still runs
+    rerender(<ResumeButton intent={{ ...intent }} activeDirName="261113-workflow-control" />);
+    expect(screen.getByTestId('intent-resume').title).toBe('Kontrollerar…');
   });
 });

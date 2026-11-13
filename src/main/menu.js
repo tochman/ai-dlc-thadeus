@@ -102,7 +102,7 @@ export function buildMenuTemplate({ isMac, isPackaged, state, fullscreen, send, 
     {
       label: t('menu.terminal'),
       submenu: [
-        { label: t('menu.claude'), enabled: hasProject, click: cmd('terminal', { action: 'claude' }) },
+        { label: t('menu.agent'), enabled: hasProject, click: cmd('terminal', { action: 'agent' }) },
         { label: t('menu.shell'), enabled: hasProject, click: cmd('terminal', { action: 'shell' }) },
         { label: t('menu.restartTab'), enabled: hasProject, click: cmd('terminal', { action: 'restart' }) }
       ]

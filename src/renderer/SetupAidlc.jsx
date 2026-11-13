@@ -112,13 +112,14 @@ function MissingTool() {
 /** Offer separate feature docs (EPIC-06 FR4.1, FR4.2). Nothing is created here; SetupDone offers the request afterwards. */
 function FeatureDocsChoice({ checked, onChange, exist }) {
   const { t } = useTranslation();
+  const harness = useTerminal()?.harness?.name ?? t('terminal.agent'); // the agent tab creates them (US-0801 FR8.1)
   return (
     <div className="setup-feature-docs">
       <label className="check">
         <input type="checkbox" checked={checked} onChange={(e) => onChange(e.target.checked)} data-testid="setup-aidlc-feature-docs" />
         {t('setup.featureDocs')}
       </label>
-      <p className="muted">{exist ? t('setup.featureDocsExist') : t('setup.featureDocsNew')}</p>
+      <p className="muted">{exist ? t('setup.featureDocsExist') : t('setup.featureDocsNew', { harness })}</p>
     </div>
   );
 }

@@ -60,7 +60,7 @@
     "openProject": "Öppna projekt",
     "pickFolder": "Öppna projektmapp",
     "question": {
-      "waiting": "Claude väntar på ditt svar",
+      "waiting": "AI-DLC väntar på ditt svar",
       "stillWaiting": "Väntar fortfarande på ditt svar",
       "early": "Väntade redan när appen startade",
       "gate": "Godkännande: {stage}",
@@ -68,10 +68,10 @@
       "previous": "Föregående",
       "next": "Nästa",
       "position": "{i} av {n}",
-      "answer": "Svara i Claude"
+      "answer": "Svara i agentfliken"
     },
     "notification": {
-      "title": "{project}: Claude väntar på ditt svar"
+      "title": "{project}: AI-DLC väntar på ditt svar"
     }
   },
   "intents": {
@@ -140,7 +140,7 @@
       "label": "Fortsätt",
       "atStage": "Fortsätt vid {stage}",
       "step": "(steg {step} av {total})",
-      "busy": "Claude arbetar — vänta eller avbryt först",
+      "busy": "{harness} arbetar — vänta eller avbryt först",
       "invalidName": "Ogiltigt intent-namn: {name}"
     },
     "files": {
@@ -196,6 +196,7 @@
     "breakdown": "input {input} · output {output} · cache write {cacheWrite} · cache read {cacheRead}",
     "loadFailed": "Kostnaden kunde inte läsas: {error}",
     "estimateMeta": "Uppskattad · API-pris",
+    "coversClaude": "Gäller Claude Code: kostnadsloggen fylls av Claudes hooks.",
     "tokens": "{amount} tokens",
     "stale": "{warning} Visar senaste giltiga värden.",
     "legacyTitle": "Körningar under record:<space>/legacy, från före intent-id. Ingår i totalen.",
@@ -251,7 +252,7 @@
     "rebaseText": "Rebase lägger dina lokala commits ovanpå fjärrens, så historiken blir rak.",
     "mergeText": "Merge förenar båda sidorna i en merge-commit och skriver inte om något.",
     "conflictIntents": "Behåll raderna från båda sidor: varje intent är en egen rad.",
-    "conflictState": "Välj den sida som körde stegen senast, eller be Claude i claude-fliken att lösa konflikten.",
+    "conflictState": "Välj den sida som körde stegen senast, eller be {harness} i agentfliken att lösa konflikten.",
     "branch": "Gren",
     "comparedWith": "Jämförs med",
     "noRemote": "ingen fjärr",
@@ -280,7 +281,7 @@
   },
   "terminal": {
     "label": "Terminal",
-    "claude": "Claude",
+    "agent": "Agent",
     "shell": "Shell",
     "tabsLabel": "Terminaler",
     "state": {
@@ -289,7 +290,6 @@
       "exited": "Avslutad"
     },
     "tabName": {
-      "claude": "Claude",
       "shell": "Skalet"
     },
     "notRunning": "{kind} körs inte.",
@@ -299,7 +299,12 @@
     "resize": "Ändra terminalens höjd (pil upp/ned)",
     "hide": "Dölj terminal",
     "show": "Visa terminal",
-    "quickTitle": "Skriver in kommandot i claude-fliken utan att skicka det",
+    "quickTitle": "Skriver in kommandot i {harness}-fliken utan att skicka det",
+    "noCommand": "{harness} har inget AI-DLC-kommando i appens tabell, så inget skrivs in.",
+    "checking": "Kontrollerar…",
+    "chooseHarness": "Välj en annan harness",
+    "cliMissing": "{harness} hittades inte: kommandot {cli} finns inte i PATH, så inget startades.",
+    "notInstalled": "AI-DLC är inte installerat för {harness} i det här projektet, så inget startades.",
     "pending": "Väntar på din Enter",
     "pendingHint": "{tab}: skrivet av appen. Inget körs förrän du trycker Enter.",
     "noTab": "Terminalfliken {tab} finns inte.",
@@ -380,7 +385,7 @@
     "installTool": "Installera AI-DLC:s kommandoverktyg först, enligt anvisningen på {link}. Kontrollera sedan igen.",
     "featureDocs": "Använd separata feature-beskrivningar (FEATURES.md + en fil per epic)",
     "featureDocsExist": "Feature-beskrivningar finns redan. Valet lägger bara till en projektregel om att hålla dem uppdaterade.",
-    "featureDocsNew": "En översikt med epics i docs/FEATURES.md och en fil per epic med user stories, till exempel docs/features/epic-01-inloggning.md. Claude skapar dem efter uppsättningen, när du har bekräftat.",
+    "featureDocsNew": "En översikt med epics i docs/FEATURES.md och en fil per epic med user stories, till exempel docs/features/epic-01-inloggning.md. {harness} skapar dem efter uppsättningen, när du har bekräftat.",
     "checkFailed": "Förutsättningarna kunde inte läsas: {error}",
     "buildFailed": "Kommandot kunde inte byggas: {error}",
     "checking": "Kontrollerar…",
@@ -388,7 +393,7 @@
     "run": "Initiera",
     "recheck": "Kontrollera igen",
     "started": "Kommandot står i shell-fliken. Tryck Enter där för att köra det. Vyn växlar när AI-DLC finns i mappen.",
-    "done": "AI-DLC är uppsatt. Claude startas om så att AI-DLC laddas.",
+    "done": "AI-DLC är uppsatt. {harness} startas om så att AI-DLC laddas.",
     "runDoctor": "Kör /aidlc --doctor",
     "firstWork": "Starta första arbetet",
     "createFeatureDocs": "Skapa feature-beskrivningar"
@@ -403,7 +408,7 @@
       "reduced": "Dämpad",
       "off": "Av"
     },
-    "alertsLegend": "Frågor från Claude",
+    "alertsLegend": "Frågor från AI-DLC",
     "alertsHelp": "En popup när AI-DLC väntar på ditt svar, och en systemnotis när appen ligger i bakgrunden eller frågan gäller ett annat projekt.",
     "alerts": {
       "popup-notify": "Popup och notis",
@@ -437,7 +442,11 @@
       },
       "pathLabel": "Sökväg till översikten",
       "pathInvalid": "Sökvägen ska vara relativ till projektet, sluta på .md och inte innehålla ..",
-      "noDocs": "Projektet har inga feature-beskrivningar ännu."
+      "noDocs": "Projektet har inga feature-beskrivningar ännu.",
+      "harnessLabel": "Agent-terminal",
+      "harnessUnsupported": "stöds inte än",
+      "harnessNotFound": "hittades inte",
+      "harnessSwitchConfirm": "{from} arbetar. Byter du till {to} stängs sessionen. Byta ändå?"
     }
   },
   "menu": {
@@ -469,7 +478,7 @@
     "zoomOut": "Zooma ut",
     "resetZoom": "Återställ zoom",
     "terminal": "Terminal",
-    "claude": "Claude",
+    "agent": "Agent",
     "shell": "Shell",
     "restartTab": "Starta om flik",
     "window": "Fönster",
@@ -517,6 +526,7 @@
     "invalidJson": "Ogiltig JSON i {rel}: {error}",
     "ptyLoadFailed": "Terminalmodulen kunde inte laddas: {error}",
     "unknownTerminal": "Okänd terminaltyp: {kind}",
+    "unknownHarness": "Okänd harness, eller en som inte stöds än: {id}",
     "noSession": "Ingen terminalsession med id {id}",
     "ptyDataNotString": "Terminaldata måste vara en sträng"
   }

@@ -32,7 +32,7 @@ describe('QuestionPopup (US-0505)', () => {
     render(<QuestionPopup open questions={[question(), older]} onAnswer={onAnswer} onClose={onClose} />);
     const popup = screen.getByTestId('question-popup');
     expect(popup.getAttribute('aria-labelledby')).toBe('question-popup-title');
-    expect(screen.getByTestId('question-popup-title').textContent).toBe('Claude väntar på ditt svar');
+    expect(screen.getByTestId('question-popup-title').textContent).toBe('AI-DLC väntar på ditt svar'); // harness-neutral (US-0801)
     expect(within(popup).getByText('aidlc-dash · 261113-question-popup · requirements-analysis')).toBeTruthy();
     expect(within(popup).getByText('Var ska popupen <b>visas</b>?')).toBeTruthy(); // text, never HTML
     expect(popup.querySelector('b')).toBeNull();
@@ -80,7 +80,7 @@ describe('QuestionPopup (US-0505)', () => {
 
     rerender(<QuestionPopup {...props} questions={[question({ id: 'new', timeMs: 2 }), question()]} />);
     expect(popup.classList.contains('is-overdue')).toBe(false);
-    expect(screen.getByTestId('question-popup-title').textContent).toBe('Claude väntar på ditt svar');
+    expect(screen.getByTestId('question-popup-title').textContent).toBe('AI-DLC väntar på ditt svar');
   });
 
   it('shows a gate as "Godkännande: stage → next stage" without options (FR2.2)', () => {

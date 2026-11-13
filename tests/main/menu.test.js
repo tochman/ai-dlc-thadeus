@@ -34,7 +34,7 @@ describe('app menu (EPIC-04 US-0404)', () => {
 
   it('turns project items off without a project and Kostnad/Github off outside AI-DLC (FR2.5)', () => {
     const none = build({ state: { hasProject: false, isAidlc: false, showFeatures: false } }).template;
-    for (const label of ['Stäng projekt', 'Projektinställningar…', 'Intents', 'Kostnad', 'Github', 'Claude', 'Shell', 'Starta om flik']) {
+    for (const label of ['Stäng projekt', 'Projektinställningar…', 'Intents', 'Kostnad', 'Github', 'Agent', 'Shell', 'Starta om flik']) {
       expect(byLabel(none, label).enabled, label).toBe(false);
     }
     expect(byLabel(none, 'Features').visible).toBe(false);
@@ -69,6 +69,8 @@ describe('app menu (EPIC-04 US-0404)', () => {
     expect(send).toHaveBeenLastCalledWith({ command: 'panel', panel: 'cost' });
     byLabel(template, 'Starta om flik').click();
     expect(send).toHaveBeenLastCalledWith({ command: 'terminal', action: 'restart' });
+    byLabel(template, 'Agent').click(); // the neutral agent tab (US-0801 FR3.1)
+    expect(send).toHaveBeenLastCalledWith({ command: 'terminal', action: 'agent' });
     byLabel(template, 'AI-DLC-dokumentation').click();
     expect(send).toHaveBeenLastCalledWith({ command: 'docs' });
 

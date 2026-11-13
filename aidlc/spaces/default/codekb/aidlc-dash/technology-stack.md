@@ -1,61 +1,77 @@
-# Teknikstack: aidlc-dash
+# Technology Stack: aidlc-dash
 
-Versionerna är omlästa ur `package.json` i denna skanning (commit `8623af4`).
+Versions are from `package.json` as skimmed in this scan (commit `4b5b8c6`).
 
-## Språk och runtime
+## Languages and runtime
 
-| Del | Val | Version |
-|-----|-----|---------|
-| Språk | JavaScript (ESM), JSX; CommonJS i två skript | – |
-| Node | `.nvmrc` (läses av CI via `node-version-file`) | 22 |
-| Skrivbordsruntime | Electron | ^45.3.1 |
-| Styling | Ren CSS, en global fil (`theme.css`), CSS custom properties; `tokens.js` läser dem i JS | – |
+| Part | Choice | Version |
+|------|--------|---------|
+| Language | JavaScript (ESM), JSX; CommonJS in two scripts | – |
+| Node | `.nvmrc` (read by CI through `node-version-file`) | 22 |
+| Desktop runtime | Electron | ^45.3.1 |
+| Styling | plain CSS, one global file (`theme.css`), CSS custom properties; `tokens.js` reads them in JS | – |
+| Translations | JSON locale files with ICU MessageFormat texts (`src/shared/locales/`) | – |
 
-## Ramverk och bibliotek (runtime)
+## Frameworks and libraries (runtime)
 
-| Bibliotek | Version | Används till |
-|-----------|---------|--------------|
+| Library | Version | Used for |
+|---------|---------|----------|
 | react, react-dom | ^19.3.1 | UI |
-| @xterm/xterm | ^6.0.0 | terminal i renderaren |
-| @xterm/addon-fit | ^0.11.0 | terminalstorlek |
-| node-pty | ^1.1.0 | pseudoterminaler (native, `asarUnpack`) |
-| chokidar | ^4.0.3 | filbevakning |
-| react-markdown | ^10.1.0 | artefakter utan rå HTML |
-| remark-gfm | ^4.0.1 | tabeller, kryssrutor |
-| @tanstack/react-virtual | 3.14.24 (låst) | virtualiserad tidslinje |
-| @fontsource/antonio | ^5.3.0 | rubrik- och etikettfont (400, 700), bundlad lokalt; appnamnet i sidhuvudet och på splashen sätts i den, i versaler |
+| i18next | ^27.1.1 | translation instance per process (US-0701) |
+| i18next-icu | ^2.7.0 | ICU MessageFormat (placeholders, plurals) |
+| react-i18next | ^18.0.1 | `I18nextProvider`, `useTranslation()` |
+| intl-messageformat | ^12.1.5 | ICU parsing; used directly by `tests/main/i18nKeys.test.js` to compare placeholders |
+| @xterm/xterm | ^6.0.0 | terminal in the renderer |
+| @xterm/addon-fit | ^0.11.0 | terminal size |
+| node-pty | ^1.1.0 | pseudo-terminals (native, loaded lazily, `asarUnpack`) |
+| chokidar | ^4.0.3 | file watching |
+| react-markdown | ^10.1.0 | artifacts without raw HTML |
+| remark-gfm | ^4.0.1 | tables, checkboxes |
+| @tanstack/react-virtual | 3.14.24 (pinned) | virtualised timeline |
+| @fontsource/antonio | ^5.3.0 | heading and label font (400, 600, 700), bundled locally |
 
-Inga animations-, ikon-, meny-, notis- eller komponentbibliotek. All rörelse är CSS-keyframes och transitions. Appmenyn och About-panelen byggs med Electrons inbyggda `Menu` och `app.setAboutPanelOptions`; systemnotiserna (US-0505) med Electrons `Notification`. Ett namnbyte (US-0406) kräver inget nytt beroende.
+No animation, icon, menu, notification or component libraries. The app menu and About panel use Electron's `Menu` and `app.setAboutPanelOptions`; system notifications use Electron's `Notification`. US-0801 needs no new dependency: harness detection fits `fs` through `projectAccess` and `child_process.execFile` through `runFixed`.
 
-## Bygg och paketering
+## External programs the app depends on
 
-| Verktyg | Version | Roll |
-|---------|---------|------|
-| electron-vite | ^6.0.0 | bygger main, preload, renderer till `out/`; `dev` sätter `ELECTRON_RENDERER_URL` |
-| vite | ^8.3.8 | bundlare |
+| Program | Where | Required |
+|---------|-------|----------|
+| `$SHELL` (zsh on macOS, bash elsewhere, as fallback) | `pty.js`, `exec.loginPath` | yes: both terminal tabs and the PATH probe |
+| `claude` (Claude Code CLI) | agent tab (`pty.js:24`) | for the agent tab today; the only harness CLI the app knows |
+| `aidlc` | `setup.js`, `models.js` | for setup and the model table; missing is handled |
+| `git` | `git.js`, `setup.js` | for the Github panel and setup; missing is handled |
+
+Candidate CLIs named by US-0801: `opencode`, `codex`, `kiro-cli` (each read with `--version`).
+
+## Build and packaging
+
+| Tool | Version | Role |
+|------|---------|------|
+| electron-vite | ^6.0.0 | builds main, preload, renderer into `out/`; `dev` sets `ELECTRON_RENDERER_URL` |
+| vite | ^8.3.8 | bundler; JSON locale files are imported as modules into both bundles |
 | @vitejs/plugin-react | ^6.3.0 | JSX |
-| electron-builder | ^26.18.0 | `.dmg` (universal, osignerad, `identity: null`) och `.deb` (x64, `executableName auctum-aidlc-control`); utdata i `dist/`, inga uttryckliga `artifactName` |
+| electron-builder | ^26.18.0 | `.dmg` (universal, unsigned) and `.deb` (x64); output in `dist/` |
 
-Paketidentitet: `name aidlc-dash`, `productName Auctum AIDLC Control` (i både `package.json` och `electron-builder.yml`), `version 0.2.0`, `appId se.auctum.aidlc-control`, `author Auctum Solutions AB <info@auctum.se>`, `homepage https://github.com/tochman/aidlc-dash`. Detaljer och vad varje nyckel styr i `component-inventory.md` (Packaging Config).
+Package identity (from `package.json`): `name: thadeus`, `productName: THADEUS`, `version: 0.2.0`, author Auctum Solutions AB, homepage `https://github.com/tochman/aidlc-dash`. `electron-builder.yml` was not re-read.
 
 ## CI
 
-GitHub Actions (`.github/workflows/release.yml`): `actions/checkout@v4`, `actions/setup-node@v4` (npm-cache), `actions/upload-artifact@v4`, `actions/download-artifact@v4`, `gh release create`. Runners: ubuntu-latest (verify, release), macos-latest (mac-bygge), ubuntu-22.04 (Linux-bygge, för glibc 2.35).
+GitHub Actions (`.github/workflows/release.yml`, earlier scan): `actions/checkout@v4`, `actions/setup-node@v4`, `actions/upload-artifact@v4`, `actions/download-artifact@v4`, `gh release create`. Runners ubuntu-latest, macos-latest, ubuntu-22.04.
 
 ## Test
 
-| Verktyg | Version |
-|---------|---------|
-| vitest | ^5.1.0 (projekt `main`/node och `renderer`/jsdom) |
+| Tool | Version |
+|------|---------|
+| vitest | ^5.1.0 (projects `main`/node and `renderer`/jsdom; renderer setup `tests/renderer/setup-i18n.js`) |
 | @testing-library/react | ^16.3.3 |
 | jsdom | ^29.1.1 |
 
-## Typografi och färg
+## Typography and colour
 
-- Rubriker, etiketter, knappar, block och appnamnet: Antonio i versaler (`--font-head`, med `'Arial Narrow'` som reserv).
-- Brödtext: systemfont (`--font-read`); siffror och kod: `--font-mono`.
-- Palett: bakgrund `#05060a` (`--bg`, även fönstrets `backgroundColor`), skiffer, stålblå, korall, `--alert #ff3b3b` för obesvarade frågor; Auctum-amber `#ff9e40` för märket, sidhuvudets märkesblock och den primära åtgärden. Fullständig tokenlista i `component-inventory.md` (Theme Stylesheet).
+- Headings, labels, buttons, blocks and the app name: Antonio in capitals (`--font-head`).
+- Body text: system font (`--font-read`); numbers and code: `--font-mono`. The terminal uses `ui-monospace, "SF Mono", Menlo, monospace` at 13 px with the token-based `xtermTheme()`.
+- Palette: background `#05060a`, slate, steel blue, coral, `--alert #ff3b3b`; Auctum amber `#ff9e40` for the mark and the primary action.
 
-## Plattformar
+## Platforms
 
-macOS (universal) och Ubuntu 22.04 eller nyare. Ingen Windows-målplattform. Systemnotiser går via macOS Notification Center respektive Linux libnotify (Electron). På macOS knyts notisbehörighet, Dock-fästning och Gatekeeper-beslut till appens `appId` och bundle; Linux-paketet identifieras av `.deb`-paketnamnet.
+macOS (universal) and Ubuntu 22.04 or later. No Windows target: `pty.js` and `exec.js` assume a POSIX login shell (`-l -i -c`).
