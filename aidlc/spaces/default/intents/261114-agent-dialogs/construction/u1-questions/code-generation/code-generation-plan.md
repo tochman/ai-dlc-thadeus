@@ -105,6 +105,7 @@
 | K14 | Fixtures under `tests/fixtures/agent-events/` follow the payload shapes of the spike tables (functional-spec.md), with the 2026-11-14 labels. The manual run on the release Mac (NFR2.2) saves the real event files of the five scenarios, and they replace or confirm the fixtures before the release pull request. | the proof rule asks for recorded payloads; Code Generation cannot drive a real Claude Code question |
 | K15 | `questions:focus` and `onQuestionFocus` stay. u1 adds only the C4 `agentEvents.focus` row. u5 removes the old channel after that row exists (u5 amendment 1). | the audit fallback still uses the notification click |
 | K16 | u3's contract additions (C2 `onRefusedReply`, C3 `dismissed`/`stale`, C4 `agentEvents.latest` and `reopen`, the C6 Stop entry) describe u3's code and are applied by u3's Code Generation. u1 applies the C1 amendment, its review fixes and the C4 focus row. | each Unit documents the contract it builds |
+| K17 | The measured baseline was 73.73% lines (3301 of 4477), below the 80% floor. The person chose to close the gap in this pull request (2026-11-14): Step 3a adds tests for existing low-coverage files until the project reaches at least 80% lines before any other edit. These are characterisation tests of today's behaviour: no source change, no threshold change, no exclusion. `src/main/ipc.js` (0%, 367 lines) is tested by mocking `electron` and the services it wires, as the existing `windowOptions.test.js` does. | the person's decision; team Testing Posture |
 
 ## Files
 
@@ -139,6 +140,7 @@
 | `tests/main/agentText.test.js`, `dialogScript.test.js`, `agentChannel.test.js`, `agentChannelScript.test.js`, `agentAdapters.test.js`, `opencodePlugin.test.js`, `agentTiming.test.js`, `agentEvents.test.js`, `agentIpc.test.js`, `preload.test.js`, `tests/helpers/shells.js` | new | tests |
 | `tests/main/pty.test.js`, `tests/main/windowOptions.test.js` | changed: new cases | tests |
 | `tests/renderer/AgentDialog.test.jsx` | new; `tests/renderer/QuestionPopup.test.jsx` moved into it and deleted | tests |
+| `tests/main/ipc.test.js`, `tests/main/index.test.js`, `tests/renderer/useProject.test.jsx`, and further characterisation tests if needed | new: cover existing code to the 80% floor (Step 3a, K17) | tests |
 
 TerminalContext.jsx does not change: fallback events still go through its `answer()` (BR3.6). `notify.js` does not change: per-event notifications are u5's.
 
@@ -146,32 +148,33 @@ TerminalContext.jsx does not change: fallback events still go through its `answe
 
 ### Quality gates (Bolt 1, first task)
 
-- [ ] Step 1: Project structure and production configuration skeleton. Install the dev tools with `npm install -D @vitest/coverage-v8@<installed vitest version, read from node_modules/vitest/package.json; 5.1.x> eslint @eslint/js globals eslint-plugin-react eslint-plugin-react-hooks eslint-config-prettier prettier`. Add the npm scripts `"coverage": "vitest run tests/ --coverage"`, `"lint": "eslint ."`, `"format": "prettier --write ."` and `"format:check": "prettier --check ."`. Add `coverage/` to `.gitignore`. (NFR8.2, NFR8.3)
-- [ ] Step 2: Write the configs. `vitest.config.mjs` gains `coverage: { provider: 'v8', include: ['src/**/*.{js,jsx}', '.opencode/plugins/*.js'], reporter: ['text', 'json-summary'], thresholds: { lines: 80 } }`, inside the shared `test` block so both projects report into one result. Write `.prettierrc.json` (K2) and `.prettierignore` with `out/`, `dist/`, `build/`, `coverage/`, `node_modules/`, `aidlc/`, `.claude/`, `.aidlc/`, `.opencode/*`, `!.opencode/plugins/`, `docs/`, `*.md`, `package-lock.json`, `tests/fixtures/`, `tests/.tmp/`, `aidlc.settings.json`, `opencode.json`. Write `eslint.config.mjs` (K3): node globals for `src/main`, `src/preload`, `tests/main`, `scripts`, `.opencode/plugins` and the config files; browser globals for `src/renderer` and `tests/renderer`; `sourceType: 'commonjs'` for `*.cjs`; JSX enabled; ignores matching `.prettierignore`. (NFR8.2, NFR8.3)
-- [ ] Step 3: Baseline before any edit to existing code. Run `npx vitest run tests/` and record the pass count. Then run `npx vitest run tests/ --coverage` and record the project's line coverage. If it is below 80%, stop and tell the person the measured figure and the files that pull it down. Never lower the threshold or exclude files (K1). (NFR8.2, team Testing Posture)
-- [ ] Step 4: Formatting-only pass on existing code. Run `npx prettier --write .`, then `npx vitest run tests/`; the pass count must equal Step 3's. Keep it as its own commit (`chore(US-0506): format with Prettier`), so the review can skip it. No logic, rename or reordering beyond what Prettier writes. (NFR8.3)
-- [ ] Step 5: Lint pass on existing code. Run `npx eslint .`. Fix only behaviour-neutral findings (unused imports and variables, a missing `globals` entry). Where a fix would change behaviour, add `// eslint-disable-next-line <rule> -- <reason>` (K3). Re-run `npx vitest run tests/`; the count must equal Step 3's. (NFR8.3)
-- [ ] Step 6: CI. In the `verify` job of `.github/workflows/release.yml`, replace `npx vitest run tests/` with `npx vitest run tests/ --coverage` under `env: THADEUS_REQUIRE_DASH: '1'`, then add the steps `npx eslint .` and `npx prettier --check .`. Each is its own step, so a failure names its gate. Run the Construction Verification Command `npx vitest run tests/ --coverage && npx eslint . && npx prettier --check .` on the whole repo; it passes, or Step 3's coverage gap is already with the person. (NFR8.2, NFR8.3, NFR8.4)
+- [x] Step 1: Project structure and production configuration skeleton. Install the dev tools with `npm install -D @vitest/coverage-v8@<installed vitest version, read from node_modules/vitest/package.json; 5.1.x> eslint @eslint/js globals eslint-plugin-react eslint-plugin-react-hooks eslint-config-prettier prettier`. Add the npm scripts `"coverage": "vitest run tests/ --coverage"`, `"lint": "eslint ."`, `"format": "prettier --write ."` and `"format:check": "prettier --check ."`. Add `coverage/` to `.gitignore`. (NFR8.2, NFR8.3)
+- [x] Step 2: Write the configs. `vitest.config.mjs` gains `coverage: { provider: 'v8', include: ['src/**/*.{js,jsx}', '.opencode/plugins/*.js'], reporter: ['text', 'json-summary'], thresholds: { lines: 80 } }`, inside the shared `test` block so both projects report into one result. Write `.prettierrc.json` (K2) and `.prettierignore` with `out/`, `dist/`, `build/`, `coverage/`, `node_modules/`, `aidlc/`, `.claude/`, `.aidlc/`, `.opencode/*`, `!.opencode/plugins/`, `docs/`, `*.md`, `package-lock.json`, `tests/fixtures/`, `tests/.tmp/`, `aidlc.settings.json`, `opencode.json`. Write `eslint.config.mjs` (K3): node globals for `src/main`, `src/preload`, `tests/main`, `scripts`, `.opencode/plugins` and the config files; browser globals for `src/renderer` and `tests/renderer`; `sourceType: 'commonjs'` for `*.cjs`; JSX enabled; ignores matching `.prettierignore`. (NFR8.2, NFR8.3)
+- [x] Step 3: Baseline before any edit to existing code. Run `npx vitest run tests/` and record the pass count. Then run `npx vitest run tests/ --coverage` and record the project's line coverage. If it is below 80%, stop and tell the person the measured figure and the files that pull it down. Never lower the threshold or exclude files (K1). (NFR8.2, team Testing Posture)
+- [x] Step 3a: Close the coverage gap (K17). Write characterisation tests for the existing low-coverage files, in this order, until `npx vitest run tests/ --coverage` reports at least 80% lines for the project: `tests/main/ipc.test.js` for `src/main/ipc.js` (each registered handler's happy path and one error path, with `electron`, `node-pty` and the services mocked), `tests/renderer/useProject.test.jsx` for `src/renderer/useProject.js`, `tests/main/index.test.js` for `src/main/index.js` (start-up wiring with `electron` mocked), then, only if still short, `src/renderer/useFeatures.js`, `Pipeline.jsx`, `ArtifactReader.jsx`, `BoltDag.jsx` and `editor/FileTree.jsx`. Tests pin today's behaviour; no file under `src/` changes in this step, and a bug a test finds is reported to the person, not fixed here. Commit as `test(US-0506): cover existing code to the 80% floor`. Record the new figure. (NFR8.2, team Testing Posture)
+- [x] Step 4: Formatting-only pass on existing code. Run `npx prettier --write .`, then `npx vitest run tests/`; the pass count must equal Step 3's. Keep it as its own commit (`chore(US-0506): format with Prettier`), so the review can skip it. No logic, rename or reordering beyond what Prettier writes. (NFR8.3)
+- [x] Step 5: Lint pass on existing code. Run `npx eslint .`. Fix only behaviour-neutral findings (unused imports and variables, a missing `globals` entry). Where a fix would change behaviour, add `// eslint-disable-next-line <rule> -- <reason>` (K3). Re-run `npx vitest run tests/`; the count must equal Step 3's. (NFR8.3)
+- [x] Step 6: CI. In the `verify` job of `.github/workflows/release.yml`, replace `npx vitest run tests/` with `npx vitest run tests/ --coverage` under `env: THADEUS_REQUIRE_DASH: '1'`, then add the steps `npx eslint .` and `npx prettier --check .`. Each is its own step, so a failure names its gate. Run the Construction Verification Command `npx vitest run tests/ --coverage && npx eslint . && npx prettier --check .` on the whole repo; it passes, or Step 3's coverage gap is already with the person. (NFR8.2, NFR8.3, NFR8.4)
 
 ### Contract documentation
 
-- [ ] Step 7: Apply the C1 amendment of `nfr-design/logical-components.md` to `contract-summary.md` § C1: replace the `environment`, `folder`, `event_file.name`, `answer_file` and `waiting` keys, and add `event_file.order` and the "Delivery is confirmed, not assumed" bullet. Fold in review R-05: `refusals` reads "still .tmp: ignored, never read or deleted"; `versions.other_versions` says an unaccepted version is deleted with no hand-back (it may be forged), so that hook ends by its own deadline or liveness rule; `waiting` gains `entry_timeout: "600 s for the question entry, 10 s for answered (C6)"`. Fold in R-04: the bullet says "sent" is reported only while the session is live and its folder exists. In C2, add "hook gave up" to `writeAnswer`'s errors, and note `answerState` and `retract` as main-internal members. (C1, C2; R-04, R-05; BR1.1, BR1.3, BR3.2)
-- [ ] Step 8: Apply the C4 focus row (u5 amendment 1): add `agentEvents.focus: { push: "agent-events:focus", payload: { eventId: string }, unit: U5 }` to the C4 YAML block, and change C4's Owner in the Contracts table to "U1; U3, U4 and U5 add members". `questions:focus` and `onQuestionFocus` stay in the code (K15). (C4)
+- [x] Step 7: Apply the C1 amendment of `nfr-design/logical-components.md` to `contract-summary.md` § C1: replace the `environment`, `folder`, `event_file.name`, `answer_file` and `waiting` keys, and add `event_file.order` and the "Delivery is confirmed, not assumed" bullet. Fold in review R-05: `refusals` reads "still .tmp: ignored, never read or deleted"; `versions.other_versions` says an unaccepted version is deleted with no hand-back (it may be forged), so that hook ends by its own deadline or liveness rule; `waiting` gains `entry_timeout: "600 s for the question entry, 10 s for answered (C6)"`. Fold in R-04: the bullet says "sent" is reported only while the session is live and its folder exists. In C2, add "hook gave up" to `writeAnswer`'s errors, and note `answerState` and `retract` as main-internal members. (C1, C2; R-04, R-05; BR1.1, BR1.3, BR3.2)
+- [x] Step 8: Apply the C4 focus row (u5 amendment 1): add `agentEvents.focus: { push: "agent-events:focus", payload: { eventId: string }, unit: U5 }` to the C4 YAML block, and change C4's Owner in the Contracts table to "U1; U3, U4 and U5 add members". `questions:focus` and `onQuestionFocus` stay in the code (K15). (C4)
 
 ### Runner and test data
 
-- [ ] Step 9: Verify the existing test runner and record the unit-scoped command. Run `npx vitest run tests/main/i18nKeys.test.js` (green), and confirm `--coverage.include` and per-file globs work with the installed vitest. Create `tests/helpers/shells.js`, which exports `SHELLS`: `['sh']` plus `'dash'` when `spawnSync('dash', ['-c', 'exit 0']).status === 0`, and which throws when `THADEUS_REQUIRE_DASH=1` and dash is missing. Create the fixtures (K14): `tests/fixtures/agent-events/claude/` holds `gate-2026-11-14.json` (scenario 1: "Complete workflow" and "Request Changes" with descriptions), `reordered.json` (2), `batch-four.json` (3, one question multi-select), `multi-two.json` (4), `own-answer.json` (5), `post-tool-use.json`, `unicode-70kb.json` (generated in the test from a seed, not stored), and the malformed `no-questions.json`, `five-questions.json`, `no-text.json`, `empty-label.json`; `tests/fixtures/agent-events/opencode/` holds the same five scenarios as `form.created` payloads, plus `form-replied.json` and `form-cancelled.json`. Add `tests/fixtures/agent-events/README.md`, which says the files follow the spike tables until the manual run replaces them. (AC1.1.1, AC1.1.2, AC1.1.10; NFR2.1, NFR8.4)
+- [x] Step 9: Verify the existing test runner and record the unit-scoped command. Run `npx vitest run tests/main/i18nKeys.test.js` (green), and confirm `--coverage.include` and per-file globs work with the installed vitest. Create `tests/helpers/shells.js`, which exports `SHELLS`: `['sh']` plus `'dash'` when `spawnSync('dash', ['-c', 'exit 0']).status === 0`, and which throws when `THADEUS_REQUIRE_DASH=1` and dash is missing. Create the fixtures (K14): `tests/fixtures/agent-events/claude/` holds `gate-2026-11-14.json` (scenario 1: "Complete workflow" and "Request Changes" with descriptions), `reordered.json` (2), `batch-four.json` (3, one question multi-select), `multi-two.json` (4), `own-answer.json` (5), `post-tool-use.json`, `unicode-70kb.json` (generated in the test from a seed, not stored), and the malformed `no-questions.json`, `five-questions.json`, `no-text.json`, `empty-label.json`; `tests/fixtures/agent-events/opencode/` holds the same five scenarios as `form.created` payloads, plus `form-replied.json` and `form-cancelled.json`. Add `tests/fixtures/agent-events/README.md`, which says the files follow the spike tables until the manual run replaces them. (AC1.1.1, AC1.1.2, AC1.1.10; NFR2.1, NFR8.4)
 
 ### Layer: shared sanitizer (`src/shared/agentText.js`, u3 LC12)
 
-- [ ] Step 10: Red. Write `tests/main/agentText.test.js` from u5's "Tested by": one table test over every listed code point (U+0000, U+001B, U+007F, U+0085, U+009F, U+00AD, U+061C, U+200B–U+200F, U+202A, U+202E, U+2028, U+2029, U+2060, U+2066, U+2069, U+FEFF, U+E0001, U+E0041, U+E007F, lone U+D800) with the result of each export; `UNSAFE.flags` has no `g` and two `.test()` calls in a row agree; 👩‍💻 and `åäö` unchanged by `cleanLine` and `stripUnsafe`; `visibleText` escapes to `\uXXXX`/`\u{…}`, and keeps LF and TAB with `multiline: true`; `plainLine` and `firstLine` on Markdown samples; `cutGraphemes` keeps a ZWJ sequence whole and adds "…"; `utf8Bytes` of emoji. Run `npx vitest run tests/main/agentText.test.js` and record the failing output (module missing). (u5 amendment 2; NFR7.2, BR4.1)
-- [ ] Step 11: Green. Create `src/shared/agentText.js` with the eight exports (K9), no exported pattern with the `g` flag, and the `ponytail:` note that emoji tag-sequence flags lose their tags. Header comment: `US-0506 u1 (u3 LC12, u5 amendment 2)`. Run the Step 10 command: green.
-- [ ] Step 12: Refactor with the Step 10 command green: one internal `every()` builder for the global pattern, no duplicate class string.
+- [x] Step 10: Red. Write `tests/main/agentText.test.js` from u5's "Tested by": one table test over every listed code point (U+0000, U+001B, U+007F, U+0085, U+009F, U+00AD, U+061C, U+200B–U+200F, U+202A, U+202E, U+2028, U+2029, U+2060, U+2066, U+2069, U+FEFF, U+E0001, U+E0041, U+E007F, lone U+D800) with the result of each export; `UNSAFE.flags` has no `g` and two `.test()` calls in a row agree; 👩‍💻 and `åäö` unchanged by `cleanLine` and `stripUnsafe`; `visibleText` escapes to `\uXXXX`/`\u{…}`, and keeps LF and TAB with `multiline: true`; `plainLine` and `firstLine` on Markdown samples; `cutGraphemes` keeps a ZWJ sequence whole and adds "…"; `utf8Bytes` of emoji. Run `npx vitest run tests/main/agentText.test.js` and record the failing output (module missing). (u5 amendment 2; NFR7.2, BR4.1)
+- [x] Step 11: Green. Create `src/shared/agentText.js` with the eight exports (K9), no exported pattern with the `g` flag, and the `ponytail:` note that emoji tag-sequence flags lose their tags. Header comment: `US-0506 u1 (u3 LC12, u5 amendment 2)`. Run the Step 10 command: green.
+- [x] Step 12: Refactor with the Step 10 command green: one internal `every()` builder for the global pattern, no duplicate class string.
 
 ### Layer: hook script (`.thadeus/hooks/dialog.sh`, LC8; file protocol, writer side)
 
-- [ ] Step 13: Red. Write `tests/main/dialogScript.test.js`, which runs every case once per shell in `SHELLS` and always spawns the shell explicitly (`spawn(shell, [script, kind])`, RD4). Each case asserts exit status 0 and 0 bytes on stdout and stderr unless an answer is printed. Cases: the exact C6 command through `sh -c`, 20 runs each with the variable unset and with the script folder deleted, each ≤ 100 ms (NFR4.1); folder or `alive` missing, nothing written, ≤ 100 ms (NFR4.2); `THADEUS_WAIT_SECONDS` empty or not a number; unknown kind (NFR4.3); `events/` not writable; `answers/` missing (review R-01: this one fails under dash with `: >`); a failing `sleep` on `PATH` makes the hook exit before any file exists (R-03); `alive` stops changing, exit 2.0–2.5 s after the last update (NFR5.1, BR1.2); `alive` rewritten every 500 ms for 3 s, then stopped: still waiting at 3 s, exit 2.0–2.5 s after the last write; `THADEUS_WAIT_SECONDS=2`, exit 1.0–3.2 s (NFR5.2, BR1.3); a dropped `.ans` is printed byte for byte ≤ 300 ms, with no `.wait` or `.took` left (NFR1.5); an empty `.ans` prints nothing ≤ 300 ms (NFR5.3, BR3.5); `TERM` to a waiting hook removes `.wait` (RD4); a payload with `$(touch marker)`, backticks, `;` and both quotes arrives byte for byte, and `marker` does not exist (NFR3.8, SD5); a `sleep` wrapper on `PATH` counts at most 11 polls in 1 s (NFR5.11); `answered` writes its event and exits at once without a `.wait`. Each test uses its own `mkdtemp` folder under `tests/.tmp/`. Run `npx vitest run tests/main/dialogScript.test.js` and record the failing output (script missing). (AC1.1.6, AC1.1.9; NFR4.1–NFR4.3, NFR5.1–NFR5.3, NFR5.11, NFR8.4)
-- [ ] Step 14: Green. Write `.thadeus/hooks/dialog.sh` from RD4 and RD1, with K6. These are the lines that differ from the design:
+- [x] Step 13: Red. Write `tests/main/dialogScript.test.js`, which runs every case once per shell in `SHELLS` and always spawns the shell explicitly (`spawn(shell, [script, kind])`, RD4). Each case asserts exit status 0 and 0 bytes on stdout and stderr unless an answer is printed. Cases: the exact C6 command through `sh -c`, 20 runs each with the variable unset and with the script folder deleted, each ≤ 100 ms (NFR4.1); folder or `alive` missing, nothing written, ≤ 100 ms (NFR4.2); `THADEUS_WAIT_SECONDS` empty or not a number; unknown kind (NFR4.3); `events/` not writable; `answers/` missing (review R-01: this one fails under dash with `: >`); a failing `sleep` on `PATH` makes the hook exit before any file exists (R-03); `alive` stops changing, exit 2.0–2.5 s after the last update (NFR5.1, BR1.2); `alive` rewritten every 500 ms for 3 s, then stopped: still waiting at 3 s, exit 2.0–2.5 s after the last write; `THADEUS_WAIT_SECONDS=2`, exit 1.0–3.2 s (NFR5.2, BR1.3); a dropped `.ans` is printed byte for byte ≤ 300 ms, with no `.wait` or `.took` left (NFR1.5); an empty `.ans` prints nothing ≤ 300 ms (NFR5.3, BR3.5); `TERM` to a waiting hook removes `.wait` (RD4); a payload with `$(touch marker)`, backticks, `;` and both quotes arrives byte for byte, and `marker` does not exist (NFR3.8, SD5); a `sleep` wrapper on `PATH` counts at most 11 polls in 1 s (NFR5.11); `answered` writes its event and exits at once without a `.wait`. Each test uses its own `mkdtemp` folder under `tests/.tmp/`. Run `npx vitest run tests/main/dialogScript.test.js` and record the failing output (script missing). (AC1.1.6, AC1.1.9; NFR4.1–NFR4.3, NFR5.1–NFR5.3, NFR5.11, NFR8.4)
+- [x] Step 14: Green. Write `.thadeus/hooks/dialog.sh` from RD4 and RD1, with K6. These are the lines that differ from the design:
 
   ```sh
   [ -n "$d" ] && [ -n "$s" ] && read -r last < "$d/alive" || exit 0
@@ -182,11 +185,11 @@ TerminalContext.jsx does not change: fallback events still go through its `answe
   ```
 
   No other redirect is placed on `:` or `exec`, except `exec 2>/dev/null` itself. The header comment names `US-0506 u1 FR4.6, NFR4, NFR5` and the C1 version. Run the Step 13 command: green under `sh`, and under `dash` where installed.
-- [ ] Step 15: Refactor with the Step 13 command green. Review the script against SCD4's per-poll list (one `[ -f ]`, one `read`, one `date`, one `sleep`; `mv` and `cat` only on an answer) and against "no `[[`, `$RANDOM`, arrays, `local`, `ERR` trap". Change the design's sentence "only POSIX features" to name `sleep 0.1` (R-03), as a comment in the script. (NFR5.11, NFR8.4)
+- [x] Step 15: Refactor with the Step 13 command green. Review the script against SCD4's per-poll list (one `[ -f ]`, one `read`, one `date`, one `sleep`; `mv` and `cat` only on an answer) and against "no `[[`, `$RANDOM`, arrays, `local`, `ERR` trap". Change the design's sentence "only POSIX features" to name `sleep 0.1` (R-03), as a comment in the script. (NFR5.11, NFR8.4)
 
 ### Layer: channel and file protocol (`src/main/agentChannel.js`, LC1 and LC2; data access)
 
-- [ ] Step 16: Red. Write `tests/main/agentChannel.test.js` against `createAgentChannel({ root, log })` on a temp root:
+- [x] Step 16: Red. Write `tests/main/agentChannel.test.js` against `createAgentChannel({ root, log })` on a temp root:
   - `openSession` returns `sessionId` and an `env` with exactly the three C1 keys, a 64-hex secret and `THADEUS_WAIT_SECONDS` `595` for Claude Code (NFR3.2, NFR5.2).
   - The root, the session folder, `events/` and `answers/` have mode `0700`, also under `process.umask(0)`, and the path starts with the given root (NFR3.1, SD1).
   - The first `openSession` awaits `init()`, which removes leftover folders holding `.evt` files and emits no raw event for them (NFR5.4, BR2.4, RD6).
@@ -207,12 +210,12 @@ TerminalContext.jsx does not change: fallback events still go through its `answe
   - a full round trip leaves only `alive`, an empty `events/` and an empty `answers/` (SCD5).
 
   Run `npx vitest run tests/main/agentChannel.test.js tests/main/agentChannelScript.test.js` and record the failing output. (AC1.1.5, AC1.1.9; NFR3.1–NFR3.3, NFR3.9, NFR3.11, NFR5.4, NFR5.12)
-- [ ] Step 17: Green. Write `src/main/agentChannel.js`. It holds C2's `openSession`, `bindPty`, `ptyOf`, `closeSession`, `onRawEvent` and `writeAnswer`, plus the main-internal `answerState`, `retract` and `isLive`. The heartbeat is an inline `worker_threads` worker with `eval: true` (RD1), which reports a write error other than `ENOENT` once per folder and code through `parentPort` (OD2). There is one `chokidar` watcher on the root with `depth: 2` and `ignoreInitial: true`, no `awaitWriteFinish`, and an `ignored` function that passes only `<id>/events/*.evt` (PD1, R-07). Secrets are compared with `crypto.timingSafeEqual` on the decoded bytes (SD3). The header comment names `US-0506 u1 FR1.3, NFR3, NFR5, C1, C2`. Run the Step 16 command: green.
-- [ ] Step 18: Refactor with the Step 16 command green: the refusal checks as one ordered list, and the log line built in one function (cut to 80 characters, line breaks made spaces).
+- [x] Step 17: Green. Write `src/main/agentChannel.js`. It holds C2's `openSession`, `bindPty`, `ptyOf`, `closeSession`, `onRawEvent` and `writeAnswer`, plus the main-internal `answerState`, `retract` and `isLive`. The heartbeat is an inline `worker_threads` worker with `eval: true` (RD1), which reports a write error other than `ENOENT` once per folder and code through `parentPort` (OD2). There is one `chokidar` watcher on the root with `depth: 2` and `ignoreInitial: true`, no `awaitWriteFinish`, and an `ignored` function that passes only `<id>/events/*.evt` (PD1, R-07). Secrets are compared with `crypto.timingSafeEqual` on the decoded bytes (SD3). The header comment names `US-0506 u1 FR1.3, NFR3, NFR5, C1, C2`. Run the Step 16 command: green.
+- [x] Step 18: Refactor with the Step 16 command green: the refusal checks as one ordered list, and the log line built in one function (cut to 80 characters, line breaks made spaces).
 
 ### Layer: harness adapters (`src/main/agentAdapters.js`, LC3; business logic, pure)
 
-- [ ] Step 19: Red. Write `tests/main/agentAdapters.test.js` against the fixtures:
+- [x] Step 19: Red. Write `tests/main/agentAdapters.test.js` against the fixtures:
   - Claude Code `PreToolUse` and opencode `form.created` parse into questions with header, text, options (label and description in the agent's order), `multiSelect` and `allowOwn` (BR1.4, BR4.2, AC1.1.1, AC1.1.2).
   - `toolCallId` is read where the payload has it, and `post-tool-use.json` and `form-replied.json` parse as closing events (BR2.3).
   - Each malformed fixture is a refusal with a reason (NFR2.3).
@@ -223,12 +226,12 @@ TerminalContext.jsx does not change: fallback events still go through its `answe
   - An unknown kind is ignored (C1 ownership rules).
 
   Run `npx vitest run tests/main/agentAdapters.test.js` and record the failing output. (NFR2.1, NFR2.3, NFR5.8, NFR7.2)
-- [ ] Step 20: Green. Write `src/main/agentAdapters.js`: `adapters.claude` and `adapters.opencode`, each `{ parse(kind, body), answerText(event, answer), keys(event, answer) }`, pure, with `cutUtf8` from SCD1. The `ponytail:` comment on `keys` names K11's ceiling. The header comment names `US-0506 u1 FR1.1, FR1.2, FR3.2, FR6.2, ADR-003`. Run the Step 19 command: green.
-- [ ] Step 21: Refactor with the Step 19 command green: one shared question normaliser for both harnesses.
+- [x] Step 20: Green. Write `src/main/agentAdapters.js`: `adapters.claude` and `adapters.opencode`, each `{ parse(kind, body), answerText(event, answer), keys(event, answer) }`, pure, with `cutUtf8` from SCD1. The `ponytail:` comment on `keys` names K11's ceiling. The header comment names `US-0506 u1 FR1.1, FR1.2, FR3.2, FR6.2, ADR-003`. Run the Step 19 command: green.
+- [x] Step 21: Refactor with the Step 19 command green: one shared question normaliser for both harnesses.
 
 ### Layer: opencode plugin (`.opencode/plugins/thadeus-dialog.js`, LC9)
 
-- [ ] Step 22: Red. Write `tests/main/opencodePlugin.test.js`, which imports the module with a stubbed V2 `ctx` and a temp session folder:
+- [x] Step 22: Red. Write `tests/main/opencodePlugin.test.js`, which imports the module with a stubbed V2 `ctx` and a temp session folder:
   - Without `THADEUS_SESSION_DIR` it registers nothing and writes nothing (FR4.4).
   - `form.created` writes a C1 event file (header line, then the payload JSON) and a `.wait` marker before the rename (RD2 step 1).
   - A dropped `.ans` is taken by rename to `.took`, `session.form.reply` is called with the parsed answer, and `.took` and `.wait` are removed.
@@ -240,12 +243,12 @@ TerminalContext.jsx does not change: fallback events still go through its `answe
   - The event handler returns before the wait ends (own async task).
 
   Run `npx vitest run tests/main/opencodePlugin.test.js` and record the failing output. (NFR5.7, AC1.1.1, AC1.1.6)
-- [ ] Step 23: Green. Write `.opencode/plugins/thadeus-dialog.js` (K12): an ES module, `node:fs/promises` only, every handler in `try`/`catch`, the wait as a `setTimeout` chain. The header comment names `US-0506 u1 FR1.2, FR4.4, NFR5.7, C1`. Run the Step 22 command: green.
-- [ ] Step 24: Refactor with the Step 22 command green: the C1 file names and the header line built in one place, matching the script.
+- [x] Step 23: Green. Write `.opencode/plugins/thadeus-dialog.js` (K12): an ES module, `node:fs/promises` only, every handler in `try`/`catch`, the wait as a `setTimeout` chain. The header comment names `US-0506 u1 FR1.2, FR4.4, NFR5.7, C1`. Run the Step 22 command: green.
+- [x] Step 24: Refactor with the Step 22 command green: the C1 file names and the header line built in one place, matching the script.
 
 ### Layer: timing log (`src/main/agentTiming.js`, LC7)
 
-- [ ] Step 25: Red. Write `tests/main/agentTiming.test.js`:
+- [x] Step 25: Red. Write `tests/main/agentTiming.test.js`:
   - With the switch on, one answered event gives exactly four JSON lines `{ eventId, harness, stamp, at }` in order, with no other field.
   - With it off, no `logs/` folder and no file exist after the same calls.
   - Renderer stamps other than `dialogShown` and `answerClicked`, or an `eventId` over 64 characters, are refused.
@@ -253,12 +256,12 @@ TerminalContext.jsx does not change: fallback events still go through its `answe
   - The `notificationShown` and `notificationClicked` names are accepted from main callers only (u5 amendment 4 needs only the list entry).
 
   Run `npx vitest run tests/main/agentTiming.test.js` and record the failing output. (NFR1.6, NFR1.7)
-- [ ] Step 26: Green. Write `src/main/agentTiming.js`: `createTimingLog({ dir, on })`, a no-op when off. The header comment names `US-0506 u1 NFR1.6, OD1`. Run the Step 25 command: green.
-- [ ] Step 27: Refactor with the Step 25 command green (none expected beyond naming).
+- [x] Step 26: Green. Write `src/main/agentTiming.js`: `createTimingLog({ dir, on })`, a no-op when off. The header comment names `US-0506 u1 NFR1.6, OD1`. Run the Step 25 command: green.
+- [x] Step 27: Refactor with the Step 25 command green (none expected beyond naming).
 
 ### Layer: event store and fallback source (`src/main/agentEvents.js`, LC4; `src/main/questions.js`)
 
-- [ ] Step 28: Red. Write `tests/main/agentEvents.test.js` against `createAgentEventStore({ channel, adapters, pty, timing, contextOf, auditEventsOf, clock })` with a fake channel, a fake pty and fake timers.
+- [x] Step 28: Red. Write `tests/main/agentEvents.test.js` against `createAgentEventStore({ channel, adapters, pty, timing, contextOf, auditEventsOf, clock })` with a fake channel, a fake pty and fake timers.
   - Order and lifecycle:
     - three sessions within 100 ms are listed by `arrivedAtMs`, then `tabId`, then `seq` (NFR5.9, BR2.1);
     - a second question from one session ends the first before the second is queued, never two open (NFR5.10, BR2.2);
@@ -286,12 +289,12 @@ TerminalContext.jsx does not change: fallback events still go through its `answe
   - One `[agent-events]` line per refused answer and per failed send (NFR3.11), and none on the happy path (NFR3.12).
 
   Add cases to the existing `tests/main/questions.test.js` for `auditEvent(q)` (same text, options, gate and ask fields as today, and `audit` keeps the original question for the terminal path) and `auditContext`. Run `npx vitest run tests/main/agentEvents.test.js tests/main/questions.test.js` and record the failing output. (AC1.1.1–AC1.1.8; NFR1.3, NFR1.4, NFR3.2, NFR3.4, NFR3.7, NFR5.2–NFR5.6, NFR5.9, NFR5.10)
-- [ ] Step 29: Green. Write `src/main/agentEvents.js` (state machine of functional-spec.md, `sendViaHook` from RD2 with the R-04 check `channel.isLive(sessionId) && state.folder` before `sent`, `hookWaits` from RD3, the picker tap with a rolling 64 KB ANSI-stripped buffer, C4 errors thrown as `Error(t('agentDialog.errors.<key>'))` with the English reason logged). The header comment names `US-0506 u1 FR1.4, FR1.5, FR3.1–FR3.6, FR6.1, components.md Option A`. Add `auditEvent` and `auditContext` to `src/main/questions.js`. Run the Step 28 command: green.
-- [ ] Step 30: Refactor with the Step 28 command green: the transitions in one table-driven `move(ev, to)`, with the push in it, so no path forgets it.
+- [x] Step 29: Green. Write `src/main/agentEvents.js` (state machine of functional-spec.md, `sendViaHook` from RD2 with the R-04 check `channel.isLive(sessionId) && state.folder` before `sent`, `hookWaits` from RD3, the picker tap with a rolling 64 KB ANSI-stripped buffer, C4 errors thrown as `Error(t('agentDialog.errors.<key>'))` with the English reason logged). The header comment names `US-0506 u1 FR1.4, FR1.5, FR3.1–FR3.6, FR6.1, components.md Option A`. Add `auditEvent` and `auditContext` to `src/main/questions.js`. Run the Step 28 command: green.
+- [x] Step 30: Refactor with the Step 28 command green: the transitions in one table-driven `move(ev, to)`, with the push in it, so no path forgets it.
 
 ### Layer: PtyManager, IPC and preload bridge, single instance (LC5, LC6; API)
 
-- [ ] Step 31: Red.
+- [x] Step 31: Red.
   - Extend `tests/main/pty.test.js`:
     - a shell tab spawned while `process.env` holds `THADEUS_SESSION_SECRET` gets no `THADEUS_*` key;
     - an agent tab gets exactly the three channel keys passed in (NFR3.2, SD2);
@@ -316,18 +319,18 @@ TerminalContext.jsx does not change: fallback events still go through its `answe
     - on `second-instance` it calls `focus` (K5, R-02).
 
   Run `npx vitest run tests/main/pty.test.js tests/main/agentIpc.test.js tests/main/preload.test.js tests/main/windowOptions.test.js` and record the failing output. (AC1.1.5, AC1.1.7, AC1.1.9; NFR1.7, NFR3.2, NFR3.4, NFR5.5)
-- [ ] Step 32: Green.
+- [x] Step 32: Green.
   - `src/main/pty.js`: `spawnSession` gains `env` (the channel variables) and `onExit`; the base environment is `process.env` minus every `THADEUS_*` key; `tapOutput(id, fn)` returns a remover.
   - `src/main/agentIpc.js` as tested. `src/main/ipc.js` builds the channel on `<userData>/agent-channel`, the store, the timing log on `<userData>/logs`, and `hooksCurrent` from `THADEUS_AGENT_HOOKS`. It wires `pty:spawn`, `shutdown` and the three `agentEvents:*` handlers, and pushes after `refreshQuestions` publishes (audit events in the list).
   - `src/main/index.js`: `claimSingleInstance` right after `setPath` (K5), and `windowOptions(settings, platform, { timing })`.
   - `src/preload/index.js`: the `agentEvents` member.
 
   Header and doc comments name `US-0506 u1` with the FR or NFR. Run the Step 31 command: green. Then run `npx vitest run tests/main/` once to keep the main project green.
-- [ ] Step 33: Refactor with the Step 31 command green: the env helper in `pty.js` as one pure function; no new `ipc.js` handler beyond the three.
+- [x] Step 33: Refactor with the Step 31 command green: the env helper in `pty.js` as one pure function; no new `ipc.js` handler beyond the three.
 
 ### Layer: AgentDialog (`src/renderer/AgentDialog.jsx`, LC10; frontend)
 
-- [ ] Step 34: Red. Write `tests/renderer/AgentDialog.test.jsx` (Swedish locale, `window.bridge` stubbed).
+- [x] Step 34: Red. Write `tests/renderer/AgentDialog.test.jsx` (Swedish locale, `window.bridge` stubbed).
   - Question layouts:
     - M1 single question with descriptions under each label, "Complete workflow" first, with a pick sending `{ picks: [[0]], own: [null] }` once (AC1.1.1, BR4.2);
     - M2 batch of four stacked under their headers, each collapsing when answered, Send disabled with "<n> av <total> besvarade" until all are answered, then one `answer` call (AC1.1.2, BR4.3);
@@ -347,7 +350,7 @@ TerminalContext.jsx does not change: fallback events still go through its `answe
   - Extend `tests/renderer/AppShell.test.jsx`: a pushed hook event opens the dialog unless `questionAlerts` is `off`.
 
   Run `npx vitest run tests/renderer/AgentDialog.test.jsx tests/renderer/AppShell.test.jsx` and record the failing output. (AC1.1.1–AC1.1.4, AC1.1.6–AC1.1.8, AC1.1.10, AC1.1.11; NFR3.5, NFR3.6, NFR6.1–NFR6.3, NFR7.1)
-- [ ] Step 35: Green.
+- [x] Step 35: Green.
   - Write `src/renderer/AgentDialog.jsx`: a native modal `<dialog>` as today; `data-testid` values `agent-dialog`, `agent-dialog-title`, `agent-dialog-choice`, `agent-dialog-check`, `agent-dialog-own`, `agent-dialog-send`, `agent-dialog-done`, `agent-dialog-close`, `agent-dialog-terminal`, `agent-dialog-status`, `agent-dialog-prev`, `agent-dialog-next`, `agent-dialog-new-count`; the timing stamps in a `requestAnimationFrame` after paint and at the start of Send.
   - Add `html="text"` to `FileContent`.
   - In `App.jsx`, replace QuestionPopup with AgentDialog, fed by `bridge.agentEvents.list` and `onChanged`; keep the `questions` state for `askingIntents`; send audit answers through the existing `sendAnswer`.
@@ -355,22 +358,22 @@ TerminalContext.jsx does not change: fallback events still go through its `answe
   - Add the `agentDialog.*` keys to `sv.json` and `en.json` with the same ICU placeholders: `title.waiting`, `title.stillWaiting`, `kind.question`, `context`, `state.sending`, `state.sent` `{harness}`, `state.handedBack`, `state.timedOut`, `state.failed` `{error}`, `state.sessionEnded` `{harness}`, `alsoInTerminal`, `truncated`, `answered` `{answered}` `{total}`, `send`, `sendAll`, `done`, `ownAnswer`, `newCount` `{n}`, `openTerminal`, `position` `{i}` `{n}`, `previous`, `next`, and `errors.unknownEvent`, `errors.eventNotOpen`, `errors.sessionEnded`, `errors.doesNotFit`, `errors.fallback`, `errors.pickerNotShowing`, `errors.sendFailed` `{cause}`, `errors.notTaken`, `errors.answerInTerminal`. Move the popup's `app.question.*` keys that the fallback path still uses; remove only keys no `t()` call uses any more.
 
   The header comment names `US-0506 u1 FR2.1–FR2.6, FR3.3, FR3.5, NFR6, NFR7, ADR-006`. Run the Step 34 command, then `npx vitest run tests/main/i18nKeys.test.js`: green.
-- [ ] Step 36: Refactor with the Step 34 command green: one `QuestionBlock` component inside the file for the M1 and M2 questions; no Swedish literal in the file (the i18nKeys regression check).
+- [x] Step 36: Refactor with the Step 34 command green: one `QuestionBlock` component inside the file for the M1 and M2 questions; no Swedish literal in the file (the i18nKeys regression check).
 
 ### Environment, build and verification
 
-- [ ] Step 37: Environment and build configuration. Add per-file coverage globs at 80 lines to `vitest.config.mjs` for `src/main/agent*.js`, `src/shared/agentText.js`, `src/renderer/AgentDialog.jsx` and `.opencode/plugins/thadeus-dialog.js` (NFR8.2). Run `npx eslint .` and `npx prettier --check .` on the new files and fix them. Then run the Construction Verification Command `npx vitest run tests/ --coverage && npx eslint . && npx prettier --check .`; it passes, and the test count is Step 3's count minus the deleted popup file plus the new tests. Record the counts and the coverage figures for `code-summary.md`. (NFR8.1–NFR8.4)
-- [ ] Step 38: Development hook entries (K13). Put the two Claude Code entries from functional-spec.md ("Hook entries for development") into `unit-test-instructions.md` and `code-summary.md` for the person to paste, together with `THADEUS_AGENT_HOOKS=1 npm run dev` and `THADEUS_TIMING=1`. `.claude/settings.json` is not written. The manual run (NFR1.1–NFR1.3, NFR2.2) is left to Build and Test and the release check, as the bolt plan says.
+- [x] Step 37: Environment and build configuration. Add per-file coverage globs at 80 lines to `vitest.config.mjs` for `src/main/agent*.js`, `src/shared/agentText.js`, `src/renderer/AgentDialog.jsx` and `.opencode/plugins/thadeus-dialog.js` (NFR8.2). Run `npx eslint .` and `npx prettier --check .` on the new files and fix them. Then run the Construction Verification Command `npx vitest run tests/ --coverage && npx eslint . && npx prettier --check .`; it passes, and the test count is Step 3's count minus the deleted popup file plus the new tests. Record the counts and the coverage figures for `code-summary.md`. (NFR8.1–NFR8.4)
+- [x] Step 38: Development hook entries (K13). Put the two Claude Code entries from functional-spec.md ("Hook entries for development") into `unit-test-instructions.md` and `code-summary.md` for the person to paste, together with `THADEUS_AGENT_HOOKS=1 npm run dev` and `THADEUS_TIMING=1`. `.claude/settings.json` is not written. The manual run (NFR1.1–NFR1.3, NFR2.2) is left to Build and Test and the release check, as the bolt plan says.
 
 ### Documentation and traceability
 
-- [ ] Step 39: Documentation and traceability. Check that `docs/FEATURES.md` and `docs/features/epic-05-workflow-control.md` still show US-0506 as "🚧 in progress, for v0.2.5"; leave them unchanged and mark nothing done. Check that every new module and exported function names its story and requirement IDs (team Code Style). Check that every `ponytail:` comment names its ceiling (K11, the agentText flags, RD2's "taken but not finished within 1 s"). `code-summary.md`, `source-manifest.json` and `traceability.json` follow in Step 5 of the stage.
+- [x] Step 39: Documentation and traceability. Check that `docs/FEATURES.md` and `docs/features/epic-05-workflow-control.md` still show US-0506 as "🚧 in progress, for v0.2.5"; leave them unchanged and mark nothing done. Check that every new module and exported function names its story and requirement IDs (team Code Style). Check that every `ponytail:` comment names its ceiling (K11, the agentText flags, RD2's "taken but not finished within 1 s"). `code-summary.md`, `source-manifest.json` and `traceability.json` follow in Step 5 of the stage.
 
 ## Story and requirement traceability
 
 | Plan steps | Story / criteria | Rules and NFRs |
 |---|---|---|
-| 1–6, 37 | US1.1 Definition of Done | NFR8.1–NFR8.4 |
+| 1–6, 3a, 37 | US1.1 Definition of Done | NFR8.1–NFR8.4 |
 | 7, 8 | US1.1 (contracts) | C1, C2, C4; R-04, R-05 |
 | 9 | AC1.1.1, AC1.1.2, AC1.1.10 | NFR2.1, NFR8.4 |
 | 10–12 | AC1.1.11 | BR4.1, NFR7.2 (u5 amendment 2) |

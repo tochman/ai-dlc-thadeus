@@ -17,7 +17,7 @@ Every edge in the Unit graph is the same thing seen from two sides: U1 creates a
 | C1 | U1 (AgentChannel) | ClaudeCodeHook and OpencodePlugin (U1, extended by U2, U3) | files in a per-session folder | U1 |
 | C2 | U1 (AgentChannel) | IpcRouter (U1), AgentEventStore (U1) | in-process calls in main | U1 |
 | C3 | U1 (HarnessEventAdapter, AgentEventStore) | AgentEventStore, AgentDialog (U1–U5), Notifications (U5) | shared schema (AgentEvent) | U1 |
-| C4 | U1 (IpcRouter) | AgentDialog (U1), LatestMessageStrip (U3), AgentDialogsSetupUI (U4) | `window.bridge` IPC (invoke and push) | U1; U3 and U4 add members |
+| C4 | U1 (IpcRouter) | AgentDialog (U1), LatestMessageStrip (U3), AgentDialogsSetupUI (U4) | `window.bridge` IPC (invoke and push) | U1; U3, U4 and U5 add members |
 | C5 | U4 (HookInstaller) | AgentEventStore (U1 switch replaced in U4), IpcRouter (U4) | in-process calls in main | U4 |
 | C6 | U4 (HookInstaller) | External: Claude Code hooks and opencode's plugin loader | entries in `.claude/settings.json`, committed script and plugin | U4 |
 
@@ -40,13 +40,14 @@ The same rule holds for opencode, decided by its own spike result.
 environment:                 # set by PtyManager on the agent child only (C2)
   THADEUS_SESSION_DIR: "absolute path of the session folder (mode 0700, under the app's userData)"
   THADEUS_SESSION_SECRET: "32 random bytes, hex; never written to a committed file"
-  THADEUS_WAIT_SECONDS: "how long a question or permission hook may wait before handing back"
+  THADEUS_WAIT_SECONDS: "the full time a question or permission hook may wait, in whole seconds (595 for Claude Code: the entry timeout 600 minus a 5 s margin that main applies once, when it sets the variable); hooks use it as given and subtract nothing"
 folder:
-  alive: "file whose mtime the app refreshes every 500 ms; older than 2 s means the app is gone"
-  events/: "event files, written by the hook as <name>.tmp then renamed to <name>.evt"
-  answers/: "answer files, written by the app as <name>.tmp then renamed to <name>.ans"
+  alive: "holds the app's current epoch ms and a newline; the app replaces it atomically every 500 ms from a worker thread; a hook treats the app as gone after 20 consecutive 100 ms polls that read the same content (at least 2 s without an update)"
+  events/: "event files, written by the hook as <name>.tmp then renamed to <name>.evt; the app reads each .evt once and deletes it; .tmp files are never read"
+  answers/: "answer files and the hook's wait markers (see answer_file)"
 event_file:
-  name: "<epoch-ms>-<pid>.evt"
+  name: "<digits>-<digits>.evt; the script writes <epoch-s>-<pid> (date +%s and its own pid), the opencode plugin <epoch-ms>-<pid> with the ms strictly increasing inside its process; a name only identifies the file, it never orders events"
+  order: "arrival order is the event file's mtimeMs, then tabId, then a counter main increments as it accepts each file"
   line_1: "THADEUS-EVENT <version> <kind> <secret>"   # e.g. THADEUS-EVENT v1 question 9f…
   rest: "the harness's input exactly as received (Claude Code hook stdin, opencode event JSON)"
   max_bytes: 1048576
@@ -56,25 +57,31 @@ event_file:
     permission: "agent asks for permission (U2)"
     reply: "agent finished its turn and waits for input (U3)"
 answer_file:
-  name: "<same name as the event file>.ans"
+  name: "<same name as the event file, without .evt>.ans"
   content: "the exact text the hook prints on stdout, built by HarnessEventAdapter; empty means hand back"
+  wait_marker: "<name>.wait, created by a waiting hook before it renames its event file into place, removed by the hook on every exit"
+  take: "the hook takes an answer by renaming <name>.ans to <name>.took, then prints it; a plugin whose harness refuses the answer renames <name>.took to <name>.nack before it removes its wait marker"
+  delivered_when: "the app reports an answer as sent via hook only when <name>.ans is gone (taken), <name>.wait is gone (the hook finished) and no <name>.nack exists; when <name>.wait is gone and <name>.ans is still there, the app deletes <name>.ans and the answer was not delivered"
 waiting:
   question: "waits for the answer file"
   permission: "waits for the answer file"
   answered: "never waits: writes the event and exits 0"
   reply: "never waits: writes the event and exits 0 (FR3.3)"
-  stops_waiting_when: "answer file arrives; alive older than 2 s; THADEUS_WAIT_SECONDS minus 5 s reached"
+  stops_waiting_when: "answer file taken; alive unchanged for 20 polls (the plugin: for 2000 ms by Date.now()); THADEUS_WAIT_SECONDS reached by wall clock (date +%s; the plugin: Date.now())"
   on_stop_without_answer: "print nothing, exit 0, so the agent shows its own prompt (NFR5)"
+  entry_timeout: "600 s for the question entry, 10 s for answered (C6)"
 versions:                    # [Q1]
   current: v1
   accepted_by_app: "its own version and the one before it"
-  other_versions: "event ignored; the hook times out to the terminal; the project shows out of date with Update"
+  other_versions: "event deleted with no hand-back (it may be forged), so that hook ends by its own deadline or liveness rule; the project shows out of date with Update"
 refusals:                    # by AgentChannel, nothing is shown
   - "folder unknown or session ended"
   - "secret does not match the folder's secret"
-  - "file over max_bytes, still .tmp, or line 1 malformed"
+  - "file over max_bytes, or line 1 malformed"
+  - "still .tmp: ignored, never read or deleted"
 ```
 
+- **Delivery is confirmed, not assumed:** an answer file the hook never took is not an answer. The app checks the wait marker before it writes, and after it writes it reports "sent" only once the hook has taken the file, and only while the session is live and its folder exists. If the hook has already gone, the app deletes the answer file and sends the answer as keys once the agent's own picker shows (C2 "Delivering an answer").
 - **Kind comes from the hook entry, not from the input:** each hook entry calls the script with its kind as the first argument, so the script never parses JSON (Domain Design review R-01).
 - **Closing a question (FR1.5):** the `answered` event is the session's own signal that the question is done, whether it was answered in the dialog or in the terminal after a hand-back. A newer event from the same session, or the tab's exit, also closes it (Domain Design review R-02).
 - **Security:** only the user can read the folder; the secret is in the agent's environment, so a command the agent itself runs could forge events for its own session only, never for another tab. That reaches nothing more than the person's own dialog, and every answer still needs a person's click (FR3.4).
@@ -107,7 +114,15 @@ onRawEvent:
 writeAnswer:
   called_by: AgentEventStore
   input: { sessionId: string, file: string, text: string }
-  errors: ["session ended", "event file no longer waiting"]
+  errors: ["session ended", "event file no longer waiting", "hook gave up"]
+answerState:                 # main-internal (U1 NFR Design LC2), not used outside main
+  called_by: AgentEventStore
+  input: { sessionId: string, file: string }
+  output: "{ folder: boolean, waiting: boolean, answerPresent: boolean, nack: boolean } from the .wait, .ans and .nack markers"
+retract:                     # main-internal (U1 NFR Design LC2)
+  called_by: AgentEventStore
+  input: { sessionId: string, file: string }
+  output: "true when it deleted <name>.ans (the hook had not taken it), false when the file was already gone (taken)"
 ```
 
 Answers that must be typed for a hook event (a reply's text, keys after a hand-back) go through one guarded caller of the existing `writeSession(id, data)` inside AgentEventStore. It takes the session from the event it holds and the pty from `ptyOf(sessionId)`, and refuses when that is null. The renderer's existing `pty:write` stays for what the person types in the terminal (Domain Design review R-03).
@@ -177,6 +192,7 @@ agentEvents.answer:   { in: { eventId: string, answer: Answer }, out: { state: "
                         errors: ["unknown event", "event not open", "session ended", "answer does not fit the event",
                                  "fallback event: answered in the terminal path", "the agent's picker is not showing", "send failed: <cause>"] }
 agentEvents.close:    { in: { eventId: string }, out: { state: "handedBack" | "dismissed" }, unit: U1 }
+agentEvents.focus:    { push: "agent-events:focus", payload: { eventId: string }, unit: U5 }
 agentEvents.latest:   { in: { projectId: string }, out: "{ tabId, harness, text, arrivedAt, status } | null", unit: U3 }
 agentHooks.status:    { in: { projectId: string }, out: "[{ harness, files: [{ path, status }], status }]", unit: U4 }
 agentHooks.preview:   { in: { projectId: string, harness: string, action: "install" | "update" | "remove" }, out: "{ previewId, files: [{ path, summary, diff }] }", unit: U4 }

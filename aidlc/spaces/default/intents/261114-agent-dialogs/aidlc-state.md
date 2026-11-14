@@ -11,7 +11,7 @@
 - **State Version**: 8
 - **Active Agent**: aidlc-developer-agent
 - **Worktree Path**:
-- **Bolt Refs**:
+- **Bolt Refs**: [empty list]
 - **Practices Affirmed Timestamp**: 2026-11-14T14:47:00Z
 
 ## Scope Configuration
