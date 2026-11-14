@@ -82,11 +82,18 @@ jobs:
       - uses: actions/download-artifact@v4
         with:
           path: artifacts
+      # The app's updater verifies its download against this file and stops on a mismatch (EPIC-04 US-0407).
+      - name: Checksums
+        run: |
+          mkdir -p upload
+          cp artifacts/mac/*.dmg artifacts/linux/*.deb upload/
+          (cd upload && sha256sum *.dmg *.deb > SHA256SUMS.txt)
+          cat upload/SHA256SUMS.txt
       - name: Create GitHub Release
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release create "${GITHUB_REF_NAME}" artifacts/mac/*.dmg artifacts/linux/*.deb \
+          gh release create "${GITHUB_REF_NAME}" upload/*.dmg upload/*.deb upload/SHA256SUMS.txt \
             --repo "${GITHUB_REPOSITORY}" \
             --title "T.H.A.D.E.U.S. ${GITHUB_REF_NAME}" \
             --generate-notes

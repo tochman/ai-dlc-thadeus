@@ -3,10 +3,12 @@ import { useTranslation } from 'react-i18next';
 import ProjectView from './ProjectView.jsx';
 import AuctumMark from './AuctumMark.jsx';
 import Splash from './Splash.jsx';
-import AppSettingsDialog, { saveLanguage } from './AppSettingsDialog.jsx';
+import SettingsView, { saveLanguage } from './SettingsView.jsx';
 import { withSlots } from './format.js';
 import DocsDialog from './DocsDialog.jsx';
+import AboutDialog from './AboutDialog.jsx';
 import QuestionPopup from './QuestionPopup.jsx';
+import UpdateNotice from './UpdateNotice.jsx';
 import { Bar, Frame } from './Lcars.jsx';
 import { APP_NAME } from '../shared/appName.js';
 import { selectableHarness } from '../shared/harnesses.js';
@@ -47,7 +49,9 @@ export default function App() {
   const [error, setError] = useState(null);
   const [restored, setRestored] = useState(false);
   const [settingsFor, setSettingsFor] = useState(null); // projectId whose "Projektinställningar" is open (EPIC-06 FR3.1)
-  const [appSettingsOpen, setAppSettingsOpen] = useState(false);
+  const [settingsView, setSettingsView] = useState(false); // "Inställningar" shows in the content frame, not a dialog (US-0405 FR1.1)
+  const [startFullscreen, setStartFullscreen] = useState(false); // the saved "Helskärm vid start", apart from the live mode below
+  const [recent, setRecent] = useState([]); // the "Senaste projekt" list, also kept in recentRef for saving
   const [animations, setAnimations] = useState(null); // saved choice; null means the default applies
   const [language, setLanguage] = useState('auto'); // saved "Språk / Language" choice (EPIC-07 FR4.1)
   const [ui, setUi] = useState({}); // projectId -> {view}: the one view the arm has selected per project
@@ -62,6 +66,8 @@ export default function App() {
   const [popupFocus, setPopupFocus] = useState(null); // {id} named by a clicked notification (FR3.2)
   const recentRef = useRef([]);
   const menuCommandRef = useRef(null);
+  const [updateCheck, setUpdateCheck] = useState(0); // "Sök efter uppdatering…" bumps it (US-0407)
+  const [aboutOpen, setAboutOpen] = useState(false); // "Om T.H.A.D.E.U.S." from the menu (US-0408)
   const seenQuestionsRef = useRef(new Set());
   const questionAlertsRef = useRef('popup-notify');
   questionAlertsRef.current = alertSettings.questionAlerts ?? 'popup-notify';
@@ -77,6 +83,7 @@ export default function App() {
     setTabs((t) => [...t, info]);
     setActiveId(info.projectId);
     recentRef.current = [info.root, ...recentRef.current.filter((p) => p !== info.root)].slice(0, 10);
+    setRecent(recentRef.current);
     return info;
   }, []);
 
@@ -86,7 +93,9 @@ export default function App() {
       try {
         const s = await bridge.getSettings();
         recentRef.current = s.recentProjects;
+        setRecent(s.recentProjects ?? []);
         setAnimations(s.animations ?? null);
+        setStartFullscreen(s.fullscreen === true); // "Helskärm vid start" is the mode main saved at exit (US-0404)
         setLanguage(s.language ?? 'auto');
         setAlertSettings({ questionAlerts: s.questionAlerts, notificationSound: s.notificationSound });
         const failed = [];
@@ -211,9 +220,9 @@ export default function App() {
     setTerminalCommand((c) => ({ seq: (c?.seq ?? 0) + 1, action: 'agent', projectId: q.projectId }));
   }
   /** The popup's answer: `text` goes to that project's agent tab without switching views. Resolves {ok, error}. */
-  function sendAnswer(q, text) {
+  function sendAnswer(q, answer) {
     return new Promise((reply) =>
-      setTerminalCommand((c) => ({ seq: (c?.seq ?? 0) + 1, action: 'answer', projectId: q.projectId, text, reply }))
+      setTerminalCommand((c) => ({ seq: (c?.seq ?? 0) + 1, action: 'answer', projectId: q.projectId, question: q, answer, reply }))
     );
   }
   async function saveAlertSettings(partial) {
@@ -250,11 +259,22 @@ export default function App() {
 
   async function saveAnimations(next) {
     setAnimations(next);
-    await bridge.setSettings({ animations: next }); // a failure is shown in the dialog
+    await bridge.setSettings({ animations: next }); // a failure is shown in the view
   }
   async function changeLanguage(next) {
     setLanguage(next);
-    await saveLanguage(next); // a failure is shown in the dialog
+    await saveLanguage(next); // a failure is shown in the view
+  }
+  /** "Helskärm vid start" (US-0404 A2): the key main saves at exit, kept apart from the live mode the header shows. */
+  async function saveStartFullscreen(on) {
+    setStartFullscreen(on);
+    await bridge.setSettings({ fullscreen: on });
+  }
+  /** Drops one recent project from the list the view shows and the next save writes (US-0405 FR4.2). */
+  async function removeRecent(dir) {
+    recentRef.current = recentRef.current.filter((p) => p !== dir);
+    setRecent(recentRef.current);
+    await bridge.setSettings({ recentProjects: recentRef.current });
   }
 
   const active = tabs.find((t) => t.projectId === activeId) ?? null;
@@ -275,11 +295,17 @@ export default function App() {
   function showView(next) {
     if (active) setUiOf(active.projectId, { view: next });
   }
-  const openAppSettings = () => setAppSettingsOpen(true);
+  const openAppSettings = () => setSettingsView(true);
   function openProjectSettings(projectId) {
     if (!projectId) return;
     setActiveId(projectId);
     setSettingsFor(projectId);
+  }
+  /** The view's link into a project's own settings: the view gives the content frame back first (FR4.3, FR6.2). */
+  function openProjectSettingsFromView(projectId) {
+    if (!projectId) return;
+    setSettingsView(false);
+    openProjectSettings(projectId);
   }
   function runTerminal(action) {
     if (active) setTerminalCommand((c) => ({ seq: (c?.seq ?? 0) + 1, action, projectId: active.projectId }));
@@ -305,7 +331,9 @@ export default function App() {
     view: ({ view: v }) => pick(v, ['intents', 'features', 'config'], showView),
     panel: ({ panel }) => isAidlc && pick(panel, ['cost', 'github'], showView), // Kostnad and Github are views too
     terminal: ({ action }) => pick(action, ['agent', 'shell', 'restart'], runTerminal),
-    docs: () => openDocs()
+    docs: () => openDocs(),
+    checkUpdate: () => setUpdateCheck((n) => n + 1),
+    about: () => setAboutOpen(true)
   };
   menuCommandRef.current = (payload) => {
     if (typeof payload?.command === 'string' && Object.hasOwn(menuCommands, payload.command)) menuCommands[payload.command](payload);
@@ -343,7 +371,9 @@ export default function App() {
               </>
             )}
             <h1 className="app-title">
-              {active ? (
+              {settingsView ? (
+                t('app.settings')
+              ) : active ? (
                 <>
                   {active.name} <span className="app-title-sep" aria-hidden="true">•</span> {viewLabel}
                 </>
@@ -410,21 +440,21 @@ export default function App() {
         <span className="arm-spacer" aria-hidden="true" />
         {active && (
           <>
-            <ArmBlock current={view === 'intents'} onClick={() => showView('intents')} data-testid="project-view-switch-intents">
+            <ArmBlock current={!settingsView && view === 'intents'} onClick={() => showView('intents')} data-testid="project-view-switch-intents">
               {firstLabel}
             </ArmBlock>
             {showFeatures && (
-              <ArmBlock current={view === 'features'} onClick={() => showView('features')} data-testid="project-view-switch-features">
+              <ArmBlock current={!settingsView && view === 'features'} onClick={() => showView('features')} data-testid="project-view-switch-features">
                 {t('app.features')}
               </ArmBlock>
             )}
             {isAidlc && (
-              <ArmBlock current={view === 'config'} onClick={() => showView('config')} data-testid="project-view-switch-config">
+              <ArmBlock current={!settingsView && view === 'config'} onClick={() => showView('config')} data-testid="project-view-switch-config">
                 {t('app.config')}
               </ArmBlock>
             )}
             <ArmBlock
-              current={view === 'cost'}
+              current={!settingsView && view === 'cost'}
               disabled={!isAidlc}
               onClick={() => showView('cost')}
               data-testid="arm-cost"
@@ -433,7 +463,7 @@ export default function App() {
             </ArmBlock>
             <ArmBlock
               tone="dark"
-              current={view === 'github'}
+              current={!settingsView && view === 'github'}
               disabled={!isAidlc}
               onClick={() => showView('github')}
               data-testid="arm-github"
@@ -442,7 +472,7 @@ export default function App() {
             </ArmBlock>
           </>
         )}
-        <ArmBlock tone="dark" onClick={openAppSettings} data-testid="app-settings-open">
+        <ArmBlock tone="dark" current={settingsView} onClick={openAppSettings} data-testid="app-settings-open">
           {t('app.settings')}
         </ArmBlock>
         <div className="arm-foot">
@@ -461,7 +491,7 @@ export default function App() {
       )}
 
       <main className="app-main">
-        {tabs.length === 0 && restored && (
+        {tabs.length === 0 && restored && !settingsView && (
           <div className="empty-state">
             <Frame>
               <AuctumMark size={96} className="empty-state-mark" />
@@ -473,38 +503,49 @@ export default function App() {
             </Frame>
           </div>
         )}
+        {/* One view at a time in the content frame (US-0405 FR1.1); closing it returns to the view that was shown. */}
+        {settingsView && (
+          <SettingsView
+            onClose={() => setSettingsView(false)}
+            animations={motion}
+            onAnimations={saveAnimations}
+            fullscreen={startFullscreen}
+            onFullscreen={saveStartFullscreen}
+            language={language}
+            onLanguage={changeLanguage}
+            questionAlerts={alertSettings.questionAlerts ?? 'popup-notify'}
+            notificationSound={alertSettings.notificationSound !== false}
+            onAlertSettings={saveAlertSettings}
+            recentProjects={recent}
+            onRemoveRecent={removeRecent}
+            projects={tabs.map((tab) => ({ projectId: tab.projectId, name: tab.name }))}
+            onProjectSettings={openProjectSettingsFromView}
+          />
+        )}
         {/* Every tab stays mounted so its terminals and watchers survive tab switches (FR8.4). */}
         {tabs.map((tab) => {
           const tabUi = { ...UI_DEFAULT, ...ui[tab.projectId] };
           return (
-            <div key={tab.projectId} className="project-pane" hidden={tab.projectId !== activeId}>
+            <div key={tab.projectId} className="project-pane" hidden={settingsView || tab.projectId !== activeId}>
               <ProjectView
                 project={tab}
-                visible={tab.projectId === activeId}
+                visible={!settingsView && tab.projectId === activeId}
                 settingsOpen={settingsFor === tab.projectId}
                 onCloseSettings={() => setSettingsFor(null)}
                 view={tabUi.view}
                 onView={(v) => setUiOf(tab.projectId, { view: v })}
                 onMeta={reportMeta}
                 terminalCommand={terminalCommand}
+                askingIntents={questions.filter((q) => !q.early && q.projectId === tab.projectId).map((q) => q.intent)}
               />
             </div>
           );
         })}
       </main>
 
-      <AppSettingsDialog
-        open={appSettingsOpen}
-        onClose={() => setAppSettingsOpen(false)}
-        value={motion}
-        onChange={saveAnimations}
-        questionAlerts={alertSettings.questionAlerts ?? 'popup-notify'}
-        notificationSound={alertSettings.notificationSound !== false}
-        onSave={saveAlertSettings}
-        language={language}
-        onLanguage={changeLanguage}
-      />
       <DocsDialog doc={docs} onClose={() => setDocs(null)} />
+      <AboutDialog open={aboutOpen} onClose={() => setAboutOpen(false)} />
+      <UpdateNotice busy={Object.values(meta).some((m) => m?.busy)} checkRequest={updateCheck} />
       <QuestionPopup
         open={popupOpen}
         questions={popupQuestions}

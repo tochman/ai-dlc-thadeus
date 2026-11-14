@@ -1,7 +1,7 @@
 // The app's own menu (EPIC-04 US-0404 FR2). Labels are the left arm's names. Everything that concerns the
 // content is sent to the renderer as `menu:command` and runs the same function as the arm's button (FR2.4).
 import { app, BrowserWindow, Menu, shell } from 'electron';
-import { APP_FULL_NAME, APP_NAME, APP_TAGLINE, APP_VENDOR } from '../shared/appName.js';
+import { APP_NAME } from '../shared/appName.js';
 import { t } from '../shared/i18n.js';
 
 // [assumption] AI-DLC's web page; the fallback when the project has no docs/README.md (FR2.1 Hjälp).
@@ -36,13 +36,15 @@ export function buildMenuTemplate({ isMac, isPackaged, state, fullscreen, send, 
   const showFeatures = hasProject && state?.showFeatures === true;
   const cmd = (command, args = {}) => () => send({ command, ...args });
   const appSettings = { label: t('menu.settings'), accelerator: 'CmdOrCtrl+,', click: cmd('appSettings') };
+  // The app's own "Om" popup with the version replaces Electron's About panel (EPIC-04 US-0408).
+  const about = { label: t('menu.about', { app: APP_NAME }), click: cmd('about') };
 
   const template = [];
   if (isMac) {
     template.push({
       label: APP_NAME,
       submenu: [
-        { role: 'about', label: t('menu.about', { app: APP_NAME }) },
+        about,
         sep,
         appSettings,
         sep,
@@ -120,7 +122,11 @@ export function buildMenuTemplate({ isMac, isPackaged, state, fullscreen, send, 
     role: 'help',
     submenu: [
       { label: t('menu.docs'), click: cmd('docs') },
-      { label: t('menu.reportIssue'), click: () => actions.reportIssue() }
+      { label: t('menu.reportIssue'), click: () => actions.reportIssue() },
+      sep,
+      // The renderer runs the check and shows the result in its notice (EPIC-04 US-0407).
+      { label: t('menu.checkUpdate'), click: cmd('checkUpdate') },
+      ...(isMac ? [] : [sep, about])
     ]
   });
   // Reload and DevTools only while developing; the packaged app has neither (FR2.2).
@@ -154,13 +160,6 @@ const actions = {
 
 /** (Re)builds the menu from the latest renderer state and the window's real fullscreen mode. */
 export function applyMenu(win) {
-  // macOS About panel (US-0406 FR2.4). `version` (the build number) is left to Info.plist's CFBundleVersion.
-  app.setAboutPanelOptions({
-    applicationName: APP_NAME,
-    applicationVersion: app.getVersion(),
-    copyright: `© ${APP_VENDOR}`,
-    credits: `${APP_FULL_NAME} — ${APP_TAGLINE}`
-  });
   const template = buildMenuTemplate({
     isMac: process.platform === 'darwin',
     isPackaged: app.isPackaged,

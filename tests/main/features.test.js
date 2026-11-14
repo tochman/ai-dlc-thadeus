@@ -3,7 +3,7 @@ import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import { openRoot } from '../../src/main/projectAccess.js';
 import { loadFeatures, loadStoryLinks } from '../../src/main/features.js';
-import { parseEpic, parseOverview, storyIdsIn } from '../../src/main/parsers/features.js';
+import { epicStatusOf, parseEpic, parseOverview, statusOf, storyIdsIn } from '../../src/main/parsers/features.js';
 
 const FIXTURES = path.resolve(__dirname, '../fixtures');
 const FEATURES = path.join(FIXTURES, 'features');
@@ -40,6 +40,22 @@ describe('feature docs parser', () => {
     expect(second.criteria[1]).toEqual({ checked: false, text: 'The list updates live' });
     expect(second.raw).toMatch(/^\*\*US-0102: Show the project contents\*\*/);
     expect(second.raw).not.toMatch(/US-0101: Open/);
+  });
+
+  it('gives an epic its badge from every marker in its status cell, not only the first', () => {
+    const mixed = '✅ US-0401 released in v0.1.1. ✅ US-0405 done. 📋 US-0407 Planned for v0.2.3.';
+    expect(statusOf(mixed)).toBe('done'); // the old first-marker reading that showed Done
+    expect(epicStatusOf(mixed)).toBe('progress');
+    expect(epicStatusOf('✅ US-0101 released. ✅ US-0102 released.')).toBe('done');
+    expect(epicStatusOf('📋 US-0201 Planned. 📋 US-0202 Planned.')).toBe('planned');
+    expect(epicStatusOf('✅ US-0301 released. 🚧 US-0302 in progress.')).toBe('progress');
+    expect(epicStatusOf('🚧 Built, not released')).toBe('progress');
+    expect(epicStatusOf('No markers here')).toBeNull();
+    expect(epicStatusOf('')).toBeNull();
+    expect(epicStatusOf(undefined)).toBeNull();
+
+    const table = '| Epic | Topic | Status |\n|---|---|---|\n| EPIC-04 | Branding | ✅ US-0401 released · 📋 US-0407 Planned |';
+    expect(parseOverview(table).epics[0].statusKind).toBe('progress');
   });
 
   it('gives warnings instead of throwing for files that do not follow the format (FR1.4)', async () => {

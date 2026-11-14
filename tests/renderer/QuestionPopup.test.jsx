@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
-import QuestionPopup, { OVERDUE_MS } from '../../src/renderer/QuestionPopup.jsx';
+import QuestionPopup, { ARRIVAL_MS, OVERDUE_MS } from '../../src/renderer/QuestionPopup.jsx';
 import { HARNESSES } from '../../src/shared/harnesses.js';
 
 const harness = (id) => HARNESSES.find((h) => h.id === id);
@@ -64,7 +64,7 @@ describe('QuestionPopup (US-0505)', () => {
     const q = question({ projectId: 'p2' });
     const { rerender } = render(<QuestionPopup {...props} questions={[q, question({ id: 'next', projectId: 'p2', text: 'Nästa fråga?' })]} />);
     fireEvent.click(screen.getAllByTestId('question-popup-choice')[1]);
-    expect(props.onSend).toHaveBeenCalledWith(expect.objectContaining({ id: '8c1829d0', projectId: 'p2' }), '2');
+    expect(props.onSend).toHaveBeenCalledWith(expect.objectContaining({ id: '8c1829d0', projectId: 'p2' }), { index: 1 });
     await waitFor(() => expect(screen.getByTestId('question-popup-status').textContent).toBe('Skickat till Claude'));
     expect(screen.getAllByTestId('question-popup-choice').every((b) => b.disabled)).toBe(true); // no double answer
     expect(props.onOpenTerminal).not.toHaveBeenCalled();
@@ -88,7 +88,7 @@ describe('QuestionPopup (US-0505)', () => {
     expect(approve.textContent).toBe('1Godkänn');
     expect(changes.textContent).toBe('2Begär ändringar');
     fireEvent.click(changes);
-    expect(props.onSend).toHaveBeenCalledWith(expect.objectContaining({ id: 'g1' }), '2');
+    expect(props.onSend).toHaveBeenCalledWith(expect.objectContaining({ id: 'g1' }), { index: 1 });
   });
 
   it('the own answer types its text and Enter; a failed send says why', async () => {
@@ -97,7 +97,7 @@ describe('QuestionPopup (US-0505)', () => {
     expect(screen.getByTestId('question-popup-own-send').disabled).toBe(true);
     fireEvent.change(screen.getByTestId('question-popup-own'), { target: { value: 'Både och' } });
     fireEvent.click(screen.getByTestId('question-popup-own-send'));
-    expect(props.onSend).toHaveBeenCalledWith(expect.objectContaining({ id: '8c1829d0' }), 'Både och\r');
+    expect(props.onSend).toHaveBeenCalledWith(expect.objectContaining({ id: '8c1829d0' }), { own: 'Både och' });
     await waitFor(() => expect(screen.getByTestId('question-popup-status').textContent).toBe('Kunde inte skicka: Agentfliken kör inte.'));
   });
 
@@ -144,5 +144,25 @@ describe('QuestionPopup (US-0505)', () => {
     rerender(<QuestionPopup {...props} questions={[question({ id: 'new', timeMs: 2 }), question()]} />);
     expect(popup.classList.contains('is-calm')).toBe(true);
     expect(screen.getByTestId('question-popup-title').textContent).toBe('AI-DLC väntar på ditt svar');
+  });
+
+  it('a refused send offers only the terminal; a sent answer still waiting after ARRIVAL_MS says once it may be lost (EPIC-00 US-0004)', async () => {
+    const refused = base({ onSend: vi.fn(async () => ({ ok: false, error: 'Claude ställer flera frågor på en gång. Svara i terminalen.' })) });
+    const { unmount } = render(<QuestionPopup {...refused} questions={[question()]} />);
+    fireEvent.click(screen.getAllByTestId('question-popup-choice')[0]);
+    await waitFor(() => expect(screen.getByTestId('question-popup-status').textContent).toContain('flera frågor'));
+    expect(screen.getAllByTestId('question-popup-choice').every((b) => b.disabled)).toBe(true);
+    expect(screen.getByTestId('question-popup-own').disabled).toBe(true);
+    expect(screen.getByTestId('question-popup-terminal').disabled).toBe(false);
+    unmount();
+
+    vi.useFakeTimers();
+    const props = base();
+    render(<QuestionPopup {...props} questions={[question()]} />);
+    await act(async () => fireEvent.click(screen.getAllByTestId('question-popup-choice')[0]));
+    expect(screen.getByTestId('question-popup-status').textContent).toBe('Skickat till Claude');
+    act(() => vi.advanceTimersByTime(ARRIVAL_MS));
+    expect(screen.getByTestId('question-popup-status').textContent).toContain('kanske inte kom fram');
+    expect(props.onSend).toHaveBeenCalledTimes(1); // it does not ask or send again
   });
 });

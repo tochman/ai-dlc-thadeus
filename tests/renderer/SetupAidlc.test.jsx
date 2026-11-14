@@ -141,7 +141,7 @@ describe('SetupAidlc', () => {
     const ruleOnly = featureDocsPrompt({ exists: true, path: 'FEATURES.md' });
     for (const text of [create, ruleOnly]) {
       expect(text).not.toMatch(/[\r\n]/);
-      expect(text).toMatch(/projektregel genom AI-DLC:s eget sätt att spara regler.*storys i rätt epic-fil.*byggs och släpps/);
+      expect(text).toMatch(/projektregel genom AI-DLC:s eget sätt att spara regler.*rätt epic-fil.*🚧 In progress.*✅ Done.*Released in vX\.Y\.Z/);
     }
     expect(create).toMatch(/^Skapa feature-beskrivningar.*docs\/FEATURES\.md.*docs\/features\/epic-XX-<slug>\.md.*Given\/When\/Then.*📋.*🚧.*✅/);
     expect(ruleOnly).toMatch(/^Projektet har redan feature-beskrivningar i FEATURES\.md/);

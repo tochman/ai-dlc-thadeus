@@ -205,7 +205,7 @@ function ProjectContent({ project, visible, settingsOpen = false, onCloseSetting
     // The question popup's answer: keys for the agent tab, the view stays where it is (US-0505).
     if (terminalCommand.action === 'answer') {
       try {
-        terminal.answer(terminalCommand.text);
+        terminal.answer(terminalCommand.question, terminalCommand.answer);
         terminalCommand.reply?.({ ok: true });
       } catch (err) {
         terminalCommand.reply?.({ ok: false, error: err.message });
@@ -233,13 +233,21 @@ function ProjectContent({ project, visible, settingsOpen = false, onCloseSetting
   // The agent tab's harness (US-0801 FR2.2): known once the saved choice and the detection are both in.
   const [detectRun, setDetectRun] = useState(0);
   const detected = useDetectedHarnesses(project.projectId, detectRun);
-  const harnessId = settingsLoaded && detected ? resolveHarness(settings.harness, detected) : null;
+  // The open harness tabs (US-0803): the saved choice, else US-0801's single harness. The first tab is the saved
+  // harness when it is among them; the others open beside it when they can run.
+  const tabIds = settings.harnessTabs ?? null;
+  const preferred = tabIds ? (tabIds.includes(settings.harness) ? settings.harness : tabIds[0]) : settings.harness;
+  const harnessId = settingsLoaded && detected ? resolveHarness(preferred, detected) : null;
   const harness = harnessId ? selectableHarness(harnessId) : null;
   const problem = harness ? harnessProblem(harness, detected, t) : null;
+  const extras = (harness && tabIds ? tabIds.filter((id) => id !== harness.id) : [])
+    .map(selectableHarness)
+    .filter((h) => h && !harnessProblem(h, detected, t));
+  const extrasKey = extras.map((h) => h.id).join();
   useEffect(() => {
-    terminal.setAgent({ harness, problem });
+    terminal.setAgent({ harness, problem, extras });
     onMeta?.(project.projectId, { harness: problem ? null : harnessId }); // the question popup answers only a running harness
-  }, [harness, problem]); // setAgent is stable
+  }, [harness, problem, extrasKey]); // setAgent is stable
   const [choosingHarness, setChoosingHarness] = useState(false); // opened from the agent tab's warning (FR5.1)
   const [addingHarness, setAddingHarness] = useState(false); // setup in add mode, from Projektinställningar (US-0802 FR3.1)
   // The switch offer after setup goes the same way as the dialog's: asked first while the tab works (FR4.2).
@@ -280,6 +288,12 @@ function ProjectContent({ project, visible, settingsOpen = false, onCloseSetting
   useEffect(() => {
     onMeta?.(project.projectId, { showFeatures });
   }, [project.projectId, showFeatures, onMeta]);
+
+  // Whether any agent tab here is "Arbetar", so the update notice asks before a restart (EPIC-04 US-0407).
+  const agentBusy = terminal.anyBusy();
+  useEffect(() => {
+    onMeta?.(project.projectId, { busy: agentBusy });
+  }, [project.projectId, agentBusy, onMeta]);
 
   function openIntent(dirName) {
     onView?.('intents');
@@ -366,10 +380,11 @@ export default function ProjectView({
   view,
   onView,
   onMeta,
-  terminalCommand
+  terminalCommand,
+  askingIntents
 }) {
   return (
-    <TerminalProvider>
+    <TerminalProvider askingIntents={askingIntents}>
       <ProjectContent
         project={project}
         visible={visible}

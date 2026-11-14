@@ -94,7 +94,8 @@ export default function RefreshPanel({ projectId, space, lastIntentChangeAt, ope
   const [conflicts, setConflicts] = useState(null);
   const [remoteFile, setRemoteFile] = useState(null); // {rel, content?, error?}
   const recentWrite = useRecent(lastIntentChangeAt, WORKING_MS);
-  const working = terminal?.state('agent') === 'busy' || recentWrite; // FR3.5
+  // Any agent tab "Arbetar" counts (EPIC-08 US-0803); a test double without anyBusy falls back to the one tab.
+  const working = (terminal?.anyBusy ? terminal.anyBusy() : terminal?.state('agent') === 'busy') || recentWrite; // FR3.5
   const bridge = window.bridge;
 
   async function act(fn) {

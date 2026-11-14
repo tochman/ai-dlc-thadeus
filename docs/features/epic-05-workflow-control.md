@@ -8,7 +8,7 @@
 
 **Stories:** US-0501, US-0502, US-0503, US-0504, US-0505, US-0506
 
-**Status (2026-11-14):** ✅ US-0501–US-0503 released in v0.2.0. ✅ US-0505 released in v0.2.1 (answering from the popup added in v0.2.2). US-0504 and US-0506 📋 Planned.
+**Status (2026-11-14):** ✅ US-0501–US-0503 released in v0.2.0. ✅ US-0505 released in v0.2.1 (answering from the popup added in v0.2.2). US-0504 and US-0506 📋 Planned. The popup double-answer fix is US-0004 in [EPIC-00](epic-00-fixes.md).
 
 ---
 

@@ -77,4 +77,36 @@ describe('pty lazy loading (FR2)', () => {
     expect(factory).toHaveBeenCalledTimes(1);
     pty.killAllSessions();
   });
+
+  it('starts the chosen claude and shell paths, and today\'s ones when nothing is saved (US-0405 FR2.4)', async () => {
+    const working = fakePty();
+    vi.doMock('node-pty', () => working);
+    const pty = await import('../../src/main/pty.js');
+    const tools = await import('../../src/main/tools.js');
+    const today = process.env.SHELL || (process.platform === 'darwin' ? '/bin/zsh' : '/bin/bash');
+    const calls = () => working.spawn.mock.calls.map((c) => [c[0], c[1]]);
+
+    // No saved path: the bare claude from the table and $SHELL, exactly as before.
+    await pty.spawnSession({ ...spawnArgs, kind: 'agent', harness: 'claude' });
+    await pty.spawnSession(spawnArgs);
+    expect(calls()).toEqual([
+      [today, ['-l', '-i', '-c', 'claude']],
+      [today, ['-l']]
+    ]);
+
+    // A saved path reaches both tabs; ipc passes it at spawn time.
+    const toolPaths = { claude: '/opt/claude/bin/claude', shell: '/bin/dash' };
+    await pty.spawnSession({ ...spawnArgs, kind: 'agent', harness: 'claude', toolPaths });
+    await pty.spawnSession({ ...spawnArgs, toolPaths });
+    expect(calls().slice(2)).toEqual([
+      ['/bin/dash', ['-l', '-i', '-c', '/opt/claude/bin/claude']],
+      ['/bin/dash', ['-l']]
+    ]);
+    expect(tools.toolPath('claude')).toBe('/opt/claude/bin/claude');
+
+    // A path with a space stays one word for the login shell.
+    await pty.spawnSession({ ...spawnArgs, kind: 'agent', harness: 'claude', toolPaths: { claude: '/Applications/Claude Code/claude' } });
+    expect(working.spawn.mock.calls[4][1][3]).toBe("'/Applications/Claude Code/claude'");
+    pty.killAllSessions();
+  });
 });

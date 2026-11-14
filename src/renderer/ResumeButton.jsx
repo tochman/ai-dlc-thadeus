@@ -29,12 +29,20 @@ export default function ResumeButton({ intent, activeDirName, position }) {
   const command = harnessCommand(terminal.harness); // the harness's AI-DLC command (US-0801 FR4.1)
   // Nothing is typed when the table lacks the command, or while detection runs (FR4.2).
   const missing = command ? null : terminal.harness ? t('terminal.noCommand', { harness: harnessName }) : t('terminal.checking');
-  // Only an idle agent tab can pick up the work: while it works ("Arbetar") the button waits, with the reason (FR2.4).
-  const unavailable = missing ?? (terminal.state('agent') === 'busy' ? t('intents.resume.busy', { harness: harnessName }) : null);
+  // Only an idle agent can pick up the work. While any agent tab works ("Arbetar"), or one waits on the person's answer,
+  // the work is already running: the button waits, with the reason (FR2.4, EPIC-00 US-0005).
+  const unavailable = missing ?? workingReason();
+
+  function workingReason() {
+    if (terminal.anyBusy?.() ?? terminal.state('agent') === 'busy') return t('intents.resume.busy', { harness: harnessName });
+    if (terminal.asking?.()) return t('intents.resume.asking', { harness: harnessName });
+    return null;
+  }
 
   function resume(e) {
     e.stopPropagation();
-    if (terminal.state('agent') === 'busy') return setMessage(t('intents.resume.busy', { harness: harnessName })); // FR2.4
+    const reason = workingReason();
+    if (reason) return setMessage(reason); // FR2.4
     setMessage(null);
     if (intent.dirName === activeDirName) return terminal.type('agent', command, { submit: false });
     // The name is submitted with Enter, so it must not carry anything a terminal would act on.
@@ -46,7 +54,9 @@ export default function ResumeButton({ intent, activeDirName, position }) {
   }
 
   // The amber block in two parts (mockup): where it picks up, then the step. The text reads as one label.
-  const [main, step] = resumeLabel(position);
+  const [label, step] = resumeLabel(position);
+  // With two agent tabs open it goes to the last one used, and says which ("Fortsätt i opencode", US-0803).
+  const main = terminal.agentTabs?.length > 1 ? t('intents.resume.inHarness', { label, harness: harnessName }) : label;
   return (
     <span className="resume">
       <button

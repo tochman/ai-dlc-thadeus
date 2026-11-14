@@ -2,6 +2,7 @@
 // getSetupInfo only reads (a `--dry-run` preview); runSetup runs the steps itself after the person pressed
 // Apply (US-0802 FR2.2), with fixed argument arrays through runFixed: no shell.
 import { runFixed } from './exec.js';
+import { toolPath } from './tools.js';
 import { isGitRepo } from './git.js';
 import { listDir } from './projectAccess.js';
 import { DEFAULT_HARNESS, HARNESSES, setupHarness } from '../shared/harnesses.js';
@@ -42,7 +43,7 @@ async function readPlugins(root, setupId, exec) {
   let lastErr;
   for (const extra of tries) {
     try {
-      const out = JSON.parse(await runFixed('aidlc', ['config', 'project', '--show', '--json', ...extra], { cwd: root, exec }));
+      const out = JSON.parse(await runFixed(toolPath('aidlc'), ['config', 'project', '--show', '--json', ...extra], { cwd: root, exec }));
       const installed = out?.data?.installedPlugins;
       if (out?.ok !== true || !Array.isArray(installed)) throw new Error(t('errors.missingField', { field: 'data.installedPlugins' }));
       return { plugins: installed.filter((p) => typeof p === 'string' && PLUGIN_NAME.test(p)) };
@@ -72,14 +73,14 @@ export async function getSetupInfo(root, { harness = DEFAULT_HARNESS, exec } = {
 
   let version;
   try {
-    version = (await runFixed('aidlc', ['--version'], { cwd: root, exec })).trim();
+    version = (await runFixed(toolPath('aidlc'), ['--version'], { cwd: root, exec })).trim();
   } catch (err) {
     return { ...base, aidlc: { installed: false, error: errorText(err) } };
   }
 
   let preview;
   try {
-    preview = parsePreview(await runFixed('aidlc', ['--project-dir', root, 'config', '--harness', setupId, '--dry-run'], { cwd: root, exec }));
+    preview = parsePreview(await runFixed(toolPath('aidlc'), ['--project-dir', root, 'config', '--harness', setupId, '--dry-run'], { cwd: root, exec }));
   } catch (err) {
     preview = { ...parsePreview(''), raw: String(err.stdout ?? ''), error: t('errors.previewFailed', { error: errorText(err) }) };
   }
@@ -105,10 +106,10 @@ function setupSteps(root, { harness, mode = 'setup', plugins = [], preset = null
   const steps = [];
   if (mode !== 'add' && !info.git?.isRepo) steps.push(['git', ['init', '-b', 'main']]);
   // `--project-dir` because aidlc refuses non-interactive config outside a recognised project (F-02).
-  steps.push(['aidlc', ['--project-dir', root, 'config', '--harness', setupId, '--yes']]);
+  steps.push([toolPath('aidlc'), ['--project-dir', root, 'config', '--harness', setupId, '--yes']]);
   // `--harness`: with more than one harness installed (always so after adding one) aidlc refuses these without it.
-  if (plugins.length) steps.push(['aidlc', ['config', 'project', '--plugins', plugins.join(','), '--harness', setupId, '--yes']]);
-  if (preset) steps.push(['aidlc', ['config', 'models', '--preset', preset, '--project', '--harness', setupId, '--yes']]);
+  if (plugins.length) steps.push([toolPath('aidlc'), ['config', 'project', '--plugins', plugins.join(','), '--harness', setupId, '--yes']]);
+  if (preset) steps.push([toolPath('aidlc'), ['config', 'models', '--preset', preset, '--project', '--harness', setupId, '--yes']]);
   return steps;
 }
 

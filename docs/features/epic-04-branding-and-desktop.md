@@ -6,9 +6,9 @@
 
 > Auctum AIDLC Control should look and behave like a proper Auctum desktop app wherever it shows up: in the Dock, the application menu, the window switcher, the installer and the Linux launcher. Inside the app it should feel like a living bridge console. EPIC-01 added the name, splash screen, in-app logo and the restrained LCARS theme. This epic covers the parts of the operating system that still show Electron defaults, and the motion and light that make the theme come alive without hurting readability.
 
-**Stories:** US-0401, US-0402, US-0403, US-0404, US-0405, US-0406, US-0407
+**Stories:** US-0401, US-0402, US-0403, US-0404, US-0405, US-0406, US-0407, US-0408
 
-**Status (2026-11-14):** ✅ US-0401 released in v0.1.1. ✅ US-0402, US-0403 and US-0404 released in v0.2.0. ✅ US-0406 released in v0.2.1 (intent `261113-thadeus-name`). US-0405 and US-0407 📋 Planned.
+**Status (2026-11-14):** ✅ US-0401 released in v0.1.1. ✅ US-0402, US-0403 and US-0404 released in v0.2.0. ✅ US-0406 released in v0.2.1 (intent `261113-thadeus-name`). ✅ US-0405 done, ships in v0.2.3 (settings view, intent `261114-settings-view`) — marked "Released in v0.2.3" when the tag is cut. ✅ US-0407 done, ships in v0.2.3 (update from a GitHub release). ✅ US-0408 done, ships in v0.2.3 (Om T.H.A.D.E.U.S. window with the app version).
 
 ---
 
@@ -26,7 +26,7 @@
   - [x] Linux: the PNG sizes for the `.deb`'s `.desktop` entry are derived by electron-builder from `build/icon.png`, and the window gets the icon via `BrowserWindow` (`resources/icon.png`), so the application menu and window list show the Auctum icon
   - [x] In development (`npm run dev`) the Dock icon is also Auctum (`app.dock.setIcon` on macOS)
   - [x] The icon sources (`build/icon.svg`, `build/icon.png`) and the command that generates them (`npm run icon`, `scripts/make-icon.cjs`) are committed, so the icon can be regenerated
-  - [ ] Verified on an installed release on macOS and on Linux
+  - [ ] Verified on an installed release on macOS and on Linux *(macOS: verified on the installed v0.2.3 on 2026-11-14. Linux: still to check, on the `.deb` from the v0.2.3 release.)*
 - **Dependencies:** US-0109, US-0110
 
 **US-0402: Living LCARS — glow and motion** ✅ Released in v0.2.0
@@ -104,29 +104,30 @@
   - [x] Menu items that need an open project are disabled when no project is open.
 - **Dependencies:** US-0403 (the left arm and its views), US-0101
 
-**US-0405: Settings view with native file pickers** 📋 Planned (after v0.2.0)
+**US-0405: Settings view with native file pickers** ✅ Done (ships in v0.2.3, intent `261114-settings-view`)
 - As a **developer who runs the console in full screen**, in order to **change the app's settings and point it at the right tools without leaving the bridge view or hunting for config files**, I would like to **a full settings view inside the app, where paths are chosen with the operating system's own file dialogs**.
 - **Epic:** EPIC-04
 - **Priority:** Medium
 - **Complexity:** Medium
 - **Background:** Today the app finds `aidlc` and `claude` through the login shell's PATH, and settings are spread over small dialogs (Animationer in US-0402, Projektinställningar in EPIC-06). In full screen (US-0404) a separate dialog window feels out of place, and there is nowhere to fix a tool the app cannot find.
 - **Acceptance Criteria:**
-  - [ ] **A settings view** opens from "Inställningar" in the left arm, from the menu ("Inställningar…", `Cmd/Ctrl+,`) and works in full screen. It is a view in the content frame, in the LCARS style, not a separate window. It has sections as labelled blocks: **Verktyg**, **Utseende**, **Projekt**, **Om**.
-  - [ ] **Verktyg (tools):**
+  - [x] **A settings view** opens from "Inställningar" in the left arm, from the menu ("Inställningar…", `Cmd/Ctrl+,`) and works in full screen. It is a view in the content frame, in the LCARS style, not a separate window. It has sections as labelled blocks: **Verktyg**, **Utseende**, **Projekt**, **Om**.
+  - [x] **Verktyg (tools):**
     - path to the **AI-DLC CLI** (`aidlc`), the **Claude Code CLI** (`claude`) and the **shell** for the terminal tabs
     - each one shows what was found automatically (via the login shell's PATH) and its version (`aidlc --version`, `claude --version`, run with fixed arguments and no shell)
     - "Välj…" opens the **native file dialog** (`dialog.showOpenDialog`, files only) to point at another binary, and "Återställ" goes back to automatic
     - a chosen path is checked before it is saved: the file exists, is executable, and `--version` answers. Otherwise a short message explains why it was not saved.
     - all places that start `aidlc` or `claude` (setup, models, the terminal tabs) use the chosen path
-  - [ ] **Utseende:** Animationer (Full / Dämpad / Av, from US-0402), Helskärm vid start (US-0404) and, once EPIC-07 is built, Språk.
-  - [ ] **Projekt:**
+  - [x] **Utseende:** Animationer (Full / Dämpad / Av, from US-0402), Helskärm vid start (US-0404) and, once EPIC-07 is built, Språk.
+  - [x] **Projekt:**
     - the default folder for "Öppna projekt…", chosen with the native folder dialog
     - the list of recently opened projects, where entries can be removed
     - a link to each open project's Projektinställningar (EPIC-06)
-  - [ ] **Om:** the app version, the AI-DLC version found, the Auctum symbol, and links to the repo and the feature docs.
-  - [ ] Settings are saved in the app's own `settings.json`, validated by `sanitize()`. Nothing is written into any project. Paths are stored as absolute paths and never passed through a shell.
-  - [ ] The existing small dialogs either move into this view or open it at the right section, so each setting has one home.
-  - [ ] Keyboard and screen readers: every field has a label, file buttons have names ("Välj sökväg till aidlc"), and focus moves into the view when it opens.
+  - [x] **Om:** the app version, the AI-DLC version found, the Auctum symbol, and links to the repo and the feature docs.
+  - [x] Settings are saved in the app's own `settings.json`, validated by `sanitize()`. Nothing is written into any project. Paths are stored as absolute paths and never passed through a shell.
+  - [x] The existing small dialogs either move into this view or open it at the right section, so each setting has one home.
+  - [x] Keyboard and screen readers: every field has a label, file buttons have names ("Välj sökväg till aidlc"), and focus moves into the view when it opens.
+  *Verified in `261114-settings-view`: 36 scoped unit tests and 224 in the full suite, plus `electron-vite build`. The native file and folder dialogs, a real `--version` answer and "a saved path is used on the next start" are checked on an installed release at the v0.2.3 tag — the same point where US-0401's installed-release criterion closes.*
 - **Dependencies:** US-0402, US-0403, US-0404, EPIC-06
 
 **US-0406: Name the application T.H.A.D.E.U.S.** ✅ Released in v0.2.1 (intent `261113-thadeus-name`)
@@ -163,25 +164,39 @@
   - [x] Tests that check the name (the splash `role="img"` contract, the menu labels in `menu.test.js`, settings paths) are updated to the new name. No old name is left in user-facing text. The design doc and feature docs mention the old name only in history.
 - **Dependencies:** US-0401, US-0403, US-0404
 
-**US-0407: Update the app from a GitHub release** 📋 Planned
+**US-0407: Update the app from a GitHub release** ✅ Done (ships in v0.2.3, intent `261114-intent-0-2-3-release`)
 - As a **developer using THADEUS day to day**, in order to **stay on the latest version without hunting for the download**, I would like to **have the app find a new release on GitHub, download it, install it and restart, and optionally remove the downloaded package afterwards**.
 - **Epic:** EPIC-04
 - **Priority:** Medium
 - **Complexity:** Medium
 - **Background:** Releases are built by `.github/workflows/release.yml` on a `v*.*.*` tag, as a macOS `.dmg` and a Linux `.deb` (`electron-builder.yml`). The macOS build is unsigned (`identity: null`). Electron's built-in auto-updater (Squirrel.Mac, used by `electron-updater`) only installs signed apps, so on macOS the app has to download the DMG and either hand it to the person or replace the app bundle itself. On Linux, installing a `.deb` needs root (`pkexec dpkg -i`), whereas an AppImage could replace itself.
 - **Acceptance Criteria:**
-  - [ ] **Check:**
+  - [x] **Check:**
     - On start (at most once a day) and from the app menu ("Sök efter uppdatering…"), the app reads the latest release from the GitHub API for `tochman/aidlc-dash`, with no token, and compares its tag with `app.getVersion()` (semver).
     - Pre-releases and drafts are ignored.
     - When offline or rate-limited, it says so in one sentence and tries again later. It never blocks the app.
-  - [ ] **Offer:** a new version shows a calm notice (LCARS, not a modal), with the version, the release notes rendered as Markdown, and **Update now**, **Later** and **Skip this version**. A skipped version is saved in the app's own `settings.json`.
-  - [ ] **Download:** only the asset for this platform and architecture (macOS `.dmg` arm64/x64, Linux `.deb` amd64/arm64), over HTTPS from GitHub's release assets, into a temporary folder under userData, with progress shown. When the release publishes a checksum, it is verified, and a mismatch stops the update.
-  - [ ] **Install and restart:**
+  - [x] **Offer:** a new version shows a calm notice (LCARS, not a modal), with the version, the release notes rendered as Markdown, and **Update now**, **Later** and **Skip this version**. A skipped version is saved in the app's own `settings.json`.
+  - [x] **Download:** only the asset for this platform and architecture (macOS `.dmg` arm64/x64, Linux `.deb` amd64/arm64), over HTTPS from GitHub's release assets, into a temporary folder under userData, with progress shown. When the release publishes a checksum, it is verified, and a mismatch stops the update.
+  - [ ] **Install and restart:** *(Built and unit-tested with fakes. Not yet run on a real machine; it is checked on the first update from v0.2.3 to a later release.)*
     - macOS: mount the DMG, copy the new `THADEUS.app` over the running one with the person's rights (asking for admin rights only when `/Applications` needs them), clear the quarantine flag the way the README describes for the unsigned build, then relaunch with `app.relaunch()` + `app.quit()`.
     - Linux: install the `.deb` through `pkexec dpkg -i`, which shows the system's password prompt, then relaunch.
     - If any step fails, the app keeps running on the old version, says in one sentence what failed, and offers to open the downloaded file in Finder or the file manager instead.
-  - [ ] **Before restarting:** if an agent tab is "Arbetar", the person is asked first, because a restart ends the terminal sessions. Open projects and settings survive the restart (userData stays `aidlc-dash`).
-  - [ ] **Clean up (optional):** a setting, "Ta bort hämtat paket efter uppdatering: På / Av" (default På), removes the downloaded DMG or `.deb` after a successful install. With it off, the file is kept and its path shown.
-  - [ ] **Safety:** only `github.com/tochman/aidlc-dash` release assets are downloaded. The URL and asset name are checked against that repository before download. Nothing downloaded is run except by the platform's installer step above.
+  - [x] **Before restarting:** if an agent tab is "Arbetar", the person is asked first, because a restart ends the terminal sessions. Open projects and settings survive the restart (userData stays `aidlc-dash`).
+  - [x] **Clean up (optional):** a setting, "Ta bort hämtat paket efter uppdatering: På / Av" (default På), removes the downloaded DMG or `.deb` after a successful install. With it off, the file is kept and its path shown.
+  - [x] **Safety:** only `github.com/tochman/aidlc-dash` release assets are downloaded. The URL and asset name are checked against that repository before download. Nothing downloaded is run except by the platform's installer step above.
 - **Notes:** Added 2026-11-14 at the person's request. Signing the macOS app would allow the standard `electron-updater` flow; that is a separate choice.
 - **Dependencies:** US-0404 (app menu), the release workflow
+
+**US-0408: See which version is running in an "Om T.H.A.D.E.U.S." window** ✅ Done (ships in v0.2.3, intent `261114-intent-0-2-3-release`)
+- As a **developer using THADEUS**, in order to **know which version I'm running (for example after an update)**, I would like to **open "Om T.H.A.D.E.U.S." from the menu and see the splash screen's logo and name together with the app version**.
+- **Epic:** EPIC-04
+- **Priority:** Medium
+- **Complexity:** Low
+- **Acceptance Criteria:**
+  - [x] The app menu (macOS) and Hjälp (Linux) have **"Om T.H.A.D.E.U.S."**, replacing the Electron default About panel (`role: 'about'`).
+  - [x] It opens an LCARS popup with the same content as the splash screen: the Auctum mark, `APP_NAME`, `APP_FULL_NAME` and `APP_TAGLINE` from `src/shared/appName.js`.
+  - [x] The popup also shows the app version (`app.getVersion()`, the same value as the Om section in Inställningar, US-0405).
+  - [x] It closes with Esc, a Stäng button or a click outside, and focus returns to where it was.
+  - [x] Swedish and English texts.
+- **Notes:** Added 2026-11-14 at the person's request, during v0.2.3's Build and Test.
+- **Dependencies:** US-0404 (app menu), US-0406 (name and splash)

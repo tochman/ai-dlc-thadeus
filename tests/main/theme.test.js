@@ -107,3 +107,16 @@ describe('terminal elbow', () => {
     expect(rule('.terminal-elbow')).toMatch(/align-items: flex-end;/);
   });
 });
+
+describe('busy glow keeps block edges aligned', () => {
+  it('draws the 1px ring of the breathing glow inside the block, never outside it', () => {
+    const keyframes = /@keyframes lcars-breathe\s*\{([\s\S]*?)\n\}/.exec(css)?.[1];
+    expect(keyframes).toBeTruthy();
+    const shadows = [...keyframes.matchAll(/box-shadow:([^;]+);/g), ...css.matchAll(/\.is-breathing\s*\{[^}]*box-shadow:([^;]+);/g)].map((m) => m[1]);
+    expect(shadows.length).toBeGreaterThanOrEqual(3);
+    for (const s of shadows) {
+      expect(s).not.toMatch(/(^|,)\s*0 0 0 1px/);
+      expect(s).toMatch(/inset 0 0 0 1px/);
+    }
+  });
+});

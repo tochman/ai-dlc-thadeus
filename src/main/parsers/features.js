@@ -30,6 +30,16 @@ export function statusOf(text) {
   return best?.status ?? null;
 }
 
+/**
+ * An epic's status from every marker in its overview cell, which lists one marker per story:
+ * done only when all are ✅, planned when all are 📋, progress for any 🚧 or a mix, null without markers.
+ */
+export function epicStatusOf(text) {
+  const kinds = new Set((String(text ?? '').match(/[✅🚧📋]/gu) ?? []).map((m) => MARKERS.find(([k]) => k === m)[1]));
+  if (kinds.size === 0) return null;
+  return kinds.size === 1 ? [...kinds][0] : 'progress';
+}
+
 /** Every distinct story id (US-XXYY) in a text, in order of appearance. */
 export function storyIdsIn(text) {
   return [...new Set(String(text ?? '').match(/US-\d{4}/g) ?? [])];
@@ -79,7 +89,7 @@ export function parseOverview(md) {
       link: m ? m[2] : null,
       topic,
       status,
-      statusKind: statusOf(status)
+      statusKind: epicStatusOf(status)
     });
   }
   if (epics.length === 0) warnings.push(t('features.warn.noRows'));

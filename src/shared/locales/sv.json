@@ -75,6 +75,10 @@
       "send": "Skicka",
       "sent": "Skickat till {harness}",
       "sendFailed": "Kunde inte skicka: {error}",
+      "noPicker": "{harness} visar ingen fråga att välja i just nu. Svara i terminalen.",
+      "several": "{harness} ställer flera frågor på en gång. Svara i terminalen.",
+      "mismatch": "{harness} visar andra val än de AI-DLC loggade. Svara i terminalen.",
+      "maybeLost": "Skickat till {harness}, men frågan väntar fortfarande. Svaret kanske inte kom fram – titta i terminalen.",
       "noAgent": "Agentfliken kör inte än. Svara i terminalen.",
       "openTerminal": "Öppna terminalen"
     },
@@ -147,8 +151,10 @@
     "resume": {
       "label": "Fortsätt",
       "atStage": "Fortsätt vid {stage}",
+    "inHarness": "{label} i {harness}",
       "step": "(steg {step} av {total})",
       "busy": "{harness} arbetar — vänta eller avbryt först",
+      "asking": "{harness} väntar på ditt svar — svara i terminalen först",
       "invalidName": "Ogiltigt intent-namn: {name}"
     },
     "files": {
@@ -316,6 +322,7 @@
     "notInstalled": "AI-DLC är inte installerat för {harness} i det här projektet, så inget startades.",
     "pending": "Väntar på din Enter",
     "pendingHint": "{tab}: skrivet av appen. Inget körs förrän du trycker Enter.",
+    "twoAgents": "Två agenter arbetar samtidigt med projektets pågående arbete, så de ändrar samma underlag.",
     "noTab": "Terminalfliken {tab} finns inte.",
     "cannotStart": "{name} kunde inte startas.",
     "cannotRestart": "{name} kunde inte startas om.",
@@ -364,7 +371,7 @@
     },
     "prompt": {
       "format": "Skapa feature-beskrivningar för det här projektet utifrån det som redan finns (README, kod, dokumentation): docs/FEATURES.md med en kort inledning och en tabell med en rad per epic (länk, ämne, status), och en fil per epic i docs/features/epic-XX-<slug>.md med en beskrivning, en rad **Stories:**, en rad **Status (datum):** och storys som **US-XXYY: Titel** <status> följt av As a / in order to / I would like to, Epic, Priority, Complexity, Acceptance Criteria som kryssrutor i formen Given/When/Then, Notes och Dependencies. Statusmarkörer: 📋 Planned, 🚧 In progress, ✅ Done (mergad; lägg till \"Released in vX.Y.Z\" vid release). Ordna epics efter ämne, inte efter release.",
-      "rule": "Lägg också till en projektregel genom AI-DLC:s eget sätt att spara regler, inte genom att redigera minnesfilerna direkt: nytt arbete beskrivs som storys i rätt epic-fil, och status och acceptanskriterier uppdateras när arbetet byggs och släpps.",
+      "rule": "Lägg också till en projektregel genom AI-DLC:s eget sätt att spara regler, inte genom att redigera minnesfilerna direkt, så att varje AI-verktyg i projektet (Claude Code, opencode och de andra) följer den: en ny story som personen beskriver läggs in i rätt epic-fil direkt; när arbetet på en story startar sätts den till 🚧 In progress i statusmarkören, epicens rad **Status (…)** och raden i FEATURES.md; när den är byggd och godkänd sätts den till ✅ Done och uppfyllda acceptanskriterier kryssas; så snart det är känt vilken release den ingår i skrivs releasen ut (\"for vX.Y.Z\", och \"Released in vX.Y.Z\" när taggen sätts); en levererad story får aldrig stå som pågående.",
       "exists": "Projektet har redan feature-beskrivningar i {path} (en översikt och en fil per epic). {rule}"
     }
   },
@@ -445,6 +452,64 @@
       "sv": "Svenska",
       "en": "English"
     },
+    "sections": {
+      "tools": "Verktyg",
+      "appearance": "Utseende",
+      "project": "Projekt",
+      "about": "Om"
+    },
+    "tools": {
+      "aidlc": "AI-DLC CLI",
+      "claude": "Claude Code CLI",
+      "shell": "Skal",
+      "pathLabel": "Sökväg",
+      "versionLabel": "Version",
+      "notFound": "hittades inte",
+      "notOnPath": "hittades inte i PATH",
+      "checking": "Kontrollerar…",
+      "source": {
+        "saved": "Egen sökväg",
+        "auto": "Hittad automatiskt"
+      },
+      "pick": "Välj…",
+      "pickFor": "Välj sökväg till {tool}",
+      "pickTitle": "Välj sökväg till ett verktyg",
+      "reset": "Återställ",
+      "resetFor": "Återställ sökvägen till {tool}",
+      "nextStart": "En ändrad sökväg gäller nästa gång verktyget startas; terminaler som redan körs påverkas inte.",
+      "loadFailed": "Verktygen kunde inte läsas: {error}"
+    },
+    "fullscreenLabel": "Helskärm vid start",
+    "defaultFolder": {
+      "label": "Standardmapp för Öppna projekt",
+      "none": "Ingen mapp vald",
+      "pick": "Välj mapp…",
+      "pickTitle": "Välj standardmapp för projekt",
+      "reset": "Återställ",
+      "resetFor": "Återställ standardmappen"
+    },
+    "recent": {
+      "label": "Senaste projekt",
+      "empty": "Inga senaste projekt ännu.",
+      "remove": "Ta bort {path}",
+      "removeShort": "Ta bort"
+    },
+    "openProjects": {
+      "label": "Öppna projekt",
+      "empty": "Inga projekt är öppna."
+    },
+    "update": {
+      "cleanup": "Ta bort hämtat paket efter uppdatering",
+      "cleanupOption": { "on": "På", "off": "Av" }
+    },
+    "about": {
+      "version": "App-version {version}",
+      "aidlcVersion": "AI-DLC {version}",
+      "aidlcNotFound": "AI-DLC hittades inte: {error}",
+      "repo": "Källkoden på GitHub",
+      "features": "Feature-dokumentationen",
+      "loadFailed": "Appinformationen kunde inte läsas: {error}"
+    },
     "project": {
       "title": "Projektinställningar",
       "titleFor": "Projektinställningar: {name}",
@@ -463,6 +528,8 @@
       "pathInvalid": "Sökvägen ska vara relativ till projektet, sluta på .md och inte innehålla ..",
       "noDocs": "Projektet har inga feature-beskrivningar ännu.",
       "harnessLabel": "Agent-terminal",
+      "tabsLegend": "Agentflikar",
+      "tabsHelp": "Varje vald harness får en egen agentflik bredvid Shell, och båda arbetar i samma aidlc/-underlag.",
       "harnessUnsupported": "stöds inte än",
       "harnessNotFound": "hittades inte",
       "harnessSwitchConfirm": "{from} arbetar. Byter du till {to} stängs sessionen. Byta ändå?",
@@ -510,6 +577,105 @@
     "missing": "AI-DLC:s kommandoradsverktyg aidlc hittades inte: {error}",
     "failed": "AI-DLC:s konfiguration kunde inte läsas: {error}"
   },
+  "configEdit": {
+    "previewing": "Kontrollerar ändringen…",
+    "command": "Kommando",
+    "noDryRun": "AI-DLC har ingen provkörning för det här kommandot; det körs först när du tillämpar det.",
+    "applied": "Tillämpat.",
+    "apply": "Tillämpa",
+    "preview": "Visa ändring",
+    "current": "nu: {value}",
+    "busy": "En agentflik arbetar, så det pågående arbetets inställningar kan inte ändras just nu.",
+    "setting": "Inställning",
+    "value": "Värde",
+    "where": {
+      "legend": "Gäller för",
+      "project": "Det här projektet",
+      "local": "Bara mig",
+      "global": "Den här datorn"
+    },
+    "defaults": {
+      "title": "Ändra ett standardval",
+      "defaultScope": "Standardplan",
+      "swarm": "Parallella Units",
+      "provider": "Leverantör",
+      "region": "Region",
+      "plugins": "Pluginer"
+    },
+    "guards": {
+      "title": "Kontroller du kan stänga av",
+      "turnOff": "Stäng av",
+      "turnOn": "Slå på",
+      "confirmOff": "Stänga av kontrollen \"{name}\"? AI-DLC slutar då kontrollera det tills du slår på den igen.",
+      "confirmYes": "Ja, stäng av",
+      "AIDLC_DISABLE_PLAN_APPROVAL_GUARD": { "name": "Godkännande av plan", "protects": "Kodgenereringen väntar på att du godkänner planen innan den skriver kod." },
+      "AIDLC_DISABLE_REVIEW_FREEZE_HOOK": { "name": "Frysning under granskning", "protects": "Filer som granskas kan inte ändras förrän granskningen är klar." },
+      "AIDLC_DISABLE_REVIEWER_SCOPE_HOOK": { "name": "Granskarens läsområde", "protects": "En granskare läser bara det den ombads granska." },
+      "AIDLC_DISABLE_SUMMARY_CONFIRMATION": { "name": "Bekräftelse av sammanfattning", "protects": "AI-DLC ber dig bekräfta sin sammanfattning av ett steg innan det går vidare." },
+      "AIDLC_SKIP_SUMMARY_CONFIRMATION_GUARD": { "name": "Kontroll av bekräftelsen", "protects": "Ett steg kan inte stängas förrän sammanfattningen verkligen bekräftats." },
+      "AIDLC_SKIP_HUMAN_PRESENCE_GUARD": { "name": "Mänsklig närvaro", "protects": "Ett godkännande räknas bara när en person gav det." },
+      "AIDLC_SKIP_ARTIFACT_GUARD": { "name": "Stegets resultat", "protects": "Ett steg kan inte slutföras utan filerna det ska ta fram." },
+      "AIDLC_SKIP_REVISION_BACKSTOP": { "name": "Spärr mot omtag", "protects": "Ett steg kan inte göras om gång på gång utan att en person beslutar." },
+      "AIDLC_DISABLE_ENSEMBLE_EVIDENCE": { "name": "Överlämning i kedjan", "protects": "Arbete som lämnas från en agent till nästa måste ha med sitt underlag." }
+    },
+    "lock": {
+      "title": "Låsning av Guard Policy",
+      "help": "Låsningen av Guard Policy har inget kommando. Appen ändrar bara avsnittet Guard Policy i minnesfilen, efter att ha visat ändringen.",
+      "layer": "Minnesfil",
+      "mode": "Läge",
+      "none": "ingen låsning",
+      "preview": "Visa ändringen"
+    },
+    "models": {
+      "idePicker": "I {harness} väljer IDE:ns egen väljare modellen, så den kan inte ändras här.",
+      "noTable": "{harness} har inga modellregler i appen än, så avsnittet är skrivskyddat.",
+      "readFailed": "Modellvalen kunde inte läsas, så avsnittet är skrivskyddat: {error}",
+      "noModels": "opencode listade inga modeller.",
+      "runsAs": "{effort} (körs som {applied})",
+      "ranOn": "Körde på",
+      "share": "Kostnadsandel",
+      "mismatch": "avviker",
+      "alignHint": "Agenten körde på en annan modell än den som är inställd. Välj modellen den ska använda, eller ändra inställningen till den den körde på.",
+      "keep": "behåll",
+      "preset": "Förval för alla agenter",
+      "group": "Effort per grupp",
+      "groups": { "deciding": "Beslutande", "reviewing": "Granskande", "writing-up": "Dokumenterande" },
+      "estimate": "Kostnad enligt projektets ledger, uppskattning: {before} → {after} ({delta}).",
+      "noEstimate": "Ingen kostnadsuppskattning: ledgern har inget pris för modellen, eller så ändrar valet bara effort.",
+      "check": "Kontrollera agentfilerna",
+      "checkOk": "Ingen agentfil har ändrats för hand."
+    }
+  },
+  "update": {
+    "ghMissing": "Uppdateringskontrollen behöver GitHubs gh-verktyg, som inte hittades på den här datorn.",
+    "ghLoggedOut": "Uppdateringskontrollen behöver att gh är inloggat: kör gh auth login i en terminal.",
+    "rateLimited": "GitHub begränsar anropen just nu, så uppdateringskontrollen försöker igen senare.",
+    "offline": "GitHub gick inte att nå, så uppdateringskontrollen försöker igen senare.",
+    "noAccess": "Ingen release av {repo} kunde läsas med din gh-inloggning.",
+    "checkFailed": "Uppdateringskontrollen misslyckades: {error}",
+    "badAnswer": "GitHubs svar om den senaste releasen gick inte att läsa.",
+    "notOwnAsset": "{name} är ingen releasefil från {repo}, så den hämtades inte.",
+    "checksumMissing": "SHA256SUMS.txt saknar kontrollsumma för {name}, så uppdateringen stoppades.",
+    "checksumMismatch": "Kontrollsumman för {name} stämmer inte med SHA256SUMS.txt, så uppdateringen stoppades.",
+    "downloadFailed": "Hämtningen misslyckades: {error}",
+    "noPackage": "Den här releasen har inget paket för den här datorn.",
+    "notDownloaded": "Inget har hämtats än.",
+    "notPackaged": "Bara den installerade appen kan uppdatera sig själv, inte en utvecklingskörning.",
+    "notABundle": "Den körande appen ligger inte i ett .app-paket.",
+    "stepFailed": "Installationen misslyckades vid {step}: {error}",
+    "title": "T.H.A.D.E.U.S. {version} finns",
+    "noNotes": "Releasen har inga release notes.",
+    "now": "Uppdatera nu",
+    "later": "Senare",
+    "skip": "Hoppa över den här versionen",
+    "downloading": "Hämtar…",
+    "downloadingPct": "Hämtar… {pct} %",
+    "installing": "Installerar…",
+    "kept": "Installerad. Det hämtade paketet finns kvar i",
+    "relaunch": "Starta om nu",
+    "upToDate": "Du har den senaste versionen.",
+    "confirmRestart": "En agentflik arbetar. Uppdateringen startar om appen och avslutar dess terminalsessioner. Uppdatera ändå?"
+  },
   "menu": {
     "about": "Om {app}",
     "hide": "Göm {app}",
@@ -549,6 +715,7 @@
     "help": "Hjälp",
     "docs": "AI-DLC-dokumentation",
     "reportIssue": "Rapportera problem",
+    "checkUpdate": "Sök efter uppdatering…",
     "develop": "Utveckling",
     "reload": "Ladda om",
     "forceReload": "Tvinga omladdning",
@@ -593,6 +760,15 @@
     "setupTouchesExisting": "Förhandsvisningen visar filer som krockar eller skulle tas bort, så ingenting kördes.",
     "setupRunning": "En uppsättning körs redan för projektet.",
     "noSession": "Ingen terminalsession med id {id}",
-    "ptyDataNotString": "Terminaldata måste vara en sträng"
+    "ptyDataNotString": "Terminaldata måste vara en sträng",
+    "unknownTool": "Okänt verktyg: {id}",
+    "toolPathInvalid": "Ogiltig sökväg till {tool}: {path}. Ange en absolut sökväg.",
+    "toolMissing": "{path} finns inte.",
+    "toolNotExecutable": "{path} är inte körbar.",
+    "toolVersionFailed": "Filen svarar inte på --version: {error}",
+    "toolNoVersion": "Filen svarar inte med någon version.",
+    "toolNotOnPath": "{name} hittades inte i inloggningsskalets PATH.",
+    "unknownExternal": "Okänd extern länk: {key}",
+    "changedSincePreview": "{file} ändrades efter förhandsvisningen. Titta på ändringen igen innan du tillämpar den."
   }
 }

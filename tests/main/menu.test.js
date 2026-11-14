@@ -86,7 +86,7 @@ describe('app menu (EPIC-04 US-0404)', () => {
   it('has the app and Fönster menus on macOS only; Linux gets F11, Inställningar and Avsluta under Arkiv (FR2.1, FR1.1)', () => {
     const mac = build({ isMac: true }).template;
     expect(mac.map((m) => m.label)).toEqual(['T.H.A.D.E.U.S.', 'Arkiv', 'Redigera', 'Visa', 'Terminal', 'Fönster', 'Hjälp']);
-    expect(byLabel(mac, 'Om T.H.A.D.E.U.S.').role).toBe('about');
+    expect(byLabel(mac, 'T.H.A.D.E.U.S.').submenu[0].label).toBe('Om T.H.A.D.E.U.S.');
     expect(byLabel(mac, 'Göm T.H.A.D.E.U.S.').role).toBe('hide'); // US-0406 FR2.4
     expect(byLabel(mac, 'Avsluta T.H.A.D.E.U.S.').role).toBe('quit');
     expect(byLabel(mac, 'Fönster').role).toBe('windowMenu');
@@ -100,11 +100,46 @@ describe('app menu (EPIC-04 US-0404)', () => {
     expect(roles(linux)).toEqual(expect.arrayContaining(['undo', 'redo', 'cut', 'copy', 'paste', 'selectAll']));
   });
 
+  it('has "Sök efter uppdatering…" under Hjälp on both platforms, sending checkUpdate (EPIC-04 US-0407)', async () => {
+    for (const isMac of [true, false]) {
+      const { template, send } = build({ isMac });
+      const item = byLabel(template, 'Sök efter uppdatering…');
+      expect(byLabel(template, 'Hjälp').submenu).toContain(item);
+      expect(item.enabled).not.toBe(false); // works without a project
+      item.click();
+      expect(send).toHaveBeenLastCalledWith({ command: 'checkUpdate' });
+    }
+    await i18n.changeLanguage('en');
+    expect(byLabel(build().template, 'Check for update…')).toBeTruthy();
+  });
+
+  it('has the app\'s own "Om T.H.A.D.E.U.S." in the app menu on macOS and in Hjälp on Linux, sending about (EPIC-04 US-0408)', () => {
+    const mac = build({ isMac: true });
+    const macAbout = byLabel(mac.template, 'Om T.H.A.D.E.U.S.');
+    expect(byLabel(mac.template, 'T.H.A.D.E.U.S.').submenu).toContain(macAbout);
+    expect(byLabel(mac.template, 'Hjälp').submenu).not.toContain(macAbout); // once per platform
+    macAbout.click();
+    expect(mac.send).toHaveBeenLastCalledWith({ command: 'about' });
+
+    const linux = build({ isMac: false, state: { hasProject: false, isAidlc: false, showFeatures: false } });
+    const linuxAbout = byLabel(linux.template, 'Om T.H.A.D.E.U.S.');
+    expect(byLabel(linux.template, 'Hjälp').submenu).toContain(linuxAbout);
+    expect(linuxAbout.enabled).not.toBe(false); // works without a project
+    linuxAbout.click();
+    expect(linux.send).toHaveBeenLastCalledWith({ command: 'about' });
+
+    // Electron's default About panel is gone on both platforms.
+    for (const template of [mac.template, linux.template, build({ isPackaged: false }).template]) {
+      expect(roles(template)).not.toContain('about');
+    }
+  });
+
   it('is built in the current language, so a rebuild after a switch shows English (EPIC-07 US-0701 FR1.2, FR4.4)', async () => {
     await i18n.changeLanguage('en');
     const mac = build({ isMac: true, isPackaged: false }).template;
     expect(mac.map((m) => m.label)).toEqual(['T.H.A.D.E.U.S.', 'File', 'Edit', 'View', 'Terminal', 'Window', 'Help', 'Develop']);
-    expect(byLabel(mac, 'About T.H.A.D.E.U.S.').role).toBe('about');
+    expect(byLabel(mac, 'About T.H.A.D.E.U.S.')).toBeTruthy();
+    expect(byLabel(build({ isMac: false }).template, 'Help').submenu.map((i) => i.label)).toContain('About T.H.A.D.E.U.S.');
     expect(byLabel(mac, 'Open project…').accelerator).toBe('CmdOrCtrl+O');
     byLabel(mac, 'Close project').click();
     const file = byLabel(build({ isMac: false }).template, 'File').submenu.map((i) => i.label).filter(Boolean);

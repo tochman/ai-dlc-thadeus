@@ -3,10 +3,16 @@ import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-libra
 
 // xterm needs a real canvas and layout; this stand-in keeps what the panel uses and lets the test "type".
 const keyboards = []; // onData listeners, one per terminal in mount order (shell, then the agent once its harness is known)
+const screens = []; // per terminal in mount order: the rows its screen shows (the popup reads the picker, US-0004)
 vi.mock('@xterm/xterm', () => ({
   Terminal: class {
     cols = 80;
     rows = 24;
+    constructor() {
+      const rows = [];
+      screens.push(rows);
+      this.buffer = { active: { viewportY: 0, getLine: (y) => (y < rows.length ? { isWrapped: false, translateToString: () => rows[y] } : undefined) } };
+    }
     loadAddon() {}
     open() {}
     write() {}
@@ -188,13 +194,76 @@ describe('TerminalPanel', () => {
     expect(window.bridge.ptyWrite).toHaveBeenLastCalledWith('pty-shell', '/x.png ');
   });
 
-  it('answer() writes to the agent tab without switching tabs, and throws when there is none', async () => {
+  it('answer() sends the picker\'s own key to the agent tab without switching tabs, and refuses with no picker (US-0004)', async () => {
     await renderPanel();
     act(() => terminal.setView({ open: true, active: 'shell' }));
-    act(() => terminal.answer('2'));
+    const gate = { kind: 'gate' };
+    expect(() => terminal.answer(gate, { index: 1 })).toThrow('visar ingen fråga'); // nothing on screen: no keys
+    expect(window.bridge.ptyWrite).not.toHaveBeenCalled();
+
+    screens.at(-1).push('Klart. Hur vill du gå vidare?', '', '❯ 1. Approve', '     Fortsätt', '  2. Request Changes', '  3. Type something.');
+    act(() => terminal.answer(gate, { index: 1 }));
     expect(window.bridge.ptyWrite).toHaveBeenCalledWith('pty-agent', '2');
     expect(terminal.view.active).toBe('shell');
+
+    expect(() => terminal.answer({ kind: 'question', options: ['Fritt'] }, { own: 'x' })).toThrow('andra val'); // another picker
+    screens.at(-1).length = 0; // the picker is gone: a free-text question in the chat
+    act(() => terminal.answer({ kind: 'question', options: ['Fritt'] }, { own: 'Både och' }));
+    expect(window.bridge.ptyWrite).toHaveBeenLastCalledWith('pty-agent', 'Både och\r');
     act(() => terminal.setAgent({ harness: null }));
-    expect(() => terminal.answer('1')).toThrow();
+    expect(() => terminal.answer({ kind: 'question', options: [] }, { own: 'x' })).toThrow();
+  });
+});
+
+describe('Claude Code and opencode side by side (EPIC-08 US-0803)', () => {
+  const both = { harness: harness('claude'), extras: [harness('opencode')] };
+  /** Each agent session gets its own pty id, so the test can tell which tab was written to. */
+  function ownIds() {
+    window.bridge.ptySpawn.mockImplementation(async ({ kind, harness: h }) => `pty-${h ?? kind}`);
+  }
+  afterEach(() => window.bridge.ptySpawn.mockImplementation(async ({ kind }) => `pty-${kind}`));
+
+  it('with harnessTabs [claude, opencode] renders two agent tabs and the shell tab, each spawning its own harness', async () => {
+    ownIds();
+    await renderPanel(both);
+    expect(screen.getAllByRole('tab').map((b) => b.textContent)).toEqual(['ArbetarClaude', expect.stringMatching(/opencode$/), expect.stringMatching(/Shell$/)]);
+    expect(screen.getByTestId('terminal-panel-name-agent-opencode').textContent).toBe('opencode');
+    const spawned = window.bridge.ptySpawn.mock.calls.map(([a]) => `${a.kind}:${a.harness ?? ''}`).sort();
+    expect(spawned).toEqual(['agent:claude', 'agent:opencode', 'shell:']);
+    expect(screen.getByTestId('terminal-panel-host-agent-opencode')).toBeTruthy(); // its own session and Restart
+  });
+
+  it('sends the quick command and type("agent") to the last agent tab used, and names it', async () => {
+    ownIds();
+    await renderPanel(both);
+    expect(terminal.harness.id).toBe('claude'); // nothing used yet: the first tab
+    fireEvent.click(screen.getByTestId('terminal-panel-tab-agent-opencode'));
+    expect(terminal.harness.id).toBe('opencode');
+    const select = screen.getByTestId('terminal-panel-quick-select');
+    await act(async () => fireEvent.change(select, { target: { value: '/aidlc --status' } }));
+    expect(window.bridge.ptyWrite).toHaveBeenLastCalledWith('pty-opencode', '/aidlc --status');
+    expect(screen.getByTestId('terminal-panel-pending-agent-opencode')).toBeTruthy();
+
+    await act(() => terminal.type('agent', '/aidlc continue', { submit: false }));
+    expect(window.bridge.ptyWrite).toHaveBeenLastCalledWith('pty-opencode', '/aidlc continue');
+    act(() => terminal.input('agent:claude')); // the person types in the Claude tab
+    await act(() => terminal.type('agent', 'x'));
+    expect(window.bridge.ptyWrite).toHaveBeenLastCalledWith('pty-claude', 'x');
+  });
+
+  it('anyBusy() is true when only the second tab is busy, and two busy tabs warn once', async () => {
+    ownIds();
+    await renderPanel(both);
+    await waitFor(() => expect(terminal.busyAgents()).toBe(2)); // both just started: one sentence warns
+    expect((await screen.findByTestId('terminal-panel-two-agents')).textContent).toMatch(/Två agenter arbetar samtidigt/);
+    fireEvent.click(screen.getByTestId('terminal-panel-two-agents-dismiss'));
+    expect(screen.queryByTestId('terminal-panel-two-agents')).toBeNull();
+
+    // Claude goes quiet after 1.5 s; opencode's 4 s quiet keeps it "Arbetar".
+    await waitFor(() => expect(screen.getByTestId('terminal-panel-state-agent').textContent).toBe('Ledig'), { timeout: 3000 });
+    expect(screen.getByTestId('terminal-panel-state-agent-opencode').textContent).toBe('Arbetar');
+    expect(terminal.state('agent:claude')).toBe('idle');
+    expect(terminal.anyBusy()).toBe(true);
+    expect(screen.queryByTestId('terminal-panel-two-agents')).toBeNull(); // not repeated in the same busy period
   });
 });

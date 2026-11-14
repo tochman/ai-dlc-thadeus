@@ -42,7 +42,20 @@ function mockBridge(settings) {
     closeProject: vi.fn(async () => {}),
     pickProject: vi.fn(async () => null),
     onProjectDetected: vi.fn(() => () => {}),
-    getGitStatus: vi.fn(async () => ({ isRepo: true, branch: 'feat/epic04-living-lcars' }))
+    getGitStatus: vi.fn(async () => ({ isRepo: true, branch: 'feat/epic04-living-lcars' })),
+    // The Settings view (US-0405) reads these as it opens.
+    getTools: vi.fn(async () => [
+      { id: 'aidlc', path: '/usr/local/bin/aidlc', source: 'auto', found: true, version: '0.9.1' },
+      { id: 'claude', path: '/usr/local/bin/claude', source: 'auto', found: true, version: '2.1.0' },
+      { id: 'shell', path: '/bin/zsh', source: 'auto', found: true, version: 'zsh 5.9' }
+    ]),
+    pickTool: vi.fn(async () => null),
+    saveTool: vi.fn(async () => ({ ok: true, version: '2.1.0' })),
+    resetTool: vi.fn(async () => {}),
+    pickDefaultFolder: vi.fn(async () => null),
+    clearDefaultFolder: vi.fn(async () => {}),
+    getAppInfo: vi.fn(async () => ({ version: '0.2.3', aidlc: { found: true, version: '0.9.1' } })),
+    openExternal: vi.fn(async () => {})
   });
 }
 
@@ -156,8 +169,7 @@ describe('App shell', () => {
     expect(screen.getByTestId('arm-github').hasAttribute('aria-current')).toBe(false);
   });
 
-  it('sets data-motion from the setting, Dämpad under prefers-reduced-motion without one, and saves a new choice (FR4.2)', async () => {
-    mockReducedMotion(true);
+  it('sets data-motion from the setting, Dämpad under prefers-reduced-motion without one, and saves a new choice (FR4.2)', async () => {    mockReducedMotion(true);
     await renderApp({});
     await waitFor(() => expect(window.bridge.getSettings).toHaveBeenCalled());
     expect(document.documentElement.dataset.motion).toBe('reduced');
@@ -177,6 +189,25 @@ describe('App shell', () => {
     fireEvent.click(screen.getByTestId('app-settings-animations-off'));
     expect(document.documentElement.dataset.motion).toBe('off');
     await waitFor(() => expect(saved).toContainEqual({ animations: 'off' }));
+  });
+
+  it('shows Inställningar as a view in the content frame from the arm, with aria-current and a way back (US-0405 FR1.1, FR6.1)', async () => {
+    await renderApp({ openProjects: ['/p/aidlc-dash-a'], activeProject: '/p/aidlc-dash-a' });
+    await screen.findByTestId('project-view-switch-features');
+    const pane = () => screen.getByTestId('project-view-p1').parentElement;
+
+    fireEvent.click(screen.getByTestId('app-settings-open'));
+    expect(screen.getByTestId('settings-view')).toBeTruthy();
+    expect(screen.getByTestId('app-settings-open').getAttribute('aria-current')).toBe('page');
+    expect(screen.getByRole('heading', { level: 1 }).textContent).toBe('Inställningar');
+    expect(screen.getByTestId('project-view-switch-features').hasAttribute('aria-current')).toBe(false);
+    expect(pane().hidden).toBe(true); // the project stays mounted, hidden
+
+    fireEvent.click(screen.getByTestId('settings-view-close'));
+    expect(screen.queryByTestId('settings-view')).toBeNull();
+    expect(screen.getByRole('heading', { level: 1 }).textContent).toMatch(/aidlc-dash-a.*Intents/);
+    expect(screen.getByTestId('project-view-switch-intents').getAttribute('aria-current')).toBe('page');
+    expect(pane().hidden).toBe(false);
   });
 
   it('shows the Auctum mark in the header with its name, next to the project and view title (FR2.1)', async () => {
@@ -219,7 +250,10 @@ describe('App shell', () => {
     expect(screen.getByRole('heading', { level: 1 }).textContent).toMatch(/Features/);
 
     act(() => push.menuCommand({ command: 'appSettings' }));
-    expect(screen.getByTestId('app-settings-animations-full')).toBeTruthy(); // the same dialog as the arm's Inställningar
+    expect(screen.getByTestId('settings-view')).toBeTruthy(); // the same view as the arm's Inställningar
+    expect(screen.getByRole('heading', { level: 1 }).textContent).toBe('Inställningar');
+    fireEvent.click(screen.getByTestId('settings-view-close')); // back to the view that was shown
+    expect(screen.getByTestId('project-view-switch-features').getAttribute('aria-current')).toBe('page');
 
     act(() => push.menuCommand({ command: 'nope' }));
     act(() => push.menuCommand({ command: 'view', view: 'elsewhere' }));

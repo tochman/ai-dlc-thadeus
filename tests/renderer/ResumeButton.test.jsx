@@ -17,6 +17,8 @@ afterEach(() => {
   vi.clearAllMocks();
   terminal.state.mockImplementation(() => 'idle');
   terminal.harness = CLAUDE;
+  delete terminal.anyBusy;
+  delete terminal.asking;
 });
 
 describe('ResumeButton', () => {
@@ -74,5 +76,24 @@ describe('ResumeButton', () => {
     terminal.harness = null; // detection still runs
     rerender(<ResumeButton intent={{ ...intent }} activeDirName="261113-workflow-control" />);
     expect(screen.getByTestId('intent-resume').title).toBe('Kontrollerar…');
+  });
+
+  it('stays disabled while the work already runs: another agent tab works, or an agent waits on an answer (EPIC-00 US-0005)', () => {
+    terminal.anyBusy = vi.fn(() => true); // the last-used tab is idle, but another agent tab works
+    const { rerender } = render(<ResumeButton intent={intent} activeDirName="261113-workflow-control" />);
+    expect(screen.getByTestId('intent-resume').disabled).toBe(true);
+    expect(screen.getByTestId('intent-resume').title).toBe(BUSY_MESSAGE);
+
+    terminal.anyBusy = vi.fn(() => false);
+    terminal.asking = vi.fn(() => true); // idle at a question it asked: still working on it
+    rerender(<ResumeButton intent={{ ...intent }} activeDirName="261113-workflow-control" />);
+    expect(screen.getByTestId('intent-resume').disabled).toBe(true);
+    expect(screen.getByTestId('intent-resume').title).toBe('Claude väntar på ditt svar — svara i terminalen först');
+    fireEvent.click(screen.getByTestId('intent-resume'));
+    expect(terminal.type).not.toHaveBeenCalled();
+
+    terminal.asking = vi.fn(() => false);
+    rerender(<ResumeButton intent={{ ...intent }} activeDirName="261113-workflow-control" />);
+    expect(screen.getByTestId('intent-resume').disabled).toBe(false);
   });
 });

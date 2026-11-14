@@ -1,6 +1,7 @@
 // Configured model per AI-DLC agent. Primary source: `aidlc config models` (fixed arguments,
 // execFile without a shell). Fallback: the `model:` frontmatter of .claude/agents/aidlc-*-agent.md (FR4.1, FR4.2).
 import { defaultExec, runFixed } from './exec.js';
+import { toolPath } from './tools.js';
 import { listDir, readText } from './projectAccess.js';
 import { agentName } from './parsers/ledger.js';
 import { t } from '../shared/i18n.js';
@@ -50,7 +51,7 @@ async function readAgentFiles(root) {
 export async function getConfiguredModels(root, { exec = defaultExec } = {}) {
   let error;
   try {
-    const stdout = await runFixed('aidlc', AIDLC_ARGS, { cwd: root, timeout: AIDLC_TIMEOUT_MS, exec });
+    const stdout = await runFixed(toolPath('aidlc'), AIDLC_ARGS, { cwd: root, timeout: AIDLC_TIMEOUT_MS, exec });
     return { source: 'aidlc-config', agents: parseAidlcOutput(stdout) };
   } catch (err) {
     error = `aidlc config models misslyckades: ${err.killed ? 'timeout efter 10 s' : err.message}`;
