@@ -10,6 +10,32 @@ T.H.A.D.E.U.S. is a desktop bridge console for [AI-DLC](https://github.com/awsla
 
 ![Project view: intents, pipeline, cost and terminal](docs/screenshots/intents.png)
 
+## Why I built this
+
+I'm an agile practitioner. Long before AI came along I worked in epics and user stories, so when I started using AI in my development work I simply kept doing that. It still felt ad hoc, though. The sheer speed of AI coding agents lets you make massive progress, but it takes a good amount of self-discipline to keep that progress pointed in the right direction.
+
+I needed a framework and a structure. I didn't want to just be *assisted* by AI. I wanted to *team up* with it. So I started building my own structure on top of my experience as a developer, trying out different skills and setups along the way.
+
+Then I found [AI-DLC](https://github.com/awslabs/aidlc-workflows). I read up on it, tried it on two projects of quite different complexity, and it felt like coming home. It hit the spot.
+
+There's a catch. AI-DLC produces a lot: documentation, approval gates, decisions, audit logs. I also combine it with my own way of splitting a domain into epics and user stories with acceptance criteria (in the Connexa format). I needed one place where all of that was visible and easy to reach. So I built it.
+
+And yes, I'm a Trekkie. 🖖
+
+## Why AI-DLC is worth it
+
+**For the individual developer**, AI-DLC is the discipline you would otherwise have to supply yourself. It makes you say what you're building before anything gets built. It asks the questions you'd skip on a busy day. It stops at every step for your approval, and it writes down what was decided and why. You still go fast, but you go fast in a direction you chose, and you can come back a week later and see exactly where you left off and how you got there.
+
+**For teams**, it turns AI work from something that happens inside one person's chat window into something everyone can follow. Requirements, designs, decisions and test results live in the repository next to the code. They're reviewed like code and handed over like code. A teammate, a reviewer or a product owner can see what the agents did without having been in the room. Shared practices are written down once and every agent follows them, whoever is at the keyboard.
+
+T.H.A.D.E.U.S. is there to make all of that visible, so the structure helps you instead of burying you.
+
+## On vibe coding
+
+Let's be honest: vibe coding produces bad software. You prompt until something seems to work, ship it, and hope nobody looks too closely. The result is code nobody understands, nobody tested and nobody can maintain.
+
+That isn't AI's fault. An AI coding agent is an incredibly capable tool, and like any tool it does what it's pointed at. Using it well is the operator's responsibility: knowing what you want, checking what you get, and owning the result. AI-DLC, and this console, exist to make doing it the right way the easy way.
+
 ## Features
 
 - **Intents and pipeline:** every piece of AI-DLC work in a project, with its plan, status and stage-by-stage progress. Custom plans are shown by their own name.
@@ -78,6 +104,10 @@ The app was previously named Auctum AIDLC Control. Your settings and open projec
 
 - **macOS:** T.H.A.D.E.U.S. has a new app id, so it does not replace the old app. Quit the old app and remove it from Applications.
 - **Linux:** the `thadeus` package replaces `aidlc-dash` automatically.
+
+## Open source
+
+I'm open-sourcing T.H.A.D.E.U.S. because I think it's a good thing to do. If you find it useful and decide to use it, that will make me happy. Issues, ideas and pull requests are welcome.
 
 ## License
 
