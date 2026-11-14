@@ -884,6 +884,19 @@ a.md-link:hover { color: var(--steel-light); }
 .config-pairs div { display: flex; gap: 10px; }
 .config-pairs dt { min-width: 200px; color: var(--muted); }
 .config-pairs dd { margin: 0; }
+/* Changing settings (EPIC-09 US-0902, US-0904): preview first, then apply. */
+.config-section h3 { margin: 12px 0 6px; color: var(--muted); font-size: 13px; letter-spacing: 0.04em; text-transform: uppercase; }
+.config-edit { display: flex; flex-direction: column; gap: 8px; margin-top: 8px; }
+.config-edit-grid { display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-end; }
+.config-edit-grid .field { margin: 0; min-width: 0; }
+.config-where { display: flex; flex-wrap: wrap; gap: 12px; border: 0; margin: 0; padding: 0; }
+.config-change { display: flex; flex-direction: column; gap: 6px; border-left: var(--gap) solid var(--steel); padding: 8px 12px; }
+.config-change code { overflow-wrap: anywhere; }
+.config-change-output { margin: 0; max-height: 220px; overflow: auto; white-space: pre-wrap; font-size: 12px; background: var(--slate-2); padding: 6px 8px; }
+/* The update notice (EPIC-04 US-0407): a calm notice in the corner, never a modal. */
+.update-notice { position: fixed; right: 16px; bottom: 16px; z-index: 40; width: min(440px, calc(100vw - 32px)); max-height: 60vh; overflow: auto; border-left: var(--gap) solid var(--steel); display: flex; flex-direction: column; gap: 8px; }
+.update-notice h2 { margin: 0; color: var(--steel); font-size: 15px; letter-spacing: 0.04em; text-transform: uppercase; }
+.update-notice-notes { max-height: 30vh; overflow: auto; }
 .features-links { display: flex; flex-wrap: wrap; gap: var(--gap); align-items: center; margin: 0 0 8px; }
 
 .settings-dialog {
@@ -899,6 +912,11 @@ a.md-link:hover { color: var(--steel-light); }
 }
 .settings-dialog::backdrop { background: var(--backdrop); }
 .settings-dialog h2 { margin: 0 0 14px; font-size: 28px; }
+/* US-0408: the padding sits on the body so a click on the <dialog> itself means the backdrop. */
+.about-dialog { padding: 0; }
+.about-dialog-body { display: flex; flex-direction: column; align-items: center; gap: 16px; padding: 28px 32px 22px; }
+.about-dialog-body .splash-name-main { font-size: 44px; }
+.about-dialog-version { margin: 0; color: var(--text-2); font-variant-numeric: tabular-nums; }
 .settings-group { border: 0; border-top: 1px solid var(--slate-2); margin: 0 0 14px; padding: 8px 0 0; display: flex; flex-direction: column; gap: var(--gap); }
 .settings-setup { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
 .settings-help { margin: 4px 0 0; font-size: 13px; max-width: 460px; }
@@ -1002,8 +1020,9 @@ a.md-link:hover { color: var(--steel-light); }
 /* ---------- Motion (FR4.1–FR4.4, NFR2): only opacity, filter, box-shadow and transform animate; the
    sweep moves a background image. Never more than 3 flashes per second. ---------- */
 @keyframes lcars-breathe {
-  0%, 100% { box-shadow: 0 0 0 1px var(--steel-a55), 0 0 8px var(--steel-a25); }
-  50% { box-shadow: 0 0 0 1px var(--steel-text-a95), 0 0 22px var(--steel-a60); }
+  /* The 1px ring is inset so a busy block keeps its edges aligned with its neighbours; only the soft glow spreads. */
+  0%, 100% { box-shadow: inset 0 0 0 1px var(--steel-a55), 0 0 8px var(--steel-a25); }
+  50% { box-shadow: inset 0 0 0 1px var(--steel-text-a95), 0 0 22px var(--steel-a60); }
 }
 @keyframes lcars-attn {
   0%, 100% { box-shadow: 0 0 0 0 var(--coral-a0); }
@@ -1034,7 +1053,7 @@ a.md-link:hover { color: var(--steel-light); }
    data-motion from the saved choice, or Dämpad under prefers-reduced-motion (FR4.2). */
 :root[data-motion='reduced'] *, :root[data-motion='reduced'] *::before, :root[data-motion='reduced'] *::after { animation: none !important; }
 :root[data-motion='off'] *, :root[data-motion='off'] *::before, :root[data-motion='off'] *::after { animation: none !important; transition: none !important; }
-:root:is([data-motion='reduced'], [data-motion='off']) .is-breathing { box-shadow: 0 0 0 1px var(--steel-a55), 0 0 12px var(--steel-a25); }
+:root:is([data-motion='reduced'], [data-motion='off']) .is-breathing { box-shadow: inset 0 0 0 1px var(--steel-a55), 0 0 12px var(--steel-a25); }
 :root:is([data-motion='reduced'], [data-motion='off']) .is-attn { box-shadow: 0 0 0 2px var(--coral-a90); }
 :root:is([data-motion='reduced'], [data-motion='off']) .lcars-dot--current,
 :root:is([data-motion='reduced'], [data-motion='off']) .lcars-live-dot { box-shadow: 0 0 0 3px var(--steel-a25); }

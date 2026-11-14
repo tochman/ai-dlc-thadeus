@@ -26,7 +26,7 @@
 
 **Stories:** US-0901, US-0902, US-0903, US-0904
 
-**Status (2026-11-14):** 🔄 In progress. ✅ US-0901 released in v0.2.2. 📋 US-0902–US-0904 planned. US-0904 replaces US-0206 (moved here from EPIC-02).
+**Status (2026-11-14):** 🔄 In progress. ✅ US-0901 released in v0.2.2. ✅ US-0902 done, ships in v0.2.3. 📋 US-0903 planned for v0.2.4. ✅ US-0904 done, ships in v0.2.3. US-0904 replaces US-0206 (moved here from EPIC-02).
 
 ---
 
@@ -109,23 +109,23 @@ The CLI refuses a harness that the project hasn't installed.
 - **Notes:** Shows every project-default switch, with its source. Plans list both the shipped plans and the project's own, the project's own are marked, and the active intent's plan is highlighted. The provider field names are assumed, because no provider record existed when this was built.
 - **Dependencies:** US-0801, US-0405
 
-**US-0902: Change project defaults and the active work's settings** 📋 Planned
+**US-0902: Change project defaults and the active work's settings** ✅ Done (ships in v0.2.3, intent `261114-intent-0-2-3-release`)
 - As a **developer who wants AI-DLC lighter or stricter**, in order to **change how it runs without looking up flags**, I would like to **change the project defaults and the current work's settings from the configuration view**.
 - **Epic:** EPIC-09
 - **Priority:** Medium
 - **Complexity:** Medium
 - **Acceptance Criteria:**
-  - [ ] **Project defaults:**
+  - [x] **Project defaults:**
     - default plan (`--default-scope`), parallel Units (`--swarm`), provider and region (`aidlc config providers`) and plugins (`aidlc config project --plugins`).
     - Where each setting applies (this project, only me, this machine) is chosen explicitly.
-  - [ ] **The active work's settings:** depth, test strategy, reviews, Guard Policy, sensors, learnings, summary confirmation, plan approval and collaborators, through `aidlc engine config set <key> <value>`, for the active intent only.
-  - [ ] **Checks the person can turn off** (the guard switches) are shown with what each one protects. Turning one off needs a confirmation that names it. Turning it back on needs none.
-  - [ ] **Preview, then apply (tier 1):**
+  - [x] **The active work's settings:** depth, test strategy, reviews, Guard Policy, sensors, learnings, summary confirmation, plan approval and collaborators, through `aidlc engine config set <key> <value>`, for the active intent only.
+  - [x] **Checks the person can turn off** (the guard switches) are shown with what each one protects. Turning one off needs a confirmation that names it. Turning it back on needs none.
+  - [x] **Preview, then apply (tier 1):**
     - Every change shows the exact command, and its `--dry-run` result where AI-DLC has one.
     - **Apply** runs the command from the app (fixed arguments, no shell) and shows its result or its error.
     - The view reloads after the change.
     - Changes to the active work's settings are blocked while the agent tab is "Arbetar".
-  - [ ] **The Guard Policy lock (tier 2):** the strict lock in `aidlc/spaces/<space>/memory/*.md` has no CLI command. The app edits only that section, after showing the diff, and never touches the rest of the memory file.
+  - [x] **The Guard Policy lock (tier 2):** the strict lock in `aidlc/spaces/<space>/memory/*.md` has no CLI command. The app edits only that section, after showing the diff, and never touches the rest of the memory file.
 - **Dependencies:** US-0901
 
 **US-0903: Create and reuse custom plans** 📋 Planned
@@ -149,32 +149,32 @@ The CLI refuses a harness that the project hasn't installed.
   - [ ] A custom plan's own name is shown wherever an intent's plan is shown (built in US-0701).
 - **Dependencies:** US-0901, US-0801
 
-**US-0904: Choose models and effort per agent** 📋 Planned (moved from US-0206)
+**US-0904: Choose models and effort per agent** ✅ Done (ships in v0.2.3, intent `261114-intent-0-2-3-release`; moved from US-0206)
 - As a **developer tuning how AI-DLC spends tokens**, in order to **choose which model and effort each agent uses without remembering `aidlc config` commands**, I would like to **see and change model and effort per agent, with the estimated cost of the choice beside it**.
 - **Epic:** EPIC-09
 - **Priority:** Medium
 - **Complexity:** Medium
 - **Acceptance Criteria:**
-  - [ ] **Every agent is listed** with:
+  - [x] **Every agent is listed** with:
     - its configured model and effort, and where each comes from (`aidlc config models --show --json --harness <h>`);
     - the model it actually ran on, from the ledger (US-0204);
     - its share of the cost.
-  - [ ] **Choosing a model and effort:**
+  - [x] **Choosing a model and effort:**
     - Models come from the lists the installed `aidlc` supports for the harness (Claude ids, Kiro's own ids, `inherit` for the session model).
     - Effort ranges from `low` to `max`, and `default` removes a setting.
     - The presets `thorough`, `balanced` and `minimal` apply to all agents at once. So do the group efforts for deciding, reviewing and writing-up agents.
-  - [ ] **Per harness, from the rule tables above,** starting with Claude Code and opencode:
+  - [x] **Per harness, from the rule tables above,** starting with Claude Code and opencode:
     - **Claude Code:** Claude aliases and ids.
     - **opencode:** `provider/model` ids from opencode's own model list, with `xhigh` shown as running at `high`.
     - **Harnesses without a table yet:** Codex, Kiro and others show the section read-only.
     - **Cursor and Copilot:** the section explains that the IDE's picker decides.
     - The list never offers a choice the harness ignores.
-  - [ ] **Before applying:**
+  - [x] **Before applying:**
     - The exact command is shown, together with its `--dry-run` result.
     - An estimate shows how the cost would change, based on this project's ledger and API prices, labelled as an estimate.
-  - [ ] **Applying:**
+  - [x] **Applying:**
     - Where the change applies is chosen explicitly: this project (`--project`) or only me (`--local`).
     - **Apply** runs the command from the app (tier 1). AI-DLC then regenerates the agent files itself; the app never edits them.
     - The view reloads after the change.
-  - [ ] Agents whose run differs from their configuration (US-0204) are marked, with a suggestion to align them. `aidlc config models --check` flags agent files that were edited by hand.
+  - [x] Agents whose run differs from their configuration (US-0204) are marked, with a suggestion to align them. `aidlc config models --check` flags agent files that were edited by hand.
 - **Dependencies:** US-0901, US-0204, US-0801

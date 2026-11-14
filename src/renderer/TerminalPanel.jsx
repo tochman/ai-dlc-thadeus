@@ -4,7 +4,7 @@ import { Terminal } from '@xterm/xterm';
 import { FitAddon } from '@xterm/addon-fit';
 import '@xterm/xterm/css/xterm.css';
 import { createActivity, dropText } from './terminalControl.js';
-import { useTerminal } from './TerminalContext.jsx';
+import { isAgentTab, useTerminal } from './TerminalContext.jsx';
 import AuctumMark from './AuctumMark.jsx';
 import { Bar } from './Lcars.jsx';
 import { xtermTheme } from './tokens.js';
@@ -13,7 +13,6 @@ import { harnessCommand } from '../shared/harnesses.js';
 
 const bridge = window.bridge;
 const QUICK_COMMANDS = [' --status', ' --doctor', ' continue']; // after the harness's AI-DLC command (FR4.1)
-const KINDS = ['agent', 'shell'];
 const errorText = (err) => String(err?.message ?? err).replace(/^Error invoking remote method '[^']+': (Error: )?/, '');
 
 /**
@@ -21,9 +20,10 @@ const errorText = (err) => String(err?.message ?? err).replace(/^Error invoking 
  * Registers itself with the TerminalProvider so other views can type into it (FR1.1).
  * `onInput` is told when the person types, which clears "Väntar på din Enter" (EPIC-04 FR3.6).
  * The agent tab passes its harness id (main looks up the command) and the harness's `quietMs` (US-0801 FR4.3);
- * `name` is what the texts call the tab.
+ * `name` is what the texts call the tab. `tab` is the key it registers under (`agent:<id>` or `shell`, US-0803)
+ * and `testId` the suffix of its data-testids.
  */
-function TermSession({ projectId, kind, harness, quietMs, name, shown, register, onInput }) {
+function TermSession({ projectId, kind, tab = kind, testId = kind, harness, quietMs, name, shown, register, onInput }) {
   const { t } = useTranslation();
   const hostRef = useRef(null);
   const termRef = useRef(null);
@@ -75,7 +75,7 @@ function TermSession({ projectId, kind, harness, quietMs, name, shown, register,
 
   useEffect(
     () =>
-      register(kind, {
+      register(tab, {
         activity,
         spawn,
         write: (text) => {
@@ -83,6 +83,8 @@ function TermSession({ projectId, kind, harness, quietMs, name, shown, register,
           bridge.ptyWrite(idRef.current, text).catch((err) => setError(errorText(err)));
         },
         focus: () => termRef.current?.focus(),
+        /** The visible rows as text, wrapped rows joined (the question popup reads the picker, EPIC-00 US-0004). */
+        screen: () => screenLines(termRef.current),
         restart: async () => {
           const id = idRef.current;
           idRef.current = null; // the old session's exit event is ignored
@@ -91,7 +93,7 @@ function TermSession({ projectId, kind, harness, quietMs, name, shown, register,
           return spawn();
         }
       }),
-    [register, kind, name, activity, spawn]
+    [register, tab, name, activity, spawn]
   );
 
   useEffect(() => {
@@ -164,7 +166,7 @@ function TermSession({ projectId, kind, harness, quietMs, name, shown, register,
       {(exited !== null || error) && (
         <div className="term-status" role="status">
           <span>{error ? t('terminal.startFailed', { kind: name, error }) : t('terminal.exited', { kind: name, code: String(exited) })}</span>
-          <button className="btn btn-accent" onClick={spawn} data-testid={`terminal-panel-restart-${kind}`}>
+          <button className="btn btn-accent" onClick={spawn} data-testid={`terminal-panel-restart-${testId}`}>
             {t('terminal.restart')}
           </button>
         </div>
@@ -175,7 +177,7 @@ function TermSession({ projectId, kind, harness, quietMs, name, shown, register,
         onDragOver={dragOver}
         onDragLeave={dragLeave}
         onDrop={drop}
-        data-testid={`terminal-panel-host-${kind}`}
+        data-testid={`terminal-panel-host-${testId}`}
       />
     </div>
   );
@@ -217,24 +219,64 @@ function QuickSelect({ harness, onPick }) {
 }
 
 /**
+ * "Two agents are changing the same work" (US-0803): both agent tabs share the project's aidlc/ records, so its
+ * one active intent. Shown once when two are busy at the same time, until closed; armed again only after no
+ * agent tab is busy, so the busy/idle flicker of a working agent never repeats it within one busy period.
+ */
+function useTwoBusyWarning(busyCount) {
+  const [shown, setShown] = useState(false);
+  const armed = useRef(true);
+  useEffect(() => {
+    if (busyCount >= 2 && armed.current) {
+      armed.current = false;
+      setShown(true);
+    } else if (busyCount === 0) {
+      armed.current = true;
+    }
+  }, [busyCount]);
+  return { shown, dismiss: () => setShown(false) };
+}
+
+/**
  * Must sit inside a TerminalProvider: which tab is open and active is shared with the other views (FR1.4).
  * The agent tab runs `terminal.harness` (US-0801); while it is null (detection runs) or `terminal.harnessProblem`
  * is set, nothing starts there, and `onChooseHarness` opens the project settings (FR5.1).
  */
+/** The viewport's rows as text; a row the terminal wrapped is joined to the one before it. */
+export function screenLines(term) {
+  const buf = term?.buffer?.active;
+  if (!buf) return [];
+  const lines = [];
+  for (let y = buf.viewportY; y < buf.viewportY + term.rows; y++) {
+    const line = buf.getLine(y);
+    if (!line) continue;
+    const text = line.translateToString(true);
+    if (line.isWrapped && lines.length) lines[lines.length - 1] += text;
+    else lines.push(text);
+  }
+  return lines;
+}
+
 export default function TerminalPanel({ projectId, visible, onChooseHarness }) {
   const { t } = useTranslation();
   const terminal = useTerminal();
   const { open, active } = terminal.view;
-  const { harness, harnessProblem } = terminal;
-  const tabLabel = (kind) => (kind === 'agent' ? (harness?.name ?? t('terminal.agent')) : t(`terminal.${kind}`));
+  const { harnessProblem, agentTabs } = terminal;
+  const first = terminal.harnessOf(agentTabs[0]); // the US-0801 tab; null while detection runs
+  const tabs = [...agentTabs, 'shell'];
+  const harnessIn = (tab) => terminal.harnessOf(tab);
+  const tabLabel = (tab) => (isAgentTab(tab) ? (harnessIn(tab)?.name ?? t('terminal.agent')) : t(`terminal.${tab}`));
+  // The first agent tab keeps the ids it always had; a second one is suffixed with its harness id.
+  const testId = (tab) => (tab === agentTabs[0] ? 'agent' : isAgentTab(tab) ? `agent-${harnessIn(tab)?.id}` : tab);
+  const activeHarness = isAgentTab(active) ? harnessIn(active) : null;
   const setOpen = (next) => terminal.setView((v) => ({ ...v, open: typeof next === 'function' ? next(v.open) : next }));
-  const setActive = (tab) => terminal.setView((v) => ({ ...v, active: tab }));
   // null = the CSS default clamp(180px, 24vh, 240px) on the open panel; a number once the person drags (F-01).
   const [height, setHeight] = useState(null);
   const panelRef = useRef(null);
   const clampHeight = (h) => Math.round(Math.min(window.innerHeight * 0.6, Math.max(180, h)));
   const currentHeight = () => height ?? panelRef.current?.offsetHeight ?? 220;
-  const pendingKinds = KINDS.filter((kind) => terminal.pending(kind));
+  const pendingTabs = tabs.filter((tab) => terminal.pending(tab));
+  const twoBusy = useTwoBusyWarning(terminal.busyAgents());
 
   function startDrag(e) {
     e.preventDefault();
@@ -277,28 +319,26 @@ export default function TerminalPanel({ projectId, visible, onChooseHarness }) {
       )}
       <div className="terminal-arm">
         <div role="tablist" aria-label={t('terminal.tabsLabel')} className="terminal-tabs">
-          {KINDS.map((kind) => {
-            const state = terminal.state(kind);
-            const on = active === kind;
-            const breathing = kind === 'agent' && state === 'busy';
-            const checking = kind === 'agent' && !harness;
+          {tabs.map((tab) => {
+            const agent = isAgentTab(tab);
+            const state = terminal.state(tab);
+            const on = active === tab;
+            const breathing = agent && state === 'busy';
+            const checking = agent && !harnessIn(tab);
             return (
               <button
-                key={kind}
+                key={tab}
                 role="tab"
                 aria-selected={on}
-                className={`lcars-block term-tab term-tab--${kind} lcars-block--${on ? 'active' : 'mid'} ${breathing ? 'is-breathing' : ''}`}
-                onClick={() => {
-                  setActive(kind);
-                  setOpen(true);
-                }}
-                data-testid={`terminal-panel-tab-${kind}`}
+                className={`lcars-block term-tab term-tab--${agent ? 'agent' : tab} lcars-block--${on ? 'active' : 'mid'} ${breathing ? 'is-breathing' : ''}`}
+                onClick={() => terminal.show(tab)} // an agent tab shown becomes the one 'agent' goes to (US-0803)
+                data-testid={`terminal-panel-tab-${testId(tab)}`}
               >
-                <span className={`term-state term-state-${state}`} data-testid={`terminal-panel-state-${kind}`}>
+                <span className={`term-state term-state-${state}`} data-testid={`terminal-panel-state-${testId(tab)}`}>
                   {checking ? t('terminal.checking') : t(`terminal.state.${state}`)}
                 </span>
-                <span className="term-tab-name" data-testid={`terminal-panel-name-${kind}`}>
-                  {tabLabel(kind)}
+                <span className="term-tab-name" data-testid={`terminal-panel-name-${testId(tab)}`}>
+                  {tabLabel(tab)}
                 </span>
               </button>
             );
@@ -314,14 +354,14 @@ export default function TerminalPanel({ projectId, visible, onChooseHarness }) {
           <Bar
             segs={[
               ['steel', 2],
-              ['steel-deep', 90, active === 'agent' && <QuickSelect harness={harness} onPick={(cmd) => terminal.type('agent', cmd, { submit: false })} />],
+              ['steel-deep', 90, activeHarness && <QuickSelect harness={activeHarness} onPick={(cmd) => terminal.type(active, cmd, { submit: false })} />],
               ['slate-3', 1]
             ]}
           />
         )}
         <div className="terminal-body" hidden={!open}>
           {harnessProblem && (
-            <div className="term-session" hidden={!(visible && open && active === 'agent')}>
+            <div className="term-session" hidden={!(visible && open && active === agentTabs[0])}>
               <div className="term-status" role="status" data-testid="terminal-panel-harness-problem">
                 <span>{harnessProblem}</span>
                 {onChooseHarness && (
@@ -332,20 +372,28 @@ export default function TerminalPanel({ projectId, visible, onChooseHarness }) {
               </div>
             </div>
           )}
-          {/* Keyed by harness: a switch closes the old session and starts the new CLI (FR6.1). */}
-          {harness && !harnessProblem && (
-            <TermSession
-              key={`agent-${harness.id}`}
-              projectId={projectId}
-              kind="agent"
-              harness={harness.id}
-              quietMs={harness.quietMs}
-              name={harness.name}
-              shown={visible && open && active === 'agent'}
-              register={terminal.register}
-              onInput={() => terminal.input('agent')}
-            />
-          )}
+          {/* One session per open harness, keyed by it: a switch closes the old session and starts the new CLI
+              (FR6.1); a second harness runs beside the first with its own state and Restart (US-0803). */}
+          {first &&
+            !harnessProblem &&
+            agentTabs.map((tab) => {
+              const h = harnessIn(tab);
+              return (
+                <TermSession
+                  key={tab}
+                  projectId={projectId}
+                  kind="agent"
+                  tab={tab}
+                  testId={testId(tab)}
+                  harness={h.id}
+                  quietMs={h.quietMs}
+                  name={h.name}
+                  shown={visible && open && active === tab}
+                  register={terminal.register}
+                  onInput={() => terminal.input(tab)}
+                />
+              );
+            })}
           <TermSession
             key="shell"
             projectId={projectId}
@@ -357,14 +405,22 @@ export default function TerminalPanel({ projectId, visible, onChooseHarness }) {
           />
         </div>
         {/* Only while something waits for Enter or went wrong, so the terminal keeps the height otherwise. */}
-        {(pendingKinds.length > 0 || terminal.error) && (
+        {(pendingTabs.length > 0 || terminal.error || twoBusy.shown) && (
           <div className="terminal-foot" data-testid="terminal-panel-foot">
-            {pendingKinds.map((kind) => (
-              <span key={kind} className="term-pending-row">
-                <span className="term-pending is-attn" data-testid={`terminal-panel-pending-${kind}`}>
+            {twoBusy.shown && (
+              <span className="term-pending-row" role="status" data-testid="terminal-panel-two-agents">
+                <span className="term-pending-hint">{t('terminal.twoAgents')}</span>
+                <button className="btn btn-quiet" onClick={twoBusy.dismiss} data-testid="terminal-panel-two-agents-dismiss">
+                  {t('common.close')}
+                </button>
+              </span>
+            )}
+            {pendingTabs.map((tab) => (
+              <span key={tab} className="term-pending-row">
+                <span className="term-pending is-attn" data-testid={`terminal-panel-pending-${testId(tab)}`}>
                   {t('terminal.pending')}
                 </span>
-                <span className="term-pending-hint">{t('terminal.pendingHint', { tab: tabLabel(kind) })}</span>
+                <span className="term-pending-hint">{t('terminal.pendingHint', { tab: tabLabel(tab) })}</span>
               </span>
             ))}
             {terminal.error && (

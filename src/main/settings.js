@@ -1,11 +1,11 @@
-// The app's own settings file in userData. This is the only file the app ever writes,
-// and it is never an AI-DLC file.
+// The app's own settings file in userData. It is never an AI-DLC file. (The app's only other writes are the
+// downloaded update under userData/updates and the Guard Policy lock in aidlcWrite.js, EPIC-09 tier 2.)
 import { app } from 'electron';
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import { DEFAULT_FEATURES_PATH, isValidFeaturesPath } from './parsers/features.js';
 import { LANGUAGE_SETTINGS, t } from '../shared/i18n.js';
-import { selectableHarness } from '../shared/harnesses.js';
+import { HARNESSES, selectableHarness } from '../shared/harnesses.js';
 import { TOOL_IDS, isStoredPath } from './tools.js';
 
 export { TOOL_IDS };
@@ -26,19 +26,45 @@ function sanitizeToolPaths(raw) {
   return Object.fromEntries(TOOL_IDS.filter((id) => isStoredPath(raw[id])).map((id) => [id, raw[id]]));
 }
 
+/**
+ * The agent tabs open side by side (EPIC-08 US-0803): selectable harness ids only, deduplicated, in table
+ * order. Null when nothing usable is left, so the single-harness choice from US-0801 applies.
+ */
+export function sanitizeHarnessTabs(raw) {
+  if (!Array.isArray(raw)) return null;
+  const ids = HARNESSES.filter((h) => h.selectable && raw.includes(h.id)).map((h) => h.id);
+  return ids.length ? ids : null;
+}
+
+/** What the updater remembers (EPIC-04 US-0407); deleteAfterInstall is on unless it is saved as false. */
+export const UPDATE_DEFAULTS = { deleteAfterInstall: true };
+const VERSION = /^\d+\.\d+\.\d+$/;
+
+function sanitizeUpdates(raw) {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return {};
+  return {
+    ...(Number.isFinite(raw.lastCheckMs) && raw.lastCheckMs >= 0 ? { lastCheckMs: raw.lastCheckMs } : {}),
+    ...(typeof raw.skipVersion === 'string' && VERSION.test(raw.skipVersion) ? { skipVersion: raw.skipVersion } : {}),
+    ...(typeof raw.deleteAfterInstall === 'boolean' ? { deleteAfterInstall: raw.deleteAfterInstall } : {})
+  };
+}
+
 /** Per-project settings keyed by project root (EPIC-06 FR3.4); invalid values fall back to the defaults. */
 function sanitizeProject(raw) {
+  const tabs = sanitizeHarnessTabs(raw?.harnessTabs);
   return {
     featureDocs: FEATURE_DOCS.has(raw?.featureDocs) ? raw.featureDocs : PROJECT_DEFAULTS.featureDocs,
     featuresPath: isValidFeaturesPath(raw?.featuresPath) ? raw.featuresPath : PROJECT_DEFAULTS.featuresPath,
     // "Agent-terminal" (EPIC-08 US-0801 FR2.3); left out when invalid, so the detected default applies.
-    ...(selectableHarness(raw?.harness) ? { harness: raw.harness } : {})
+    ...(selectableHarness(raw?.harness) ? { harness: raw.harness } : {}),
+    ...(tabs ? { harnessTabs: tabs } : {})
   };
 }
 
 function sanitize(raw) {
   const projects = raw?.projectSettings && typeof raw.projectSettings === 'object' ? raw.projectSettings : {};
   const toolPaths = sanitizeToolPaths(raw?.toolPaths);
+  const updates = sanitizeUpdates(raw?.updates);
   return {
     openProjects: stringList(raw?.openProjects),
     recentProjects: stringList(raw?.recentProjects),
@@ -57,6 +83,8 @@ function sanitize(raw) {
     // absolute paths only, and each key is left out when it holds nothing usable.
     ...(Object.keys(toolPaths).length ? { toolPaths } : {}),
     ...(isStoredPath(raw?.defaultProjectFolder) ? { defaultProjectFolder: raw.defaultProjectFolder } : {}),
+    // The update check's memory (US-0407); left out when empty, so UPDATE_DEFAULTS apply where it is read.
+    ...(Object.keys(updates).length ? { updates } : {}),
     // ponytail: capped at 200 projects, oldest kept; prune closed projects if that ever matters.
     projectSettings: Object.fromEntries(
       Object.entries(projects)
@@ -90,8 +118,15 @@ function update(change) {
 }
 
 export function setSettings(partial) {
-  // projectSettings are only changed through setProjectSettings.
-  return update((cur) => ({ ...cur, ...partial, projectSettings: cur.projectSettings }));
+  // projectSettings are only changed through setProjectSettings. `updates` is merged, so the updater's check time
+  // and the Settings view's cleanup choice never overwrite each other (US-0407).
+  const updates = partial?.updates && typeof partial.updates === 'object' ? partial.updates : null;
+  return update((cur) => ({
+    ...cur,
+    ...partial,
+    ...(updates ? { updates: { ...cur.updates, ...sanitizeUpdates(updates) } } : {}),
+    projectSettings: cur.projectSettings
+  }));
 }
 
 export async function getProjectSettings(root) {
@@ -109,6 +144,13 @@ export async function setProjectSettings(root, partial) {
   }
   if (partial?.featuresPath !== undefined && !isValidFeaturesPath(partial.featuresPath)) {
     throw new Error(t('errors.invalidFeaturesPath', { path: String(partial.featuresPath) }));
+  }
+  if (partial?.harnessTabs !== undefined) {
+    const tabs = sanitizeHarnessTabs(partial.harnessTabs);
+    if (!tabs || tabs.length !== new Set(partial.harnessTabs).size) {
+      throw new Error(t('errors.unknownHarness', { id: String(partial.harnessTabs) }));
+    }
+    partial = { ...partial, harnessTabs: tabs };
   }
   const given = Object.fromEntries(Object.entries(partial ?? {}).filter(([, v]) => v !== undefined));
   const next = await update((cur) => ({

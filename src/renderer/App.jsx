@@ -6,7 +6,9 @@ import Splash from './Splash.jsx';
 import SettingsView, { saveLanguage } from './SettingsView.jsx';
 import { withSlots } from './format.js';
 import DocsDialog from './DocsDialog.jsx';
+import AboutDialog from './AboutDialog.jsx';
 import QuestionPopup from './QuestionPopup.jsx';
+import UpdateNotice from './UpdateNotice.jsx';
 import { Bar, Frame } from './Lcars.jsx';
 import { APP_NAME } from '../shared/appName.js';
 import { selectableHarness } from '../shared/harnesses.js';
@@ -64,6 +66,8 @@ export default function App() {
   const [popupFocus, setPopupFocus] = useState(null); // {id} named by a clicked notification (FR3.2)
   const recentRef = useRef([]);
   const menuCommandRef = useRef(null);
+  const [updateCheck, setUpdateCheck] = useState(0); // "Sök efter uppdatering…" bumps it (US-0407)
+  const [aboutOpen, setAboutOpen] = useState(false); // "Om T.H.A.D.E.U.S." from the menu (US-0408)
   const seenQuestionsRef = useRef(new Set());
   const questionAlertsRef = useRef('popup-notify');
   questionAlertsRef.current = alertSettings.questionAlerts ?? 'popup-notify';
@@ -216,9 +220,9 @@ export default function App() {
     setTerminalCommand((c) => ({ seq: (c?.seq ?? 0) + 1, action: 'agent', projectId: q.projectId }));
   }
   /** The popup's answer: `text` goes to that project's agent tab without switching views. Resolves {ok, error}. */
-  function sendAnswer(q, text) {
+  function sendAnswer(q, answer) {
     return new Promise((reply) =>
-      setTerminalCommand((c) => ({ seq: (c?.seq ?? 0) + 1, action: 'answer', projectId: q.projectId, text, reply }))
+      setTerminalCommand((c) => ({ seq: (c?.seq ?? 0) + 1, action: 'answer', projectId: q.projectId, question: q, answer, reply }))
     );
   }
   async function saveAlertSettings(partial) {
@@ -327,7 +331,9 @@ export default function App() {
     view: ({ view: v }) => pick(v, ['intents', 'features', 'config'], showView),
     panel: ({ panel }) => isAidlc && pick(panel, ['cost', 'github'], showView), // Kostnad and Github are views too
     terminal: ({ action }) => pick(action, ['agent', 'shell', 'restart'], runTerminal),
-    docs: () => openDocs()
+    docs: () => openDocs(),
+    checkUpdate: () => setUpdateCheck((n) => n + 1),
+    about: () => setAboutOpen(true)
   };
   menuCommandRef.current = (payload) => {
     if (typeof payload?.command === 'string' && Object.hasOwn(menuCommands, payload.command)) menuCommands[payload.command](payload);
@@ -530,6 +536,7 @@ export default function App() {
                 onView={(v) => setUiOf(tab.projectId, { view: v })}
                 onMeta={reportMeta}
                 terminalCommand={terminalCommand}
+                askingIntents={questions.filter((q) => !q.early && q.projectId === tab.projectId).map((q) => q.intent)}
               />
             </div>
           );
@@ -537,6 +544,8 @@ export default function App() {
       </main>
 
       <DocsDialog doc={docs} onClose={() => setDocs(null)} />
+      <AboutDialog open={aboutOpen} onClose={() => setAboutOpen(false)} />
+      <UpdateNotice busy={Object.values(meta).some((m) => m?.busy)} checkRequest={updateCheck} />
       <QuestionPopup
         open={popupOpen}
         questions={popupQuestions}

@@ -60,6 +60,10 @@ export default function ProjectSettingsDialog({
   const [mode, setMode] = useState(settings.featureDocs);
   const [path, setPath] = useState(settings.featuresPath);
   const [chosen, setChosen] = useState(harness);
+  // The agent tabs side by side (US-0803), offered only when two selectable harnesses are installed here.
+  const runnable = HARNESSES.filter((h) => h.selectable && (harnesses ?? []).some((d) => d.id === h.id && d.installed)).map((h) => h.id);
+  const savedTabs = settings.harnessTabs ?? (harness ? [harness] : []);
+  const [tabs, setTabs] = useState(savedTabs);
   const [error, setError] = useState(null);
   const [saving, setSaving] = useState(false);
 
@@ -70,6 +74,7 @@ export default function ProjectSettingsDialog({
       setMode(settings.featureDocs);
       setPath(settings.featuresPath);
       setChosen(harness);
+      setTabs(savedTabs);
       setError(null);
       if (!d.open) d.showModal ? d.showModal() : d.setAttribute('open', '');
     } else if (d.open) {
@@ -87,10 +92,17 @@ export default function ProjectSettingsDialog({
     // Only a changed harness is saved, so the detected default is not pinned by saving other settings.
     const switching = chosen && chosen !== harness;
     if (switching && !confirmHarnessSwitch(terminal, harness, chosen, t)) return;
+    // Like the harness, the tabs are saved only when changed, so the single-harness default is not pinned.
+    const tabsChanged = runnable.length > 1 && tabs.length > 0 && tabs.join() !== savedTabs.join();
     setSaving(true);
     setError(null);
     try {
-      await window.bridge.setProjectSettings(projectId, { featureDocs: mode, featuresPath: path, ...(switching ? { harness: chosen } : {}) });
+      await window.bridge.setProjectSettings(projectId, {
+        featureDocs: mode,
+        featuresPath: path,
+        ...(switching ? { harness: chosen } : {}),
+        ...(tabsChanged ? { harnessTabs: tabs } : {})
+      });
       onClose();
     } catch (err) {
       setError(errorText(err));
@@ -162,6 +174,27 @@ export default function ProjectSettingsDialog({
               ))}
             </select>
           </label>
+          {runnable.length > 1 && (
+            <fieldset className="settings-group" data-testid="project-settings-tabs">
+              <legend>{t('settings.project.tabsLegend')}</legend>
+              {runnable.map((id) => (
+                <label key={id} className="check">
+                  <input
+                    type="checkbox"
+                    checked={tabs.includes(id)}
+                    // At least one tab stays open; the order follows the harness table.
+                    disabled={tabs.length === 1 && tabs.includes(id)}
+                    onChange={(e) =>
+                      setTabs((cur) => runnable.filter((h) => (h === id ? e.target.checked : cur.includes(h))))
+                    }
+                    data-testid={`project-settings-tab-${id}`}
+                  />
+                  {selectableHarness(id).label}
+                </label>
+              ))}
+              <span className="muted">{t('settings.project.tabsHelp')}</span>
+            </fieldset>
+          )}
           {onAddHarness && (
             <p className="settings-setup">
               <span className="muted" data-testid="project-settings-installed-harnesses">

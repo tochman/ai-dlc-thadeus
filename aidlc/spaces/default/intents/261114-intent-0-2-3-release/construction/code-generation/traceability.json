@@ -1,0 +1,25 @@
+{
+  "stage": "code-generation",
+  "upstream_ids": ["FR1.1","FR1.2","FR1.3","FR1.4","FR1.5","FR1.6","FR2.1","FR2.2","FR3.1","FR3.2","FR3.3","FR3.4","FR3.5","NFR1","NFR2","NFR3","NFR4","NFR5"],
+  "coverage": [
+    { "id": "FR1.1", "status": "N/A", "target": "US-0405 already built (commit 37a28fb); its tests stay green" },
+    { "id": "FR1.2", "status": "OK", "target": "src/main/aidlcWrite.js" },
+    { "id": "FR1.3", "status": "OK", "target": "src/main/modelChoice.js" },
+    { "id": "FR1.4", "status": "OK", "target": "src/main/updater.js" },
+    { "id": "FR1.5", "status": "OK", "target": "src/renderer/TerminalContext.jsx" },
+    { "id": "FR1.6", "status": "OK", "target": "src/renderer/AboutDialog.jsx" },
+    { "id": "FR2.1", "status": "Deferred", "target": "Render timing is measured in Build and Test" },
+    { "id": "FR2.2", "status": "Deferred", "target": "Installed-release check on macOS and Linux in Build and Test" },
+    { "id": "FR3.1", "status": "Deferred", "target": "Feature docs are updated in Deployment Execution (project rule)" },
+    { "id": "FR3.2", "status": "Deferred", "target": "Released in v0.2.3 markers are added when the tag is cut, in Deployment Execution" },
+    { "id": "FR3.3", "status": "OK", "target": "package.json" },
+    { "id": "FR3.4", "status": "Deferred", "target": "Release branch, PR and tag in Deployment Pipeline and Deployment Execution" },
+    { "id": "FR3.5", "status": "Deferred", "target": "docs/releases/0.2.3.md is updated in Deployment Execution" },
+    { "id": "NFR1", "status": "OK", "target": "tests/main/aidlcWrite.test.js" },
+    { "id": "NFR2", "status": "OK", "target": "tests/main/updater.test.js" },
+    { "id": "NFR3", "status": "OK", "target": "tests/main/updater.test.js" },
+    { "id": "NFR4", "status": "OK", "target": "src/shared/configTables.js" },
+    { "id": "NFR5", "status": "OK", "target": "src/main/updater.js" }
+  ],
+  "reverse": []
+}

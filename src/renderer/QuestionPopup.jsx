@@ -1,14 +1,16 @@
 // The popup for questions and gates AI-DLC waits on (EPIC-05 US-0505 FR2.1–FR2.5). A native modal <dialog>,
 // like the settings dialog: on top of everything, Esc closes it. The question is plain text, never HTML (NFR2).
-// It answers in place: an option or a gate button sends its number key to the project's agent tab, whose picker
-// selects by number; the own-answer field types its text and Enter. The calm steel frame turns glowing red after
+// It answers in place: an option or a gate button goes to the agent tab whose picker shows this question, as that
+// picker's own key; the own-answer field types its text and Enter. When no picker shows it (several questions at once,
+// other options, the agent moved on) nothing is sent and the popup says why (EPIC-00 US-0004). The calm steel frame turns glowing red after
 // OVERDUE_MS without an answer, and the title says so in words too (FR2.5, NFR5).
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { t as translate } from '../shared/i18n.js';
-import { withEnter } from './terminalControl.js';
 
 export const OVERDUE_MS = 20_000;
+/** After a send, how long the question may stay open before the popup says the answer may not have arrived. */
+export const ARRIVAL_MS = 10_000;
 
 /** "Godkännande: a → b"; the same keys as the system notification. */
 const gateText = (q) =>
@@ -16,7 +18,7 @@ const gateText = (q) =>
     ? translate('app.question.gateNext', { stage: q.stage ?? '?', next: q.nextStage })
     : translate('app.question.gate', { stage: q.stage ?? '?' });
 
-/** The picker's choices as [label, key]: a gate's Approve (1) and Request Changes (2), else the options 1–9. */
+/** The choices as [label, number shown]: a gate's Approve and Request Changes, else the logged options 1–9. */
 function choices(q, t) {
   if (q.kind === 'gate') return [[t('app.question.approve'), '1'], [t('app.question.requestChanges'), '2']];
   return (q.options ?? []).slice(0, 9).map((o, n) => [o, String(n + 1)]);
@@ -24,7 +26,7 @@ function choices(q, t) {
 
 /**
  * @param {{open: boolean, questions: object[], focus?: {id: string}|null,
- *          harnessOf?: (projectId: string) => object|null, onSend?: (q: object, text: string) => Promise<{ok, error?}>,
+ *          harnessOf?: (projectId: string) => object|null, onSend?: (q: object, answer: {index: number}|{own: string}) => Promise<{ok, error?}>,
  *          onOpenTerminal: (q: object) => void, onClose: () => void}} props questions in the order shown, newest first;
  *   focus is a fresh object each time a notification names a question; harnessOf gives the project's running harness
  *   (a table entry) or null
@@ -44,7 +46,7 @@ export default function QuestionPopup({ open, questions, focus = null, harnessOf
   const q = questions[i] ?? null;
   const harness = q ? harnessOf(q.projectId) : null;
   const sentHere = sent && q && sent.id === q.id ? sent : null;
-  const canSend = Boolean(harness && onSend) && !sentHere?.ok;
+  const canSend = Boolean(harness && onSend) && !sentHere; // a refused send offers only the terminal
 
   // A new newest question, or the one a notification named, is shown first.
   const newestId = questions[0]?.id;
@@ -56,6 +58,16 @@ export default function QuestionPopup({ open, questions, focus = null, harnessOf
   useEffect(() => {
     if (sent && sentAt === -1) setSent(null);
   }, [sent, sentAt]);
+
+  // Sent, but still waiting after ARRIVAL_MS: say once that it may not have arrived, instead of asking again.
+  const [late, setLate] = useState(null);
+  const sentOkId = sent?.ok ? sent.id : null;
+  useEffect(() => {
+    setLate(null);
+    if (!sentOkId) return undefined;
+    const timer = setTimeout(() => setLate(sentOkId), ARRIVAL_MS);
+    return () => clearTimeout(timer);
+  }, [sentOkId]);
 
   useEffect(() => {
     const d = ref.current;
@@ -77,9 +89,9 @@ export default function QuestionPopup({ open, questions, focus = null, harnessOf
     requestAnimationFrame(() => onOpenTerminal(q));
   }
 
-  async function send(text) {
+  async function send(answer) {
     const target = q;
-    const result = await onSend(target, text);
+    const result = await onSend(target, answer);
     setSent({ id: target.id, ok: result?.ok === true, error: result?.error ?? null });
     if (result?.ok) setOwn('');
   }
@@ -135,7 +147,7 @@ export default function QuestionPopup({ open, questions, focus = null, harnessOf
                   type="button"
                   className="question-popup-choice"
                   disabled={!canSend}
-                  onClick={() => send(key)}
+                  onClick={() => send({ index: n })}
                   data-testid="question-popup-choice"
                 >
                   <span className="question-popup-key">{key}</span>
@@ -155,7 +167,7 @@ export default function QuestionPopup({ open, questions, focus = null, harnessOf
             className="question-popup-own"
             onSubmit={(e) => {
               e.preventDefault();
-              if (own.trim()) send(withEnter(own, true));
+              if (own.trim()) send({ own });
             }}
           >
             <input
@@ -174,7 +186,11 @@ export default function QuestionPopup({ open, questions, focus = null, harnessOf
           </form>
           {sentHere && (
             <p className={`question-popup-status${sentHere.ok ? '' : ' is-error'}`} role="status" data-testid="question-popup-status">
-              {sentHere.ok ? t('app.question.sent', { harness: harness?.name ?? '' }) : t('app.question.sendFailed', { error: sentHere.error ?? '' })}
+              {sentHere.ok
+                ? late === sentHere.id
+                  ? t('app.question.maybeLost', { harness: harness?.name ?? '' })
+                  : t('app.question.sent', { harness: harness?.name ?? '' })
+                : t('app.question.sendFailed', { error: sentHere.error ?? '' })}
             </p>
           )}
           {!harness && <p className="question-popup-status">{t('app.question.noAgent')}</p>}

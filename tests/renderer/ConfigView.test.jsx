@@ -1,6 +1,10 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
-import ConfigView from '../../src/renderer/ConfigView.jsx';
+
+// The terminal's busy state, as the TerminalProvider gives it; null outside a provider (not busy).
+let terminal = null;
+vi.mock('../../src/renderer/TerminalContext.jsx', () => ({ useTerminal: () => terminal }));
+const { default: ConfigView } = await import('../../src/renderer/ConfigView.jsx');
 
 // The shape config:get returns (src/main/aidlcConfig.js plus activeDir), trimmed from this project's output.
 const config = (overrides = {}) => ({
@@ -54,7 +58,10 @@ function renderView(props = {}) {
   return render(<ConfigView projectId="p1" visible harnesses={[CLAUDE, KIRO]} defaultHarness="claude" onSetup={vi.fn()} {...props} />);
 }
 
-afterEach(cleanup);
+afterEach(() => {
+  cleanup();
+  terminal = null;
+});
 
 describe('ConfigView', () => {
   it('shows a loading state, then the six sections in order with values and sources (FR1.2, FR2.2–FR2.7, NFR4)', async () => {
@@ -187,5 +194,111 @@ describe('ConfigView', () => {
     } finally {
       vi.useRealTimers();
     }
+  });
+});
+
+describe('ConfigView changes (EPIC-09 US-0902, US-0904)', () => {
+  /** The bridge calls the edit panels use, shaped like config:preview / config:apply / models:* return. */
+  function mockEditing(extra = {}) {
+    mockBridge();
+    Object.assign(window.bridge, {
+      previewConfigChange: vi.fn(async (_p, c) => ({ command: `aidlc engine config set ${c.key} ${c.value}`, dryRun: null })),
+      applyConfigChange: vi.fn(async () => ({ ok: true, command: 'x', output: '' })),
+      ...extra
+    });
+  }
+
+  it('changing depth shows the command preview, and Apply sends only {kind, key, value}', async () => {
+    mockEditing();
+    renderView();
+    const select = await screen.findByTestId('config-edit-active-depth');
+    fireEvent.change(select, { target: { value: 'Standard' } });
+    expect((await screen.findByTestId('config-change-command')).textContent).toBe('aidlc engine config set depth Standard');
+    expect(window.bridge.previewConfigChange).toHaveBeenCalledWith('p1', { kind: 'active', key: 'depth', value: 'Standard' });
+    fireEvent.click(screen.getByTestId('config-change-apply'));
+    await waitFor(() => expect(window.bridge.applyConfigChange).toHaveBeenCalledWith('p1', { kind: 'active', key: 'depth', value: 'Standard' }));
+    expect(await screen.findByTestId('config-change-result')).toBeTruthy();
+  });
+
+  it('turning a guard off asks for a confirmation naming it and where; turning it on does not', async () => {
+    mockEditing();
+    renderView();
+    fireEvent.click(await screen.findByTestId('config-edit-guard-off-AIDLC_DISABLE_REVIEW_FREEZE_HOOK'));
+    const confirm = screen.getByTestId('config-edit-guard-confirm');
+    expect(confirm.textContent).toMatch(/Stänga av kontrollen "Frysning under granskning"/);
+    expect(window.bridge.previewConfigChange).not.toHaveBeenCalled();
+    expect(screen.getByTestId('config-edit-guard-confirm-yes').disabled).toBe(true); // where is chosen explicitly
+    fireEvent.click(screen.getByTestId('config-edit-guard-where-local'));
+    fireEvent.click(screen.getByTestId('config-edit-guard-confirm-yes'));
+    await waitFor(() =>
+      expect(window.bridge.previewConfigChange).toHaveBeenLastCalledWith('p1', {
+        kind: 'guard', key: 'AIDLC_DISABLE_REVIEW_FREEZE_HOOK', value: 'off', where: 'local'
+      })
+    );
+
+    fireEvent.click(screen.getByTestId('config-edit-guard-on-AIDLC_SKIP_ARTIFACT_GUARD'));
+    expect(screen.queryByTestId('config-edit-guard-confirm')).toBeNull();
+    await waitFor(() =>
+      expect(window.bridge.previewConfigChange).toHaveBeenLastCalledWith('p1', { kind: 'guard', key: 'AIDLC_SKIP_ARTIFACT_GUARD', value: 'on' })
+    );
+  });
+
+  it('disables Apply for the active work while an agent tab is busy, with the reason', async () => {
+    terminal = { anyBusy: () => true };
+    mockEditing();
+    renderView();
+    fireEvent.change(await screen.findByTestId('config-edit-active-sensors'), { target: { value: 'on' } });
+    await screen.findByTestId('config-change-command');
+    expect(screen.getByTestId('config-change-apply').disabled).toBe(true);
+    expect(screen.getByTestId('config-change-blocked').textContent).toMatch(/agentflik arbetar/);
+    expect(window.bridge.applyConfigChange).not.toHaveBeenCalled();
+  });
+
+  // Shaped like models:options (modelChoice.modelOptions plus the ledger usage).
+  const options = (harness, extra = {}) => ({
+    harness,
+    editable: true,
+    models: ['default', 'inherit', 'opus', 'sonnet', 'haiku'],
+    efforts: ['low', 'medium', 'high', 'xhigh', 'max', 'default'],
+    applied: harness === 'opencode' ? { xhigh: 'high' } : {},
+    usage: { totalUsd: 10, usdByAgent: { architect: 7.5 }, agentModels: { main: ['claude-opus-5-5'], architect: ['claude-sonnet-5-5'] } },
+    ...extra
+  });
+
+  it('choosing a model shows the preview and the cost estimate labelled as an estimate', async () => {
+    mockEditing({
+      getModelOptions: vi.fn(async (_p, h) => options(h)),
+      previewModelChange: vi.fn(async () => ({
+        command: 'aidlc config models --agent architect --model sonnet --harness claude --project --yes',
+        dryRun: 'models configuration plan: update=1',
+        estimate: { estimate: true, before: 10, after: 6, delta: -4 }
+      })),
+      applyModelChange: vi.fn(async () => ({ ok: true, output: '' }))
+    });
+    renderView();
+    const row = await screen.findByTestId('config-edit-models-row-architect');
+    expect(row.textContent).toMatch(/claude-sonnet-5-5.*avviker.*75 %/); // ran on another model than inherit (opus)
+    fireEvent.click(screen.getByTestId('config-edit-models-where-project'));
+    fireEvent.change(screen.getByTestId('config-edit-models-agent'), { target: { value: 'architect' } });
+    fireEvent.change(screen.getByTestId('config-edit-models-model'), { target: { value: 'sonnet' } });
+    fireEvent.click(screen.getByTestId('config-edit-models-preview-agent'));
+    expect(window.bridge.previewModelChange).toHaveBeenCalledWith('p1', { harness: 'claude', where: 'project', agent: 'architect', model: 'sonnet' });
+    expect((await screen.findByTestId('config-change-command')).textContent).toMatch(/--model sonnet/);
+    expect(screen.getByTestId('config-edit-models-estimate').textContent).toMatch(/uppskattning: \$10\.00 → \$6\.00 \(−\$4\.00\)/);
+  });
+
+  it('shows an opencode xhigh row as "körs som high", and a harness without rules read-only with the reason', async () => {
+    const xhigh = { agent: 'architecture-reviewer', model: null, effort: 'xhigh', modelSource: 'project', effortSource: 'project', env: false };
+    mockEditing({ getModelOptions: vi.fn(async (_p, h) => options(h)) });
+    window.bridge.getAidlcConfig = vi.fn(async () => config({ harness: 'opencode', models: [xhigh] }));
+    renderView({ harnesses: [OPENCODE], defaultHarness: 'opencode' });
+    expect((await screen.findByTestId('config-edit-models-row-architecture-reviewer')).textContent).toMatch(/xhigh \(körs som high\)/);
+    expect([...screen.getByTestId('config-edit-models-effort').options].map((o) => o.textContent)).toContain('xhigh (körs som high)');
+    cleanup();
+
+    mockEditing({ getModelOptions: vi.fn(async () => ({ editable: false, reason: 'Kiro har inga modellregler i appen än.' })) });
+    renderView();
+    expect((await screen.findByTestId('config-edit-models-readonly')).textContent).toMatch(/inga modellregler/);
+    expect(screen.queryByTestId('config-edit-models-agent')).toBeNull();
   });
 });

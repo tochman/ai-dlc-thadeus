@@ -17,9 +17,20 @@ import {
   loadWorkingAgents
 } from './projectService.js';
 import { notifyQuestions } from './notify.js';
-import { summarizeLedger } from './parsers/ledger.js';
+import { agentName, summarizeLedger } from './parsers/ledger.js';
 import { getConfiguredModels } from './models.js';
 import { CONFIG_WATCH_PATHS, checkHarness, getAidlcConfig } from './aidlcConfig.js';
+import { apply as applyConfigChange, applyGuardLock, preview as previewConfigChange, previewGuardLock } from './aidlcWrite.js';
+import {
+  applyModelChange,
+  checkDrift,
+  estimateCost,
+  ledgerRows,
+  modelOptions,
+  previewModelChange,
+  pricesFromLedger
+} from './modelChoice.js';
+import { createUpdater } from './updater.js';
 import { fetchRemote, getGitStatus, getRemoteChanges, listConflicts, showRemoteFile } from './git.js';
 import { getSetupInfo, runSetup } from './setup.js';
 import { detectHarnesses } from './harness.js';
@@ -40,8 +51,66 @@ const EXTERNAL_URLS = {
   features: `${REPO_URL}/tree/main/docs/features`,
   docs: AIDLC_DOCS_URL
 };
-// projectId -> { root, space, watcher, setupWatcher, featuresWatcher, featuresKey, configWatcher, sender, models, setupInfo, harnesses }
+// projectId -> { root, space, watcher, setupWatcher, featuresWatcher, featuresKey, configWatcher, sender, models, setupInfo,
+//   harnesses, modelOptions, guardLock }
 const projects = new Map();
+
+// The app updater (EPIC-04 US-0407); download progress reaches every window as `update:state`.
+const updater = createUpdater({
+  app,
+  getSettings,
+  setSettings,
+  send: (state) => {
+    for (const w of BrowserWindow.getAllWindows()) if (!w.webContents.isDestroyed()) w.webContents.send('update:state', state);
+  }
+});
+
+/** The daily check once the window has loaded (US-0407); an offered update reaches the notice as `update:state`. */
+export function startUpdateCheck(win) {
+  updater.check().then((state) => {
+    if (state.status === 'available' && !win.webContents.isDestroyed()) win.webContents.send('update:state', state);
+  });
+}
+
+const sendConfigChanged = (projectId, p) => {
+  if (!p.sender.isDestroyed()) p.sender.send('config:changed', { projectId });
+};
+
+/** The model choices of one installed harness, cached per project; preview and apply check against them (NFR4). */
+async function harnessModelOptions(p, harness) {
+  checkHarness(harness, await p.harnesses);
+  p.modelOptions ??= {};
+  p.modelOptions[harness] ??= modelOptions(p.root, harness);
+  const options = await p.modelOptions[harness];
+  if (!options.editable) throw new Error(options.reason);
+  return options;
+}
+
+/** Per agent from the ledger (US-0904): the models it ran on and its cost; null without a readable ledger. */
+async function modelUsage(root) {
+  try {
+    const cost = await loadCost(root);
+    if (!cost.available) return null;
+    const { project: summary } = summarizeLedger(cost.ledger, []);
+    return {
+      totalUsd: summary.total.usd,
+      usdByAgent: Object.fromEntries(summary.byAgent.map((r) => [agentName(r.name), r.usd])),
+      agentModels: summary.agentModels
+    };
+  } catch (err) {
+    console.warn('Modellernas kostnad kunde inte läsas:', err.message);
+    return null;
+  }
+}
+
+/** The cost estimate for a model change on this project's ledger, or null when it cannot be made. */
+async function modelEstimate(root, change) {
+  const cost = await loadCost(root);
+  if (!cost.available) return null;
+  const { project: summary } = summarizeLedger(cost.ledger, []);
+  const agents = change.agent ? [change.agent] : null; // a preset or group changes every agent
+  return estimateCost(ledgerRows(summary), pricesFromLedger(summary.byModel), { agents, model: change.model });
+}
 
 function project(projectId) {
   const p = projects.get(projectId);
@@ -288,6 +357,84 @@ const handlers = {
     const agents = await loadWorkingAgents(p.root, p.space, active.dirName);
     return agents.map((a) => ({ ...a, intent: active.slug ?? active.dirName }));
   },
+  // Changing AI-DLC settings (EPIC-09 US-0902). The renderer sends only {kind, key, value, where}; aidlcWrite
+  // checks it against the fixed tables before anything runs, and refuses any other field (NFR4).
+  'config:preview': async (_event, projectId, change) => previewConfigChange(project(projectId).root, change),
+  'config:apply': async (_event, projectId, change) => {
+    const p = project(projectId);
+    const result = await applyConfigChange(p.root, change);
+    if (result.ok) {
+      p.models = null; // a changed default can change the configured models too
+      sendConfigChanged(projectId, p);
+    }
+    return result;
+  },
+  // Tier 2: the diff is kept here, and apply writes exactly that change, only if the file is still as shown.
+  'config:guardLockPreview': async (_event, projectId, choice) => {
+    const p = project(projectId);
+    const request = { space: p.space ?? 'default', layer: choice?.layer, mode: choice?.mode };
+    const { before, file, diff } = await previewGuardLock(p.root, request);
+    p.guardLock = { ...request, before };
+    return { file, diff };
+  },
+  'config:guardLockApply': async (_event, projectId) => {
+    const p = project(projectId);
+    if (!p.guardLock) throw new Error(t('errors.previewFirst'));
+    const { before, ...request } = p.guardLock;
+    p.guardLock = null;
+    const result = await applyGuardLock(p.root, request, before);
+    sendConfigChanged(projectId, p);
+    return result;
+  },
+  // Models and effort per agent (US-0904); the harness must be installed here and have a rule table.
+  'models:options': async (_event, projectId, harness) => {
+    const p = project(projectId);
+    checkHarness(harness, await p.harnesses);
+    p.modelOptions ??= {};
+    p.modelOptions[harness] = modelOptions(p.root, harness); // fresh on every open of the section
+    const [options, usage] = await Promise.all([p.modelOptions[harness], modelUsage(p.root)]);
+    return { ...options, usage };
+  },
+  'models:preview': async (_event, projectId, change) => {
+    const p = project(projectId);
+    const options = await harnessModelOptions(p, change?.harness);
+    const [shown, estimate] = await Promise.all([
+      previewModelChange(p.root, change, options.models),
+      modelEstimate(p.root, change).catch((err) => {
+        console.warn('Kostnadsuppskattningen misslyckades:', err.message);
+        return null;
+      })
+    ]);
+    return { ...shown, estimate };
+  },
+  'models:apply': async (_event, projectId, change) => {
+    const p = project(projectId);
+    const options = await harnessModelOptions(p, change?.harness);
+    const result = await applyModelChange(p.root, change, options.models);
+    if (result.ok) {
+      p.models = null;
+      p.modelOptions = null;
+      sendConfigChanged(projectId, p);
+    }
+    return result;
+  },
+  'models:check': async (_event, projectId, harness) => {
+    const p = project(projectId);
+    checkHarness(harness, await p.harnesses);
+    return checkDrift(p.root, harness);
+  },
+  // The app updater (EPIC-04 US-0407). The renderer names no URL, file or version to download: main keeps the
+  // offered release itself, and only its own repository's assets are fetched (NFR3).
+  'update:check': async (_event, options) => updater.check({ force: options?.force === true }),
+  'update:download': async () => updater.download(),
+  'update:install': async () => updater.install(),
+  'update:relaunch': async () => updater.relaunch(),
+  'update:skip': async (_event, version) => updater.skip(version),
+  'update:reveal': async () => {
+    const file = updater.downloadedFile();
+    if (!file) throw new Error(t('update.notDownloaded'));
+    shell.showItemInFolder(file);
+  },
   'project:file': async (_event, projectId, rel) => readText(project(projectId).root, rel),
   'shell:reveal': async (_event, projectId, rel) => {
     shell.showItemInFolder(await resolveInRoot(project(projectId).root, rel));
@@ -378,8 +525,8 @@ const handlers = {
   },
   // The Om section (US-0405 FR5.1): the app version and the AI-DLC row Verktyg already shows.
   'app:info': async () => {
-    const aidlc = (await getTools()).find((row) => row.id === 'aidlc') ?? null;
-    return { version: app.getVersion(), aidlc };
+    const aidlcRow = (await getTools()).find((row) => row.id === 'aidlc') ?? null;
+    return { version: app.getVersion(), aidlc: aidlcRow };
   },
   // A fixed https address from the table above; anything else is refused before the browser opens (NFR1).
   'app:openExternal': async (_event, key) => {
@@ -407,7 +554,8 @@ const handlers = {
     const next = await setProjectSettings(p.root, {
       featureDocs: partial?.featureDocs,
       featuresPath: partial?.featuresPath,
-      harness: partial?.harness
+      harness: partial?.harness,
+      harnessTabs: partial?.harnessTabs // the agent tabs side by side (US-0803)
     });
     await syncFeaturesWatch(projectId);
     sendFeaturesChanged(projectId, p); // the open view reloads with the new setting

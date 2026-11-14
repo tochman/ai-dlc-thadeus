@@ -318,7 +318,27 @@ function Project({ settings, onReload, recentProjects = [], onRemoveRecent, proj
 }
 
 /** Om: the app version, the AI-DLC version that was found, the mark and the two fixed links (FR5.1). */
-function About() {
+/** "Ta bort hämtat paket efter uppdatering: På / Av" (EPIC-04 US-0407); På unless saved as Av. */
+function UpdateCleanup({ settings, onReload, onError }) {
+  const { t } = useTranslation();
+  const on = settings?.updates?.deleteAfterInstall !== false;
+  async function pick(id) {
+    try {
+      await window.bridge.setSettings({ updates: { deleteAfterInstall: id === 'on' } }); // main merges the rest
+      await onReload();
+    } catch (err) {
+      onError(t('settings.saveFailed', { error: errorText(err) }));
+    }
+  }
+  return (
+    <div className="field" data-testid="settings-update-cleanup">
+      <span className="field-label">{t('settings.update.cleanup')}</span>
+      <RadioBlocks name="update-cleanup" ids={['on', 'off']} labelKey="settings.update.cleanupOption" value={on ? 'on' : 'off'} onPick={pick} />
+    </div>
+  );
+}
+
+function About({ settings, onReload }) {
   const { t } = useTranslation();
   const [info, setInfo] = useState(null);
   const [error, setError] = useState(null);
@@ -336,7 +356,7 @@ function About() {
       setError(t('settings.about.loadFailed', { error: errorText(err) }));
     }
   }
-  const aidlc = info?.aidlc;
+  const aidlcTool = info?.aidlc;
   return (
     <Section id="about">
       <div className="settings-about">
@@ -344,9 +364,9 @@ function About() {
         <div className="settings-about-text">
           <p data-testid="settings-app-version">{t('settings.about.version', { version: info?.version ?? '–' })}</p>
           <p data-testid="settings-aidlc-version">
-            {aidlc?.found
-              ? t('settings.about.aidlcVersion', { version: aidlc.version })
-              : t('settings.about.aidlcNotFound', { error: aidlc?.error ?? '' })}
+            {aidlcTool?.found
+              ? t('settings.about.aidlcVersion', { version: aidlcTool.version })
+              : t('settings.about.aidlcNotFound', { error: aidlcTool?.error ?? '' })}
           </p>
           <div className="settings-about-links">
             <button type="button" className="btn" onClick={() => open('repo')} data-testid="settings-open-repo">
@@ -358,6 +378,7 @@ function About() {
           </div>
         </div>
       </div>
+      <UpdateCleanup settings={settings} onReload={onReload} onError={setError} />
       {error && (
         <p className="refresh-error" role="alert">
           {error}
@@ -454,7 +475,7 @@ export default function SettingsView({
         projects={projects}
         onProjectSettings={onProjectSettings}
       />
-      <About />
+      <About settings={settings} onReload={loadSettings} />
       {error && (
         <p className="refresh-error" role="alert">
           {error}

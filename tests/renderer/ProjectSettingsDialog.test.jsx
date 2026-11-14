@@ -105,6 +105,24 @@ describe('ProjectSettingsDialog', () => {
     expect(confirm).not.toHaveBeenCalled();
   });
 
+  it('saves both harnesses as side-by-side agent tabs when both are installed, and offers no choice with one (US-0803)', async () => {
+    const onClose = vi.fn();
+    render(<ProjectSettingsDialog open onClose={onClose} projectId="p1" settings={settings} harness="claude" harnesses={detected} />);
+    const claude = screen.getByTestId('project-settings-tab-claude');
+    const opencode = screen.getByTestId('project-settings-tab-opencode');
+    expect([claude.checked, opencode.checked]).toEqual([true, false]); // US-0801's single choice is the default
+    expect(claude.disabled).toBe(true); // the last open tab cannot be unticked
+    fireEvent.click(opencode);
+    fireEvent.click(screen.getByTestId('project-settings-save'));
+    await waitFor(() => expect(onClose).toHaveBeenCalledTimes(1));
+    expect(window.bridge.setProjectSettings).toHaveBeenCalledWith('p1', { ...settings, harnessTabs: ['claude', 'opencode'] });
+    cleanup();
+
+    const onlyClaude = detected.map((d) => (d.id === 'opencode' ? { ...d, installed: false } : d));
+    render(<ProjectSettingsDialog open onClose={onClose} projectId="p1" settings={settings} harness="claude" harnesses={onlyClaude} />);
+    expect(screen.queryByTestId('project-settings-tabs')).toBeNull();
+  });
+
   it('"Lägg till harness…" names the installed harnesses and opens setup in add mode (US-0802 FR3.1)', () => {
     const onAddHarness = vi.fn();
     const onClose = vi.fn();

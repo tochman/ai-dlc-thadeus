@@ -55,6 +55,24 @@ contextBridge.exposeInMainWorld('bridge', {
   setProjectSettings: call('projectSettings:set'),
   getAidlcConfig: call('config:get'), // read-only AI-DLC configuration for one harness (EPIC-09 US-0901)
   getWorkingAgents: call('agents:working'), // the agents working now in the active intent (US-0901)
+  // Changing AI-DLC settings (US-0902): a change is {kind, key, value, where}, never a command.
+  previewConfigChange: call('config:preview'),
+  applyConfigChange: call('config:apply'),
+  previewGuardLock: call('config:guardLockPreview'),
+  applyGuardLock: call('config:guardLockApply'),
+  // Models and effort per agent (US-0904).
+  getModelOptions: call('models:options'),
+  previewModelChange: call('models:preview'),
+  applyModelChange: call('models:apply'),
+  checkModels: call('models:check'),
+  // The app updater (EPIC-04 US-0407): no URL, file or command crosses the bridge.
+  checkUpdate: call('update:check'),
+  downloadUpdate: call('update:download'),
+  installUpdate: call('update:install'),
+  relaunchApp: call('update:relaunch'),
+  skipUpdate: call('update:skip'),
+  revealUpdate: call('update:reveal'),
+  onUpdateState: subscribe('update:state'),
   onConfigChanged: subscribe('config:changed'),
   onFeaturesChanged: subscribe('features:changed'),
   onProjectChanged: subscribe('project:changed'),

@@ -1,8 +1,11 @@
 // Configuration view (EPIC-09 US-0901): how AI-DLC is set up in this project, with where each value comes from.
-// Read-only; main runs the `aidlc config` commands and sends only the fields shown here (FR2.8).
+// Main runs the `aidlc config` commands and sends only the fields shown here (FR2.8). Changes (US-0902, US-0904)
+// go through ConfigEdit.jsx: preview first, then apply, and the view reloads on config:changed.
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { setupHarness } from '../shared/harnesses.js';
+import { ActiveEditor, DefaultsEditor, GuardLock, GuardSwitches, ModelPicker } from './ConfigEdit.jsx';
+import { useTerminal } from './TerminalContext.jsx';
 
 const DASH = '—';
 const SECTION_KEYS = ['models', 'flags', 'active', 'provider', 'plugins'];
@@ -191,6 +194,8 @@ function WorkingAgents({ projectId }) {
  */
 export default function ConfigView({ projectId, visible, harnesses, defaultHarness, onSetup }) {
   const { t } = useTranslation();
+  // Changes to the active work wait while any agent tab is "Arbetar" (US-0902, US-0803); no provider: not busy.
+  const busy = useTerminal()?.anyBusy?.() === true;
   const installed = (harnesses ?? []).filter((d) => d.installed);
   const [chosen, setChosen] = useState(null); // only this view's choice; the agent tab keeps its own (FR4.2)
   const pick = (id) => installed.some((d) => d.id === id) && id;
@@ -278,16 +283,27 @@ export default function ConfigView({ projectId, visible, harnesses, defaultHarne
       ) : (
         <>
           <Section id="models" error={errors.models} className={setupHarness(harness)?.perAgentModels === false ? 'is-greyed' : ''}>
-            {d.models && <Models rows={d.models} harness={harness} />}
+            {d.models && (
+              <ModelPicker projectId={projectId} harness={harness} rows={d.models} fallback={<Models rows={d.models} harness={harness} />} />
+            )}
           </Section>
           <Section id="defaults" error={errors.flags}>
             {d.flags && <ValueTable rows={d.flags} nameKey="name" nameLabel={t('config.switch')} />}
+            <h3>{t('configEdit.defaults.title')}</h3>
+            <DefaultsEditor projectId={projectId} plans={d.plans} />
+            <h3>{t('configEdit.guards.title')}</h3>
+            <GuardSwitches projectId={projectId} flags={d.flags} />
+            <h3>{t('configEdit.lock.title')}</h3>
+            <GuardLock projectId={projectId} />
           </Section>
           <div className="config-row">
             {/* Without an active intent the section says so, whatever config list answered (FR2.4). */}
             <Section id="active" error={d.activeDir ? errors.active : undefined}>
               {d.activeDir && d.active?.length ? (
-                <ValueTable rows={d.active} nameKey="key" nameLabel={t('config.setting')} />
+                <>
+                  <ValueTable rows={d.active} nameKey="key" nameLabel={t('config.setting')} />
+                  <ActiveEditor projectId={projectId} rows={d.active} busy={busy} />
+                </>
               ) : (
                 <p className="muted">{t('config.noActive')}</p>
               )}

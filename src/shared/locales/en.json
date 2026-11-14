@@ -75,6 +75,10 @@
       "send": "Send",
       "sent": "Sent to {harness}",
       "sendFailed": "Could not send: {error}",
+      "noPicker": "{harness} shows no question to pick from right now. Answer in the terminal.",
+      "several": "{harness} asks several questions at once. Answer in the terminal.",
+      "mismatch": "{harness} shows other choices than the ones AI-DLC logged. Answer in the terminal.",
+      "maybeLost": "Sent to {harness}, but the question is still waiting. The answer may not have arrived – check the terminal.",
       "noAgent": "The agent tab is not running yet. Answer in the terminal.",
       "openTerminal": "Open the terminal"
     },
@@ -147,8 +151,10 @@
     "resume": {
       "label": "Resume",
       "atStage": "Resume at {stage}",
+      "inHarness": "{label} in {harness}",
       "step": "(step {step} of {total})",
       "busy": "{harness} is working — wait or interrupt it first",
+      "asking": "{harness} is waiting for your answer — answer in the terminal first",
       "invalidName": "Invalid intent name: {name}"
     },
     "files": {
@@ -316,6 +322,7 @@
     "notInstalled": "AI-DLC is not installed for {harness} in this project, so nothing was started.",
     "pending": "Waiting for your Enter",
     "pendingHint": "{tab}: typed by the app. Nothing runs until you press Enter.",
+    "twoAgents": "Two agents are working at once on this project's active work, so they are changing the same records.",
     "noTab": "The terminal tab {tab} does not exist.",
     "cannotStart": "{name} could not be started.",
     "cannotRestart": "{name} could not be restarted.",
@@ -364,7 +371,7 @@
     },
     "prompt": {
       "format": "Create feature docs for this project from what is already there (README, code, documentation): docs/FEATURES.md with a short introduction and a table with one row per epic (link, topic, status), and one file per epic in docs/features/epic-XX-<slug>.md with a description, a line **Stories:**, a line **Status (date):** and stories such as **US-XXYY: Title** <status> followed by As a / in order to / I would like to, Epic, Priority, Complexity, Acceptance Criteria as checkboxes in the form Given/When/Then, Notes and Dependencies. Status markers: 📋 Planned, 🚧 In progress, ✅ Done (merged; add \"Released in vX.Y.Z\" when released). Order the epics by topic, not by release.",
-      "rule": "Also add a project rule through AI-DLC's own way of saving rules, not by editing the memory files directly: new work is described as stories in the right epic file, and status and acceptance criteria are updated when the work is built and released.",
+      "rule": "Also add a project rule through AI-DLC's own way of saving rules, not by editing the memory files directly, so every AI tool in the project (Claude Code, opencode and the others) follows it: a new story the person describes goes into the right epic file right away; when work on a story starts, set it to 🚧 In progress in its status marker, the epic's **Status (…)** line and its FEATURES.md row; when it is built and approved, set it to ✅ Done and tick its met acceptance criteria; as soon as the release it goes into is known, write it out (\"for vX.Y.Z\", and \"Released in vX.Y.Z\" when the tag is cut); a delivered story never stays in progress.",
       "exists": "The project already has feature docs in {path} (an overview and one file per epic). {rule}"
     }
   },
@@ -491,6 +498,10 @@
       "label": "Open projects",
       "empty": "No project is open."
     },
+    "update": {
+      "cleanup": "Delete the downloaded package after updating",
+      "cleanupOption": { "on": "On", "off": "Off" }
+    },
     "about": {
       "version": "App version {version}",
       "aidlcVersion": "AI-DLC {version}",
@@ -517,6 +528,8 @@
       "pathInvalid": "The path must be relative to the project, end in .md and not contain ..",
       "noDocs": "The project has no feature docs yet.",
       "harnessLabel": "Agent terminal",
+      "tabsLegend": "Agent tabs",
+      "tabsHelp": "Each chosen harness gets its own agent tab beside Shell, and both work on the same aidlc/ records.",
       "harnessUnsupported": "not supported yet",
       "harnessNotFound": "not found",
       "harnessSwitchConfirm": "{from} is working. Switching to {to} closes the session. Switch anyway?",
@@ -564,6 +577,105 @@
     "missing": "AI-DLC's command-line tool aidlc was not found: {error}",
     "failed": "The AI-DLC configuration could not be read: {error}"
   },
+  "configEdit": {
+    "previewing": "Checking the change…",
+    "command": "Command",
+    "noDryRun": "AI-DLC has no dry run for this command; it runs only when you apply it.",
+    "applied": "Applied.",
+    "apply": "Apply",
+    "preview": "Show change",
+    "current": "now: {value}",
+    "busy": "An agent tab is working, so the active work's settings can't be changed right now.",
+    "setting": "Setting",
+    "value": "Value",
+    "where": {
+      "legend": "Applies to",
+      "project": "This project",
+      "local": "Only me",
+      "global": "This machine"
+    },
+    "defaults": {
+      "title": "Change a project default",
+      "defaultScope": "Default plan",
+      "swarm": "Parallel Units",
+      "provider": "Provider",
+      "region": "Region",
+      "plugins": "Plugins"
+    },
+    "guards": {
+      "title": "Checks you can turn off",
+      "turnOff": "Turn off",
+      "turnOn": "Turn on",
+      "confirmOff": "Turn off the check \"{name}\"? AI-DLC then stops checking this until you turn it back on.",
+      "confirmYes": "Yes, turn it off",
+      "AIDLC_DISABLE_PLAN_APPROVAL_GUARD": { "name": "Plan approval", "protects": "Code Generation waits for your approval of its plan before it writes code." },
+      "AIDLC_DISABLE_REVIEW_FREEZE_HOOK": { "name": "Review freeze", "protects": "Files under review can't be changed until the review is done." },
+      "AIDLC_DISABLE_REVIEWER_SCOPE_HOOK": { "name": "Reviewer read scope", "protects": "A reviewer reads only what it was asked to review." },
+      "AIDLC_DISABLE_SUMMARY_CONFIRMATION": { "name": "Summary confirmation", "protects": "AI-DLC asks you to confirm its summary of a stage before it moves on." },
+      "AIDLC_SKIP_SUMMARY_CONFIRMATION_GUARD": { "name": "Summary confirmation check", "protects": "A stage can't close until its summary was really confirmed." },
+      "AIDLC_SKIP_HUMAN_PRESENCE_GUARD": { "name": "Human presence", "protects": "An approval counts only when a person gave it." },
+      "AIDLC_SKIP_ARTIFACT_GUARD": { "name": "Stage output", "protects": "A stage can't be completed without the files it must produce." },
+      "AIDLC_SKIP_REVISION_BACKSTOP": { "name": "Revision backstop", "protects": "A stage can't be revised again and again without a person deciding." },
+      "AIDLC_DISABLE_ENSEMBLE_EVIDENCE": { "name": "Pipeline handoff", "protects": "Work handed from one agent to the next must carry its evidence." }
+    },
+    "lock": {
+      "title": "Guard Policy lock",
+      "help": "The Guard Policy lock has no command. The app changes only the Guard Policy section of the memory file, after showing the change.",
+      "layer": "Memory file",
+      "mode": "Mode",
+      "none": "no lock",
+      "preview": "Show the change"
+    },
+    "models": {
+      "idePicker": "On {harness} the IDE's own picker decides the model, so it can't be changed here.",
+      "noTable": "{harness} has no model rules in the app yet, so this section is read-only.",
+      "readFailed": "The model choices could not be read, so this section is read-only: {error}",
+      "noModels": "opencode listed no models.",
+      "runsAs": "{effort} (runs as {applied})",
+      "ranOn": "Ran on",
+      "share": "Cost share",
+      "mismatch": "differs",
+      "alignHint": "The agent ran on another model than its configuration. Choose the model it should use, or align the configuration with what it ran on.",
+      "keep": "keep",
+      "preset": "Preset for all agents",
+      "group": "Group effort",
+      "groups": { "deciding": "Deciding", "reviewing": "Reviewing", "writing-up": "Writing up" },
+      "estimate": "Cost on this project's ledger, estimate: {before} → {after} ({delta}).",
+      "noEstimate": "No cost estimate: the ledger has no price for that model, or the change sets only effort.",
+      "check": "Check agent files",
+      "checkOk": "No agent file was edited by hand."
+    }
+  },
+  "update": {
+    "ghMissing": "The update check needs GitHub's gh CLI, which was not found on this computer.",
+    "ghLoggedOut": "The update check needs gh to be logged in: run gh auth login in a terminal.",
+    "rateLimited": "GitHub is limiting requests right now, so the update check will try again later.",
+    "offline": "GitHub could not be reached, so the update check will try again later.",
+    "noAccess": "No release of {repo} could be read with your gh login.",
+    "checkFailed": "The update check failed: {error}",
+    "badAnswer": "GitHub's answer about the latest release could not be read.",
+    "notOwnAsset": "{name} is not a release file of {repo}, so it was not downloaded.",
+    "checksumMissing": "SHA256SUMS.txt has no checksum for {name}, so the update was stopped.",
+    "checksumMismatch": "The checksum of {name} does not match SHA256SUMS.txt, so the update was stopped.",
+    "downloadFailed": "The download failed: {error}",
+    "noPackage": "This release has no package for this computer.",
+    "notDownloaded": "Nothing has been downloaded yet.",
+    "notPackaged": "Only the installed app can update itself, not a development run.",
+    "notABundle": "The running app is not inside an .app bundle.",
+    "stepFailed": "The installation failed at {step}: {error}",
+    "title": "T.H.A.D.E.U.S. {version} is available",
+    "noNotes": "This release has no release notes.",
+    "now": "Update now",
+    "later": "Later",
+    "skip": "Skip this version",
+    "downloading": "Downloading…",
+    "downloadingPct": "Downloading… {pct} %",
+    "installing": "Installing…",
+    "kept": "Installed. The downloaded package is kept at",
+    "relaunch": "Restart now",
+    "upToDate": "You have the latest version.",
+    "confirmRestart": "An agent tab is working. Updating restarts the app and ends its terminal sessions. Update anyway?"
+  },
   "menu": {
     "about": "About {app}",
     "hide": "Hide {app}",
@@ -603,6 +715,7 @@
     "help": "Help",
     "docs": "AI-DLC documentation",
     "reportIssue": "Report a problem",
+    "checkUpdate": "Check for update…",
     "develop": "Develop",
     "reload": "Reload",
     "forceReload": "Force Reload",
@@ -655,6 +768,7 @@
     "toolVersionFailed": "The file does not answer --version: {error}",
     "toolNoVersion": "The file answers with no version.",
     "toolNotOnPath": "{name} was not found on the login shell's PATH.",
-    "unknownExternal": "Unknown external link: {key}"
+    "unknownExternal": "Unknown external link: {key}",
+    "changedSincePreview": "{file} changed after the preview. Look at the change again before applying it."
   }
 }

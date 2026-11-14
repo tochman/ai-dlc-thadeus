@@ -141,6 +141,38 @@ describe('project settings', () => {
     expect('defaultProjectFolder' in read).toBe(false);
   });
 
+  it('keeps the updater memory and drops a non-boolean deleteAfterInstall (EPIC-04 US-0407)', async () => {
+    expect('updates' in (await getSettings())).toBe(false); // nothing saved: UPDATE_DEFAULTS apply
+    const updates = { lastCheckMs: 1700000000000, skipVersion: '0.2.4', deleteAfterInstall: false };
+    await setSettings({ updates });
+    await setSettings({ openProjects: ['/p/a'] }); // saving the tabs keeps it
+    expect((await getSettings()).updates).toEqual(updates);
+
+    // A partial change is merged, and invalid values never replace valid ones.
+    await setSettings({ updates: { deleteAfterInstall: true } });
+    expect((await getSettings()).updates).toEqual({ ...updates, deleteAfterInstall: true });
+    await setSettings({ updates: { lastCheckMs: -1, skipVersion: '1.0; rm', deleteAfterInstall: 'no' } });
+    expect((await getSettings()).updates).toEqual({ ...updates, deleteAfterInstall: true });
+    await fs.writeFile(FILE, JSON.stringify({ updates: { lastCheckMs: 'x', deleteAfterInstall: 'no' } }));
+    expect('updates' in (await getSettings())).toBe(false);
+    await fs.writeFile(FILE, JSON.stringify({ updates: { skipVersion: '0.3.0', deleteAfterInstall: 1 } }));
+    expect((await getSettings()).updates).toEqual({ skipVersion: '0.3.0' });
+  });
+
+  it('keeps the side-by-side harness tabs and drops an unknown harness id (EPIC-08 US-0803)', async () => {
+    expect(await setProjectSettings('/p/a', { harnessTabs: ['opencode', 'claude', 'claude'] })).toMatchObject({
+      harnessTabs: ['claude', 'opencode']
+    });
+    expect((await getSettings()).projectSettings['/p/a'].harnessTabs).toEqual(['claude', 'opencode']);
+    await expect(setProjectSettings('/p/a', { harnessTabs: ['claude', 'codex'] })).rejects.toThrow(/codex/);
+    await expect(setProjectSettings('/p/a', { harnessTabs: [] })).rejects.toThrow();
+
+    await fs.writeFile(FILE, JSON.stringify({ projectSettings: { '/p/a': { harnessTabs: ['bogus'] }, '/p/b': { harnessTabs: ['opencode', 'x'] } } }));
+    const s = await getSettings();
+    expect(s.projectSettings['/p/a']).not.toHaveProperty('harnessTabs'); // US-0801's single choice applies
+    expect(s.projectSettings['/p/b'].harnessTabs).toEqual(['opencode']);
+  });
+
   it('keeps both changes when two writes run at the same time (FR3.5)', async () => {
     await Promise.all([
       setSettings({ openProjects: ['/p/a', '/p/b'], activeProject: '/p/b' }),
