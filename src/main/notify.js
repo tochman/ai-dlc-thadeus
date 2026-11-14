@@ -13,9 +13,17 @@ export const notificationTitle = (q) => t('app.notification.title', { project: S
 export const gateText = (q) =>
   q.nextStage ? t('app.question.gateNext', { stage: q.stage ?? '?', next: q.nextStage }) : t('app.question.gate', { stage: q.stage ?? '?' });
 
+/** An engine ask (QUESTION_ASKED, EPIC-00 US-0006) has no logged text: name what it asks. Same keys as the popup. */
+export const askText = (q) =>
+  q.ask === 'plan-approval'
+    ? t('app.question.askPlan', { stage: q.stage ?? '?' })
+    : q.ask === 'scope-confirm'
+      ? t('app.question.askScope')
+      : t('app.question.askOther', { type: q.ask });
+
 /** The question, or the gate text for a gate, cut to about 120 characters. */
 export function notificationBody(q) {
-  const text = q.kind === 'gate' ? gateText(q) : String(q.text ?? '');
+  const text = q.kind === 'gate' ? gateText(q) : q.ask ? askText(q) : String(q.text ?? '');
   const flat = text.replace(/\s+/g, ' ').trim();
   return flat.length > MAX_BODY ? `${flat.slice(0, MAX_BODY - 1)}…` : flat;
 }

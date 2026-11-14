@@ -11,7 +11,7 @@ vi.mock('@xterm/xterm', () => ({
     constructor() {
       const rows = [];
       screens.push(rows);
-      this.buffer = { active: { viewportY: 0, getLine: (y) => (y < rows.length ? { isWrapped: false, translateToString: () => rows[y] } : undefined) } };
+      this.buffer = { active: { viewportY: 0, baseY: 0, getLine: (y) => (y < rows.length ? { isWrapped: false, translateToString: () => rows[y] } : undefined) } };
     }
     loadAddon() {}
     open() {}
@@ -198,20 +198,29 @@ describe('TerminalPanel', () => {
     await renderPanel();
     act(() => terminal.setView({ open: true, active: 'shell' }));
     const gate = { kind: 'gate' };
-    expect(() => terminal.answer(gate, { index: 1 })).toThrow('visar ingen fråga'); // nothing on screen: no keys
+    const now = { waitMs: 0 }; // no wait for a picker to be drawn
+    await expect(terminal.answer(gate, { index: 1 }, now)).rejects.toThrow('visar ingen fråga'); // nothing on screen: no keys
     expect(window.bridge.ptyWrite).not.toHaveBeenCalled();
 
     screens.at(-1).push('Klart. Hur vill du gå vidare?', '', '❯ 1. Approve', '     Fortsätt', '  2. Request Changes', '  3. Type something.');
-    act(() => terminal.answer(gate, { index: 1 }));
+    await act(() => terminal.answer(gate, { index: 1 }, now));
     expect(window.bridge.ptyWrite).toHaveBeenCalledWith('pty-agent', '2');
     expect(terminal.view.active).toBe('shell');
 
-    expect(() => terminal.answer({ kind: 'question', options: ['Fritt'] }, { own: 'x' })).toThrow('andra val'); // another picker
+    await expect(terminal.answer({ kind: 'question', options: ['Fritt'] }, { own: 'x' }, now)).rejects.toThrow('andra val'); // another picker
     screens.at(-1).length = 0; // the picker is gone: a free-text question in the chat
-    act(() => terminal.answer({ kind: 'question', options: ['Fritt'] }, { own: 'Både och' }));
+    await act(() => terminal.answer({ kind: 'question', options: ['Fritt'] }, { own: 'Både och' }, now));
     expect(window.bridge.ptyWrite).toHaveBeenLastCalledWith('pty-agent', 'Både och\r');
     act(() => terminal.setAgent({ harness: null }));
-    expect(() => terminal.answer({ kind: 'question', options: [] }, { own: 'x' })).toThrow();
+    await expect(terminal.answer({ kind: 'question', options: [] }, { own: 'x' }, now)).rejects.toThrow();
+  });
+
+  it('answer() waits for a picker drawn just after the question was logged (EPIC-00 US-0006)', async () => {
+    await renderPanel();
+    const sent = terminal.answer({ kind: 'gate' }, { index: 0 }, { waitMs: 3000 });
+    setTimeout(() => screens.at(-1).push('❯ 1. Approve', '  2. Request Changes', '  3. Type something.'), 400);
+    await act(() => sent);
+    expect(window.bridge.ptyWrite).toHaveBeenCalledWith('pty-agent', '1');
   });
 });
 

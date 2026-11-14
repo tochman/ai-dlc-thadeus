@@ -2,6 +2,10 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import QuestionPopup, { ARRIVAL_MS, OVERDUE_MS } from '../../src/renderer/QuestionPopup.jsx';
 import { HARNESSES } from '../../src/shared/harnesses.js';
+import { pendingQuestions } from '../../src/main/questions.js';
+import { mergeAudits } from '../../src/main/parsers/audit.js';
+import { waitForAnswer } from '../../src/renderer/picker.js';
+import { fixture } from '../fixtures/picker/index.js';
 
 const harness = (id) => HARNESSES.find((h) => h.id === id);
 
@@ -164,5 +168,67 @@ describe('QuestionPopup (US-0505)', () => {
     act(() => vi.advanceTimersByTime(ARRIVAL_MS));
     expect(screen.getByTestId('question-popup-status').textContent).toContain('kanske inte kom fram');
     expect(props.onSend).toHaveBeenCalledTimes(1); // it does not ask or send again
+  });
+});
+
+describe('QuestionPopup against the real picker (EPIC-00 US-0006)', () => {
+  const where = { project: { projectId: 'p1', name: 'aidlc-dash' }, intent: '261114-custom-plans' };
+  const block = (fields, i) =>
+    Object.entries({ Timestamp: new Date(Date.UTC(2026, 10, 14, 9, 0, i)).toISOString(), ...fields })
+      .map(([k, v]) => `**${k}**: ${v}`)
+      .join('\n');
+  const audit = (...rows) => mergeAudits([{ source: 'host.md', text: rows.map(block).join('\n\n---\n\n') }]);
+  const asked = {
+    Event: 'DECISION_RECORDED',
+    Stage: 'requirements-analysis',
+    Decision: 'How would you like to answer the questions?',
+    Options: "Guide me (walk through each question interactively here),I'll edit the file (fill in the file),Chat (discuss freely; you extract the decisions)",
+    'Question Id': '6530554d'
+  };
+
+  it('sends the key of the picker drawn after the click, and closes on the following QUESTION_ANSWERED', async () => {
+    let lines = fixture('no-picker'); // the audit row came first: Claude Code has not drawn the picker yet
+    const typed = [];
+    const onSend = vi.fn(async (q, answer) => {
+      const { found } = await waitForAnswer(() => [{ tab: 'agent:0', lines }], q, answer, { waitMs: 3000, stepMs: 50 });
+      if (found.error) return { ok: false, error: found.error };
+      typed.push(...found.keys);
+      return { ok: true };
+    });
+    const before = pendingQuestions(audit(asked), where);
+    expect(before.map((q) => q.options)).toEqual([['Guide me', "I'll edit the file", 'Chat']]);
+    const { rerender } = render(<QuestionPopup {...base({ onSend })} questions={before} />);
+
+    fireEvent.click(screen.getAllByTestId('question-popup-choice')[0]);
+    expect(screen.getAllByTestId('question-popup-choice').every((b) => b.disabled)).toBe(true); // no second send while it waits
+    expect(screen.queryByTestId('question-popup-status')).toBeNull();
+    setTimeout(() => (lines = fixture('single')), 300);
+    await waitFor(() => expect(screen.getByTestId('question-popup-status').textContent).toBe('Skickat till Claude'), { timeout: 3000 });
+    expect(typed).toEqual(['1']);
+    expect(onSend).toHaveBeenCalledTimes(1);
+
+    const after = pendingQuestions(audit(asked, { Event: 'QUESTION_ANSWERED', Stage: 'requirements-analysis', 'Person Reply': 'Guide me' }), where);
+    rerender(<QuestionPopup {...base({ onSend })} questions={after} />);
+    expect(screen.queryByTestId('question-popup-title')).toBeNull();
+  });
+
+  it('a batch question offers only the terminal and says why', () => {
+    const [q] = pendingQuestions(audit({ ...asked, Decision: 'Q1, Q2', Options: '|Q1: A. Every switch|Q1: B. Only|Q2: A. Here|Q2: B. There' }), where);
+    render(<QuestionPopup {...base()} questions={[q]} />);
+    expect(screen.queryAllByTestId('question-popup-choice')).toEqual([]);
+    expect(screen.getByTestId('question-popup-batch').textContent).toContain('Q1: A. Every switch / B. Only');
+    expect(screen.getByTestId('question-popup-batch-note').textContent).toBe('AI-DLC ställer 2 frågor på en gång, och dem kan popupen inte svara på. Svara i terminalen.');
+    expect(screen.getByTestId('question-popup-own').disabled).toBe(true);
+    expect(screen.getByTestId('question-popup-terminal').disabled).toBe(false);
+  });
+
+  it('a plan-approval ask is named and offers its exact options', () => {
+    const [q] = pendingQuestions(
+      audit({ Event: 'QUESTION_ASKED', 'Question Id': '32a59f72', 'Question Type': 'plan-approval', Stage: 'code-generation', Options: '["Approve Plan","Request Changes","I\'ll edit the files"]' }),
+      where
+    );
+    render(<QuestionPopup {...base()} questions={[q]} />);
+    expect(screen.getByText('Godkänn planen för code-generation')).toBeTruthy();
+    expect(screen.getAllByTestId('question-popup-choice').map((b) => b.textContent)).toEqual(['1Approve Plan', '2Request Changes', "3I'll edit the files"]);
   });
 });

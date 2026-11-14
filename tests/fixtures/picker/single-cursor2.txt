@@ -1,0 +1,18 @@
+⏺ I've created 3 questions in requirements-analysis-questions.md.
+
+────────────────────────────────────────────────────────────────────────────────
+ □ Answer mode
+
+How would you like to answer the questions?
+
+  1. Guide me
+     Walk through each question interactively here
+❯ 2. I'll edit the file
+     Fill in the answers in the file directly
+  3. Chat
+     Discuss freely; the decisions are taken from the conversation
+  4. Type something.
+────────────────────────────────────────────────────────────────────────────────
+  5. Chat about this
+
+Enter to select · ↑/↓ to navigate · Esc to cancel

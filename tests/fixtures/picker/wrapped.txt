@@ -1,0 +1,16 @@
+────────────────────────────────────────────────────────────
+ □ Install
+
+After installing 0.2.3: does it start, show 0.2.3 in Om
+T.H.A.D.E.U.S. and open a project?
+
+❯ 1. I install the DMG now and confirm that it starts, shows
+     0.2.3 and opens a project
+     You check it on this Mac
+  2. Accept failure: keep them open and continue
+  3. Abort
+  4. Type something.
+────────────────────────────────────────────────────────────
+  5. Chat about this
+
+Enter to select · ↑/↓ to navigate · Esc to cancel

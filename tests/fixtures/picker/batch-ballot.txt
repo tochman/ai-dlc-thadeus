@@ -1,0 +1,13 @@
+────────────────────────────────────────────────────────────────────────────────
+←  ☒ Plats  ☐ Ljud  ✔ Submit  →
+
+Ska systemnotisen låta?
+
+  1. Ja
+❯ 2. Nej
+     Tyst notis
+  3. Type something.
+────────────────────────────────────────────────────────────────────────────────
+  4. Chat about this
+
+Enter to select · Tab/Arrow keys to navigate · Esc to cancel

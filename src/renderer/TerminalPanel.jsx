@@ -85,6 +85,11 @@ function TermSession({ projectId, kind, tab = kind, testId = kind, harness, quie
         focus: () => termRef.current?.focus(),
         /** The visible rows as text, wrapped rows joined (the question popup reads the picker, EPIC-00 US-0004). */
         screen: () => screenLines(termRef.current),
+        /** Where the viewport sits in the buffer: viewportY < baseY means scrolled up (US-0006 debug only). */
+        view: () => {
+          const term = termRef.current;
+          return { rows: term?.rows, viewportY: term?.buffer?.active?.viewportY, baseY: term?.buffer?.active?.baseY };
+        },
         restart: async () => {
           const id = idRef.current;
           idRef.current = null; // the old session's exit event is ignored
@@ -242,12 +247,19 @@ function useTwoBusyWarning(busyCount) {
  * The agent tab runs `terminal.harness` (US-0801); while it is null (detection runs) or `terminal.harnessProblem`
  * is set, nothing starts there, and `onChooseHarness` opens the project settings (FR5.1).
  */
-/** The viewport's rows as text; a row the terminal wrapped is joined to the one before it. */
+/** Scrollback rows read above the live screen, so a picker taller than the terminal is still read whole (US-0006). */
+const LOOKBACK = 40;
+
+/**
+ * The live screen's rows as text (the bottom of the buffer, not the scrolled viewport, EPIC-00 US-0006), with up to
+ * LOOKBACK rows of scrollback above it; a row the terminal wrapped is joined to the one before it.
+ */
 export function screenLines(term) {
   const buf = term?.buffer?.active;
   if (!buf) return [];
+  const base = buf.baseY ?? 0;
   const lines = [];
-  for (let y = buf.viewportY; y < buf.viewportY + term.rows; y++) {
+  for (let y = Math.max(0, base - LOOKBACK); y < base + term.rows; y++) {
     const line = buf.getLine(y);
     if (!line) continue;
     const text = line.translateToString(true);

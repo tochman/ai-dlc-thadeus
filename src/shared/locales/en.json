@@ -80,7 +80,11 @@
       "mismatch": "{harness} shows other choices than the ones AI-DLC logged. Answer in the terminal.",
       "maybeLost": "Sent to {harness}, but the question is still waiting. The answer may not have arrived – check the terminal.",
       "noAgent": "The agent tab is not running yet. Answer in the terminal.",
-      "openTerminal": "Open the terminal"
+      "openTerminal": "Open the terminal",
+      "askPlan": "Approve the plan for {stage}",
+      "askScope": "Confirm the plan for the work",
+      "askOther": "AI-DLC asks ({type})",
+      "batch": "AI-DLC asks {n} questions at once, which the popup cannot answer. Answer in the terminal."
     },
     "notification": {
       "title": "{project}: AI-DLC is waiting for your answer"
