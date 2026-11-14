@@ -680,6 +680,9 @@
     "upToDate": "You have the latest version.",
     "confirmRestart": "An agent tab is working. Updating restarts the app and ends its terminal sessions. Update anyway?"
   },
+  "aboutDialog": {
+    "exit": "EXIT"
+  },
   "menu": {
     "about": "About {app}",
     "hide": "Hide {app}",

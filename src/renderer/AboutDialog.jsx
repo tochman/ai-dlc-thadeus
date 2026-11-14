@@ -1,10 +1,23 @@
-// "Om T.H.A.D.E.U.S." from the app menu (macOS) or Hjälp (Linux) (EPIC-04 US-0408): the splash screen's mark
-// and name plus the running version, the same value as the Om section in Inställningar (US-0405).
-// A native modal <dialog>; closes on Esc, Stäng or a click on the backdrop, and gives focus back.
+// "Om T.H.A.D.E.U.S." from the app menu (macOS) or Hjälp (Linux) (EPIC-04 US-0408), in the LCARS panel design
+// of US-0409: a rounded elbow frame (left arm, top and bottom bars) with small code labels, the name top right, the
+// full name, tagline and version in light bars with coloured end tabs, an EXIT block in the arm and a status row.
+// Layout and colour only follow the person's reference; every text is the app's own (NFR3), the code labels come
+// from the version and platform. A native modal <dialog>; closes on Esc, EXIT or a click on the backdrop, and gives
+// focus back.
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import AuctumMark from './AuctumMark.jsx';
 import { APP_FULL_NAME, APP_NAME, APP_TAGLINE } from '../shared/appName.js';
+
+const OS = { darwin: 'macOS', linux: 'Linux', win32: 'Windows' };
+
+/** The frame's code labels, from the app's own version and platform ("00-02", "04", "DAR", "000204"). */
+export function codeLabels(version, platform) {
+  const [a = 0, b = 0, c = 0] = String(version ?? '').split('.').map((n) => Number.parseInt(n, 10) || 0);
+  const pad = (n) => String(n).padStart(2, '0');
+  const os = String(platform ?? '').slice(0, 3).toUpperCase() || '–';
+  return [`${pad(a)}-${pad(b)}`, pad(c), os, `${pad(a)}${pad(b)}${pad(c)}`];
+}
 
 /** @param {{open: boolean, onClose: () => void}} props */
 export default function AboutDialog({ open, onClose }) {
@@ -12,6 +25,7 @@ export default function AboutDialog({ open, onClose }) {
   const ref = useRef(null);
   const returnFocus = useRef(null);
   const [version, setVersion] = useState(null);
+  const platform = window.bridge?.platform ?? null;
 
   useEffect(() => {
     const d = ref.current;
@@ -40,6 +54,13 @@ export default function AboutDialog({ open, onClose }) {
     };
   }, [open]);
 
+  const codes = codeLabels(version, platform);
+  const bars = [
+    ['amber', APP_FULL_NAME, 'about-dialog-fullname'],
+    ['steel-light', APP_TAGLINE, 'about-dialog-tagline'],
+    ['coral-soft', `v${version ?? '–'}`, 'about-dialog-version-bar']
+  ];
+
   return (
     <dialog
       ref={ref}
@@ -55,24 +76,56 @@ export default function AboutDialog({ open, onClose }) {
       data-testid="about-dialog"
     >
       {open && (
-        <div className="about-dialog-body">
+        <div className="about-lcars">
           <h2 id="about-dialog-title" className="sr-only">
             {t('menu.about', { app: APP_NAME })}
           </h2>
-          <AuctumMark size={160} className="splash-mark" />
-          <div className="splash-name">
-            <span className="splash-name-main">{APP_NAME}</span>
-            <span className="splash-name-sub">{APP_FULL_NAME}</span>
-            <span className="splash-name-tagline">{APP_TAGLINE}</span>
-          </div>
-          <p className="about-dialog-version" data-testid="about-dialog-version">
-            {t('settings.about.version', { version: version ?? '–' })}
-          </p>
-          <div className="setup-actions">
-            <button type="button" className="btn" onClick={onClose} data-testid="about-dialog-close">
-              {t('common.close')}
+          <div className="about-lcars-arm">
+            <span className="about-lcars-code" aria-hidden="true">
+              {codes[0]}
+            </span>
+            <span className="about-lcars-code" aria-hidden="true">
+              {codes[1]}
+            </span>
+            <button type="button" className="about-lcars-exit" onClick={onClose} data-testid="about-dialog-close">
+              {t('aboutDialog.exit')}
             </button>
+            <span className="about-lcars-code" aria-hidden="true">
+              {codes[2]}
+            </span>
           </div>
+          <div className="about-lcars-top" aria-hidden="true">
+            <span className="about-lcars-code about-lcars-code--bar">{codes[3]}</span>
+          </div>
+          <div className="about-lcars-main">
+            <p className="about-lcars-title">{APP_NAME}</p>
+            <div className="about-lcars-content">
+              <AuctumMark size={120} className="splash-mark" />
+              <div className="about-lcars-bars">
+                {bars.map(([tone, text, testId]) => (
+                  <div key={testId} className="about-lcars-row">
+                    <div className="about-lcars-bar">
+                      <span className="about-lcars-bar-text" data-testid={testId}>
+                        {text}
+                      </span>
+                      <span className={`about-lcars-tab about-lcars-tone--${tone}`} aria-hidden="true" />
+                      <span className={`about-lcars-line about-lcars-tone--${tone}`} aria-hidden="true" />
+                    </div>
+                    <span className="about-lcars-bullet" aria-hidden="true">
+                      <span className={`about-lcars-dot about-lcars-tone--${tone}`} />
+                      <span className={`about-lcars-hair about-lcars-tone--${tone}`} />
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+          <div className="about-lcars-foot" aria-hidden="true" />
+          <p className="about-lcars-status">
+            <span data-testid="about-dialog-version">{t('settings.about.version', { version: version ?? '–' })}</span>
+            <span aria-hidden="true"> · </span>
+            <span data-testid="about-dialog-platform">{OS[platform] ?? platform ?? '–'}</span>
+          </p>
         </div>
       )}
     </dialog>
