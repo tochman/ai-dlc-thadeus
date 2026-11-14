@@ -69,6 +69,33 @@ describe('getSetupInfo', () => {
     expect(info.preview).toMatchObject({ create: 376, remove: 0, conflict: 0 });
     await expect(getSetupInfo(root, { harness: '--yes', exec })).rejects.toThrow(/Okänd harness/);
   });
+
+  // Regression: in a project with Claude Code and opencode, the plugin list needs --harness; when the harness
+  // being added is not installed yet, aidlc refuses it, so an installed one answers instead.
+  it('reads the plugins through an installed harness when the project has several', async () => {
+    const root = await tmpRoot();
+    const info = await getSetupInfo(root, {
+      harness: 'kiro',
+      exec: fakeExec({
+        'git rev-parse --is-inside-work-tree': 'true\n',
+        'aidlc --version': 'aidlc 2.11.3\n',
+        [`aidlc --project-dir ${root} config --harness kiro --dry-run`]: 'create=40 update=0 merge=0 preserve=300 remove=0 conflict=0\n',
+        // no `--harness kiro` and no bare form: both are refused in this project
+        'aidlc config project --show --json --harness claude': PLUGINS_OUTPUT
+      })
+    });
+    expect(info.plugins).toEqual(['aidlc', 'feature-docs']);
+    expect(info.warning).toBeUndefined();
+  });
+
+  it('warns with the last error when no harness can read the plugins', async () => {
+    const root = await tmpRoot();
+    const info = await getSetupInfo(root, {
+      exec: fakeExec({ 'git rev-parse --is-inside-work-tree': 'true\n', 'aidlc --version': 'aidlc 2.11.3\n' })
+    });
+    expect(info.plugins).toEqual([]);
+    expect(info.warning).toMatch(/ENOENT/);
+  });
 });
 
 describe('parsePreview (F-02)', () => {
@@ -121,11 +148,28 @@ describe('runSetup (US-0802 FR2)', () => {
     expect(calls).toEqual([
       { file: 'git', args: ['init', '-b', 'main'] },
       { file: 'aidlc', args: ['--project-dir', ROOT, 'config', '--harness', 'opencode', '--yes'] },
-      { file: 'aidlc', args: ['config', 'project', '--plugins', 'feature-docs', '--yes'] },
-      { file: 'aidlc', args: ['config', 'models', '--preset', 'balanced', '--project', '--yes'] }
+      { file: 'aidlc', args: ['config', 'project', '--plugins', 'feature-docs', '--harness', 'opencode', '--yes'] },
+      { file: 'aidlc', args: ['config', 'models', '--preset', 'balanced', '--project', '--harness', 'opencode', '--yes'] }
     ]);
     expect(result.ok).toBe(true);
     expect(result.steps.map((s) => s.ok)).toEqual([true, true, true, true]);
+  });
+
+  // Regression: with two harnesses installed, aidlc refuses `config project` / `config models` without
+  // --harness ("multiple project harnesses are present"); adding a harness always leaves two.
+  it('names the harness on the plugin and preset steps when adding a harness', async () => {
+    const refused = 'error: multiple project harnesses are present; pass one --harness <name>';
+    const { exec } = recordingExec({
+      'aidlc config project --plugins feature-docs --yes': refused,
+      'aidlc config models --preset minimal --project --yes': refused
+    });
+    const result = await runSetup(ROOT, { harness: 'claude', mode: 'add', plugins: ['feature-docs'], preset: 'minimal' }, info('claude'), { exec });
+    expect(result.ok).toBe(true);
+    expect(result.steps.map((s) => s.command)).toEqual([
+      `aidlc --project-dir ${ROOT} config --harness claude --yes`,
+      'aidlc config project --plugins feature-docs --harness claude --yes',
+      'aidlc config models --preset minimal --project --harness claude --yes'
+    ]);
   });
 
   it('stops at the first failing step and returns the CLI error (FR2.2)', async () => {

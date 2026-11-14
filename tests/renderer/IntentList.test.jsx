@@ -1,6 +1,10 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
-import IntentList from '../../src/renderer/IntentList.jsx';
+import { HARNESSES } from '../../src/shared/harnesses.js';
+
+const terminal = { state: vi.fn(() => 'idle'), type: vi.fn(), sequence: vi.fn(), harness: HARNESSES.find((h) => h.id === 'claude') };
+vi.mock('../../src/renderer/TerminalContext.jsx', () => ({ useTerminal: () => terminal }));
+const { default: IntentList } = await import('../../src/renderer/IntentList.jsx');
 
 // Same shape loadIntentList returns (mergeIntents + per-intent summary).
 const base = { uuid: null, missingOnDisk: false, missingInIndex: false, active: false, done: 0, executed: 0, request: null };
@@ -90,5 +94,18 @@ describe('IntentList', () => {
 
     rerender(<IntentList intents={intents} selected={null} onSelect={vi.fn()} cost={{ available: false, reason: 'saknas' }} />);
     expect(screen.queryAllByTestId('intent-list-row-cost')).toEqual([]);
+  });
+
+  it('shows Fortsätt only under the selected, unfinished intent: not for the active one unless selected, never for complete', () => {
+    const resumeRow = () => screen.queryByTestId('intent-resume')?.closest('li').querySelector('.intent-slug').textContent;
+    const { rerender } = render(<IntentList intents={intents} selected={null} onSelect={vi.fn()} />);
+    expect(screen.queryByTestId('intent-resume')).toBeNull(); // the active intent too, while not selected
+
+    rerender(<IntentList intents={intents} selected="261112-epic29-small-k2-fixes" onSelect={vi.fn()} />);
+    expect(screen.getAllByTestId('intent-resume')).toHaveLength(1);
+    expect(resumeRow()).toBe('epic29-small-k2-fixes');
+
+    rerender(<IntentList intents={intents} selected="261110-epic02-finish" onSelect={vi.fn()} />);
+    expect(screen.queryByTestId('intent-resume')).toBeNull(); // finished
   });
 });

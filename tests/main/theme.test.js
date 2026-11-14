@@ -69,3 +69,41 @@ describe('LCARS labels in both languages (EPIC-07 US-0701 FR8)', () => {
     expect(rule('.lcars-block--tab')).toMatch(/max-width: 132px;/);
   });
 });
+
+describe('one LCARS select everywhere (hotfix)', () => {
+  it('gives every <select> in the renderer the shared lcars-select class', () => {
+    const selects = readdirSync(RENDERER)
+      .filter((f) => f.endsWith('.jsx'))
+      .flatMap((f) => (readFileSync(path.join(RENDERER, f), 'utf8').match(/<select\b[^>]*/g) ?? []).map((tag) => [f, tag]));
+    expect(selects.length).toBeGreaterThanOrEqual(12);
+    for (const [file, tag] of selects) expect([file, /className="lcars-select[ "]/.test(tag)]).toEqual([file, true]);
+  });
+
+  it('styles the closed control, the open list and its options with customizable select', () => {
+    expect(css).toMatch(/\.lcars-select, \.lcars-select::picker\(select\) \{ appearance: base-select; \}/);
+    expect(css).toMatch(/\n\.lcars-select::picker\(select\) \{[^}]*background: var\(--bg\);/);
+    expect(rule('.lcars-select::picker-icon')).toMatch(/background: var\(--amber\);/);
+    expect(css).toMatch(/\.lcars-select option \{[^}]*padding:/);
+    expect(css).toMatch(/\.lcars-select option:checked \{ background: var\(--amber\); color: var\(--on-light\); \}/);
+    expect(css).toMatch(/\.lcars-select option::checkmark \{/);
+    expect(css).not.toMatch(/(^|[\s,])select(:hover)?\s*\{/); // no bare select rule left beside the shared one
+  });
+
+  it('keeps the bar select as tall as the bar, borderless and on the dark segment', () => {
+    const bar = rule('.lcars-select--bar');
+    expect(bar).toMatch(/height: var\(--bar\);/);
+    expect(bar).toMatch(/background: var\(--steel-deep\);/);
+    expect(bar).toMatch(/border: 0;/);
+  });
+});
+
+describe('terminal elbow', () => {
+  it('sizes the faded mark from the block, with equal margins, and puts the label at the bottom', () => {
+    const mark = rule('.terminal-elbow-mark');
+    expect(mark).toMatch(/width: calc\(100% - 2 \* var\(--gap\)\);/);
+    expect(mark).toMatch(/left: var\(--gap\);/);
+    expect(mark).not.toMatch(/width: \d+px/);
+    expect(rule('.terminal-elbow-label')).toMatch(/margin-top: auto;/);
+    expect(rule('.terminal-elbow')).toMatch(/align-items: flex-end;/);
+  });
+});

@@ -5,14 +5,23 @@ import { formatCost } from './format.js';
 import { t } from '../shared/i18n.js';
 
 /**
- * Segmented bar. `segs` is a list of [tone, size]: a size up to 12 grows (flex), a larger one is a fixed px width.
- * @param {{segs: Array<[string, number]>, className?: string}} props
+ * Segmented bar. `segs` is a list of [tone, size, content?]: a size up to 12 grows (flex), a larger one is a fixed px
+ * width. A segment with content holds it (e.g. a small control); only then is the bar left in the accessibility tree.
+ * @param {{segs: Array<[string, number, import('react').ReactNode?]>, className?: string}} props
  */
 export function Bar({ segs, className = '' }) {
+  const holds = segs.some(([, , content]) => content);
   return (
-    <div className={`lcars-bar ${className}`} aria-hidden="true">
-      {segs.map(([tone, size], i) => (
-        <span key={i} className={`lcars-seg lcars-seg--${tone}`} style={size > 12 ? { width: size, flexShrink: 0 } : { flex: size }} />
+    <div className={`lcars-bar ${className}`} aria-hidden={holds ? undefined : 'true'}>
+      {segs.map(([tone, size, content], i) => (
+        <span
+          key={i}
+          className={`lcars-seg lcars-seg--${tone}${content ? ' lcars-seg--holds' : ''}`}
+          style={size > 12 ? { width: size, flexShrink: 0 } : { flex: size }}
+          aria-hidden={holds && !content ? 'true' : undefined}
+        >
+          {content || null}
+        </span>
       ))}
     </div>
   );

@@ -1,5 +1,5 @@
 // Narrow, named API for the sandboxed renderer. No generic invoke/send is exposed.
-import { contextBridge, ipcRenderer } from 'electron';
+import { contextBridge, ipcRenderer, webUtils } from 'electron';
 
 const call = (channel) => (...args) => ipcRenderer.invoke(channel, ...args);
 
@@ -32,6 +32,7 @@ contextBridge.exposeInMainWorld('bridge', {
   ptyWrite: call('pty:write'),
   ptyResize: call('pty:resize'),
   ptyKill: call('pty:kill'),
+  pathForFile: (file) => webUtils.getPathForFile(file), // a dropped File's path for the terminal; '' for non-disk files
   getGitStatus: call('git:status'),
   gitFetch: call('git:fetch'),
   getRemoteChanges: call('git:remoteChanges'),
@@ -43,6 +44,9 @@ contextBridge.exposeInMainWorld('bridge', {
   getStoryLinks: call('features:storyLinks'),
   getProjectSettings: call('projectSettings:get'),
   setProjectSettings: call('projectSettings:set'),
+  getAidlcConfig: call('config:get'), // read-only AI-DLC configuration for one harness (EPIC-09 US-0901)
+  getWorkingAgents: call('agents:working'), // the agents working now in the active intent (US-0901)
+  onConfigChanged: subscribe('config:changed'),
   onFeaturesChanged: subscribe('features:changed'),
   onProjectChanged: subscribe('project:changed'),
   onProjectDetected: subscribe('project:detected'),

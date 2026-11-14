@@ -1,5 +1,5 @@
 // Features view (EPIC-06 US-0602): epics and user stories from the project's feature docs. Read-only.
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { FileContent } from './ArtifactReader.jsx';
 import { Frame } from './Lcars.jsx';
@@ -74,10 +74,10 @@ function FileActions({ projectId, rel }) {
   );
 }
 
-function StoryDetail({ story, links, onOpenIntent }) {
+function StoryDetail({ id, story, links, onOpenIntent }) {
   const { t } = useTranslation();
   return (
-    <div className="file-view features-story" data-testid="features-view-story-detail">
+    <div id={id} className="file-view features-story" role="region" aria-label={story.id} data-testid="features-view-story-detail">
       {links.length > 0 && (
         <p className="features-links">
           <span className="field-label">{t('features.intents')}</span>
@@ -100,7 +100,11 @@ function EpicDetail({ projectId, epic, links, storyId, setStoryId, onOpenIntent 
   const stories = epic.parsed?.stories ?? [];
   const priorities = [...new Set(stories.map((s) => s.priority).filter(Boolean))];
   const shown = stories.filter((s) => (!status || s.status === status) && (!priority || s.priority === priority));
-  const story = stories.find((s) => s.id === storyId);
+  const openRef = useRef(null);
+  // The opened story, from a click or an intent's story link, is scrolled into view (FR2.6).
+  useEffect(() => {
+    openRef.current?.scrollIntoView?.({ block: 'nearest' });
+  }, [storyId]);
 
   return (
     <div className="features-epic">
@@ -108,8 +112,11 @@ function EpicDetail({ projectId, epic, links, storyId, setStoryId, onOpenIntent 
         <h2>
           {epic.id}: {epic.parsed?.title || epic.title}
         </h2>
-        {epic.parsed?.description && <p>{epic.parsed.description}</p>}
-        {epic.parsed?.statusLine && <p className="muted">{epic.parsed.statusLine}</p>}
+        {epic.parsed?.intro && stories.length > 0 && (
+          <div className="features-epic-intro" data-testid="features-view-epic-intro">
+            <FileContent rel="intro.md" content={epic.parsed.intro} />
+          </div>
+        )}
         {epic.file && <FileActions projectId={projectId} rel={epic.file} />}
         {(epic.parsed?.warnings ?? []).map((w) => (
           <p key={w} className="tag-warn" role="note">
@@ -128,7 +135,7 @@ function EpicDetail({ projectId, epic, links, storyId, setStoryId, onOpenIntent 
           <div className="filters">
             <label className="field">
               <span className="field-label">{t('features.statusLabel')}</span>
-              <select value={status} onChange={(e) => setStatus(e.target.value)} data-testid="features-view-filter-status">
+              <select className="lcars-select" value={status} onChange={(e) => setStatus(e.target.value)} data-testid="features-view-filter-status">
                 <option value="">{t('features.all')}</option>
                 {STATUSES.map((k) => (
                   <option key={k} value={k}>
@@ -139,7 +146,7 @@ function EpicDetail({ projectId, epic, links, storyId, setStoryId, onOpenIntent 
             </label>
             <label className="field">
               <span className="field-label">{t('features.priority')}</span>
-              <select value={priority} onChange={(e) => setPriority(e.target.value)} data-testid="features-view-filter-priority">
+              <select className="lcars-select" value={priority} onChange={(e) => setPriority(e.target.value)} data-testid="features-view-filter-priority">
                 <option value="">{t('features.all')}</option>
                 {priorities.map((p) => (
                   <option key={p} value={p}>
@@ -150,32 +157,40 @@ function EpicDetail({ projectId, epic, links, storyId, setStoryId, onOpenIntent 
             </label>
           </div>
           <ul className="intent-rows">
-            {shown.map((s) => (
-              <li key={s.id}>
-                <button
-                  className={`intent-row ${s.id === storyId ? 'is-selected' : ''}`}
-                  aria-current={s.id === storyId}
-                  onClick={() => setStoryId(s.id)}
-                  data-testid="features-view-story"
-                >
-                  <span className="intent-row-top">
-                    <span className="intent-slug">
-                      {s.id}: {s.title}
+            {shown.map((s) => {
+              const open = s.id === storyId;
+              return (
+                <li key={s.id} ref={open ? openRef : undefined}>
+                  <button
+                    className={`intent-row features-story-row ${open ? 'is-selected' : ''}`}
+                    aria-expanded={open}
+                    aria-controls={open ? `story-${s.id}` : undefined}
+                    onClick={() => setStoryId(open ? null : s.id)}
+                    data-testid="features-view-story"
+                  >
+                    <span className="intent-row-top">
+                      <span className="intent-slug">
+                        {s.id}: {s.title}
+                      </span>
+                      <StatusBadge status={s.status} text={s.statusText} />
                     </span>
-                    <StatusBadge status={s.status} text={s.statusText} />
-                  </span>
-                  <span className="intent-row-meta">
-                    {s.priority && <span>{t('features.priorityValue', { value: s.priority })}</span>}
-                    {s.complexity && <span>{t('features.complexityValue', { value: s.complexity })}</span>}
-                    <span>{t('features.criteria', { done: s.done, total: s.total })}</span>
-                    {links[s.id] && <span>{t('features.intentCount', { n: links[s.id].length })}</span>}
-                  </span>
-                </button>
-              </li>
-            ))}
+                    <span className="intent-row-meta">
+                      {s.priority && <span>{t('features.priorityValue', { value: s.priority })}</span>}
+                      {s.complexity && <span>{t('features.complexityValue', { value: s.complexity })}</span>}
+                      <span>{t('features.criteria', { done: s.done, total: s.total })}</span>
+                      {links[s.id] && <span>{t('features.intentCount', { n: links[s.id].length })}</span>}
+                    </span>
+                  </button>
+                  {open && (
+                    <div className="features-story-reveal">
+                      <StoryDetail id={`story-${s.id}`} story={s} links={links[s.id] ?? []} onOpenIntent={onOpenIntent} />
+                    </div>
+                  )}
+                </li>
+              );
+            })}
             {shown.length === 0 && <li className="muted">{t('features.noMatch')}</li>}
           </ul>
-          {story && <StoryDetail story={story} links={links[story.id] ?? []} onOpenIntent={onOpenIntent} />}
         </>
       )}
     </div>

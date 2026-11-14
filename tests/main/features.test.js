@@ -29,6 +29,10 @@ describe('feature docs parser', () => {
       statusLine: '🚧 Built, not released.',
       warnings: []
     });
+    // The intro is everything between the title and `## User Stories`, kept as Markdown for the view.
+    expect(epic.intro).toMatch(/^> Epic file — for an overview of all epics see \[FEATURES\.md\]\(\.\.\/FEATURES\.md\)\./);
+    expect(epic.intro).toMatch(/\*\*Status \(2026-11-13\):\*\* 🚧 Built, not released\.$/);
+    expect(epic.intro).not.toMatch(/User Stories|US-0101: Open/);
     const [first, second] = epic.stories;
     expect(first).toMatchObject({ id: 'US-0101', title: 'Open a project', status: 'done', statusText: 'Done', priority: 'High', complexity: 'Low', done: 2, total: 2 });
     expect(first).toMatchObject({ asA: 'developer', inOrderTo: 'see my work', wouldLike: 'open a project folder', dependencies: 'None', notes: null });

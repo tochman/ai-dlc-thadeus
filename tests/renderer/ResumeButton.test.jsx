@@ -43,13 +43,20 @@ describe('ResumeButton', () => {
     expect(terminal.type).not.toHaveBeenCalled();
   });
 
-  it('types nothing while Claude is busy, says so as text, and shows no button for complete (FR2.4, FR2.1)', () => {
+  it('is disabled with the reason while the agent works, enabled again when idle, and absent when complete (FR2.4, FR2.1)', () => {
     terminal.state.mockImplementation(() => 'busy');
     const { rerender } = render(<ResumeButton intent={intent} activeDirName="261113-workflow-control" />);
-    fireEvent.click(screen.getByTestId('intent-resume'));
+    const button = screen.getByTestId('intent-resume');
+    expect(button.disabled).toBe(true);
+    expect(button.title).toBe(BUSY_MESSAGE);
+    fireEvent.click(button);
     expect(terminal.type).not.toHaveBeenCalled();
     expect(terminal.sequence).not.toHaveBeenCalled();
-    expect(screen.getByRole('status').textContent).toBe(BUSY_MESSAGE);
+
+    terminal.state.mockImplementation(() => 'idle');
+    rerender(<ResumeButton intent={{ ...intent }} activeDirName="261113-workflow-control" />);
+    expect(screen.getByTestId('intent-resume').disabled).toBe(false);
+    expect(screen.getByTestId('intent-resume').title).toBe('');
 
     rerender(<ResumeButton intent={{ ...intent, status: 'complete' }} activeDirName="261113-workflow-control" />);
     expect(screen.queryByTestId('intent-resume')).toBeNull();

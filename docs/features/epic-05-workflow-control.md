@@ -6,9 +6,9 @@
 
 > The console should not only show AI-DLC work but make it easy to steer: pick up an intent that stopped, switch between pieces of work and answer what the workflow is waiting for, without remembering slash commands. The app still never writes AI-DLC files itself. Every action goes through Claude in the embedded terminal, so AI-DLC's own checks and records stay in charge.
 
-**Stories:** US-0501, US-0502, US-0503, US-0504, US-0505
+**Stories:** US-0501, US-0502, US-0503, US-0504, US-0505, US-0506
 
-**Status (2026-11-14):** ✅ US-0501–US-0503 released in v0.2.0. ✅ US-0505 released in v0.2.1. US-0504 📋 Planned.
+**Status (2026-11-14):** ✅ US-0501–US-0503 released in v0.2.0. ✅ US-0505 released in v0.2.1 (answering from the popup added after release, merged to main but not released yet). US-0504 and US-0506 📋 Planned.
 
 ---
 
@@ -118,5 +118,24 @@
   - [x] **Settings:** "Ljud vid notis: På / Av" (default På), and "Frågor från Claude: Popup och notis / Bara popup / Av" in the app settings (later the settings view, US-0405), saved in the app's own `settings.json`. The default is Popup och notis.
   - [x] **Read-only:** the app writes no AI-DLC or project files and sends nothing to the terminal in this story. Question text from the audit log is shown as text, never as HTML.
   - [ ] **Not covered:** free-text questions Claude asks in the chat, and Claude Code's own permission prompts. They are not in the audit log. They would need Claude Code's `Notification` hook, which is set in Claude's settings and is a separate choice (a later story).
-  - [ ] **Later (not in this story):** answering straight from the popup by typing the chosen option into the Claude tab. This depends on how Claude Code's question picker takes keys, and is verified first.
+  - [x] **Later (not in this story):** answering straight from the popup by typing the chosen option into the Claude tab. Done in a UI hotfix with US-0901 (PR #18), merged to main but not released yet. Claude Code gets the option's digit, a gate gets 1 or 2, and the own-answer field types the text and presses Enter. opencode gets the own-answer field only, until its picker keys are checked.
 - **Dependencies:** US-0101 (watcher), EPIC-03 (audit parsing), US-0501 (Claude tab states), US-0402 (coral pulse)
+
+**US-0506: Answer Claude Code's and opencode's own questions in a dialog, and see their messages** 📋 Planned
+- As a **developer running an agent in the console while I do other things**, in order to **not miss anything the agent asks or tells me, AI-DLC or not**, I would like to **get every question and permission prompt from Claude Code or opencode as a dialog I can answer in, and see the agent's messages without opening the terminal**.
+- **Epic:** EPIC-05
+- **Priority:** High
+- **Complexity:** High
+- **Background:** US-0505 only sees AI-DLC's questions, because they are in the audit log. Claude Code's own questions (its question picker, permission prompts such as "Allow this command?") and its plain chat replies are not. Claude Code exposes them through hooks (`Notification` when it waits for input or permission, `Stop` when it finishes a reply, with the transcript path). opencode has its own plugin and event API. Reading the terminal output is the fallback.
+- **Acceptance Criteria:**
+  - [ ] **Questions and permission prompts** from Claude Code and opencode, not just AI-DLC's, open the same dialog. It shows the question, its options and the project, and you can answer in place: pick an option, approve or deny a permission, or type your own answer. The dialog never answers on its own.
+  - [ ] **Messages:** a side panel or a "latest message" line shows the agent's last reply per project, rendered as Markdown, with a notification when the app is in the background. The full history stays in the terminal.
+  - [ ] **Source per harness:**
+    - Claude Code: through its hooks.
+    - opencode: through its event API or plugin.
+    - Both are installed only after the person agrees, and the app shows what will be added to the harness settings first.
+    - Without them, the app falls back to what it can read from the terminal and says so.
+  - [ ] **Escalation and settings** work as in US-0505 (calm, then red; popup and notification, popup only, or off), with a separate on/off setting for messages.
+  - [ ] **Safety:** permission answers go only to the tab that asked. Nothing is approved automatically. Text is shown as text, never as HTML.
+- **Notes:** Added 2026-11-14 at the person's request ("answer questions from Claude or opencode in dialogs, not only from AI-DLC, and see messages from them").
+- **Dependencies:** US-0505, US-0801, US-0803

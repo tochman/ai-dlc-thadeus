@@ -6,9 +6,9 @@
 
 > AI-DLC runs on several AI coding tools ("harnesses"): Claude Code, opencode, Codex CLI, Kiro CLI, Cursor and GitHub Copilot. Each keeps its own engine folder (`.claude/`, `.aidlc/` for opencode, `.codex/`, `.kiro/`, `.cursor/`) beside the shared `aidlc/` workspace. The console is built around Claude today: the terminal tab runs `claude`, and setup runs `aidlc config --harness claude`. This epic lets the person choose another harness, for example opencode, per project, while the dashboard itself keeps working the same, since it reads the shared `aidlc/` records.
 
-**Stories:** US-0801, US-0802
+**Stories:** US-0801, US-0802, US-0803
 
-**Status (2026-11-14):** ✅ US-0801 and US-0802 released in v0.2.1 (Claude Code and opencode selectable in the agent tab; all six harnesses can be set up from the app).
+**Status (2026-11-14):** ✅ US-0801 and US-0802 released in v0.2.1 (Claude Code and opencode selectable in the agent tab; all six harnesses can be set up from the app). 📋 US-0803 planned (both harnesses side by side).
 
 ---
 
@@ -42,3 +42,17 @@
   - [x] The app writes no AI-DLC files itself. Everything goes through the official `aidlc` CLI, run by the app with fixed arguments (no shell).
 - **Notes:** All six harness ids were checked against aidlc 2.11.3 with `--dry-run`. Codex, Kiro, Cursor and Copilot install AI-DLC's files but can't run in the agent tab yet.
 - **Dependencies:** US-0503, US-0801
+
+**US-0803: Use Claude Code and opencode side by side in the same project** 📋 Planned
+- As a **developer who uses both Claude Code and opencode**, in order to **pick the tool that fits each task without switching the project over**, I would like to **have an agent tab for each installed harness in the same project, both running at once**.
+- **Epic:** EPIC-08
+- **Priority:** Medium
+- **Complexity:** Medium
+- **Acceptance Criteria:**
+  - [ ] A project with both harnesses installed shows one agent tab per selectable harness ("Claude", "opencode") beside the shell tab. Each runs its own CLI in the project root, with its own states (Ledig / Arbetar / Avslutad) and Restart.
+  - [ ] Which harness tabs are open is chosen per project in Projektinställningar (one or both), saved in the app's own `settings.json`. The single-harness choice from US-0801 stays the default for projects with one harness.
+  - [ ] Fortsätt, the quick commands, "Answer in …" and the setup offers go to a named tab. When both are open they go to the last one used, and the button names the tab ("Fortsätt i opencode").
+  - [ ] Busy checks (for example the refresh panel and EPIC-09's block on changing the active work's settings) count a project as busy when any of its agent tabs is "Arbetar".
+  - [ ] Both tabs work on the shared `aidlc/` records. When both are busy on the same active intent, the app warns once, in one sentence, that two agents are changing the same work.
+- **Notes:** Added 2026-11-14 at the person's request ("I see no reason why not"). Today the agent tab is a single `agent` session whose harness can be switched (US-0801).
+- **Dependencies:** US-0801, US-0802

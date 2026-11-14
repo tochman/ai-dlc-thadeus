@@ -14,7 +14,10 @@ export const HARNESSES = [
     cli: 'claude',
     selectable: true,
     markers: { dirs: ['.claude'] },
-    commands: { aidlc: '/aidlc' }
+    commands: { aidlc: '/aidlc' },
+    // Its question picker selects an option by its number key, so the question popup can answer it.
+    // opencode's picker keys are unconfirmed: there the popup offers its own free text only.
+    pickerKeys: true
   },
   {
     id: 'opencode',
@@ -33,7 +36,8 @@ export const HARNESSES = [
   },
   { id: 'codex', setupId: 'codex', label: 'Codex', name: 'Codex', cli: 'codex', selectable: false, markers: { dirs: ['.codex'] }, commands: {} },
   { id: 'kiro', setupId: 'kiro', label: 'Kiro', name: 'Kiro', cli: 'kiro-cli', selectable: false, markers: { dirs: ['.kiro'] }, commands: {} },
-  { id: 'cursor', setupId: 'cursor', label: 'Cursor', name: 'Cursor', cli: null, selectable: false, markers: { dirs: ['.cursor'] }, commands: {} },
+  // perAgentModels: false — the session or IDE picker chooses the model (US-0901 FR4.4).
+  { id: 'cursor', setupId: 'cursor', label: 'Cursor', name: 'Cursor', cli: null, selectable: false, perAgentModels: false, markers: { dirs: ['.cursor'] }, commands: {} },
   {
     id: 'copilot',
     setupId: 'copilot',
@@ -41,6 +45,7 @@ export const HARNESSES = [
     name: 'Copilot',
     cli: null,
     selectable: false,
+    perAgentModels: false,
     // .github/ alone is any GitHub repo; only AI-DLC's own files there count.
     markers: { dirs: ['.github/skills/aidlc'], files: ['.github/hooks/aidlc.json'] },
     commands: {}
@@ -82,6 +87,12 @@ export function resolveHarness(setting, detected) {
   if (selectableHarness(setting)) return setting;
   const installed = (detected ?? []).filter((d) => d.installed && selectableHarness(d.id));
   return installed.length === 1 ? installed[0].id : DEFAULT_HARNESS;
+}
+
+/** The folder with the harness's shipped plans: `<first marker dir>/scopes`, e.g. `.claude/scopes` (US-0901 FR3.1). */
+export function scopesDir(entry) {
+  const dir = entry?.markers?.dirs?.[0];
+  return dir ? `${dir}/scopes` : null;
 }
 
 /** The AI-DLC command for `harness` (a table entry) with `suffix`, or null when its table lacks it (FR4.2). */

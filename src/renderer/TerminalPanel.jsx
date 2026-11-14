@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { Terminal } from '@xterm/xterm';
 import { FitAddon } from '@xterm/addon-fit';
 import '@xterm/xterm/css/xterm.css';
-import { createActivity } from './terminalControl.js';
+import { createActivity, dropText } from './terminalControl.js';
 import { useTerminal } from './TerminalContext.jsx';
 import AuctumMark from './AuctumMark.jsx';
 import { Bar } from './Lcars.jsx';
@@ -34,6 +34,29 @@ function TermSession({ projectId, kind, harness, quietMs, name, shown, register,
   const [activity] = useState(() => createActivity({ quietMs }));
   const [exited, setExited] = useState(null);
   const [error, setError] = useState(null);
+  const [dropping, setDropping] = useState(false);
+
+  // Dropped files (an image for Claude Code, say) are typed in as their quoted paths, without Enter. The default
+  // is prevented so the window never opens the file; main blocks navigation too.
+  const hasFiles = (e) => Array.from(e.dataTransfer?.types ?? []).includes('Files');
+  const dragOver = (e) => {
+    if (!hasFiles(e)) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'copy';
+    setDropping(true);
+  };
+  const dragLeave = (e) => {
+    if (!e.currentTarget.contains(e.relatedTarget)) setDropping(false);
+  };
+  const drop = (e) => {
+    if (!hasFiles(e)) return;
+    e.preventDefault();
+    setDropping(false);
+    const text = dropText(Array.from(e.dataTransfer.files, (f) => bridge.pathForFile?.(f)).filter(Boolean));
+    if (!text || !idRef.current) return;
+    bridge.ptyWrite(idRef.current, text).catch((err) => setError(errorText(err)));
+    termRef.current?.focus();
+  };
 
   /** Resolves true once the pty runs; output then drives the activity signal (FR1.2). */
   const spawn = useCallback(async () => {
@@ -146,8 +169,50 @@ function TermSession({ projectId, kind, harness, quietMs, name, shown, register,
           </button>
         </div>
       )}
-      <div className="term-host" ref={hostRef} />
+      <div
+        className={`term-host${dropping ? ' is-drop-target' : ''}`}
+        ref={hostRef}
+        onDragOver={dragOver}
+        onDragLeave={dragLeave}
+        onDrop={drop}
+        data-testid={`terminal-panel-host-${kind}`}
+      />
     </div>
+  );
+}
+
+/**
+ * The quick commands (FR4.1) as a tiny select in the dark segment of the bar above the terminal, so they take no row
+ * of their own. A pick types the command into the agent tab without Enter and the select goes back to its placeholder.
+ * Renders nothing when the harness has no command.
+ */
+function QuickSelect({ harness, onPick }) {
+  const { t } = useTranslation();
+  const name = harness?.name ?? t('terminal.agent');
+  const items = QUICK_COMMANDS.map((suffix) => ({ suffix, cmd: harnessCommand(harness, suffix) }));
+  if (!items.some(({ cmd }) => cmd)) return null;
+  return (
+    <select
+      className="lcars-select lcars-select--bar"
+      value=""
+      aria-label={t('terminal.quickMenu')}
+      title={t('terminal.quickTitle', { harness: name })}
+      onChange={(e) => e.target.value && onPick(e.target.value)}
+      data-testid="terminal-panel-quick-select"
+    >
+      <option value="">{t('terminal.quickMenu')}</option>
+      {items.map(({ suffix, cmd }) => (
+        <option
+          key={suffix}
+          value={cmd ?? ''}
+          disabled={!cmd}
+          title={cmd ? undefined : t('terminal.noCommand', { harness: name })}
+          data-testid="terminal-panel-quick-command"
+        >
+          {cmd ?? suffix.trim()}
+        </option>
+      ))}
+    </select>
   );
 }
 
@@ -169,6 +234,7 @@ export default function TerminalPanel({ projectId, visible, onChooseHarness }) {
   const panelRef = useRef(null);
   const clampHeight = (h) => Math.round(Math.min(window.innerHeight * 0.6, Math.max(180, h)));
   const currentHeight = () => height ?? panelRef.current?.offsetHeight ?? 220;
+  const pendingKinds = KINDS.filter((kind) => terminal.pending(kind));
 
   function startDrag(e) {
     e.preventDefault();
@@ -189,7 +255,7 @@ export default function TerminalPanel({ projectId, visible, onChooseHarness }) {
   }
 
   // The Konsol mockup: the agent and Shell as blocks in the bottom arm with their state on the block, segmented
-  // bars above and below the terminal, quick commands as outline buttons (EPIC-04 FR3.6).
+  // bars above and below the terminal, quick commands in a tiny select in the bar's dark segment (EPIC-04 FR3.6).
   return (
     <section
       ref={panelRef}
@@ -244,7 +310,15 @@ export default function TerminalPanel({ projectId, visible, onChooseHarness }) {
         </button>
       </div>
       <div className="terminal-main">
-        {open && <Bar segs={[['steel', 2], ['steel-deep', 90], ['slate-3', 1]]} />}
+        {open && (
+          <Bar
+            segs={[
+              ['steel', 2],
+              ['steel-deep', 90, active === 'agent' && <QuickSelect harness={harness} onPick={(cmd) => terminal.type('agent', cmd, { submit: false })} />],
+              ['slate-3', 1]
+            ]}
+          />
+        )}
         <div className="terminal-body" hidden={!open}>
           {harnessProblem && (
             <div className="term-session" hidden={!(visible && open && active === 'agent')}>
@@ -282,39 +356,24 @@ export default function TerminalPanel({ projectId, visible, onChooseHarness }) {
             onInput={() => terminal.input('shell')}
           />
         </div>
-        <div className="terminal-foot">
-          <div className="quick-actions">
-            {QUICK_COMMANDS.map((suffix) => {
-              const cmd = harnessCommand(harness, suffix);
-              const name = harness?.name ?? t('terminal.agent');
-              return (
-                <button
-                  key={suffix}
-                  className="btn btn-quiet"
-                  title={cmd ? t('terminal.quickTitle', { harness: name }) : t('terminal.noCommand', { harness: name })}
-                  disabled={!cmd}
-                  onClick={() => terminal.type('agent', cmd, { submit: false })}
-                  data-testid="terminal-panel-quick-command"
-                >
-                  {cmd ?? suffix.trim()}
-                </button>
-              );
-            })}
-          </div>
-          {KINDS.filter((kind) => terminal.pending(kind)).map((kind) => (
-            <span key={kind} className="term-pending-row">
-              <span className="term-pending is-attn" data-testid={`terminal-panel-pending-${kind}`}>
-                {t('terminal.pending')}
+        {/* Only while something waits for Enter or went wrong, so the terminal keeps the height otherwise. */}
+        {(pendingKinds.length > 0 || terminal.error) && (
+          <div className="terminal-foot" data-testid="terminal-panel-foot">
+            {pendingKinds.map((kind) => (
+              <span key={kind} className="term-pending-row">
+                <span className="term-pending is-attn" data-testid={`terminal-panel-pending-${kind}`}>
+                  {t('terminal.pending')}
+                </span>
+                <span className="term-pending-hint">{t('terminal.pendingHint', { tab: tabLabel(kind) })}</span>
               </span>
-              <span className="term-pending-hint">{t('terminal.pendingHint', { tab: tabLabel(kind) })}</span>
-            </span>
-          ))}
-          {terminal.error && (
-            <span className="term-error" role="alert" data-testid="terminal-panel-error">
-              {terminal.error}
-            </span>
-          )}
-        </div>
+            ))}
+            {terminal.error && (
+              <span className="term-error" role="alert" data-testid="terminal-panel-error">
+                {terminal.error}
+              </span>
+            )}
+          </div>
+        )}
         <Bar segs={[['slate-3', 2], ['steel-deep', 70], ['slate-2', 1]]} />
       </div>
     </section>

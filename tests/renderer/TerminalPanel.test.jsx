@@ -24,6 +24,12 @@ vi.mock('@xterm/xterm', () => ({
 vi.mock('@xterm/addon-fit', () => ({ FitAddon: class { fit() {} } }));
 vi.mock('@xterm/xterm/css/xterm.css', () => ({}));
 globalThis.ResizeObserver ??= class { observe() {} disconnect() {} };
+// Every harness has all quick commands or none; this lets a test take one away to see the disabled option.
+let missingSuffix = null;
+vi.mock('../../src/shared/harnesses.js', async (importOriginal) => {
+  const real = await importOriginal();
+  return { ...real, harnessCommand: (h, suffix) => (suffix === missingSuffix ? null : real.harnessCommand(h, suffix)) };
+});
 
 // Same calls as the preload bridge's pty API.
 window.bridge = {
@@ -31,6 +37,7 @@ window.bridge = {
   ptyWrite: vi.fn(async () => {}),
   ptyKill: vi.fn(async () => {}),
   ptyResize: vi.fn(async () => {}),
+  pathForFile: vi.fn((file) => file.path),
   onPtyData: vi.fn(() => () => {}),
   onPtyExit: vi.fn(() => () => {})
 };
@@ -99,14 +106,55 @@ describe('TerminalPanel', () => {
     expect(window.bridge.ptySpawn).toHaveBeenLastCalledWith(expect.objectContaining({ kind: 'agent', harness: 'claude' }));
   });
 
-  it('types the quick commands from the harness table into the agent tab without Enter (FR4.1)', async () => {
+  it('puts the quick commands select inside the dark segment of the bar above the terminal, at its placeholder (FR4.1)', async () => {
     await renderPanel({ harness: harness('opencode') });
+    expect(screen.queryByTestId('terminal-panel-foot')).toBeNull(); // nothing pending: no row under the terminal
+    const select = screen.getByTestId('terminal-panel-quick-select');
+    expect(select.className).toBe('lcars-select lcars-select--bar');
+    expect(select.closest('.lcars-seg').classList.contains('lcars-seg--steel-deep')).toBe(true);
+    expect(select.closest('.lcars-bar').nextElementSibling.classList.contains('terminal-body')).toBe(true);
+    expect(select.value).toBe('');
+    expect(select.options[0].textContent).toBe('Snabbkommandon');
     const quick = screen.getAllByTestId('terminal-panel-quick-command');
-    expect(quick.map((b) => b.textContent)).toEqual(['/aidlc --status', '/aidlc --doctor', '/aidlc continue']);
-    expect(quick[0].title).toBe('Skriver in kommandot i opencode-fliken utan att skicka det');
+    expect(quick.map((o) => o.textContent)).toEqual(['/aidlc --status', '/aidlc --doctor', '/aidlc continue']);
+    expect(quick.every((o) => !o.disabled)).toBe(true);
+  });
 
-    await act(async () => fireEvent.click(quick[1]));
-    expect(window.bridge.ptyWrite).toHaveBeenCalledWith('pty-agent', '/aidlc --doctor');
+  it('a chosen quick command is typed into the agent tab without Enter, and the select resets', async () => {
+    await renderPanel({ harness: harness('opencode') });
+    const select = screen.getByTestId('terminal-panel-quick-select');
+    await act(async () => fireEvent.change(select, { target: { value: '/aidlc --doctor' } }));
+    expect(window.bridge.ptyWrite).toHaveBeenCalledWith('pty-agent', '/aidlc --doctor'); // no Enter
+    expect(select.value).toBe('');
+    expect(screen.getByTestId('terminal-panel-pending-agent')).toBeTruthy(); // the foot row shows while it waits
+  });
+
+  it('shows a quick command the harness lacks as a disabled option, with the reason', async () => {
+    missingSuffix = ' continue';
+    try {
+      await renderPanel();
+      const last = screen.getAllByTestId('terminal-panel-quick-command')[2];
+      expect(last.disabled).toBe(true);
+      expect(last.textContent).toBe('continue');
+      expect(last.title).toBe('Claude har inget AI-DLC-kommando i appens tabell, så inget skrivs in.');
+    } finally {
+      missingSuffix = null;
+    }
+  });
+
+  it('hides the quick commands on the shell tab, when collapsed and for a harness without commands', async () => {
+    await renderPanel();
+    expect(screen.getByTestId('terminal-panel-toggle').querySelector('svg.terminal-elbow-mark')).toBeTruthy();
+    fireEvent.click(screen.getByTestId('terminal-panel-tab-shell'));
+    expect(screen.queryByTestId('terminal-panel-quick-select')).toBeNull();
+    fireEvent.click(screen.getByTestId('terminal-panel-tab-agent'));
+    expect(screen.getByTestId('terminal-panel-quick-select')).toBeTruthy();
+    fireEvent.click(screen.getByTestId('terminal-panel-toggle'));
+    expect(screen.queryByTestId('terminal-panel-quick-select')).toBeNull();
+    cleanup();
+
+    await renderPanel({ harness: { ...harness('claude'), commands: {} } });
+    expect(screen.queryByTestId('terminal-panel-quick-select')).toBeNull();
   });
 
   it('starts nothing and offers another harness when the chosen one cannot run (FR5.1)', async () => {
@@ -120,5 +168,33 @@ describe('TerminalPanel', () => {
     expect(onChooseHarness).toHaveBeenCalledTimes(1);
     expect(await act(() => terminal.type('agent', '/aidlc'))).toBe(false);
     expect(screen.getByTestId('terminal-panel-error').textContent).toBe(problem);
+  });
+
+  it('a file drop types its quoted path into that tab without Enter, and highlights while dragging over', async () => {
+    await renderPanel();
+    const host = screen.getByTestId('terminal-panel-host-agent');
+    const dataTransfer = { types: ['Files'], files: [{ path: '/Users/me/Skärm bild.png' }, { path: '/tmp/a.png' }] };
+    expect(fireEvent.dragOver(host, { dataTransfer })).toBe(false); // default prevented: the window never opens the file
+    expect(host.classList.contains('is-drop-target')).toBe(true);
+    fireEvent.dragLeave(host, { relatedTarget: document.body });
+    expect(host.classList.contains('is-drop-target')).toBe(false);
+    fireEvent.dragOver(host, { dataTransfer });
+    expect(fireEvent.drop(host, { dataTransfer })).toBe(false);
+    expect(host.classList.contains('is-drop-target')).toBe(false);
+    expect(window.bridge.ptyWrite).toHaveBeenCalledWith('pty-agent', '/Users/me/Skärm\\ bild.png /tmp/a.png ');
+    expect(window.bridge.ptyWrite).not.toHaveBeenCalledWith('pty-shell', expect.anything());
+
+    fireEvent.drop(screen.getByTestId('terminal-panel-host-shell'), { dataTransfer: { types: ['Files'], files: [{ path: '/x.png' }] } });
+    expect(window.bridge.ptyWrite).toHaveBeenLastCalledWith('pty-shell', '/x.png ');
+  });
+
+  it('answer() writes to the agent tab without switching tabs, and throws when there is none', async () => {
+    await renderPanel();
+    act(() => terminal.setView({ open: true, active: 'shell' }));
+    act(() => terminal.answer('2'));
+    expect(window.bridge.ptyWrite).toHaveBeenCalledWith('pty-agent', '2');
+    expect(terminal.view.active).toBe('shell');
+    act(() => terminal.setAgent({ harness: null }));
+    expect(() => terminal.answer('1')).toThrow();
   });
 });

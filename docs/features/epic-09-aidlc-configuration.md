@@ -26,7 +26,7 @@
 
 **Stories:** US-0901, US-0902, US-0903, US-0904
 
-**Status (2026-11-13):** 📋 Planned. US-0904 replaces US-0206 (moved here from EPIC-02).
+**Status (2026-11-14):** 🔄 In progress. ✅ US-0901 done, merged to main (not released yet). 📋 US-0902–US-0904 planned. US-0904 replaces US-0206 (moved here from EPIC-02).
 
 ---
 
@@ -92,20 +92,21 @@ The CLI refuses a harness that the project hasn't installed.
 
 ## User Stories
 
-**US-0901: See a project's AI-DLC configuration** 📋 Planned
+**US-0901: See a project's AI-DLC configuration** ✅ Done, merged to main (not released yet)
 - As a **developer running AI-DLC in several projects**, in order to **know how AI-DLC is set up here before I start work**, I would like to **one view that shows the project's AI-DLC settings and where each value comes from**.
 - **Epic:** EPIC-09
 - **Priority:** High
 - **Complexity:** Medium
 - **Acceptance Criteria:**
-  - [ ] **A "Konfiguration / Configuration" view** for the active project opens from the left arm and from the settings view (US-0405). It has sections for models and effort, project defaults, the active work's settings, plans (scopes), provider, and plugins.
-  - [ ] **Values come from the read-only CLI:**
-    - `aidlc config --show --json` and `aidlc config list --json`, run with fixed arguments and no shell.
+  - [x] **A "Konfiguration / Configuration" view** for the active project opens from the left arm and from the settings view (US-0405). It has sections for models and effort, project defaults, the active work's settings, plans (scopes), provider, and plugins.
+  - [x] **Values come from the read-only CLI:**
+    - `aidlc config <models|flags|providers|project> --show --json --harness <h>` and `aidlc config list --json`, run in parallel with fixed arguments and no shell (changed 2026-11-14: `config --show --json` refuses `--harness` and fails without it in a project with several harnesses).
     - Each value shows its source as AI-DLC reports it (project, local, machine, environment, scope default, "set by you").
     - An environment variable that overrides a value is marked as such.
-  - [ ] **The view follows the project's harness (US-0801):** it passes `--harness <h>` only for harnesses the project has installed, and greys out areas the harness does not support (for example per-agent models on Cursor and Copilot), with a one-line reason.
-  - [ ] **When AI-DLC is missing or the CLI fails,** the view says so in one sentence and offers setup (US-0503 / US-0802). It never shows stale values as current.
-  - [ ] The view reloads when the project's `aidlc.settings*.json`, `.claude/scopes/`, `aidlc/scopes/` or the active intent's state changes (watcher, US-0302).
+  - [x] **The view follows the project's harness (US-0801):** it passes `--harness <h>` only for harnesses the project has installed, and greys out areas the harness does not support (for example per-agent models on Cursor and Copilot), with a one-line reason. With several harnesses installed, a picker switches the view (not the agent tab) between them.
+  - [x] **When AI-DLC is missing or the CLI fails,** the view says so in one sentence and offers setup (US-0503 / US-0802). It never shows stale values as current. A failure in one section shows in that section only.
+  - [x] The view reloads when the project's `aidlc.settings*.json`, `.claude/scopes/`, `aidlc/scopes/` or the active intent's state changes (watcher, US-0302).
+- **Notes:** Shows every project-default switch, with its source. Plans list both the shipped plans and the project's own, the project's own are marked, and the active intent's plan is highlighted. The provider field names are assumed, because no provider record existed when this was built.
 - **Dependencies:** US-0801, US-0405
 
 **US-0902: Change project defaults and the active work's settings** 📋 Planned
