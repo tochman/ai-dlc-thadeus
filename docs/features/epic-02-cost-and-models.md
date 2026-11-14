@@ -8,7 +8,7 @@
 
 **Stories:** US-0201, US-0202, US-0203, US-0204, US-0205, US-0206, US-0207
 
-**Status (2026-11-14):** ✅ US-0201–US-0205 released in v0.2.0. CSV export (US-0203) is deferred. US-0206 moved to US-0904 in EPIC-09. ✅ US-0207 done for v0.2.4 (live token view).
+**Status (2026-11-14):** ✅ US-0201–US-0205 released in v0.2.0. CSV export (US-0203) is deferred. US-0206 moved to US-0904 in EPIC-09. ✅ US-0207 released in v0.2.4 (live token view).
 
 ---
 
@@ -115,7 +115,7 @@ The key format of `workflows` was confirmed during requirements analysis (see ab
 - **Dependencies:** US-0204, US-0405
 
 
-**US-0207: Live token view while the work runs** ✅ Done for v0.2.4
+**US-0207: Live token view while the work runs** ✅ Released in v0.2.4 (intent `261114-custom-plans`)
 - As a **developer watching agents work**, in order to **see how fast the work burns tokens and what kind**, I would like to **a live view of input, output and cache tokens with the token rate over time**.
 - **Epic:** EPIC-02
 - **Priority:** Medium

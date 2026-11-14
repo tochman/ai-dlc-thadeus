@@ -6,9 +6,9 @@
 
 > Small fixes the person reports while using the app: something looks off, behaves wrongly or is missing a detail. Each fix becomes a story here, so nothing reported in passing gets lost. A fix that grows into a feature moves to its topic's epic.
 
-**Stories:** US-0001, US-0002, US-0003, US-0004, US-0005, US-0006, US-0007
+**Stories:** US-0001, US-0002, US-0003, US-0004, US-0005, US-0006, US-0007, US-0008, US-0009
 
-**Status (2026-11-14):** ✅ US-0001 released in v0.2.3 (epic badge). ✅ US-0002 released in v0.2.3 (busy tab alignment). ✅ US-0003 released in v0.2.3 (lifecycle rule for every harness). ✅ US-0004 released in v0.2.3 (a popup answer reaches the agent once). ✅ US-0005 released in v0.2.3 (Resume waits while the work runs). ✅ US-0006 done for v0.2.4 (popup answers reach Claude Code's real picker). ✅ US-0007 done for v0.2.4 (Resume stays disabled while an agent session runs the work).
+**Status (2026-11-14):** ✅ US-0001 released in v0.2.3 (epic badge). ✅ US-0002 released in v0.2.3 (busy tab alignment). ✅ US-0003 released in v0.2.3 (lifecycle rule for every harness). ✅ US-0004 released in v0.2.3 (a popup answer reaches the agent once). ✅ US-0005 released in v0.2.3 (Resume waits while the work runs). ✅ US-0006 released in v0.2.4 (popup answers reach Claude Code's real picker). ✅ US-0007 released in v0.2.4 (Resume stays disabled while an agent session runs the work). ✅ US-0008 released in v0.2.4 (the token wave shows from the first reading). ✅ US-0009 released in v0.2.4 (Resume waits while an agent outside the app runs the work).
 
 ---
 
@@ -87,7 +87,7 @@
 - **Notes:** `asking()` in `src/renderer/TerminalContext.jsx` (fed from the waiting questions in `App.jsx`), `workingReason()` in `src/renderer/ResumeButton.jsx`, test in `tests/renderer/ResumeButton.test.jsx`.
 - **Dependencies:** US-0501, US-0505, US-0803
 
-**US-0006: Popup answers reach Claude Code's real picker** ✅ Done for v0.2.4
+**US-0006: Popup answers reach Claude Code's real picker** ✅ Released in v0.2.4 (intent `261114-custom-plans`)
 - As a **developer answering AI-DLC's questions from the popup**, in order to **answer once and move on**, I would like to **have the popup's answer actually land in Claude Code's question picker**.
 - **Epic:** EPIC-00
 - **Priority:** High
@@ -105,7 +105,7 @@
   - **Tests.** Fixtures in `tests/fixtures/picker/`. Tests in `tests/renderer/picker.test.jsx`, `tests/renderer/pickerSmoke.test.jsx` (a real xterm `Terminal`), `tests/renderer/QuestionPopup.test.jsx` and `tests/main/questions.test.js`.
 - **Dependencies:** US-0004
 
-**US-0007: Resume stays disabled while an agent session is running the work** ✅ Done for v0.2.4
+**US-0007: Resume stays disabled while an agent session is running the work** ✅ Released in v0.2.4 (intent `261114-custom-plans`)
 - As a **developer whose agent is running an intent**, in order to **not be offered a Resume that would type into the running session**, I would like to **have every Resume button stay disabled while an agent session runs the work, even when the agent is quiet**.
 - **Epic:** EPIC-00
 - **Priority:** High
@@ -119,3 +119,35 @@
   - **Where.** `running()` in `src/renderer/TerminalContext.jsx` (any agent tab not exited) and `workingReason()` in `src/renderer/ResumeButton.jsx`. The project's active intent reaches both buttons as `activeIntent` (`ProjectView.jsx` → `IntentDetail.jsx`, and `IntentList.jsx`). The text is `intents.resume.running`.
   - **Tests.** `tests/renderer/ResumeButton.test.jsx` (4 new) and `tests/renderer/TerminalPanel.test.jsx`.
 - **Dependencies:** US-0005
+
+**US-0008: The token wave shows from the first reading** ✅ Released in v0.2.4 (intent `261114-custom-plans`)
+- As a **developer watching agents work**, in order to **see the token rate in the live token view (US-0207)**, I would like to **see the waveform as soon as the view appears, and new readings at its right edge**.
+- **Epic:** EPIC-00
+- **Priority:** High
+- **Complexity:** Low
+- **Background:** Reported 2026-11-14 while checking the v0.2.4 build: "everything seem to be working on the 0.2.4 release but i do not see the token cosumption wave". The meters showed, the wave did not. `wavePoints()` placed reading *i* at *i*/119 of the width from the left: one reading is a polyline with one point, which draws nothing, and the next few readings sat in the first pixels on the left.
+- **Acceptance Criteria:**
+  - [x] With one reading, the wave is a flat line across the full width.
+  - [x] The newest reading is always at the right edge; older ones run to the left, and the part before the first reading is the zero line.
+  - [x] The rate, the 120-reading history and the animations setting work as in US-0207.
+- **Notes:**
+  - **Where.** `wavePoints()` in `src/renderer/TokenView.jsx`.
+  - **Tests.** `tests/renderer/TokenView.test.jsx`.
+- **Dependencies:** US-0207
+
+**US-0009: Resume waits while an agent outside the app runs the work** ✅ Released in v0.2.4 (intent `261114-custom-plans`)
+- As a **developer who runs AI-DLC in my own terminal**, in order to **not be offered a Resume that would start the work a second time**, I would like to **have every Resume button stay disabled while an agent outside the app is working on the active intent**.
+- **Epic:** EPIC-00
+- **Priority:** High
+- **Complexity:** Low
+- **Background:** Reported 2026-11-14 with a screenshot: "and i still see these buttons!!!". Both "Resume at Deployment Execution (step 8 of 8)" buttons were enabled while Claude Code ran `custom-plans` in the person's own terminal. US-0007 only sees the app's own agent tabs, so a session outside the app was invisible.
+- **Acceptance Criteria:**
+  - [x] While the active intent is in flight and AI-DLC wrote its audit log in the last 10 minutes, every Resume button in the project is disabled. Its title says why: "En agent utanför appen arbetar med {intent} — fortsätt där" / "An agent outside the app is working on {intent} — continue there".
+  - [x] When the log has been quiet for 10 minutes, or the intent is parked or complete, the buttons are enabled again at the next refresh.
+  - [x] The busy, asking and running reasons from US-0005 and US-0007 stay, and come first.
+  - [x] A disabled Resume button looks disabled: both blocks turn grey like every other disabled block, and hovering does not brighten them. (Reported again 2026-11-14 at 14.55: the button was disabled but still amber, because `.resume-button` never had a disabled style.)
+- **Notes:**
+  - **Where.** `newestMtime()` in `src/main/projectAccess.js`, `activityAt` in `summarizeIntent()` (`src/main/projectService.js`), and `workingReason()` with `ELSEWHERE_MS` in `src/renderer/ResumeButton.jsx`. The text is `intents.resume.elsewhere`.
+  - **Limit.** A step that writes nothing to the log for over 10 minutes can turn Resume on early. The button re-checks on the next refresh, not on a timer.
+  - **Tests.** `tests/renderer/ResumeButton.test.jsx` (2 new).
+- **Dependencies:** US-0007

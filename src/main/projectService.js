@@ -1,6 +1,6 @@
 // Loads AI-DLC data for one project root. All reads go through projectAccess.
 // A broken file only affects its own intent; the last good result is returned instead (NFR2, FR7.4).
-import { exists, listDir, readJsonSafe, readText } from './projectAccess.js';
+import { exists, listDir, newestMtime, readJsonSafe, readText } from './projectAccess.js';
 import { mergeIntents } from './parsers/intents.js';
 import { parseState } from './parsers/state.js';
 import { parseRuntimeGraph } from './parsers/runtimeGraph.js';
@@ -72,7 +72,9 @@ async function summarizeIntent(root, space, dirName) {
     currentStage: state?.currentStage ?? null,
     stateStatus: state?.currentStatus ?? null,
     done: pipeline.done,
-    executed: pipeline.executed
+    executed: pipeline.executed,
+    // When AI-DLC last wrote the intent's audit log: an agent outside the app is working on it (US-0009).
+    activityAt: (await newestMtime(root, `${base}/audit`)) || null
   };
 }
 

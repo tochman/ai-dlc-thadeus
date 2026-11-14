@@ -15,13 +15,13 @@
 
 **Stories:** US-1001
 
-**Status (2026-11-14):** ✅ US-1001 done for v0.2.4 (Monaco editing). Added at the person's request. Two performance checks wait for the person in the built app.
+**Status (2026-11-14):** ✅ US-1001 released in v0.2.4 (Monaco editing). Added at the person's request. The person checked the 1 MB open time and start time in the built `.dmg`.
 
 ---
 
 ## User Stories
 
-**US-1001: Edit files in the app with Monaco** ✅ Done for v0.2.4
+**US-1001: Edit files in the app with Monaco** ✅ Released in v0.2.4 (intent `261114-custom-plans`)
 - As a **developer working on a project in the console**, in order to **make a quick change without switching to VS Code**, I would like to **open any file of the project in a Monaco editor inside the app, edit it with syntax highlighting, and save it**.
 - **Epic:** EPIC-10
 - **Priority:** Medium
@@ -63,7 +63,7 @@
     - When the file changes on disk and there are no unsaved changes, the editor reloads it quietly. When there are unsaved changes, it shows a one-line notice.
   - [x] **Read-only where it must be:** engine-owned AI-DLC files (above) and binary files open read-only, with a one-line reason. Files over a size limit (for example 2 MB) open read-only.
   - [x] **While the agent works:** if the project's agent tab is "Arbetar" and the file is inside the active intent's record, a calm notice says the agent may also be changing it. Saving is still allowed, with the conflict check above.
-  - [ ] **Performance:** Monaco and its workers load only when an editor first opens. Opening a 1 MB file takes under 1 s on the reference machine. App start time is unchanged.
+  - [x] **Performance:** Monaco and its workers load only when an editor first opens. Opening a 1 MB file takes under 1 s on the reference machine. App start time is unchanged. *(Checked by the person in the built v0.2.4 `.dmg` on 2026-11-14.)*
   - [x] **Strings and tests:** every new label in sv and en. Tests cover:
     - the write IPC refusing out-of-root, `..`, symlink and engine-owned paths;
     - the atomic write;

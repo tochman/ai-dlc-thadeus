@@ -33,14 +33,25 @@ describe('TokenView (US-0207 FR1.3, NFR4, NFR5)', () => {
 
   it('adds a waveform point per ledger reading, and none for an unchanged one', () => {
     const { rerender } = render(<TokenView cost={cost()} dirName="261113-live" live />);
-    expect(points()).toHaveLength(1);
-    rerender(<TokenView cost={cost(later(400))} dirName="261113-live" live />);
+    // One point per reading, plus the baseline start at the left edge (US-0008).
     expect(points()).toHaveLength(2);
+    rerender(<TokenView cost={cost(later(400))} dirName="261113-live" live />);
+    expect(points()).toHaveLength(3);
     rerender(<TokenView cost={cost(later(900))} dirName="261113-live" live />);
-    expect(points()).toHaveLength(3);
+    expect(points()).toHaveLength(4);
     rerender(<TokenView cost={cost(later(900))} dirName="261113-live" live />); // the same reading again
-    expect(points()).toHaveLength(3);
+    expect(points()).toHaveLength(4);
     expect(screen.getByRole('img', { name: 'Tokenflöde, 3 avläsningar' })).toBeTruthy();
+  });
+
+  it('draws a full-width line from the first reading, with the newest at the right edge (US-0008)', () => {
+    const { rerender } = render(<TokenView cost={cost()} dirName="261113-live" live />);
+    expect(points()).toEqual(['0,44', '240,44']);
+    rerender(<TokenView cost={cost(later(400))} dirName="261113-live" live />);
+    const p = points();
+    expect(p[0]).toBe('0,44');
+    expect(p.at(-1).split(',')[0]).toBe('240');
+    expect(Number(p.at(-1).split(',')[1])).toBeLessThan(44); // the new rate rises above the baseline
   });
 
   it('renders nothing for a finished intent or one without a ledger entry', () => {

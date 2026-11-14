@@ -146,3 +146,25 @@ describe('ResumeButton while an agent session runs the work (EPIC-00 US-0007)', 
     expect(button().title).toBe('Claude väntar på ditt svar — svara i terminalen först');
   });
 });
+
+describe('ResumeButton while an agent outside the app runs the work (EPIC-00 US-0009)', () => {
+  const ELSEWHERE = 'En agent utanför appen arbetar med workflow-control — fortsätt där';
+  const button = () => screen.getByTestId('intent-resume');
+
+  it('a recent audit write on the in-flight active intent disables it, with the reason, and types nothing', () => {
+    const active = { ...intent, activityAt: Date.now() - 60_000 };
+    render(<ResumeButton intent={intent} activeDirName={intent.dirName} activeIntent={active} position={position} />);
+    expect(button().disabled).toBe(true);
+    expect(button().title).toBe(ELSEWHERE);
+    fireEvent.click(button());
+    expect(terminal.type).not.toHaveBeenCalled();
+  });
+
+  it('is enabled when the log has been quiet for over 10 minutes, or the intent is not in flight', () => {
+    const quiet = { ...intent, activityAt: Date.now() - 11 * 60_000 };
+    const { rerender } = render(<ResumeButton intent={intent} activeDirName={intent.dirName} activeIntent={quiet} />);
+    expect(button().disabled).toBe(false);
+    rerender(<ResumeButton intent={intent} activeDirName={intent.dirName} activeIntent={{ ...intent, status: 'parked', activityAt: Date.now() }} />);
+    expect(button().disabled).toBe(false);
+  });
+});

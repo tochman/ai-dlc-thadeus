@@ -593,7 +593,9 @@ button.lcars-chip:hover { border-color: var(--steel-text); color: var(--steel-li
 .resume-main, .resume-step { display: flex; align-items: flex-end; background: var(--amber); white-space: nowrap; transition: filter 150ms ease-out; }
 .resume-main { padding: 0 16px 8px 18px; font-size: 19px; font-weight: 600; border-radius: 28px 0 0 28px; }
 .resume-step { padding: 0 12px 8px; font-size: 15px; }
-.resume-button:hover .resume-main, .resume-button:hover .resume-step { filter: brightness(1.1); }
+.resume-button:hover:not(:disabled) .resume-main, .resume-button:hover:not(:disabled) .resume-step { filter: brightness(1.1); }
+/* Waiting while an agent runs the work (US-0007, US-0009): greyed like every other disabled block. */
+.resume-button:disabled .resume-main, .resume-button:disabled .resume-step { background: var(--slate-0); color: var(--slate-4); }
 .resume-message { color: var(--coral-soft); font-size: 13px; }
 .intent-rows .resume { align-items: flex-start; margin: 4px 0 2px 11px; }
 .intent-rows .resume-button { height: 28px; }

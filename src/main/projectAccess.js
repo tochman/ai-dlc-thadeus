@@ -65,6 +65,20 @@ export async function listDir(root, rel) {
   return entries.map((e) => ({ name: e.name, isDir: e.isDirectory() }));
 }
 
+/** Newest file mtime (ms) directly in a directory; 0 when it is missing or empty. */
+export async function newestMtime(root, rel) {
+  let abs;
+  try {
+    abs = await resolveInRoot(root, rel);
+  } catch (err) {
+    if (err.code === 'ENOENT') return 0;
+    throw err;
+  }
+  const names = await fs.readdir(abs);
+  const times = await Promise.all(names.map((n) => fs.stat(path.join(abs, n)).then((s) => (s.isFile() ? s.mtimeMs : 0), () => 0)));
+  return Math.max(0, ...times);
+}
+
 export async function exists(root, rel) {
   try {
     await resolveInRoot(root, rel);
