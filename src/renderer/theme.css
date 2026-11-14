@@ -566,6 +566,26 @@ button.lcars-chip:hover { border-color: var(--steel-text); color: var(--steel-li
 .readout-live { display: inline-flex; align-items: center; gap: 6px; }
 .readout-spacer { flex: 1; }
 @media (max-width: 1280px) { .readout-col { display: none; } }
+/* Live tokens (EPIC-02 US-0207): segmented bar meters lit from the bottom, amber to soft coral, with a slow glow,
+   and a steel line waveform that flows. The data-motion rules below stop both (NFR4). */
+.token-view { display: flex; flex-direction: column; gap: 6px; }
+.token-view-title { margin: 0; color: var(--muted); font-size: 12px; letter-spacing: 0.06em; }
+.token-meters { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; }
+.token-meter { display: grid; grid-template-columns: auto 1fr; grid-template-rows: 1fr auto auto; gap: 2px 3px; min-width: 0; }
+.token-meter-scale { grid-row: 1; display: flex; flex-direction: column; justify-content: space-between; font-size: 8px; color: var(--muted); font-variant-numeric: tabular-nums; writing-mode: vertical-rl; transform: rotate(180deg); }
+.token-meter-bar { grid-row: 1; display: flex; flex-direction: column; gap: 2px; height: 70px; }
+.token-seg { flex: 1; background: var(--slate-2); }
+.token-seg.is-lit { background: var(--amber); box-shadow: 0 0 6px var(--amber-a45); animation: lcars-glow-steel 2.4s ease-in-out infinite; }
+.token-seg.is-lit:nth-child(-n + 3) { background: var(--coral-soft); }
+.token-meter-label, .token-meter-value { grid-column: 1 / 3; font-size: 10px; line-height: 1.1; overflow-wrap: anywhere; min-width: 0; }
+.token-meter-label { color: var(--text-2); }
+.token-meter-value { color: var(--text); font-variant-numeric: tabular-nums; }
+.token-wave { margin: 0; display: flex; flex-direction: column; gap: 2px; }
+.token-wave svg { width: 100%; height: 40px; background: var(--slate-1); }
+.token-wave-line { fill: none; stroke: var(--steel-text); stroke-width: 1.5; vector-effect: non-scaling-stroke; stroke-dasharray: 6 3; animation: token-wave-flow 1.6s linear infinite; }
+.token-wave figcaption { font-size: 10px; color: var(--text-2); font-variant-numeric: tabular-nums; }
+.token-view-stale { margin: 0; font-size: 10px; color: var(--coral-soft); }
+@keyframes token-wave-flow { to { stroke-dashoffset: -18; } }
 
 /* Workflow control (EPIC-05): Fortsätt is the amber primary block in two parts. */
 .resume { display: inline-flex; flex-direction: column; align-items: flex-end; gap: 4px; }

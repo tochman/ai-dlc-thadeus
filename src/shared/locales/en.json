@@ -680,6 +680,15 @@
     "upToDate": "You have the latest version.",
     "confirmRestart": "An agent tab is working. Updating restarts the app and ends its terminal sessions. Update anyway?"
   },
+  "tokens": {
+    "title": "Live tokens",
+    "input": "Input",
+    "output": "Output",
+    "cacheWrite": "Cache write",
+    "cacheRead": "Cache read",
+    "waveLabel": "Token flow, {n} readings",
+    "rate": "{rate} tokens/min"
+  },
   "aboutDialog": {
     "exit": "EXIT"
   },
