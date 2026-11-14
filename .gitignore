@@ -31,3 +31,6 @@ node_modules/
 out/
 dist/
 tests/.tmp/
+
+# AI-DLC's running-agent marker (machine-local)
+aidlc/.aidlc-subagent-inflight

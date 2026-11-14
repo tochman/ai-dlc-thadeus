@@ -26,7 +26,7 @@
 
 **Stories:** US-0901, US-0902, US-0903, US-0904
 
-**Status (2026-11-14):** 🔄 In progress. ✅ US-0901 done, merged to main (not released yet). 📋 US-0902–US-0904 planned. US-0904 replaces US-0206 (moved here from EPIC-02).
+**Status (2026-11-14):** 🔄 In progress. ✅ US-0901 released in v0.2.2. 📋 US-0902–US-0904 planned. US-0904 replaces US-0206 (moved here from EPIC-02).
 
 ---
 
@@ -92,7 +92,7 @@ The CLI refuses a harness that the project hasn't installed.
 
 ## User Stories
 
-**US-0901: See a project's AI-DLC configuration** ✅ Done, merged to main (not released yet)
+**US-0901: See a project's AI-DLC configuration** ✅ Released in v0.2.2
 - As a **developer running AI-DLC in several projects**, in order to **know how AI-DLC is set up here before I start work**, I would like to **one view that shows the project's AI-DLC settings and where each value comes from**.
 - **Epic:** EPIC-09
 - **Priority:** High

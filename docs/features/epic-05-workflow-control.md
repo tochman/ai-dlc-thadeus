@@ -8,7 +8,7 @@
 
 **Stories:** US-0501, US-0502, US-0503, US-0504, US-0505, US-0506
 
-**Status (2026-11-14):** ✅ US-0501–US-0503 released in v0.2.0. ✅ US-0505 released in v0.2.1 (answering from the popup added after release, merged to main but not released yet). US-0504 and US-0506 📋 Planned.
+**Status (2026-11-14):** ✅ US-0501–US-0503 released in v0.2.0. ✅ US-0505 released in v0.2.1 (answering from the popup added in v0.2.2). US-0504 and US-0506 📋 Planned.
 
 ---
 
@@ -118,7 +118,7 @@
   - [x] **Settings:** "Ljud vid notis: På / Av" (default På), and "Frågor från Claude: Popup och notis / Bara popup / Av" in the app settings (later the settings view, US-0405), saved in the app's own `settings.json`. The default is Popup och notis.
   - [x] **Read-only:** the app writes no AI-DLC or project files and sends nothing to the terminal in this story. Question text from the audit log is shown as text, never as HTML.
   - [ ] **Not covered:** free-text questions Claude asks in the chat, and Claude Code's own permission prompts. They are not in the audit log. They would need Claude Code's `Notification` hook, which is set in Claude's settings and is a separate choice (a later story).
-  - [x] **Later (not in this story):** answering straight from the popup by typing the chosen option into the Claude tab. Done in a UI hotfix with US-0901 (PR #18), merged to main but not released yet. Claude Code gets the option's digit, a gate gets 1 or 2, and the own-answer field types the text and presses Enter. opencode gets the own-answer field only, until its picker keys are checked.
+  - [x] **Later (not in this story):** answering straight from the popup by typing the chosen option into the Claude tab. Done in a UI hotfix with US-0901 (PR #18), released in v0.2.2. Claude Code gets the option's digit, a gate gets 1 or 2, and the own-answer field types the text and presses Enter. opencode gets the own-answer field only, until its picker keys are checked.
 - **Dependencies:** US-0101 (watcher), EPIC-03 (audit parsing), US-0501 (Claude tab states), US-0402 (coral pulse)
 
 **US-0506: Answer Claude Code's and opencode's own questions in a dialog, and see their messages** 📋 Planned

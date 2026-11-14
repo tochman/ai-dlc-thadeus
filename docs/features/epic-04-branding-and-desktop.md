@@ -6,9 +6,9 @@
 
 > Auctum AIDLC Control should look and behave like a proper Auctum desktop app wherever it shows up: in the Dock, the application menu, the window switcher, the installer and the Linux launcher. Inside the app it should feel like a living bridge console. EPIC-01 added the name, splash screen, in-app logo and the restrained LCARS theme. This epic covers the parts of the operating system that still show Electron defaults, and the motion and light that make the theme come alive without hurting readability.
 
-**Stories:** US-0401, US-0402, US-0403, US-0404, US-0405, US-0406
+**Stories:** US-0401, US-0402, US-0403, US-0404, US-0405, US-0406, US-0407
 
-**Status (2026-11-14):** ✅ US-0401 released in v0.1.1. ✅ US-0402, US-0403 and US-0404 released in v0.2.0. ✅ US-0406 released in v0.2.1 (intent `261113-thadeus-name`). US-0405 📋 Planned.
+**Status (2026-11-14):** ✅ US-0401 released in v0.1.1. ✅ US-0402, US-0403 and US-0404 released in v0.2.0. ✅ US-0406 released in v0.2.1 (intent `261113-thadeus-name`). US-0405 and US-0407 📋 Planned.
 
 ---
 
@@ -162,3 +162,26 @@
   - [x] **Layout holds:** the new name and the longer sub-line fit the header elbow and the splash at 1100 px width without breaking the LCARS frames. They keep WCAG AA contrast. *Built (one line with `nowrap` in the header, balanced wrapping on the splash, existing AA token pairs); measured with screenshots in Build and Test.*
   - [x] Tests that check the name (the splash `role="img"` contract, the menu labels in `menu.test.js`, settings paths) are updated to the new name. No old name is left in user-facing text. The design doc and feature docs mention the old name only in history.
 - **Dependencies:** US-0401, US-0403, US-0404
+
+**US-0407: Update the app from a GitHub release** 📋 Planned
+- As a **developer using THADEUS day to day**, in order to **stay on the latest version without hunting for the download**, I would like to **have the app find a new release on GitHub, download it, install it and restart, and optionally remove the downloaded package afterwards**.
+- **Epic:** EPIC-04
+- **Priority:** Medium
+- **Complexity:** Medium
+- **Background:** Releases are built by `.github/workflows/release.yml` on a `v*.*.*` tag, as a macOS `.dmg` and a Linux `.deb` (`electron-builder.yml`). The macOS build is unsigned (`identity: null`). Electron's built-in auto-updater (Squirrel.Mac, used by `electron-updater`) only installs signed apps, so on macOS the app has to download the DMG and either hand it to the person or replace the app bundle itself. On Linux, installing a `.deb` needs root (`pkexec dpkg -i`), whereas an AppImage could replace itself.
+- **Acceptance Criteria:**
+  - [ ] **Check:**
+    - On start (at most once a day) and from the app menu ("Sök efter uppdatering…"), the app reads the latest release from the GitHub API for `tochman/aidlc-dash`, with no token, and compares its tag with `app.getVersion()` (semver).
+    - Pre-releases and drafts are ignored.
+    - When offline or rate-limited, it says so in one sentence and tries again later. It never blocks the app.
+  - [ ] **Offer:** a new version shows a calm notice (LCARS, not a modal), with the version, the release notes rendered as Markdown, and **Update now**, **Later** and **Skip this version**. A skipped version is saved in the app's own `settings.json`.
+  - [ ] **Download:** only the asset for this platform and architecture (macOS `.dmg` arm64/x64, Linux `.deb` amd64/arm64), over HTTPS from GitHub's release assets, into a temporary folder under userData, with progress shown. When the release publishes a checksum, it is verified, and a mismatch stops the update.
+  - [ ] **Install and restart:**
+    - macOS: mount the DMG, copy the new `THADEUS.app` over the running one with the person's rights (asking for admin rights only when `/Applications` needs them), clear the quarantine flag the way the README describes for the unsigned build, then relaunch with `app.relaunch()` + `app.quit()`.
+    - Linux: install the `.deb` through `pkexec dpkg -i`, which shows the system's password prompt, then relaunch.
+    - If any step fails, the app keeps running on the old version, says in one sentence what failed, and offers to open the downloaded file in Finder or the file manager instead.
+  - [ ] **Before restarting:** if an agent tab is "Arbetar", the person is asked first, because a restart ends the terminal sessions. Open projects and settings survive the restart (userData stays `aidlc-dash`).
+  - [ ] **Clean up (optional):** a setting, "Ta bort hämtat paket efter uppdatering: På / Av" (default På), removes the downloaded DMG or `.deb` after a successful install. With it off, the file is kept and its path shown.
+  - [ ] **Safety:** only `github.com/tochman/aidlc-dash` release assets are downloaded. The URL and asset name are checked against that repository before download. Nothing downloaded is run except by the platform's installer step above.
+- **Notes:** Added 2026-11-14 at the person's request. Signing the macOS app would allow the standard `electron-updater` flow; that is a separate choice.
+- **Dependencies:** US-0404 (app menu), the release workflow
