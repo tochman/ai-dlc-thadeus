@@ -53,7 +53,8 @@ function invertLinks(links) {
   return out;
 }
 
-function AidlcProject({ project, focusIntent, storiesByIntent, onOpenStory, panels, onMeta }) {
+/** Intents (list and detail), Kostnad or Github: one at a time, all fed by the same project data (FR2.2). */
+function AidlcProject({ project, view, onView, focusIntent, storiesByIntent, onOpenStory, onMeta }) {
   const { t } = useTranslation();
   const { detection, projectId } = project;
   const p = useProject(projectId, detection.activeSpace);
@@ -69,61 +70,96 @@ function AidlcProject({ project, focusIntent, storiesByIntent, onOpenStory, pane
     onMeta?.(projectId, { intentCount: p.intents.length });
   }, [projectId, p.intents.length, onMeta]);
 
+  // Folding a view's panel in goes back to the intents view.
+  const back = () => onView?.('intents');
   return (
-    <div className="project-body">
-      <aside className="sidebar" aria-label={t('intents.overview')}>
-        {detection.spaces.length > 1 && (
-          <label className="field">
-            <span className="field-label">{t('intents.space')}</span>
-            <select className="lcars-select" value={p.space} onChange={(e) => p.setSpace(e.target.value)} data-testid="project-space-select">
-              {detection.spaces.map((s) => (
-                <option key={s} value={s}>
-                  {s}
-                </option>
-              ))}
-            </select>
-          </label>
-        )}
-        {p.listWarning && (
-          <p className="banner banner-warn" role="status">
-            {t('intents.listStale', { warning: p.listWarning })}
-          </p>
-        )}
-        <CostPanel cost={p.cost} models={p.models} open={panels.costOpen} onToggle={panels.onToggleCost} />
-        <RefreshPanel
-          projectId={projectId}
-          space={p.space}
-          lastIntentChangeAt={p.lastIntentChangeAt}
-          open={panels.githubOpen}
-          onToggle={panels.onToggleGithub}
-        />
-        <IntentList intents={p.intents} selected={p.selected} onSelect={p.setSelected} cost={p.cost} />
-      </aside>
-      <section className="content">
-        {p.error && (
-          <p className="banner banner-error" role="alert">
-            {p.error}
-          </p>
-        )}
-        {p.detail ? (
-          <IntentDetail
-            projectId={projectId}
-            detail={p.detail}
-            intent={p.intents.find((i) => i.dirName === p.detail.dirName)}
-            activeDirName={activeDirName}
-            newKeys={p.newKeys}
-            cost={p.cost}
-            models={p.models}
-            stories={storiesByIntent?.[p.detail.dirName] ?? []}
-            onOpenStory={onOpenStory}
-          />
-        ) : (
-          <Frame>
-            <p className="muted">{t('intents.pick')}</p>
-          </Frame>
-        )}
-      </section>
-    </div>
+    <>
+      {view === 'cost' && <CostPanel cost={p.cost} models={p.models} open onToggle={back} />}
+      {/* Kept mounted, so the fetched status and changes survive a switch to another view. */}
+      <div hidden={view !== 'github'}>
+        <RefreshPanel projectId={projectId} space={p.space} lastIntentChangeAt={p.lastIntentChangeAt} open={view === 'github'} onToggle={back} />
+      </div>
+      <div className="project-body" hidden={view !== 'intents'}>
+        <aside className="sidebar" aria-label={t('intents.overview')}>
+          {detection.spaces.length > 1 && (
+            <label className="field">
+              <span className="field-label">{t('intents.space')}</span>
+              <select className="lcars-select" value={p.space} onChange={(e) => p.setSpace(e.target.value)} data-testid="project-space-select">
+                {detection.spaces.map((s) => (
+                  <option key={s} value={s}>
+                    {s}
+                  </option>
+                ))}
+              </select>
+            </label>
+          )}
+          {p.listWarning && (
+            <p className="banner banner-warn" role="status">
+              {t('intents.listStale', { warning: p.listWarning })}
+            </p>
+          )}
+          <IntentList intents={p.intents} selected={p.selected} onSelect={p.setSelected} cost={p.cost} />
+        </aside>
+        <section className="content">
+          {p.error && (
+            <p className="banner banner-error" role="alert">
+              {p.error}
+            </p>
+          )}
+          {p.detail ? (
+            <IntentDetail
+              projectId={projectId}
+              detail={p.detail}
+              intent={p.intents.find((i) => i.dirName === p.detail.dirName)}
+              activeDirName={activeDirName}
+              newKeys={p.newKeys}
+              cost={p.cost}
+              models={p.models}
+              stories={storiesByIntent?.[p.detail.dirName] ?? []}
+              onOpenStory={onOpenStory}
+            />
+          ) : (
+            <Frame>
+              <p className="muted">{t('intents.pick')}</p>
+            </Frame>
+          )}
+        </section>
+      </div>
+    </>
+  );
+}
+
+/** "Lägg till harness…" as a native modal <dialog>: focus stays inside, Esc and Avbryt close it (US-0802 FR3.1). */
+function AddHarnessDialog({ open, onClose, setupProps }) {
+  const { t } = useTranslation();
+  const ref = useRef(null);
+  useEffect(() => {
+    const d = ref.current;
+    if (open && !d.open) d.showModal ? d.showModal() : d.setAttribute('open', '');
+    else if (!open && d.open) d.close ? d.close() : d.removeAttribute('open');
+  }, [open]);
+  return (
+    <dialog
+      ref={ref}
+      className="panel settings-dialog"
+      aria-label={t('setup.addTitle')}
+      onCancel={(e) => {
+        e.preventDefault(); // Esc: close through our own state
+        onClose();
+      }}
+      data-testid="add-harness-dialog"
+    >
+      {open && (
+        <>
+          <SetupAidlc {...setupProps} mode="add" />
+          <div className="setup-actions">
+            <button type="button" className="btn" onClick={onClose} data-testid="add-harness-cancel">
+              {t('common.cancel')}
+            </button>
+          </div>
+        </>
+      )}
+    </dialog>
   );
 }
 
@@ -156,10 +192,10 @@ function SetupDone({ onClose, onFeatureDocs }) {
 }
 
 /**
- * The selected view and the open sidebar panels live in App, because the left arm selects them (FR2.2).
+ * The selected view lives in App, because the left arm selects it (FR2.2).
  * This reports back what the arm needs: whether Features is offered and how many intents there are.
  */
-function ProjectContent({ project, visible, settingsOpen = false, onCloseSettings, view: chosenView = 'intents', onView, panels, onMeta, terminalCommand }) {
+function ProjectContent({ project, visible, settingsOpen = false, onCloseSettings, view: chosenView = 'intents', onView, onMeta, terminalCommand }) {
   const { t } = useTranslation();
   const terminal = useTerminal();
 
@@ -229,8 +265,14 @@ function ProjectContent({ project, visible, settingsOpen = false, onCloseSetting
   const storiesByIntent = useMemo(() => invertLinks(links), [links]);
   const docsExist = features?.available === true;
   const showFeatures = settings.featureDocs === 'show' || (settings.featureDocs === 'auto' && docsExist);
-  // Configuration needs AI-DLC, Features the feature docs; otherwise the intents view shows (US-0901 FR1.1).
-  const view = chosenView === 'config' ? (isAidlc ? 'config' : 'intents') : showFeatures ? chosenView : 'intents';
+  // One view at a time: Features needs the feature docs, the rest AI-DLC; otherwise the intents view shows (US-0901 FR1.1).
+  const offered = { features: showFeatures, config: isAidlc, cost: isAidlc, github: isAidlc };
+  const view = offered[chosenView] ? chosenView : 'intents';
+  // Configuration mounts the first time it is chosen, so its CLI reads wait until then, and then stays (FR6.1).
+  const [configShown, setConfigShown] = useState(false);
+  useEffect(() => {
+    if (view === 'config') setConfigShown(true);
+  }, [view]);
   const setupDocs = () =>
     terminal?.type('agent', featureDocsPrompt({ exists: docsExist, path: settings.featuresPath }), { submit: false });
   const offerSetup = isAidlc && !docsExist ? setupDocs : undefined; // FR3.6, FR4.5
@@ -252,16 +294,16 @@ function ProjectContent({ project, visible, settingsOpen = false, onCloseSetting
     <div className="project-view">
       <div className="project-main">
         {justSetUp && <SetupDone onClose={() => setJustSetUp(false)} onFeatureDocs={featureDocsChoice ? setupDocs : undefined} />}
-        {isAidlc && addingHarness && <SetupAidlc {...setupProps} mode="add" onClose={() => setAddingHarness(false)} />}
         {/* Kept mounted while Features or Configuration is shown, so the intents view keeps its state (FR2.1). */}
-        <div className="project-mode" hidden={view !== 'intents'}>
+        <div className="project-mode" hidden={view === 'features' || view === 'config'}>
           {isAidlc ? (
             <AidlcProject
               project={project}
+              view={view}
+              onView={onView}
               focusIntent={focusIntent}
               storiesByIntent={storiesByIntent}
               onOpenStory={showFeatures ? openStory : undefined}
-              panels={panels}
               onMeta={onMeta}
             />
           ) : (
@@ -283,16 +325,19 @@ function ProjectContent({ project, visible, settingsOpen = false, onCloseSetting
             onSetup={offerSetup}
           />
         )}
-        {view === 'config' && (
-          <ConfigView
-            projectId={project.projectId}
-            visible={visible}
-            harnesses={detected}
-            defaultHarness={harnessId}
-            onSetup={() => setAddingHarness(true)}
-          />
+        {isAidlc && (configShown || view === 'config') && (
+          <div className="project-mode" hidden={view !== 'config'}>
+            <ConfigView
+              projectId={project.projectId}
+              visible={visible && view === 'config'}
+              harnesses={detected}
+              defaultHarness={harnessId}
+              onSetup={() => setAddingHarness(true)}
+            />
+          </div>
         )}
       </div>
+      {isAidlc && <AddHarnessDialog open={addingHarness} onClose={() => setAddingHarness(false)} setupProps={setupProps} />}
       <TerminalPanel projectId={project.projectId} visible={visible} onChooseHarness={() => setChoosingHarness(true)} />
       <ProjectSettingsDialog
         open={settingsOpen || choosingHarness}
@@ -320,14 +365,9 @@ export default function ProjectView({
   onCloseSettings,
   view,
   onView,
-  costOpen,
-  onToggleCost,
-  githubOpen,
-  onToggleGithub,
   onMeta,
   terminalCommand
 }) {
-  const panels = { costOpen, onToggleCost, githubOpen, onToggleGithub };
   return (
     <TerminalProvider>
       <ProjectContent
@@ -337,7 +377,6 @@ export default function ProjectView({
         onCloseSettings={onCloseSettings}
         view={view}
         onView={onView}
-        panels={panels}
         onMeta={onMeta}
         terminalCommand={terminalCommand}
       />

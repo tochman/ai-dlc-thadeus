@@ -4,9 +4,9 @@ import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testi
 
 // The project view has its own tests; here it only reports what the left arm needs, as the real one does.
 vi.mock('../../src/renderer/ProjectView.jsx', () => ({
-  default: function ProjectViewStub({ project, onMeta }) {
+  default: function ProjectViewStub({ project, view, onMeta }) {
     useEffect(() => onMeta(project.projectId, { showFeatures: true, intentCount: 7 }), [project.projectId, onMeta]);
-    return <div data-testid={`project-view-${project.projectId}`} />;
+    return <div data-testid={`project-view-${project.projectId}`} data-view={view} />;
   }
 }));
 
@@ -111,6 +111,49 @@ describe('App shell', () => {
     render(<App />);
     await screen.findByTestId('project-view-switch-intents');
     expect(screen.queryByTestId('project-view-switch-config')).toBeNull();
+  });
+
+  it('makes Kostnad and Github views of their own, one at a time, from the arm and the menu; disabled without AI-DLC', async () => {
+    await renderApp({ openProjects: ['/p/aidlc-dash-a'], activeProject: '/p/aidlc-dash-a' });
+    await screen.findByTestId('project-view-switch-features');
+    const current = () => screen.getAllByRole('button').filter((b) => b.getAttribute('aria-current') === 'page').map((b) => b.dataset.testid);
+    const shownView = () => screen.getByTestId('project-view-p1').dataset.view;
+
+    fireEvent.click(screen.getByTestId('arm-github'));
+    expect(current()).toEqual(['arm-github']);
+    expect(shownView()).toBe('github');
+    expect(screen.getByRole('heading', { level: 1 }).textContent).toMatch(/aidlc-dash-a.*Github/);
+    expect(screen.getByTestId('arm-github').hasAttribute('aria-expanded')).toBe(false); // a view, no longer a fold-out
+
+    fireEvent.click(screen.getByTestId('arm-cost'));
+    expect(current()).toEqual(['arm-cost']);
+    expect(shownView()).toBe('cost');
+    fireEvent.click(screen.getByTestId('arm-cost')); // clicking the current view again keeps it
+    expect(shownView()).toBe('cost');
+
+    act(() => push.menuCommand({ command: 'panel', panel: 'github' }));
+    expect(current()).toEqual(['arm-github']);
+    act(() => push.menuCommand({ command: 'view', view: 'config' }));
+    expect(current()).toEqual(['project-view-switch-config']);
+    expect(shownView()).toBe('config');
+    act(() => push.menuCommand({ command: 'panel', panel: 'cost' }));
+    expect(current()).toEqual(['arm-cost']);
+    act(() => push.menuCommand({ command: 'panel', panel: 'nope' }));
+    expect(shownView()).toBe('cost');
+    act(() => push.menuCommand({ command: 'view', view: 'intents' }));
+    expect(current()).toEqual(['project-view-switch-intents']);
+    expect(shownView()).toBe('intents');
+    cleanup();
+
+    mockBridge({ openProjects: ['/p/plain-a'], activeProject: '/p/plain-a' });
+    window.bridge.openProject = vi.fn(async (dir) => ({ ...projectInfo(dir, 'p1'), detection: { isAidlc: false } }));
+    render(<App />);
+    await screen.findByTestId('project-view-switch-intents');
+    expect(screen.getByTestId('arm-cost').disabled).toBe(true);
+    expect(screen.getByTestId('arm-github').disabled).toBe(true);
+    act(() => push.menuCommand({ command: 'panel', panel: 'github' }));
+    expect(screen.getByTestId('project-view-switch-intents').getAttribute('aria-current')).toBe('page');
+    expect(screen.getByTestId('arm-github').hasAttribute('aria-current')).toBe(false);
   });
 
   it('sets data-motion from the setting, Dämpad under prefers-reduced-motion without one, and saves a new choice (FR4.2)', async () => {

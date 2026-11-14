@@ -12,7 +12,7 @@ import { APP_NAME } from '../shared/appName.js';
 import { selectableHarness } from '../shared/harnesses.js';
 
 const bridge = window.bridge;
-const UI_DEFAULT = { view: 'intents', cost: false, github: false };
+const UI_DEFAULT = { view: 'intents' };
 
 function errorText(err) {
   return String(err?.message ?? err).replace(/^Error invoking remote method '[^']+': (Error: )?/, '');
@@ -24,20 +24,14 @@ export function motionMode(saved) {
   return window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches ? 'reduced' : 'full';
 }
 
-/** A labelled block in the left arm. The current or expanded one is light with a steel tab, as in the mockup. */
-function ArmBlock({ current = false, expanded, tone = 'mid', children, ...rest }) {
-  const lit = current || expanded === true;
+/** A labelled block in the left arm. The current one is light with a steel tab, as in the mockup. */
+function ArmBlock({ current = false, tone = 'mid', children, ...rest }) {
   const block = (
-    <button
-      className={`lcars-block lcars-block--${lit ? 'light' : tone}`}
-      aria-current={current ? 'page' : undefined}
-      aria-expanded={expanded}
-      {...rest}
-    >
+    <button className={`lcars-block lcars-block--${current ? 'light' : tone}`} aria-current={current ? 'page' : undefined} {...rest}>
       {children}
     </button>
   );
-  if (!lit) return block;
+  if (!current) return block;
   return (
     <div className="lcars-tabbed">
       <span className="lcars-tab" aria-hidden="true" />
@@ -56,7 +50,7 @@ export default function App() {
   const [appSettingsOpen, setAppSettingsOpen] = useState(false);
   const [animations, setAnimations] = useState(null); // saved choice; null means the default applies
   const [language, setLanguage] = useState('auto'); // saved "Språk / Language" choice (EPIC-07 FR4.1)
-  const [ui, setUi] = useState({}); // projectId -> {view, cost, github}: what the arm has selected per project
+  const [ui, setUi] = useState({}); // projectId -> {view}: the one view the arm has selected per project
   const [meta, setMeta] = useState({}); // projectId -> {showFeatures, intentCount, harness}, reported by ProjectView
   const [branch, setBranch] = useState(null);
   const [fullscreen, setFullscreen] = useState(false); // the window's real mode, from main (US-0404 FR1.2)
@@ -155,14 +149,7 @@ export default function App() {
     (projectId, partial) => setMeta((m) => ({ ...m, [projectId]: { ...m[projectId], ...partial } })),
     []
   );
-  const setUiOf = useCallback(
-    (projectId, change) =>
-      setUi((u) => {
-        const cur = { ...UI_DEFAULT, ...u[projectId] };
-        return { ...u, [projectId]: { ...cur, ...(typeof change === 'function' ? change(cur) : change) } };
-      }),
-    []
-  );
+  const setUiOf = useCallback((projectId, change) => setUi((u) => ({ ...u, [projectId]: { ...UI_DEFAULT, ...u[projectId], ...change } })), []);
 
   // The label follows the real mode, also when it changes from the menu, the shortcut or macOS' green button.
   useEffect(() => {
@@ -274,13 +261,12 @@ export default function App() {
   const activeUi = active ? { ...UI_DEFAULT, ...ui[active.projectId] } : UI_DEFAULT;
   const activeMeta = (active && meta[active.projectId]) || {};
   const isAidlc = active?.detection.isAidlc === true;
-  // Features needs the feature docs and Configuration needs AI-DLC (US-0901 FR1.1); else the intents view shows.
-  const view =
-    (activeUi.view === 'features' && !activeMeta.showFeatures) || (activeUi.view === 'config' && !isAidlc) ? 'intents' : activeUi.view;
-  const firstLabel = isAidlc ? t('app.intents') : t('app.setup');
-  const viewLabel = { features: t('app.features'), config: t('app.config') }[view] ?? firstLabel;
-
   const showFeatures = activeMeta.showFeatures === true;
+  // One view at a time. Features needs the feature docs, the rest AI-DLC (US-0901 FR1.1); else the intents view shows.
+  const offered = { features: showFeatures, config: isAidlc, cost: isAidlc, github: isAidlc };
+  const view = offered[activeUi.view] ? activeUi.view : 'intents';
+  const firstLabel = isAidlc ? t('app.intents') : t('app.setup');
+  const viewLabel = { features: t('app.features'), config: t('app.config'), cost: t('app.cost'), github: t('app.github') }[view] ?? firstLabel;
 
   // Named actions shared by the left arm and the app menu (US-0404 FR2.4).
   function closeActiveProject() {
@@ -288,11 +274,6 @@ export default function App() {
   }
   function showView(next) {
     if (active) setUiOf(active.projectId, { view: next });
-  }
-  /** Kostnad and Github fold their panel out in the sidebar; from Features they switch back to it first. */
-  function togglePanel(key) {
-    if (!active || !isAidlc) return;
-    setUiOf(active.projectId, (c) => ({ view: 'intents', [key]: c.view === 'intents' ? !c[key] : true }));
   }
   const openAppSettings = () => setAppSettingsOpen(true);
   function openProjectSettings(projectId) {
@@ -322,7 +303,7 @@ export default function App() {
     projectSettings: () => openProjectSettings(activeId),
     appSettings: () => openAppSettings(),
     view: ({ view: v }) => pick(v, ['intents', 'features', 'config'], showView),
-    panel: ({ panel }) => pick(panel, ['cost', 'github'], togglePanel),
+    panel: ({ panel }) => isAidlc && pick(panel, ['cost', 'github'], showView), // Kostnad and Github are views too
     terminal: ({ action }) => pick(action, ['agent', 'shell', 'restart'], runTerminal),
     docs: () => openDocs()
   };
@@ -443,18 +424,18 @@ export default function App() {
               </ArmBlock>
             )}
             <ArmBlock
-              expanded={isAidlc ? view === 'intents' && activeUi.cost : undefined}
+              current={view === 'cost'}
               disabled={!isAidlc}
-              onClick={() => togglePanel('cost')}
+              onClick={() => showView('cost')}
               data-testid="arm-cost"
             >
               {t('app.cost')}
             </ArmBlock>
             <ArmBlock
               tone="dark"
-              expanded={isAidlc ? view === 'intents' && activeUi.github : undefined}
+              current={view === 'github'}
               disabled={!isAidlc}
-              onClick={() => togglePanel('github')}
+              onClick={() => showView('github')}
               data-testid="arm-github"
             >
               {t('app.github')}
@@ -504,10 +485,6 @@ export default function App() {
                 onCloseSettings={() => setSettingsFor(null)}
                 view={tabUi.view}
                 onView={(v) => setUiOf(tab.projectId, { view: v })}
-                costOpen={tabUi.cost}
-                onToggleCost={() => setUiOf(tab.projectId, (c) => ({ cost: !c.cost }))}
-                githubOpen={tabUi.github}
-                onToggleGithub={() => setUiOf(tab.projectId, (c) => ({ github: !c.github }))}
                 onMeta={reportMeta}
                 terminalCommand={terminalCommand}
               />

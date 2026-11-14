@@ -4,7 +4,7 @@
 import { runFixed } from './exec.js';
 import { isGitRepo } from './git.js';
 import { listDir } from './projectAccess.js';
-import { DEFAULT_HARNESS, setupHarness } from '../shared/harnesses.js';
+import { DEFAULT_HARNESS, HARNESSES, setupHarness } from '../shared/harnesses.js';
 import { t } from '../shared/i18n.js';
 
 const OTHER_HARNESSES = ['.kiro', '.codex', '.cursor', '.aidlc'];
@@ -32,15 +32,25 @@ export function parsePreview(raw) {
   return { raw, ...counts, conflicts, notes };
 }
 
-async function readPlugins(root, exec) {
-  try {
-    const out = JSON.parse(await runFixed('aidlc', ['config', 'project', '--show', '--json'], { cwd: root, exec }));
-    const installed = out?.data?.installedPlugins;
-    if (out?.ok !== true || !Array.isArray(installed)) throw new Error(t('errors.missingField', { field: 'data.installedPlugins' }));
-    return { plugins: installed.filter((p) => typeof p === 'string' && PLUGIN_NAME.test(p)) };
-  } catch (err) {
-    return { plugins: [], warning: t('errors.pluginsFailed', { error: errorText(err) }) };
+/**
+ * With more than one harness installed, aidlc refuses `config project` without `--harness`, and it refuses a
+ * harness the project does not have yet (the one being added). So try the chosen harness, then no flag (zero
+ * or one harness), then each other harness in the table, and keep the first answer.
+ */
+async function readPlugins(root, setupId, exec) {
+  const tries = [['--harness', setupId], [], ...HARNESSES.filter((h) => h.setupId !== setupId).map((h) => ['--harness', h.setupId])];
+  let lastErr;
+  for (const extra of tries) {
+    try {
+      const out = JSON.parse(await runFixed('aidlc', ['config', 'project', '--show', '--json', ...extra], { cwd: root, exec }));
+      const installed = out?.data?.installedPlugins;
+      if (out?.ok !== true || !Array.isArray(installed)) throw new Error(t('errors.missingField', { field: 'data.installedPlugins' }));
+      return { plugins: installed.filter((p) => typeof p === 'string' && PLUGIN_NAME.test(p)) };
+    } catch (err) {
+      lastErr = err;
+    }
   }
+  return { plugins: [], warning: t('errors.pluginsFailed', { error: errorText(lastErr) }) };
 }
 
 /** The table entry for a setup harness id; anything else throws (US-0802 FR1.4). */
@@ -73,7 +83,7 @@ export async function getSetupInfo(root, { harness = DEFAULT_HARNESS, exec } = {
   } catch (err) {
     preview = { ...parsePreview(''), raw: String(err.stdout ?? ''), error: t('errors.previewFailed', { error: errorText(err) }) };
   }
-  return { ...base, aidlc: { installed: true, version }, preview, ...(await readPlugins(root, exec)) };
+  return { ...base, aidlc: { installed: true, version }, preview, ...(await readPlugins(root, setupId, exec)) };
 }
 
 /**
@@ -96,8 +106,9 @@ function setupSteps(root, { harness, mode = 'setup', plugins = [], preset = null
   if (mode !== 'add' && !info.git?.isRepo) steps.push(['git', ['init', '-b', 'main']]);
   // `--project-dir` because aidlc refuses non-interactive config outside a recognised project (F-02).
   steps.push(['aidlc', ['--project-dir', root, 'config', '--harness', setupId, '--yes']]);
-  if (plugins.length) steps.push(['aidlc', ['config', 'project', '--plugins', plugins.join(','), '--yes']]);
-  if (preset) steps.push(['aidlc', ['config', 'models', '--preset', preset, '--project', '--yes']]);
+  // `--harness`: with more than one harness installed (always so after adding one) aidlc refuses these without it.
+  if (plugins.length) steps.push(['aidlc', ['config', 'project', '--plugins', plugins.join(','), '--harness', setupId, '--yes']]);
+  if (preset) steps.push(['aidlc', ['config', 'models', '--preset', preset, '--project', '--harness', setupId, '--yes']]);
   return steps;
 }
 
