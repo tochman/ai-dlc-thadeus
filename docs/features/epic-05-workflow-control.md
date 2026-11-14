@@ -8,7 +8,17 @@
 
 **Stories:** US-0501, US-0502, US-0503, US-0504, US-0505, US-0506, US-0507
 
-**Status (2026-11-14):** ✅ US-0501–US-0503 released in v0.2.0. ✅ US-0505 released in v0.2.1 (answering from the popup added in v0.2.2). US-0504 📋 Planned. 🚧 US-0506 in progress, for v0.2.5 (intent `261114-agent-dialogs`: a full plan for how the dialogs show and talk to Claude Code and other agents). 📋 US-0507 Planned (agent progress). The popup double-answer fix is US-0004 in [EPIC-00](epic-00-fixes.md).
+**Status (2026-11-14):** 
+
+✅ US-0501–US-0503 released in v0.2.0. 
+
+✅ US-0505 released in v0.2.1 (answering from the popup added in v0.2.2).
+
+ US-0504 📋 Planned. 
+ 
+ 🚧 US-0506 in progress, for v0.2.5 (intent `261114-agent-dialogs`: a full plan for how the dialogs show and talk to Claude Code and other agents). 
+ 
+ 📋 US-0507 Planned (agent progress). The popup double-answer fix is US-0004 in [EPIC-00](epic-00-fixes.md).
 
 ---
 
