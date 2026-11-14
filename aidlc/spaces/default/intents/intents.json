@@ -118,5 +118,13 @@
     "scope": "ultra-express",
     "status": "complete",
     "request": "aa25414d"
+  },
+  {
+    "uuid": "01a1d80c-bfe4-7051-9200-a1458c358142",
+    "slug": "project-defaults",
+    "dirName": "261114-project-defaults",
+    "scope": "ultra-express",
+    "status": "complete",
+    "request": "727b5088"
   }
 ]
