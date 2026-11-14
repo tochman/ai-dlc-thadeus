@@ -8,6 +8,7 @@ import { mergeAudits, categoryOf } from './parsers/audit.js';
 import { mergePipeline } from './parsers/pipeline.js';
 import { unitStatuses } from './parsers/units.js';
 import { pendingQuestions } from './questions.js';
+import { agentName } from './parsers/ledger.js';
 import { t } from '../shared/i18n.js';
 
 const PHASE_DIRS = ['initialization', 'ideation', 'inception', 'construction', 'operation', 'verification'];
@@ -17,6 +18,8 @@ const detailCache = new Map();
 const costCache = new Map();
 
 export const LEDGER_PATH = 'aidlc/.aidlc-sessions/usage-ledger.json';
+/** Has an entry per agent running now (`{entries: [...]}`), written by AI-DLC's hooks. */
+export const INFLIGHT_PATH = 'aidlc/.aidlc-subagent-inflight';
 
 const spacesDir = (space) => `aidlc/spaces/${space}`;
 export const intentsDir = (space) => `${spacesDir(space)}/intents`;
@@ -137,6 +140,45 @@ async function loadAuditEvents(root, base) {
     files.map(async (f) => ({ source: f.name, text: await readText(root, `${base}/audit/${f.name}`) }))
   );
   return mergeAudits(texts).map((e) => ({ ...e, category: categoryOf(e.event) }));
+}
+
+/**
+ * The agents working now (US-0901 "Arbetar nu"): per agent type, the dispatches no later completion closed,
+ * oldest first. A dispatch a hook refused leaves a ghost, so only `running` (the inflight entries) are kept,
+ * newest first. Pure; `events` come from loadAuditEvents in time order.
+ * @returns {Array<{agent: string, name: string, startedMs: number, stage: string|null}>}
+ */
+export function workingAgents(events, running) {
+  if (!(running > 0)) return [];
+  const open = new Map(); // agent type -> dispatches not yet completed, oldest first
+  let stage = null;
+  for (const e of events) {
+    if (e.category === 'stage' && e.fields?.Stage) stage = e.fields.Stage;
+    const agent = e.fields?.['Agent Type'];
+    if (!agent) continue;
+    if (!open.has(agent)) open.set(agent, []);
+    if (e.event === 'SUBAGENT_DISPATCHED') open.get(agent).push({ agent, name: agentName(agent), startedMs: e.timeMs, stage });
+    else if (e.event === 'SUBAGENT_COMPLETED') open.get(agent).shift();
+  }
+  return [...open.values()]
+    .flat()
+    .sort((a, b) => b.startedMs - a.startedMs)
+    .slice(0, running);
+}
+
+/** How many agents run now: the entries of AI-DLC's inflight file, 0 when it is missing or broken. */
+async function inflightCount(root) {
+  const res = await readJsonSafe(root, INFLIGHT_PATH);
+  return res.ok && Array.isArray(res.value?.entries) ? res.value.entries.length : 0;
+}
+
+/** The agents working now in one intent; a missing audit folder gives none. */
+export async function loadWorkingAgents(root, space, dirName) {
+  assertName(space, 'space');
+  assertName(dirName, 'intent');
+  const running = await inflightCount(root);
+  if (running === 0) return [];
+  return workingAgents(await loadAuditEvents(root, `${intentsDir(space)}/${dirName}`), running);
 }
 
 /** An intent is in progress unless intents.json or aidlc-state.md says it is finished (US-0505 FR1.1). */

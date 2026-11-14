@@ -307,6 +307,7 @@
     "resize": "Ändra terminalens höjd (pil upp/ned)",
     "hide": "Dölj terminal",
     "show": "Visa terminal",
+    "quickMenu": "Snabbkommandon",
     "quickTitle": "Skriver in kommandot i {harness}-fliken utan att skicka det",
     "noCommand": "{harness} har inget AI-DLC-kommando i appens tabell, så inget skrivs in.",
     "checking": "Kontrollerar…",
@@ -479,8 +480,12 @@
       "active": "Pågående arbete",
       "plans": "Planer",
       "provider": "Leverantör",
-      "plugins": "Pluginer"
+      "plugins": "Pluginer",
+      "working": "Arbetar nu"
     },
+    "noWorking": "Inga agenter arbetar.",
+    "workingFor": "{minutes} min",
+    "workingIn": "{intent} · {stage}",
     "agent": "Agent",
     "model": "Modell",
     "effort": "Effort",

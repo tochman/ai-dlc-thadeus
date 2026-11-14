@@ -32,6 +32,7 @@ beforeEach(() => {
   window.bridge = {
     detectHarnesses: vi.fn(async () => installed),
     getAidlcConfig: vi.fn(async () => ({ activeDir: null, plans: [], errors: {} })),
+    getWorkingAgents: vi.fn(async () => []),
     getGitStatus: vi.fn(async () => ({ isRepo: true, branch: 'main', upstream: null, ahead: 0, behind: 0, dirtyAidlc: 0, dirtyOther: 0 })),
     setProjectSettings: vi.fn(async () => ({}))
   };

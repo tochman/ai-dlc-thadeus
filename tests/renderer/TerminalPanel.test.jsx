@@ -100,14 +100,55 @@ describe('TerminalPanel', () => {
     expect(window.bridge.ptySpawn).toHaveBeenLastCalledWith(expect.objectContaining({ kind: 'agent', harness: 'claude' }));
   });
 
-  it('types the quick commands from the harness table into the agent tab without Enter (FR4.1)', async () => {
+  it('keeps the quick commands in one closed menu; a pick types into the agent tab without Enter and closes it (FR4.1)', async () => {
     await renderPanel({ harness: harness('opencode') });
-    const quick = screen.getAllByTestId('terminal-panel-quick-command');
+    expect(screen.queryByTestId('terminal-panel-foot')).toBeNull(); // nothing pending: no row under the terminal
+    const toggle = screen.getByTestId('terminal-panel-quick-menu');
+    expect(toggle.textContent).toBe('/aidlc ▾');
+    expect(toggle.getAttribute('aria-expanded')).toBe('false');
+    expect(screen.queryByRole('menu')).toBeNull();
+
+    fireEvent.click(toggle);
+    expect(screen.getByRole('menu')).toBeTruthy();
+    const quick = screen.getAllByRole('menuitem');
+    expect(quick).toEqual(screen.getAllByTestId('terminal-panel-quick-command'));
     expect(quick.map((b) => b.textContent)).toEqual(['/aidlc --status', '/aidlc --doctor', '/aidlc continue']);
     expect(quick[0].title).toBe('Skriver in kommandot i opencode-fliken utan att skicka det');
+    expect(document.activeElement).toBe(quick[0]);
+    fireEvent.keyDown(quick[0], { key: 'ArrowDown' });
+    expect(document.activeElement).toBe(quick[1]);
+    fireEvent.keyDown(quick[1], { key: 'ArrowUp' });
+    fireEvent.keyDown(quick[0], { key: 'ArrowUp' }); // wraps
+    expect(document.activeElement).toBe(quick[2]);
 
     await act(async () => fireEvent.click(quick[1]));
     expect(window.bridge.ptyWrite).toHaveBeenCalledWith('pty-agent', '/aidlc --doctor');
+    expect(screen.queryByRole('menu')).toBeNull();
+    expect(screen.getByTestId('terminal-panel-pending-agent')).toBeTruthy(); // the foot row shows while it waits
+  });
+
+  it('closes the quick menu on Esc and on an outside click', async () => {
+    await renderPanel();
+    fireEvent.click(screen.getByTestId('terminal-panel-quick-menu'));
+    fireEvent.keyDown(screen.getAllByRole('menuitem')[0], { key: 'Escape' });
+    expect(screen.queryByRole('menu')).toBeNull();
+    expect(document.activeElement).toBe(screen.getByTestId('terminal-panel-quick-menu'));
+
+    fireEvent.click(screen.getByTestId('terminal-panel-quick-menu'));
+    fireEvent.pointerDown(document.body);
+    expect(screen.queryByRole('menu')).toBeNull();
+  });
+
+  it('a harness without an AI-DLC command shows its commands disabled, with the reason, and types nothing', async () => {
+    await renderPanel({ harness: { ...harness('claude'), commands: {} } });
+    const toggle = screen.getByTestId('terminal-panel-quick-menu');
+    expect(toggle.textContent).toBe('Snabbkommandon ▾');
+    fireEvent.click(toggle);
+    const [first] = screen.getAllByTestId('terminal-panel-quick-command');
+    expect(first.disabled).toBe(true);
+    expect(first.title).toBe('Claude har inget AI-DLC-kommando i appens tabell, så inget skrivs in.');
+    fireEvent.click(first);
+    expect(window.bridge.ptyWrite).not.toHaveBeenCalledWith('pty-agent', expect.anything());
   });
 
   it('starts nothing and offers another harness when the chosen one cannot run (FR5.1)', async () => {

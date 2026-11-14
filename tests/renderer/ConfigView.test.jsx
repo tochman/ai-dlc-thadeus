@@ -33,8 +33,20 @@ const KIRO = { id: 'kiro', label: 'Kiro', installed: false };
 let push;
 function mockBridge(getAidlcConfig = vi.fn(async () => config())) {
   push = {};
-  const listen = (name) => vi.fn((cb) => ((push[name] = cb), () => delete push[name]));
-  window.bridge = { getAidlcConfig, onConfigChanged: listen('config'), onProjectChanged: listen('project') };
+  // Several listeners per channel, as the view and its "Arbetar nu" panel both subscribe.
+  const subs = {};
+  const listen = (name) =>
+    vi.fn((cb) => {
+      (subs[name] ??= new Set()).add(cb);
+      push[name] = (c) => subs[name].forEach((f) => f(c));
+      return () => subs[name].delete(cb);
+    });
+  window.bridge = {
+    getAidlcConfig,
+    getWorkingAgents: vi.fn(async () => []),
+    onConfigChanged: listen('config'),
+    onProjectChanged: listen('project')
+  };
   return getAidlcConfig;
 }
 
@@ -52,7 +64,7 @@ describe('ConfigView', () => {
 
     await screen.findByTestId('config-view-models');
     const headings = screen.getAllByRole('heading', { level: 2 }).map((h) => h.textContent);
-    expect(headings).toEqual(['Modeller och effort', 'Projektets standardval', 'Pågående arbete', 'Planer', 'Leverantör', 'Pluginer']);
+    expect(headings).toEqual(['Modeller och effort', 'Projektets standardval', 'Pågående arbete', 'Arbetar nu', 'Planer', 'Leverantör', 'Pluginer']);
 
     const models = screen.getByTestId('config-view-models');
     expect(within(models).getByText('architect').closest('tr').textContent).toMatch(/inherit—shipped default/);
@@ -143,5 +155,37 @@ describe('ConfigView', () => {
     expect(get).toHaveBeenCalledTimes(3);
     rerender(<ConfigView projectId="p1" visible harnesses={[CLAUDE]} defaultHarness="claude" />);
     await waitFor(() => expect(get).toHaveBeenCalledTimes(4));
+  });
+
+  it('lists the agents working now beside the active work, with stage and a live counter, and updates on a change event', async () => {
+    vi.useFakeTimers({ toFake: ['Date', 'setInterval', 'clearInterval'] });
+    try {
+      vi.setSystemTime(Date.parse('2026-11-14T02:10:00Z'));
+      mockBridge();
+      // The shape agents:working returns.
+      const developer = { agent: 'aidlc-developer-agent', name: 'developer', startedMs: Date.parse('2026-11-14T02:07:00Z'), stage: 'code-generation', intent: 'config-view' };
+      window.bridge.getWorkingAgents.mockResolvedValueOnce([developer]).mockResolvedValue([]);
+      renderView();
+      const working = await screen.findByTestId('config-view-working');
+      expect(screen.getByTestId('config-view-active').parentElement).toBe(working.parentElement); // side by side
+      const row = await within(working).findByTestId('config-view-working-agent');
+      expect(row.textContent).toMatch(/developer/);
+      expect(row.textContent).toMatch(/3 min/);
+      expect(row.textContent).toMatch(/config-view · code-generation/);
+
+      await act(async () => vi.advanceTimersByTime(60 * 1000));
+      expect(row.textContent).toMatch(/4 min/);
+
+      // The inflight file emptied: config:changed reads again and the empty line shows.
+      await act(async () => push.config({ projectId: 'p1' }));
+      expect(within(working).getByText('Inga agenter arbetar.')).toBeTruthy();
+      expect(window.bridge.getWorkingAgents).toHaveBeenCalledWith('p1');
+
+      window.bridge.getWorkingAgents.mockResolvedValue([{ ...developer, name: 'quality', stage: 'build-and-test' }]);
+      await act(async () => push.project({ projectId: 'p1', dirNames: ['261113-config-view'], indexChanged: false }));
+      expect(within(working).getByTestId('config-view-working-agent').textContent).toMatch(/quality.*build-and-test/);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });

@@ -113,6 +113,23 @@ describe('watchFiles', () => {
     await wait(600);
     expect(changes).toBe(1);
   });
+
+  it('reports the extensionless aidlc/.aidlc-subagent-inflight file and ignores its siblings', async () => {
+    const root = path.join(TMP, 'inflight-project');
+    await fs.mkdir(path.join(root, 'aidlc'), { recursive: true });
+    await wait(300); // same FSEvents settling as above
+    let changes = 0;
+    watcher = watchFiles({ root, paths: ['aidlc/.aidlc-subagent-inflight'], onChange: () => changes++, debounceMs: 150 });
+    await watcher.ready;
+
+    await fs.writeFile(path.join(root, 'aidlc', '.aidlc-other'), 'x');
+    await wait(400);
+    expect(changes).toBe(0);
+
+    await fs.writeFile(path.join(root, 'aidlc', '.aidlc-subagent-inflight'), '{"version":1,"entries":[]}');
+    await wait(600);
+    expect(changes).toBe(1);
+  });
 });
 
 describe('watchForAidlc', () => {

@@ -307,6 +307,7 @@
     "resize": "Change the terminal's height (arrow up/down)",
     "hide": "Hide terminal",
     "show": "Show terminal",
+    "quickMenu": "Quick commands",
     "quickTitle": "Types the command into the {harness} tab without sending it",
     "noCommand": "{harness} has no AI-DLC command in the app's table, so nothing is typed.",
     "checking": "Checking…",
@@ -479,8 +480,12 @@
       "active": "Active work",
       "plans": "Plans",
       "provider": "Provider",
-      "plugins": "Plugins"
+      "plugins": "Plugins",
+      "working": "Working now"
     },
+    "noWorking": "No agents working.",
+    "workingFor": "{minutes} min",
+    "workingIn": "{intent} · {stage}",
     "agent": "Agent",
     "model": "Model",
     "effort": "Effort",

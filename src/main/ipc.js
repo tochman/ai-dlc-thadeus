@@ -5,6 +5,7 @@ import { randomUUID } from 'node:crypto';
 import path from 'node:path';
 import { openRoot, readText, resolveInRoot } from './projectAccess.js';
 import {
+  INFLIGHT_PATH,
   LEDGER_PATH,
   detectProject,
   intentsDir,
@@ -12,7 +13,8 @@ import {
   loadCost,
   loadIntentDetail,
   loadIntentList,
-  loadPendingQuestions
+  loadPendingQuestions,
+  loadWorkingAgents
 } from './projectService.js';
 import { notifyQuestions } from './notify.js';
 import { summarizeLedger } from './parsers/ledger.js';
@@ -58,7 +60,7 @@ function watchConfig(projectId) {
   try {
     p.configWatcher = watchFiles({
       root: p.root,
-      paths: CONFIG_WATCH_PATHS,
+      paths: [...CONFIG_WATCH_PATHS, INFLIGHT_PATH], // the inflight file changes "Arbetar nu"
       onChange: () => {
         if (!p.sender.isDestroyed()) p.sender.send('config:changed', { projectId });
       },
@@ -266,6 +268,14 @@ const handlers = {
     const active = await activeIntent(p);
     const config = await getAidlcConfig(p.root, { harness, activeScope: active?.scope ?? null });
     return { ...config, activeDir: active?.dirName ?? null };
+  },
+  // The agents working now in the active intent, for the Configuration view's "Arbetar nu"; read-only.
+  'agents:working': async (_event, projectId) => {
+    const p = project(projectId);
+    const active = await activeIntent(p);
+    if (!active) return [];
+    const agents = await loadWorkingAgents(p.root, p.space, active.dirName);
+    return agents.map((a) => ({ ...a, intent: active.slug ?? active.dirName }));
   },
   'project:file': async (_event, projectId, rel) => readText(project(projectId).root, rel),
   'shell:reveal': async (_event, projectId, rel) => {

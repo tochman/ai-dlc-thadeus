@@ -772,8 +772,28 @@ a.md-link:hover { color: var(--steel-light); }
 .term-host.is-drop-target { outline: 2px dashed var(--steel); outline-offset: -4px; background: var(--slate-1); }
 .term-status { display: flex; gap: 12px; align-items: center; padding: 4px 6px; color: var(--coral-soft); }
 .terminal-foot { display: flex; align-items: center; gap: 8px 14px; flex-wrap: wrap; min-height: 38px; padding: 0 0 6px 24px; }
-.quick-actions { display: flex; gap: 5px; }
-.quick-actions .btn-quiet { min-height: 32px; }
+/* Quick commands: one block in the arm opening a menu with the selects' picker look (::picker(select)). */
+.quick-menu { position: relative; }
+.quick-menu-toggle { width: 100%; justify-content: flex-end; text-transform: none; }
+.quick-menu-list {
+  position: absolute;
+  left: calc(100% + 6px);
+  bottom: 0;
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  min-width: 200px;
+  padding: 4px 0;
+  background: var(--bg);
+  color: var(--text);
+  border-left: var(--frame) solid var(--slate-3);
+  border-bottom: 2px solid var(--slate-2);
+  border-radius: 0 0 0 18px;
+  box-shadow: 0 8px 24px var(--backdrop);
+}
+.quick-menu-item { padding: 6px 14px 6px 10px; border: 0; background: none; color: inherit; text-align: left; font: 14px var(--font-head); letter-spacing: 0.03em; cursor: pointer; }
+.quick-menu-item:hover:not(:disabled), .quick-menu-item:focus-visible { background: var(--steel-deep); outline: none; }
+.quick-menu-item:disabled { color: var(--slate-4); cursor: default; }
 .term-pending-row { display: inline-flex; align-items: center; gap: 8px; }
 .term-pending { border: 1px solid var(--coral); padding: 2px 10px; color: var(--coral-soft); font-size: 13px; text-transform: uppercase; white-space: nowrap; }
 .term-pending-hint { font-size: 13px; color: var(--muted); }
@@ -854,6 +874,9 @@ a.md-link:hover { color: var(--steel-light); }
 .config-section > p { margin: 0 0 6px; }
 .config-section.is-greyed .config-table { opacity: 0.5; }
 .config-table code { font-size: 13px; }
+/* Active work and "Arbetar nu" side by side; they stack when the view is narrow. */
+.config-row { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-start; }
+.config-row > .config-section { flex: 1 1 320px; min-width: 0; }
 .config-env { margin-left: 6px; }
 .config-plans { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
 .config-plans li { display: flex; flex-wrap: wrap; gap: 8px; align-items: baseline; padding: 3px 6px; border-bottom: 1px solid var(--slate-2); }

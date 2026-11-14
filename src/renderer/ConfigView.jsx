@@ -135,6 +135,55 @@ function Pairs({ pairs }) {
   );
 }
 
+const MINUTE = 60 * 1000;
+
+/** "Arbetar nu": the agents working in the active intent, read again on every change event, with a live counter. */
+function WorkingAgents({ projectId }) {
+  const { t } = useTranslation();
+  const [agents, setAgents] = useState(null);
+  const [now, setNow] = useState(Date.now);
+  const load = useCallback(async () => {
+    try {
+      setAgents(await window.bridge.getWorkingAgents(projectId));
+    } catch (err) {
+      console.warn('Arbetande agenter kunde inte läsas:', errorText(err)); // the list keeps its last value
+    }
+  }, [projectId]);
+  useEffect(() => {
+    load();
+    const mine = (c) => c.projectId === projectId && load();
+    const offConfig = window.bridge.onConfigChanged?.(mine); // the inflight file is in the config watcher
+    const offProject = window.bridge.onProjectChanged?.(mine);
+    return () => {
+      offConfig?.();
+      offProject?.();
+    };
+  }, [projectId, load]);
+  useEffect(() => {
+    if (!agents?.length) return undefined;
+    const timer = setInterval(() => setNow(Date.now()), 15 * 1000);
+    return () => clearInterval(timer);
+  }, [agents]);
+
+  return (
+    <Section id="working">
+      {!agents?.length ? (
+        <p className="muted">{t('config.noWorking')}</p>
+      ) : (
+        <ul className="config-plans" data-testid="config-view-working-list">
+          {agents.map((a) => (
+            <li key={`${a.agent}-${a.startedMs}`} data-testid="config-view-working-agent">
+              <strong>{a.name}</strong>
+              <span className="tag tag-active">{t('config.workingFor', { minutes: Math.max(0, Math.floor((now - a.startedMs) / MINUTE)) })}</span>
+              <span className="muted">{t('config.workingIn', { intent: a.intent ?? DASH, stage: a.stage ?? DASH })}</span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </Section>
+  );
+}
+
 /**
  * @param {{projectId: string, visible: boolean, harnesses: Array<{id: string, label: string, installed: boolean}>|null,
  *          defaultHarness: string|null, onSetup?: () => void}} props
@@ -234,14 +283,17 @@ export default function ConfigView({ projectId, visible, harnesses, defaultHarne
           <Section id="defaults" error={errors.flags}>
             {d.flags && <ValueTable rows={d.flags} nameKey="name" nameLabel={t('config.switch')} />}
           </Section>
-          {/* Without an active intent the section says so, whatever config list answered (FR2.4). */}
-          <Section id="active" error={d.activeDir ? errors.active : undefined}>
-            {d.activeDir && d.active?.length ? (
-              <ValueTable rows={d.active} nameKey="key" nameLabel={t('config.setting')} />
-            ) : (
-              <p className="muted">{t('config.noActive')}</p>
-            )}
-          </Section>
+          <div className="config-row">
+            {/* Without an active intent the section says so, whatever config list answered (FR2.4). */}
+            <Section id="active" error={d.activeDir ? errors.active : undefined}>
+              {d.activeDir && d.active?.length ? (
+                <ValueTable rows={d.active} nameKey="key" nameLabel={t('config.setting')} />
+              ) : (
+                <p className="muted">{t('config.noActive')}</p>
+              )}
+            </Section>
+            <WorkingAgents projectId={projectId} />
+          </div>
           <Section id="plans">
             <Plans plans={d.plans ?? []} />
           </Section>

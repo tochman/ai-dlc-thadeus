@@ -182,6 +182,80 @@ function TermSession({ projectId, kind, harness, quietMs, name, shown, register,
 }
 
 /**
+ * The quick commands (FR4.1) as one small menu button in the terminal arm, so they take no row of their own.
+ * A menu rather than a select, since these are actions. Arrow keys move, Esc and an outside click close, a pick types the
+ * command into the agent tab without Enter.
+ */
+function QuickMenu({ harness, onPick }) {
+  const { t } = useTranslation();
+  const [open, setOpen] = useState(false);
+  const rootRef = useRef(null);
+  const toggleRef = useRef(null);
+  const name = harness?.name ?? t('terminal.agent');
+  const items = QUICK_COMMANDS.map((suffix) => ({ suffix, cmd: harnessCommand(harness, suffix) }));
+  const enabled = () => [...(rootRef.current?.querySelectorAll('[role="menuitem"]:not(:disabled)') ?? [])];
+
+  useEffect(() => {
+    if (!open) return undefined;
+    enabled()[0]?.focus();
+    const outside = (e) => !rootRef.current?.contains(e.target) && setOpen(false);
+    document.addEventListener('pointerdown', outside);
+    return () => document.removeEventListener('pointerdown', outside);
+  }, [open]);
+
+  function close() {
+    setOpen(false);
+    toggleRef.current?.focus();
+  }
+  function onKeyDown(e) {
+    if (e.key === 'Escape') {
+      e.preventDefault();
+      close();
+    } else if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      const list = enabled();
+      const i = list.indexOf(document.activeElement);
+      list[(i + (e.key === 'ArrowDown' ? 1 : -1) + list.length) % list.length]?.focus();
+    }
+  }
+
+  return (
+    <div className="quick-menu" ref={rootRef} onKeyDown={open ? onKeyDown : undefined}>
+      <button
+        ref={toggleRef}
+        className="lcars-block lcars-block--sm lcars-block--dark quick-menu-toggle"
+        aria-haspopup="menu"
+        aria-expanded={open}
+        onClick={() => setOpen((o) => !o)}
+        data-testid="terminal-panel-quick-menu"
+      >
+        {harnessCommand(harness, '') ?? t('terminal.quickMenu')} ▾
+      </button>
+      {open && (
+        <div className="quick-menu-list" role="menu" aria-label={t('terminal.quickMenu')}>
+          {items.map(({ suffix, cmd }) => (
+            <button
+              key={suffix}
+              role="menuitem"
+              className="quick-menu-item"
+              title={cmd ? t('terminal.quickTitle', { harness: name }) : t('terminal.noCommand', { harness: name })}
+              disabled={!cmd}
+              onClick={() => {
+                close();
+                onPick(cmd);
+              }}
+              data-testid="terminal-panel-quick-command"
+            >
+              {cmd ?? suffix.trim()}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/**
  * Must sit inside a TerminalProvider: which tab is open and active is shared with the other views (FR1.4).
  * The agent tab runs `terminal.harness` (US-0801); while it is null (detection runs) or `terminal.harnessProblem`
  * is set, nothing starts there, and `onChooseHarness` opens the project settings (FR5.1).
@@ -199,6 +273,7 @@ export default function TerminalPanel({ projectId, visible, onChooseHarness }) {
   const panelRef = useRef(null);
   const clampHeight = (h) => Math.round(Math.min(window.innerHeight * 0.6, Math.max(180, h)));
   const currentHeight = () => height ?? panelRef.current?.offsetHeight ?? 220;
+  const pendingKinds = KINDS.filter((kind) => terminal.pending(kind));
 
   function startDrag(e) {
     e.preventDefault();
@@ -219,7 +294,7 @@ export default function TerminalPanel({ projectId, visible, onChooseHarness }) {
   }
 
   // The Konsol mockup: the agent and Shell as blocks in the bottom arm with their state on the block, segmented
-  // bars above and below the terminal, quick commands as outline buttons (EPIC-04 FR3.6).
+  // bars above and below the terminal, quick commands in one menu button in the arm (EPIC-04 FR3.6).
   return (
     <section
       ref={panelRef}
@@ -268,6 +343,7 @@ export default function TerminalPanel({ projectId, visible, onChooseHarness }) {
             );
           })}
         </div>
+        <QuickMenu harness={harness} onPick={(cmd) => terminal.type('agent', cmd, { submit: false })} />
         <button className="terminal-elbow" onClick={() => setOpen((o) => !o)} aria-expanded={open} data-testid="terminal-panel-toggle">
           <AuctumMark size={96} className="terminal-elbow-mark" decorative />
           <span className="terminal-elbow-label">{open ? t('terminal.hide') : t('terminal.show')}</span>
@@ -312,39 +388,24 @@ export default function TerminalPanel({ projectId, visible, onChooseHarness }) {
             onInput={() => terminal.input('shell')}
           />
         </div>
-        <div className="terminal-foot">
-          <div className="quick-actions">
-            {QUICK_COMMANDS.map((suffix) => {
-              const cmd = harnessCommand(harness, suffix);
-              const name = harness?.name ?? t('terminal.agent');
-              return (
-                <button
-                  key={suffix}
-                  className="btn btn-quiet"
-                  title={cmd ? t('terminal.quickTitle', { harness: name }) : t('terminal.noCommand', { harness: name })}
-                  disabled={!cmd}
-                  onClick={() => terminal.type('agent', cmd, { submit: false })}
-                  data-testid="terminal-panel-quick-command"
-                >
-                  {cmd ?? suffix.trim()}
-                </button>
-              );
-            })}
-          </div>
-          {KINDS.filter((kind) => terminal.pending(kind)).map((kind) => (
-            <span key={kind} className="term-pending-row">
-              <span className="term-pending is-attn" data-testid={`terminal-panel-pending-${kind}`}>
-                {t('terminal.pending')}
+        {/* Only while something waits for Enter or went wrong, so the terminal keeps the height otherwise. */}
+        {(pendingKinds.length > 0 || terminal.error) && (
+          <div className="terminal-foot" data-testid="terminal-panel-foot">
+            {pendingKinds.map((kind) => (
+              <span key={kind} className="term-pending-row">
+                <span className="term-pending is-attn" data-testid={`terminal-panel-pending-${kind}`}>
+                  {t('terminal.pending')}
+                </span>
+                <span className="term-pending-hint">{t('terminal.pendingHint', { tab: tabLabel(kind) })}</span>
               </span>
-              <span className="term-pending-hint">{t('terminal.pendingHint', { tab: tabLabel(kind) })}</span>
-            </span>
-          ))}
-          {terminal.error && (
-            <span className="term-error" role="alert" data-testid="terminal-panel-error">
-              {terminal.error}
-            </span>
-          )}
-        </div>
+            ))}
+            {terminal.error && (
+              <span className="term-error" role="alert" data-testid="terminal-panel-error">
+                {terminal.error}
+              </span>
+            )}
+          </div>
+        )}
         <Bar segs={[['slate-3', 2], ['steel-deep', 70], ['slate-2', 1]]} />
       </div>
     </section>
