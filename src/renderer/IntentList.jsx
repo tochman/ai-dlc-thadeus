@@ -55,7 +55,8 @@ export default function IntentList({ intents, selected, onSelect, cost }) {
   const scopes = useMemo(() => unique(intents.map(planName)), [intents]);
   const costs = cost?.available ? cost.perIntent : null;
   const visible = sortIntents(filterIntents(intents, { status, scope, query }), sort, costs);
-  const activeDirName = intents.find((i) => i.active)?.dirName ?? null;
+  const activeIntent = intents.find((i) => i.active) ?? null;
+  const activeDirName = activeIntent?.dirName ?? null;
 
   return (
     <div className="intent-list" data-testid="intent-list">
@@ -142,7 +143,7 @@ export default function IntentList({ intents, selected, onSelect, cost }) {
               )}
             </button>
             {i.dirName === selected && (
-              <ResumeButton intent={i} activeDirName={activeDirName} position={stagePosition(i.currentStage, i.done, i.executed)} />
+              <ResumeButton intent={i} activeDirName={activeDirName} activeIntent={activeIntent} position={stagePosition(i.currentStage, i.done, i.executed)} />
             )}
           </li>
         ))}

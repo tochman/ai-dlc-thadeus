@@ -6,9 +6,9 @@
 
 > Small fixes the person reports while using the app: something looks off, behaves wrongly or is missing a detail. Each fix becomes a story here, so nothing reported in passing gets lost. A fix that grows into a feature moves to its topic's epic.
 
-**Stories:** US-0001, US-0002, US-0003, US-0004, US-0005, US-0006
+**Stories:** US-0001, US-0002, US-0003, US-0004, US-0005, US-0006, US-0007
 
-**Status (2026-11-14):** ✅ US-0001 released in v0.2.3 (epic badge). ✅ US-0002 released in v0.2.3 (busy tab alignment). ✅ US-0003 released in v0.2.3 (lifecycle rule for every harness). ✅ US-0004 released in v0.2.3 (a popup answer reaches the agent once). ✅ US-0005 released in v0.2.3 (Resume waits while the work runs). ✅ US-0006 done for v0.2.4 (popup answers reach Claude Code's real picker).
+**Status (2026-11-14):** ✅ US-0001 released in v0.2.3 (epic badge). ✅ US-0002 released in v0.2.3 (busy tab alignment). ✅ US-0003 released in v0.2.3 (lifecycle rule for every harness). ✅ US-0004 released in v0.2.3 (a popup answer reaches the agent once). ✅ US-0005 released in v0.2.3 (Resume waits while the work runs). ✅ US-0006 done for v0.2.4 (popup answers reach Claude Code's real picker). ✅ US-0007 done for v0.2.4 (Resume stays disabled while an agent session runs the work).
 
 ---
 
@@ -104,3 +104,18 @@
   - **Where.** `parseOptions()` and `pendingQuestions()` in `src/main/questions.js`; `readPicker()`, `resolveAnswer()` and `waitForAnswer()` in `src/renderer/picker.js`; `screenLines()` in `src/renderer/TerminalPanel.jsx`; `answer()` in `src/renderer/TerminalContext.jsx`.
   - **Tests.** Fixtures in `tests/fixtures/picker/`. Tests in `tests/renderer/picker.test.jsx`, `tests/renderer/pickerSmoke.test.jsx` (a real xterm `Terminal`), `tests/renderer/QuestionPopup.test.jsx` and `tests/main/questions.test.js`.
 - **Dependencies:** US-0004
+
+**US-0007: Resume stays disabled while an agent session is running the work** ✅ Done for v0.2.4
+- As a **developer whose agent is running an intent**, in order to **not be offered a Resume that would type into the running session**, I would like to **have every Resume button stay disabled while an agent session runs the work, even when the agent is quiet**.
+- **Epic:** EPIC-00
+- **Priority:** High
+- **Complexity:** Low
+- **Background:** Reported 2026-11-14, with a screenshot, and reported several times before: "we still see these buttons active while we work on an intent … it is confusing for the user". Both "Resume at Code Generation (step 5 of 8)" buttons were enabled while `custom-plans` was in flight and Claude ran it in the agent tab. `workingReason()` disabled them only while a tab was busy (output in the last 1.5 s) or a question was open (US-0005). While Claude waits on a background subagent or is between steps, the tab is quiet and no question is open, so Resume turned active.
+- **Acceptance Criteria:**
+  - [x] While any agent tab of the project is alive (not exited) and the project's active intent is in flight, every Resume button in that project is disabled: under the intent and in the intent list, for the active intent and for other intents. Its title says why: "{harness} kör {intent} — fortsätt i terminalen" / "{harness} is running {intent} — continue in the terminal".
+  - [x] The buttons are enabled again when the agent tab exits, or when the active intent is parked or completed.
+  - [x] The busy and asking reasons from US-0005 stay, and come first.
+- **Notes:**
+  - **Where.** `running()` in `src/renderer/TerminalContext.jsx` (any agent tab not exited) and `workingReason()` in `src/renderer/ResumeButton.jsx`. The project's active intent reaches both buttons as `activeIntent` (`ProjectView.jsx` → `IntentDetail.jsx`, and `IntentList.jsx`). The text is `intents.resume.running`.
+  - **Tests.** `tests/renderer/ResumeButton.test.jsx` (4 new) and `tests/renderer/TerminalPanel.test.jsx`.
+- **Dependencies:** US-0005

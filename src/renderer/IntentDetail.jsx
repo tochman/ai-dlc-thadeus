@@ -116,7 +116,7 @@ function ReadoutColumn({ pipeline, intentCost, intent, directive, cost, dirName 
   );
 }
 
-export default function IntentDetail({ projectId, detail, intent, activeDirName, newKeys, cost, models, stories = [], onOpenStory }) {
+export default function IntentDetail({ projectId, detail, intent, activeDirName, activeIntent = null, newKeys, cost, models, stories = [], onOpenStory }) {
   const { t } = useTranslation();
   const [tab, setTab] = useState('pipeline');
   const [openFile, setOpenFile] = useState(null);
@@ -157,7 +157,7 @@ export default function IntentDetail({ projectId, detail, intent, activeDirName,
               {detail.stale && <span className="lcars-chip lcars-chip--warn">{t('intents.stale')}</span>}
             </div>
           </div>
-          {intent && <ResumeButton intent={intent} activeDirName={activeDirName} position={position} />}
+          {intent && <ResumeButton intent={intent} activeDirName={activeDirName} activeIntent={activeIntent} position={position} />}
         </header>
 
         {steps.length > 0 && (

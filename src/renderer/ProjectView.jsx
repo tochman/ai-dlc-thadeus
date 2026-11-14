@@ -58,7 +58,8 @@ function AidlcProject({ project, view, onView, focusIntent, storiesByIntent, onO
   const { t } = useTranslation();
   const { detection, projectId } = project;
   const p = useProject(projectId, detection.activeSpace);
-  const activeDirName = p.intents.find((i) => i.active)?.dirName ?? null;
+  const activeIntent = p.intents.find((i) => i.active) ?? null;
+  const activeDirName = activeIntent?.dirName ?? null;
 
   // A story's link to an intent selects that intent (FR2.6).
   useEffect(() => {
@@ -112,6 +113,7 @@ function AidlcProject({ project, view, onView, focusIntent, storiesByIntent, onO
               detail={p.detail}
               intent={p.intents.find((i) => i.dirName === p.detail.dirName)}
               activeDirName={activeDirName}
+              activeIntent={activeIntent}
               newKeys={p.newKeys}
               cost={p.cost}
               models={p.models}
