@@ -80,7 +80,11 @@
       "mismatch": "{harness} visar andra val än de AI-DLC loggade. Svara i terminalen.",
       "maybeLost": "Skickat till {harness}, men frågan väntar fortfarande. Svaret kanske inte kom fram – titta i terminalen.",
       "noAgent": "Agentfliken kör inte än. Svara i terminalen.",
-      "openTerminal": "Öppna terminalen"
+      "openTerminal": "Öppna terminalen",
+      "askPlan": "Godkänn planen för {stage}",
+      "askScope": "Bekräfta planen för arbetet",
+      "askOther": "AI-DLC frågar ({type})",
+      "batch": "AI-DLC ställer {n} frågor på en gång, och dem kan popupen inte svara på. Svara i terminalen."
     },
     "notification": {
       "title": "{project}: AI-DLC väntar på ditt svar"

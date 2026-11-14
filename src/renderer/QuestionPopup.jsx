@@ -18,8 +18,19 @@ const gateText = (q) =>
     ? translate('app.question.gateNext', { stage: q.stage ?? '?', next: q.nextStage })
     : translate('app.question.gate', { stage: q.stage ?? '?' });
 
+/** An engine ask has no logged text: name what it asks (the same keys as main's notify.js askText). */
+const askText = (q) =>
+  q.ask === 'plan-approval'
+    ? translate('app.question.askPlan', { stage: q.stage ?? '?' })
+    : q.ask === 'scope-confirm'
+      ? translate('app.question.askScope')
+      : translate('app.question.askOther', { type: q.ask });
+
+const textOf = (q) => (q.kind === 'gate' ? gateText(q) : q.ask ? askText(q) : q.text);
+
 /** The choices as [label, number shown]: a gate's Approve and Request Changes, else the logged options 1–9. */
 function choices(q, t) {
+  if (q.batch?.length) return []; // several questions at once: answered in the terminal (EPIC-00 US-0006)
   if (q.kind === 'gate') return [[t('app.question.approve'), '1'], [t('app.question.requestChanges'), '2']];
   return (q.options ?? []).slice(0, 9).map((o, n) => [o, String(n + 1)]);
 }
@@ -46,7 +57,9 @@ export default function QuestionPopup({ open, questions, focus = null, harnessOf
   const q = questions[i] ?? null;
   const harness = q ? harnessOf(q.projectId) : null;
   const sentHere = sent && q && sent.id === q.id ? sent : null;
-  const canSend = Boolean(harness && onSend) && !sentHere; // a refused send offers only the terminal
+  const batch = q?.batch?.length ? q.batch : null;
+  // A refused send, or a batch, offers only the terminal; a send waiting for its picker blocks a second one.
+  const canSend = Boolean(harness && onSend) && !sentHere && !batch;
 
   // A new newest question, or the one a notification named, is shown first.
   const newestId = questions[0]?.id;
@@ -91,7 +104,10 @@ export default function QuestionPopup({ open, questions, focus = null, harnessOf
 
   async function send(answer) {
     const target = q;
+    setSent({ id: target.id, waiting: true });
     const result = await onSend(target, answer);
+    // Development only (EPIC-00 US-0006): the resolveAnswer result and the last 30 rows of each agent tab's screen.
+    if (import.meta.env.DEV && !result?.ok) console.debug('[US-0006] popup send failed', { question: target, answer, ...result });
     setSent({ id: target.id, ok: result?.ok === true, error: result?.error ?? null });
     if (result?.ok) setOwn('');
   }
@@ -113,7 +129,7 @@ export default function QuestionPopup({ open, questions, focus = null, harnessOf
   const red = overdue && !sentHere?.ok;
 
   const picker = q && harness?.pickerKeys ? choices(q, t) : [];
-  const listed = q && !picker.length && q.options?.length > 0;
+  const listed = q && !picker.length && !batch && q.options?.length > 0;
 
   return (
     <dialog
@@ -137,7 +153,21 @@ export default function QuestionPopup({ open, questions, focus = null, harnessOf
             {q.projectName} · {q.intent} · {q.stage ?? '?'}
           </p>
           {q.early && <p className="question-popup-early">{t('app.question.early')}</p>}
-          <p className="question-popup-text">{q.kind === 'gate' ? gateText(q) : q.text}</p>
+          <p className="question-popup-text">{textOf(q)}</p>
+          {batch && (
+            <>
+              <ul className="question-popup-options" data-testid="question-popup-batch">
+                {batch.map((b) => (
+                  <li key={b.id}>
+                    {b.id}: {b.options.join(' / ')}
+                  </li>
+                ))}
+              </ul>
+              <p className="question-popup-status" data-testid="question-popup-batch-note">
+                {t('app.question.batch', { n: batch.length })}
+              </p>
+            </>
+          )}
           {picker.length > 0 && (
             <div className="question-popup-choices">
               {picker.map(([label, key], n) => (
@@ -184,7 +214,7 @@ export default function QuestionPopup({ open, questions, focus = null, harnessOf
               {t('app.question.send')}
             </button>
           </form>
-          {sentHere && (
+          {sentHere && !sentHere.waiting && (
             <p className={`question-popup-status${sentHere.ok ? '' : ' is-error'}`} role="status" data-testid="question-popup-status">
               {sentHere.ok
                 ? late === sentHere.id

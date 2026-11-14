@@ -7,7 +7,7 @@
 import { createContext, useCallback, useContext, useMemo, useRef, useState } from 'react';
 import { READY_TIMEOUT_MS, runSequence, waitFor, withEnter } from './terminalControl.js';
 import { t } from '../shared/i18n.js';
-import { resolveAnswer } from './picker.js';
+import { waitForAnswer } from './picker.js';
 
 const TerminalCtx = createContext(null);
 const NO_AGENT = { harness: null, problem: null, extras: [] };
@@ -159,19 +159,32 @@ export function TerminalProvider({ children, askingIntents = [] }) {
       /**
        * The question popup's answer, without showing the tab (US-0505). An option goes only to the agent tab whose
        * picker shows that question, as the picker's own key (EPIC-00 US-0004); an own answer with no picker on screen
-       * is typed with Enter into the last agent tab. Throws, with the reason, when nothing can be sent.
+       * is typed with Enter into the last agent tab. It waits up to `waitMs` for the picker to be drawn (US-0006).
+       * Rejects, with the reason, when nothing can be sent.
        */
-      answer: (q, answer) => {
-        const screens = agentTabs
-          .filter((tab) => sessions.current[tab]?.screen)
-          .map((tab) => ({ tab, lines: sessions.current[tab].screen() }));
-        const found = resolveAnswer(screens, q, answer);
+      answer: async (q, answer, { waitMs } = {}) => {
+        const read = () =>
+          agentTabs
+            .filter((tab) => sessions.current[tab]?.screen)
+            .map((tab) => ({ tab, lines: sessions.current[tab].screen() }));
+        const { found, screens } = await waitForAnswer(read, q, answer, { waitMs });
+        // Development only (EPIC-00 US-0006): a refused send carries what the picker reader saw, for QuestionPopup to log.
+        const fail = (message) => {
+          const err = new Error(message);
+          if (import.meta.env.DEV) {
+            err.debug = {
+              found,
+              screens: screens.map(({ tab, lines }) => ({ tab, view: sessions.current[tab]?.view?.(), lines: lines.slice(-30) }))
+            };
+          }
+          return err;
+        };
         if (found.error === 'noPicker' && answer.own !== undefined) {
           const s = sessions.current[lastRef.current];
-          if (!s) throw new Error(noTabText(ALIAS));
+          if (!s) throw fail(noTabText(ALIAS));
           return s.write(withEnter(answer.own, true));
         }
-        if (found.error) throw new Error(t(`app.question.${found.error}`, { harness: harnessOf(lastRef.current)?.name ?? t('terminal.agent') }));
+        if (found.error) throw fail(t(`app.question.${found.error}`, { harness: harnessOf(lastRef.current)?.name ?? t('terminal.agent') }));
         const s = sessions.current[found.tab];
         for (const key of found.keys) s.write(key);
       },

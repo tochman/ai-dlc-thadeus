@@ -204,12 +204,11 @@ function ProjectContent({ project, visible, settingsOpen = false, onCloseSetting
     if (!terminalCommand || terminalCommand.projectId !== project.projectId) return;
     // The question popup's answer: keys for the agent tab, the view stays where it is (US-0505).
     if (terminalCommand.action === 'answer') {
-      try {
-        terminal.answer(terminalCommand.question, terminalCommand.answer);
-        terminalCommand.reply?.({ ok: true });
-      } catch (err) {
-        terminalCommand.reply?.({ ok: false, error: err.message });
-      }
+      // It may wait a moment for Claude Code to draw its picker (EPIC-00 US-0006).
+      terminal.answer(terminalCommand.question, terminalCommand.answer).then(
+        () => terminalCommand.reply?.({ ok: true }),
+        (err) => terminalCommand.reply?.({ ok: false, error: err.message, debug: err.debug })
+      );
       return;
     }
     if (terminalCommand.action === 'restart') terminal.restart(terminal.view.active);

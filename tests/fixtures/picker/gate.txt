@@ -1,0 +1,18 @@
+⏺ Code Generation är klar. Ändrade filer:
+  1. src/renderer/picker.js
+  2. src/main/questions.js
+
+────────────────────────────────────────────────────────────────────────────────
+ □ Approval
+
+Code Generation complete. How would you like to proceed?
+
+❯ 1. Approve
+     Continue to Build and Test
+  2. Request Changes
+     Provide revision feedback
+  3. Type something.
+────────────────────────────────────────────────────────────────────────────────
+  4. Chat about this
+
+Enter to select · ↑/↓ to navigate · Esc to cancel

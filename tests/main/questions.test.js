@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { pendingQuestions } from '../../src/main/questions.js';
+import { parseOptions, pendingQuestions } from '../../src/main/questions.js';
 import { mergeAudits } from '../../src/main/parsers/audit.js';
 
 const where = { project: { projectId: 'p1', name: 'aidlc-dash' }, intent: '261113-question-popup' };
@@ -71,6 +71,12 @@ describe('pendingQuestions (US-0505 FR1.2, FR1.3)', () => {
     expect(broken.options).toEqual(['[not json']);
   });
 
+  it('(e2) a JSON list keeps its labels; options carry no batch for one question', () => {
+    const [q] = pendingQuestions(events(asked('s', 'j2', { Options: '["A. @tanstack/react-virtual (Recommended)","B. Egen fönstring"]' })), where);
+    expect(q.options).toEqual(['A. @tanstack/react-virtual (Recommended)', 'B. Egen fönstring']);
+    expect(q.batch).toBeNull();
+  });
+
   it('(f) an answer in another stage or for another unit does not answer the question', () => {
     const list = pendingQuestions(
       events(
@@ -82,5 +88,84 @@ describe('pendingQuestions (US-0505 FR1.2, FR1.3)', () => {
       where
     );
     expect(list.map((q) => q.id)).toEqual(['q1']);
+  });
+});
+
+// Options as AI-DLC really logged them in this project's audit shards (EPIC-00 US-0006).
+describe('parseOptions (US-0006)', () => {
+  it('reads comma, pipe, semicolon and JSON lists', () => {
+    expect(parseOptions('Retry with fix,Accept failure,Abort').options).toEqual(['Retry with fix', 'Accept failure', 'Abort']);
+    expect(parseOptions('|Yes, all three work|Something is wrong (describe)').options).toEqual(['Yes, all three work', 'Something is wrong']);
+    expect(parseOptions('Ja; Nej; Kanske').options).toEqual(['Ja', 'Nej', 'Kanske']);
+    expect(parseOptions('["Approve Plan","Request Changes","I\'ll edit the files"]').options).toEqual(['Approve Plan', 'Request Changes', "I'll edit the files"]);
+  });
+
+  it('strips a description in parentheses, even one holding a comma or semicolon', () => {
+    const raw =
+      'Guide me (walk through each question interactively here),I\'ll edit the file (they fill in the answers in the file directly),Chat (discuss freely; you extract the decisions from the conversation)';
+    expect(parseOptions(raw)).toEqual({ options: ['Guide me', "I'll edit the file", 'Chat'], batch: null });
+    expect(parseOptions('Q1: A. Vanlig release direkt,Q1: B. Prerelease först')).toEqual({ options: ['A. Vanlig release direkt', 'B. Prerelease först'], batch: null });
+  });
+
+  it('turns a batch summary into one entry per question, in every logged form', () => {
+    const forms = [
+      '|Q1: A. Every switch|Q1: B. Non-default plus Show all|Q2: A. Agent-tab harness, no switch|Q2: B. Section per harness',
+      'Q1: A. Every switch / B. Non-default plus Show all; Q2: A. Agent-tab harness, no switch / B. Section per harness',
+      'Q1: A. Every switch / B. Non-default plus Show all,Q2: A. Agent-tab harness, no switch / B. Section per harness'
+    ];
+    for (const raw of forms) {
+      expect(parseOptions(raw).batch, raw).toEqual([
+        { id: 'Q1', options: ['A. Every switch', 'B. Non-default plus Show all'] },
+        { id: 'Q2', options: ['A. Agent-tab harness, no switch', 'B. Section per harness'] }
+      ]);
+    }
+    expect(parseOptions('Q1: remove dialog, keep dialog; Q2: under Utseende, own section').batch).toEqual([
+      { id: 'Q1', options: ['remove dialog', 'keep dialog'] },
+      { id: 'Q2', options: ['under Utseende', 'own section'] }
+    ]);
+    expect(parseOptions('Q1: All six,Q1: Only Claude Code,Q2: Keep it visible,Q2: App runs it').batch.map((b) => b.options)).toEqual([
+      ['All six', 'Only Claude Code'],
+      ['Keep it visible', 'App runs it']
+    ]);
+  });
+});
+
+describe('pendingQuestions with engine asks and real answers (US-0006)', () => {
+  const plan = { Event: 'QUESTION_ASKED', 'Question Id': '32a59f72', 'Question Type': 'plan-approval', Stage: 'code-generation', Options: '["Approve Plan","Request Changes","I\'ll edit the files"]' };
+
+  it('shows a plan-approval ask with its exact options until its reply or PLAN_APPROVAL_RECORDED', () => {
+    const [q] = pendingQuestions(events(plan), where);
+    expect(q).toMatchObject({ id: '32a59f72', kind: 'question', ask: 'plan-approval', stage: 'code-generation', text: '', options: ['Approve Plan', 'Request Changes', "I'll edit the files"] });
+    expect(pendingQuestions(events(plan, { Event: 'PLAN_APPROVAL_RECORDED', Stage: 'code-generation' }), where)).toEqual([]);
+    const reply = { Event: 'QUESTION_REPLIED', Reply: 'Approve Plan', Options: '["Approve Plan","Request Changes","I\'ll edit the files"]' };
+    expect(pendingQuestions(events(plan, reply), where)).toEqual([]);
+    // A gate's reply does not close the plan ask.
+    expect(pendingQuestions(events(plan, { ...reply, Options: '["Approve","Request Changes"]' }), where)).toHaveLength(1);
+  });
+
+  it('shows a scope-confirm ask, but not one of type gate (that one is STAGE_AWAITING_APPROVAL)', () => {
+    const scope = { ...plan, 'Question Id': 's1', 'Question Type': 'scope-confirm', Options: '["Go ahead with the \\"ultra-express\\" plan","Use a different plan"]' };
+    const list = pendingQuestions(events(scope, { ...plan, 'Question Id': 'g1', 'Question Type': 'gate' }), where);
+    expect(list.map((q) => [q.id, q.ask])).toEqual([['s1', 'scope-confirm']]);
+  });
+
+  it('a batch summary row becomes a batch question', () => {
+    const row = asked('requirements-analysis', '4e279738', { Decision: 'Q1, Q2', Options: '|Q1: A. Every switch|Q1: B. Only|Q2: A. Here|Q2: B. There' });
+    const [q] = pendingQuestions(events(row), where);
+    expect(q.batch.map((b) => b.id)).toEqual(['Q1', 'Q2']);
+  });
+
+  it('an answer closes only the question it answers', () => {
+    const mode = asked('requirements-analysis', 'mode', { Options: "Guide me,I'll edit the file,Chat" });
+    const scan = asked('requirements-analysis', 'scan', { Options: 'Full rescan,Focused scan' });
+    // The reply names the older question's option: that one closes, the newer stays.
+    const one = pendingQuestions(events(mode, scan, { Event: 'QUESTION_ANSWERED', Stage: 'requirements-analysis', 'Person Reply': 'Guide me' }), where);
+    expect(one.map((q) => q.id)).toEqual(['scan']);
+    // A free-text reply answers the newest (the one on screen), not an older one left open.
+    const two = pendingQuestions(events(mode, scan, { Event: 'QUESTION_ANSWERED', Stage: 'requirements-analysis', 'Person Reply': 'Kör en snabb' }), where);
+    expect(two.map((q) => q.id)).toEqual(['mode']);
+    // An answer never closes an engine ask: its reply does.
+    const three = pendingQuestions(events(plan, { Event: 'QUESTION_ANSWERED', Stage: 'code-generation', 'Person Reply': 'Ja' }), where);
+    expect(three.map((q) => q.id)).toEqual(['32a59f72']);
   });
 });
