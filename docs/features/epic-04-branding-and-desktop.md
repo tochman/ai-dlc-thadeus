@@ -8,7 +8,7 @@
 
 **Stories:** US-0401, US-0402, US-0403, US-0404, US-0405, US-0406, US-0407, US-0408, US-0409
 
-**Status (2026-11-14):** ✅ US-0401 released in v0.1.1. ✅ US-0402, US-0403 and US-0404 released in v0.2.0. ✅ US-0406 released in v0.2.1 (intent `261113-thadeus-name`). ✅ US-0405 released in v0.2.3 (settings view, intent `261114-settings-view`) — marked "Released in v0.2.3" when the tag is cut. ✅ US-0407 released in v0.2.3 (update from a GitHub release). ✅ US-0408 released in v0.2.3 (Om T.H.A.D.E.U.S. window with the app version). 📋 US-0409 planned for v0.2.4 (About window in a new design).
+**Status (2026-11-14):** ✅ US-0401 released in v0.1.1. ✅ US-0402, US-0403 and US-0404 released in v0.2.0. ✅ US-0406 released in v0.2.1 (intent `261113-thadeus-name`). ✅ US-0405 released in v0.2.3 (settings view, intent `261114-settings-view`) — marked "Released in v0.2.3" when the tag is cut. ✅ US-0407 released in v0.2.3 (update from a GitHub release). ✅ US-0408 released in v0.2.3 (Om T.H.A.D.E.U.S. window with the app version). ✅ US-0409 done for v0.2.4 (About window in a new design).
 
 ---
 
@@ -201,16 +201,23 @@
 - **Notes:** Added 2026-11-14 at the person's request, during v0.2.3's Build and Test.
 - **Dependencies:** US-0404 (app menu), US-0406 (name and splash)
 
-**US-0409: The About window in the new LCARS design** 📋 Planned for v0.2.4
+**US-0409: The About window in the new LCARS design** ✅ Done for v0.2.4
 - As a **developer using THADEUS**, in order to **have the About window look like the rest of the bridge console**, I would like to **see it in the person's new design: an LCARS elbow frame with bars, labels and an EXIT block**.
 - **Epic:** EPIC-04
 - **Priority:** Medium
 - **Complexity:** Low
 - **Background:** The person shared a better design on 2026-11-14 (reference screenshot `Screenshot 2026-11-14 at 08.57.52.png`). The screenshot guides layout, shape and colour only (FR9.5: no copied text or assets).
 - **Acceptance Criteria:**
-  - [ ] A rounded LCARS elbow frames the content on the left, top and bottom, with small code labels in the frame and a small status row at the bottom.
-  - [ ] The title (`APP_NAME`) sits top right in the accent colour.
-  - [ ] `APP_FULL_NAME`, `APP_TAGLINE` and the app version sit in light horizontal bars, each with a coloured end tab and a line under it, beside the Auctum mark.
-  - [ ] An EXIT block in the frame's left edge closes the window, like Stäng did. Esc, a click outside and the focus return still work (US-0408).
-  - [ ] Swedish and English texts, 4.5:1 contrast, and motion that follows the animations setting.
+  - [x] A rounded LCARS elbow frames the content on the left, top and bottom, with small code labels in the frame and a small status row at the bottom.
+  - [x] The title (`APP_NAME`) sits top right in the accent colour.
+  - [x] `APP_FULL_NAME`, `APP_TAGLINE` and the app version sit in light horizontal bars, each with a coloured end tab and a line under it, beside the Auctum mark.
+  - [x] An EXIT block in the frame's left edge closes the window, like Stäng did. Esc, a click outside and the focus return still work (US-0408).
+  - [x] Swedish and English texts, 4.5:1 contrast, and motion that follows the animations setting.
+- **Notes:**
+  - `src/renderer/AboutDialog.jsx` and the `.about-lcars-*` rules in `src/renderer/theme.css`.
+  - The elbow is a CSS grid: the arm spans every row, and the main area overlaps it by its corner radius.
+  - The code labels come from the version and platform (`codeLabels()`). EXIT/STÄNG comes from `aboutDialog.exit`.
+  - Colours are the existing tokens only. Measured contrast: bar text 7.8:1, EXIT 13.6:1, title 9.9:1, status row 12.2:1.
+  - No new animation: the mark's glow already follows the animations setting.
+  - Test: `tests/renderer/AboutDialog.test.jsx`. No screenshot was taken in this build (no screen access); one is due before the release.
 - **Dependencies:** US-0408

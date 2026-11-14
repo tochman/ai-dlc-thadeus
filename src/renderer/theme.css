@@ -913,10 +913,64 @@ a.md-link:hover { color: var(--steel-light); }
 .settings-dialog::backdrop { background: var(--backdrop); }
 .settings-dialog h2 { margin: 0 0 14px; font-size: 28px; }
 /* US-0408: the padding sits on the body so a click on the <dialog> itself means the backdrop. */
-.about-dialog { padding: 0; }
-.about-dialog-body { display: flex; flex-direction: column; align-items: center; gap: 16px; padding: 28px 32px 22px; }
-.about-dialog-body .splash-name-main { font-size: 44px; }
-.about-dialog-version { margin: 0; color: var(--text-2); font-variant-numeric: tabular-nums; }
+/* US-0409: an LCARS panel. The grid is the elbow: the arm spans every row, the top and foot bars join it, and the
+   main area overlaps the arm by its corner radius so the inner curve shows the arm's colour behind it. */
+.about-dialog { padding: 0; border: 0; border-radius: 0; width: min(760px, 94vw); max-width: none; background: var(--bg); }
+.about-lcars {
+  display: grid;
+  grid-template-columns: 112px 1fr;
+  grid-template-rows: var(--bar) 1fr var(--bar) auto;
+  padding: 14px 16px 10px;
+}
+.about-lcars-arm {
+  grid-column: 1; grid-row: 1 / 4;
+  display: flex; flex-direction: column; align-items: flex-start; gap: var(--gap);
+  padding: 44px 30px 40px 14px;
+  background: var(--slate-5);
+  border-radius: 48px 0 0 48px;
+}
+.about-lcars-top { grid-column: 2; grid-row: 1; display: flex; justify-content: flex-end; background: var(--slate-5); padding-right: 20%; }
+.about-lcars-foot { grid-column: 2; grid-row: 3; background: var(--slate-5); }
+.about-lcars-main {
+  grid-column: 2; grid-row: 2;
+  position: relative; margin-left: -24px;
+  min-height: 280px; padding: 8px 4px 16px 44px;
+  background: var(--bg);
+  border-radius: 24px 0 0 24px;
+  display: flex; flex-direction: column; gap: 10px;
+}
+.about-lcars-code { background: var(--bg); color: var(--text-2); font-size: 11px; letter-spacing: 0.1em; line-height: 1; padding: 3px 6px; font-variant-numeric: tabular-nums; }
+.about-lcars-code--bar { align-self: stretch; display: flex; align-items: center; padding: 0 8px; }
+.about-lcars-exit {
+  position: relative; margin: 10px 0; width: 100%; min-height: 40px; padding: 14px 8px 4px 12px;
+  border: 0; border-radius: 0; cursor: pointer;
+  background: var(--steel-light); color: var(--on-light);
+  font: 600 16px/1 var(--font-head); letter-spacing: 0.12em; text-align: left; text-transform: uppercase;
+}
+.about-lcars-exit::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 5px; background: var(--alert); }
+.about-lcars-exit:focus-visible { outline: 2px solid var(--amber); outline-offset: 2px; }
+.about-lcars-title { margin: 0; align-self: flex-end; color: var(--amber); font: 700 44px/1 var(--font-head); letter-spacing: 0.08em; text-transform: uppercase; white-space: nowrap; }
+.about-lcars-content { display: flex; align-items: center; gap: 20px; }
+.about-lcars-content .splash-mark { flex-shrink: 0; }
+.about-lcars-bars { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 12px; }
+.about-lcars-row { display: flex; flex-direction: column; gap: 5px; }
+.about-lcars-bar { display: flex; align-items: center; gap: var(--gap); }
+.about-lcars-bar-text {
+  flex: 1; min-width: 0; padding: 5px 10px;
+  background: var(--text-2); color: var(--slate-2);
+  border-radius: 14px 0 0 14px;
+  font-size: 15px; font-weight: 600; line-height: 1.2; letter-spacing: 0.08em; text-align: right; text-transform: uppercase;
+  overflow-wrap: anywhere;
+}
+.about-lcars-tab { flex: 0 0 18px; align-self: stretch; }
+.about-lcars-line { flex: 0 0 48px; height: 2px; }
+.about-lcars-bullet { display: flex; align-items: center; gap: var(--gap); padding-left: 10px; }
+.about-lcars-dot { width: 8px; height: 8px; border-radius: 50%; }
+.about-lcars-hair { flex: 1; height: 1px; opacity: 0.6; }
+.about-lcars-tone--amber { background: var(--amber); }
+.about-lcars-tone--steel-light { background: var(--steel-light); }
+.about-lcars-tone--coral-soft { background: var(--coral-soft); }
+.about-lcars-status { grid-column: 2; grid-row: 4; margin: 6px 0 0; text-align: right; color: var(--text-2); font-size: 12px; letter-spacing: 0.1em; text-transform: uppercase; font-variant-numeric: tabular-nums; }
 .settings-group { border: 0; border-top: 1px solid var(--slate-2); margin: 0 0 14px; padding: 8px 0 0; display: flex; flex-direction: column; gap: var(--gap); }
 .settings-setup { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
 .settings-help { margin: 4px 0 0; font-size: 13px; max-width: 460px; }

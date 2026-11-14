@@ -2,10 +2,10 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { useState } from 'react';
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import i18n from '../../src/shared/i18n.js';
-import AboutDialog from '../../src/renderer/AboutDialog.jsx';
+import AboutDialog, { codeLabels } from '../../src/renderer/AboutDialog.jsx';
 
 beforeEach(() => {
-  window.bridge = { getAppInfo: vi.fn().mockResolvedValue({ version: '0.2.3', aidlc: null }) };
+  window.bridge = { platform: 'darwin', getAppInfo: vi.fn().mockResolvedValue({ version: '0.2.3', aidlc: null }) };
 });
 afterEach(() => {
   cleanup();
@@ -34,22 +34,40 @@ function openDialog() {
   return opener;
 }
 
-describe('AboutDialog (EPIC-04 US-0408)', () => {
-  it('shows the mark, the name, the full name, the tagline and the version from getAppInfo', async () => {
+describe('AboutDialog (EPIC-04 US-0408, US-0409)', () => {
+  it('shows the mark and the name as title, and the full name, tagline and version in the bars', async () => {
     openDialog();
     expect(screen.getByTestId('about-dialog').hasAttribute('open')).toBe(true);
     expect(screen.getByRole('img', { name: 'Auctum' })).toBeTruthy();
-    expect(screen.getByText('T.H.A.D.E.U.S.')).toBeTruthy();
-    expect(screen.getByText('Transformative Human-AI Development Environment for Ubiquitous Systems')).toBeTruthy();
-    expect(screen.getByText('AI-driven software development, under human direction.')).toBeTruthy();
-    await waitFor(() => expect(screen.getByTestId('about-dialog-version').textContent).toBe('App-version 0.2.3'));
+    expect(screen.getByText('T.H.A.D.E.U.S.').className).toBe('about-lcars-title');
+    expect(screen.getByTestId('about-dialog-fullname').textContent).toBe('Transformative Human-AI Development Environment for Ubiquitous Systems');
+    expect(screen.getByTestId('about-dialog-tagline').textContent).toBe('AI-driven software development, under human direction.');
+    await waitFor(() => expect(screen.getByTestId('about-dialog-version-bar').textContent).toBe('v0.2.3'));
+    for (const id of ['about-dialog-fullname', 'about-dialog-tagline', 'about-dialog-version-bar']) {
+      const bar = screen.getByTestId(id).parentElement;
+      expect(bar.className).toBe('about-lcars-bar');
+      expect(bar.querySelector('.about-lcars-tab')).toBeTruthy(); // the coloured end tab
+    }
+    expect(screen.getByTestId('about-dialog-version').textContent).toBe('App-version 0.2.3'); // the status row
+    expect(screen.getByTestId('about-dialog-platform').textContent).toBe('macOS');
     expect(window.bridge.getAppInfo).toHaveBeenCalledTimes(1);
   });
 
-  it('closes with Stäng and gives focus back to where it was', async () => {
+  it('takes its code labels from the version and platform, not from the reference (NFR3)', async () => {
+    expect(codeLabels('0.2.4', 'linux')).toEqual(['00-02', '04', 'LIN', '000204']);
+    expect(codeLabels(null, null)).toEqual(['00-00', '00', '–', '000000']);
+    openDialog();
+    await waitFor(() => expect(screen.getByText('000203')).toBeTruthy());
+    expect(screen.getByText('DAR')).toBeTruthy();
+  });
+
+  it('closes with EXIT and gives focus back to where it was', async () => {
     const opener = openDialog();
-    screen.getByTestId('about-dialog-close').focus();
-    fireEvent.click(screen.getByTestId('about-dialog-close'));
+    const exit = screen.getByTestId('about-dialog-close');
+    expect(exit.textContent).toBe('STÄNG');
+    expect(exit.closest('.about-lcars-arm')).toBeTruthy(); // in the frame's left edge
+    exit.focus();
+    fireEvent.click(exit);
     await waitFor(() => expect(screen.queryByTestId('about-dialog-close')).toBeNull());
     expect(screen.getByTestId('about-dialog').hasAttribute('open')).toBe(false);
     expect(document.activeElement).toBe(opener);
@@ -75,6 +93,7 @@ describe('AboutDialog (EPIC-04 US-0408)', () => {
     openDialog();
     await waitFor(() => expect(warn).toHaveBeenCalled());
     expect(screen.getByTestId('about-dialog-version').textContent).toBe('App-version –');
+    expect(screen.getByTestId('about-dialog-version-bar').textContent).toBe('v–');
     expect(screen.getByText('T.H.A.D.E.U.S.')).toBeTruthy();
     warn.mockRestore();
   });
@@ -83,7 +102,7 @@ describe('AboutDialog (EPIC-04 US-0408)', () => {
     await i18n.changeLanguage('en');
     openDialog();
     await waitFor(() => expect(screen.getByTestId('about-dialog-version').textContent).toBe('App version 0.2.3'));
-    expect(screen.getByTestId('about-dialog-close').textContent).toBe('Close');
+    expect(screen.getByTestId('about-dialog-close').textContent).toBe('EXIT');
     expect(screen.getByRole('heading', { name: 'About T.H.A.D.E.U.S.' })).toBeTruthy();
   });
 });

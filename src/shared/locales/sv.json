@@ -680,6 +680,9 @@
     "upToDate": "Du har den senaste versionen.",
     "confirmRestart": "En agentflik arbetar. Uppdateringen startar om appen och avslutar dess terminalsessioner. Uppdatera ändå?"
   },
+  "aboutDialog": {
+    "exit": "STÄNG"
+  },
   "menu": {
     "about": "Om {app}",
     "hide": "Göm {app}",
