@@ -1,10 +1,13 @@
 # Hälsokontroll — EPIC-04 US-0402 och US-0403
 
-Underlag: `deployment-log.md`.
+Underlag: `deployment-log.md` och `smoke-test-results.md`.
 
-Skrivbordsappen har ingen driftmiljö. Hälsan bedöms därför på två sätt:
+| Kontroll | Status |
+|----------|--------|
+| `main` innehåller designlyftet (`fec505b`) | OK |
+| CI grön på mergad kod (verify, build-mac, build-linux) | OK |
+| Ingen release publicerad av misstag (`release` hoppades över, ingen tagg efter v0.1.1) | OK |
+| Kompatibilitet bakåt (`animations` ignoreras av äldre versioner) | OK enligt `rollback-runbook.md` |
+| Röktest i installerad app (Mac och Linux) | Väntar på v0.2.0 |
 
-- **CI-körningen på PR #9:** bygger dmg och deb, med glibc-kontroll.
-- **Röktestet:** inga konsolfel. Se `smoke-test-results.md`.
-
-Status: grönt lokalt.
+**Slutsats:** mergen är frisk. Det finns ingen körande tjänst att övervaka. Den slutliga hälsokontrollen görs i den installerade appen när v0.2.0 släpps.

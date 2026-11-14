@@ -1,11 +1,8 @@
-# Deployment Execution — frågor EPIC-04 US-0402 och US-0403
+# Frågor — Driftsättning
 
-Underlag: `operation/deployment-pipeline/deployment-strategy.md`.
+Inga frågor ställdes. Förkontrollerna besvaras av underlaget:
 
-## Fråga 1
-Hur levereras designlyftet?
-
-A. Som en PR mot `main` som användaren mergar själv. Ingen tagg, eftersom releasen samlas i v0.2.0.
-X. Other (please specify)
-
-[Answer]: A. Följer den godkända releasestrategin (meddelande 7aa3faba).
+- **Förkontroller:** CI på PR #9 är grön.
+- **Databasmigreringar:** inga. Appen har ingen databas.
+- **Beroende tjänster:** inga. Appen körs lokalt.
+- **Driftsättningsfönster:** behövs inte. Releasestrategin publicerar ingen tagg för designlyftet.
