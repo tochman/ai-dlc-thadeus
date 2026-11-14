@@ -182,76 +182,37 @@ function TermSession({ projectId, kind, harness, quietMs, name, shown, register,
 }
 
 /**
- * The quick commands (FR4.1) as one small menu button in the terminal arm, so they take no row of their own.
- * A menu rather than a select, since these are actions. Arrow keys move, Esc and an outside click close, a pick types the
- * command into the agent tab without Enter.
+ * The quick commands (FR4.1) as a tiny select in the dark segment of the bar above the terminal, so they take no row
+ * of their own. A pick types the command into the agent tab without Enter and the select goes back to its placeholder.
+ * Renders nothing when the harness has no command.
  */
-function QuickMenu({ harness, onPick }) {
+function QuickSelect({ harness, onPick }) {
   const { t } = useTranslation();
-  const [open, setOpen] = useState(false);
-  const rootRef = useRef(null);
-  const toggleRef = useRef(null);
   const name = harness?.name ?? t('terminal.agent');
   const items = QUICK_COMMANDS.map((suffix) => ({ suffix, cmd: harnessCommand(harness, suffix) }));
-  const enabled = () => [...(rootRef.current?.querySelectorAll('[role="menuitem"]:not(:disabled)') ?? [])];
-
-  useEffect(() => {
-    if (!open) return undefined;
-    enabled()[0]?.focus();
-    const outside = (e) => !rootRef.current?.contains(e.target) && setOpen(false);
-    document.addEventListener('pointerdown', outside);
-    return () => document.removeEventListener('pointerdown', outside);
-  }, [open]);
-
-  function close() {
-    setOpen(false);
-    toggleRef.current?.focus();
-  }
-  function onKeyDown(e) {
-    if (e.key === 'Escape') {
-      e.preventDefault();
-      close();
-    } else if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
-      e.preventDefault();
-      const list = enabled();
-      const i = list.indexOf(document.activeElement);
-      list[(i + (e.key === 'ArrowDown' ? 1 : -1) + list.length) % list.length]?.focus();
-    }
-  }
-
+  if (!items.some(({ cmd }) => cmd)) return null;
   return (
-    <div className="quick-menu" ref={rootRef} onKeyDown={open ? onKeyDown : undefined}>
-      <button
-        ref={toggleRef}
-        className="lcars-block lcars-block--sm lcars-block--dark quick-menu-toggle"
-        aria-haspopup="menu"
-        aria-expanded={open}
-        onClick={() => setOpen((o) => !o)}
-        data-testid="terminal-panel-quick-menu"
-      >
-        {harnessCommand(harness, '') ?? t('terminal.quickMenu')} ▾
-      </button>
-      {open && (
-        <div className="quick-menu-list" role="menu" aria-label={t('terminal.quickMenu')}>
-          {items.map(({ suffix, cmd }) => (
-            <button
-              key={suffix}
-              role="menuitem"
-              className="quick-menu-item"
-              title={cmd ? t('terminal.quickTitle', { harness: name }) : t('terminal.noCommand', { harness: name })}
-              disabled={!cmd}
-              onClick={() => {
-                close();
-                onPick(cmd);
-              }}
-              data-testid="terminal-panel-quick-command"
-            >
-              {cmd ?? suffix.trim()}
-            </button>
-          ))}
-        </div>
-      )}
-    </div>
+    <select
+      className="lcars-select lcars-select--bar"
+      value=""
+      aria-label={t('terminal.quickMenu')}
+      title={t('terminal.quickTitle', { harness: name })}
+      onChange={(e) => e.target.value && onPick(e.target.value)}
+      data-testid="terminal-panel-quick-select"
+    >
+      <option value="">{t('terminal.quickMenu')}</option>
+      {items.map(({ suffix, cmd }) => (
+        <option
+          key={suffix}
+          value={cmd ?? ''}
+          disabled={!cmd}
+          title={cmd ? undefined : t('terminal.noCommand', { harness: name })}
+          data-testid="terminal-panel-quick-command"
+        >
+          {cmd ?? suffix.trim()}
+        </option>
+      ))}
+    </select>
   );
 }
 
@@ -294,7 +255,7 @@ export default function TerminalPanel({ projectId, visible, onChooseHarness }) {
   }
 
   // The Konsol mockup: the agent and Shell as blocks in the bottom arm with their state on the block, segmented
-  // bars above and below the terminal, quick commands in one menu button in the arm (EPIC-04 FR3.6).
+  // bars above and below the terminal, quick commands in a tiny select in the bar's dark segment (EPIC-04 FR3.6).
   return (
     <section
       ref={panelRef}
@@ -343,14 +304,21 @@ export default function TerminalPanel({ projectId, visible, onChooseHarness }) {
             );
           })}
         </div>
-        <QuickMenu harness={harness} onPick={(cmd) => terminal.type('agent', cmd, { submit: false })} />
         <button className="terminal-elbow" onClick={() => setOpen((o) => !o)} aria-expanded={open} data-testid="terminal-panel-toggle">
           <AuctumMark size={96} className="terminal-elbow-mark" decorative />
           <span className="terminal-elbow-label">{open ? t('terminal.hide') : t('terminal.show')}</span>
         </button>
       </div>
       <div className="terminal-main">
-        {open && <Bar segs={[['steel', 2], ['steel-deep', 90], ['slate-3', 1]]} />}
+        {open && (
+          <Bar
+            segs={[
+              ['steel', 2],
+              ['steel-deep', 90, active === 'agent' && <QuickSelect harness={harness} onPick={(cmd) => terminal.type('agent', cmd, { submit: false })} />],
+              ['slate-3', 1]
+            ]}
+          />
+        )}
         <div className="terminal-body" hidden={!open}>
           {harnessProblem && (
             <div className="term-session" hidden={!(visible && open && active === 'agent')}>
