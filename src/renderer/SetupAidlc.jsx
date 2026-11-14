@@ -40,7 +40,7 @@ function HarnessSelect({ value, onChange, detected, add, disabled }) {
     <>
       <label className="field">
         <span className="field-label">{t('setup.harnessLabel')}</span>
-        <select value={value} onChange={(e) => onChange(e.target.value)} disabled={disabled} data-testid="setup-harness">
+        <select className="lcars-select" value={value} onChange={(e) => onChange(e.target.value)} disabled={disabled} data-testid="setup-harness">
           {HARNESSES.filter((h) => h.setupId).map((h) => {
             const found = byId[h.id];
             const installed = add && found?.installed;

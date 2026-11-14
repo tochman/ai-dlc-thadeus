@@ -100,7 +100,7 @@ export default function AppSettingsDialog({
           <h2 id="app-settings-title">{t('settings.title')}</h2>
           <fieldset className="settings-group">
             <legend>{t('settings.languageLegend')}</legend>
-            <select
+            <select className="lcars-select"
               aria-label={t('settings.languageLegend')}
               value={language}
               onChange={(e) => save(() => onLanguage(e.target.value))}

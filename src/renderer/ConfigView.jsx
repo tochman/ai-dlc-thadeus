@@ -202,7 +202,7 @@ export default function ConfigView({ projectId, visible, harnesses, defaultHarne
       {installed.length > 1 && (
         <label className="field config-harness">
           <span className="field-label">{t('config.harnessLabel')}</span>
-          <select value={harness ?? ''} onChange={(e) => setChosen(e.target.value)} data-testid="config-view-harness">
+          <select className="lcars-select" value={harness ?? ''} onChange={(e) => setChosen(e.target.value)} data-testid="config-view-harness">
             {installed.map((h) => (
               <option key={h.id} value={h.id}>
                 {h.label}

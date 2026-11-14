@@ -148,7 +148,7 @@ export default function ProjectSettingsDialog({
           )}
           <label className="field">
             <span className="field-label">{t('settings.project.harnessLabel')}</span>
-            <select
+            <select className="lcars-select"
               value={chosen ?? ''}
               onChange={(e) => setChosen(e.target.value)}
               disabled={!harness}

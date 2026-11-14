@@ -31,6 +31,7 @@ window.bridge = {
   ptyWrite: vi.fn(async () => {}),
   ptyKill: vi.fn(async () => {}),
   ptyResize: vi.fn(async () => {}),
+  pathForFile: vi.fn((file) => file.path),
   onPtyData: vi.fn(() => () => {}),
   onPtyExit: vi.fn(() => () => {})
 };
@@ -120,5 +121,33 @@ describe('TerminalPanel', () => {
     expect(onChooseHarness).toHaveBeenCalledTimes(1);
     expect(await act(() => terminal.type('agent', '/aidlc'))).toBe(false);
     expect(screen.getByTestId('terminal-panel-error').textContent).toBe(problem);
+  });
+
+  it('a file drop types its quoted path into that tab without Enter, and highlights while dragging over', async () => {
+    await renderPanel();
+    const host = screen.getByTestId('terminal-panel-host-agent');
+    const dataTransfer = { types: ['Files'], files: [{ path: '/Users/me/Skärm bild.png' }, { path: '/tmp/a.png' }] };
+    expect(fireEvent.dragOver(host, { dataTransfer })).toBe(false); // default prevented: the window never opens the file
+    expect(host.classList.contains('is-drop-target')).toBe(true);
+    fireEvent.dragLeave(host, { relatedTarget: document.body });
+    expect(host.classList.contains('is-drop-target')).toBe(false);
+    fireEvent.dragOver(host, { dataTransfer });
+    expect(fireEvent.drop(host, { dataTransfer })).toBe(false);
+    expect(host.classList.contains('is-drop-target')).toBe(false);
+    expect(window.bridge.ptyWrite).toHaveBeenCalledWith('pty-agent', '/Users/me/Skärm\\ bild.png /tmp/a.png ');
+    expect(window.bridge.ptyWrite).not.toHaveBeenCalledWith('pty-shell', expect.anything());
+
+    fireEvent.drop(screen.getByTestId('terminal-panel-host-shell'), { dataTransfer: { types: ['Files'], files: [{ path: '/x.png' }] } });
+    expect(window.bridge.ptyWrite).toHaveBeenLastCalledWith('pty-shell', '/x.png ');
+  });
+
+  it('answer() writes to the agent tab without switching tabs, and throws when there is none', async () => {
+    await renderPanel();
+    act(() => terminal.setView({ open: true, active: 'shell' }));
+    act(() => terminal.answer('2'));
+    expect(window.bridge.ptyWrite).toHaveBeenCalledWith('pty-agent', '2');
+    expect(terminal.view.active).toBe('shell');
+    act(() => terminal.setAgent({ harness: null }));
+    expect(() => terminal.answer('1')).toThrow();
   });
 });

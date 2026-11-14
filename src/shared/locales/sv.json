@@ -69,7 +69,14 @@
       "previous": "Föregående",
       "next": "Nästa",
       "position": "{i} av {n}",
-      "answer": "Svara i agentfliken"
+      "approve": "Godkänn",
+      "requestChanges": "Begär ändringar",
+      "ownAnswer": "Eget svar…",
+      "send": "Skicka",
+      "sent": "Skickat till {harness}",
+      "sendFailed": "Kunde inte skicka: {error}",
+      "noAgent": "Agentfliken kör inte än. Svara i terminalen.",
+      "openTerminal": "Öppna terminalen"
     },
     "notification": {
       "title": "{project}: AI-DLC väntar på ditt svar"

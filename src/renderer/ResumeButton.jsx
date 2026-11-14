@@ -1,5 +1,6 @@
-// "Fortsätt" for an in-flight intent (US-0501, FR2). Types into the agent tab; only the intent switch
-// is submitted, `/aidlc` itself waits for the person's Enter (Q1: C).
+// "Fortsätt" for an in-flight intent (US-0501, FR2), shown for the selected intent only and enabled only while the
+// agent tab is idle. Types into the agent tab; only the intent switch is submitted, `/aidlc` itself waits for the
+// person's Enter (Q1: C).
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useTerminal } from './TerminalContext.jsx';
@@ -27,7 +28,9 @@ export default function ResumeButton({ intent, activeDirName, position }) {
   const harnessName = terminal.harness?.name ?? t('terminal.agent');
   const command = harnessCommand(terminal.harness); // the harness's AI-DLC command (US-0801 FR4.1)
   // Nothing is typed when the table lacks the command, or while detection runs (FR4.2).
-  const unavailable = command ? null : terminal.harness ? t('terminal.noCommand', { harness: harnessName }) : t('terminal.checking');
+  const missing = command ? null : terminal.harness ? t('terminal.noCommand', { harness: harnessName }) : t('terminal.checking');
+  // Only an idle agent tab can pick up the work: while it works ("Arbetar") the button waits, with the reason (FR2.4).
+  const unavailable = missing ?? (terminal.state('agent') === 'busy' ? t('intents.resume.busy', { harness: harnessName }) : null);
 
   function resume(e) {
     e.stopPropagation();

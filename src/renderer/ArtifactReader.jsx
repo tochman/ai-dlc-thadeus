@@ -16,9 +16,19 @@ function prettyJson(text) {
 }
 
 // Raw HTML in artifacts is never rendered: react-markdown escapes it unless rehype-raw is added (FR6.4).
-// Links do not navigate the app window (main blocks navigation); they are shown as plain text links.
+// Links never navigate the app window (main blocks navigation): a web link opens in the OS browser through main's
+// window-open handler, any other link is shown as plain text.
 const markdownComponents = {
-  a: ({ children, href }) => <span className="md-link" title={href}>{children}</span>,
+  a: ({ children, href }) =>
+    /^https?:\/\//.test(href ?? '') ? (
+      <a className="md-link" href={href} target="_blank" rel="noreferrer">
+        {children}
+      </a>
+    ) : (
+      <span className="md-link" title={href}>
+        {children}
+      </span>
+    ),
   img: ({ alt }) => <span className="muted">{t('intents.files.image', { alt: alt ?? '' })}</span>
 };
 

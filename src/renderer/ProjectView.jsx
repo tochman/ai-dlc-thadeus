@@ -75,7 +75,7 @@ function AidlcProject({ project, focusIntent, storiesByIntent, onOpenStory, pane
         {detection.spaces.length > 1 && (
           <label className="field">
             <span className="field-label">{t('intents.space')}</span>
-            <select value={p.space} onChange={(e) => p.setSpace(e.target.value)} data-testid="project-space-select">
+            <select className="lcars-select" value={p.space} onChange={(e) => p.setSpace(e.target.value)} data-testid="project-space-select">
               {detection.spaces.map((s) => (
                 <option key={s} value={s}>
                   {s}
@@ -166,6 +166,16 @@ function ProjectContent({ project, visible, settingsOpen = false, onCloseSetting
   // The Terminal menu (EPIC-04 US-0404 FR2.4): only the project it was sent for reacts; seq lets it repeat.
   useEffect(() => {
     if (!terminalCommand || terminalCommand.projectId !== project.projectId) return;
+    // The question popup's answer: keys for the agent tab, the view stays where it is (US-0505).
+    if (terminalCommand.action === 'answer') {
+      try {
+        terminal.answer(terminalCommand.text);
+        terminalCommand.reply?.({ ok: true });
+      } catch (err) {
+        terminalCommand.reply?.({ ok: false, error: err.message });
+      }
+      return;
+    }
     if (terminalCommand.action === 'restart') terminal.restart(terminal.view.active);
     else terminal.show(terminalCommand.action);
   }, [terminalCommand]); // runs once per command, not when the terminal state changes
@@ -192,6 +202,7 @@ function ProjectContent({ project, visible, settingsOpen = false, onCloseSetting
   const problem = harness ? harnessProblem(harness, detected, t) : null;
   useEffect(() => {
     terminal.setAgent({ harness, problem });
+    onMeta?.(project.projectId, { harness: problem ? null : harnessId }); // the question popup answers only a running harness
   }, [harness, problem]); // setAgent is stable
   const [choosingHarness, setChoosingHarness] = useState(false); // opened from the agent tab's warning (FR5.1)
   const [addingHarness, setAddingHarness] = useState(false); // setup in add mode, from Projektinställningar (US-0802 FR3.1)

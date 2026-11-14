@@ -33,8 +33,21 @@ describe('FeaturesView', () => {
     expect(stories[0]).toMatch(/US-0101: Open a project.*✅ Klar.*Prioritet: High.*Komplexitet: Low.*2\/2 kriterier/);
     expect(stories[1]).toMatch(/US-0102.*🚧 Pågår.*1\/3 kriterier.*1 intent/);
 
-    fireEvent.click(screen.getAllByTestId('features-view-story')[1]);
+    // The intro before `## User Stories` is Markdown, not flattened text.
+    const intro = screen.getByTestId('features-view-epic-intro');
+    expect(intro.querySelectorAll('blockquote')).toHaveLength(2);
+    expect(intro.querySelector('strong').textContent).toBe('Stories:');
+    expect(intro.querySelector('table td').textContent).toBe('Projects');
+    expect(intro.querySelector('ol > li > ul > li').textContent).toBe('then read it');
+
+    const row = screen.getAllByTestId('features-view-story')[1];
+    expect(row.getAttribute('aria-expanded')).toBe('false');
+    expect(screen.queryByTestId('features-view-story-detail')).toBeNull();
+    fireEvent.click(row);
+    expect(row.getAttribute('aria-expanded')).toBe('true');
     const detail = screen.getByTestId('features-view-story-detail');
+    expect(row.closest('li').contains(detail)).toBe(true); // under its own row, not under the list
+    expect(row.getAttribute('aria-controls')).toBe(detail.id);
     const boxes = within(detail).getAllByRole('checkbox');
     expect(boxes.map((b) => b.checked)).toEqual([true, false, false]);
     expect(boxes.every((b) => b.disabled)).toBe(true);
@@ -44,6 +57,25 @@ describe('FeaturesView', () => {
     expect(onOpenIntent).toHaveBeenCalledWith('261113-feature-docs');
     fireEvent.click(screen.getByTestId('features-view-open-editor'));
     expect(window.bridge.openInEditor).toHaveBeenCalledWith('p1', 'features/epic-01-alpha.md');
+
+    fireEvent.click(row); // a second click closes it
+    expect(row.getAttribute('aria-expanded')).toBe('false');
+    expect(screen.queryByTestId('features-view-story-detail')).toBeNull();
+  });
+
+  it('a story link from an intent opens that story under its row and scrolls it into view (FR2.6)', () => {
+    const scrollIntoView = vi.fn();
+    Element.prototype.scrollIntoView = scrollIntoView;
+    try {
+      render(<FeaturesView projectId="p1" features={features} focusStory={{ id: 'US-0102' }} />);
+      const row = screen.getAllByTestId('features-view-story')[1];
+      expect(row.getAttribute('aria-expanded')).toBe('true');
+      expect(row.closest('li').contains(screen.getByTestId('features-view-story-detail'))).toBe(true);
+      expect(scrollIntoView).toHaveBeenCalled();
+      expect(scrollIntoView.mock.contexts.at(-1)).toBe(row.closest('li'));
+    } finally {
+      delete Element.prototype.scrollIntoView;
+    }
   });
 
   it('filters stories by status and priority (FR2.5)', () => {

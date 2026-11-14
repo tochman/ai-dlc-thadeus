@@ -8,6 +8,12 @@ const ENTER = '\r';
 
 export const withEnter = (text, submit) => (submit ? text + ENTER : text);
 
+/** A path as a shell word: every character outside letters, digits and `_@%+=:,./-` backslash-escaped, as a drop in Terminal.app types it. */
+export const shellQuote = (path) => String(path).replace(/[^\p{L}\p{N}_@%+=:,./-]/gu, '\\$&');
+
+/** Dropped files' paths as one line for the prompt: quoted, space-separated, a trailing space and no Enter. */
+export const dropText = (paths) => (paths.length ? paths.map(shellQuote).join(' ') + ' ' : '');
+
 /**
  * `idle | busy | exited` for one pty. Output sets `busy`; `quietMs` without output sets `idle`.
  * A tab starts as `exited` (not started). `exitCode` is the last exit code, or null.

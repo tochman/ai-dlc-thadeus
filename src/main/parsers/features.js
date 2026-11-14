@@ -136,7 +136,7 @@ function parseStory(id, title, rest, body) {
 
 const STORY_HEAD = /^\*\*(US-\d{4})\s*[:–-]\s*(.+?)\*\*\s*(.*)$/;
 
-/** @returns {{id: string|null, title: string, description: string, storiesLine: string|null, statusLine: string|null, stories: object[], raw: string, warnings: string[]}} */
+/** @returns {{id: string|null, title: string, description: string, intro: string, storiesLine: string|null, statusLine: string|null, stories: object[], raw: string, warnings: string[]}} */
 export function parseEpic(md) {
   const raw = String(md ?? '');
   const lines = raw.split(/\r?\n/);
@@ -173,10 +173,21 @@ export function parseEpic(md) {
   if (current) stories.push(parseStory(...current));
   if (stories.length === 0) warnings.push(t('features.warn.noStories'));
 
+  // Everything between the title and `## User Stories` (else the first story), as Markdown for the view.
+  const start = lines.findIndex((l) => /^#\s/.test(l)) + 1;
+  let end = lines.findIndex((l) => /^##\s+(user stories|användarberättelser|storys)\b/i.test(l));
+  if (end === -1) end = lines.findIndex((l) => STORY_HEAD.test(l));
+  const intro = lines
+    .slice(start, end === -1 ? lines.length : end)
+    .join('\n')
+    .replace(/^(\s*---\s*\n)+|(\n\s*---\s*)+$/g, '')
+    .trim();
+
   return {
     id: hm ? hm[1].toUpperCase() : null,
     title: (hm ? hm[2] : heading).trim(),
     description: quote.join('\n').trim(),
+    intro,
     storiesLine: lineAfter(/^\*\*(Stories|Storys):\*\*/i),
     statusLine: lineAfter(/^\*\*Status(\s*\([^)]*\))?:\*\*/i),
     stories,

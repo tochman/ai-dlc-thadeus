@@ -103,6 +103,12 @@ export function TerminalProvider({ children }) {
         if (ok) markPending(tab, !submit && text !== '');
         return ok;
       },
+      /** Keys for the running agent tab without showing it (the question popup's answer). Throws when none runs. */
+      answer: (text) => {
+        const s = sessions.current.agent;
+        if (!s) throw new Error(noTabText('agent'));
+        s.write(text);
+      },
       sequence: async (tab, steps) => {
         const ok = await run(tab, (s) => runSequence(s, steps));
         const last = steps.at(-1);

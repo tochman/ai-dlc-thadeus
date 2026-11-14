@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { Terminal } from '@xterm/xterm';
 import { FitAddon } from '@xterm/addon-fit';
 import '@xterm/xterm/css/xterm.css';
-import { createActivity } from './terminalControl.js';
+import { createActivity, dropText } from './terminalControl.js';
 import { useTerminal } from './TerminalContext.jsx';
 import AuctumMark from './AuctumMark.jsx';
 import { Bar } from './Lcars.jsx';
@@ -34,6 +34,29 @@ function TermSession({ projectId, kind, harness, quietMs, name, shown, register,
   const [activity] = useState(() => createActivity({ quietMs }));
   const [exited, setExited] = useState(null);
   const [error, setError] = useState(null);
+  const [dropping, setDropping] = useState(false);
+
+  // Dropped files (an image for Claude Code, say) are typed in as their quoted paths, without Enter. The default
+  // is prevented so the window never opens the file; main blocks navigation too.
+  const hasFiles = (e) => Array.from(e.dataTransfer?.types ?? []).includes('Files');
+  const dragOver = (e) => {
+    if (!hasFiles(e)) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'copy';
+    setDropping(true);
+  };
+  const dragLeave = (e) => {
+    if (!e.currentTarget.contains(e.relatedTarget)) setDropping(false);
+  };
+  const drop = (e) => {
+    if (!hasFiles(e)) return;
+    e.preventDefault();
+    setDropping(false);
+    const text = dropText(Array.from(e.dataTransfer.files, (f) => bridge.pathForFile?.(f)).filter(Boolean));
+    if (!text || !idRef.current) return;
+    bridge.ptyWrite(idRef.current, text).catch((err) => setError(errorText(err)));
+    termRef.current?.focus();
+  };
 
   /** Resolves true once the pty runs; output then drives the activity signal (FR1.2). */
   const spawn = useCallback(async () => {
@@ -146,7 +169,14 @@ function TermSession({ projectId, kind, harness, quietMs, name, shown, register,
           </button>
         </div>
       )}
-      <div className="term-host" ref={hostRef} />
+      <div
+        className={`term-host${dropping ? ' is-drop-target' : ''}`}
+        ref={hostRef}
+        onDragOver={dragOver}
+        onDragLeave={dragLeave}
+        onDrop={drop}
+        data-testid={`terminal-panel-host-${kind}`}
+      />
     </div>
   );
 }

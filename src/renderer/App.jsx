@@ -9,6 +9,7 @@ import DocsDialog from './DocsDialog.jsx';
 import QuestionPopup from './QuestionPopup.jsx';
 import { Bar, Frame } from './Lcars.jsx';
 import { APP_NAME } from '../shared/appName.js';
+import { selectableHarness } from '../shared/harnesses.js';
 
 const bridge = window.bridge;
 const UI_DEFAULT = { view: 'intents', cost: false, github: false };
@@ -56,7 +57,7 @@ export default function App() {
   const [animations, setAnimations] = useState(null); // saved choice; null means the default applies
   const [language, setLanguage] = useState('auto'); // saved "Språk / Language" choice (EPIC-07 FR4.1)
   const [ui, setUi] = useState({}); // projectId -> {view, cost, github}: what the arm has selected per project
-  const [meta, setMeta] = useState({}); // projectId -> {showFeatures, intentCount}, reported by ProjectView
+  const [meta, setMeta] = useState({}); // projectId -> {showFeatures, intentCount, harness}, reported by ProjectView
   const [branch, setBranch] = useState(null);
   const [fullscreen, setFullscreen] = useState(false); // the window's real mode, from main (US-0404 FR1.2)
   const [terminalCommand, setTerminalCommand] = useState(null); // {seq, action, projectId} from the Terminal menu
@@ -221,6 +222,12 @@ export default function App() {
     closePopup();
     setActiveId(q.projectId);
     setTerminalCommand((c) => ({ seq: (c?.seq ?? 0) + 1, action: 'agent', projectId: q.projectId }));
+  }
+  /** The popup's answer: `text` goes to that project's agent tab without switching views. Resolves {ok, error}. */
+  function sendAnswer(q, text) {
+    return new Promise((reply) =>
+      setTerminalCommand((c) => ({ seq: (c?.seq ?? 0) + 1, action: 'answer', projectId: q.projectId, text, reply }))
+    );
   }
   async function saveAlertSettings(partial) {
     setAlertSettings((s) => ({ ...s, ...partial }));
@@ -521,7 +528,15 @@ export default function App() {
         onLanguage={changeLanguage}
       />
       <DocsDialog doc={docs} onClose={() => setDocs(null)} />
-      <QuestionPopup open={popupOpen} questions={popupQuestions} focus={popupFocus} onAnswer={answerInAgent} onClose={closePopup} />
+      <QuestionPopup
+        open={popupOpen}
+        questions={popupQuestions}
+        focus={popupFocus}
+        harnessOf={(projectId) => selectableHarness(meta[projectId]?.harness)}
+        onSend={sendAnswer}
+        onOpenTerminal={answerInAgent}
+        onClose={closePopup}
+      />
     </div>
   );
 }

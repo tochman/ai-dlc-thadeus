@@ -6,6 +6,13 @@
 
 > Alpha is the foundation: open a project and see what it contains.
 
+| Area | Scope |
+| --- | --- |
+| Projects | Open, close |
+
+1. Open a folder
+   - then read it
+
 **Stories:** US-0101, US-0102
 
 **Status (2026-11-13):** 🚧 Built, not released.

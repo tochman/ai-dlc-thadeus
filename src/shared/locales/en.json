@@ -69,7 +69,14 @@
       "previous": "Previous",
       "next": "Next",
       "position": "{i} of {n}",
-      "answer": "Answer in the agent tab"
+      "approve": "Approve",
+      "requestChanges": "Request changes",
+      "ownAnswer": "Own answer…",
+      "send": "Send",
+      "sent": "Sent to {harness}",
+      "sendFailed": "Could not send: {error}",
+      "noAgent": "The agent tab is not running yet. Answer in the terminal.",
+      "openTerminal": "Open the terminal"
     },
     "notification": {
       "title": "{project}: AI-DLC is waiting for your answer"

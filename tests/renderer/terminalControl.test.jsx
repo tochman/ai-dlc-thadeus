@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { createActivity, runSequence, waitFor } from '../../src/renderer/terminalControl.js';
+import { createActivity, dropText, runSequence, shellQuote, waitFor } from '../../src/renderer/terminalControl.js';
 
 beforeEach(() => vi.useFakeTimers());
 afterEach(() => vi.useRealTimers());
@@ -73,5 +73,15 @@ describe('runSequence', () => {
     await vi.advanceTimersByTimeAsync(500);
     expect(await seq).toBeInstanceOf(Error);
     expect(term.writes).toEqual([]);
+  });
+});
+
+describe('dropText', () => {
+  it('escapes shell characters in each path and joins them with spaces, without Enter', () => {
+    expect(shellQuote('/Users/me/Bilder/skärm.png')).toBe('/Users/me/Bilder/skärm.png');
+    expect(shellQuote("/tmp/it's (1) $x.png")).toBe("/tmp/it\\'s\\ \\(1\\)\\ \\$x.png");
+    expect(shellQuote('/tmp/"quoted".png')).toBe('/tmp/\\"quoted\\".png');
+    expect(dropText(['/a b.png', '/c.png', '/d e/f.jpg'])).toBe('/a\\ b.png /c.png /d\\ e/f.jpg ');
+    expect(dropText([])).toBe('');
   });
 });

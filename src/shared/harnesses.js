@@ -14,7 +14,10 @@ export const HARNESSES = [
     cli: 'claude',
     selectable: true,
     markers: { dirs: ['.claude'] },
-    commands: { aidlc: '/aidlc' }
+    commands: { aidlc: '/aidlc' },
+    // Its question picker selects an option by its number key, so the question popup can answer it.
+    // opencode's picker keys are unconfirmed: there the popup offers its own free text only.
+    pickerKeys: true
   },
   {
     id: 'opencode',
