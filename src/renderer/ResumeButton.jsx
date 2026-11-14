@@ -8,6 +8,9 @@ import { t as translate } from '../shared/i18n.js';
 import { harnessCommand } from '../shared/harnesses.js';
 
 const SAFE_DIR_NAME = /^[A-Za-z0-9][A-Za-z0-9._-]*$/;
+// ponytail: a quiet log for this long means the outside agent stopped; a long silent step can re-enable Resume early.
+// The button re-checks on the next refresh, not on a timer.
+export const ELSEWHERE_MS = 10 * 60_000;
 
 /** ["Fortsätt vid <stage>", "(steg n av m)"], or just ["Fortsätt", ""] without pipeline data (FR2.5). */
 export function resumeLabel(position) {
@@ -42,6 +45,11 @@ export default function ResumeButton({ intent, activeDirName, activeIntent = nul
     // on a subagent, between steps). Every Resume in the project waits: a switch typed into it is wrong too (US-0007).
     if (terminal.running?.() && activeIntent?.status === 'in-flight') {
       return t('intents.resume.running', { harness: harnessName, intent: activeIntent.slug ?? activeIntent.dirName });
+    }
+    // An agent outside the app (another terminal) is running the active intent: AI-DLC wrote its audit log within
+    // the last few minutes. The app cannot see that session, so it goes by the log (US-0009).
+    if (activeIntent?.status === 'in-flight' && Date.now() - (activeIntent.activityAt ?? 0) < ELSEWHERE_MS) {
+      return t('intents.resume.elsewhere', { intent: activeIntent.slug ?? activeIntent.dirName });
     }
     return null;
   }

@@ -163,6 +163,7 @@
       "busy": "{harness} is working — wait or interrupt it first",
       "asking": "{harness} is waiting for your answer — answer in the terminal first",
       "running": "{harness} is running {intent} — continue in the terminal",
+      "elsewhere": "An agent outside the app is working on {intent} — continue there",
       "invalidName": "Invalid intent name: {name}"
     },
     "files": {

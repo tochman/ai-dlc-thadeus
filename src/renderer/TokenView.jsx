@@ -13,11 +13,18 @@ const METERS = ['input', 'output', 'cacheWrite', 'cacheRead'];
 const WAVE_W = 240;
 const WAVE_H = 48;
 
-/** "x,y" points for the rate history, one per sample, scaled to the largest rate. */
+/**
+ * "x,y" points for the rate history, scaled to the largest rate. The newest sample sits at the right edge and older
+ * ones run left; before the first sample the line is the zero baseline, so even one reading draws a full-width line
+ * (US-0008: a one-point polyline draws nothing).
+ */
 export function wavePoints(history) {
   const top = Math.max(...history.map((s) => s.rate), 0);
   const step = WAVE_W / (HISTORY_MAX - 1);
-  return history.map((s, i) => `${Math.round(i * step)},${Math.round(WAVE_H - 4 - (top > 0 ? (s.rate / top) * (WAVE_H - 8) : 0))}`).join(' ');
+  const base = WAVE_H - 4;
+  const offset = HISTORY_MAX - history.length;
+  const pts = history.map((s, i) => `${Math.round((offset + i) * step)},${Math.round(base - (top > 0 ? (s.rate / top) * (WAVE_H - 8) : 0))}`);
+  return (offset > 0 ? [`0,${base}`, ...pts] : pts).join(' ');
 }
 
 /**

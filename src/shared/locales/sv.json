@@ -163,6 +163,7 @@
       "busy": "{harness} arbetar — vänta eller avbryt först",
       "asking": "{harness} väntar på ditt svar — svara i terminalen först",
       "running": "{harness} kör {intent} — fortsätt i terminalen",
+      "elsewhere": "En agent utanför appen arbetar med {intent} — fortsätt där",
       "invalidName": "Ogiltigt intent-namn: {name}"
     },
     "files": {

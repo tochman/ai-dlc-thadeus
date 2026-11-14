@@ -26,7 +26,7 @@
 
 **Stories:** US-0901, US-0902, US-0903, US-0904
 
-**Status (2026-11-14):** 🔄 In progress. ✅ US-0901 released in v0.2.2. ✅ US-0902 released in v0.2.3. ✅ US-0903 done for v0.2.4. ✅ US-0904 released in v0.2.3. US-0904 replaces US-0206 (moved here from EPIC-02).
+**Status (2026-11-14):** 🔄 In progress. ✅ US-0901 released in v0.2.2. ✅ US-0902 released in v0.2.3. ✅ US-0903 released in v0.2.4. ✅ US-0904 released in v0.2.3. US-0904 replaces US-0206 (moved here from EPIC-02).
 
 ---
 
@@ -128,7 +128,7 @@ The CLI refuses a harness that the project hasn't installed.
   - [x] **The Guard Policy lock (tier 2):** the strict lock in `aidlc/spaces/<space>/memory/*.md` has no CLI command. The app edits only that section, after showing the diff, and never touches the rest of the memory file.
 - **Dependencies:** US-0901
 
-**US-0903: Create and reuse custom plans** ✅ Done for v0.2.4
+**US-0903: Create and reuse custom plans** ✅ Released in v0.2.4 (intent `261114-custom-plans`)
 - As a **developer who keeps running the same kind of work**, in order to **start it with the right steps every time**, I would like to **see the saved plans, compose a new one for a task, and save the plan of a running piece of work**.
 - **Epic:** EPIC-09
 - **Priority:** Medium
