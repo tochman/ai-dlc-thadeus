@@ -13,6 +13,7 @@ Overview of all epics. Each epic lives in its own file under [features/](feature
 | [EPIC-07](features/epic-07-internationalisation.md) | Internationalisation: translation files, English, and languages users add themselves | ✅ US-0701 released in v0.2.1 (Swedish and English, language setting) · 📋 US-0702 Planned (own translation files) |
 | [EPIC-08](features/epic-08-harnesses.md) | Harnesses: choose opencode, Codex or Kiro instead of Claude per project, and set them up | ✅ US-0801 and US-0802 released in v0.2.1 (agent terminal per project: Claude Code or opencode; set up any of the six harnesses from the app). 📋 US-0803 planned: Claude Code and opencode side by side |
 | [EPIC-09](features/epic-09-aidlc-configuration.md) | AI-DLC Configuration: see and change a project's AI-DLC settings, custom plans and models per agent, per harness | 🔄 In progress: ✅ US-0901 released in v0.2.2 (read-only Configuration view per project and harness) · 📋 US-0902–US-0904 planned |
+| [EPIC-10](features/epic-10-editing.md) | Editing: edit project files, docs and code in the app with the Monaco editor | 📋 Planned (US-1001) |
 
 ## Story numbering
 
