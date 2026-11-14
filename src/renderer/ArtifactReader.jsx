@@ -3,6 +3,7 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { useTranslation } from 'react-i18next';
 import { t } from '../shared/i18n.js';
+import { useEditor } from './editor/EditorContext.jsx';
 
 const bridge = window.bridge;
 const errorText = (err) => String(err?.message ?? err).replace(/^Error invoking remote method '[^']+': (Error: )?/, '');
@@ -47,6 +48,7 @@ export function FileContent({ rel, content }) {
 
 function FileView({ projectId, rel }) {
   const { t } = useTranslation();
+  const editor = useEditor(); // "Redigera" opens the file in the app's editor (EPIC-10 US-1001)
   const [content, setContent] = useState(null);
   const [error, setError] = useState(null);
 
@@ -76,10 +78,15 @@ function FileView({ projectId, rel }) {
     <div className="file-view">
       <div className="file-actions">
         <code className="file-path">{rel}</code>
+        {editor && (
+          <button className="btn btn-accent" onClick={() => editor.open(rel)} data-testid="artifact-reader-edit">
+            {t('common.edit')}
+          </button>
+        )}
         <button className="btn" onClick={() => act(bridge.revealInFinder)} data-testid="artifact-reader-reveal">
           {bridge.platform === 'darwin' ? t('common.revealFinder') : t('common.revealFiles')}
         </button>
-        <button className="btn" onClick={() => act(bridge.openInEditor)} data-testid="artifact-reader-open-editor">
+        <button className="btn btn-quiet" onClick={() => act(bridge.openInEditor)} data-testid="artifact-reader-open-editor">
           {t('common.openInEditor')}
         </button>
       </div>

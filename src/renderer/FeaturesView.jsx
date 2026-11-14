@@ -2,6 +2,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { FileContent } from './ArtifactReader.jsx';
+import { useEditor } from './editor/EditorContext.jsx';
 import { Frame } from './Lcars.jsx';
 import { withSlots } from './format.js';
 import { STATUS_MARKER } from '../main/parsers/features.js';
@@ -46,6 +47,7 @@ function FormatHelp({ path, reason, onSetup }) {
 
 function FileActions({ projectId, rel }) {
   const { t } = useTranslation();
+  const editor = useEditor(); // the epic file opens in the app's editor (EPIC-10 US-1001)
   const [error, setError] = useState(null);
   const bridge = window.bridge;
   async function act(fn) {
@@ -59,10 +61,15 @@ function FileActions({ projectId, rel }) {
   return (
     <div className="file-actions">
       <code className="file-path">{rel}</code>
+      {editor && (
+        <button className="btn btn-accent" onClick={() => editor.open(rel)} data-testid="features-view-edit">
+          {t('common.edit')}
+        </button>
+      )}
       <button className="btn" onClick={() => act(bridge.revealInFinder)} data-testid="features-view-reveal">
         {bridge.platform === 'darwin' ? t('common.revealFinder') : t('common.revealFiles')}
       </button>
-      <button className="btn" onClick={() => act(bridge.openInEditor)} data-testid="features-view-open-editor">
+      <button className="btn btn-quiet" onClick={() => act(bridge.openInEditor)} data-testid="features-view-open-editor">
         {t('common.openInEditor')}
       </button>
       {error && (

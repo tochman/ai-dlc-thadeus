@@ -13,7 +13,7 @@ vi.mock('electron', () => ({
   BrowserWindow: {},
   shell: {}
 }));
-vi.mock('../../src/main/ipc.js', () => ({ registerIpc: () => {}, shutdown: async () => {} }));
+vi.mock('../../src/main/ipc.js', () => ({ registerIpc: () => {}, shutdown: async () => {}, guardClose: () => {}, noteQuitting: () => {} }));
 vi.mock('../../src/main/menu.js', () => ({ applyMenu: () => {} }));
 vi.mock('../../src/main/settings.js', () => ({ getSettings: async () => ({}), setSettings: async () => {} }));
 

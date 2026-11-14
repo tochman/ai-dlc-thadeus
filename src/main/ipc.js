@@ -37,7 +37,8 @@ import { getSetupInfo, runSetup } from './setup.js';
 import { detectHarnesses } from './harness.js';
 import { TOOL_IDS, getTools, setToolPaths, validateTool } from './tools.js';
 import { getProjectSettings, getSettings, setProjectSettings, setSettings } from './settings.js';
-import { watchFiles, watchForAidlc, watchIntents } from './watcher.js';
+import { watchFiles, watchForAidlc, watchIntents, watchOpenFiles } from './watcher.js';
+import { listTree, readForEdit, writeFileSafe } from './fileWrite.js';
 import { featureWatchPaths, loadFeatures, loadStoryLinks } from './features.js';
 import { killAllSessions, killProjectSessions, killSession, resizeSession, spawnSession, writeSession } from './pty.js';
 import { AIDLC_DOCS_URL, applyMenu, parseMenuState, setMenuState } from './menu.js';
@@ -124,12 +125,48 @@ async function closeWatcher(p) {
   const s = p.setupWatcher;
   const f = p.featuresWatcher;
   const c = p.configWatcher;
+  const e = p.editorWatcher;
   p.watcher = null;
   p.setupWatcher = null;
   p.featuresWatcher = null;
   p.featuresKey = null;
   p.configWatcher = null;
-  await Promise.all([w?.close(), s?.close(), f?.close(), c?.close()]);
+  p.editorWatcher = null;
+  await Promise.all([w?.close(), s?.close(), f?.close(), c?.close(), e?.close()]);
+}
+
+/** Watches exactly the files open in the editor; each change sends `file:changed` with its relative path (US-1001). */
+async function watchEditorFiles(projectId, rels) {
+  const p = project(projectId);
+  const old = p.editorWatcher;
+  p.editorWatcher = null;
+  await old?.close();
+  const files = (await Promise.all(rels.map((rel) => resolveInRoot(p.root, rel).then((abs) => [abs, rel], () => null)))).filter(Boolean);
+  if (!files.length) return;
+  const relOf = new Map(files);
+  p.editorWatcher = watchOpenFiles({
+    files: [...relOf.keys()],
+    onChange: (abs) => {
+      if (relOf.has(abs) && !p.sender.isDestroyed()) p.sender.send('file:changed', { projectId, rel: relOf.get(abs) });
+    },
+    onError: (err) => console.error(`Bevakning av öppna filer misslyckades för ${p.root}:`, err)
+  });
+}
+
+// Closing a window or quitting asks the renderer first while an editor has unsaved changes (US-1001).
+const closeAllowed = new WeakSet();
+let quitting = false;
+export const noteQuitting = () => {
+  quitting = true;
+};
+/** Every close of `win` waits for the renderer's `app:closeConfirmed`, unless its renderer is gone. */
+export function guardClose(win) {
+  win.on('close', (event) => {
+    if (closeAllowed.has(win) || win.webContents.isDestroyed()) return;
+    event.preventDefault();
+    win.webContents.send('app:confirmClose');
+  });
+  win.webContents.on('render-process-gone', () => closeAllowed.add(win));
 }
 
 /** The settings files and plan folders behind the Configuration view; each change sends config:changed (US-0901 FR6.1). */
@@ -485,6 +522,23 @@ const handlers = {
     shell.showItemInFolder(file);
   },
   'project:file': async (_event, projectId, rel) => readText(project(projectId).root, rel),
+  // Editing files (EPIC-10 US-1001): a relative path, content and the hash it was opened with; never a root.
+  'file:read': async (_event, projectId, rel) => readForEdit(project(projectId).root, rel),
+  'file:write': async (_event, projectId, rel, content, expect) =>
+    writeFileSafe(project(projectId).root, rel, content, { expectMtime: expect?.mtimeMs, expectHash: expect?.hash }),
+  'file:watch': async (_event, projectId, rels) => watchEditorFiles(projectId, Array.isArray(rels) ? rels.map(String) : []),
+  'project:listTree': async (_event, projectId) => listTree(project(projectId).root),
+  // The renderer's answer to app:confirmClose: true closes (or quits), false keeps the window.
+  'app:closeConfirmed': async (event, ok) => {
+    const win = BrowserWindow.fromWebContents(event.sender);
+    if (ok !== true || !win) {
+      quitting = false;
+      return;
+    }
+    closeAllowed.add(win);
+    if (quitting) app.quit();
+    else win.close();
+  },
   'shell:reveal': async (_event, projectId, rel) => {
     shell.showItemInFolder(await resolveInRoot(project(projectId).root, rel));
   },

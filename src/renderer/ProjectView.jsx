@@ -1,4 +1,7 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import EditorPanel, { useEditorTabs } from './editor/EditorPanel.jsx';
+import FileTree from './editor/FileTree.jsx';
+import { EditorCtx } from './editor/EditorContext.jsx';
 import { useTranslation } from 'react-i18next';
 import IntentList from './IntentList.jsx';
 import IntentDetail from './IntentDetail.jsx';
@@ -55,12 +58,17 @@ function invertLinks(links) {
 }
 
 /** Intents (list and detail), Kostnad or Github: one at a time, all fed by the same project data (FR2.2). */
-function AidlcProject({ project, view, onView, focusIntent, storiesByIntent, onOpenStory, onMeta }) {
+function AidlcProject({ project, view, onView, focusIntent, storiesByIntent, onOpenStory, onMeta, onActiveRecord }) {
   const { t } = useTranslation();
   const { detection, projectId } = project;
   const p = useProject(projectId, detection.activeSpace);
   const activeIntent = p.intents.find((i) => i.active) ?? null;
   const activeDirName = activeIntent?.dirName ?? null;
+
+  // The editor's "the agent may change this file too" notice needs the active intent's record (US-1001).
+  useEffect(() => {
+    onActiveRecord?.(activeDirName && p.space ? `aidlc/spaces/${p.space}/intents/${activeDirName}/` : null);
+  }, [activeDirName, p.space]);
 
   // A story's link to an intent selects that intent (FR2.6).
   useEffect(() => {
@@ -198,9 +206,35 @@ function SetupDone({ onClose, onFeatureDocs }) {
  * The selected view lives in App, because the left arm selects it (FR2.2).
  * This reports back what the arm needs: whether Features is offered and how many intents there are.
  */
-function ProjectContent({ project, visible, settingsOpen = false, onCloseSettings, view: chosenView = 'intents', onView, onMeta, terminalCommand }) {
+function ProjectContent({
+  project,
+  visible,
+  settingsOpen = false,
+  onCloseSettings,
+  view: chosenView = 'intents',
+  onView,
+  onMeta,
+  terminalCommand,
+  editRequest
+}) {
   const { t } = useTranslation();
   const terminal = useTerminal();
+
+  // Editing files (EPIC-10 US-1001): the open tabs live here, so they survive a switch to another view.
+  const editor = useEditorTabs(project.projectId);
+  const openEditor = editor.open;
+  const openInApp = useCallback(
+    (rel) => {
+      openEditor(rel);
+      onView?.('editor');
+    },
+    [openEditor, onView]
+  );
+  const editorCtx = useMemo(() => ({ open: openInApp }), [openInApp]);
+  const [activeRecord, setActiveRecord] = useState(null);
+  useEffect(() => {
+    if (editRequest?.projectId === project.projectId) openInApp(editRequest.rel);
+  }, [editRequest]); // once per request, from the docs dialog
 
   // The Terminal menu (EPIC-04 US-0404 FR2.4): only the project it was sent for reacts; seq lets it repeat.
   useEffect(() => {
@@ -276,7 +310,7 @@ function ProjectContent({ project, visible, settingsOpen = false, onCloseSetting
   const docsExist = features?.available === true;
   const showFeatures = settings.featureDocs === 'show' || (settings.featureDocs === 'auto' && docsExist);
   // One view at a time: Features needs the feature docs, the rest AI-DLC; otherwise the intents view shows (US-0901 FR1.1).
-  const offered = { features: showFeatures, config: isAidlc, plans: isAidlc, cost: isAidlc, github: isAidlc };
+  const offered = { features: showFeatures, config: isAidlc, plans: isAidlc, cost: isAidlc, github: isAidlc, editor: true };
   const view = offered[chosenView] ? chosenView : 'intents';
   // Configuration mounts the first time it is chosen, so its CLI reads wait until then, and then stays (FR6.1).
   const [configShown, setConfigShown] = useState(false);
@@ -307,11 +341,12 @@ function ProjectContent({ project, visible, settingsOpen = false, onCloseSetting
   }
 
   return (
+    <EditorCtx.Provider value={editorCtx}>
     <div className="project-view">
       <div className="project-main">
         {justSetUp && <SetupDone onClose={() => setJustSetUp(false)} onFeatureDocs={featureDocsChoice ? setupDocs : undefined} />}
         {/* Kept mounted while Features or Configuration is shown, so the intents view keeps its state (FR2.1). */}
-        <div className="project-mode" hidden={view === 'features' || view === 'config' || view === 'plans'}>
+        <div className="project-mode" hidden={['features', 'config', 'plans', 'editor'].includes(view)}>
           {isAidlc ? (
             <AidlcProject
               project={project}
@@ -321,6 +356,7 @@ function ProjectContent({ project, visible, settingsOpen = false, onCloseSetting
               storiesByIntent={storiesByIntent}
               onOpenStory={showFeatures ? openStory : undefined}
               onMeta={onMeta}
+              onActiveRecord={setActiveRecord}
             />
           ) : (
             <SetupAidlc
@@ -352,8 +388,14 @@ function ProjectContent({ project, visible, settingsOpen = false, onCloseSetting
             />
           </div>
         )}
-      </div>
         {view === 'plans' && <PlansView projectId={project.projectId} visible={visible} harness={harnessId} />}
+        {view === 'editor' && (
+          <div className="editor-view" data-testid="editor-view">
+            <FileTree projectId={project.projectId} onOpen={editor.open} />
+            <EditorPanel projectId={project.projectId} editor={editor} agentBusy={agentBusy} activeRecord={activeRecord} />
+          </div>
+        )}
+      </div>
       {isAidlc && <AddHarnessDialog open={addingHarness} onClose={() => setAddingHarness(false)} setupProps={setupProps} />}
       <TerminalPanel projectId={project.projectId} visible={visible} onChooseHarness={() => setChoosingHarness(true)} />
       <ProjectSettingsDialog
@@ -372,6 +414,7 @@ function ProjectContent({ project, visible, settingsOpen = false, onCloseSetting
         onOpenConfig={isAidlc ? () => onView?.('config') : undefined}
       />
     </div>
+    </EditorCtx.Provider>
   );
 }
 
@@ -384,6 +427,7 @@ export default function ProjectView({
   onView,
   onMeta,
   terminalCommand,
+  editRequest,
   askingIntents
 }) {
   return (
@@ -397,6 +441,7 @@ export default function ProjectView({
         onView={onView}
         onMeta={onMeta}
         terminalCommand={terminalCommand}
+        editRequest={editRequest}
       />
     </TerminalProvider>
   );
