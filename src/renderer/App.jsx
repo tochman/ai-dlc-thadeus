@@ -7,7 +7,7 @@ import SettingsView, { saveLanguage } from './SettingsView.jsx';
 import { withSlots } from './format.js';
 import DocsDialog from './DocsDialog.jsx';
 import AboutDialog from './AboutDialog.jsx';
-import QuestionPopup from './QuestionPopup.jsx';
+import AgentDialog from './AgentDialog.jsx';
 import UpdateNotice from './UpdateNotice.jsx';
 import { Bar, Frame } from './Lcars.jsx';
 import { APP_NAME } from '../shared/appName.js';
@@ -64,6 +64,7 @@ export default function App() {
   const [editRequest, setEditRequest] = useState(null); // {seq, projectId, rel}: "Redigera" in the docs dialog (US-1001)
   const [alertSettings, setAlertSettings] = useState({}); // {questionAlerts, notificationSound} as saved (US-0505 FR4.1)
   const [questions, setQuestions] = useState([]); // waiting questions of every open project, from main (FR1.4)
+  const [agentEvents, setAgentEvents] = useState({}); // projectId -> AgentEvent[] from main, hook and audit (US-0506 C4)
   const [popupOpen, setPopupOpen] = useState(false);
   const [popupFocus, setPopupFocus] = useState(null); // {id} named by a clicked notification (FR3.2)
   const recentRef = useRef([]);
@@ -122,10 +123,7 @@ export default function App() {
 
   // A folder that got AI-DLC set up switches to the project view in the same tab (FR4.6).
   useEffect(
-    () =>
-      bridge.onProjectDetected(({ projectId, detection }) =>
-        setTabs((t) => t.map((tab) => (tab.projectId === projectId ? { ...tab, detection } : tab)))
-      ),
+    () => bridge.onProjectDetected(({ projectId, detection }) => setTabs((t) => t.map((tab) => (tab.projectId === projectId ? { ...tab, detection } : tab)))),
     []
   );
 
@@ -149,17 +147,14 @@ export default function App() {
     let cancelled = false;
     bridge
       .getGitStatus(activeId)
-      .then((s) => !cancelled && setBranch(s?.isRepo ? s.branch ?? null : null))
+      .then((s) => !cancelled && setBranch(s?.isRepo ? (s.branch ?? null) : null))
       .catch((err) => console.warn('Grenen kunde inte läsas:', errorText(err)));
     return () => {
       cancelled = true;
     };
   }, [activeId]);
 
-  const reportMeta = useCallback(
-    (projectId, partial) => setMeta((m) => ({ ...m, [projectId]: { ...m[projectId], ...partial } })),
-    []
-  );
+  const reportMeta = useCallback((projectId, partial) => setMeta((m) => ({ ...m, [projectId]: { ...m[projectId], ...partial } })), []);
   const setUiOf = useCallback((projectId, change) => setUi((u) => ({ ...u, [projectId]: { ...UI_DEFAULT, ...u[projectId], ...change } })), []);
 
   // The label follows the real mode, also when it changes from the menu, the shortcut or macOS' green button.
@@ -171,18 +166,14 @@ export default function App() {
     return bridge.onFullscreen((on) => setFullscreen(on === true));
   }, []);
 
-  // Waiting questions (US-0505). Only an id not seen before and not waiting since the start opens the popup
-  // (FR1.4); with "Av" it never opens by itself (FR4.2). Optional: an older preload has no question API.
+  // Waiting questions (US-0505): kept for the "asking" marks on the intents. The dialog itself shows main's agent
+  // events (US-0506), which hold these questions as audit events while a project has no hook session.
   useEffect(() => {
     const receive = (list) => {
-      if (!Array.isArray(list)) return;
-      const seen = seenQuestionsRef.current;
-      const fresh = list.some((q) => !q.early && !seen.has(q.id));
-      for (const q of list) seen.add(q.id);
-      setQuestions(list);
-      if (fresh && questionAlertsRef.current !== 'off') setPopupOpen(true);
+      if (Array.isArray(list)) setQuestions(list);
     };
-    bridge.listQuestions?.()
+    bridge
+      .listQuestions?.()
       .then(receive)
       .catch((err) => console.warn('Väntande frågor kunde inte läsas:', errorText(err)));
     const offQuestions = bridge.onQuestions?.(receive);
@@ -197,15 +188,39 @@ export default function App() {
     };
   }, []);
 
+  // Agent events (US-0506 u1 C4): the list per open project, then main's pushes. Only an event not seen before and
+  // not waiting since the start opens the dialog (US-0505 FR1.4); with "Av" it never opens by itself (FR4.2).
+  const receiveAgentEvents = useCallback((projectId, events) => {
+    if (typeof projectId !== 'string' || !Array.isArray(events)) return;
+    const seen = seenQuestionsRef.current;
+    const fresh = events.some((e) => !e.early && (e.state === 'shown' || e.state === 'timedOut') && !seen.has(e.eventId));
+    for (const e of events) seen.add(e.eventId);
+    setAgentEvents((m) => ({ ...m, [projectId]: events }));
+    if (fresh && questionAlertsRef.current !== 'off') setPopupOpen(true);
+  }, []);
+  useEffect(() => bridge.agentEvents?.onChanged(({ projectId, events }) => receiveAgentEvents(projectId, events)), [receiveAgentEvents]);
+  const listedRef = useRef(new Set());
+  useEffect(() => {
+    for (const { projectId } of tabs) {
+      if (listedRef.current.has(projectId) || !bridge.agentEvents) continue;
+      listedRef.current.add(projectId);
+      bridge.agentEvents
+        .list(projectId)
+        .then((events) => receiveAgentEvents(projectId, events))
+        .catch((err) => console.warn('Agentens frågor kunde inte läsas:', errorText(err)));
+    }
+  }, [tabs, receiveAgentEvents]);
+
   // Main decides on notifications and needs to know which project is shown (FR3.1).
   useEffect(() => {
     bridge.setActiveProject?.(activeId).catch((err) => console.warn('Aktivt projekt kunde inte skickas:', errorText(err)));
   }, [activeId]);
 
-  // New questions first, then the ones that waited from the start (FR2.2). The popup closes by itself once
-  // none of the questions that opened it waits any longer (FR2.4).
-  const popupQuestions = [...questions.filter((q) => !q.early), ...questions.filter((q) => q.early)];
-  const hasNewQuestion = questions.some((q) => !q.early);
+  // The open projects' events in arrival order, new ones before those that waited from the start (FR2.2, BR2.1).
+  // The dialog closes by itself once none of the events that opened it is left (FR2.4).
+  const dialogEvents = tabs.flatMap((tab) => agentEvents[tab.projectId] ?? []).sort((a, b) => a.arrivedAtMs - b.arrivedAtMs || a.seq - b.seq);
+  const popupEvents = [...dialogEvents.filter((e) => !e.early), ...dialogEvents.filter((e) => e.early)];
+  const hasNewQuestion = dialogEvents.some((e) => !e.early);
   useEffect(() => {
     if (!hasNewQuestion) setPopupOpen(false);
   }, [hasNewQuestion]);
@@ -365,9 +380,7 @@ export default function App() {
   // Main enables and hides menu items from this (FR2.5).
   const hasProject = active !== null;
   useEffect(() => {
-    bridge
-      .sendMenuState({ hasProject, isAidlc, showFeatures })
-      .catch((err) => console.warn('Menyläget kunde inte skickas:', errorText(err)));
+    bridge.sendMenuState({ hasProject, isAidlc, showFeatures }).catch((err) => console.warn('Menyläget kunde inte skickas:', errorText(err)));
   }, [hasProject, isAidlc, showFeatures]);
 
   function toggleFullscreen() {
@@ -383,7 +396,14 @@ export default function App() {
           <span className="app-brand-text">{APP_NAME}</span>
         </div>
         <div className="app-header-main">
-          <Bar segs={[['slate-4', 3], ['steel-deep', 90], ['slate-3', 1], ['slate-5', 54]]} />
+          <Bar
+            segs={[
+              ['slate-4', 3],
+              ['steel-deep', 90],
+              ['slate-3', 1],
+              ['slate-5', 54]
+            ]}
+          />
           <div className="app-header-row">
             {branch && (
               <>
@@ -398,7 +418,11 @@ export default function App() {
                 t('app.settings')
               ) : active ? (
                 <>
-                  {active.name} <span className="app-title-sep" aria-hidden="true">•</span> {viewLabel}
+                  {active.name}{' '}
+                  <span className="app-title-sep" aria-hidden="true">
+                    •
+                  </span>{' '}
+                  {viewLabel}
                 </>
               ) : (
                 t('app.noProject')
@@ -484,21 +508,10 @@ export default function App() {
             <ArmBlock current={!settingsView && view === 'editor'} onClick={() => showView('editor')} data-testid="project-view-switch-editor">
               {t('app.editor')}
             </ArmBlock>
-            <ArmBlock
-              current={!settingsView && view === 'cost'}
-              disabled={!isAidlc}
-              onClick={() => showView('cost')}
-              data-testid="arm-cost"
-            >
+            <ArmBlock current={!settingsView && view === 'cost'} disabled={!isAidlc} onClick={() => showView('cost')} data-testid="arm-cost">
               {t('app.cost')}
             </ArmBlock>
-            <ArmBlock
-              tone="dark"
-              current={!settingsView && view === 'github'}
-              disabled={!isAidlc}
-              onClick={() => showView('github')}
-              data-testid="arm-github"
-            >
+            <ArmBlock tone="dark" current={!settingsView && view === 'github'} disabled={!isAidlc} onClick={() => showView('github')} data-testid="arm-github">
               {t('app.github')}
             </ArmBlock>
           </>
@@ -589,12 +602,13 @@ export default function App() {
       />
       <AboutDialog open={aboutOpen} onClose={() => setAboutOpen(false)} />
       <UpdateNotice busy={Object.values(meta).some((m) => m?.busy)} checkRequest={updateCheck} />
-      <QuestionPopup
+      <AgentDialog
         open={popupOpen}
-        questions={popupQuestions}
+        events={popupEvents}
         focus={popupFocus}
         harnessOf={(projectId) => selectableHarness(meta[projectId]?.harness)}
-        onSend={sendAnswer}
+        projectNameOf={(projectId) => tabs.find((tab) => tab.projectId === projectId)?.name ?? ''}
+        onAuditSend={sendAnswer}
         onOpenTerminal={answerInAgent}
         onClose={closePopup}
       />

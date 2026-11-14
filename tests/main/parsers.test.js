@@ -21,12 +21,7 @@ describe('mergeIntents', () => {
     const disk = ['261110-epic02-finish', '261111-orphan-notes', '261112-epic29-small-k2-fixes'];
     const list = mergeIntents(readJson(path.join(INTENTS, 'intents.json')), disk, '261112-epic29-small-k2-fixes');
 
-    expect(list.map((i) => i.dirName)).toEqual([
-      '261112-epic29-small-k2-fixes',
-      '261111-orphan-notes',
-      '261110-epic02-finish',
-      '261105-ghost-intent'
-    ]);
+    expect(list.map((i) => i.dirName)).toEqual(['261112-epic29-small-k2-fixes', '261111-orphan-notes', '261110-epic02-finish', '261105-ghost-intent']);
     const by = Object.fromEntries(list.map((i) => [i.dirName, i]));
     expect(by['261105-ghost-intent'].missingOnDisk).toBe(true);
     expect(by['261111-orphan-notes']).toMatchObject({ missingInIndex: true, slug: 'orphan-notes' });
@@ -73,9 +68,7 @@ describe('mergePipeline', () => {
     // Graph claims build-and-test is approved; the state checkbox still says in progress.
     const disagreeing = {
       ...graph,
-      stages: graph.stages.map((g) =>
-        g.slug === 'build-and-test' ? { ...g, completedAt: '2026-11-12T22:01:05Z', outcome: 'approved' } : g
-      )
+      stages: graph.stages.map((g) => (g.slug === 'build-and-test' ? { ...g, completedAt: '2026-11-12T22:01:05Z', outcome: 'approved' } : g))
     };
     expect(stage(mergePipeline(state, disagreeing), 'build-and-test')).toMatchObject({ status: 'in-progress', mismatch: true });
   });

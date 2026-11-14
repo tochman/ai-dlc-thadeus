@@ -1,0 +1,19 @@
+{
+  "type": "form.created",
+  "properties": {
+    "sessionID": "ses_7d1c0b2a9e",
+    "formID": "frm_multitwo",
+    "questions": [
+      {
+        "question": "Which checks should run in CI?",
+        "header": "CI checks",
+        "options": [
+          { "label": "Coverage", "description": "80% line floor." },
+          { "label": "ESLint", "description": "Lint errors block the merge." },
+          { "label": "Prettier", "description": "Format check." }
+        ],
+        "multiple": true
+      }
+    ]
+  }
+}

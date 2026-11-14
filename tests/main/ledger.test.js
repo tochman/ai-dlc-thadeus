@@ -26,7 +26,10 @@ describe('summarizeLedger', () => {
       totalTokens: 9800,
       missingPrice: false
     });
-    expect(epic02.byStage.map((r) => [r.name, r.usd])).toEqual([['functional-design', 2.5], ['code-generation', 1.5]]);
+    expect(epic02.byStage.map((r) => [r.name, r.usd])).toEqual([
+      ['functional-design', 2.5],
+      ['code-generation', 1.5]
+    ]);
     expect(epic02.stageModels['code-generation']).toEqual(['sonnet-5-5']);
     expect(summary.perIntent['261105-ghost-intent']).toBeNull(); // uuid in intents.json, no ledger entry
     expect(summary.perIntent['261111-orphan-notes']).toBeNull(); // no uuid at all

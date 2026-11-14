@@ -1,0 +1,21 @@
+{
+  "session_id": "4b6f6a2e-3f0d-4d55-9a57-2b1f0c3e9d11",
+  "hook_event_name": "PostToolUse",
+  "tool_name": "AskUserQuestion",
+  "tool_input": {
+    "questions": [
+      {
+        "question": "**Code Generation** is complete for `u1-questions`. How would you like to proceed?",
+        "header": "Stage gate",
+        "options": [
+          { "label": "Complete workflow", "description": "Approve this stage and continue to Build and Test." },
+          { "label": "Request Changes", "description": "Keep the stage open and say what to change." }
+        ],
+        "multiSelect": false
+      }
+    ],
+    "answers": { "**Code Generation** is complete for `u1-questions`. How would you like to proceed?": "Complete workflow" }
+  },
+  "tool_response": { "answers": { "**Code Generation** is complete for `u1-questions`. How would you like to proceed?": "Complete workflow" } },
+  "tool_use_id": "toolu_01GateQuestion20261114"
+}

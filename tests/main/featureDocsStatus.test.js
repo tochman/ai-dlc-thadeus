@@ -111,7 +111,12 @@ describe('feature docs status', () => {
 
   it('fails when a delivered story is still marked in progress', () => {
     const ov = '| Epic | Topic | Status |\n|---|---|---|\n| [EPIC-09](e.md) | T | 🚧 US-0901 built |\n';
-    const problems = checkFeatureDocs({ overview: ov, epics: { 'e.md': epic('🚧 Built', '🚧 US-0901 built.') }, built: new Set(), delivered: new Set(['US-0901']) });
+    const problems = checkFeatureDocs({
+      overview: ov,
+      epics: { 'e.md': epic('🚧 Built', '🚧 US-0901 built.') },
+      built: new Set(),
+      delivered: new Set(['US-0901'])
+    });
     expect(problems).toEqual([expect.stringContaining('US-0901 is delivered')]);
   });
 

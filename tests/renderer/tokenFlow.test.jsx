@@ -19,7 +19,7 @@ function later(extraIn, extraOut) {
 }
 
 describe('tokenFlow (US-0207 FR1.3, NFR5)', () => {
-  it('reads the intent\'s tokens from the ledger, with cache write = 5m + 1h', () => {
+  it("reads the intent's tokens from the ledger, with cache write = 5m + 1h", () => {
     expect(tokensOf(cost(), '261113-live')).toEqual({ input: 3000, output: 1500, cacheWrite: 300, cacheRead: 5000 });
   });
 
@@ -41,7 +41,11 @@ describe('tokenFlow (US-0207 FR1.3, NFR5)', () => {
   });
 
   it('a lower total (a new session or a reset) starts a new history; it keeps at most HISTORY_MAX', () => {
-    const h = pushSample(pushSample([], { input: 900, output: 0, cacheWrite: 0, cacheRead: 0 }, 0), { input: 1000, output: 0, cacheWrite: 0, cacheRead: 0 }, 60_000);
+    const h = pushSample(
+      pushSample([], { input: 900, output: 0, cacheWrite: 0, cacheRead: 0 }, 0),
+      { input: 1000, output: 0, cacheWrite: 0, cacheRead: 0 },
+      60_000
+    );
     expect(h).toHaveLength(2);
     const reset = pushSample(h, { input: 10, output: 0, cacheWrite: 0, cacheRead: 0 }, 120_000);
     expect(reset).toEqual([{ at: 120_000, total: 10, tokens: expect.any(Object), rate: 0 }]);

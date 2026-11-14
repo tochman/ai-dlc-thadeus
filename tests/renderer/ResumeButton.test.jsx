@@ -114,7 +114,7 @@ describe('ResumeButton while an agent session runs the work (EPIC-00 US-0007)', 
     expect(terminal.sequence).not.toHaveBeenCalled();
   });
 
-  it('another intent\'s button waits too while the active one is in flight', () => {
+  it("another intent's button waits too while the active one is in flight", () => {
     terminal.running = vi.fn(() => true);
     render(<ResumeButton intent={{ ...intent, dirName: '261112-other', active: false }} activeDirName={intent.dirName} activeIntent={active('in-flight')} />);
     expect(button().disabled).toBe(true);

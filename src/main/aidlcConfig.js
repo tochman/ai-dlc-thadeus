@@ -87,7 +87,13 @@ export function splitSource(text) {
   for (let i = s.length - 1; i >= 0; i--) {
     if (s[i] === ')') depth++;
     else if (s[i] === '(' && --depth === 0) {
-      return { value: s.slice(0, i).trim(), source: s.slice(i + 1, -1).trim().replace(/^from\s+/, '') };
+      return {
+        value: s.slice(0, i).trim(),
+        source: s
+          .slice(i + 1, -1)
+          .trim()
+          .replace(/^from\s+/, '')
+      };
     }
   }
   return { value: s, source: null }; // unbalanced: shown as it is
@@ -138,9 +144,4 @@ export async function getAidlcConfig(root, { harness, activeScope = null, exec =
 }
 
 /** Root-relative paths whose change can alter the configuration (FR6.1); the intent state comes via project:changed. */
-export const CONFIG_WATCH_PATHS = [
-  'aidlc.settings.json',
-  'aidlc.settings.local.json',
-  OWN_PLANS_DIR,
-  ...HARNESSES.map(scopesDir).filter(Boolean)
-];
+export const CONFIG_WATCH_PATHS = ['aidlc.settings.json', 'aidlc.settings.local.json', OWN_PLANS_DIR, ...HARNESSES.map(scopesDir).filter(Boolean)];

@@ -85,10 +85,11 @@ describe('App shell', () => {
     await waitFor(() => expect(first.getAttribute('aria-current')).toBe('true'));
     expect(second.hasAttribute('aria-current')).toBe(false);
     expect(within(arm).getAllByTestId('project-settings-open')).toHaveLength(2);
-    expect(within(arm).getAllByTestId('project-tabs-close').map((b) => b.getAttribute('aria-label'))).toEqual([
-      'Stäng aidlc-dash-a',
-      'Stäng visinv'
-    ]);
+    expect(
+      within(arm)
+        .getAllByTestId('project-tabs-close')
+        .map((b) => b.getAttribute('aria-label'))
+    ).toEqual(['Stäng aidlc-dash-a', 'Stäng visinv']);
 
     // Views: Intents is the current page; Features shows because the project offers it (EPIC-06 rule).
     const intents = await screen.findByTestId('project-view-switch-intents');
@@ -129,7 +130,11 @@ describe('App shell', () => {
   it('makes Kostnad and Github views of their own, one at a time, from the arm and the menu; disabled without AI-DLC', async () => {
     await renderApp({ openProjects: ['/p/aidlc-dash-a'], activeProject: '/p/aidlc-dash-a' });
     await screen.findByTestId('project-view-switch-features');
-    const current = () => screen.getAllByRole('button').filter((b) => b.getAttribute('aria-current') === 'page').map((b) => b.dataset.testid);
+    const current = () =>
+      screen
+        .getAllByRole('button')
+        .filter((b) => b.getAttribute('aria-current') === 'page')
+        .map((b) => b.dataset.testid);
     const shownView = () => screen.getByTestId('project-view-p1').dataset.view;
 
     fireEvent.click(screen.getByTestId('arm-github'));
@@ -169,7 +174,8 @@ describe('App shell', () => {
     expect(screen.getByTestId('arm-github').hasAttribute('aria-current')).toBe(false);
   });
 
-  it('sets data-motion from the setting, Dämpad under prefers-reduced-motion without one, and saves a new choice (FR4.2)', async () => {    mockReducedMotion(true);
+  it('sets data-motion from the setting, Dämpad under prefers-reduced-motion without one, and saves a new choice (FR4.2)', async () => {
+    mockReducedMotion(true);
     await renderApp({});
     await waitFor(() => expect(window.bridge.getSettings).toHaveBeenCalled());
     expect(document.documentElement.dataset.motion).toBe('reduced');
@@ -221,7 +227,7 @@ describe('App shell', () => {
     expect(within(screen.getByTestId('project-tabs')).queryByRole('img')).toBeNull();
   });
 
-  it('labels the fullscreen block from the window\'s real mode, with aria-pressed, and toggles it on click (US-0404 FR1.2, NFR3)', async () => {
+  it("labels the fullscreen block from the window's real mode, with aria-pressed, and toggles it on click (US-0404 FR1.2, NFR3)", async () => {
     await renderApp({});
     const button = await screen.findByTestId('fullscreen-toggle');
     expect(button.tagName).toBe('BUTTON'); // reachable with the keyboard
@@ -270,5 +276,51 @@ describe('App shell', () => {
     await waitFor(() => expect(window.bridge.sendMenuState).toHaveBeenLastCalledWith({ hasProject: false, isAidlc: false, showFeatures: false }));
     act(() => push.menuCommand({ command: 'closeProject' }));
     expect(window.bridge.closeProject).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('App shell: agent dialogs (US-0506 u1)', () => {
+  const hookEvent = {
+    eventId: 'h1',
+    sessionId: 's1',
+    projectId: 'p1',
+    tabId: 'agent:claude',
+    harness: 'claude',
+    source: 'hook',
+    kind: 'question',
+    state: 'shown',
+    arrivedAtMs: 1,
+    seq: 1,
+    context: null,
+    questions: [{ header: 'Val', text: 'Vilken?', truncated: false, options: [{ label: 'A', description: null }], multiSelect: false, allowOwn: true }],
+    lastError: null
+  };
+  async function withAgentEvents(settings) {
+    mockBridge({ openProjects: ['/p/aidlc-dash-a'], activeProject: '/p/aidlc-dash-a', ...settings });
+    window.bridge.agentEvents = {
+      list: vi.fn(async () => []),
+      onChanged: vi.fn((cb) => ((push.agentEvents = cb), () => delete push.agentEvents)),
+      answer: vi.fn(async () => ({ state: 'sent', via: 'hook' })),
+      close: vi.fn(async () => ({ state: 'handedBack' }))
+    };
+    render(<App />);
+    await waitFor(() => expect(window.bridge.agentEvents.list).toHaveBeenCalledWith('p1'));
+  }
+  afterEach(() => delete window.bridge.agentEvents);
+
+  it('a pushed hook event opens the dialog', async () => {
+    await withAgentEvents({});
+    act(() => push.agentEvents({ projectId: 'p1', events: [hookEvent] }));
+    expect(await screen.findByTestId('agent-dialog-title')).toBeTruthy();
+    expect(screen.getByTestId('agent-dialog').hasAttribute('open')).toBe(true);
+    act(() => push.agentEvents({ projectId: 'p1', events: [] }));
+    await waitFor(() => expect(screen.getByTestId('agent-dialog').hasAttribute('open')).toBe(false));
+  });
+
+  it('with question alerts off the dialog does not open by itself', async () => {
+    await withAgentEvents({ questionAlerts: 'off' });
+    await waitFor(() => expect(window.bridge.getSettings).toHaveBeenCalled());
+    act(() => push.agentEvents({ projectId: 'p1', events: [hookEvent] }));
+    expect(screen.getByTestId('agent-dialog').hasAttribute('open')).toBe(false);
   });
 });

@@ -31,7 +31,11 @@ export const isInFlight = (status) => status === 'in-flight';
 export const shortModel = (name) => String(name).replace(/^claude-/, '');
 
 /** "code-generation" -> "Code Generation" */
-export const stageTitle = (slug) => String(slug).split('-').map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+export const stageTitle = (slug) =>
+  String(slug)
+    .split('-')
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+    .join(' ');
 
 /** Where resuming picks up: the current stage and its step among the executed stages (FR2.5). */
 export function stagePosition(currentStage, done, executed) {

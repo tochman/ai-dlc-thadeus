@@ -18,7 +18,7 @@ const MAX_TREE_FILES = 20000;
 export const TREE_SKIP = new Set(['node_modules', 'out', 'dist', '.git']);
 
 // The harness folders hold AI-DLC's installed engine (agents, hooks, tools, scopes): read-only as a whole, like .git/.
-const ENGINE_DIRS =[...new Set([...HARNESSES.flatMap((h) => h.markers.dirs ?? []), '.opencode', '.github/skills/aidlc', '.git'])];
+const ENGINE_DIRS = [...new Set([...HARNESSES.flatMap((h) => h.markers.dirs ?? []), '.opencode', '.github/skills/aidlc', '.git'])];
 const ENGINE_FILES = [
   /^aidlc\/(.+\/)?aidlc-state\.md$/,
   /^aidlc\/(.+\/)?audit(\/|$)/,

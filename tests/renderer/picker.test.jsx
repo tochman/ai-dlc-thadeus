@@ -43,7 +43,7 @@ describe('resolveAnswer over the fixtures (US-0006)', () => {
   });
 
   it('matches labels logged with a description, a letter or a Q prefix', () => {
-    const logged = { kind: 'question', options: ['Q1: A. Guide me (walk through each question)', 'B. I\'ll edit the file', 'Chat (discuss freely)'] };
+    const logged = { kind: 'question', options: ['Q1: A. Guide me (walk through each question)', "B. I'll edit the file", 'Chat (discuss freely)'] };
     expect(resolveAnswer(on('single'), logged, { index: 1 }).keys).toEqual(['2']);
   });
 
@@ -62,7 +62,19 @@ describe('resolveAnswer over the fixtures (US-0006)', () => {
     const flags = { kind: 'question', options: ['Every switch', 'Non-default + Show all', 'Non-default only'] };
     expect(resolveAnswer(on('batch-square'), flags, { index: 0 })).toEqual({ error: 'several' });
     expect(resolveAnswer(on('batch-ballot'), { kind: 'question', options: ['Ja', 'Nej'] }, { index: 0 })).toEqual({ error: 'several' });
-    expect(resolveAnswer(on('single'), { ...answerMode, batch: [{ id: 'Q1', options: [] }, { id: 'Q2', options: [] }] }, { index: 0 })).toEqual({ error: 'several' });
+    expect(
+      resolveAnswer(
+        on('single'),
+        {
+          ...answerMode,
+          batch: [
+            { id: 'Q1', options: [] },
+            { id: 'Q2', options: [] }
+          ]
+        },
+        { index: 0 }
+      )
+    ).toEqual({ error: 'several' });
   });
 
   it('an own answer goes through "Type something" with its text', () => {

@@ -442,7 +442,13 @@ export default function TerminalPanel({ projectId, visible, onChooseHarness }) {
             )}
           </div>
         )}
-        <Bar segs={[['slate-3', 2], ['steel-deep', 70], ['slate-2', 1]]} />
+        <Bar
+          segs={[
+            ['slate-3', 2],
+            ['steel-deep', 70],
+            ['slate-2', 1]
+          ]}
+        />
       </div>
     </section>
   );

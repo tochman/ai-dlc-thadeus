@@ -20,10 +20,13 @@ function debounce(flush, debounceMs, maxWaitMs) {
     schedule() {
       if (!timer) firstAt = Date.now();
       clearTimeout(timer);
-      timer = setTimeout(() => {
-        timer = null;
-        flush();
-      }, Math.min(debounceMs, Math.max(0, firstAt + maxWaitMs - Date.now())));
+      timer = setTimeout(
+        () => {
+          timer = null;
+          flush();
+        },
+        Math.min(debounceMs, Math.max(0, firstAt + maxWaitMs - Date.now()))
+      );
     },
     cancel: () => clearTimeout(timer)
   };
@@ -41,8 +44,7 @@ export function watchFiles({ root, paths, onChange, onError = console.error, deb
   const relOf = (p) => path.relative(base, path.resolve(p)).split(path.sep).join('/');
   // A dot-named target such as aidlc/.aidlc-subagent-inflight is a file too, though it has no extension.
   const isFile = (t) => /\.(md|json)$/i.test(t) || path.posix.basename(t).startsWith('.');
-  const matches = (rel) =>
-    targets.some((t) => (isFile(t) ? rel === t : path.posix.dirname(rel) === t && rel.toLowerCase().endsWith('.md')));
+  const matches = (rel) => targets.some((t) => (isFile(t) ? rel === t : path.posix.dirname(rel) === t && rel.toLowerCase().endsWith('.md')));
   const keep = (rel) => rel === '' || targets.some((t) => t === rel || t.startsWith(`${rel}/`)) || matches(rel);
   const { schedule, cancel } = debounce(onChange, debounceMs, maxWaitMs);
 

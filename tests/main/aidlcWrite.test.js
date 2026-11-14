@@ -43,9 +43,7 @@ describe('AI-DLC writes (EPIC-09 US-0902)', () => {
       args: ['config', 'flags', '--swarm', 'on', '--local', '--yes'],
       dryRunArgs: ['config', 'flags', '--swarm', 'on', '--local', '--dry-run']
     });
-    expect(buildCommand({ kind: 'project', key: 'plugins', value: 'aidlc,extra' }).args).toEqual([
-      'config', 'project', '--plugins', 'aidlc,extra', '--yes'
-    ]);
+    expect(buildCommand({ kind: 'project', key: 'plugins', value: 'aidlc,extra' }).args).toEqual(['config', 'project', '--plugins', 'aidlc,extra', '--yes']);
     expect(() => buildCommand({ kind: 'project', key: 'swarm', value: 'on' })).toThrow(); // no target: refused
   });
 
@@ -55,10 +53,19 @@ describe('AI-DLC writes (EPIC-09 US-0902)', () => {
       dryRunArgs: null
     });
     expect(buildCommand({ kind: 'guard', key: 'AIDLC_DISABLE_REVIEW_FREEZE_HOOK', value: 'off', where: 'global' }).args).toEqual([
-      'config', 'flags', '--bypass', 'AIDLC_DISABLE_REVIEW_FREEZE_HOOK', '--global', '--yes'
+      'config',
+      'flags',
+      '--bypass',
+      'AIDLC_DISABLE_REVIEW_FREEZE_HOOK',
+      '--global',
+      '--yes'
     ]);
     expect(buildCommand({ kind: 'guard', key: 'AIDLC_DISABLE_REVIEW_FREEZE_HOOK', value: 'on' }).args).toEqual([
-      'config', 'flags', '--clear-bypass', 'AIDLC_DISABLE_REVIEW_FREEZE_HOOK', '--yes'
+      'config',
+      'flags',
+      '--clear-bypass',
+      'AIDLC_DISABLE_REVIEW_FREEZE_HOOK',
+      '--yes'
     ]);
   });
 

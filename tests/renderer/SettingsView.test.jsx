@@ -10,9 +10,7 @@ function stubBridge({ settings = {}, tools = [], appInfo, saveError = null } = {
     getSettings: vi.fn(async () => ({ ...state, toolPaths: { ...state.toolPaths } })),
     setSettings: vi.fn(async (partial) => Object.assign(state, partial)),
     getLanguage: vi.fn(async () => 'sv'),
-    getTools: vi.fn(async () =>
-      tools.map((row) => (state.toolPaths[row.id] ? { ...row, path: state.toolPaths[row.id], source: 'saved' } : row))
-    ),
+    getTools: vi.fn(async () => tools.map((row) => (state.toolPaths[row.id] ? { ...row, path: state.toolPaths[row.id], source: 'saved' } : row))),
     pickTool: vi.fn(async () => '/opt/claude'),
     saveTool: vi.fn(async (id, file) => {
       if (saveError) throw new Error(`Error invoking remote method 'tools:save': Error: ${saveError}`);
@@ -187,7 +185,7 @@ describe('Inställningar as a view in the content frame (EPIC-04 US-0405)', () =
     expect(screen.getByRole('button', { name: 'Projektinställningar: aidlc-dash-a' })).toBeTruthy();
   });
 
-  it('picks and clears the default folder, removes a recent project and opens a project\'s settings (FR4.1–FR4.3)', async () => {
+  it("picks and clears the default folder, removes a recent project and opens a project's settings (FR4.1–FR4.3)", async () => {
     const { bridge, state } = stubBridge({ tools: TOOLS });
     const { onRemoveRecent, onProjectSettings } = renderView();
 

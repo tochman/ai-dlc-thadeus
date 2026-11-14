@@ -67,7 +67,11 @@ export function ChangePanel({ preview, apply, blocked = null, onClose, renderExt
               <span className="field-label">{t('configEdit.command')}</span> <code data-testid="config-change-command">{shownPreview.command}</code>
             </p>
           )}
-          {shownPreview.dryRun && <pre className="config-change-output" data-testid="config-change-dry-run">{shownPreview.dryRun}</pre>}
+          {shownPreview.dryRun && (
+            <pre className="config-change-output" data-testid="config-change-dry-run">
+              {shownPreview.dryRun}
+            </pre>
+          )}
           {shownPreview.command && !shownPreview.dryRun && !shownPreview.error && <p className="muted">{t('configEdit.noDryRun')}</p>}
           {shownPreview.error && (
             <p className="refresh-error" role="alert" data-testid="config-change-preview-error">
@@ -77,7 +81,11 @@ export function ChangePanel({ preview, apply, blocked = null, onClose, renderExt
           {renderExtra?.(shownPreview)}
         </>
       )}
-      {blocked && <p className="muted" data-testid="config-change-blocked">{blocked}</p>}
+      {blocked && (
+        <p className="muted" data-testid="config-change-blocked">
+          {blocked}
+        </p>
+      )}
       {result &&
         (result.ok ? (
           <p role="status" data-testid="config-change-result">
@@ -207,7 +215,13 @@ export function DefaultsEditor({ projectId, plans }) {
               ))}
             </select>
           ) : (
-            <input type="text" value={value} onChange={(e) => setValue(e.target.value.trim())} aria-invalid={!!value && !valid} data-testid="config-edit-defaults-value" />
+            <input
+              type="text"
+              value={value}
+              onChange={(e) => setValue(e.target.value.trim())}
+              aria-invalid={!!value && !valid}
+              data-testid="config-edit-defaults-value"
+            />
           )}
         </label>
       </div>
@@ -264,7 +278,12 @@ export function GuardSwitches({ projectId, flags }) {
       {confirming && (
         <div className="panel config-change" role="alertdialog" data-testid="config-edit-guard-confirm">
           <p>{t('configEdit.guards.confirmOff', { name: t(`configEdit.guards.${confirming.id}.name`) })}</p>
-          <WhereChoice name="config-edit-guard" options={GUARD_OFF_WHERE} value={confirming.where} onChange={(where) => setConfirming({ ...confirming, where })} />
+          <WhereChoice
+            name="config-edit-guard"
+            options={GUARD_OFF_WHERE}
+            value={confirming.where}
+            onChange={(where) => setConfirming({ ...confirming, where })}
+          />
           <div className="setup-actions">
             <button
               className="btn btn-accent"
@@ -345,11 +364,20 @@ function effortText(effort, applied, t) {
 /** The estimate line under a model change's preview, always labelled as an estimate. */
 function Estimate({ estimate }) {
   const { t } = useTranslation();
-  if (!estimate) return <p className="muted" data-testid="config-edit-models-estimate">{t('configEdit.models.noEstimate')}</p>;
+  if (!estimate)
+    return (
+      <p className="muted" data-testid="config-edit-models-estimate">
+        {t('configEdit.models.noEstimate')}
+      </p>
+    );
   const sign = estimate.delta > 0 ? '+' : estimate.delta < 0 ? '−' : '±';
   return (
     <p data-testid="config-edit-models-estimate">
-      {t('configEdit.models.estimate', { before: formatUsd(estimate.before), after: formatUsd(estimate.after), delta: `${sign}${formatUsd(Math.abs(estimate.delta))}` })}
+      {t('configEdit.models.estimate', {
+        before: formatUsd(estimate.before),
+        after: formatUsd(estimate.after),
+        delta: `${sign}${formatUsd(Math.abs(estimate.delta))}`
+      })}
     </p>
   );
 }
@@ -515,11 +543,22 @@ export function ModelPicker({ projectId, harness, rows, fallback }) {
             ))}
           </select>
         </label>
-        <select className="lcars-select" value={groupEffort} onChange={(e) => setGroupEffort(e.target.value)} aria-label={t('config.effort')} data-testid="config-edit-models-group-effort">
+        <select
+          className="lcars-select"
+          value={groupEffort}
+          onChange={(e) => setGroupEffort(e.target.value)}
+          aria-label={t('config.effort')}
+          data-testid="config-edit-models-group-effort"
+        >
           <option value="">{DASH}</option>
           {effortOptions(options.efforts.filter((e) => e !== 'default'))}
         </select>
-        <button className="btn" disabled={!where || !group || !groupEffort} onClick={() => preview({ group, effort: groupEffort })} data-testid="config-edit-models-preview-group">
+        <button
+          className="btn"
+          disabled={!where || !group || !groupEffort}
+          onClick={() => preview({ group, effort: groupEffort })}
+          data-testid="config-edit-models-preview-group"
+        >
           {t('configEdit.preview')}
         </button>
       </div>

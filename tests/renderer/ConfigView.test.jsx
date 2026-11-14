@@ -121,7 +121,9 @@ describe('ConfigView', () => {
     renderView({ onSetup });
     await screen.findByTestId('config-view-models');
 
-    get.mockResolvedValueOnce(config({ models: null, flags: null, active: null, provider: null, plugins: null, errors: { missing: true, models: 'spawn aidlc ENOENT' } }));
+    get.mockResolvedValueOnce(
+      config({ models: null, flags: null, active: null, provider: null, plugins: null, errors: { missing: true, models: 'spawn aidlc ENOENT' } })
+    );
     await act(async () => push.config({ projectId: 'p1' }));
     const error = await screen.findByTestId('config-view-error');
     expect(error.textContent).toMatch(/aidlc hittades inte: spawn aidlc ENOENT/);
@@ -170,7 +172,13 @@ describe('ConfigView', () => {
       vi.setSystemTime(Date.parse('2026-11-14T02:10:00Z'));
       mockBridge();
       // The shape agents:working returns.
-      const developer = { agent: 'aidlc-developer-agent', name: 'developer', startedMs: Date.parse('2026-11-14T02:07:00Z'), stage: 'code-generation', intent: 'config-view' };
+      const developer = {
+        agent: 'aidlc-developer-agent',
+        name: 'developer',
+        startedMs: Date.parse('2026-11-14T02:07:00Z'),
+        stage: 'code-generation',
+        intent: 'config-view'
+      };
       window.bridge.getWorkingAgents.mockResolvedValueOnce([developer]).mockResolvedValue([]);
       renderView();
       const working = await screen.findByTestId('config-view-working');
@@ -232,7 +240,10 @@ describe('ConfigView changes (EPIC-09 US-0902, US-0904)', () => {
     fireEvent.click(screen.getByTestId('config-edit-guard-confirm-yes'));
     await waitFor(() =>
       expect(window.bridge.previewConfigChange).toHaveBeenLastCalledWith('p1', {
-        kind: 'guard', key: 'AIDLC_DISABLE_REVIEW_FREEZE_HOOK', value: 'off', where: 'local'
+        kind: 'guard',
+        key: 'AIDLC_DISABLE_REVIEW_FREEZE_HOOK',
+        value: 'off',
+        where: 'local'
       })
     );
 

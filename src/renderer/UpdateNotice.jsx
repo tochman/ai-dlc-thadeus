@@ -111,9 +111,7 @@ export default function UpdateNotice({ busy, checkRequest = 0 }) {
               {!offer?.asset && <p className="refresh-error">{t('update.noPackage')}</p>}
             </>
           )}
-          {phase === 'downloading' && (
-            <p data-testid="update-notice-progress">{pct == null ? t('update.downloading') : t('update.downloadingPct', { pct })}</p>
-          )}
+          {phase === 'downloading' && <p data-testid="update-notice-progress">{pct == null ? t('update.downloading') : t('update.downloadingPct', { pct })}</p>}
           {phase === 'installing' && <p>{t('update.installing')}</p>}
           {phase === 'installed' && (
             <p data-testid="update-notice-kept">
@@ -147,7 +145,11 @@ export default function UpdateNotice({ busy, checkRequest = 0 }) {
           </button>
         )}
         {phase === 'error' && failed?.file && (
-          <button className="btn" onClick={() => bridge.revealUpdate().catch((err) => setFailed({ error: errorText(err), file: null }))} data-testid="update-notice-reveal">
+          <button
+            className="btn"
+            onClick={() => bridge.revealUpdate().catch((err) => setFailed({ error: errorText(err), file: null }))}
+            data-testid="update-notice-reveal"
+          >
             {reveal}
           </button>
         )}

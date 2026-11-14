@@ -6,7 +6,10 @@ import { loadWorkingAgents, workingAgents } from '../../src/main/projectService.
 import { categoryOf, mergeAudits } from '../../src/main/parsers/audit.js';
 
 // Shards in AI-DLC's audit format, through the same parser and categories loadAuditEvents uses.
-const block = (fields) => Object.entries(fields).map(([k, v]) => `**${k}**: ${v}`).join('\n');
+const block = (fields) =>
+  Object.entries(fields)
+    .map(([k, v]) => `**${k}**: ${v}`)
+    .join('\n');
 const at = (min) => new Date(Date.UTC(2026, 10, 14, 2, min)).toISOString();
 const shard = (...blocks) => blocks.map(([min, f]) => block({ Timestamp: at(min), ...f })).join('\n\n---\n\n');
 const events = (...blocks) => mergeAudits([{ source: 'host-1.md', text: shard(...blocks) }]).map((e) => ({ ...e, category: categoryOf(e.event) }));
@@ -15,7 +18,7 @@ const dispatched = (agent) => ({ Event: 'SUBAGENT_DISPATCHED', 'Agent Type': age
 const completed = (agent) => ({ Event: 'SUBAGENT_COMPLETED', 'Agent Type': agent, 'Agent ID': 'a1' });
 
 describe('workingAgents', () => {
-  it('closes each agent type\'s oldest dispatch with its first later completion, and names the stage it ran in', () => {
+  it("closes each agent type's oldest dispatch with its first later completion, and names the stage it ran in", () => {
     const list = workingAgents(
       events(
         [0, stage('requirements-analysis')],
@@ -35,7 +38,7 @@ describe('workingAgents', () => {
     ]);
   });
 
-  it('shows at most as many as are running, newest first, so a refused dispatch\'s ghost is hidden', () => {
+  it("shows at most as many as are running, newest first, so a refused dispatch's ghost is hidden", () => {
     // A hook refused the first dispatch, AI-DLC retried: two dispatches, one agent running.
     const log = events([0, stage('code-generation')], [1, dispatched('general-purpose')], [2, dispatched('general-purpose')]);
     expect(workingAgents(log, 1).map((a) => a.startedMs)).toEqual([Date.parse(at(2))]);
@@ -49,7 +52,8 @@ const write = async (rel, text) => {
   await fs.mkdir(path.dirname(path.join(TMP, rel)), { recursive: true });
   await fs.writeFile(path.join(TMP, rel), text);
 };
-const inflight = (n) => JSON.stringify({ version: 1, entries: Array.from({ length: n }, (_, i) => ({ sessionId: `s${i}`, startedAtMs: 1, authority: 'hook' })) });
+const inflight = (n) =>
+  JSON.stringify({ version: 1, entries: Array.from({ length: n }, (_, i) => ({ sessionId: `s${i}`, startedAtMs: 1, authority: 'hook' })) });
 
 describe('loadWorkingAgents', () => {
   beforeEach(async () => {

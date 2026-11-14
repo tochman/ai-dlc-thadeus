@@ -34,7 +34,10 @@ export function buildMenuTemplate({ isMac, isPackaged, state, fullscreen, send, 
   const hasProject = state?.hasProject === true;
   const isAidlc = hasProject && state?.isAidlc === true;
   const showFeatures = hasProject && state?.showFeatures === true;
-  const cmd = (command, args = {}) => () => send({ command, ...args });
+  const cmd =
+    (command, args = {}) =>
+    () =>
+      send({ command, ...args });
   const appSettings = { label: t('menu.settings'), accelerator: 'CmdOrCtrl+,', click: cmd('appSettings') };
   // The app's own "Om" popup with the version replaces Electron's About panel (EPIC-04 US-0408).
   const about = { label: t('menu.about', { app: APP_NAME }), click: cmd('about') };

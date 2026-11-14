@@ -17,7 +17,10 @@ function build(options = {}) {
 
 const items = (template) => template.flatMap((m) => [m, ...(m.submenu ?? [])]);
 const byLabel = (template, label) => items(template).find((i) => i.label === label);
-const roles = (template) => items(template).map((i) => i.role).filter(Boolean);
+const roles = (template) =>
+  items(template)
+    .map((i) => i.role)
+    .filter(Boolean);
 
 describe('app menu (EPIC-04 US-0404)', () => {
   it('has no Reload, DevTools or Utveckling when packaged, and has them in dev (FR2.2)', () => {
@@ -94,7 +97,9 @@ describe('app menu (EPIC-04 US-0404)', () => {
     const linux = build({ isMac: false }).template;
     expect(linux.map((m) => m.label)).toEqual(['Arkiv', 'Redigera', 'Visa', 'Terminal', 'Hjälp']);
     expect(byLabel(linux, 'Helskärm').accelerator).toBe('F11');
-    const arkiv = byLabel(linux, 'Arkiv').submenu.map((i) => i.label).filter(Boolean);
+    const arkiv = byLabel(linux, 'Arkiv')
+      .submenu.map((i) => i.label)
+      .filter(Boolean);
     expect(arkiv).toEqual(['Öppna projekt…', 'Stäng projekt', 'Projektinställningar…', 'Inställningar…', 'Avsluta']);
     expect(byLabel(linux, 'Avsluta').accelerator).toBe('Ctrl+Q');
     expect(roles(linux)).toEqual(expect.arrayContaining(['undo', 'redo', 'cut', 'copy', 'paste', 'selectAll']));
@@ -142,9 +147,15 @@ describe('app menu (EPIC-04 US-0404)', () => {
     expect(byLabel(build({ isMac: false }).template, 'Help').submenu.map((i) => i.label)).toContain('About T.H.A.D.E.U.S.');
     expect(byLabel(mac, 'Open project…').accelerator).toBe('CmdOrCtrl+O');
     byLabel(mac, 'Close project').click();
-    const file = byLabel(build({ isMac: false }).template, 'File').submenu.map((i) => i.label).filter(Boolean);
+    const file = byLabel(build({ isMac: false }).template, 'File')
+      .submenu.map((i) => i.label)
+      .filter(Boolean);
     expect(file).toEqual(['Open project…', 'Close project', 'Project settings…', 'Settings…', 'Quit']);
-    expect(items(mac).filter((i) => i.label).every((i) => !/[åäöÅÄÖ]/.test(i.label))).toBe(true);
+    expect(
+      items(mac)
+        .filter((i) => i.label)
+        .every((i) => !/[åäöÅÄÖ]/.test(i.label))
+    ).toBe(true);
 
     await i18n.changeLanguage('sv');
     expect(build().template.map((m) => m.label)).toContain('Arkiv');

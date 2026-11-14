@@ -21,8 +21,7 @@ export function mergePipeline(state, graph) {
     name: phase.name,
     stages: phase.stages.map((s) => {
       const g = bySlug.get(s.slug);
-      const mismatch =
-        !!g && s.status !== 'skipped' && (graphStatus(g) === 'done') !== (s.status === 'done');
+      const mismatch = !!g && s.status !== 'skipped' && (graphStatus(g) === 'done') !== (s.status === 'done');
       return {
         slug: s.slug,
         status: s.status,

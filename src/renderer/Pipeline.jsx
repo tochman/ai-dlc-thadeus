@@ -32,7 +32,7 @@ function stageDetails(stage, stageModels, fileCount) {
 /** "NN · Status" at the top, the name at the bottom right; model and cost on the stage in progress (FR3.4). */
 function StageBlock({ stage, index, open, onToggle, stageCost, stageModels, details }) {
   const { t } = useTranslation();
-  const statusText = stage.mode === 'SKIP' ? t('pipeline.notIncluded') : stageStatusLabel(stage.status) ?? stage.status;
+  const statusText = stage.mode === 'SKIP' ? t('pipeline.notIncluded') : (stageStatusLabel(stage.status) ?? stage.status);
   const extra = stage.current && stage.status !== 'in-progress' ? ` · ${t('pipeline.current')}` : '';
   const models = stage.current && stageModels?.length ? `${stageModels.map(shortModel).join(', ')} · ` : '';
   return (
@@ -96,7 +96,10 @@ export default function Pipeline({ pipeline, files, hasGraph, onOpenFile, cost }
 
   // Executed stages are numbered across phases; those not included get "—" and hide behind "Visa".
   const numbers = new Map();
-  pipeline.phases.flatMap((p) => p.stages).filter((s) => !isSkipped(s)).forEach((s, i) => numbers.set(s.slug, String(i + 1).padStart(2, '0')));
+  pipeline.phases
+    .flatMap((p) => p.stages)
+    .filter((s) => !isSkipped(s))
+    .forEach((s, i) => numbers.set(s.slug, String(i + 1).padStart(2, '0')));
   const skipped = pipeline.phases.map((p) => [p.name, p.stages.filter(isSkipped).length]).filter(([, n]) => n > 0);
   const skippedTotal = skipped.reduce((sum, [, n]) => sum + n, 0);
   const fileCount = (slug) => filesForStage(files, slug).reduce((n, g) => n + g.files.length, 0);

@@ -276,9 +276,7 @@ function ProjectContent({
   const harnessId = settingsLoaded && detected ? resolveHarness(preferred, detected) : null;
   const harness = harnessId ? selectableHarness(harnessId) : null;
   const problem = harness ? harnessProblem(harness, detected, t) : null;
-  const extras = (harness && tabIds ? tabIds.filter((id) => id !== harness.id) : [])
-    .map(selectableHarness)
-    .filter((h) => h && !harnessProblem(h, detected, t));
+  const extras = (harness && tabIds ? tabIds.filter((id) => id !== harness.id) : []).map(selectableHarness).filter((h) => h && !harnessProblem(h, detected, t));
   const extrasKey = extras.map((h) => h.id).join();
   useEffect(() => {
     terminal.setAgent({ harness, problem, extras });
@@ -317,8 +315,7 @@ function ProjectContent({
   useEffect(() => {
     if (view === 'config') setConfigShown(true);
   }, [view]);
-  const setupDocs = () =>
-    terminal?.type('agent', featureDocsPrompt({ exists: docsExist, path: settings.featuresPath }), { submit: false });
+  const setupDocs = () => terminal?.type('agent', featureDocsPrompt({ exists: docsExist, path: settings.featuresPath }), { submit: false });
   const offerSetup = isAidlc && !docsExist ? setupDocs : undefined; // FR3.6, FR4.5
 
   useEffect(() => {
@@ -342,94 +339,78 @@ function ProjectContent({
 
   return (
     <EditorCtx.Provider value={editorCtx}>
-    <div className="project-view">
-      <div className="project-main">
-        {justSetUp && <SetupDone onClose={() => setJustSetUp(false)} onFeatureDocs={featureDocsChoice ? setupDocs : undefined} />}
-        {/* Kept mounted while Features or Configuration is shown, so the intents view keeps its state (FR2.1). */}
-        <div className="project-mode" hidden={['features', 'config', 'plans', 'editor'].includes(view)}>
-          {isAidlc ? (
-            <AidlcProject
-              project={project}
-              view={view}
-              onView={onView}
-              focusIntent={focusIntent}
-              storiesByIntent={storiesByIntent}
-              onOpenStory={showFeatures ? openStory : undefined}
-              onMeta={onMeta}
-              onActiveRecord={setActiveRecord}
-            />
-          ) : (
-            <SetupAidlc
-              {...setupProps}
-              featureDocs={featureDocsChoice}
-              onFeatureDocsChange={setFeatureDocsChoice}
-              featureDocsExist={docsExist}
+      <div className="project-view">
+        <div className="project-main">
+          {justSetUp && <SetupDone onClose={() => setJustSetUp(false)} onFeatureDocs={featureDocsChoice ? setupDocs : undefined} />}
+          {/* Kept mounted while Features or Configuration is shown, so the intents view keeps its state (FR2.1). */}
+          <div className="project-mode" hidden={['features', 'config', 'plans', 'editor'].includes(view)}>
+            {isAidlc ? (
+              <AidlcProject
+                project={project}
+                view={view}
+                onView={onView}
+                focusIntent={focusIntent}
+                storiesByIntent={storiesByIntent}
+                onOpenStory={showFeatures ? openStory : undefined}
+                onMeta={onMeta}
+                onActiveRecord={setActiveRecord}
+              />
+            ) : (
+              <SetupAidlc {...setupProps} featureDocs={featureDocsChoice} onFeatureDocsChange={setFeatureDocsChoice} featureDocsExist={docsExist} />
+            )}
+          </div>
+          {view === 'features' && (
+            <FeaturesView
+              projectId={project.projectId}
+              features={features}
+              links={links}
+              focusStory={focusStory}
+              onOpenIntent={isAidlc ? openIntent : undefined}
+              onSetup={offerSetup}
             />
           )}
+          {isAidlc && (configShown || view === 'config') && (
+            <div className="project-mode" hidden={view !== 'config'}>
+              <ConfigView
+                projectId={project.projectId}
+                visible={visible && view === 'config'}
+                harnesses={detected}
+                defaultHarness={harnessId}
+                onSetup={() => setAddingHarness(true)}
+              />
+            </div>
+          )}
+          {view === 'plans' && <PlansView projectId={project.projectId} visible={visible} harness={harnessId} />}
+          {view === 'editor' && (
+            <div className="editor-view" data-testid="editor-view">
+              <FileTree projectId={project.projectId} onOpen={editor.open} />
+              <EditorPanel projectId={project.projectId} editor={editor} agentBusy={agentBusy} activeRecord={activeRecord} />
+            </div>
+          )}
         </div>
-        {view === 'features' && (
-          <FeaturesView
-            projectId={project.projectId}
-            features={features}
-            links={links}
-            focusStory={focusStory}
-            onOpenIntent={isAidlc ? openIntent : undefined}
-            onSetup={offerSetup}
-          />
-        )}
-        {isAidlc && (configShown || view === 'config') && (
-          <div className="project-mode" hidden={view !== 'config'}>
-            <ConfigView
-              projectId={project.projectId}
-              visible={visible && view === 'config'}
-              harnesses={detected}
-              defaultHarness={harnessId}
-              onSetup={() => setAddingHarness(true)}
-            />
-          </div>
-        )}
-        {view === 'plans' && <PlansView projectId={project.projectId} visible={visible} harness={harnessId} />}
-        {view === 'editor' && (
-          <div className="editor-view" data-testid="editor-view">
-            <FileTree projectId={project.projectId} onOpen={editor.open} />
-            <EditorPanel projectId={project.projectId} editor={editor} agentBusy={agentBusy} activeRecord={activeRecord} />
-          </div>
-        )}
+        {isAidlc && <AddHarnessDialog open={addingHarness} onClose={() => setAddingHarness(false)} setupProps={setupProps} />}
+        <TerminalPanel projectId={project.projectId} visible={visible} onChooseHarness={() => setChoosingHarness(true)} />
+        <ProjectSettingsDialog
+          open={settingsOpen || choosingHarness}
+          onClose={() => {
+            setChoosingHarness(false);
+            onCloseSettings?.();
+          }}
+          projectId={project.projectId}
+          name={project.name}
+          settings={settings}
+          harness={harnessId}
+          harnesses={detected}
+          onSetup={offerSetup}
+          onAddHarness={isAidlc ? () => setAddingHarness(true) : undefined}
+          onOpenConfig={isAidlc ? () => onView?.('config') : undefined}
+        />
       </div>
-      {isAidlc && <AddHarnessDialog open={addingHarness} onClose={() => setAddingHarness(false)} setupProps={setupProps} />}
-      <TerminalPanel projectId={project.projectId} visible={visible} onChooseHarness={() => setChoosingHarness(true)} />
-      <ProjectSettingsDialog
-        open={settingsOpen || choosingHarness}
-        onClose={() => {
-          setChoosingHarness(false);
-          onCloseSettings?.();
-        }}
-        projectId={project.projectId}
-        name={project.name}
-        settings={settings}
-        harness={harnessId}
-        harnesses={detected}
-        onSetup={offerSetup}
-        onAddHarness={isAidlc ? () => setAddingHarness(true) : undefined}
-        onOpenConfig={isAidlc ? () => onView?.('config') : undefined}
-      />
-    </div>
     </EditorCtx.Provider>
   );
 }
 
-export default function ProjectView({
-  project,
-  visible,
-  settingsOpen,
-  onCloseSettings,
-  view,
-  onView,
-  onMeta,
-  terminalCommand,
-  editRequest,
-  askingIntents
-}) {
+export default function ProjectView({ project, visible, settingsOpen, onCloseSettings, view, onView, onMeta, terminalCommand, editRequest, askingIntents }) {
   return (
     <TerminalProvider askingIntents={askingIntents}>
       <ProjectContent

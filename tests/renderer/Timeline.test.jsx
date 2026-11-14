@@ -11,7 +11,12 @@ const saved = {};
 beforeAll(() => {
   for (const prop of ['offsetHeight', 'clientHeight']) {
     saved[prop] = Object.getOwnPropertyDescriptor(HTMLElement.prototype, prop);
-    Object.defineProperty(HTMLElement.prototype, prop, { configurable: true, get() { return heightOf(this); } });
+    Object.defineProperty(HTMLElement.prototype, prop, {
+      configurable: true,
+      get() {
+        return heightOf(this);
+      }
+    });
   }
   saved.rect = HTMLElement.prototype.getBoundingClientRect;
   HTMLElement.prototype.getBoundingClientRect = function () {
@@ -29,7 +34,8 @@ afterAll(() => {
 afterEach(cleanup);
 
 // Events in the shape projectService returns: mergeAudits over shard texts, plus category.
-const block = (event, minute) => `## ${event}\n**Timestamp**: ${new Date(Date.UTC(2026, 10, 13, 0, minute)).toISOString()}\n**Event**: ${event}\n**Stage**: code-generation\n`;
+const block = (event, minute) =>
+  `## ${event}\n**Timestamp**: ${new Date(Date.UTC(2026, 10, 13, 0, minute)).toISOString()}\n**Event**: ${event}\n**Stage**: code-generation\n`;
 const shard = (source, minutes) => ({ source, text: minutes.map((m) => block(`STAGE_STARTED`, m)).join('---\n') });
 const toEvents = (files) => mergeAudits(files).map((e) => ({ ...e, category: categoryOf(e.event) }));
 const range = (n, from = 0) => Array.from({ length: n }, (_, i) => from + i);

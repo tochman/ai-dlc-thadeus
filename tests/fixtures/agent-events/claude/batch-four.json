@@ -1,0 +1,47 @@
+{
+  "session_id": "4b6f6a2e-3f0d-4d55-9a57-2b1f0c3e9d11",
+  "hook_event_name": "PreToolUse",
+  "tool_name": "AskUserQuestion",
+  "tool_input": {
+    "questions": [
+      {
+        "question": "Which language should the texts be written in?",
+        "header": "Language",
+        "options": [
+          { "label": "Svenska", "description": "Swedish first, English as the fallback." },
+          { "label": "English", "description": "English only." }
+        ],
+        "multiSelect": false
+      },
+      {
+        "question": "Which platforms must the release cover?",
+        "header": "Platforms",
+        "options": [
+          { "label": "macOS", "description": "Universal .dmg." },
+          { "label": "Linux", "description": "x64 .deb." },
+          { "label": "Windows", "description": "Not built today." }
+        ],
+        "multiSelect": true
+      },
+      {
+        "question": "How should a failed send be shown?",
+        "header": "Errors",
+        "options": [
+          { "label": "In the dialog", "description": "One sentence under the choices." },
+          { "label": "As a notification", "description": "A system notification." }
+        ],
+        "multiSelect": false
+      },
+      {
+        "question": "Should the dialog open by itself?",
+        "header": "Opening",
+        "options": [
+          { "label": "Yes", "description": "Unless question alerts are off." },
+          { "label": "No", "description": "Only from the notification." }
+        ],
+        "multiSelect": false
+      }
+    ]
+  },
+  "tool_use_id": "toolu_01BatchFour"
+}

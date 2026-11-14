@@ -34,7 +34,16 @@ describe('feature docs parser', () => {
     expect(epic.intro).toMatch(/\*\*Status \(2026-11-13\):\*\* 🚧 Built, not released\.$/);
     expect(epic.intro).not.toMatch(/User Stories|US-0101: Open/);
     const [first, second] = epic.stories;
-    expect(first).toMatchObject({ id: 'US-0101', title: 'Open a project', status: 'done', statusText: 'Done', priority: 'High', complexity: 'Low', done: 2, total: 2 });
+    expect(first).toMatchObject({
+      id: 'US-0101',
+      title: 'Open a project',
+      status: 'done',
+      statusText: 'Done',
+      priority: 'High',
+      complexity: 'Low',
+      done: 2,
+      total: 2
+    });
     expect(first).toMatchObject({ asA: 'developer', inOrderTo: 'see my work', wouldLike: 'open a project folder', dependencies: 'None', notes: null });
     expect(second).toMatchObject({ id: 'US-0102', status: 'progress', priority: 'Medium', notes: 'Read-only.', dependencies: 'US-0101', done: 1, total: 3 });
     expect(second.criteria[1]).toEqual({ checked: false, text: 'The list updates live' });

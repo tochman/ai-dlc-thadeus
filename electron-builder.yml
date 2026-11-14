@@ -26,7 +26,7 @@ mac:
   category: public.app-category.developer-tools
   # node-pty ships per-arch prebuilt binaries that are identical in the x64 and arm64 builds;
   # tell @electron/universal to keep them as-is instead of failing the merge.
-  x64ArchFiles: "Contents/Resources/app.asar.unpacked/node_modules/node-pty/prebuilds/**"
+  x64ArchFiles: 'Contents/Resources/app.asar.unpacked/node_modules/node-pty/prebuilds/**'
   # Unsigned internal build: no signing identity, no notarisation.
   identity: null
 dmg:
@@ -40,8 +40,8 @@ linux:
   icon: build/icons
   # Keep macOS/Windows node-pty prebuilds out of the .deb; scripts/check-glibc.mjs verifies this in CI.
   files:
-    - "!node_modules/node-pty/prebuilds/darwin-*/**"
-    - "!node_modules/node-pty/prebuilds/win32-*/**"
+    - '!node_modules/node-pty/prebuilds/darwin-*/**'
+    - '!node_modules/node-pty/prebuilds/win32-*/**'
   executableName: thadeus
   # The launcher entry shows the dotted name; StartupWMClass stays productName, which is the window's WM_CLASS.
   desktop:
@@ -53,5 +53,5 @@ deb:
   artifactName: thadeus_${version}_${arch}.deb
   # The package was called aidlc-dash before US-0406; installing thadeus removes it.
   fpm:
-    - "--replaces=aidlc-dash"
-    - "--conflicts=aidlc-dash"
+    - '--replaces=aidlc-dash'
+    - '--conflicts=aidlc-dash'

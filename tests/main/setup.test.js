@@ -100,7 +100,8 @@ describe('getSetupInfo', () => {
 
 describe('parsePreview (F-02)', () => {
   it('reads every count and the Note: lines from the real dry-run output', () => {
-    const raw = '  Note: no AI-DLC install found in /Users/me/new-app; planning a fresh install\nconfig plan for /Users/me/new-app: create=360 update=0 merge=0 preserve=1 remove=0 conflict=0\n';
+    const raw =
+      '  Note: no AI-DLC install found in /Users/me/new-app; planning a fresh install\nconfig plan for /Users/me/new-app: create=360 update=0 merge=0 preserve=1 remove=0 conflict=0\n';
     expect(parsePreview(raw)).toEqual({
       raw,
       create: 360,
@@ -176,7 +177,11 @@ describe('runSetup (US-0802 FR2)', () => {
     const { exec, calls } = recordingExec({ [`aidlc --project-dir ${ROOT} config --harness opencode --yes`]: 'error: harness opencode is not installed' });
     const result = await runSetup(ROOT, { harness: 'opencode', preset: 'balanced' }, info(), { exec });
     expect(result.ok).toBe(false);
-    expect(result.steps.at(-1)).toEqual({ command: `aidlc --project-dir ${ROOT} config --harness opencode --yes`, ok: false, error: 'error: harness opencode is not installed' });
+    expect(result.steps.at(-1)).toEqual({
+      command: `aidlc --project-dir ${ROOT} config --harness opencode --yes`,
+      ok: false,
+      error: 'error: harness opencode is not installed'
+    });
     expect(calls).toHaveLength(2); // git init, then the failing config; the preset never ran
   });
 
@@ -184,7 +189,9 @@ describe('runSetup (US-0802 FR2)', () => {
     const { exec, calls } = recordingExec();
     await expect(runSetup(ROOT, { harness: 'rm -rf ~' }, info(), { exec })).rejects.toThrow(/Okänd harness/);
     await expect(runSetup(ROOT, { harness: 'opencode', plugins: ['not-listed'] }, info(), { exec })).rejects.toThrow(/Okänt plugin/);
-    await expect(runSetup(ROOT, { harness: 'opencode', plugins: ['x; rm -rf ~'] }, { ...info(), plugins: ['x; rm -rf ~'] }, { exec })).rejects.toThrow(/Okänt plugin/);
+    await expect(runSetup(ROOT, { harness: 'opencode', plugins: ['x; rm -rf ~'] }, { ...info(), plugins: ['x; rm -rf ~'] }, { exec })).rejects.toThrow(
+      /Okänt plugin/
+    );
     await expect(runSetup(ROOT, { harness: 'opencode', preset: 'max' }, info(), { exec })).rejects.toThrow(/Okänd modellnivå/);
     await expect(runSetup(ROOT, { harness: 'codex' }, info('opencode'), { exec })).rejects.toThrow(/förhandsvisningen/); // preview was for opencode
     await expect(runSetup(ROOT, { harness: 'opencode' }, null, { exec })).rejects.toThrow(/förhandsvisningen/);
@@ -193,7 +200,8 @@ describe('runSetup (US-0802 FR2)', () => {
 
   it('refuses a second run for the same project while one is running (NFR3)', async () => {
     let release;
-    const exec = (file) => (file === 'git' || file === 'aidlc' ? new Promise((r) => (release = () => r('ok'))) : Promise.resolve('__AIDLC_DASH_PATH__/usr/bin'));
+    const exec = (file) =>
+      file === 'git' || file === 'aidlc' ? new Promise((r) => (release = () => r('ok'))) : Promise.resolve('__AIDLC_DASH_PATH__/usr/bin');
     const first = runSetup(ROOT, { harness: 'opencode' }, { ...info(), git: { isRepo: true } }, { exec });
     await expect(runSetup(ROOT, { harness: 'opencode' }, info(), { exec })).rejects.toThrow(/körs redan/);
     await vi.waitFor(() => expect(release).toBeTypeOf('function'));

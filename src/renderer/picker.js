@@ -29,7 +29,11 @@ const norm = (s) =>
     .toLowerCase();
 
 /** Without a letter prefix ("A. ") or a trailing description in parentheses: AI-DLC logs either way. */
-const loose = (s) => norm(s).replace(/^[a-z]\.\s+/, '').replace(/\s*\([^()]*\)$/, '').trim();
+const loose = (s) =>
+  norm(s)
+    .replace(/^[a-z]\.\s+/, '')
+    .replace(/\s*\([^()]*\)$/, '')
+    .trim();
 
 /** Same label, said with or without "A. " or "(…)", cut short with "…", or wrapped onto the rows under it. */
 function sameLabel(logged, option) {
@@ -51,7 +55,11 @@ function sameLabel(logged, option) {
 export function readPicker(lines) {
   const rows = (lines ?? []).map((l) => String(l ?? ''));
   let c = -1;
-  for (let i = rows.length - 1; i >= 0; i--) if (CURSOR.test(rows[i])) { c = i; break; }
+  for (let i = rows.length - 1; i >= 0; i--)
+    if (CURSOR.test(rows[i])) {
+      c = i;
+      break;
+    }
   if (c === -1) return null;
   const part = (l) => OPTION.test(l) || DESCRIPTION.test(l) || RULE.test(l) || !l.trim();
   let top = c;
@@ -89,11 +97,17 @@ export function resolveAnswer(screens, q, answer) {
   for (const { tab, lines } of screens) {
     const picker = readPicker(lines);
     if (!picker) continue;
-    if (picker.multi) { error = 'several'; continue; }
+    if (picker.multi) {
+      error = 'several';
+      continue;
+    }
     const shown = picker.options.filter((o) => !OWN.test(o.label));
     const keyOf = (label) => shown.find((o) => sameLabel(label, o))?.key;
     // Every logged option must be in the picker: otherwise it asks something else, or says it differently.
-    if (!logged.length || logged.some((l) => !keyOf(l))) { if (error === 'noPicker') error = 'mismatch'; continue; }
+    if (!logged.length || logged.some((l) => !keyOf(l))) {
+      if (error === 'noPicker') error = 'mismatch';
+      continue;
+    }
     if (answer.own !== undefined) {
       const own = picker.options.find((o) => OWN.test(o.label));
       if (!own) return { error: 'mismatch' };

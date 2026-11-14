@@ -86,7 +86,8 @@ export async function loadStoryLinks(root, space, dirNames) {
   await Promise.all(
     dirNames.map(async (dir) => {
       const base = `aidlc/spaces/${space}/intents/${dir}`;
-      const text = (await readOrEmpty(root, `${base}/project-description.json`)) + (await readOrEmpty(root, `${base}/inception/requirements-analysis/requirements.md`));
+      const text =
+        (await readOrEmpty(root, `${base}/project-description.json`)) + (await readOrEmpty(root, `${base}/inception/requirements-analysis/requirements.md`));
       for (const id of storyIdsIn(text)) (links[id] ??= []).push(dir);
     })
   );

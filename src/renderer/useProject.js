@@ -28,17 +28,20 @@ export function useProject(projectId, initialSpace) {
   selectedRef.current = selected;
   detailRef.current = detail;
 
-  const loadList = useCallback(async (onlyDirs) => {
-    try {
-      const res = await bridge.getIntents(projectId, space, onlyDirs);
-      setIntents(res.intents);
-      setListWarning(res.warning);
-      setError(null);
-      setSelected((cur) => cur ?? res.intents.find((i) => i.active)?.dirName ?? res.intents[0]?.dirName ?? null);
-    } catch (err) {
-      setError(t('intents.loadFailed', { error: errorText(err) }));
-    }
-  }, [projectId, space]);
+  const loadList = useCallback(
+    async (onlyDirs) => {
+      try {
+        const res = await bridge.getIntents(projectId, space, onlyDirs);
+        setIntents(res.intents);
+        setListWarning(res.warning);
+        setError(null);
+        setSelected((cur) => cur ?? res.intents.find((i) => i.active)?.dirName ?? res.intents[0]?.dirName ?? null);
+      } catch (err) {
+        setError(t('intents.loadFailed', { error: errorText(err) }));
+      }
+    },
+    [projectId, space]
+  );
 
   const clearHighlight = useCallback(() => {
     clearTimeout(highlightTimer.current);

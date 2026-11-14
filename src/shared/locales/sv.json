@@ -69,9 +69,6 @@
       "early": "Väntade redan när appen startade",
       "gate": "Godkännande: {stage}",
       "gateNext": "Godkännande: {stage} → {next}",
-      "previous": "Föregående",
-      "next": "Nästa",
-      "position": "{i} av {n}",
       "approve": "Godkänn",
       "requestChanges": "Begär ändringar",
       "ownAnswer": "Eget svar…",
@@ -83,7 +80,6 @@
       "mismatch": "{harness} visar andra val än de AI-DLC loggade. Svara i terminalen.",
       "maybeLost": "Skickat till {harness}, men frågan väntar fortfarande. Svaret kanske inte kom fram – titta i terminalen.",
       "noAgent": "Agentfliken kör inte än. Svara i terminalen.",
-      "openTerminal": "Öppna terminalen",
       "askPlan": "Godkänn planen för {stage}",
       "askScope": "Bekräfta planen för arbetet",
       "askOther": "AI-DLC frågar ({type})",
@@ -158,7 +154,7 @@
     "resume": {
       "label": "Fortsätt",
       "atStage": "Fortsätt vid {stage}",
-    "inHarness": "{label} i {harness}",
+      "inHarness": "{label} i {harness}",
       "step": "(steg {step} av {total})",
       "busy": "{harness} arbetar — vänta eller avbryt först",
       "asking": "{harness} väntar på ditt svar — svara i terminalen först",
@@ -681,15 +677,30 @@
       "turnOn": "Slå på",
       "confirmOff": "Stänga av kontrollen \"{name}\"? AI-DLC slutar då kontrollera det tills du slår på den igen.",
       "confirmYes": "Ja, stäng av",
-      "AIDLC_DISABLE_PLAN_APPROVAL_GUARD": { "name": "Godkännande av plan", "protects": "Kodgenereringen väntar på att du godkänner planen innan den skriver kod." },
-      "AIDLC_DISABLE_REVIEW_FREEZE_HOOK": { "name": "Frysning under granskning", "protects": "Filer som granskas kan inte ändras förrän granskningen är klar." },
+      "AIDLC_DISABLE_PLAN_APPROVAL_GUARD": {
+        "name": "Godkännande av plan",
+        "protects": "Kodgenereringen väntar på att du godkänner planen innan den skriver kod."
+      },
+      "AIDLC_DISABLE_REVIEW_FREEZE_HOOK": {
+        "name": "Frysning under granskning",
+        "protects": "Filer som granskas kan inte ändras förrän granskningen är klar."
+      },
       "AIDLC_DISABLE_REVIEWER_SCOPE_HOOK": { "name": "Granskarens läsområde", "protects": "En granskare läser bara det den ombads granska." },
-      "AIDLC_DISABLE_SUMMARY_CONFIRMATION": { "name": "Bekräftelse av sammanfattning", "protects": "AI-DLC ber dig bekräfta sin sammanfattning av ett steg innan det går vidare." },
-      "AIDLC_SKIP_SUMMARY_CONFIRMATION_GUARD": { "name": "Kontroll av bekräftelsen", "protects": "Ett steg kan inte stängas förrän sammanfattningen verkligen bekräftats." },
+      "AIDLC_DISABLE_SUMMARY_CONFIRMATION": {
+        "name": "Bekräftelse av sammanfattning",
+        "protects": "AI-DLC ber dig bekräfta sin sammanfattning av ett steg innan det går vidare."
+      },
+      "AIDLC_SKIP_SUMMARY_CONFIRMATION_GUARD": {
+        "name": "Kontroll av bekräftelsen",
+        "protects": "Ett steg kan inte stängas förrän sammanfattningen verkligen bekräftats."
+      },
       "AIDLC_SKIP_HUMAN_PRESENCE_GUARD": { "name": "Mänsklig närvaro", "protects": "Ett godkännande räknas bara när en person gav det." },
       "AIDLC_SKIP_ARTIFACT_GUARD": { "name": "Stegets resultat", "protects": "Ett steg kan inte slutföras utan filerna det ska ta fram." },
       "AIDLC_SKIP_REVISION_BACKSTOP": { "name": "Spärr mot omtag", "protects": "Ett steg kan inte göras om gång på gång utan att en person beslutar." },
-      "AIDLC_DISABLE_ENSEMBLE_EVIDENCE": { "name": "Överlämning i kedjan", "protects": "Arbete som lämnas från en agent till nästa måste ha med sitt underlag." }
+      "AIDLC_DISABLE_ENSEMBLE_EVIDENCE": {
+        "name": "Överlämning i kedjan",
+        "protects": "Arbete som lämnas från en agent till nästa måste ha med sitt underlag."
+      }
     },
     "lock": {
       "title": "Låsning av Guard Policy",
@@ -861,5 +872,46 @@
     "planNotFound": "Ingen plan med namnet {name} hittades.",
     "notAFile": "{rel} är ingen fil.",
     "engineOwned": "{rel} tillhör AI-DLC:s motor och sparas inte från appen."
+  },
+  "agentDialog": {
+    "title": {
+      "waiting": "Agenten väntar på ditt svar",
+      "stillWaiting": "Agenten väntar fortfarande på ditt svar"
+    },
+    "kind": {
+      "question": "Fråga"
+    },
+    "context": "{project} · {intent} · {stage}",
+    "state": {
+      "sending": "Skickar…",
+      "sent": "Skickat till {harness}.",
+      "handedBack": "Lämnad tillbaka till terminalen.",
+      "timedOut": "Frågan väntade för länge och visas nu i terminalen. Du kan fortfarande svara här.",
+      "failed": "Kunde inte skicka: {error}",
+      "sessionEnded": "Sessionen i {harness} avslutades. Inget skickades."
+    },
+    "alsoInTerminal": "Frågan visas också i terminalen.",
+    "truncated": "Texten är förkortad. Hela texten finns i terminalen.",
+    "answered": "{answered} av {total} besvarade",
+    "send": "Skicka",
+    "sendAll": "Skicka alla svar",
+    "done": "Klar",
+    "ownAnswer": "Eget svar…",
+    "newCount": "{n, plural, one {+# ny} other {+# nya}}",
+    "openTerminal": "Öppna terminalen",
+    "position": "{i} av {n}",
+    "previous": "Föregående",
+    "next": "Nästa",
+    "errors": {
+      "unknownEvent": "Frågan finns inte längre.",
+      "eventNotOpen": "Frågan är inte öppen längre.",
+      "sessionEnded": "Sessionen har avslutats.",
+      "doesNotFit": "Svaret passar inte frågan.",
+      "fallback": "Den här frågan besvaras genom terminalen.",
+      "pickerNotShowing": "Agentens val visas inte i terminalen.",
+      "sendFailed": "Det gick inte att skicka: {cause}",
+      "notTaken": "Agenten tog inte emot svaret.",
+      "answerInTerminal": "Det här svaret kan bara ges i terminalen."
+    }
   }
 }

@@ -1,16 +1,26 @@
 import { describe, expect, it } from 'vitest';
-import { parseOptions, pendingQuestions } from '../../src/main/questions.js';
+import { auditContext, auditEvent, parseOptions, pendingQuestions } from '../../src/main/questions.js';
 import { mergeAudits } from '../../src/main/parsers/audit.js';
 
 const where = { project: { projectId: 'p1', name: 'aidlc-dash' }, intent: '261113-question-popup' };
 
 // Real shards in AI-DLC's audit format, run through the same parser loadAuditEvents uses.
-const block = (fields) => Object.entries(fields).map(([k, v]) => `**${k}**: ${v}`).join('\n');
+const block = (fields) =>
+  Object.entries(fields)
+    .map(([k, v]) => `**${k}**: ${v}`)
+    .join('\n');
 function events(...blocks) {
   const text = blocks.map((f, i) => block({ Timestamp: new Date(Date.UTC(2026, 10, 13, 10, 0, i)).toISOString(), ...f })).join('\n\n---\n\n');
   return mergeAudits([{ source: 'host-1.md', text }]);
 }
-const asked = (stage, id, extra = {}) => ({ Event: 'DECISION_RECORDED', Stage: stage, Decision: `Fråga ${id}?`, Options: 'A,B,X', 'Question Id': id, ...extra });
+const asked = (stage, id, extra = {}) => ({
+  Event: 'DECISION_RECORDED',
+  Stage: stage,
+  Decision: `Fråga ${id}?`,
+  Options: 'A,B,X',
+  'Question Id': id,
+  ...extra
+});
 
 describe('pendingQuestions (US-0505 FR1.2, FR1.3)', () => {
   it('(a) lists an unanswered question with its fields and options', () => {
@@ -31,7 +41,11 @@ describe('pendingQuestions (US-0505 FR1.2, FR1.3)', () => {
 
   it('(b) QUESTION_ANSWERED in the same stage answers the oldest question', () => {
     const list = pendingQuestions(
-      events(asked('requirements-analysis', 'q1'), asked('requirements-analysis', 'q2'), { Event: 'QUESTION_ANSWERED', Stage: 'requirements-analysis', Details: 'A' }),
+      events(asked('requirements-analysis', 'q1'), asked('requirements-analysis', 'q2'), {
+        Event: 'QUESTION_ANSWERED',
+        Stage: 'requirements-analysis',
+        Details: 'A'
+      }),
       where
     );
     expect(list.map((q) => q.id)).toEqual(['q2']);
@@ -97,14 +111,21 @@ describe('parseOptions (US-0006)', () => {
     expect(parseOptions('Retry with fix,Accept failure,Abort').options).toEqual(['Retry with fix', 'Accept failure', 'Abort']);
     expect(parseOptions('|Yes, all three work|Something is wrong (describe)').options).toEqual(['Yes, all three work', 'Something is wrong']);
     expect(parseOptions('Ja; Nej; Kanske').options).toEqual(['Ja', 'Nej', 'Kanske']);
-    expect(parseOptions('["Approve Plan","Request Changes","I\'ll edit the files"]').options).toEqual(['Approve Plan', 'Request Changes', "I'll edit the files"]);
+    expect(parseOptions('["Approve Plan","Request Changes","I\'ll edit the files"]').options).toEqual([
+      'Approve Plan',
+      'Request Changes',
+      "I'll edit the files"
+    ]);
   });
 
   it('strips a description in parentheses, even one holding a comma or semicolon', () => {
     const raw =
-      'Guide me (walk through each question interactively here),I\'ll edit the file (they fill in the answers in the file directly),Chat (discuss freely; you extract the decisions from the conversation)';
+      "Guide me (walk through each question interactively here),I'll edit the file (they fill in the answers in the file directly),Chat (discuss freely; you extract the decisions from the conversation)";
     expect(parseOptions(raw)).toEqual({ options: ['Guide me', "I'll edit the file", 'Chat'], batch: null });
-    expect(parseOptions('Q1: A. Vanlig release direkt,Q1: B. Prerelease först')).toEqual({ options: ['A. Vanlig release direkt', 'B. Prerelease först'], batch: null });
+    expect(parseOptions('Q1: A. Vanlig release direkt,Q1: B. Prerelease först')).toEqual({
+      options: ['A. Vanlig release direkt', 'B. Prerelease först'],
+      batch: null
+    });
   });
 
   it('turns a batch summary into one entry per question, in every logged form', () => {
@@ -131,11 +152,24 @@ describe('parseOptions (US-0006)', () => {
 });
 
 describe('pendingQuestions with engine asks and real answers (US-0006)', () => {
-  const plan = { Event: 'QUESTION_ASKED', 'Question Id': '32a59f72', 'Question Type': 'plan-approval', Stage: 'code-generation', Options: '["Approve Plan","Request Changes","I\'ll edit the files"]' };
+  const plan = {
+    Event: 'QUESTION_ASKED',
+    'Question Id': '32a59f72',
+    'Question Type': 'plan-approval',
+    Stage: 'code-generation',
+    Options: '["Approve Plan","Request Changes","I\'ll edit the files"]'
+  };
 
   it('shows a plan-approval ask with its exact options until its reply or PLAN_APPROVAL_RECORDED', () => {
     const [q] = pendingQuestions(events(plan), where);
-    expect(q).toMatchObject({ id: '32a59f72', kind: 'question', ask: 'plan-approval', stage: 'code-generation', text: '', options: ['Approve Plan', 'Request Changes', "I'll edit the files"] });
+    expect(q).toMatchObject({
+      id: '32a59f72',
+      kind: 'question',
+      ask: 'plan-approval',
+      stage: 'code-generation',
+      text: '',
+      options: ['Approve Plan', 'Request Changes', "I'll edit the files"]
+    });
     expect(pendingQuestions(events(plan, { Event: 'PLAN_APPROVAL_RECORDED', Stage: 'code-generation' }), where)).toEqual([]);
     const reply = { Event: 'QUESTION_REPLIED', Reply: 'Approve Plan', Options: '["Approve Plan","Request Changes","I\'ll edit the files"]' };
     expect(pendingQuestions(events(plan, reply), where)).toEqual([]);
@@ -144,7 +178,12 @@ describe('pendingQuestions with engine asks and real answers (US-0006)', () => {
   });
 
   it('shows a scope-confirm ask, but not one of type gate (that one is STAGE_AWAITING_APPROVAL)', () => {
-    const scope = { ...plan, 'Question Id': 's1', 'Question Type': 'scope-confirm', Options: '["Go ahead with the \\"ultra-express\\" plan","Use a different plan"]' };
+    const scope = {
+      ...plan,
+      'Question Id': 's1',
+      'Question Type': 'scope-confirm',
+      Options: '["Go ahead with the \\"ultra-express\\" plan","Use a different plan"]'
+    };
     const list = pendingQuestions(events(scope, { ...plan, 'Question Id': 'g1', 'Question Type': 'gate' }), where);
     expect(list.map((q) => [q.id, q.ask])).toEqual([['s1', 'scope-confirm']]);
   });
@@ -167,5 +206,49 @@ describe('pendingQuestions with engine asks and real answers (US-0006)', () => {
     // An answer never closes an engine ask: its reply does.
     const three = pendingQuestions(events(plan, { Event: 'QUESTION_ANSWERED', Stage: 'code-generation', 'Person Reply': 'Ja' }), where);
     expect(three.map((q) => q.id)).toEqual(['32a59f72']);
+  });
+});
+
+describe('auditEvent and auditContext (US-0506 u1 FallbackQuestionSource, BR2.5, BR3.6)', () => {
+  it('turns a waiting question into an audit AgentEvent with the same text and options, keeping the original', () => {
+    const [q] = pendingQuestions(events(asked('requirements-analysis', '8c1829d0')), where);
+    const ev = auditEvent({ ...q, early: true });
+    expect(ev).toMatchObject({
+      sessionId: null,
+      projectId: 'p1',
+      tabId: null,
+      source: 'audit',
+      kind: 'question',
+      state: 'shown',
+      arrivedAtMs: q.timeMs,
+      early: true,
+      projectName: 'aidlc-dash',
+      context: { intent: '261113-question-popup', stage: 'requirements-analysis' },
+      questions: [{ header: null, text: 'Fråga 8c1829d0?', truncated: false, multiSelect: false, allowOwn: true }]
+    });
+    expect(ev.questions[0].options.map((o) => o.label)).toEqual(['A', 'B', 'X']);
+    expect(ev.audit).toEqual({ ...q, early: true });
+    expect(ev.eventId).toMatch(/^audit-[0-9a-f]{40}$/);
+    expect(auditEvent(q).eventId).toBe(ev.eventId); // stable for the same question
+  });
+
+  it('keeps gates and engine asks as the original question, with their kind and ask fields', () => {
+    const gate = pendingQuestions(events({ Event: 'STAGE_AWAITING_APPROVAL', Stage: 'code-generation', 'Next Stage': 'build-and-test' }), where)[0];
+    const ev = auditEvent(gate);
+    expect(ev.audit).toMatchObject({ kind: 'gate', nextStage: 'build-and-test', ask: null });
+    expect(ev.questions[0].options).toEqual([]);
+    expect(auditEvent({ ...gate, id: 'x'.repeat(500) }).eventId.length).toBeLessThanOrEqual(64);
+  });
+
+  it('auditContext gives the newest waiting question of the intent as context, or null', () => {
+    const list = [
+      { intent: 'a', stage: 's1', timeMs: 1 },
+      { intent: 'a', stage: 's2', timeMs: 3 },
+      { intent: 'b', stage: 's3', timeMs: 5 }
+    ];
+    expect(auditContext(list, 'a')).toEqual({ intent: 'a', stage: 's2' });
+    expect(auditContext(list)).toEqual({ intent: 'b', stage: 's3' });
+    expect(auditContext(list, 'c')).toBeNull();
+    expect(auditContext([], null)).toBeNull();
   });
 });

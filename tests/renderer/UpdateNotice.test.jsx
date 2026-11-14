@@ -119,7 +119,10 @@ describe('UpdateNotice (EPIC-04 US-0407)', () => {
     expect((await screen.findByTestId('update-notice-message')).textContent).toBe('Du har den senaste versionen.');
     expect(window.bridge.checkUpdate).toHaveBeenLastCalledWith({ force: true });
 
-    window.bridge.checkUpdate.mockResolvedValueOnce({ status: 'unavailable', reason: 'GitHub gick inte att nå, så uppdateringskontrollen försöker igen senare.' });
+    window.bridge.checkUpdate.mockResolvedValueOnce({
+      status: 'unavailable',
+      reason: 'GitHub gick inte att nå, så uppdateringskontrollen försöker igen senare.'
+    });
     rerender(<UpdateNotice busy={false} checkRequest={2} />);
     await waitFor(() => expect(screen.getByTestId('update-notice-message').textContent).toMatch(/försöker igen senare/));
   });

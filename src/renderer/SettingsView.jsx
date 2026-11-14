@@ -260,7 +260,13 @@ function Project({ settings, onReload, recentProjects = [], onRemoveRecent, proj
           {t('settings.defaultFolder.pick')}
         </button>
         {folder && (
-          <button type="button" className="btn btn-quiet" aria-label={t('settings.defaultFolder.resetFor')} onClick={clearFolder} data-testid="settings-default-folder-reset">
+          <button
+            type="button"
+            className="btn btn-quiet"
+            aria-label={t('settings.defaultFolder.resetFor')}
+            onClick={clearFolder}
+            data-testid="settings-default-folder-reset"
+          >
             {t('settings.defaultFolder.reset')}
           </button>
         )}

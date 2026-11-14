@@ -98,7 +98,7 @@ function ReadoutColumn({ pipeline, intentCost, intent, directive, cost, dirName 
           ) : mode ? (
             t(`intents.mode.${mode}`)
           ) : (
-            intent?.status ?? '–'
+            (intent?.status ?? '–')
           )}
         </span>
       </div>
@@ -121,7 +121,7 @@ export default function IntentDetail({ projectId, detail, intent, activeDirName,
   const [tab, setTab] = useState('pipeline');
   const [openFile, setOpenFile] = useState(null);
   const { state, pipeline } = detail;
-  const intentCost = cost?.available ? cost.perIntent[detail.dirName] ?? null : null;
+  const intentCost = cost?.available ? (cost.perIntent[detail.dirName] ?? null) : null;
   const position = stagePosition(state?.currentStage, pipeline.done, pipeline.executed);
   const steps = pipelineSteps(pipeline);
   const now = state?.currentStage ? currentText(pipeline, state.currentStage) : null;
@@ -149,7 +149,13 @@ export default function IntentDetail({ projectId, detail, intent, activeDirName,
               {/* Stories in the feature docs that this intent mentions (EPIC-06 FR2.6). */}
               {onOpenStory &&
                 stories.map((id) => (
-                  <button key={id} className="lcars-chip lcars-chip--active" title={t('intents.openStory', { id })} onClick={() => onOpenStory(id)} data-testid="intent-detail-story-link">
+                  <button
+                    key={id}
+                    className="lcars-chip lcars-chip--active"
+                    title={t('intents.openStory', { id })}
+                    onClick={() => onOpenStory(id)}
+                    data-testid="intent-detail-story-link"
+                  >
                     {id}
                   </button>
                 ))}
@@ -162,9 +168,7 @@ export default function IntentDetail({ projectId, detail, intent, activeDirName,
 
         {steps.length > 0 && (
           <div className="intent-progress">
-            {position && (
-              <span className="intent-progress-step">{t('intents.step', { step: position.step, total: position.total })}</span>
-            )}
+            {position && <span className="intent-progress-step">{t('intents.step', { step: position.step, total: position.total })}</span>}
             <Dots states={steps} />
             {now && <span className={`intent-progress-now ${now.needsYou ? 'is-you' : ''}`}>{now.text}</span>}
           </div>
@@ -193,9 +197,7 @@ export default function IntentDetail({ projectId, detail, intent, activeDirName,
         </div>
 
         <div className="detail-body" role="tabpanel">
-          {tab === 'pipeline' && (
-            <Pipeline pipeline={pipeline} files={detail.files} hasGraph={!!detail.graph} onOpenFile={showFile} cost={intentCost} />
-          )}
+          {tab === 'pipeline' && <Pipeline pipeline={pipeline} files={detail.files} hasGraph={!!detail.graph} onOpenFile={showFile} cost={intentCost} />}
           {tab === 'cost' && <CostTab cost={cost} intentCost={intentCost} pipeline={pipeline} models={models} />}
           {tab === 'timeline' && <Timeline events={detail.events} newKeys={newKeys} />}
           {tab === 'units' && <BoltDag dag={detail.graph?.boltDag ?? null} statuses={detail.units} />}

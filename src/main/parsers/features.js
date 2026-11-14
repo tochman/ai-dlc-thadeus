@@ -80,8 +80,8 @@ export function parseOverview(md) {
     const cell = cells[iEpic === -1 ? 0 : iEpic] ?? '';
     const m = cell.match(/\[([^\]]+)\]\(([^)\s]+)[^)]*\)/);
     const label = stripMd(m ? m[1] : cell);
-    const topic = stripMd(iTopic === -1 ? '' : cells[iTopic] ?? '');
-    const status = stripMd(iStatus === -1 ? '' : cells[iStatus] ?? '');
+    const topic = stripMd(iTopic === -1 ? '' : (cells[iTopic] ?? ''));
+    const status = stripMd(iStatus === -1 ? '' : (cells[iStatus] ?? ''));
     if (!label) continue;
     epics.push({
       id: label.match(/EPIC-\d+/i)?.[0].toUpperCase() ?? label,
@@ -151,7 +151,11 @@ export function parseEpic(md) {
   const raw = String(md ?? '');
   const lines = raw.split(/\r?\n/);
   const warnings = [];
-  const heading = lines.find((l) => /^#\s/.test(l))?.replace(/^#\s+/, '').trim() ?? '';
+  const heading =
+    lines
+      .find((l) => /^#\s/.test(l))
+      ?.replace(/^#\s+/, '')
+      .trim() ?? '';
   const hm = heading.match(/^(EPIC-\d+)\s*[:–-]\s*(.*)$/i);
   if (!heading) warnings.push(t('features.warn.noHeading'));
 

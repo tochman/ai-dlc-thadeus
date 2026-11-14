@@ -42,7 +42,20 @@ function clampSize(n, fallback) {
   return Number.isInteger(n) && n > 0 && n < 1000 ? n : fallback;
 }
 
-export async function spawnSession({ projectId, root, kind, harness, cols, rows, toolPaths: paths, sender }) {
+/**
+ * US-0506 u1 SD2: the child's environment. Every inherited THADEUS_* key is dropped (a development run started inside
+ * an app tab would otherwise leak a stale secret into every tab), then only `extra` is added. Pure.
+ */
+export function childEnv(base, extra = {}) {
+  const env = Object.fromEntries(Object.entries(base).filter(([k]) => !k.startsWith('THADEUS_')));
+  return { ...env, TERM: 'xterm-256color', COLORTERM: 'truecolor', ...extra };
+}
+
+/**
+ * @param {object} options `env` holds the agent channel variables (US-0506 u1, agent tabs only); `onExit` is called
+ *   with { id, exitCode, signal } when the process exits (RD5)
+ */
+export async function spawnSession({ projectId, root, kind, harness, cols, rows, toolPaths: paths, sender, env, onExit }) {
   if (paths) setToolPaths(paths); // the saved paths at spawn time, so the two tabs use them (US-0405 FR2.4)
   const args = shellArgs(kind, harness); // validate before loading the native module
   const { spawn: spawnPty } = await loadPty();
@@ -52,19 +65,34 @@ export async function spawnSession({ projectId, root, kind, harness, cols, rows,
     cols: clampSize(cols, 100),
     rows: clampSize(rows, 30),
     cwd: root,
-    env: { ...process.env, TERM: 'xterm-256color', COLORTERM: 'truecolor' }
+    env: childEnv(process.env, kind === 'agent' ? env : undefined) // a shell tab never gets the channel (SD2)
   });
   const id = randomUUID();
-  sessions.set(id, { proc, projectId, sender });
+  const taps = new Set();
+  sessions.set(id, { proc, projectId, sender, taps });
   const send = (channel, payload) => {
     if (!sender.isDestroyed()) sender.send(channel, payload);
   };
-  proc.onData((data) => send('pty:data', { id, data }));
+  proc.onData((data) => {
+    send('pty:data', { id, data });
+    for (const fn of taps) fn(data); // read-only taps, e.g. waiting for the agent's picker (US-0506 PD2)
+  });
   proc.onExit(({ exitCode, signal }) => {
     sessions.delete(id);
     send('pty:exit', { id, exitCode, signal });
+    onExit?.({ id, exitCode, signal });
   });
   return id;
+}
+
+/** US-0506 u1 PD2: calls `fn` with each chunk of the session's output until the returned remover runs. */
+export function tapOutput(id, fn) {
+  const taps = sessions.get(id)?.taps;
+  if (!taps) return () => {};
+  taps.add(fn);
+  return () => {
+    taps.delete(fn);
+  };
 }
 
 function get(id) {

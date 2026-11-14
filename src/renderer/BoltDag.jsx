@@ -55,12 +55,7 @@ export default function BoltDag({ dag, statuses }) {
               const y2 = b.y + NODE_H / 2;
               const mid = (x1 + x2) / 2;
               return (
-                <path
-                  key={`${d}->${u.name}`}
-                  className="dag-edge"
-                  d={`M${x1},${y1} C${mid},${y1} ${mid},${y2} ${x2},${y2}`}
-                  markerEnd="url(#dag-arrow)"
-                />
+                <path key={`${d}->${u.name}`} className="dag-edge" d={`M${x1},${y1} C${mid},${y1} ${mid},${y2} ${x2},${y2}`} markerEnd="url(#dag-arrow)" />
               );
             })
         )}

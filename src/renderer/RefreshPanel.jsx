@@ -219,12 +219,22 @@ export default function RefreshPanel({ projectId, space, lastIntentChangeAt, ope
                     </p>
                   )}
                   {status.tracking && (
-                    <button className="btn" disabled={working} onClick={() => setChoose((c) => (c === 'pull' ? null : 'pull'))} data-testid="refresh-panel-pull">
+                    <button
+                      className="btn"
+                      disabled={working}
+                      onClick={() => setChoose((c) => (c === 'pull' ? null : 'pull'))}
+                      data-testid="refresh-panel-pull"
+                    >
                       {t('github.pull')}
                     </button>
                   )}
                   {status.branch !== 'main' && (
-                    <button className="btn" disabled={working} onClick={() => setChoose((c) => (c === 'main' ? null : 'main'))} data-testid="refresh-panel-from-main">
+                    <button
+                      className="btn"
+                      disabled={working}
+                      onClick={() => setChoose((c) => (c === 'main' ? null : 'main'))}
+                      data-testid="refresh-panel-from-main"
+                    >
                       {t('github.fromMain')}
                     </button>
                   )}
@@ -233,7 +243,11 @@ export default function RefreshPanel({ projectId, space, lastIntentChangeAt, ope
                   )}
                 </div>
               )}
-              <button className="btn btn-quiet" onClick={() => act(async () => setConflicts(await bridge.getConflicts(projectId)))} data-testid="refresh-panel-conflicts">
+              <button
+                className="btn btn-quiet"
+                onClick={() => act(async () => setConflicts(await bridge.getConflicts(projectId)))}
+                data-testid="refresh-panel-conflicts"
+              >
                 {t('github.showConflicts')}
               </button>
               {conflicts && conflicts.length === 0 && <p className="muted">{t('github.noConflicts')}</p>}

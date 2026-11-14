@@ -11,7 +11,10 @@ const SYNTHETIC_MODEL = '<synthetic>';
 const num = (v) => (Number.isFinite(v) ? v : 0);
 const entries = (obj) => (obj && typeof obj === 'object' ? Object.entries(obj) : []);
 /** "aidlc-developer-agent" and "developer" both become "developer"; "main" (the session) stays "main". */
-export const agentName = (name) => String(name).replace(/^aidlc-/, '').replace(/-agent$/, '');
+export const agentName = (name) =>
+  String(name)
+    .replace(/^aidlc-/, '')
+    .replace(/-agent$/, '');
 
 /** One ledger node -> display cost. `missingPrice`: tokens were used but the ledger has no price (FR6.2). */
 export function costOf(node) {
@@ -83,7 +86,9 @@ function intentCost(wf) {
   const byStage = rows(Object.fromEntries(entries(wf.byStage).map(([s, n]) => [s, n?.totals])));
   const stageModels = {};
   for (const [stage, node] of entries(wf.byStage)) {
-    stageModels[stage] = rows(node?.byModel).filter((r) => r.name !== SYNTHETIC_MODEL).map((r) => r.name);
+    stageModels[stage] = rows(node?.byModel)
+      .filter((r) => r.name !== SYNTHETIC_MODEL)
+      .map((r) => r.name);
   }
   const byModel = rows(wf.byModel);
   return {
@@ -146,7 +151,11 @@ export function summarizeLedger(ledger, intents) {
 
 /** "opus" matches "opus-5-5" and "claude-opus-5-5"; "opus-4-1" does not match "opus-5-5". */
 function sameModel(configured, actual) {
-  const norm = (m) => String(m).toLowerCase().replace(/\[.*\]$/, '').replace(/^claude-/, '');
+  const norm = (m) =>
+    String(m)
+      .toLowerCase()
+      .replace(/\[.*\]$/, '')
+      .replace(/^claude-/, '');
   const c = norm(configured);
   const a = norm(actual);
   return a === c || a.startsWith(`${c}-`) || c.startsWith(`${a}-`);
@@ -169,7 +178,7 @@ export function compareModels(configured, actualByAgent = {}, { onlyParticipants
     .map((agent) => {
       const c = conf.get(agent);
       const inherit = c?.model === 'inherit';
-      const expected = inherit ? sessionModel : c?.model ?? null;
+      const expected = inherit ? sessionModel : (c?.model ?? null);
       const actual = actualByAgent[agent] ?? [];
       const mismatch = !!expected && actual.some((m) => !sameModel(expected, m));
       return { agent, configured: c?.model ?? null, effort: c?.effort ?? null, inherit, expected, actual, mismatch };

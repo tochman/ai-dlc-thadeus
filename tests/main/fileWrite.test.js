@@ -39,7 +39,12 @@ describe('safe writes (EPIC-10 US-1001, NFR6)', () => {
     await expect(writeFileSafe(root, path.join(outside, 'secret.txt'), 'x', expect_)).rejects.toThrow();
     await expect(writeFileSafe(root, '../x.txt', 'x', expect_)).rejects.toThrow();
     await expect(writeFileSafe(root, 'link-out.txt', 'x', expect_)).rejects.toThrow();
-    for (const rel of ['aidlc/spaces/default/intents/261114-x/aidlc-state.md', 'aidlc/spaces/default/intents/261114-x/audit/host-1.md', 'aidlc/spaces/default/intents/intents.json', '.claude/agents/aidlc-developer-agent.md']) {
+    for (const rel of [
+      'aidlc/spaces/default/intents/261114-x/aidlc-state.md',
+      'aidlc/spaces/default/intents/261114-x/audit/host-1.md',
+      'aidlc/spaces/default/intents/intents.json',
+      '.claude/agents/aidlc-developer-agent.md'
+    ]) {
       await expect(writeFileSafe(root, rel, 'x', expect_), rel).rejects.toThrow(/AI-DLC/);
     }
     expect(await fs.readFile(path.join(outside, 'secret.txt'), 'utf8')).toBe('secret');

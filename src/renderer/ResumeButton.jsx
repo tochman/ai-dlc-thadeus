@@ -74,13 +74,7 @@ export default function ResumeButton({ intent, activeDirName, activeIntent = nul
   const main = terminal.agentTabs?.length > 1 ? t('intents.resume.inHarness', { label, harness: harnessName }) : label;
   return (
     <span className="resume">
-      <button
-        className="resume-button"
-        onClick={resume}
-        disabled={!!unavailable}
-        title={unavailable ?? undefined}
-        data-testid="intent-resume"
-      >
+      <button className="resume-button" onClick={resume} disabled={!!unavailable} title={unavailable ?? undefined} data-testid="intent-resume">
         <span className="resume-main">{main}</span>
         <span className="resume-step">{step ? ` ${step}` : ''}</span>
       </button>

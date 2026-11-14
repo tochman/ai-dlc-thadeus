@@ -22,9 +22,16 @@ afterEach(cleanup);
 describe('TokenView (US-0207 FR1.3, NFR4, NFR5)', () => {
   it('shows four labelled meters with their figures and a level for an in-flight intent', () => {
     render(<TokenView cost={cost()} dirName="261113-live" live />);
-    const labels = ['input', 'output', 'cacheWrite', 'cacheRead'].map((m) => screen.getByTestId(`token-meter-${m}`).querySelector('.token-meter-label').textContent);
+    const labels = ['input', 'output', 'cacheWrite', 'cacheRead'].map(
+      (m) => screen.getByTestId(`token-meter-${m}`).querySelector('.token-meter-label').textContent
+    );
     expect(labels).toEqual(['Input', 'Output', 'Cache write', 'Cache read']);
-    expect(['input', 'output', 'cacheWrite', 'cacheRead'].map((m) => screen.getByTestId(`token-value-${m}`).textContent)).toEqual(['3,0 k', '1,5 k', '300', '5,0 k']);
+    expect(['input', 'output', 'cacheWrite', 'cacheRead'].map((m) => screen.getByTestId(`token-value-${m}`).textContent)).toEqual([
+      '3,0 k',
+      '1,5 k',
+      '300',
+      '5,0 k'
+    ]);
     // cache read is the largest: its meter is full on the 5 000 scale, input fills 6 of 10.
     expect(screen.getByTestId('token-meter-cacheRead').querySelectorAll('.token-seg.is-lit')).toHaveLength(10);
     expect(screen.getByTestId('token-meter-input').querySelectorAll('.token-seg.is-lit')).toHaveLength(6);

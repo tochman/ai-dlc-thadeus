@@ -37,7 +37,13 @@ export default function Splash({ ready }) {
     <div className={`splash ${leaving ? 'is-leaving' : ''}`} data-testid="splash">
       <div className="splash-top" aria-hidden="true">
         <span className="splash-cap" />
-        <Bar segs={[['slate-3', 3], ['steel-deep', 90], ['slate-4', 1]]} />
+        <Bar
+          segs={[
+            ['slate-3', 3],
+            ['steel-deep', 90],
+            ['slate-4', 1]
+          ]}
+        />
       </div>
       <div className="splash-mid">
         <div className="splash-arm" aria-hidden="true">
@@ -59,7 +65,14 @@ export default function Splash({ ready }) {
           </div>
         </div>
       </div>
-      <Bar className="splash-bottom" segs={[['slate-2', 2], ['steel-deep', 70], ['slate-3', 1]]} />
+      <Bar
+        className="splash-bottom"
+        segs={[
+          ['slate-2', 2],
+          ['steel-deep', 70],
+          ['slate-3', 1]
+        ]}
+      />
     </div>
   );
 }

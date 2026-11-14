@@ -11,11 +11,36 @@ const MonacoPane = lazy(() => import('./MonacoPane.jsx'));
 const errorText = (err) => String(err?.message ?? err).replace(/^Error invoking remote method '[^']+': (Error: )?/, '');
 
 const LANGUAGES = {
-  md: 'markdown', markdown: 'markdown', js: 'javascript', jsx: 'javascript', mjs: 'javascript', cjs: 'javascript',
-  ts: 'typescript', tsx: 'typescript', mts: 'typescript', cts: 'typescript', json: 'json', jsonc: 'json',
-  yaml: 'yaml', yml: 'yaml', css: 'css', scss: 'scss', less: 'less', html: 'html', htm: 'html',
-  sh: 'shell', bash: 'shell', zsh: 'shell', py: 'python', xml: 'xml', svg: 'xml', plist: 'xml',
-  ini: 'ini', toml: 'ini', cfg: 'ini', sql: 'sql'
+  md: 'markdown',
+  markdown: 'markdown',
+  js: 'javascript',
+  jsx: 'javascript',
+  mjs: 'javascript',
+  cjs: 'javascript',
+  ts: 'typescript',
+  tsx: 'typescript',
+  mts: 'typescript',
+  cts: 'typescript',
+  json: 'json',
+  jsonc: 'json',
+  yaml: 'yaml',
+  yml: 'yaml',
+  css: 'css',
+  scss: 'scss',
+  less: 'less',
+  html: 'html',
+  htm: 'html',
+  sh: 'shell',
+  bash: 'shell',
+  zsh: 'shell',
+  py: 'python',
+  xml: 'xml',
+  svg: 'xml',
+  plist: 'xml',
+  ini: 'ini',
+  toml: 'ini',
+  cfg: 'ini',
+  sql: 'sql'
 };
 
 /** The Monaco language for a path, from its extension (or the name Dockerfile); `plaintext` for anything else. */
@@ -85,12 +110,14 @@ export function useEditorTabs(projectId) {
     const disk = tabsRef.current.find((x) => x.rel === rel)?.conflict;
     if (disk) save(rel, { mtimeMs: disk.mtimeMs, hash: disk.hash });
   };
-  const takeDisk = (rel) =>
-    patch(rel, (tab) => ({ text: tab.conflict.content, base: { ...tab.conflict }, conflict: null, notice: null }));
+  const takeDisk = (rel) => patch(rel, (tab) => ({ text: tab.conflict.content, base: { ...tab.conflict }, conflict: null, notice: null }));
   const edit = (rel, text) => patch(rel, () => ({ text }));
 
   // The unsaved files, for closing the project and quitting; and the watch on exactly the open files.
-  const dirtyKey = tabs.filter(isDirty).map((x) => x.rel).join('\n');
+  const dirtyKey = tabs
+    .filter(isDirty)
+    .map((x) => x.rel)
+    .join('\n');
   useEffect(() => markDirty(projectId, dirtyKey ? dirtyKey.split('\n') : []), [projectId, dirtyKey]);
   useEffect(() => () => markDirty(projectId, []), [projectId]);
   const openKey = tabs.map((x) => x.rel).join('\n');
@@ -151,11 +178,17 @@ export default function EditorPanel({ projectId, editor, agentBusy = false, acti
               {x.rel.split('/').pop()}
               {isDirty(x) && (
                 <span className="editor-dirty" aria-label={t('editor.unsaved')} data-testid="editor-tab-dirty">
-                  {' '}●
+                  {' '}
+                  ●
                 </span>
               )}
             </button>
-            <button className="editor-tab-close" aria-label={t('editor.close', { file: x.rel })} onClick={() => editor.close(x.rel)} data-testid="editor-tab-close">
+            <button
+              className="editor-tab-close"
+              aria-label={t('editor.close', { file: x.rel })}
+              onClick={() => editor.close(x.rel)}
+              data-testid="editor-tab-close"
+            >
               ×
             </button>
           </span>

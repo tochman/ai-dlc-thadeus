@@ -127,23 +127,32 @@ function inPipelineOrder(rows, pipeline) {
 export default function CostTab({ cost, intentCost, pipeline, models }) {
   const { t } = useTranslation();
   if (!cost) return <p className="muted">{t('cost.reading')}</p>;
-  if (!cost.available) return <p className="muted" data-testid="cost-tab-unavailable">{cost.reason}</p>;
+  if (!cost.available)
+    return (
+      <p className="muted" data-testid="cost-tab-unavailable">
+        {cost.reason}
+      </p>
+    );
   if (!intentCost) return <p className="muted">– {t('cost.noEntry')}</p>;
   const { total } = intentCost;
 
   return (
     <div className="cost-tab" data-testid="cost-tab">
-      <p className="muted" data-testid="cost-tab-harness">{t('cost.coversClaude')}</p>
-      {cost.stale && <p className="banner banner-warn" role="status">{t('cost.stale', { warning: cost.warning })}</p>}
+      <p className="muted" data-testid="cost-tab-harness">
+        {t('cost.coversClaude')}
+      </p>
+      {cost.stale && (
+        <p className="banner banner-warn" role="status">
+          {t('cost.stale', { warning: cost.warning })}
+        </p>
+      )}
       <div className="cost-total">
         <CostLabel complete={intentCost.complete} />
         <span className="cost-total-usd">{total.missingPrice ? t('cost.missingPrice') : formatUsd(total.usd)}</span>
         <span className="muted">{tokenBreakdown(total.tokens)}</span>
       </div>
       <Readout
-        rows={[...intentCost.byModel]
-          .sort((a, b) => b.usd - a.usd)
-          .map((r, i) => ({ ...r, label: shortModel(r.name), key: i === 0 ? 'steel' : 'light' }))}
+        rows={[...intentCost.byModel].sort((a, b) => b.usd - a.usd).map((r, i) => ({ ...r, label: shortModel(r.name), key: i === 0 ? 'steel' : 'light' }))}
         totalUsd={total.usd}
       />
       <CostTable title={t('cost.perStage')} rows={inPipelineOrder(intentCost.byStage, pipeline)} totalUsd={total.usd} testId="cost-tab-stages" />

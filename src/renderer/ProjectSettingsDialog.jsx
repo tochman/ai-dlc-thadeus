@@ -28,9 +28,7 @@ function harnessOptions(detected, t) {
  */
 export function confirmHarnessSwitch(terminal, from, to, t) {
   if (terminal?.state('agent') !== 'busy') return true;
-  return window.confirm(
-    t('settings.project.harnessSwitchConfirm', { from: selectableHarness(from)?.label ?? from, to: selectableHarness(to)?.label ?? to })
-  );
+  return window.confirm(t('settings.project.harnessSwitchConfirm', { from: selectableHarness(from)?.label ?? from, to: selectableHarness(to)?.label ?? to }));
 }
 
 /**
@@ -124,9 +122,7 @@ export default function ProjectSettingsDialog({
     >
       {open && (
         <form onSubmit={save}>
-          <h2 id={`project-settings-title-${projectId}`}>
-            {name ? t('settings.project.titleFor', { name }) : t('settings.project.title')}
-          </h2>
+          <h2 id={`project-settings-title-${projectId}`}>{name ? t('settings.project.titleFor', { name }) : t('settings.project.title')}</h2>
           <fieldset className="settings-group">
             <legend>{t('settings.project.featureDocsLegend')}</legend>
             {MODES.map((id) => (
@@ -160,7 +156,8 @@ export default function ProjectSettingsDialog({
           )}
           <label className="field">
             <span className="field-label">{t('settings.project.harnessLabel')}</span>
-            <select className="lcars-select"
+            <select
+              className="lcars-select"
               value={chosen ?? ''}
               onChange={(e) => setChosen(e.target.value)}
               disabled={!harness}
@@ -184,9 +181,7 @@ export default function ProjectSettingsDialog({
                     checked={tabs.includes(id)}
                     // At least one tab stays open; the order follows the harness table.
                     disabled={tabs.length === 1 && tabs.includes(id)}
-                    onChange={(e) =>
-                      setTabs((cur) => runnable.filter((h) => (h === id ? e.target.checked : cur.includes(h))))
-                    }
+                    onChange={(e) => setTabs((cur) => runnable.filter((h) => (h === id ? e.target.checked : cur.includes(h))))}
                     data-testid={`project-settings-tab-${id}`}
                   />
                   {selectableHarness(id).label}
@@ -199,7 +194,11 @@ export default function ProjectSettingsDialog({
             <p className="settings-setup">
               <span className="muted" data-testid="project-settings-installed-harnesses">
                 {t('settings.project.installedHarnesses', {
-                  list: (harnesses ?? []).filter((d) => d.installed).map((d) => d.label).join(', ') || '–'
+                  list:
+                    (harnesses ?? [])
+                      .filter((d) => d.installed)
+                      .map((d) => d.label)
+                      .join(', ') || '–'
                 })}
               </span>
               <button

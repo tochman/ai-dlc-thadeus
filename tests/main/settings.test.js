@@ -19,7 +19,10 @@ afterEach(async () => {
 describe('project settings', () => {
   it('are kept per project root in the app settings and invalid values fall back to the defaults (FR3.4)', async () => {
     expect(await getProjectSettings('/p/a')).toEqual({ featureDocs: 'auto', featuresPath: 'docs/FEATURES.md' });
-    expect(await setProjectSettings('/p/a', { featureDocs: 'show', featuresPath: 'FEATURES.md' })).toEqual({ featureDocs: 'show', featuresPath: 'FEATURES.md' });
+    expect(await setProjectSettings('/p/a', { featureDocs: 'show', featuresPath: 'FEATURES.md' })).toEqual({
+      featureDocs: 'show',
+      featuresPath: 'FEATURES.md'
+    });
     expect(await setProjectSettings('/p/a', { featureDocs: 'hide' })).toEqual({ featureDocs: 'hide', featuresPath: 'FEATURES.md' });
     await expect(setProjectSettings('/p/a', { featuresPath: '../outside.md' })).rejects.toThrow(/Ogiltig sökväg/);
     await expect(setProjectSettings('/p/a', { featureDocs: 'always' })).rejects.toThrow(/Okänt värde/);
