@@ -80,13 +80,31 @@ Requires macOS or Linux, Node 22 and npm.
 ```bash
 npm install            # install dependencies and rebuild node-pty for Electron
 npm run dev            # run the app with hot reload
-npx vitest run tests/  # run the test suite
+npm test               # run the test suite
 npm run build          # build an unsigned macOS app (.app and .dmg) in dist/
 npm run build:linux    # build the Linux .deb in dist/
 npm run icon           # regenerate the app icon from build/icon.svg
 ```
 
 Releases are built by GitHub Actions when a `vX.Y.Z` tag matching `package.json` is pushed. This project is developed with AI-DLC itself; its records are in `aidlc/spaces/default/intents/`, and the roadmap is in [docs/FEATURES.md](docs/FEATURES.md).
+
+## Testing
+
+The test suite uses [Vitest](https://vitest.dev/) and [Testing Library](https://testing-library.com/), and is split into two projects:
+
+- **main** (`tests/main/`) covers the Electron main process (parsers for the AI-DLC records, file access, git, settings, the terminal and the harness setup) in a Node environment.
+- **renderer** (`tests/renderer/`) covers the React components in jsdom, rendered in Swedish so the translations are exercised too.
+
+Both run against small sample AI-DLC projects, audit logs and ledgers in `tests/fixtures/`, never against your real projects.
+
+```bash
+npm test                                  # run everything once
+npx vitest                                # watch mode
+npx vitest run --project main             # only the main-process tests
+npx vitest run tests/renderer/Timeline.test.jsx   # a single file
+```
+
+Every pull request runs the full suite in GitHub Actions before the macOS and Linux builds, and a release is only built from a green run. The tests need Node 22; on older versions some of them fail to start.
 
 ## Security
 
@@ -97,13 +115,6 @@ Releases are built by GitHub Actions when a `vX.Y.Z` tag matching `package.json`
 - **Renderer:** the renderer runs sandboxed with `contextIsolation` and without `nodeIntegration`. It reaches only a narrow preload API of named functions.
 - **Artifacts:** Markdown is rendered without raw HTML, so no script in an artifact can run. "Open in editor" is limited to document files (`.md`, `.json`, `.txt`, `.yaml`, `.yml`).
 - **Terminal:** the terminal tabs run with your normal environment and permissions, like a terminal you start yourself.
-
-## Upgrading from Auctum AIDLC Control
-
-The app was previously named Auctum AIDLC Control. Your settings and open projects carry over, because the settings folder is still named `aidlc-dash`.
-
-- **macOS:** T.H.A.D.E.U.S. has a new app id, so it does not replace the old app. Quit the old app and remove it from Applications.
-- **Linux:** the `thadeus` package replaces `aidlc-dash` automatically.
 
 ## Open source
 
