@@ -8,7 +8,7 @@
 
 **Stories:** US-0501, US-0502, US-0503, US-0504, US-0505, US-0506
 
-**Status (2026-11-14):** ✅ US-0501–US-0503 released in v0.2.0. ✅ US-0505 released in v0.2.1 (answering from the popup added in v0.2.2). US-0504 and US-0506 📋 Planned. The popup double-answer fix is US-0004 in [EPIC-00](epic-00-fixes.md).
+**Status (2026-11-14):** ✅ US-0501–US-0503 released in v0.2.0. ✅ US-0505 released in v0.2.1 (answering from the popup added in v0.2.2). US-0504 📋 Planned. 🚧 US-0506 in progress, for v0.2.5 (intent `261114-agent-dialogs`: a full plan for how the dialogs show and talk to Claude Code and other agents). The popup double-answer fix is US-0004 in [EPIC-00](epic-00-fixes.md).
 
 ---
 
@@ -121,7 +121,7 @@
   - [x] **Later (not in this story):** answering straight from the popup by typing the chosen option into the Claude tab. Done in a UI hotfix with US-0901 (PR #18), released in v0.2.2. Claude Code gets the option's digit, a gate gets 1 or 2, and the own-answer field types the text and presses Enter. opencode gets the own-answer field only, until its picker keys are checked.
 - **Dependencies:** US-0101 (watcher), EPIC-03 (audit parsing), US-0501 (Claude tab states), US-0402 (coral pulse)
 
-**US-0506: Answer Claude Code's and opencode's own questions in a dialog, and see their messages** 📋 Planned
+**US-0506: Answer Claude Code's and opencode's own questions in a dialog, and see their messages** 🚧 In progress, for v0.2.5 (intent `261114-agent-dialogs`, classic)
 - As a **developer running an agent in the console while I do other things**, in order to **not miss anything the agent asks or tells me, AI-DLC or not**, I would like to **get every question and permission prompt from Claude Code or opencode as a dialog I can answer in, and see the agent's messages without opening the terminal**.
 - **Epic:** EPIC-05
 - **Priority:** High

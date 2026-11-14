@@ -1,0 +1,1 @@
+npx vitest run tests/ --coverage && npx eslint . && npx prettier --check .

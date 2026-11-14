@@ -1,0 +1,56 @@
+{
+  "stage": "nfr-requirements",
+  "unit": "u2-permissions",
+  "upstream_ids": [
+    "NFR1",
+    "NFR2",
+    "NFR3",
+    "NFR4",
+    "NFR5",
+    "NFR6",
+    "NFR7",
+    "NFR8"
+  ],
+  "coverage": [
+    {
+      "id": "NFR1",
+      "status": "OK",
+      "target": "NFR1.8, NFR1.9, NFR1.10, NFR1.11, NFR1.12, NFR1.13"
+    },
+    {
+      "id": "NFR2",
+      "status": "OK",
+      "target": "NFR2.4, NFR2.5, NFR2.6, NFR2.7"
+    },
+    {
+      "id": "NFR3",
+      "status": "OK",
+      "target": "NFR3.13, NFR3.14, NFR3.15, NFR3.16, NFR3.17, NFR3.18, NFR3.19, NFR3.20, NFR3.21"
+    },
+    {
+      "id": "NFR4",
+      "status": "OK",
+      "target": "NFR4.4, NFR4.5"
+    },
+    {
+      "id": "NFR5",
+      "status": "OK",
+      "target": "NFR5.13, NFR5.14, NFR5.15, NFR5.16, NFR5.17, NFR5.18, NFR5.19, NFR5.20, NFR5.21, NFR5.22, NFR5.23, NFR5.24"
+    },
+    {
+      "id": "NFR6",
+      "status": "OK",
+      "target": "NFR6.4, NFR6.5, NFR6.6"
+    },
+    {
+      "id": "NFR7",
+      "status": "OK",
+      "target": "NFR7.3, NFR7.4"
+    },
+    {
+      "id": "NFR8",
+      "status": "OK",
+      "target": "NFR8.5, NFR8.6"
+    }
+  ]
+}

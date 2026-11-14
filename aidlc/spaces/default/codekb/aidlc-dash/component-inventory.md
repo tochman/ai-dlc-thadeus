@@ -1,281 +1,349 @@
-# Component Inventory: aidlc-dash
+# Component Inventory
 
-Every `###` heading below is a component name, used verbatim in `reverse-engineering-timestamp.md`. Renderer entries list what they render, their `data-testid`s and the tests tied to their markup. Keep every `data-testid`.
+One heading per component; the heading text is the component's name in the Scope of Analysis block. Paths are repo-relative. Dependencies list internal modules; external packages are in `dependencies.md`.
 
-This scan (intent `261113-harness-choice`, US-0801, commit `4b5b8c6`) read in depth: the agent terminal (PTY Manager, Exec Runner, TerminalPanel, TerminalContext, Terminal Control, ResumeButton), setup (Setup Helper, SetupAidlc), project detection and settings (Project Service, Project Access, Settings Store, IPC Router, Preload Bridge, ProjectSettingsDialog, ProjectView, App Shell), cost (Ledger Parser, CostPanel, CostTab, Model Config Reader), i18n (Shared i18n, Main i18n, Locale Files, Renderer Bootstrap, App Name Module), Feature Docs Prompt, and the matching tests (Test Suite). Sections marked *earlier scan* come from the scans at commits `22bd721` and `8623af4` and were not re-verified. US-0701 has since moved their visible texts into the locale files.
-
-## Renderer: shell and brand
-
-### App Shell
-- **File**: `src/renderer/App.jsx` (519 lines; line map in `code-structure.md`). Depends on Splash, AuctumMark, Lcars Primitives, AppSettingsDialog (`saveLanguage`), DocsDialog, QuestionPopup, ProjectView, `withSlots`, `APP_NAME`, `window.bridge`.
-- **Renders**: `div.app` > `Splash`; `header.app-header` (`div.app-brand` with `AuctumMark` 46 px and `span.app-brand-text` = `APP_NAME`; `Bar`, branch, `h1.app-title` "<project> • <view>" or `app.noProject`, fullscreen button); `nav.app-arm[aria-label=app.armLabel]`; error banner; `main.app-main` (empty state with `withSlots('app.emptyText')`, one `div.project-pane` per project); `AppSettingsDialog` (now with `language`, `onLanguage`), `DocsDialog`, `QuestionPopup`.
-- **State**: `tabs`, `activeId`, `error`, `restored`, `settingsFor`, `appSettingsOpen`, `animations`, `language` (new), `ui[projectId] = {view, cost, github}`, `meta[projectId] = {showFeatures, intentCount}`, `branch`, `fullscreen`, `terminalCommand`, `docs`, `alertSettings`, `questions`, `popupOpen`, `popupFocus`.
-- **Terminal hooks into projects**: `runTerminal(action)` (293-295) and `answerInClaude(q)` (220-224) set `terminalCommand {seq, action, projectId}`; the menu's `terminal` command accepts only `claude | shell | restart` (316). This whitelist and the action name `claude` are agent-tab specific.
-- **Named actions shared by the arm and the menu** (`menuCommands`, 309-318): `openProject`, `closeProject`, `projectSettings`, `appSettings`, `view`, `panel`, `terminal`, `docs`.
-- **Language**: `useTranslation()` at the top re-renders the whole app on a language switch with state kept (EPIC-07 NFR3). `changeLanguage(next)` sets state and calls `saveLanguage`.
-- **data-testid**: `project-tabs`, `project-tabs-tab`, `project-settings-open`, `project-tabs-close`, `project-tabs-add`, `project-view-switch-intents`, `project-view-switch-features`, `arm-cost`, `arm-github`, `app-settings-open`, `fullscreen-toggle`, `app-error-dismiss`, `empty-state-open`.
-- **Accessibility**: `aria-current`, `aria-expanded` on Cost/Github, `aria-pressed` on fullscreen, `aria-label` and `title` on the settings and close tools, `role="alert"` on the banner.
-- **Tests**: `tests/renderer/AppShell.test.jsx` (176 lines; grep only in this scan).
-
-### AppSettingsDialog
-- *Earlier scan, plus exports seen in this scan.* `src/renderer/AppSettingsDialog.jsx` (156 lines). Exports `saveLanguage(language)` (line 17) and the default dialog. Props from `App.jsx:504-514`: `open`, `onClose`, `value`, `onChange`, `questionAlerts`, `notificationSound`, `onSave`, `language`, `onLanguage` (default `saveLanguage`). Groups: Animations, Questions from Claude (`settings.alertsLegend`), Notification sound, Language / Språk.
-- **data-testid** (known): `app-settings-dialog`, `app-settings-animations-full|reduced|off`, `app-settings-close`.
-
-### DocsDialog
-- *Earlier scan.* `src/renderer/DocsDialog.jsx`. Native modal `dialog` showing `docs/README.md` through `FileContent`. **data-testid**: `docs-dialog`.
-
-### QuestionPopup
-- *Earlier scan.* `src/renderer/QuestionPopup.jsx` (117 lines). Props `open`, `questions`, `focus`, `onAnswer(q)`, `onClose`. Its answer button "Answer in Claude" opens the `claude` tab through `answerInClaude`. **Tests**: `QuestionPopup.test.jsx`.
-
-### Lcars Primitives
-- *Earlier scan.* `src/renderer/Lcars.jsx`: `Bar`, `Frame`, `Hairlines`, `progressStates`, `dotsLabel`, `Dots`, `Readout`.
-
-### Splash
-- *Earlier scan, before US-0406 was built; the name now comes from `src/shared/appName.js`.* `src/renderer/Splash.jsx` (65 lines). Timing `SPLASH_MIN_MS` 900, `SPLASH_MAX_MS` 4000, `SPLASH_FADE_MS` 300. `AuctumMark` 300 px with `role="img"` "Auctum", decorative visible name, `sr-only` full name. **Tests**: `Splash.test.jsx`.
-
-### AuctumMark
-- *Earlier scan.* `src/renderer/AuctumMark.jsx` (19 lines). Inline SVG; `role="img" aria-label="Auctum"`, or `aria-hidden` when `decorative`. Used in the splash, header, empty state, arm foot (decorative) and terminal elbow (decorative).
-
-### Theme Stylesheet
-- *Earlier scan.* `src/renderer/theme.css` (889 lines). Tokens on `:root` (`--bg #05060a`, slate, steel, coral, amber `#ff9e40`, `--alert`, frame anatomy `--arm 150px`), LCARS primitives, app shell, terminal arm (`.terminal-arm`, `.term-tab`, `.term-tab--<kind>`, `.terminal-elbow`), dialogs, keyframes, `data-motion` rules. `.term-tab--claude` (line 687: height 64 px, rounded top-left) styles the agent tab by its kind name; `.term-tab--shell` has no rule. **Tests**: `theme.test.js`.
-
-## Renderer: project view
-
-### ProjectView
-- **File**: `src/renderer/ProjectView.jsx` (253 lines). Internal parts `AidlcProject`, `SetupDone`, `ProjectContent`; default `ProjectView` wraps `ProjectContent` in `TerminalProvider`, so each project has its own terminals.
-- **Props**: `project`, `visible`, `settingsOpen`, `onCloseSettings`, `view`, `onView`, `costOpen`, `onToggleCost`, `githubOpen`, `onToggleGithub`, `onMeta`, `terminalCommand`.
-- **`terminalCommand` effect** (132-136): only for a matching `projectId`; `restart` restarts the active tab, otherwise `terminal.show(action)` (so `action` is a tab id).
-- **After setup** (141-147): on the switch from not-AI-DLC to AI-DLC it sets `justSetUp` and calls `terminal.restart('claude')`, so the agent loads the new hooks.
-- **SetupDone** (99-122): types `/aidlc --doctor` and `/aidlc ` into `claude`; optional "Create feature docs".
-- **Feature docs**: `setupDocs` types `featureDocsPrompt(...)` into `claude` without Enter (158-160); `offerSetup` passes it to FeaturesView and ProjectSettingsDialog.
-- **Mounts** `TerminalPanel projectId visible` and `ProjectSettingsDialog` with `settings` from `useFeatures` (only `{featureDocs, featuresPath}`).
-- **data-testid**: `project-space-select`, `setup-aidlc-done`, `setup-aidlc-doctor`, `setup-aidlc-first-work`, `setup-aidlc-feature-docs-run`.
-
-### IntentList
-- *Earlier scan.* `src/renderer/IntentList.jsx`: `sortIntents`, `filterIntents`; rows with ResumeButton. **data-testid**: `intent-list`, `intent-list-search`, `intent-list-status-filter`, `intent-list-scope-filter`, `intent-list-sort`, `intent-list-row`, `intent-list-row-cost`, `intent-list-row-status`.
-
-### IntentDetail
-- *Earlier scan.* `src/renderer/IntentDetail.jsx`: header, five tabs (Pipeline, Timeline, Units, Cost, Files). **data-testid**: `intent-detail`, `intent-detail-tab-pipeline|timeline|units|cost|files`, `intent-detail-story-link`.
-
-### Pipeline
-- *Earlier scan.* `src/renderer/Pipeline.jsx`; statuses `not-started`, `in-progress`, `awaiting-approval`, `revising`, `done`, `skipped`, `unknown`. **data-testid**: `pipeline`, `pipeline-stage`, `pipeline-stage-cost`, `pipeline-stage-file`.
-
-### Timeline
-- *Earlier scan.* `src/renderer/Timeline.jsx`, virtualised with `@tanstack/react-virtual`. **data-testid**: `timeline`, `timeline-noise-toggle`, `timeline-type-filter`, `timeline-stage-filter`, `timeline-jump-newest`, `timeline-jump-stage`, `timeline-new-counter`, `timeline-scroll`, `timeline-event`.
-
-### BoltDag
-- *Earlier scan.* `src/renderer/BoltDag.jsx`; SVG `role="img"`. **data-testid**: `bolt-dag`, `bolt-dag-empty`.
-
-### ArtifactReader
-- *Earlier scan.* `src/renderer/ArtifactReader.jsx`; exports `FileContent`. **data-testid**: `artifact-reader`, `artifact-reader-file`, `artifact-reader-reveal`, `artifact-reader-open-editor`.
-
-### CostPanel
-- **File**: `src/renderer/CostPanel.jsx` (138 lines). Internal `CostChart` (plain SVG bars), `ScopeTable`, `readoutRows`. Props `cost`, `models`, `open`, `onToggle`.
-- **Renders**: `section.cost-panel` > toggle (`cost.title`, `cost.estimateMeta`); `cost.reason` when unavailable; total with `*` when incomplete, token count, `Readout` of the top two models and agents; when open: stale banner, `CostLabel`, legacy row, chart, per-model and per-agent `CostTable`, `ScopeTable`, `ModelTable`.
-- **Harness note**: nothing in the panel says which harness the ledger covers; model names are shown via `shortModel` (strips `claude-`).
-- **data-testid**: `cost-panel`, `cost-panel-toggle`, `cost-panel-legacy`, `cost-panel-models`, `cost-panel-agents`, `cost-panel-scopes`.
-- **Tests**: `tests/renderer/CostPanel.test.jsx` (Swedish texts "Uppskattad kostnad (API-pris)", "Ofullständig", "pris saknas", a `claude-haiku-5-5` row, mismatch title, legacy row, missing ledger).
-
-### CostTab
-- **File**: `src/renderer/CostTab.jsx` (155 lines). Exports `CostLabel({complete})`, `CostTable({title, rows, totalUsd, testId})`, `ModelTable({models, agentModels, onlyParticipants})`, default `CostTab({cost, intentCost, pipeline, models})`.
-- **ModelTable**: "configured from" with `cost.source.<source>` (or the raw source), configured vs actual per agent via `compareModels`, mismatch tag, `main` shown as the session.
-- **data-testid**: `cost-tab`, `cost-tab-unavailable`, `cost-tab-stages`, `cost-tab-agents`, `cost-tab-models`, `model-table`, `model-mismatch`.
-
-### RefreshPanel
-- *Earlier scan, one line re-read.* `src/renderer/RefreshPanel.jsx` (267 lines). Exports `WAIT_MESSAGE`, `PULL`, `FROM_MAIN`. "Working" = `terminal.state('claude') === 'busy'` or a recent intent write (line 97). Types git chains into `shell`. **data-testid**: `refresh-panel`, `refresh-panel-toggle`, `refresh-panel-status`, `refresh-panel-update`, `refresh-panel-badge`, `refresh-panel-details`, `refresh-panel-detail-list`, `refresh-panel-remote-file`, `refresh-panel-pull`, `refresh-panel-from-main`, `refresh-panel-choice`, `refresh-panel-choice-rebase`, `refresh-panel-choice-merge`, `refresh-panel-conflicts`, `refresh-panel-conflict-list`.
-
-### ResumeButton
-- **File**: `src/renderer/ResumeButton.jsx` (55 lines). Exports `resumeLabel(position)` and the default button. (The older `BUSY_MESSAGE` export is gone; the text is `intents.resume.busy`.)
-- **Behaviour**: renders nothing outside a `TerminalProvider` or for an intent that is not `in-flight`. Busy `claude` → status text `intents.resume.busy` ("Claude is working — wait or interrupt it first"). Active intent → `type('claude', '/aidlc', {submit: false})`. Other intent → refuses names failing `SAFE_DIR_NAME`, else `sequence('claude', [{text: '/aidlc intent <dirName>', submit: true}, {text: '/aidlc', submit: false}])`.
-- **Renders**: `span.resume` > `button.resume-button` (`span.resume-main`, `span.resume-step`), `span.resume-message[role=status]`.
-- **data-testid**: `intent-resume`.
-- **Tests**: `tests/renderer/ResumeButton.test.jsx` asserts the `'claude'` tab id and both command strings.
-
-### SetupAidlc
-- **File**: `src/renderer/SetupAidlc.jsx` (217 lines). Exports `INSTALL_URL` (`https://github.com/awslabs/aidlc-workflows`). Internal `Prerequisites`, `Preview`, `Advanced`, `MissingTool`, `FeatureDocsChoice`.
-- **Flow**: nothing is read until "Set up AI-DLC" (`setup:info`). It shows AI-DLC version, git state, "Other harnesses" (`info.harnesses`, today never `.claude/`), the dry-run preview with counts, notes and conflicts, plugins and model presets, and the feature-docs choice. "Set up" asks `setup:command` and types the chain into the `shell` tab without Enter. Blocked when `aidlc` is missing or there are conflicts. After start, a non-zero exit of the shell tab shows `setup.failed`.
-- **data-testid**: `project-not-aidlc`, `setup-aidlc-start`, `setup-aidlc-checks`, `setup-aidlc-preview`, `setup-aidlc-note`, `setup-aidlc-advanced`, `setup-aidlc-plugin`, `setup-aidlc-preset-<preset>`, `setup-aidlc-missing`, `setup-aidlc-feature-docs`, `setup-aidlc-run`, `setup-aidlc-failed`.
-- **Tests**: `tests/renderer/SetupAidlc.test.jsx` asserts the chain `git init -b main && aidlc --project-dir . config --harness claude --yes`.
-
-### FeaturesView
-- *Earlier scan.* `src/renderer/FeaturesView.jsx`; exports `StatusBadge`. **data-testid**: `features-view`, `features-view-empty`, `features-view-setup`, `features-view-fallback`, `features-view-epic`, `features-view-story`, `features-view-story-detail`, `features-view-intent-link`, `features-view-reveal`, `features-view-open-editor`, `features-view-filter-status`, `features-view-filter-priority`.
-
-### ProjectSettingsDialog
-- **File**: `src/renderer/ProjectSettingsDialog.jsx` (133 lines). Opened from the arm's settings tool.
-- **Props**: `open`, `onClose`, `projectId`, `name`, `settings {featureDocs, featuresPath}`, `onSetup`.
-- **Behaviour**: the form resets from the saved settings each time it opens. Save sends exactly `{featureDocs, featuresPath}` through `setProjectSettings` and closes; a main-process error stays in the dialog. The path is validated in the renderer with `isValidFeaturesPath` (imported from `main/parsers/features.js`).
-- **Renders**: native `dialog.panel.settings-dialog` > `form` with `h2` (`settings.project.titleFor`), `fieldset.settings-group` with three radios (`settings.project.mode.<id>` and help), path field with `aria-invalid`/`aria-describedby`, error rows, optional setup offer, Save/Cancel.
-- **data-testid**: `project-settings-dialog`, `project-settings-mode-auto|show|hide`, `project-settings-path`, `project-settings-setup`, `project-settings-save`, `project-settings-cancel`.
-- **Tests**: `tests/renderer/ProjectSettingsDialog.test.jsx` (skimmed).
-- **US-0801**: the "Agent-terminal" choice would be a second fieldset here. Its save path must also reach main.
-
-### TerminalPanel
-- **File**: `src/renderer/TerminalPanel.jsx` (280 lines, internal `TermSession`). Props `projectId`, `visible`. Depends on xterm, FitAddon, TerminalContext, Terminal Control, `tokens.xtermTheme`, AuctumMark, `Bar`.
-- **Constants**: `QUICK_COMMANDS` (`/aidlc --status`, `/aidlc --doctor`, `/aidlc continue`), `KINDS = ['claude', 'shell']`.
-- **TermSession**: spawns on mount (`ptySpawn({projectId, kind, cols, rows})`), registers `{activity, spawn, write, focus, restart}` with the context, writes typed keys to the pty, resizes with a ResizeObserver (skipped while hidden), shows `terminal.startFailed` / `terminal.exited` with a Restart button. Its mount effect depends on `spawn`, which depends on `kind`: a new `kind` kills the old pty and spawns a new one.
-- **Renders**: `section.terminal-panel(.is-collapsed)[aria-label=terminal.label]` > resize separator (drag or arrows, 180 px to 60 % of the window), `div.terminal-arm` (tab blocks with the state label `terminal.state.<state>` and name `terminal.<kind>`, `is-breathing` when `claude` is busy; elbow toggle), `div.terminal-main` (`Bar`, one `TermSession` per kind, footer with quick commands typed into `claude`, "Waiting for your Enter" rows, error).
-- **data-testid**: `terminal-panel-resize`, `terminal-panel-toggle`, `terminal-panel-tab-claude|shell`, `terminal-panel-state-claude|shell`, `terminal-panel-pending-claude|shell`, `terminal-panel-error`, `terminal-panel-quick-command`, `terminal-panel-restart-<kind>`.
-- **Tests**: `tests/renderer/TerminalPanel.test.jsx` (stubbed xterm; asserts state "Arbetar", the pending label and the `pty-claude` write).
-
-### TerminalContext
-- **File**: `src/renderer/TerminalContext.jsx` (106 lines). `TerminalProvider` and `useTerminal()` (API in `api-documentation.md`). Mounted per project in ProjectView; renders no markup.
-- **State**: `sessions` (ref, tab → session), `view {open, active}` (starts `{open: true, active: 'claude'}`), `states {claude, shell}` (start `exited`), `error`, `pending {claude, shell}`.
-- **`ready(tab)`**: spawns an exited tab and waits for its first `idle` (20 s); errors `terminal.cannotStart`, `terminal.noResponse`. **`run(tab, fn)`**: shows the tab, readies it, runs `fn`, focuses; errors go to `error`.
-- **Names in errors**: `terminal.tabName.<tab>` ("Claude", "The shell").
-
-### Terminal Control
-- **File**: `src/renderer/terminalControl.js` (75 lines). Pure: no React, no bridge.
-- **`createActivity({quietMs = 1500})`**: `exited` at start; output → `busy`; 1.5 s without output → `idle`; `onExit(code)` → `exited` with `exitCode`.
-- **`waitFor`**, **`runSequence`** (each step waits for `idle`; after a submitted step it waits up to 3 s for output first), **`withEnter`**, **`READY_TIMEOUT_MS`** 20000.
-- **Tests**: `tests/renderer/terminalControl.test.jsx` (skimmed).
-- **US-0801**: the signal relies on output pauses. Whether opencode, Codex or Kiro go quiet when they wait for input has not been verified.
-
-### Feature Docs Prompt
-- **File**: `src/renderer/featureDocsPrompt.js` (11 lines). `featureDocsPrompt({exists, path})`: one line (no newline, so nothing is sent), built from `features.prompt.*` in the current language. Plain language, not tied to `/aidlc` syntax.
-
-### useProject Hook
-- *Earlier scan.* `src/renderer/useProject.js` (134 lines). `useProject(projectId, initialSpace)` returns `space, setSpace, intents, listWarning, selected, setSelected, detail, newKeys, error, cost, models, lastIntentChangeAt`.
-
-### useFeatures Hook
-- *Earlier scan.* `src/renderer/useFeatures.js` (53 lines): feature docs, project settings and story links; subscribes to `features:changed`.
-
-### Renderer Utilities
-- *Exports re-checked in this scan.* `src/renderer/format.js`: status labels via `labelOf`, `formatTime`, `formatDuration`, `isInFlight`, `shortModel` (strips `claude-`), `stageTitle`, `stagePosition`, `formatUsd`, `formatCost`, `formatTokens`, `tokenBreakdown`, `withSlots(key, elements)`. `src/renderer/tokens.js`: `token(name)`, `xtermTheme()`.
-
-### Renderer Bootstrap
-- **File**: `src/renderer/main.jsx` (26 lines). Loads Antonio 400/600/700 and `theme.css`; sets `<html lang>` on every `languageChanged`; asks `getLanguage()`, switches i18n, then renders `App` inside `I18nextProvider`. On failure the bundled Swedish default stays.
-
-### Renderer Entry
-- *Earlier scan.* `src/renderer/index.html`: CSP, `<title>`, `div#root`, `main.jsx`.
-
-## Shared modules
-
-### Shared i18n
-- **File**: `src/shared/i18n.js` (55 lines). One i18next instance per process with `i18next-icu`, bundled `sv` and `en`, start language `sv`, `fallbackLng: 'en'`, `initAsync: false`, `returnEmptyString: false`, missing key → the key, dev-only missing-key warning once per key and language.
-- **Exports**: `LANGUAGES`, `LANGUAGE_SETTINGS`, `resolveLanguage`, `t`, `locale`, default instance.
-- **Used by**: almost every main and renderer module (`t('errors.…')` in main, `useTranslation()` or `t` in the renderer).
-- **Tests**: `tests/main/i18n.test.js`, `tests/main/i18nKeys.test.js`.
-
-### Locale Files
-- **Files**: `src/shared/locales/en.json`, `src/shared/locales/sv.json` (523 lines each, identical key sets). Groups `common, app, intents, pipeline, cost, github, terminal, features, setup, settings, menu, errors`.
-- **Harness-specific texts** (en): `terminal.claude`, `terminal.tabName.claude`, `terminal.quickTitle` ("…into the claude tab…"), `menu.claude`, `intents.resume.busy`, `setup.done` ("Claude restarts…"), `setup.featureDocsNew`, `settings.alertsLegend` ("Questions from Claude"), `app.notification.title` ("{project}: Claude is waiting for your answer"), the question popup's waiting and answer texts, `github.conflictState`. `setup.harnessesLabel` is "Other harnesses:".
-- **Rules** (enforced by `i18nKeys.test.js`): the same keys in both files, no empty text, every literal `t('…')` key present, the same ICU placeholders per key, valid ICU.
-
-### App Name Module
-- **File**: `src/shared/appName.js` (7 lines). `APP_NAME 'T.H.A.D.E.U.S.'`, `APP_FULL_NAME`, `APP_TAGLINE`, `APP_SHORT 'THADEUS'`, `APP_VENDOR 'Auctum'`. Imported by `App.jsx`, `Splash.jsx`, `src/main/menu.js` and `src/main/index.js`.
-
-## Preload and main
-
-### Preload Bridge
-- **File**: `src/preload/index.js` (63 lines). `call(channel)` = `ipcRenderer.invoke`; `subscribe(channel)` forwards only the payload and returns `removeListener`. No generic `invoke`/`send`.
-- **API**: `platform`, 35 invoke functions and 10 subscriptions (list in `api-documentation.md`); new: `getLanguage`.
-
-### IPC Router
-- **File**: `src/main/ipc.js` (317 lines).
-- **Project table**: `Map` projectId → `{root, space, watcher, setupWatcher, featuresWatcher, featuresKey, sender, models, setupInfo, questions}`. `projectId` is a fresh UUID on every open.
-- **Watching**: `project:open` validates the root, detects AI-DLC, then `watchSpace` (AI-DLC) or `watchForSetup` (plain folder), and starts `syncFeaturesWatch` without waiting.
-- **Caches per opened project**: `p.models` (promise from `getConfiguredModels`), `p.setupInfo` (from `setup:info`, used by `setup:command` to validate plugins).
-- **pty**: `pty:spawn` passes `{projectId, root: project(projectId).root, kind, cols, rows, sender}`. The renderer cannot name a root or a command.
-- **Settings**: `settings:set` → `setSettings`, then `setLanguageFromSettings`; rebuilds the menu when the language changed. `projectSettings:set` forwards only `featureDocs` and `featuresPath`.
-- **Questions**: `startedWith` set, `activeProjectId`, `allQuestions`, `publishQuestions`, `refreshQuestions` → `notifyQuestions`.
-- **`registerIpc()`** logs and rethrows; **`shutdown()`** kills every pty and closes every watcher.
-
-### Question Service
-- **Files**: `src/main/questions.js` (59 lines, skimmed), `src/main/notify.js` (48 lines, read).
-- **`notify.js`**: `notificationTitle(q)` = `app.notification.title` ("{project}: Claude is waiting for your answer"); `gateText(q)`; `notificationBody(q)` cut to about 120 characters; `notifyQuestions(fresh, {settings, win, activeProjectId})` shows each id once, skips the shown project in a focused window, honours `questionAlerts` and `notificationSound`, and on click restores the window and sends `questions:focus`.
-- **`questions.js`**: derives waiting questions and gates from audit events (`CLOSERS`, `parseOptions`); harness-neutral (reads only `aidlc/` audit shards).
-- **Tests**: `tests/main/questions.test.js`, `tests/main/notify.test.js` (not read).
-
-### Project Service
-- **File**: `src/main/projectService.js` (246 lines).
-- **Detection**: `detectProject(root)` requires `aidlc/spaces/` with at least one space (`errors.notAidlc`, `errors.noSpace`); active space from `aidlc/active-space`, else `default`, else the first. It does not look at harness folders.
-- **Intent list**: `loadIntentList(root, space, onlyDirs)` merges `intents.json`, folders on disk and `active-intent`; per intent reads `aidlc-state.md` and `project-description.json`; keeps the last good index when `intents.json` is half written.
-- **Detail**: `loadIntentDetail` → `buildDetail` (state, runtime graph, `.aidlc-engine/active-directive.json`, audit events, unit statuses, artifact files); returns the last detail with `stale: true` on error.
-- **Questions**: `loadPendingQuestions(project, onlyDirs)` reads audit logs only for in-progress intents, cached per intent.
-- **Cost**: `loadCost(root)` reads `LEDGER_PATH = aidlc/.aidlc-sessions/usage-ledger.json`; never throws; keeps the last good ledger with `stale` and `warning`.
-- **Caches**: `listCache`, `detailCache`, `costCache`, `questionCache` (`ponytail:` unbounded).
-
-### Project Access
-- **File**: `src/main/projectAccess.js` (75 lines). `openRoot(dir)` (realpath, must be a folder), `resolveInRoot(root, rel)` (rejects absolute, `..`, symlink escapes, checked twice), `readText`, `readJsonSafe` (never throws: `{ok, value}` or `{ok: false, missing, error}`), `listDir` (missing → `[]`), `exists`. No write calls.
-- **Tests**: `tests/main/projectAccess.test.js` (skimmed).
-
-### PTY Manager
-- **File**: `src/main/pty.js` (85 lines).
-- **Kinds**: `shellArgs(kind)`: `claude` → `$SHELL -l -i -c claude`; `shell` → `$SHELL -l`; anything else throws before node-pty loads. `-i` makes zsh/bash read the interactive rc files, where nvm usually lives.
-- **Spawn**: `cwd` = project root; env = `process.env` plus `TERM=xterm-256color`, `COLORTERM=truecolor`; size clamped (default 100x30); sessions keyed by UUID with `projectId` and `sender`; `pty:data` and `pty:exit` pushed after an `isDestroyed()` check.
-- **Loading**: node-pty is imported on first spawn and cached only after success, so a failed load is retried.
-- **Tests**: `tests/main/pty.test.js` (lazy load, retry, no load at import; error message asserted in Swedish), `tests/main/ptyPerms.test.js`.
-- **US-0801**: the one place a harness CLI is started. A new harness is a new entry in `shellArgs` (or a table it reads), chosen by a validated id.
-
-### Exec Runner
-- **File**: `src/main/exec.js` (47 lines). `defaultExec` (promisified `execFile`), `loginPath(exec)` (PATH from `$SHELL -l -i -c` with a marker, once per process, falls back to the app's PATH), `runFixed(file, args, {cwd, timeout = 10000, exec})` (rejects non-string arguments before running).
-- **US-0801**: fits `<cli> --version` as the AC asks (fixed arguments, no shell). Callers decide parallelism and caching.
-
-### Settings Store
-- **File**: `src/main/settings.js` (102 lines). The only file the app writes: `<userData>/settings.json`, userData pinned to `aidlc-dash` by Main Entry.
-- **`sanitize()`**: keeps `openProjects`, `recentProjects`, `activeProject`, `animations`, `fullscreen`, `questionAlerts`, `notificationSound`, `language`, `projectSettings` (at most 200, each through `sanitizeProject`). Every other key is dropped.
-- **Per project**: `PROJECT_DEFAULTS {featureDocs: 'auto', featuresPath: 'docs/FEATURES.md'}`; `getProjectSettings(root)`; `setProjectSettings(root, partial)` validates each given field and merges.
-- **Writes**: one at a time through a promise queue; a failed write is reported to its caller and does not block the next.
-- **Tests**: `tests/main/settings.test.js` (project settings, animations, fullscreen, question alerts, language, concurrent writes).
-
-### Setup Helper
-- **File**: `src/main/setup.js` (85 lines).
-- **`getSetupInfo(root, {exec})`**: lists root folders matching `OTHER_HARNESSES = ['.kiro', '.codex', '.cursor', '.aidlc']` (not `.claude/`, not `.github/`); git state; `aidlc --version` (missing → `{installed: false}` and stop); dry run `aidlc --project-dir <root> config --harness claude --dry-run` parsed by `parsePreview`; plugins from `aidlc config project --show --json`. Never throws for a missing tool.
-- **`buildSetupCommand(options, availablePlugins)`**: `git init -b main` (optional) `&& aidlc --project-dir . config --harness claude --yes` `&& aidlc config project --plugins … --yes` `&& aidlc config models --preset … --project --yes`; rejects plugins not in the list read and unknown presets.
-- **Tests**: `tests/main/setup.test.js` (asserts the `--harness claude` strings and `harnesses: ['.kiro/']`).
-
-### Model Config Reader
-- **File**: `src/main/models.js` (66 lines). `getConfiguredModels(root)`: `aidlc config models --show --json --harness claude` → `{source: 'aidlc-config', agents}`; fallback the `model:`/`effort:` frontmatter of `.claude/agents/aidlc-*-agent.md` → `agent-files`; else `none`. Never throws; the error text is Swedish and not translated (line 56).
-- **Tests**: `tests/main/configuredModels.test.js` (asserts the `--harness claude` arguments).
-- **US-0801**: Claude-only by construction; the model table needs a harness label or a per-harness source.
-
-### Ledger Parser
-- **File**: `src/main/parsers/ledger.js` (177 lines). Pure; the renderer imports `compareModels`.
-- **`summarizeLedger(ledger, intents)`**: workflows keyed `intent:<uuid>` map to intents; `record:…/legacy` nodes are summed as legacy; per intent `total`, `byStage`, `byAgent`, `byModel`, `stageModels`, `agentModels`, `complete`; `byScope` with averages; `timeline`; project totals. Only the ledger's own `usd` is used. Reads no harness field.
-- **`agentModels`**: attributes models to agents only where certain (one model, one agent, or `main` plus one).
-- **`compareModels(configured, actualByAgent, {onlyParticipants})`**: `inherit` means the session's (`main`) model; `sameModel` normalises by stripping `claude-` and a `[…]` suffix.
-- **Tests**: `tests/main/ledger.test.js` (not read in full), `tests/renderer/CostPanel.test.jsx`.
-
-### Main i18n
-- **File**: `src/main/i18n.js` (13 lines). `currentLanguage()`; `setLanguageFromSettings(settings)` resolves `language` with `app.getLocale()` and switches synchronously (bundled resources). Called at startup (`index.js:70`) and after every `settings:set`.
+## Main process (`src/main/`)
 
 ### Main Entry
-- *Earlier scan, two lines re-read.* `src/main/index.js` (97 lines). userData pinned to `aidlc-dash` (line 10); `windowOptions(settings, platform)`; `whenReady`: language, Dock icon in dev, `registerIpc()`, `applyMenu(null)`, `createWindow().then(applyMenu)`.
+- **Path**: `src/main/index.js`
+- **Responsibility**: app lifecycle; userData kept at `aidlc-dash`; `windowOptions()` (sandboxed, contextIsolation, fullscreen from settings); blocks navigation and new windows; close guard; daily update check; shutdown kills ptys and watchers.
+- **Depends on**: IPC Router, App Menu, Settings Store, Tools Registry, Main i18n, App Name Module.
 
-### App Menu
-- *Earlier scan, terminal submenu re-read.* `src/main/menu.js` (173 lines). Labels through `t('menu.…')`. Terminal submenu: `menu.claude` → `terminal {action: 'claude'}`, `menu.shell`, `menu.restartTab`, enabled when a project is open. `parseMenuState` accepts only `{hasProject, isAidlc, showFeatures}`. **Tests**: `tests/main/menu.test.js`.
+### IPC Router
+- **Path**: `src/main/ipc.js` (709 lines)
+- **Responsibility**: the 71 invoke handlers; per-project state (`projects` map: root, space, watchers, sender, cached models/harnesses/setup info/previews); question baseline (`startedWith`), `allQuestions()`, `publishQuestions()`, `refreshQuestions()`; space, feature-docs, config and open-file watchers; window close confirmation; fixed external URL table.
+- **Depends on**: nearly every main module.
 
-### File Watcher
-- *Earlier scan.* `src/main/watcher.js` (165 lines): `watchIntents` (debounce 300 ms, max 800 ms; `dirNames`, `indexChanged`, `costChanged`), `watchFiles`, `watchForAidlc`.
+### Project Service
+- **Path**: `src/main/projectService.js`
+- **Responsibility**: detect AI-DLC (`aidlc/spaces/`), list spaces, cached intent list with per-intent summaries (`activityAt` from the audit folder mtime), intent detail, cost from the ledger, `workingAgents()`, `inProgress()`, `loadPendingQuestions()` with a per-intent cache.
+- **Depends on**: Project Access, all parsers, Questions Parser.
 
-### Audit Parser
-- *Earlier scan.* `src/main/parsers/audit.js`: `parseAudit`, `mergeAudits`, `categoryOf`, `NOISY_EVENTS`.
+### Project Access
+- **Path**: `src/main/projectAccess.js`
+- **Responsibility**: root-confined, read-only file access (`openRoot`, `resolveInRoot` with realpath checks, `readText`, `readJsonSafe`, `listDir`, `newestMtime`, `exists`). Contains no write calls.
+
+### Questions Parser
+- **Path**: `src/main/questions.js`
+- **Responsibility**: `parseOptions()` (JSON, comma, pipe, semicolon lists; `Q<n>:` batch summaries; strips descriptions in parentheses) and `pendingQuestions()` (open/close rules from audit events; see `api-documentation.md` section 4). Pure.
+
+### Notifications
+- **Path**: `src/main/notify.js`
+- **Responsibility**: system notification per new question id, once per app run, unless the window is focused on that project; honours `questionAlerts` and `notificationSound`; a click restores the window and sends `questions:focus`. Holds `gateText`/`askText` (duplicated in QuestionPopup).
+- **Depends on**: Shared i18n, electron `Notification`.
+
+### PTY Manager
+- **Path**: `src/main/pty.js`
+- **Responsibility**: lazy `node-pty` load; spawn agent (`$SHELL -l -i -c <cli>`, CLI from Harness Table by validated id) or shell (`$SHELL -l`); stream `pty:data`/`pty:exit`; write (string only), resize (clamped), kill per session, per project, all.
+- **Depends on**: Harness Table, Tools Registry, Shared i18n.
+
+### Exec Runner
+- **Path**: `src/main/exec.js`
+- **Responsibility**: `runFixed()` (execFile, no shell, string args, timeout, login-shell PATH) and `loginPath()` (probed once with a marker).
+
+### Tools Registry
+- **Path**: `src/main/tools.js`
+- **Responsibility**: the three tools (`aidlc`, `claude`, `shell`): saved paths, PATH lookup, `--version` probes, validation before saving.
+- **Depends on**: Exec Runner.
+
+### Harness Detection
+- **Path**: `src/main/harness.js`
+- **Responsibility**: `detectHarnesses()` per project: folder/file markers (and `opencode.json(c)` mentioning aidlc) plus `<cli> --version`; never rejects. Re-exports the table helpers.
+- **Depends on**: Harness Table, Exec Runner, Tools Registry.
+
+### Settings Store
+- **Path**: `src/main/settings.js`
+- **Responsibility**: the app's `settings.json` in userData; sanitising of every key (`questionAlerts`, `notificationSound`, `language`, `animations`, `fullscreen`, `toolPaths`, `defaultProjectFolder`, `updates`, per-root `projectSettings` with `harness`/`harnessTabs`); serialised writes.
+- **Depends on**: Harness Table, Features Parser, Tools Registry.
+
+### Watcher
+- **Path**: `src/main/watcher.js`
+- **Responsibility**: chokidar watchers: `watchIntents` (intents folder, ignoring `.aidlc-engine/` except `active-directive.json`, plus the ledger), `watchFiles` (named files/folders, appear-later safe), `watchOpenFiles` (editor), `watchForAidlc` (first space appears). Debounce 300 ms, max wait 800 ms.
+
+### Setup Helper
+- **Path**: `src/main/setup.js`
+- **Responsibility**: prerequisites and `--dry-run` preview for a harness; runs `git init`, `aidlc config --harness`, plugins and preset steps after a matching preview; one run per root at a time.
+
+### AI-DLC Config Reader
+- **Path**: `src/main/aidlcConfig.js`
+- **Responsibility**: read-only configuration per harness (`aidlc config <section> --show --json --harness`, `config list --json`, plans); `checkHarness()`; `CONFIG_WATCH_PATHS`.
+
+### AI-DLC Config Writer
+- **Path**: `src/main/aidlcWrite.js`
+- **Responsibility**: tier 1 `aidlc config`/`engine config set`/`config flags` commands from fixed tables, with dry runs; tier 2 Guard Policy lock in a memory file after a diff, only if unchanged since preview.
+- **Depends on**: Config Tables, Exec Runner, Project Access.
+
+### Plans Service
+- **Path**: `src/main/plans.js`
+- **Responsibility**: own (`aidlc/scopes/`) and stock plans, stages from grid blocks or the compiled scope grid, save (`engine scope save`), tier-2 edit/delete of own plans then `engine graph compile`.
+
+### Model Choice
+- **Path**: `src/main/modelChoice.js`
+- **Responsibility**: model/effort options per harness (claude, opencode), command building and validation, preview/apply/check, cost estimate from the ledger's own prices.
+
+### Model Config Reader
+- **Path**: `src/main/models.js`
+- **Responsibility**: configured model per agent from `aidlc config models --show --json --harness claude`, else `.claude/agents/aidlc-*-agent.md` frontmatter; `frontmatterField()`.
 
 ### Git Reader
-- *Earlier scan.* `src/main/git.js`: status, fetch, remote changes, remote file, conflicts; argument checks; through `runFixed`.
+- **Path**: `src/main/git.js`
+- **Responsibility**: read-only git for Refresh: status split into `aidlc/` and other, fetch, remote changes under `aidlc/`, read a remote file from git objects, conflicts.
 
-### Feature Docs Loader
-- *Earlier scan.* `src/main/features.js` and `src/main/parsers/features.js` (`isValidFeaturesPath`, `DEFAULT_FEATURES_PATH`).
+### Updater
+- **Path**: `src/main/updater.js`
+- **Responsibility**: once-a-day check of `tochman/aidlc-dash` releases via `gh`, asset pick per platform, own-asset check, SHA256SUMS verification, install (mac: hdiutil/ditto/xattr, admin via osascript; Linux: pkexec dpkg), relaunch.
 
-### Parsers
-- *Earlier scan.* `src/main/parsers/`: `state.js`, `pipeline.js`, `audit.js`, `intents.js`, `runtimeGraph.js`, `units.js`, `ledger.js` (see Ledger Parser), `features.js`.
+### File Editor Service
+- **Path**: `src/main/fileWrite.js`
+- **Responsibility**: editor reads with mtime/hash/readOnly reason; atomic write only if the hash still matches (else conflict); engine-owned paths (harness folders, `.opencode`, AI-DLC state, audit, intents.json, `.aidlc-*`) refused; file tree via `git ls-files`.
 
-## Build, CI and test
+### Features Loader
+- **Path**: `src/main/features.js`
+- **Responsibility**: loads `FEATURES.md` and linked epic files (root-confined), watch paths, story ids mentioned by each intent.
 
-### Packaging Config
-- *Earlier scan, before US-0406 was built; `package.json` skimmed in this scan.* `package.json` now has `name: thadeus`, `productName: THADEUS`, `version: 0.2.0`, dependencies including `i18next`, `i18next-icu`, `intl-messageformat`, `react-i18next`. `electron-builder.yml` (not re-read): macOS universal `dmg` (unsigned), Linux `deb` x64, `asarUnpack node_modules/node-pty/**`.
+### App Menu
+- **Path**: `src/main/menu.js`
+- **Responsibility**: menu template (pure `buildMenuTemplate`), commands sent as `menu:command`, `menu:state` parsing, docs and issues URLs.
+
+### Main i18n
+- **Path**: `src/main/i18n.js`
+- **Responsibility**: sets main's language from the setting and OS locale.
+
+### Audit Parser
+- **Path**: `src/main/parsers/audit.js`
+- **Responsibility**: parses shards into events with stable keys, merges shards by time, `categoryOf()`, `NOISY_EVENTS`. Pure (also bundled into the renderer by `Timeline.jsx`).
+
+### State Parser
+- **Path**: `src/main/parsers/state.js`
+- **Responsibility**: `aidlc-state.md` sections and stage checkboxes, plan/scope/depth/test strategy/current stage.
+
+### Runtime Graph Parser
+- **Path**: `src/main/parsers/runtimeGraph.js`
+- **Responsibility**: normalises `runtime-graph.json` stages and Bolt DAG.
+
+### Pipeline Merger
+- **Path**: `src/main/parsers/pipeline.js`
+- **Responsibility**: merges state checkboxes with graph timings, flags mismatches, counts done/executed.
+
+### Intents Merger
+- **Path**: `src/main/parsers/intents.js`
+- **Responsibility**: merges `intents.json` with folders on disk, marks missing ones and the active intent.
+
+### Units Status
+- **Path**: `src/main/parsers/units.js`
+- **Responsibility**: unit status from `UNIT_STARTED`/`UNIT_COMPLETED`.
+
+### Ledger Parser
+- **Path**: `src/main/parsers/ledger.js`
+- **Responsibility**: `summarizeLedger()` per project/intent/stage/agent/model/scope, `agentModels()` attribution, `compareModels()`, `agentName()`. Pure (also used by the renderer).
+
+### Features Parser
+- **Path**: `src/main/parsers/features.js`
+- **Responsibility**: `parseOverview`, `parseEpic`, status markers, `isValidFeaturesPath`, `storyIdsIn`. Pure (also used by the renderer).
+
+## Preload
+
+### Preload Bridge
+- **Path**: `src/preload/index.js`
+- **Responsibility**: `window.bridge` with 87 named members (see `api-documentation.md` section 1). The question members are read-only: answering goes through `ptyWrite`.
+
+## Shared (`src/shared/`)
+
+### Harness Table
+- **Path**: `src/shared/harnesses.js`
+- **Responsibility**: the six harnesses (claude, opencode selectable; codex, kiro, cursor, copilot setup-only) with markers, CLI, `commands.aidlc`, `quietMs` (opencode 4000), `pickerKeys` (Claude Code only), `perAgentModels`; helpers `selectableHarness`, `setupHarness`, `defaultSetupHarness`, `resolveHarness`, `scopesDir`, `harnessCommand`. Adding a harness starts here.
+
+### Shared i18n
+- **Path**: `src/shared/i18n.js`
+- **Responsibility**: one i18next instance per process with ICU, `sv`/`en`, English fallback, `resolveLanguage`, `t`, `locale`.
+
+### Config Tables
+- **Path**: `src/shared/configTables.js`
+- **Responsibility**: fixed tables for project settings, active-work settings, guard switches, guard lock layers/modes, efforts, presets, groups, Claude models, applied effort.
+
+### App Name Module
+- **Path**: `src/shared/appName.js`
+- **Responsibility**: the app name in every form.
+
+### Plan Name Rule
+- **Path**: `src/shared/planName.js`
+- **Responsibility**: `validPlanName()` shared by the Plans view and main.
+
+### Locale Files
+- **Path**: `src/shared/locales/sv.json`, `src/shared/locales/en.json` (749 texts each, same keys)
+- **Responsibility**: every UI text, grouped by view; `app.question.*` holds the popup texts.
+
+## Renderer (`src/renderer/`)
+
+### Renderer Bootstrap
+- **Path**: `src/renderer/main.jsx`, `src/renderer/index.html`
+- **Responsibility**: fonts and theme, language from main before the first render, `<html lang>`; CSP.
+
+### App Shell
+- **Path**: `src/renderer/App.jsx` (603 lines)
+- **Responsibility**: project tabs and restore, left arm and header, view per project, settings view, menu commands, docs/about/update dialogs; question state (`questions`, `seenQuestionsRef`, popup open/focus), `sendAnswer()` and `answerInAgent()` as `terminalCommand`s; `askingIntents` per project.
+- **Depends on**: ProjectView, QuestionPopup, SettingsView, dialogs, Harness Table.
+
+### ProjectView
+- **Path**: `src/renderer/ProjectView.jsx`
+- **Responsibility**: one `TerminalProvider` per project; harness resolution (saved choice, tabs, detection, `harnessProblem`); reports `harness`, `busy`, `showFeatures`, `intentCount` to App; runs `terminalCommand` (`answer`, `restart`, show tab); setup done offer; view switching; editor tabs.
+
+### TerminalContext
+- **Path**: `src/renderer/TerminalContext.jsx`
+- **Responsibility**: shared terminal control per project: tab registry (`agent:<id>`, `shell`, alias `agent` = last agent tab used), states, `type`, `sequence`, `restart`, `anyBusy`, `asking`, `running`, `busyAgents`, pending-Enter marks, and `answer(q, answer)` (waits for the picker, writes the picker's keys, or own text into the last agent tab when no picker shows).
+- **Depends on**: Terminal Control, Picker Reader.
+
+### TerminalPanel
+- **Path**: `src/renderer/TerminalPanel.jsx`
+- **Responsibility**: `TermSession` (one xterm bound to one pty: spawn, data, exit, resize, drop files, `screen()` via `screenLines()` with 40 rows of scrollback and wrapped rows joined); tab bar with states; quick commands select; resize handle; two-busy warning; pending-Enter and error footer.
+- **Depends on**: TerminalContext, Terminal Control, Harness Table, Theme Tokens.
+
+### Terminal Control
+- **Path**: `src/renderer/terminalControl.js`
+- **Responsibility**: `createActivity` (`exited`/`busy`/`idle` from output timing, quiet 1.5 s), `waitFor`, `runSequence`, shell quoting for dropped paths. Pure.
+
+### Picker Reader
+- **Path**: `src/renderer/picker.js`
+- **Responsibility**: `readPicker()` reads Claude Code's numbered picker from screen rows (cursor `❯`, indented descriptions, rule, `□` header chips for batches); `resolveAnswer()` maps a logged option to the picker's key only when every logged option is shown; `waitForAnswer()` retries for 3 s. Pure.
+
+### QuestionPopup
+- **Path**: `src/renderer/QuestionPopup.jsx`
+- **Responsibility**: modal `<dialog>` with the question as plain text, numbered choices (gate: Approve / Request changes) when the harness has `pickerKeys`, an own-answer field, batch note, pager, Open the terminal, Close; calm then red after 20 s (`OVERDUE_MS`); "may not have arrived" after 10 s (`ARRIVAL_MS`).
+
+### ResumeButton
+- **Path**: `src/renderer/ResumeButton.jsx`
+- **Responsibility**: Resume an in-flight intent with the harness's AI-DLC command; waits while an agent works, asks, runs the work, or an outside agent wrote the audit log in the last 10 minutes.
+
+### IntentList
+- **Path**: `src/renderer/IntentList.jsx`
+- **Responsibility**: intents with search, status and plan filters, sort by date/cost/name, row cost and step dots, Resume on the selected row.
+
+### IntentDetail
+- **Path**: `src/renderer/IntentDetail.jsx`
+- **Responsibility**: intent header, progress dots, request text, tabs (pipeline, timeline, units, cost, files), readout column with live tokens.
+
+### Pipeline
+- **Path**: `src/renderer/Pipeline.jsx`
+- **Responsibility**: phases and stage blocks with status, cost, model and files; skipped stages behind Show.
+
+### Timeline
+- **Path**: `src/renderer/Timeline.jsx`
+- **Responsibility**: virtualised audit events, filters, noise toggle, new-event counter, keyboard navigation.
+
+### BoltDag
+- **Path**: `src/renderer/BoltDag.jsx`
+- **Responsibility**: SVG unit DAG by batches with status.
+
+### ArtifactReader
+- **Path**: `src/renderer/ArtifactReader.jsx`
+- **Responsibility**: artifact tree and `FileContent` (Markdown with `skipHtml`, links only http(s), pretty JSON); reused by Features, Refresh, Docs, Update and the editor preview.
+
+### CostPanel
+- **Path**: `src/renderer/CostPanel.jsx`
+- **Responsibility**: project cost total, readout, chart, per-model/agent/scope tables, configured vs actual models.
+
+### CostTab
+- **Path**: `src/renderer/CostTab.jsx`
+- **Responsibility**: one intent's cost by stage/agent/model and participant models; `CostTable`, `ModelTable`, `CostLabel`.
+
+### TokenView
+- **Path**: `src/renderer/TokenView.jsx`
+- **Responsibility**: live token meters and rate waveform while an intent is in flight.
+
+### Token Flow
+- **Path**: `src/renderer/tokenFlow.js`
+- **Responsibility**: token history, rate, meter levels. Pure.
+
+### RefreshPanel
+- **Path**: `src/renderer/RefreshPanel.jsx`
+- **Responsibility**: git status, fetch, remote changes under `aidlc/`, pull/rebase choices typed into the shell tab, conflicts.
+
+### SetupAidlc
+- **Path**: `src/renderer/SetupAidlc.jsx`
+- **Responsibility**: set up AI-DLC or add a harness: prerequisites, harness choice, preview, advanced options, apply, switch offer.
+
+### ProjectSettingsDialog
+- **Path**: `src/renderer/ProjectSettingsDialog.jsx`
+- **Responsibility**: feature-docs mode and path, agent-terminal harness, side-by-side tabs, add harness, open Configuration; `confirmHarnessSwitch()`.
+
+### SettingsView
+- **Path**: `src/renderer/SettingsView.jsx`
+- **Responsibility**: app settings: tools, appearance (animations, fullscreen, language, question alerts, notification sound), projects, about and update cleanup.
+
+### ConfigView
+- **Path**: `src/renderer/ConfigView.jsx`
+- **Responsibility**: AI-DLC configuration per installed harness, working agents, live reload on `config:changed`.
+
+### ConfigEdit
+- **Path**: `src/renderer/ConfigEdit.jsx`
+- **Responsibility**: `ChangePanel` (command, dry run, apply), active-work editor, defaults editor, guard switches, guard lock, model picker.
+
+### PlansView
+- **Path**: `src/renderer/PlansView.jsx`
+- **Responsibility**: own and stock plans with stages; compose/start/steps requests typed into the agent tab; save, edit, delete through main.
+
+### FeaturesView
+- **Path**: `src/renderer/FeaturesView.jsx`
+- **Responsibility**: epics and stories from the feature docs with filters, story detail and intent links.
+
+### Editor
+- **Path**: `src/renderer/editor/` (`EditorPanel.jsx`, `EditorContext.jsx`, `ConflictDialog.jsx`, `FileTree.jsx`, `MonacoPane.jsx`, `monacoSetup.js`)
+- **Responsibility**: editor tabs per project with dirty tracking, hash-checked saves and conflicts, open-file watching, Markdown preview, lazy Monaco with an LCARS theme, file tree.
+
+### UpdateNotice
+- **Path**: `src/renderer/UpdateNotice.jsx`
+- **Responsibility**: update offer, progress, install outcome; asks first while an agent is busy.
+
+### AboutDialog
+- **Path**: `src/renderer/AboutDialog.jsx`
+- **Responsibility**: About window in the LCARS panel design with version and platform codes.
+
+### DocsDialog
+- **Path**: `src/renderer/DocsDialog.jsx`
+- **Responsibility**: the project's `docs/README.md` as Markdown, with Edit.
+
+### Splash
+- **Path**: `src/renderer/Splash.jsx`
+- **Responsibility**: start-up splash between 0.9 and 4 s.
+
+### LCARS Primitives
+- **Path**: `src/renderer/Lcars.jsx`, `src/renderer/AuctumMark.jsx`
+- **Responsibility**: bars, frame, hairlines, dots, readout; the Auctum mark SVG.
+
+### Format Helpers
+- **Path**: `src/renderer/format.js`
+- **Responsibility**: translated status labels, time/duration/cost/token formatting, `stagePosition`, `withSlots`.
+
+### Theme Tokens
+- **Path**: `src/renderer/tokens.js`
+- **Responsibility**: reads CSS tokens from `:root` for xterm's theme.
+
+### useProject
+- **Path**: `src/renderer/useProject.js`
+- **Responsibility**: intent list, detail, cost and models for one project; partial reload on `project:changed`; new-event highlight.
+
+### useFeatures
+- **Path**: `src/renderer/useFeatures.js`
+- **Responsibility**: feature docs, project settings and story links; reload on `features:changed`.
+
+### Feature Docs Prompt
+- **Path**: `src/renderer/featureDocsPrompt.js`
+- **Responsibility**: the one-line request typed into the agent tab to create feature docs.
+
+### Theme Stylesheet
+- **Path**: `src/renderer/theme.css`
+- **Responsibility**: LCARS tokens on `:root`, component styles, question-popup calm/overdue styles, `data-motion` rules (skimmed in this run).
+
+## Build, CI and tests
+
+### Release Workflow
+- **Path**: `.github/workflows/release.yml`
+- **Responsibility**: on PR to `main` and `v*.*.*` tags: tag/version check, `npm ci`, `vitest run tests/`, mac universal .dmg, Linux .deb on ubuntu-22.04 with the glibc check; on tags a GitHub Release with `SHA256SUMS.txt`.
 
 ### Build Scripts
-- *Earlier scan.* `scripts/make-icon.cjs`, `scripts/fix-pty-perms.cjs`, `scripts/check-glibc.mjs`.
-
-### Release Pipeline
-- *Earlier scan.* `.github/workflows/release.yml`: `verify` (tag equals `package.json` version, `npm ci`, `npx vitest run tests/`), `build-mac`, `build-linux` (glibc check), `release` (`gh release create`).
-
-### Project README
-- *Earlier scan.* `README.md`: start, Gatekeeper, usage, security, settings paths.
+- **Path**: `scripts/check-glibc.mjs`, `scripts/fix-pty-perms.cjs`, `scripts/make-icon.cjs`, `electron.vite.config.mjs`, `electron-builder.yml`, `vitest.config.mjs`
+- **Responsibility**: bundling, packaging, glibc and foreign-prebuild check, spawn-helper permissions, icon rendering, test projects.
 
 ### Test Suite
-- **Folders**: `tests/main/` (22 files, node), `tests/renderer/` (16 files, jsdom, with `setup-i18n.js` switching to Swedish), `tests/fixtures/`.
-- **In-scope tests read in this scan**: `pty.test.js`, `setup.test.js`, `settings.test.js`, `i18n.test.js`, `i18nKeys.test.js`, `TerminalPanel.test.jsx`, `ResumeButton.test.jsx`, `SetupAidlc.test.jsx`, `CostPanel.test.jsx`, `setup-i18n.js`.
-- **Patterns**: injected `exec` fakes for main modules (`fakeExec` answering `"<file> <args>"`); `vi.doMock('node-pty')` with `vi.resetModules()`; stubbed xterm and `window.bridge` for the terminal; `vi.mock('TerminalContext.jsx')` with a fake `useTerminal()` for ResumeButton and SetupAidlc; real temp folders under `tests/.tmp/`; renderer assertions on Swedish texts.
-- **Claude-specific assertions** that US-0801 will touch: see `code-quality-assessment.md`.
+- **Path**: `tests/` (32 main and 27 renderer test files, fixtures)
+- **Responsibility**: unit and component tests; see `code-quality-assessment.md` for coverage of the intent area.

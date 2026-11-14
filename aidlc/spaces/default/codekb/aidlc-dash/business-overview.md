@@ -1,53 +1,52 @@
-# Business Overview: aidlc-dash (T.H.A.D.E.U.S.)
+# Business Overview
 
 ## Purpose
 
-T.H.A.D.E.U.S. (*Transformative Human-AI Development Environment for Ubiquitous Systems*; tagline *AI-driven software development, under human direction.*) is an Electron desktop app for developers at Auctum Solutions AB who work with AI-DLC. The repo is still named `aidlc-dash`. The app shows the state of one or more AI-DLC projects as a "bridge console": intents and their pipeline of stages, a live timeline from the audit logs, the unit DAG, cost per intent and model, and the project's feature docs. Next to these views sits an embedded terminal with two tabs per project: the agent tab (today always `claude`) and a login `shell`.
+T.H.A.D.E.U.S. (Transformative Human-AI Development Environment for Ubiquitous Systems, repository `aidlc-dash`, package `thadeus` 0.2.4) is a desktop "bridge console" for software projects that use AI-DLC (AI-Driven Development Life Cycle). It is built by Auctum Solutions AB and released under the MIT licence. It runs on macOS (universal .dmg) and Linux (x64 .deb).
 
-The app is read-only towards AI-DLC files. Anything that changes something (`/aidlc` commands, `git pull`, AI-DLC setup) is typed into a visible terminal tab and runs only when the person presses Enter. The only file the app writes is its own `settings.json` in userData (folder `aidlc-dash`).
+The app puts three things in one window per project:
 
-## Users
+1. **A view of the AI-DLC work**: intents, their stage pipeline, the audit timeline, Bolt/Unit DAG, artifacts, cost and tokens, feature docs (epics and stories).
+2. **Embedded agent terminals**: one tab per selected harness (Claude Code and/or opencode) plus a login shell, all in the project root.
+3. **Steering without slash commands**: Resume an intent, answer AI-DLC's questions from a popup, refresh from GitHub, set up AI-DLC, change AI-DLC configuration, plans and models, edit files.
 
-- Developers who drive AI-DLC from a coding agent and want to see what the agents do while they work. Today that agent is Claude Code. EPIC-08 opens this to opencode, Codex CLI and Kiro CLI.
-- The console stays open all day, often on its own screen, so readability, contrast, calm motion and fullscreen matter (EPIC-04).
-- People often have several projects open and work in other windows, so waiting questions show as a popup and a system notification (US-0505).
-- Swedish and English speakers. Since US-0701 the interface follows the `language` setting (auto from the OS locale, or sv/en).
+## Guiding principle
 
-## Main functions (per epic in `docs/FEATURES.md`)
+The app reads AI-DLC's files and leaves the writing to AI-DLC. Actions that change the workflow are either typed into the visible agent or shell terminal for the person to confirm, or run through the official `aidlc` CLI with fixed arguments. The few direct writes are the app's own `settings.json` (in userData), files the person edits in the Monaco editor (engine-owned files refused), the `## Guard Policy` section of a memory file and the project's own plan files, each after a diff (EPIC-09 tier 2).
 
-| Epic | Content | Status (from earlier scans and commits) |
-|------|---------|--------|
-| EPIC-01 | Base console: project tabs, intent list, detail view (Pipeline, Timeline, Units, Files), terminal, splash and Auctum mark, LCARS theme | Released v0.1.0 |
-| EPIC-02 | Cost and models from `usage-ledger.json` and `aidlc config models` | Built |
-| EPIC-03 | Virtualised timeline with precise live updates | Built |
-| EPIC-04 | Icon and OS integration, glow and motion, LCARS design update, fullscreen and app menu, settings view (US-0405, planned), the name T.H.A.D.E.U.S. (US-0406) | US-0406 merged (commit `df21127`, PR #12) |
-| EPIC-05 | Workflow control: Resume (Fortsätt), Update from GitHub, Set up AI-DLC, questions and approvals as popup and notification | Built |
-| EPIC-06 | Feature docs: Features view, project settings (Projektinställningar) | Built |
-| EPIC-07 | Internationalisation: US-0701 i18n foundation with Swedish and English | US-0701 committed on `feat/us0701-i18n` (commit `71fe927`) |
-| EPIC-08 | Harnesses beyond Claude: US-0801 choose the harness per project, US-0802 set up AI-DLC for another harness | Planned; US-0801 is this intent |
+## Users and value
 
-## This intent: US-0801
+- **Developer running AI-DLC**: sees where each intent stands, what it costs, and what the agent is waiting for, while doing other work.
+- **Developer on several machines or in a team**: brings in AI-DLC work pushed to GitHub safely (US-0502).
+- **Project owner**: reads epics and stories (feature docs) and their link to intents.
 
-Intent `261113-harness-choice` implements US-0801 (`docs/features/epic-08-harnesses.md`): the person chooses which harness the agent terminal runs for each project. The acceptance criteria ask for:
+## Key functionality (by epic)
 
-- **Detection** when a project opens: installed harness folders (`.claude/`, `.aidlc/` for opencode, `.codex/`, `.kiro/`, `.cursor/`, `.github/` with AI-DLC files) and CLIs on the PATH (`claude`, `opencode`, `codex`, `kiro-cli`), each version read with `--version`, fixed arguments, no shell.
-- **A choice per project** in Projektinställningar: "Agent-terminal: Claude Code / opencode / Codex / Kiro". The default is the only installed harness, or Claude Code when several are installed. It is saved in the app's own `settings.json`, never in the project.
-- **An agent tab named after the harness**, started in the project root through the login shell, with the same states (Idle / Working / Exited).
-- **Commands that follow the harness**: Resume, the quick commands and the setup offers come from one table per harness. A command is never sent to a harness that does not have it.
-- **A warning and nothing started** when the chosen harness is not installed in the project or its CLI is not found.
-- **An unchanged dashboard**, reading the shared `aidlc/` records. Harness-specific figures (the cost ledger, filled today by the Claude hooks) say which harness they cover.
-- **Instant switching**: the old tab is closed only after the person confirms, if it is working.
+| Epic | Capability | Status at this commit |
+|---|---|---|
+| EPIC-01 | Read-only AI-DLC visualisation and embedded terminal (foundation) | Released v0.1.0 |
+| EPIC-02 | Cost and models per intent, stage, agent and model; live token view | Released up to v0.2.4 |
+| EPIC-03 | Virtualised audit timeline with live highlights | Released v0.2.0 |
+| EPIC-04 | LCARS design, icon, fullscreen and menu, settings view, self-update from GitHub releases, About window | Released up to v0.2.4 |
+| EPIC-05 | Workflow control: Resume, Refresh from GitHub, Set up AI-DLC, question popup (US-0505); **US-0506 in progress** | US-0504 planned |
+| EPIC-06 | Feature docs view and setup offer | Released v0.2.0 |
+| EPIC-07 | Swedish and English UI with a language setting | US-0702 planned |
+| EPIC-08 | Harness per project (Claude Code, opencode), set up any of six harnesses, two agent tabs side by side | Released up to v0.2.3 |
+| EPIC-09 | AI-DLC configuration view and changes, custom plans, models and effort per agent | In progress |
+| EPIC-10 | Edit project files in the app with Monaco | Released v0.2.4 |
+| EPIC-00 | Small fixes reported in use (US-0001 to US-0009) | Released v0.2.3 / v0.2.4 |
 
-Where the code ties the console to Claude today is listed in `component-inventory.md` (PTY Manager, TerminalPanel, TerminalContext, ResumeButton, Setup Helper, Model Config Reader, Settings Store) and `code-quality-assessment.md` (Risks for US-0801).
+## The active intent: US-0506 (agent dialogs)
 
-## Business rules that shape the interface
+Intent `261114-agent-dialogs` (scope `classic`) covers EPIC-05 US-0506: every question, permission prompt and message from Claude Code and other AI clients (opencode, later others) shown in, and answered from, the app's dialog.
 
-- Status is never shown by colour alone: every tag has text (FR9.3, NFR3).
-- Body text has at least 4.5:1 contrast against `--bg` and `--panel` (NFR3, WCAG AA).
-- No Star Trek trademarks, logos, sounds or copied assets (FR9.5). The only logo is the Auctum mark.
-- All costs are estimates and are labelled so (`cost.label`, "Estimated cost (API price)").
-- Decorative numbers must not look like real data (US-0403).
-- The app writes only its own `settings.json`. Commands that change a project are typed for the person to confirm with Enter (US-0503 FR4.4, US-0802).
-- Every visible text comes from `src/shared/locales/{sv,en}.json` (US-0701). A missing key falls back to English, then to the key, never to an empty text.
+The business problem, as the code stands:
 
-Component details are in `component-inventory.md`, architecture in `architecture.md`.
+- The popup (US-0505, extended by US-0004 and US-0006) only knows AI-DLC's own questions, because they are the ones in the audit log. Claude Code's own picker questions, its permission prompts ("Allow this command?") and plain chat replies are invisible.
+- An answer reaches Claude Code only when the picker on screen shows exactly the options AI-DLC logged. When the wording differs the person sees "Could not send: Claude shows other choices than the ones AI-DLC logged" and has to answer in the terminal.
+- A question that was answered some other way, or whose picker went away, can stay in the popup because only an audit event closes it.
+- opencode gets an own-answer field only, since its picker keys were never verified.
+
+US-0506's acceptance criteria (in `docs/features/epic-05-workflow-control.md`) ask for: questions and permission prompts from Claude Code and opencode in the same dialog with answers in place; the agent's latest message per project rendered as Markdown with a background notification; a source per harness (Claude Code hooks, opencode event API or plugin, installed only after consent with a preview, falling back to the terminal); the US-0505 escalation and settings plus a separate messages setting; and safety rules (answers only to the asking tab, nothing approved automatically, text never HTML).
+
+See `architecture.md` for how the current question flow works and `code-quality-assessment.md` for the risks it carries into US-0506.

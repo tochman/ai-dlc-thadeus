@@ -58,6 +58,8 @@
 <!-- Format: NEVER [behavior] (affirmed [date]) -->
 <!-- Example: NEVER throw exceptions across service layer boundaries (affirmed 2026-05-17) -->
 
+None. (affirmed 2026-11-14)
+
 ## Mandated
 
 <!-- Populated by practices-discovery affirmation gate. -->
@@ -66,6 +68,14 @@
 
 - ALWAYS hålla feature-dokumenten aktuella när projektet har `docs/FEATURES.md` och epic-filer under `docs/features/`. I Deployment Execution för varje intent, och före PR:en, uppdateras fyra saker: storyns statusmarkör, uppfyllda acceptanskriterier (`- [x]`), epicens rad `**Status (…)**` och raden i `FEATURES.md`. När en release taggas märks varje story som ingår med "Released in vX.Y.Z". En ny story som användaren beskriver läggs in direkt. En levererad story får aldrig stå som pågående. (affirmed 2026-11-13)
 - ALWAYS följa storyns livscykel i feature- och epic-filerna medan arbetet pågår, inte bara i slutet: när arbetet på en story startar sätts den till 🚧 Pågående (storyns markör, epicens rad `**Status (…)**` och raden i `FEATURES.md`); när den är färdigbyggd och godkänd sätts den till ✅ Klar; när det är känt vilken release den ska ingå i skrivs releasen ut ("for vX.Y.Z", och "Released in vX.Y.Z" när taggen sätts). (affirmed 2026-11-14)
+
+ALWAYS write a failing test before the code for new behaviour (TDD). (affirmed 2026-11-14)
+
+ALWAYS keep line coverage at or above 80%, checked in CI. (affirmed 2026-11-14)
+
+ALWAYS run ESLint and Prettier in CI; a failure blocks the merge. (affirmed 2026-11-14)
+
+ALWAYS merge each story through its own squash-merged pull request; only docs and small chores may go straight to `main`. (affirmed 2026-11-14)
 
 ## Corrections
 

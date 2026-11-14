@@ -1,0 +1,56 @@
+{
+  "stage": "nfr-requirements",
+  "unit": "u5-notifications",
+  "upstream_ids": [
+    "NFR1",
+    "NFR2",
+    "NFR3",
+    "NFR4",
+    "NFR5",
+    "NFR6",
+    "NFR7",
+    "NFR8"
+  ],
+  "coverage": [
+    {
+      "id": "NFR1",
+      "status": "OK",
+      "target": "NFR1.50, NFR1.51, NFR1.52, NFR1.53, NFR1.54, NFR1.55, NFR1.56"
+    },
+    {
+      "id": "NFR2",
+      "status": "N/A",
+      "target": "u5 sends no answer and never chooses an option; answer correctness is owned by u1, u2 and u3"
+    },
+    {
+      "id": "NFR3",
+      "status": "OK",
+      "target": "NFR3.50, NFR3.51, NFR3.52, NFR3.53, NFR3.54, NFR3.55, NFR3.56, NFR3.57"
+    },
+    {
+      "id": "NFR4",
+      "status": "N/A",
+      "target": "u5 adds no hook or plugin code; the hook entries' early exit is owned by u1, u3 and u4"
+    },
+    {
+      "id": "NFR5",
+      "status": "OK",
+      "target": "NFR5.50"
+    },
+    {
+      "id": "NFR6",
+      "status": "OK",
+      "target": "NFR6.50, NFR6.51, NFR6.52, NFR6.53, NFR6.54, NFR6.55, NFR6.56, NFR6.57, NFR6.58"
+    },
+    {
+      "id": "NFR7",
+      "status": "OK",
+      "target": "NFR7.50, NFR7.51, NFR7.52"
+    },
+    {
+      "id": "NFR8",
+      "status": "OK",
+      "target": "NFR8.50, NFR8.51, NFR8.52, NFR8.53"
+    }
+  ]
+}

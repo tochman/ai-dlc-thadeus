@@ -1,78 +1,93 @@
-# Code Quality Assessment: aidlc-dash
+# Code Quality Assessment
 
-## Quick rating
+Read-only assessment at commit `2d111d6`. No tests, builds or app runs were made, so pass/fail and coverage figures are not measured here.
 
-| Area | Rating | Comment |
-|------|--------|---------|
-| Naming | good | Clear component, function and class names; consistent `data-testid`s. One misleading name: the tab id `'claude'` stands for "the agent tab" and for the CLI at once |
-| Function size | fair | Most functions are small; `App` (519 lines), `ProjectContent`, `TerminalPanel`/`TermSession`, `SetupAidlc`, `RefreshPanel` and `Timeline` are long but cohesive |
-| Error handling | good | IPC errors are logged in main and shown with `role="alert"`; readers that must not break the view never throw (`loadCost`, `getConfiguredModels`, `readJsonSafe`, `getSetupInfo` for a missing tool); half-written AI-DLC files keep the last good value; node-pty failing to load breaks only the terminal; no silent catch without a comment |
-| Test presence | fair | Main modules and the stateful views have tests; `useProject`, `createWindow`, `applyMenu` and `ProjectContent` (setup restart, `terminalCommand`) have none of their own |
-| Duplication | fair | `errorText()` in 10+ renderer files; the `'claude'` literal in about 15 places across main and renderer; the per-project settings fields listed in three places (`settings.js` twice, `ipc.js:274`) |
-| Dead code | good | No TODO/FIXME or `eslint-disable` in the files read |
+## Summary ratings
 
-## Tests
+| Aspect | Rating | Evidence |
+|---|---|---|
+| Naming clarity | good | intention-revealing names (`resolveAnswer`, `pendingQuestions`, `harnessProblem`), consistent `data-testid` |
+| Function size | fair | most functions are short and pure; `ipc.js` (709 lines), `App.jsx` (603), `ConfigEdit.jsx` (550), `ProjectView.jsx` (448), `TerminalPanel.jsx` (449) are large |
+| Error handling | good | readers return errors as values and keep last good data; every IPC handler logs and rethrows; spawn and CLI failures become one translated sentence |
+| Test presence | good | 32 main and 27 renderer test files (about 490 test cases); the intent area has dedicated unit, component and xterm smoke tests |
+| Duplication | fair | `errorText()` in about 15 renderer files; `gateText`/`askText` in `notify.js` and `QuestionPopup.jsx`; harness "busy" fallbacks repeated |
+| Dead code | good | no commented-out blocks; 0 TODO/FIXME/eslint-disable; 10 `ponytail:` markers documenting deliberate ceilings |
 
-- **Framework**: Vitest 5 with two projects (`main` in node, `renderer` in jsdom), Testing Library React. Renderer tests run in Swedish (`tests/renderer/setup-i18n.js`).
-- **main** (22 files): `appName`, `check-glibc`, `configuredModels`, `features`, `git`, `i18n`, `i18nKeys`, `icon`, `ledger`, `menu`, `notify`, `parsers`, `projectAccess`, `projectService`, `pty`, `ptyPerms`, `questions`, `settings`, `setup`, `theme`, `watcher`, `windowOptions`.
-- **renderer** (16 files): `AppSettingsDialog`, `AppShell`, `CostPanel`, `FeaturesView`, `IntentDetail`, `IntentList`, `ProjectSettingsDialog`, `QuestionPopup`, `RefreshPanel`, `ResumeButton`, `SetupAidlc`, `Splash`, `TerminalPanel`, `Timeline`, `format`, `terminalControl`.
-- **Coverage**: no configuration or threshold.
-- **In CI**: `npx vitest run tests/` in the `verify` job on every PR to `main` and on tags (earlier scan).
-- **Translation lint** (`tests/main/i18nKeys.test.js`): identical keys in sv/en, no empty texts, every literal `t('…')`/`translate('…')` key present in `en.json` (at least 300 calls found), identical ICU placeholders per key, and no å/ä/ö interface text in `src/renderer/` or `src/main/menu.js` outside comments and `console.*`.
+## Testing
 
-### Tests that assert Claude-specific behaviour (US-0801)
+- **Runner**: vitest with two projects (`vitest.config.mjs`): `main` (node, `tests/main/**/*.test.js`) and `renderer` (jsdom, `tests/renderer/**/*.test.jsx`, Swedish UI via `tests/renderer/setup-i18n.js`).
+- **CI**: `.github/workflows/release.yml` runs `npx vitest run tests/` on every PR to `main` and on tags, before the mac and Linux builds.
+- **Coverage**: no coverage configuration or provider. The `classic` scope's default 80% line-coverage floor (org `## Testing Posture`) cannot be verified without adding one (for example `@vitest/coverage-v8`).
+- **Fixtures**: `tests/fixtures/picker/*.txt` are Claude Code picker screens transcribed from a screenshot (US-0006), not live captures; `tests/fixtures/project/` is a small AI-DLC project; audit shards and a ledger mirror real formats.
 
-| Test | Asserts | Affected by |
-|------|---------|-------------|
-| `tests/renderer/TerminalPanel.test.jsx` | test ids `terminal-panel-state-claude`, `terminal-panel-pending-claude`; `type('claude', …)`; `ptyWrite('pty-claude', '/aidlc')`; mount order claude then shell | renaming the tab id or changing `KINDS` |
-| `tests/renderer/ResumeButton.test.jsx` | `type('claude', '/aidlc', …)`, `sequence('claude', [/aidlc intent …, /aidlc])`, busy text "Claude arbetar — vänta eller avbryt först" | per-harness commands and texts |
-| `tests/main/setup.test.js` | `aidlc --project-dir <root> config --harness claude --dry-run`, `buildSetupCommand({})` = `… --harness claude --yes`, `harnesses: ['.kiro/']` | detection that adds `.claude/`/`.github/`; US-0802 |
-| `tests/renderer/SetupAidlc.test.jsx` | typed chain with `--harness claude` | US-0802 |
-| `tests/main/configuredModels.test.js` | `['config','models','--show','--json','--harness','claude']` | a per-harness model source |
-| `tests/main/pty.test.js` | lazy loading with kind `shell`; Swedish error `Terminalmodulen kunde inte laddas` | unaffected unless `shellArgs` changes shape |
-| `tests/main/settings.test.js` | project settings equal exactly `{featureDocs, featuresPath}` | adding a `harness` field changes these `toEqual`s |
-| `tests/main/i18nKeys.test.js` | key and placeholder parity | every new or reworded harness text |
+### Coverage of the intent area
 
-## Linting, formatting, CI
+| Behaviour | Tests |
+|---|---|
+| Option parsing in every logged form, batch summaries, engine asks, open/close rules | `tests/main/questions.test.js` |
+| Picker reading (gate, single, cursor on 2, wrapped, cut with `…`, batch chips, old picker in scrollback), key resolution, mismatch/noPicker/several, wait for the picker | `tests/renderer/picker.test.jsx` |
+| Real xterm buffer: ANSI, scrolled viewport, tall picker, redraw, narrow wrap | `tests/renderer/pickerSmoke.test.jsx` |
+| Popup: text not HTML, choices, gate buttons, own answer, opencode (no keys), no agent, terminal hand-off, escalation, refused send, arrival warning, batch, plan ask | `tests/renderer/QuestionPopup.test.jsx` |
+| `answer()` writes the picker key without switching tabs, refuses without a picker, waits for it | `tests/renderer/TerminalPanel.test.jsx` |
+| Notification title/body per language | `tests/main/notify.test.js` |
+| Agent spawn by harness id only, lazy node-pty | `tests/main/pty.test.js` |
+| Activity signal and sequences | `tests/renderer/terminalControl.test.jsx` |
+| Resume waiting reasons (busy, asking, running, elsewhere) | `tests/renderer/ResumeButton.test.jsx` |
+| `questionAlerts`/`notificationSound` sanitising | `tests/main/settings.test.js` |
 
-- No ESLint, Prettier or EditorConfig in the repo. The style is consistent anyway (2 spaces, single quotes, semicolons).
-- CI: tests on PRs and tags, tag vs `package.json` version, macOS and Linux builds, glibc check, release (earlier scan). No lint step; `i18nKeys.test.js` covers translations.
+Gaps: nothing tests `ipc.js`'s `refreshQuestions`/`early` baseline or `notifyQuestions`' focus rule (Electron `Notification` is mocked away); no test covers an own answer landing in a different agent tab than the asking one; no test exercises opencode's screen at all.
+
+## Linting, formatting, typing
+
+None configured: no ESLint, Prettier, editorconfig or TypeScript/`tsc --checkJs`. The org rule "defer to project-level configurations" therefore has nothing to defer to. Style is consistent by hand (2 spaces, single quotes, semicolons, long lines up to about 160 characters).
 
 ## Documentation
 
-`README.md`, `docs/FEATURES.md` and one file per epic carry the requirements (`docs/features/epic-08-harnesses.md` for this intent). Code comments are short and cite requirement ids. `src/shared/i18n.js:4-9` documents the locale format for translators (US-0702).
+- `README.md`: background, features, install, usage, development, testing, security, licence.
+- `docs/FEATURES.md` and `docs/features/epic-*.md`: stories with Given/When/Then criteria, status markers and release notes per story; kept current by a mandated project rule.
+- `docs/releases/0.2.3.md`, `0.2.4.md`.
+- In code: a header comment per module and a doc comment per exported function, each naming its story and requirement ids; texts for translators described in `src/shared/i18n.js`.
 
-## Accessibility (existing patterns)
+## Security posture
 
-- Status always has text, never colour alone (`format.js` labels, `.tag`, `StatusBadge`). The terminal tab shows its state as text on the tab block (`terminal.state.<state>`).
-- Global `:focus-visible` outline.
-- Motion: `data-motion` (`full | reduced | off`).
-- `<html lang>` follows the language (`main.jsx`).
-- Dialogs: native modal `dialog` with `aria-labelledby`; Esc closes through `onCancel`; errors in `p.refresh-error[role=alert]`. `ProjectSettingsDialog` uses `aria-invalid` and `aria-describedby` on its field.
-- Terminal: tabs with `role="tab"` and `aria-selected`; the resize handle is a focusable `role="separator"` with arrow keys; the toggle has `aria-expanded`.
+| Control | Where |
+|---|---|
+| Sandboxed renderer, contextIsolation, no node integration, webSecurity | `src/main/index.js` `windowOptions()` |
+| CSP: `default-src 'self'`, `script-src 'self'`, `connect-src 'self' ws:`, no objects | `src/renderer/index.html` |
+| No navigation away, new windows denied, http(s) links to the OS browser | `src/main/index.js` |
+| Narrow bridge, no generic invoke | `src/preload/index.js` |
+| Root confinement with realpath checks | `src/main/projectAccess.js` |
+| No shell for commands, fixed args from tables, timeouts | `src/main/exec.js`, `aidlcWrite.js`, `modelChoice.js`, `setup.js`, `git.js` |
+| Agent CLI only from the harness table by validated id | `src/main/pty.js` |
+| External URLs by fixed key | `src/main/ipc.js` `EXTERNAL_URLS` |
+| Update assets checked against the own repo and SHA256SUMS | `src/main/updater.js` |
+| Markdown without raw HTML; question text as text | `ArtifactReader.jsx` (`skipHtml`), `QuestionPopup.jsx` |
+| Engine-owned files never written by the editor | `src/main/fileWrite.js` |
 
-## Risks for US-0801
+Weak points relevant to US-0506:
 
-1. **The tab id is the CLI name.** `'claude'` is the pty kind (`pty.js:24`), the context key (`TerminalContext.jsx:12-16`), the menu action (`menu.js:105`, `App.jsx:316`), the CSS modifier (`theme.css:687`) and part of three test ids. Option A: keep `'claude'` as the internal id of "the agent tab" and change only the label and the command (smallest diff, misleading name). Option B: rename it to a neutral id such as `agent` (honest, but it touches every caller, the CSS and the tests). The decision belongs in design.
-2. **The command must stay fixed in main.** `shellArgs` is a whitelist today. The harness id must travel from the renderer (or from settings read in main) and be validated in main against a fixed table, and the CLI name must come from that table, never from the renderer. `pty:spawn` already looks up the root in main.
-3. **Switching kills the session.** `TermSession`'s mount effect re-runs when `kind` changes (`spawn` depends on `kind`), and its cleanup calls `ptyKill`. "The old tab is closed only after the person confirms if it is working" must be checked before the prop changes. `terminal.state(tab) === 'busy'` is the available signal.
-4. **The busy signal is unverified for other TUIs.** `idle` = 1.5 s without output. A TUI that redraws constantly never goes idle; `type`/`sequence` would then fail after 20 s (`terminal.noResponse`), and the breathing indicator would never stop. This must be checked against each CLI. Nothing in the code shows how opencode, Codex or Kiro behave.
-5. **Command syntax per harness is unverified.** `/aidlc …` appears in `QUICK_COMMANDS`, `ResumeButton`, `SetupDone`. The AC's per-harness table (slash command in Claude Code and opencode; skill or prompt form in Codex and Kiro) has no evidence in this repo. `featureDocsPrompt` is plain language and portable.
-6. **Detection gaps.** `getSetupInfo` lists only `.kiro`, `.codex`, `.cursor`, `.aidlc` and only when the person opens the setup view. `.claude/` and `.github/` (with an AI-DLC check) are missing, and an AI-DLC project never runs this code. Detection on open needs a new call, and `--version` probes (four CLIs, 10 s timeout each) should run in parallel and be cached per opened project, like `p.models`.
-7. **The settings schema is whitelisted in three places.** A `harness` per project needs `sanitizeProject`, `setProjectSettings`'s validation, the `ipc.js:274` field pick and `ProjectSettingsDialog`'s save to change together, plus the `settings.test.js` expectations. The key is the realpath root, which matches how projects are opened.
-8. **Claude-specific dashboard parts.** The model table reads `--harness claude` and `.claude/agents` (`models.js`). The ledger path is shared, but `summarizeLedger` has no harness field, and the epic says only the Claude hooks fill it. Both views need a "covers <harness>" label under the AC.
-9. **Texts name Claude.** At least 11 locale keys. New texts must use the same `{placeholders}` in sv and en, and no literal Swedish may enter `src/renderer/` or `menu.js`.
-10. **The menu cannot know the harness.** `menu:state` accepts only three booleans, so a "Terminal > opencode" label needs that validation extended.
+- `pty:write` accepts any string for any live session id (`pty.js` `writeSession`); which tab receives an answer is decided in the renderer. US-0506's "permission answers go only to the tab that asked" has no main-side enforcement today.
+- An own answer with no picker on screen goes to the last agent tab used (`TerminalContext.jsx` `answer()`), which can differ from the asking tab with two harness tabs open.
+- Installing Claude Code hooks or an opencode plugin means writing into `.claude/settings*.json`, `opencode.json` or `.opencode/`, all engine-owned for the editor; it needs a consent and preview flow like EPIC-09's tier 2, and any hook transport (local HTTP endpoint, files written by a command hook, a plugin) is new attack surface the app does not have today (no listener in main; CSP limits renderer connections).
 
 ## Technical debt
 
-1. The agent tab's identity is spread across main, renderer, CSS and tests as the literal `'claude'` (see above).
-2. `--harness claude` is hard-coded in three places (`setup.js:12`, `:62`, `models.js:8`).
-3. Per-project settings fields are listed in three places in main and one in the renderer.
-4. `errorText()` is copied into 10+ renderer files.
-5. Some main-process error texts that reach the person are still Swedish literals: `exec.js:43` (`Ogiltiga argument till …`) and `models.js:56` (`aidlc config models misslyckades …`, shown as the model table's warning title).
-6. `getSetupInfo` runs its tool calls one after another (git, `aidlc --version`, dry run, plugins), up to about 40 s worst case with 10 s timeouts.
-7. No window reference in main: `ipc.js`, `menu.js` and `notify.js` look up the window per call (earlier scan).
-8. `settings.js` whitelists keys; every new setting needs a change in `sanitize()`.
-9. Two debounce implementations in `watcher.js`; watching covers one space per project (earlier scan).
-10. `hidden` sets `display: none !important`, so transitions on hidden tabs need another technique (earlier scan).
+| Item | Location | Impact |
+|---|---|---|
+| Question source is the audit log only | `src/main/questions.js` | Claude Code's own questions, permission prompts and messages are invisible |
+| Answer path by screen-scraping and exact label match | `src/renderer/picker.js` (`ponytail:` note) | "shows other choices than the ones AI-DLC logged" whenever AI-DLC's logged labels and the picker's differ; any Claude Code layout change breaks it |
+| Questions close only on audit events | `questions.js`, `App.jsx` popup rule | a question answered without a matching event (or abandoned) stays and keeps the popup open |
+| Activity from output timing | `terminalControl.js` | "idle" can mean waiting for input, thinking quietly, or waiting on a subagent |
+| opencode picker keys unverified | `shared/harnesses.js` (`pickerKeys` only on Claude Code) | opencode gets only free text |
+| No coverage tool, no linter | repo | scope floors and style not enforceable |
+| Large modules | `ipc.js`, `App.jsx`, `ConfigEdit.jsx`, `ProjectView.jsx`, `TerminalPanel.jsx`, `theme.css` | changes in the question flow touch several large files |
+| Renderer imports from `src/main/parsers/` | `Timeline.jsx`, `CostTab.jsx`, `ConfigEdit.jsx`, `FeaturesView.jsx`, `ProjectSettingsDialog.jsx` | safe while the parsers stay pure |
+| Duplicated helpers | `errorText()` in renderer files; `gateText`/`askText` | drift risk |
+| Unbounded caches | `projectService.js` (`ponytail:`), `notify.js` `notified`, `ipc.js` `startedWith` | memory grows with long runs and many intents |
+| Swedish log messages and a few internal errors | `console.*` across main, `exec.js`, `models.js`, `scripts/check-glibc.mjs` | inconsistent with the English UI default; not user-facing |
+| `tests/.tmp/` used by tests in the repo folder | `tests/main/harness.test.js` and others | git-ignored; harmless |
+
+## Brownfield notes for the next stages
+
+- **Test baseline**: the suite was not run in this stage; Code Generation should record a baseline (`npm test`) before changes.
+- **Blast radius of US-0506**: see the intent-area graph in `dependencies.md`; the high-impact files are `src/main/ipc.js`, `src/main/questions.js`, `src/preload/index.js`, `src/renderer/App.jsx`, `src/renderer/QuestionPopup.jsx`, `src/renderer/TerminalContext.jsx`, `src/shared/harnesses.js`, `src/main/settings.js` and both locale files.

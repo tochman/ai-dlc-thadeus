@@ -1,0 +1,3 @@
+# NFR Requirements questions: u1-questions
+
+No questions for this Unit. Its non-functional targets are already set in `requirements.md` and accepted by you: latency within 1 second both ways measured on the release Mac (NFR1), the seven correctness scenarios (NFR2), the per-session secret and sanitized text (NFR3), no harm when the app is absent (NFR4), hand-back on time-out or app crash (NFR5), keyboard use (NFR6), texts in Swedish and English (NFR7), and the quality gates (NFR8). The tech stack stays the app's own (Electron, React, vitest) plus plain `sh` for the hook script and opencode's plugin API V2.
