@@ -8,7 +8,8 @@
     "reading": "Reading…",
     "revealFinder": "Show in Finder",
     "revealFiles": "Show in file manager",
-    "openInEditor": "Open in editor",
+    "openInEditor": "Open in external editor",
+    "edit": "Edit",
     "stageStatus": {
       "not-started": "Not started",
       "in-progress": "In progress",
@@ -56,6 +57,7 @@
     "settings": "Settings",
     "config": "Configuration",
     "plans": "Plans",
+    "editor": "Editor",
     "intentCount":"{n, plural, one {# intent} other {# intents}}",
     "emptyTitle": "No project open",
     "emptyText": "Open a project folder that contains {path}.",
@@ -583,6 +585,32 @@
     "missing": "AI-DLC's command-line tool aidlc was not found: {error}",
     "failed": "The AI-DLC configuration could not be read: {error}"
   },
+  "editor": {
+    "empty": "No file is open. Pick a file in the tree, or Edit in the reader or the Features view.",
+    "loading": "Loading the editor…",
+    "tree": "The project's files",
+    "treeTruncated": "The tree shows the first 20,000 files.",
+    "unsaved": "unsaved changes",
+    "close": "Close {file}",
+    "closeDirty": "{file} has unsaved changes. Close it anyway?",
+    "closeProjectDirty": "Unsaved changes in {files}. Close the project anyway?",
+    "quitDirty": "Unsaved changes in {files}. Close anyway?",
+    "preview": "Preview",
+    "changedOnDisk": "The file changed on disk while you were editing. Saving shows both versions.",
+    "agentWorking": "The agent is working in this intent and may change this file too. Saving checks for that first.",
+    "readOnly": {
+      "engine": "Read-only: the file belongs to AI-DLC's engine.",
+      "binary": "Read-only: the file is binary.",
+      "tooLarge": "Read-only: the file is larger than 2 MB."
+    },
+    "conflict": {
+      "title": "{file} has changed",
+      "text": "{file} changed on disk after you opened it, perhaps by the agent.",
+      "keepMine": "Keep mine",
+      "takeDisk": "Take the disk version",
+      "compare": "Compare"
+    }
+  },
   "plans": {
     "loading": "Reading the plans…",
     "new": "New plan",
@@ -829,6 +857,8 @@
     "invalidPlanName": "Invalid plan name: {name}. Use lowercase words joined by hyphens, such as my-plan.",
     "stockPlan": "{name} is a stock plan and is read-only.",
     "planInUse": "{name} is used by an intent in progress ({intents}) and can't be deleted.",
-    "planNotFound": "No plan named {name} was found."
+    "planNotFound": "No plan named {name} was found.",
+    "notAFile": "{rel} is not a file.",
+    "engineOwned": "{rel} belongs to AI-DLC's engine and is not saved from the app."
   }
 }

@@ -12,6 +12,7 @@ import UpdateNotice from './UpdateNotice.jsx';
 import { Bar, Frame } from './Lcars.jsx';
 import { APP_NAME } from '../shared/appName.js';
 import { selectableHarness } from '../shared/harnesses.js';
+import { dirtyFiles } from './editor/EditorContext.jsx';
 
 const bridge = window.bridge;
 const UI_DEFAULT = { view: 'intents' };
@@ -60,6 +61,7 @@ export default function App() {
   const [fullscreen, setFullscreen] = useState(false); // the window's real mode, from main (US-0404 FR1.2)
   const [terminalCommand, setTerminalCommand] = useState(null); // {seq, action, projectId} from the Terminal menu
   const [docs, setDocs] = useState(null); // {name, content} of the docs/README.md shown from Hjälp
+  const [editRequest, setEditRequest] = useState(null); // {seq, projectId, rel}: "Redigera" in the docs dialog (US-1001)
   const [alertSettings, setAlertSettings] = useState({}); // {questionAlerts, notificationSound} as saved (US-0505 FR4.1)
   const [questions, setQuestions] = useState([]); // waiting questions of every open project, from main (FR1.4)
   const [popupOpen, setPopupOpen] = useState(false);
@@ -230,6 +232,17 @@ export default function App() {
     await bridge.setSettings(partial); // a failure is shown in the dialog
   }
 
+  // Closing the window or quitting: main waits for this answer, asked only while an editor has unsaved changes (US-1001).
+  useEffect(
+    () =>
+      bridge.onConfirmClose?.(() => {
+        const unsaved = dirtyFiles();
+        const ok = !unsaved.length || window.confirm(t('editor.quitDirty', { files: unsaved.join(', ') }));
+        bridge.confirmClose(ok).catch((err) => console.error('Close answer failed:', errorText(err)));
+      }),
+    [t]
+  );
+
   // Every menu command runs the same named function as the arm's button (US-0404 FR2.4); unknown ones are ignored.
   useEffect(() => bridge.onMenuCommand((payload) => menuCommandRef.current?.(payload)), []);
 
@@ -247,6 +260,8 @@ export default function App() {
   }
 
   async function closeTab(projectId) {
+    const unsaved = dirtyFiles(projectId);
+    if (unsaved.length && !window.confirm(t('editor.closeProjectDirty', { files: unsaved.join(', ') }))) return; // US-1001
     const rest = tabs.filter((t) => t.projectId !== projectId);
     setTabs(rest);
     if (activeId === projectId) setActiveId(rest[rest.length - 1]?.projectId ?? null);
@@ -283,11 +298,18 @@ export default function App() {
   const isAidlc = active?.detection.isAidlc === true;
   const showFeatures = activeMeta.showFeatures === true;
   // One view at a time. Features needs the feature docs, the rest AI-DLC (US-0901 FR1.1); else the intents view shows.
-  const offered = { features: showFeatures, config: isAidlc, plans: isAidlc, cost: isAidlc, github: isAidlc };
+  const offered = { features: showFeatures, config: isAidlc, plans: isAidlc, cost: isAidlc, github: isAidlc, editor: true };
   const view = offered[activeUi.view] ? activeUi.view : 'intents';
   const firstLabel = isAidlc ? t('app.intents') : t('app.setup');
   const viewLabel =
-    { features: t('app.features'), config: t('app.config'), plans: t('app.plans'), cost: t('app.cost'), github: t('app.github') }[view] ?? firstLabel;
+    {
+      features: t('app.features'),
+      config: t('app.config'),
+      plans: t('app.plans'),
+      editor: t('app.editor'),
+      cost: t('app.cost'),
+      github: t('app.github')
+    }[view] ?? firstLabel;
 
   // Named actions shared by the left arm and the app menu (US-0404 FR2.4).
   function closeActiveProject() {
@@ -315,7 +337,7 @@ export default function App() {
   async function openDocs() {
     if (active) {
       try {
-        setDocs({ name: active.name, content: await bridge.readFile(active.projectId, 'docs/README.md') });
+        setDocs({ name: active.name, projectId: active.projectId, content: await bridge.readFile(active.projectId, 'docs/README.md') });
         return;
       } catch (err) {
         console.info('Ingen docs/README.md i projektet, öppnar AI-DLC:s webbsida:', errorText(err));
@@ -329,7 +351,7 @@ export default function App() {
     closeProject: () => closeActiveProject(),
     projectSettings: () => openProjectSettings(activeId),
     appSettings: () => openAppSettings(),
-    view: ({ view: v }) => pick(v, ['intents', 'features', 'config', 'plans'], showView),
+    view: ({ view: v }) => pick(v, ['intents', 'features', 'config', 'plans', 'editor'], showView),
     panel: ({ panel }) => isAidlc && pick(panel, ['cost', 'github'], showView), // Kostnad and Github are views too
     terminal: ({ action }) => pick(action, ['agent', 'shell', 'restart'], runTerminal),
     docs: () => openDocs(),
@@ -459,6 +481,9 @@ export default function App() {
                 {t('app.plans')}
               </ArmBlock>
             )}
+            <ArmBlock current={!settingsView && view === 'editor'} onClick={() => showView('editor')} data-testid="project-view-switch-editor">
+              {t('app.editor')}
+            </ArmBlock>
             <ArmBlock
               current={!settingsView && view === 'cost'}
               disabled={!isAidlc}
@@ -542,6 +567,7 @@ export default function App() {
                 onView={(v) => setUiOf(tab.projectId, { view: v })}
                 onMeta={reportMeta}
                 terminalCommand={terminalCommand}
+                editRequest={editRequest}
                 askingIntents={questions.filter((q) => !q.early && q.projectId === tab.projectId).map((q) => q.intent)}
               />
             </div>
@@ -549,7 +575,18 @@ export default function App() {
         })}
       </main>
 
-      <DocsDialog doc={docs} onClose={() => setDocs(null)} />
+      <DocsDialog
+        doc={docs}
+        onClose={() => setDocs(null)}
+        onEdit={
+          docs?.projectId
+            ? () => {
+                setEditRequest((r) => ({ seq: (r?.seq ?? 0) + 1, projectId: docs.projectId, rel: 'docs/README.md' }));
+                setDocs(null);
+              }
+            : undefined
+        }
+      />
       <AboutDialog open={aboutOpen} onClose={() => setAboutOpen(false)} />
       <UpdateNotice busy={Object.values(meta).some((m) => m?.busy)} checkRequest={updateCheck} />
       <QuestionPopup

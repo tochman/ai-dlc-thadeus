@@ -1,6 +1,6 @@
 import { app, BrowserWindow, shell } from 'electron';
 import { join } from 'node:path';
-import { registerIpc, shutdown, startUpdateCheck } from './ipc.js';
+import { guardClose, noteQuitting, registerIpc, shutdown, startUpdateCheck } from './ipc.js';
 import { applyMenu } from './menu.js';
 import { getSettings, setSettings } from './settings.js';
 import { setToolPaths } from './tools.js';
@@ -56,6 +56,7 @@ async function createWindow() {
     if (!win.webContents.isDestroyed()) win.webContents.send('window:fullscreen', on);
     applyMenu(win); // the checkbox follows the real mode
   };
+  guardClose(win); // unsaved editor changes are asked about first (EPIC-10 US-1001)
   win.on('enter-full-screen', onFullscreen(true));
   win.on('leave-full-screen', onFullscreen(false));
   // At most once a day, in the background: the window never waits on it (EPIC-04 US-0407 NFR5).
@@ -93,7 +94,10 @@ app.whenReady().then(async () => {
   });
 });
 
-app.on('before-quit', () => {
+// The windows ask about unsaved editor changes before they close, so the sessions stop only once quitting
+// is certain (will-quit comes after every window has closed).
+app.on('before-quit', noteQuitting);
+app.on('will-quit', () => {
   shutdown().catch((err) => console.error('Nedstängning misslyckades:', err));
 });
 

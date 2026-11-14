@@ -8,7 +8,8 @@
     "reading": "Läser…",
     "revealFinder": "Visa i Finder",
     "revealFiles": "Visa i filhanteraren",
-    "openInEditor": "Öppna i editor",
+    "openInEditor": "Öppna i extern editor",
+    "edit": "Redigera",
     "stageStatus": {
       "not-started": "Ej startad",
       "in-progress": "Pågår",
@@ -56,6 +57,7 @@
     "settings": "Inställningar",
     "config": "Konfiguration",
     "plans": "Planer",
+    "editor": "Editor",
     "intentCount": "{n} intents",
     "emptyTitle": "Inget projekt öppet",
     "emptyText": "Öppna en projektmapp som innehåller {path}.",
@@ -583,6 +585,32 @@
     "missing": "AI-DLC:s kommandoradsverktyg aidlc hittades inte: {error}",
     "failed": "AI-DLC:s konfiguration kunde inte läsas: {error}"
   },
+  "editor": {
+    "empty": "Ingen fil är öppen. Välj en fil i trädet, eller Redigera i läsaren eller Features-vyn.",
+    "loading": "Laddar editorn…",
+    "tree": "Projektets filer",
+    "treeTruncated": "Trädet visar de första 20 000 filerna.",
+    "unsaved": "osparade ändringar",
+    "close": "Stäng {file}",
+    "closeDirty": "{file} har osparade ändringar. Stäng ändå?",
+    "closeProjectDirty": "Osparade ändringar i {files}. Stäng projektet ändå?",
+    "quitDirty": "Osparade ändringar i {files}. Stäng ändå?",
+    "preview": "Förhandsvisning",
+    "changedOnDisk": "Filen ändrades på disken medan du redigerade. Spara visar båda versionerna.",
+    "agentWorking": "Agenten arbetar i den här intenten och kan också ändra filen. Spara kontrollerar det först.",
+    "readOnly": {
+      "engine": "Skrivskyddad: filen tillhör AI-DLC:s motor.",
+      "binary": "Skrivskyddad: filen är binär.",
+      "tooLarge": "Skrivskyddad: filen är större än 2 MB."
+    },
+    "conflict": {
+      "title": "{file} har ändrats",
+      "text": "{file} ändrades på disken efter att du öppnade den, kanske av agenten.",
+      "keepMine": "Behåll min",
+      "takeDisk": "Ta diskens version",
+      "compare": "Jämför"
+    }
+  },
   "plans": {
     "loading": "Läser planerna…",
     "new": "Ny plan",
@@ -829,6 +857,8 @@
     "invalidPlanName": "Ogiltigt plannamn: {name}. Använd små bokstäver och ord med bindestreck emellan, som min-plan.",
     "stockPlan": "{name} är en av AI-DLC:s egna planer och kan inte ändras.",
     "planInUse": "{name} används av en pågående intent ({intents}) och kan inte tas bort.",
-    "planNotFound": "Ingen plan med namnet {name} hittades."
+    "planNotFound": "Ingen plan med namnet {name} hittades.",
+    "notAFile": "{rel} är ingen fil.",
+    "engineOwned": "{rel} tillhör AI-DLC:s motor och sparas inte från appen."
   }
 }

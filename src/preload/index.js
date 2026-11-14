@@ -23,6 +23,14 @@ contextBridge.exposeInMainWorld('bridge', {
   getModels: call('project:models'),
   detectHarnesses: call('harness:detect'), // installed harnesses and CLI versions (EPIC-08 US-0801)
   readFile: call('project:file'),
+  // Editing files (EPIC-10 US-1001): relative paths only; main refuses engine-owned and out-of-root ones.
+  readFileForEdit: call('file:read'),
+  writeFile: call('file:write'),
+  watchOpenFiles: call('file:watch'),
+  listTree: call('project:listTree'),
+  onFileChanged: subscribe('file:changed'),
+  onConfirmClose: subscribe('app:confirmClose'),
+  confirmClose: call('app:closeConfirmed'),
   revealInFinder: call('shell:reveal'),
   openInEditor: call('shell:openInEditor'),
   getSettings: call('settings:get'),

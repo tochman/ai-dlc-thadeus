@@ -4,8 +4,8 @@ import { useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { FileContent } from './ArtifactReader.jsx';
 
-/** @param {{doc: {name: string, content: string} | null, onClose: () => void}} props */
-export default function DocsDialog({ doc, onClose }) {
+/** @param {{doc: {name: string, content: string} | null, onClose: () => void, onEdit?: () => void}} props */
+export default function DocsDialog({ doc, onClose, onEdit }) {
   const { t } = useTranslation();
   const ref = useRef(null);
 
@@ -32,6 +32,11 @@ export default function DocsDialog({ doc, onClose }) {
           <h2 id="docs-dialog-title">{doc.name} • docs/README.md</h2>
           <FileContent rel="docs/README.md" content={doc.content} />
           <div className="setup-actions">
+            {onEdit && (
+              <button type="button" className="btn btn-accent" onClick={onEdit} data-testid="docs-dialog-edit">
+                {t('common.edit')}
+              </button>
+            )}
             <button type="button" className="btn" onClick={onClose} data-testid="docs-dialog-close">
               {t('common.close')}
             </button>

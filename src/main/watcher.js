@@ -62,6 +62,14 @@ export function watchFiles({ root, paths, onChange, onError = console.error, deb
   };
 }
 
+/** The files open in the editor (EPIC-10 US-1001): `onChange(absPath)` for every change, add or removal of one. */
+export function watchOpenFiles({ files, onChange, onError = console.error }) {
+  const watcher = chokidar.watch(files, { ignoreInitial: true });
+  watcher.on('all', (_event, p) => onChange(p));
+  watcher.on('error', onError);
+  return { close: () => watcher.close() };
+}
+
 /**
  * @param {{intentsDir: string, ledgerFile?: string,
  *          onChange: (c: {dirNames: string[], indexChanged: boolean, costChanged: boolean}) => void,

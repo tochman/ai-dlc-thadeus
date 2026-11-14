@@ -920,6 +920,26 @@ a.md-link:hover { color: var(--steel-light); }
 .plans-head .btn-link { background: none; border: 0; padding: 0; color: var(--amber); font: inherit; cursor: pointer; text-transform: none; }
 .plans-list p { margin: 2px 0; }
 .plans-stage-list ul { margin: 0; padding-left: 18px; columns: 2; }
+/* The editor (EPIC-10 US-1001): the file tree beside the editor tabs. */
+.editor-view { flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(180px, 260px) 1fr; gap: var(--gap); }
+.file-tree { overflow: auto; background: var(--slate-1); padding: 6px 4px; font-size: 13px; }
+.file-tree-list { list-style: none; margin: 0; padding-left: 12px; }
+.file-tree > .file-tree-list { padding-left: 0; }
+.file-tree-dir, .file-tree-file { background: none; border: 0; color: var(--text-2); font: inherit; text-align: left; padding: 1px 2px; cursor: pointer; width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.file-tree-dir { color: var(--steel-text); }
+.file-tree-dir:hover, .file-tree-file:hover { color: var(--amber); }
+.editor-panel { min-width: 0; min-height: 0; display: flex; flex-direction: column; gap: 6px; }
+.editor-empty { padding: 12px; }
+.editor-tabs { display: flex; flex-wrap: wrap; gap: 2px; }
+.editor-tab { display: inline-flex; background: var(--slate-2); }
+.editor-tab.is-active { background: var(--steel-deep); border-bottom: 2px solid var(--amber); }
+.editor-tab button { background: none; border: 0; color: var(--text); font: inherit; font-size: 13px; padding: 4px 8px; cursor: pointer; }
+.editor-dirty { color: var(--amber); }
+.editor-body { flex: 1; min-height: 320px; display: grid; grid-template-columns: 1fr; gap: var(--gap); }
+.editor-body.has-preview { grid-template-columns: 1fr 1fr; }
+.editor-monaco { min-height: 320px; border-left: var(--gap) solid var(--steel-deep); }
+.editor-preview { overflow: auto; background: var(--slate-1); padding: 8px 12px; }
+.editor-diff { height: 360px; }
 /* The update notice (EPIC-04 US-0407): a calm notice in the corner, never a modal. */
 .update-notice { position: fixed; right: 16px; bottom: 16px; z-index: 40; width: min(440px, calc(100vw - 32px)); max-height: 60vh; overflow: auto; border-left: var(--gap) solid var(--steel); display: flex; flex-direction: column; gap: 8px; }
 .update-notice h2 { margin: 0; color: var(--steel); font-size: 15px; letter-spacing: 0.04em; text-transform: uppercase; }
