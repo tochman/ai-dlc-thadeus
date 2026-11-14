@@ -128,7 +128,7 @@ The CLI refuses a harness that the project hasn't installed.
   - [x] **The Guard Policy lock (tier 2):** the strict lock in `aidlc/spaces/<space>/memory/*.md` has no CLI command. The app edits only that section, after showing the diff, and never touches the rest of the memory file.
 - **Dependencies:** US-0901
 
-**US-0903: Create and reuse custom plans** 📋 Planned
+**US-0903: Create and reuse custom plans** 📋 Planned for v0.2.4
 - As a **developer who keeps running the same kind of work**, in order to **start it with the right steps every time**, I would like to **see the saved plans, compose a new one for a task, and save the plan of a running piece of work**.
 - **Epic:** EPIC-09
 - **Priority:** Medium

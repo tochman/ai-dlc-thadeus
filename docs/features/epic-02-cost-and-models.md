@@ -6,9 +6,9 @@
 
 > Make the price and the "brains" of AI-DLC work visible. For every intent, stage and agent the console shows what the run cost (tokens and USD) and which model did the work, next to which model each agent is *configured* to use. The goal is that the user can answer "what did this feature cost?", "where does the money go?" and "is the reviewer really running on the cheaper model?" without leaving the app. Read-only, like everything else.
 
-**Stories:** US-0201, US-0202, US-0203, US-0204, US-0205, US-0206
+**Stories:** US-0201, US-0202, US-0203, US-0204, US-0205, US-0206, US-0207
 
-**Status (2026-11-13):** ✅ US-0201–US-0205 released in v0.2.0. CSV export (US-0203) is deferred. US-0206 moved to US-0904 in EPIC-09.
+**Status (2026-11-14):** ✅ US-0201–US-0205 released in v0.2.0. CSV export (US-0203) is deferred. US-0206 moved to US-0904 in EPIC-09. 📋 US-0207 planned for v0.2.4 (live token view).
 
 ---
 
@@ -114,3 +114,17 @@ The key format of `workflows` was confirmed during requirements analysis (see ab
   - [ ] Agents that deviate from their configuration (US-0204) are marked, with a suggestion to align them.
 - **Dependencies:** US-0204, US-0405
 
+
+**US-0207: Live token view while the work runs** 📋 Planned for v0.2.4
+- As a **developer watching agents work**, in order to **see how fast the work burns tokens and what kind**, I would like to **a live view of input, output and cache tokens with the token rate over time**.
+- **Epic:** EPIC-02
+- **Priority:** Medium
+- **Complexity:** Medium
+- **Background:** Asked for on 2026-11-14 for v0.2.4. The style follows the reference screenshot `Screenshot 2026-11-14 at 08.57.27.png`: glowing bar meters with a level scale, and a waveform. The screenshot guides layout, shape and colour only (FR9.5).
+- **Acceptance Criteria:**
+  - [ ] For the running intent, input, output, cache write and cache read tokens show as glowing bar meters with a level scale and the figure beside each. They come from the intent's `workflows` node in `usage-ledger.json`.
+  - [ ] A waveform shows the token rate over time, computed from the change between ledger updates.
+  - [ ] It updates live when the ledger changes, debounced like the other updates (US-0205).
+  - [ ] A missing or half-written ledger keeps the last good values and says so in one sentence. Figures are the ledger's own.
+  - [ ] Each meter has a text label, not colour alone. Swedish and English texts, and motion follows the animations setting.
+- **Dependencies:** US-0201, US-0205

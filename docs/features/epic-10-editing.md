@@ -15,13 +15,13 @@
 
 **Stories:** US-1001
 
-**Status (2026-11-14):** 📋 Planned. Added at the person's request.
+**Status (2026-11-14):** 📋 Planned. Added at the person's request. US-1001 planned for v0.2.4.
 
 ---
 
 ## User Stories
 
-**US-1001: Edit files in the app with Monaco** 📋 Planned
+**US-1001: Edit files in the app with Monaco** 📋 Planned for v0.2.4
 - As a **developer working on a project in the console**, in order to **make a quick change without switching to VS Code**, I would like to **open any file of the project in a Monaco editor inside the app, edit it with syntax highlighting, and save it**.
 - **Epic:** EPIC-10
 - **Priority:** Medium

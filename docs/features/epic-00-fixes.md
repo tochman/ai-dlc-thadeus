@@ -6,9 +6,9 @@
 
 > Small fixes the person reports while using the app: something looks off, behaves wrongly or is missing a detail. Each fix becomes a story here, so nothing reported in passing gets lost. A fix that grows into a feature moves to its topic's epic.
 
-**Stories:** US-0001, US-0002, US-0003, US-0004, US-0005
+**Stories:** US-0001, US-0002, US-0003, US-0004, US-0005, US-0006
 
-**Status (2026-11-14):** ✅ US-0001 released in v0.2.3 (epic badge). ✅ US-0002 released in v0.2.3 (busy tab alignment). ✅ US-0003 released in v0.2.3 (lifecycle rule for every harness). ✅ US-0004 released in v0.2.3 (a popup answer reaches the agent once). ✅ US-0005 released in v0.2.3 (Resume waits while the work runs).
+**Status (2026-11-14):** ✅ US-0001 released in v0.2.3 (epic badge). ✅ US-0002 released in v0.2.3 (busy tab alignment). ✅ US-0003 released in v0.2.3 (lifecycle rule for every harness). ✅ US-0004 released in v0.2.3 (a popup answer reaches the agent once). ✅ US-0005 released in v0.2.3 (Resume waits while the work runs). 📋 US-0006 planned for v0.2.4 (popup answers still don't reach the agent).
 
 ---
 
@@ -86,3 +86,16 @@
   - [x] Given the question is answered or the agent tab has exited, the button is enabled again. A question left open since before the app started does not block it.
 - **Notes:** `asking()` in `src/renderer/TerminalContext.jsx` (fed from the waiting questions in `App.jsx`), `workingReason()` in `src/renderer/ResumeButton.jsx`, test in `tests/renderer/ResumeButton.test.jsx`.
 - **Dependencies:** US-0501, US-0505, US-0803
+
+**US-0006: Popup answers reach Claude Code's real picker** 📋 Planned for v0.2.4
+- As a **developer answering AI-DLC's questions from the popup**, in order to **answer once and move on**, I would like to **have the popup's answer actually land in Claude Code's question picker**.
+- **Epic:** EPIC-00
+- **Priority:** High
+- **Complexity:** Medium
+- **Background:** Reported 2026-11-14 after v0.2.3: "the us-0004 is NOT working. We can not update AIDLC answers or Claude answers." US-0004's notes say the picker layout in its tests was written by hand, and the check against Claude Code's real picker was still due.
+- **Acceptance Criteria:**
+  - [ ] The cause is found in a real Claude Code session, and the picker text that session shows is captured as a test fixture.
+  - [ ] Given a waiting AI-DLC question and the same question in Claude Code's picker, when the person picks an option in the popup, then the picker receives it, AI-DLC records `QUESTION_ANSWERED`, and the popup closes.
+  - [ ] Given a picker with several questions, the popup answers each, or offers only "Svara i Claude" and says why.
+  - [ ] A test built on the captured picker text fails before the fix and passes after it.
+- **Dependencies:** US-0004
