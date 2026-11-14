@@ -96,6 +96,23 @@ describe('watchFiles', () => {
     await wait(900);
     expect(changes).toBe(1);
   });
+
+  it('reports a .json file target, created after watching started, and ignores other .json files (US-0901 FR6.1)', async () => {
+    const root = path.join(TMP, 'config-project');
+    await fs.mkdir(root, { recursive: true });
+    await wait(300); // same FSEvents settling as above
+    let changes = 0;
+    watcher = watchFiles({ root, paths: ['aidlc.settings.json', 'aidlc/scopes'], onChange: () => changes++, debounceMs: 150 });
+    await watcher.ready;
+
+    await fs.writeFile(path.join(root, 'package.json'), '{}');
+    await wait(400);
+    expect(changes).toBe(0);
+
+    await fs.writeFile(path.join(root, 'aidlc.settings.json'), '{"flags":{}}');
+    await wait(600);
+    expect(changes).toBe(1);
+  });
 });
 
 describe('watchForAidlc', () => {

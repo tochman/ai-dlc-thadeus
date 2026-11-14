@@ -92,6 +92,27 @@ describe('App shell', () => {
     expect(screen.getByTestId('project-view-switch-intents').getAttribute('aria-current')).toBe('page'); // views are per project
   });
 
+  it('opens the Configuration view from its arm block and the menu, only in an AI-DLC project (US-0901 FR1.1)', async () => {
+    await renderApp({ openProjects: ['/p/aidlc-dash-a'], activeProject: '/p/aidlc-dash-a' });
+    const block = await screen.findByTestId('project-view-switch-config');
+    expect(block.textContent).toBe('Konfiguration');
+    fireEvent.click(block);
+    expect(screen.getByTestId('project-view-switch-config').getAttribute('aria-current')).toBe('page');
+    expect(screen.getByRole('heading', { level: 1 }).textContent).toMatch(/aidlc-dash-a.*Konfiguration/);
+
+    act(() => push.menuCommand({ command: 'view', view: 'intents' }));
+    expect(screen.getByTestId('project-view-switch-intents').getAttribute('aria-current')).toBe('page');
+    act(() => push.menuCommand({ command: 'view', view: 'config' }));
+    expect(screen.getByTestId('project-view-switch-config').getAttribute('aria-current')).toBe('page');
+    cleanup();
+
+    mockBridge({ openProjects: ['/p/plain-a'], activeProject: '/p/plain-a' });
+    window.bridge.openProject = vi.fn(async (dir) => ({ ...projectInfo(dir, 'p1'), detection: { isAidlc: false } }));
+    render(<App />);
+    await screen.findByTestId('project-view-switch-intents');
+    expect(screen.queryByTestId('project-view-switch-config')).toBeNull();
+  });
+
   it('sets data-motion from the setting, Dämpad under prefers-reduced-motion without one, and saves a new choice (FR4.2)', async () => {
     mockReducedMotion(true);
     await renderApp({});

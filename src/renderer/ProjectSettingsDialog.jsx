@@ -40,6 +40,7 @@ export function confirmHarnessSwitch(terminal, from, to, t) {
  *   onSetup: given when the project uses AI-DLC but has no feature docs (FR3.6, FR4.5)
  *   harness: the harness the agent tab runs now; harnesses: the detection, null while it runs (US-0801)
  *   onAddHarness: given in an AI-DLC project; opens setup in add mode (US-0802 FR3.1)
+ *   onOpenConfig: given in an AI-DLC project; shows the Configuration view (US-0901 FR1.1)
  */
 export default function ProjectSettingsDialog({
   open,
@@ -50,7 +51,8 @@ export default function ProjectSettingsDialog({
   onSetup,
   harness = null,
   harnesses = null,
-  onAddHarness
+  onAddHarness,
+  onOpenConfig
 }) {
   const { t } = useTranslation();
   const terminal = useTerminal();
@@ -177,6 +179,21 @@ export default function ProjectSettingsDialog({
                 data-testid="project-settings-add-harness"
               >
                 {t('settings.project.addHarness')}
+              </button>
+            </p>
+          )}
+          {onOpenConfig && (
+            <p className="settings-setup">
+              <button
+                type="button"
+                className="btn"
+                onClick={() => {
+                  onOpenConfig();
+                  onClose();
+                }}
+                data-testid="project-settings-open-config"
+              >
+                {t('settings.project.openConfig')}
               </button>
             </p>
           )}

@@ -267,8 +267,11 @@ export default function App() {
   const activeUi = active ? { ...UI_DEFAULT, ...ui[active.projectId] } : UI_DEFAULT;
   const activeMeta = (active && meta[active.projectId]) || {};
   const isAidlc = active?.detection.isAidlc === true;
-  const view = activeMeta.showFeatures ? activeUi.view : 'intents';
+  // Features needs the feature docs and Configuration needs AI-DLC (US-0901 FR1.1); else the intents view shows.
+  const view =
+    (activeUi.view === 'features' && !activeMeta.showFeatures) || (activeUi.view === 'config' && !isAidlc) ? 'intents' : activeUi.view;
   const firstLabel = isAidlc ? t('app.intents') : t('app.setup');
+  const viewLabel = { features: t('app.features'), config: t('app.config') }[view] ?? firstLabel;
 
   const showFeatures = activeMeta.showFeatures === true;
 
@@ -311,7 +314,7 @@ export default function App() {
     closeProject: () => closeActiveProject(),
     projectSettings: () => openProjectSettings(activeId),
     appSettings: () => openAppSettings(),
-    view: ({ view: v }) => pick(v, ['intents', 'features'], showView),
+    view: ({ view: v }) => pick(v, ['intents', 'features', 'config'], showView),
     panel: ({ panel }) => pick(panel, ['cost', 'github'], togglePanel),
     terminal: ({ action }) => pick(action, ['agent', 'shell', 'restart'], runTerminal),
     docs: () => openDocs()
@@ -354,7 +357,7 @@ export default function App() {
             <h1 className="app-title">
               {active ? (
                 <>
-                  {active.name} <span className="app-title-sep" aria-hidden="true">•</span> {view === 'features' ? t('app.features') : firstLabel}
+                  {active.name} <span className="app-title-sep" aria-hidden="true">•</span> {viewLabel}
                 </>
               ) : (
                 t('app.noProject')
@@ -425,6 +428,11 @@ export default function App() {
             {showFeatures && (
               <ArmBlock current={view === 'features'} onClick={() => showView('features')} data-testid="project-view-switch-features">
                 {t('app.features')}
+              </ArmBlock>
+            )}
+            {isAidlc && (
+              <ArmBlock current={view === 'config'} onClick={() => showView('config')} data-testid="project-view-switch-config">
+                {t('app.config')}
               </ArmBlock>
             )}
             <ArmBlock

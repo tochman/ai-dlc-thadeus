@@ -19,7 +19,7 @@ function parseAidlcOutput(stdout) {
     .map((e) => ({ agent: agentName(e.agent), model: e.model ?? null, effort: e.effort ?? null }));
 }
 
-function frontmatterField(text, field) {
+export function frontmatterField(text, field) {
   const fm = /^---\r?\n([\s\S]*?)\r?\n---/.exec(text);
   const m = fm && new RegExp(`^${field}:\\s*(.+?)\\s*$`, 'm').exec(fm[1]);
   return m ? m[1].replace(/^['"]|['"]$/g, '') : null;

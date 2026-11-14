@@ -43,6 +43,8 @@ contextBridge.exposeInMainWorld('bridge', {
   getStoryLinks: call('features:storyLinks'),
   getProjectSettings: call('projectSettings:get'),
   setProjectSettings: call('projectSettings:set'),
+  getAidlcConfig: call('config:get'), // read-only AI-DLC configuration for one harness (EPIC-09 US-0901)
+  onConfigChanged: subscribe('config:changed'),
   onFeaturesChanged: subscribe('features:changed'),
   onProjectChanged: subscribe('project:changed'),
   onProjectDetected: subscribe('project:detected'),

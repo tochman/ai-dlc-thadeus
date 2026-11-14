@@ -776,6 +776,23 @@ button.lcars-chip:hover { border-color: var(--steel-text); color: var(--steel-li
 .features-epic .filters .field { margin: 0; }
 .features-empty { display: flex; flex-direction: column; gap: 10px; align-items: flex-start; max-width: 680px; }
 .features-empty h2, .features-empty p { margin: 0; }
+
+/* Configuration view (US-0901): six sections of read-only tables on the panel ground. */
+.config-view { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 12px; overflow: auto; }
+.config-harness { align-self: flex-start; margin: 0; }
+.config-section { background: var(--slate-1); border-left: var(--gap) solid var(--slate-3); padding: 10px 14px; }
+.config-section h2 { margin: 0 0 8px; color: var(--steel); font-size: 15px; letter-spacing: 0.04em; text-transform: uppercase; }
+.config-section > p { margin: 0 0 6px; }
+.config-section.is-greyed .config-table { opacity: 0.5; }
+.config-table code { font-size: 13px; }
+.config-env { margin-left: 6px; }
+.config-plans { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.config-plans li { display: flex; flex-wrap: wrap; gap: 8px; align-items: baseline; padding: 3px 6px; border-bottom: 1px solid var(--slate-2); }
+.config-plans li.is-active { border-left: var(--gap) solid var(--steel); }
+.config-pairs { margin: 0; display: grid; gap: 3px; }
+.config-pairs div { display: flex; gap: 10px; }
+.config-pairs dt { min-width: 200px; color: var(--muted); }
+.config-pairs dd { margin: 0; }
 .features-links { display: flex; flex-wrap: wrap; gap: var(--gap); align-items: center; margin: 0 0 8px; }
 
 .settings-dialog {

@@ -17,6 +17,7 @@ import {
 import { notifyQuestions } from './notify.js';
 import { summarizeLedger } from './parsers/ledger.js';
 import { getConfiguredModels } from './models.js';
+import { CONFIG_WATCH_PATHS, checkHarness, getAidlcConfig } from './aidlcConfig.js';
 import { fetchRemote, getGitStatus, getRemoteChanges, listConflicts, showRemoteFile } from './git.js';
 import { getSetupInfo, runSetup } from './setup.js';
 import { detectHarnesses } from './harness.js';
@@ -29,7 +30,7 @@ import { currentLanguage, setLanguageFromSettings } from './i18n.js';
 import { t } from '../shared/i18n.js';
 
 const OPEN_IN_EDITOR_EXT = new Set(['.md', '.json', '.txt', '.yaml', '.yml']);
-// projectId -> { root, space, watcher, setupWatcher, featuresWatcher, featuresKey, sender, models, setupInfo, harnesses }
+// projectId -> { root, space, watcher, setupWatcher, featuresWatcher, featuresKey, configWatcher, sender, models, setupInfo, harnesses }
 const projects = new Map();
 
 function project(projectId) {
@@ -42,11 +43,41 @@ async function closeWatcher(p) {
   const w = p.watcher;
   const s = p.setupWatcher;
   const f = p.featuresWatcher;
+  const c = p.configWatcher;
   p.watcher = null;
   p.setupWatcher = null;
   p.featuresWatcher = null;
   p.featuresKey = null;
-  await Promise.all([w?.close(), s?.close(), f?.close()]);
+  p.configWatcher = null;
+  await Promise.all([w?.close(), s?.close(), f?.close(), c?.close()]);
+}
+
+/** The settings files and plan folders behind the Configuration view; each change sends config:changed (US-0901 FR6.1). */
+function watchConfig(projectId) {
+  const p = project(projectId);
+  try {
+    p.configWatcher = watchFiles({
+      root: p.root,
+      paths: CONFIG_WATCH_PATHS,
+      onChange: () => {
+        if (!p.sender.isDestroyed()) p.sender.send('config:changed', { projectId });
+      },
+      onError: (err) => console.error(`Bevakning av AI-DLC-konfigurationen misslyckades för ${p.root}:`, err)
+    });
+  } catch (err) {
+    console.error(`Bevakning av AI-DLC-konfigurationen kunde inte startas för ${p.root}:`, err); // only live reload stops
+  }
+}
+
+/** The active intent of the watched space from the cached list, or null (US-0901 FR3.3). Never throws. */
+async function activeIntent(p) {
+  if (!p.space) return null;
+  try {
+    return (await loadIntentList(p.root, p.space, [])).intents.find((i) => i.active) ?? null;
+  } catch (err) {
+    console.warn(`Aktiv intent kunde inte läsas för ${p.root}:`, err.message);
+    return null;
+  }
 }
 
 const sendFeaturesChanged = (projectId, p) => {
@@ -187,6 +218,7 @@ const handlers = {
     if (detection.isAidlc) await watchSpace(projectId, detection.activeSpace);
     else watchForSetup(projectId);
     syncFeaturesWatch(projectId); // not awaited: opening a project never waits on the feature docs
+    watchConfig(projectId);
     return { projectId, root, name: path.basename(root), detection };
   },
   'project:close': async (_event, projectId) => {
@@ -226,6 +258,15 @@ const handlers = {
   },
   // Cached per opened project like the models; detectHarnesses never rejects (US-0801 FR1.2, FR1.3).
   'harness:detect': async (_event, projectId) => project(projectId).harnesses,
+  // Read-only AI-DLC configuration (US-0901). The id must be a table harness installed here (FR4.3, NFR2);
+  // getAidlcConfig never rejects, so a CLI failure comes back as a value the view shows (NFR3).
+  'config:get': async (_event, projectId, harness) => {
+    const p = project(projectId);
+    checkHarness(harness, await p.harnesses);
+    const active = await activeIntent(p);
+    const config = await getAidlcConfig(p.root, { harness, activeScope: active?.scope ?? null });
+    return { ...config, activeDir: active?.dirName ?? null };
+  },
   'project:file': async (_event, projectId, rel) => readText(project(projectId).root, rel),
   'shell:reveal': async (_event, projectId, rel) => {
     shell.showItemInFolder(await resolveInRoot(project(projectId).root, rel));

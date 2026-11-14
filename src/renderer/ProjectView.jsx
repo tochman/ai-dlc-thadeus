@@ -7,6 +7,7 @@ import RefreshPanel from './RefreshPanel.jsx';
 import SetupAidlc from './SetupAidlc.jsx';
 import TerminalPanel from './TerminalPanel.jsx';
 import FeaturesView from './FeaturesView.jsx';
+import ConfigView from './ConfigView.jsx';
 import ProjectSettingsDialog, { confirmHarnessSwitch } from './ProjectSettingsDialog.jsx';
 import { Frame } from './Lcars.jsx';
 import { featureDocsPrompt } from './featureDocsPrompt.js';
@@ -217,7 +218,8 @@ function ProjectContent({ project, visible, settingsOpen = false, onCloseSetting
   const storiesByIntent = useMemo(() => invertLinks(links), [links]);
   const docsExist = features?.available === true;
   const showFeatures = settings.featureDocs === 'show' || (settings.featureDocs === 'auto' && docsExist);
-  const view = showFeatures ? chosenView : 'intents';
+  // Configuration needs AI-DLC, Features the feature docs; otherwise the intents view shows (US-0901 FR1.1).
+  const view = chosenView === 'config' ? (isAidlc ? 'config' : 'intents') : showFeatures ? chosenView : 'intents';
   const setupDocs = () =>
     terminal?.type('agent', featureDocsPrompt({ exists: docsExist, path: settings.featuresPath }), { submit: false });
   const offerSetup = isAidlc && !docsExist ? setupDocs : undefined; // FR3.6, FR4.5
@@ -240,8 +242,8 @@ function ProjectContent({ project, visible, settingsOpen = false, onCloseSetting
       <div className="project-main">
         {justSetUp && <SetupDone onClose={() => setJustSetUp(false)} onFeatureDocs={featureDocsChoice ? setupDocs : undefined} />}
         {isAidlc && addingHarness && <SetupAidlc {...setupProps} mode="add" onClose={() => setAddingHarness(false)} />}
-        {/* Kept mounted while Features is shown, so the intents view keeps its state (FR2.1). */}
-        <div className="project-mode" hidden={view === 'features'}>
+        {/* Kept mounted while Features or Configuration is shown, so the intents view keeps its state (FR2.1). */}
+        <div className="project-mode" hidden={view !== 'intents'}>
           {isAidlc ? (
             <AidlcProject
               project={project}
@@ -270,6 +272,15 @@ function ProjectContent({ project, visible, settingsOpen = false, onCloseSetting
             onSetup={offerSetup}
           />
         )}
+        {view === 'config' && (
+          <ConfigView
+            projectId={project.projectId}
+            visible={visible}
+            harnesses={detected}
+            defaultHarness={harnessId}
+            onSetup={() => setAddingHarness(true)}
+          />
+        )}
       </div>
       <TerminalPanel projectId={project.projectId} visible={visible} onChooseHarness={() => setChoosingHarness(true)} />
       <ProjectSettingsDialog
@@ -285,6 +296,7 @@ function ProjectContent({ project, visible, settingsOpen = false, onCloseSetting
         harnesses={detected}
         onSetup={offerSetup}
         onAddHarness={isAidlc ? () => setAddingHarness(true) : undefined}
+        onOpenConfig={isAidlc ? () => onView?.('config') : undefined}
       />
     </div>
   );
