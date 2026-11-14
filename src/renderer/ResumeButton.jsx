@@ -18,9 +18,11 @@ export function resumeLabel(position) {
 
 /**
  * @param {{intent: {dirName: string, status: string|null}, activeDirName: string|null,
- *          position?: {stage: string|null, step?: number, total?: number}}} props
+ *          activeIntent?: {dirName: string, slug?: string, status: string|null}|null,
+ *          position?: {stage: string|null, step?: number, total?: number}}} props activeIntent is the project's
+ *   active intent (the one an agent session runs)
  */
-export default function ResumeButton({ intent, activeDirName, position }) {
+export default function ResumeButton({ intent, activeDirName, activeIntent = null, position }) {
   const { t } = useTranslation();
   const terminal = useTerminal();
   const [message, setMessage] = useState(null);
@@ -36,6 +38,11 @@ export default function ResumeButton({ intent, activeDirName, position }) {
   function workingReason() {
     if (terminal.anyBusy?.() ?? terminal.state('agent') === 'busy') return t('intents.resume.busy', { harness: harnessName });
     if (terminal.asking?.()) return t('intents.resume.asking', { harness: harnessName });
+    // A live agent session with the active intent in flight is running the work, even while it is quiet (waiting
+    // on a subagent, between steps). Every Resume in the project waits: a switch typed into it is wrong too (US-0007).
+    if (terminal.running?.() && activeIntent?.status === 'in-flight') {
+      return t('intents.resume.running', { harness: harnessName, intent: activeIntent.slug ?? activeIntent.dirName });
+    }
     return null;
   }
 

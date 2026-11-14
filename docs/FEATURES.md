@@ -4,7 +4,7 @@ Overview of all epics. Each epic lives in its own file under [features/](feature
 
 | Epic | Topic | Status |
 |------|-------|--------|
-| [EPIC-00](features/epic-00-fixes.md) | Fixes: small things the person reports while using the app | ✅ US-0001 released in v0.2.3 (epic badge) · ✅ US-0002 released in v0.2.3 (busy tab alignment) · ✅ US-0003 released in v0.2.3 (lifecycle rule for every harness) · ✅ US-0004 released in v0.2.3 (a popup answer reaches the agent once) · ✅ US-0005 released in v0.2.3 (Resume waits while the work runs) · ✅ US-0006 done for v0.2.4 (popup answers reach Claude Code's real picker) |
+| [EPIC-00](features/epic-00-fixes.md) | Fixes: small things the person reports while using the app | ✅ US-0001 released in v0.2.3 (epic badge) · ✅ US-0002 released in v0.2.3 (busy tab alignment) · ✅ US-0003 released in v0.2.3 (lifecycle rule for every harness) · ✅ US-0004 released in v0.2.3 (a popup answer reaches the agent once) · ✅ US-0005 released in v0.2.3 (Resume waits while the work runs) · ✅ US-0006 done for v0.2.4 (popup answers reach Claude Code's real picker) · ✅ US-0007 done for v0.2.4 (Resume stays disabled while an agent session runs the work) |
 | [EPIC-01](features/epic-01-bridge-console-mvp.md) | Bridge Console: read-only AI-DLC visualisation and an embedded Claude terminal (foundation) | ✅ Released in v0.1.0 |
 | [EPIC-02](features/epic-02-cost-and-models.md) | Cost & Models: what runs cost, and which model each agent uses | ✅ Released in v0.2.0 (US-0201–US-0205; CSV export in US-0203 deferred) · US-0206 moved to US-0904 (EPIC-09) · ✅ US-0207 done for v0.2.4 (live token view) |
 | [EPIC-03](features/epic-03-audit-timeline.md) | Audit Timeline: long histories and precise live updates | ✅ Released in v0.2.0 (US-0301, US-0302) |

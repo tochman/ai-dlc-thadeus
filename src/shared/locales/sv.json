@@ -159,6 +159,7 @@
       "step": "(steg {step} av {total})",
       "busy": "{harness} arbetar — vänta eller avbryt först",
       "asking": "{harness} väntar på ditt svar — svara i terminalen först",
+      "running": "{harness} kör {intent} — fortsätt i terminalen",
       "invalidName": "Ogiltigt intent-namn: {name}"
     },
     "files": {

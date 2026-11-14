@@ -19,6 +19,7 @@ afterEach(() => {
   terminal.harness = CLAUDE;
   delete terminal.anyBusy;
   delete terminal.asking;
+  delete terminal.running;
 });
 
 describe('ResumeButton', () => {
@@ -95,5 +96,53 @@ describe('ResumeButton', () => {
     terminal.asking = vi.fn(() => false);
     rerender(<ResumeButton intent={{ ...intent }} activeDirName="261113-workflow-control" />);
     expect(screen.getByTestId('intent-resume').disabled).toBe(false);
+  });
+});
+
+describe('ResumeButton while an agent session runs the work (EPIC-00 US-0007)', () => {
+  const RUNNING = 'Claude kör workflow-control — fortsätt i terminalen';
+  const active = (status) => ({ ...intent, status });
+  const button = () => screen.getByTestId('intent-resume');
+
+  it('a quiet but alive agent tab with the active intent in flight disables it, with the reason, and types nothing', () => {
+    terminal.running = vi.fn(() => true); // idle: waiting on a subagent or between steps
+    render(<ResumeButton intent={intent} activeDirName={intent.dirName} activeIntent={active('in-flight')} position={position} />);
+    expect(button().disabled).toBe(true);
+    expect(button().title).toBe(RUNNING);
+    fireEvent.click(button());
+    expect(terminal.type).not.toHaveBeenCalled();
+    expect(terminal.sequence).not.toHaveBeenCalled();
+  });
+
+  it('another intent\'s button waits too while the active one is in flight', () => {
+    terminal.running = vi.fn(() => true);
+    render(<ResumeButton intent={{ ...intent, dirName: '261112-other', active: false }} activeDirName={intent.dirName} activeIntent={active('in-flight')} />);
+    expect(button().disabled).toBe(true);
+    expect(button().title).toBe(RUNNING);
+  });
+
+  it('is enabled again when the agent tab has exited, or the active intent is parked or complete', () => {
+    terminal.running = vi.fn(() => false); // exited
+    const { rerender } = render(<ResumeButton intent={intent} activeDirName={intent.dirName} activeIntent={active('in-flight')} />);
+    expect(button().disabled).toBe(false);
+
+    terminal.running = vi.fn(() => true);
+    for (const status of ['parked', 'complete']) {
+      const other = { ...intent, dirName: '261112-other', active: false };
+      rerender(<ResumeButton intent={other} activeDirName={intent.dirName} activeIntent={active(status)} />);
+      expect(button().disabled, status).toBe(false);
+      expect(button().title, status).toBe('');
+    }
+  });
+
+  it('busy and asking keep their own reasons ahead of it', () => {
+    terminal.running = vi.fn(() => true);
+    terminal.anyBusy = vi.fn(() => true);
+    const { rerender } = render(<ResumeButton intent={intent} activeDirName={intent.dirName} activeIntent={active('in-flight')} />);
+    expect(button().title).toBe(BUSY_MESSAGE);
+    terminal.anyBusy = vi.fn(() => false);
+    terminal.asking = vi.fn(() => true);
+    rerender(<ResumeButton intent={{ ...intent }} activeDirName={intent.dirName} activeIntent={active('in-flight')} />);
+    expect(button().title).toBe('Claude väntar på ditt svar — svara i terminalen först');
   });
 });

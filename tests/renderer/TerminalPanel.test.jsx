@@ -169,6 +169,7 @@ describe('TerminalPanel', () => {
     await renderPanel({ harness: harness('opencode'), problem }, { onChooseHarness });
     expect(screen.getByTestId('terminal-panel-harness-problem').textContent).toContain(problem);
     expect(window.bridge.ptySpawn.mock.calls.map(([a]) => a.kind)).toEqual(['shell']);
+    expect(terminal.running()).toBe(false); // no agent session: nothing runs the work (EPIC-00 US-0007)
 
     fireEvent.click(screen.getByTestId('terminal-panel-choose-harness'));
     expect(onChooseHarness).toHaveBeenCalledTimes(1);
@@ -217,6 +218,7 @@ describe('TerminalPanel', () => {
 
   it('answer() waits for a picker drawn just after the question was logged (EPIC-00 US-0006)', async () => {
     await renderPanel();
+    expect(terminal.running()).toBe(true); // the agent session is alive (EPIC-00 US-0007)
     const sent = terminal.answer({ kind: 'gate' }, { index: 0 }, { waitMs: 3000 });
     setTimeout(() => screens.at(-1).push('❯ 1. Approve', '  2. Request Changes', '  3. Type something.'), 400);
     await act(() => sent);

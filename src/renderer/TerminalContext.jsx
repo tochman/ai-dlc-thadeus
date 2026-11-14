@@ -140,6 +140,8 @@ export function TerminalProvider({ children, askingIntents = [] }) {
        * (US-0505 `early: false`), with an agent tab still running (EPIC-00 US-0005).
        */
       asking: () => askingIntents.length > 0 && agentTabs.some((tab) => (states[tab] ?? 'exited') !== 'exited'),
+      /** True while any agent tab's session is alive (not exited), quiet or not (EPIC-00 US-0007). */
+      running: () => agentTabs.some((tab) => (states[tab] ?? 'exited') !== 'exited'),
       /** How many agent tabs are "Arbetar" now. */
       busyAgents: () => agentTabs.filter((tab) => states[tab] === 'busy').length,
       exitCode: (tab) => sessions.current[resolve(tab)]?.activity.exitCode ?? null,
