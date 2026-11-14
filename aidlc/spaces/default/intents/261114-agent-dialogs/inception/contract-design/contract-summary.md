@@ -69,7 +69,7 @@ waiting:
   reply: "never waits: writes the event and exits 0 (FR3.3)"
   stops_waiting_when: "answer file taken; alive unchanged for 20 polls (the plugin: for 2000 ms by Date.now()); THADEUS_WAIT_SECONDS reached by wall clock (date +%s; the plugin: Date.now())"
   on_stop_without_answer: "print nothing, exit 0, so the agent shows its own prompt (NFR5)"
-  entry_timeout: "600 s for the question entry, 10 s for answered (C6)"
+  entry_timeout: "600 s for the question and permission entries, 10 s for answered (C6)"
 versions:                    # [Q1]
   current: v1
   accepted_by_app: "its own version and the one before it"
@@ -123,6 +123,14 @@ retract:                     # main-internal (U1 NFR Design LC2)
   called_by: AgentEventStore
   input: { sessionId: string, file: string }
   output: "true when it deleted <name>.ans (the hook had not taken it), false when the file was already gone (taken)"
+onRefusedReply:              # U3 amendment (RD11)
+  subscriber: AgentEventStore
+  payload: { sessionId: string, reason: string }
+  note: "only for an over-limit reply file whose header is authentic (RD11)"
+terminalInput:               # U3 amendment (BR6.6, SD10)
+  called_by: IpcRouter's pty:write handler, before writeSession
+  input: { ptyId: string, data: string }
+  effect: "the person's input moves the tab's open reply on (BR6.6, SD10)"
 ```
 
 Answers that must be typed for a hook event (a reply's text, keys after a hand-back) go through one guarded caller of the existing `writeSession(id, data)` inside AgentEventStore. It takes the session from the event it holds and the pty from `ptyOf(sessionId)`, and refuses when that is null. The renderer's existing `pty:write` stays for what the person types in the terminal (Domain Design review R-03).
@@ -137,7 +145,7 @@ Every hook-event answer goes one of three ways. The adapter picks the way from t
 |---|---|---|
 | `hook` | the hook is still waiting and the harness lets a hook return this kind of answer | the adapter builds the hook's stdout; AgentChannel writes it as the answer file (C1) |
 | `keys` | the hook cannot return the answer (spike result), or it has already handed back (`timedOut`) | the store waits for the agent's own picker in that pty's output (below), then types the key sequence the adapter computed from the event's own options |
-| `typed` | a reply | the store types the text and Enter into the pty, only while the tab still waits for input (FR2.7) |
+| `typed` | a reply | **U3 amendment (K1):** the text, then one Enter to the same pty after a short gap in the same send, only while the tab still waits (FR2.7) |
 
 **Picker readiness for `keys`:** main already receives the pty's output stream. After a hand-back, the store watches that stream for the agent's picker showing the event's first option label, for at most 3 seconds. If the label appears, it types the keys. If it does not, nothing is typed and the answer fails with "the agent's picker is not showing". The dialog keeps the answer and offers Open the terminal (FR3.5, FR3.6).
 
@@ -167,16 +175,19 @@ AgentEvent:
     what: string               # the tool or action, as the agent reported it
     detail: string             # the command or path, as reported
     cwd: string | null
-    choices: [ { label: string, refuses: boolean } ]               # in the agent's order
+    truncated: boolean         # additive (u2): detail, what or cwd was cut; both allow choices are then disabled
+    choices: [ { label: string, effect: "allowOnce" | "allowAlways" | "deny", refuses: boolean, enabled: boolean } ]   # in the agent's order; effect and enabled additive (u2)
+    # alwaysRules (the agent's own suggestions or always-patterns) never leaves main and is not part of C3 (u2 SD11).
   message:                     # kind reply (U3)
     text: string               # Markdown, up to 64 KB
     truncated: boolean
 Answer:                        # what the renderer sends (C4)
   question: { picks: [ [integer] ], own: [ string | null ] }       # one entry per question, option indexes
-  permission: { choice: integer }
+  permission: { choice: integer }                                  # no key but choice is accepted (u2 SD10)
   reply: { text: string }
 ```
 
+- **U3 amendment:** `state` gains `dismissed | stale` (kind reply only); `staleReason: "movedOn" | "sessionEnded" | "notShown"` (optional, kind reply); `message.empty: boolean`.
 - **Additive only:** U2 adds `permission`, U3 adds `message`; no field is renamed or removed in this intent. Consumers ignore fields they do not know.
 - **Indexes, not labels:** the renderer answers by option index into the options the event carried, so the dialog and the agent can never disagree about labels (FR3.2).
 
@@ -190,10 +201,14 @@ agentEvents.list:     { in: { projectId: string }, out: "AgentEvent[] in pager o
 agentEvents.changed:  { push: "agent-events:changed", payload: { projectId: string, events: "AgentEvent[]" }, unit: U1 }
 agentEvents.answer:   { in: { eventId: string, answer: Answer }, out: { state: "sending" | "sent", via: "hook" | "keys" | "typed" }, unit: U1,
                         errors: ["unknown event", "event not open", "session ended", "answer does not fit the event",
-                                 "fallback event: answered in the terminal path", "the agent's picker is not showing", "send failed: <cause>"] }
+                                 "fallback event: answered in the terminal path", "the agent's picker is not showing", "send failed: <cause>"],
+                        note: "a permission answer is only ever via: hook, never keys (u2 D10)" }
 agentEvents.close:    { in: { eventId: string }, out: { state: "handedBack" | "dismissed" }, unit: U1 }
 agentEvents.focus:    { push: "agent-events:focus", payload: { eventId: string }, unit: U5 }
-agentEvents.latest:   { in: { projectId: string }, out: "{ tabId, harness, text, arrivedAt, status } | null", unit: U3 }
+agentEvents.latest:   { in: { projectId: string }, out: "{ tabId, harness, text, arrivedAt, status, eventId, truncated, empty } | null", unit: U3,
+                        note: 'U3 amendment: status is "waiting" | "answered" | "sessionEnded" | "notShown"' }
+agentEvents.reopen:   { in: { eventId: string }, out: { state: "shown" }, errors: ["unknown event", "event not open"], unit: U3 }   # U3 amendment
+# U3 amendment: agentEvents.close returns { state: "dismissed" } for a reply (BR6.14)
 agentHooks.status:    { in: { projectId: string }, out: "[{ harness, files: [{ path, status }], status }]", unit: U4 }
 agentHooks.preview:   { in: { projectId: string, harness: string, action: "install" | "update" | "remove" }, out: "{ previewId, files: [{ path, summary, diff }] }", unit: U4 }
 agentHooks.apply:     { in: { projectId: string, previewId: string }, out: "{ status }", unit: U4,
@@ -225,6 +240,11 @@ hooks:
   <question-done-hook-event>:     # after the question tool ran (U1): same command with "answered"
   <permission-hook-event>:        # permission prompt (U2): same command with "permission"
   <stop-hook-event>:              # turn finished (U3): same command with "reply"
+  Stop:                           # U3 amendment: no matcher, timeout 10
+    - hooks:
+        - type: command
+          timeout: 10
+          command: '[ -n "$THADEUS_SESSION_DIR" ] && [ -f "$CLAUDE_PROJECT_DIR/.thadeus/hooks/dialog.sh" ] && sh "$CLAUDE_PROJECT_DIR/.thadeus/hooks/dialog.sh" reply; exit 0'
 recognised_as_the_apps: "the command runs a script in .thadeus/hooks/ (ADR-004)"
 committed_files:
   - .thadeus/hooks/dialog.sh       # name final in Functional Design

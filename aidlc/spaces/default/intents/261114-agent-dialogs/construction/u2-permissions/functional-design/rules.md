@@ -37,7 +37,7 @@ rules:
     category: policy
     applies_to: HarnessEventAdapter
     trigger: building Permission.choices
-    logic: Claude Code - Allow once (allowOnce); Allow always (allowAlways) only IF alwaysRules is not empty, one choice that applies all of them, its label naming each rule's text verbatim; Deny (deny). opencode - Allow once (once), Allow always (always), Reject (reject). refuses is true for the deny choice only
+    logic: Claude Code - Allow once (allowOnce); Allow always (allowAlways) only IF alwaysRules is not empty, one choice that applies all of them, only IF every suggestion is an `addRules` with `behavior: "allow"` or an `addDirectories` with no unknown key, its label naming each rule or folder with its destination; disabled when the lines exceed the caps (security-design.md SD11); Deny (deny). opencode - Allow once (once); Allow always (always) only IF the request carries a non-empty list of always-patterns that fits the caps, its label naming each pattern as `<permission>: <pattern>`; Reject (reject). refuses is true for the deny choice only
     violation: none
     source: FR2.1, FR3.2
   - id: BR5.4
