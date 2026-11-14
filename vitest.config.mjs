@@ -19,6 +19,8 @@ export default defineConfig({
         // The agent dialog files (US-0506 u1) each hold the floor on their own (NFR8.2).
         'src/main/agent*.js': { lines: 80 },
         'src/shared/agentText.js': { lines: 80 },
+        'src/shared/agentOrder.js': { lines: 80 }, // US-0506 u2
+
         'src/renderer/AgentDialog.jsx': { lines: 80 },
         '.opencode/plugins/thadeus-dialog.js': { lines: 80 }
       }

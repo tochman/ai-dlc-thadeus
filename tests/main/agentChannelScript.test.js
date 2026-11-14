@@ -24,8 +24,8 @@ afterEach(async () => {
   rmSync(base, { recursive: true, force: true });
 });
 
-function hook(shell, env, input) {
-  const child = spawn(shell, [SCRIPT, 'question'], { env: { PATH: process.env.PATH, ...env } });
+function hook(shell, env, input, kind = 'question') {
+  const child = spawn(shell, [SCRIPT, kind], { env: { PATH: process.env.PATH, ...env } });
   let out = '';
   child.stdout.on('data', (b) => (out += b));
   child.stdin.on('error', () => {});
@@ -55,6 +55,36 @@ describe.each(SHELLS)('dialog.sh with AgentChannel under %s', (shell) => {
     expect(readdirSync(env.THADEUS_SESSION_DIR).sort()).toEqual(['alive', 'answers', 'events']);
     expect(readdirSync(path.join(env.THADEUS_SESSION_DIR, 'events'))).toEqual([]);
     expect(readdirSync(path.join(env.THADEUS_SESSION_DIR, 'answers'))).toEqual([]);
+  });
+
+  it('a permission reaches main byte for byte and the written hook output is printed (US-0506 u2 W1)', { timeout: 10_000 }, async () => {
+    const { sessionId, env } = await channel.openSession({ projectId: 'p1', tabId: 'agent:claude', harness: 'claude' });
+    const input = '{"tool_name":"Bash","tool_input":{"command":"git push 👍"}}';
+    const { done } = hook(shell, env, input, 'permission');
+    const raw = await rawFor(sessionId);
+    expect(raw.kind).toBe('permission');
+    expect(raw.body.toString('utf8')).toBe(input);
+    const out = '{"hookSpecificOutput":{"hookEventName":"PermissionRequest","decision":{"behavior":"allow"}}}';
+    await channel.writeAnswer({ sessionId, file: raw.file, text: out });
+    expect(await done).toMatchObject({ code: 0, out });
+  });
+
+  it('three permission round trips (allow, hand-back, time-out) leave only alive and two empty folders (SCD10)', { timeout: 15_000 }, async () => {
+    const { sessionId, env } = await channel.openSession({ projectId: 'p1', tabId: 'agent:claude', harness: 'claude' });
+    for (const text of ['{"ok":true}', '']) {
+      raws.length = 0;
+      const { done } = hook(shell, env, '{}', 'permission');
+      const raw = await rawFor(sessionId);
+      await channel.writeAnswer({ sessionId, file: raw.file, text });
+      expect(await done).toMatchObject({ code: 0, out: text });
+    }
+    const timedOut = await hook(shell, { ...env, THADEUS_WAIT_SECONDS: '1' }, '{}', 'permission').done;
+    expect(timedOut).toMatchObject({ code: 0, out: '' });
+    await sleep(400); // the sweep takes the last event file
+    const dir = env.THADEUS_SESSION_DIR;
+    expect(readdirSync(dir).sort()).toEqual(['alive', 'answers', 'events']);
+    expect(readdirSync(path.join(dir, 'events'))).toEqual([]);
+    expect(readdirSync(path.join(dir, 'answers'))).toEqual([]);
   });
 
   it('closeSession makes a waiting hook exit at its next poll (RD5)', { timeout: 10_000 }, async () => {

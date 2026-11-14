@@ -551,3 +551,249 @@ describe('AgentDialog: audit fallback against the real picker (EPIC-00 US-0006)'
     expect(choices().map((b) => b.textContent)).toEqual(['1Approve Plan', '2Request Changes', "3I'll edit the files"]);
   });
 });
+
+// US-0506 u2 LC10: permission pages (AC2.1.1–AC2.1.4; BR5.5, BR5.6, BR5.9, BR5.10, BR5.13; NFR3.14, NFR3.16,
+// NFR6.4–NFR6.6, NFR7.3; PD8, SD9, K8–K11).
+describe('AgentDialog: permission pages', () => {
+  /** A permission AgentEvent as main pushes it, built by the real adapter from a fixture (or a payload). */
+  function permissionEvent(fixtureName = 'permission-bash', over = {}, h = 'claude', payload) {
+    const bytes = payload ? Buffer.from(JSON.stringify(payload)) : readFileSync(path.join(FIX, h, `${fixtureName}.json`));
+    const { permission, toolCallId } = adapters[h].parse('permission', bytes);
+    return {
+      eventId: `p-${fixtureName}`,
+      sessionId: 's1',
+      projectId: 'p1',
+      tabId: `agent:${h}`,
+      harness: h,
+      source: 'hook',
+      kind: 'permission',
+      state: 'shown',
+      arrivedAt: '2026-11-14T10:00:00.000Z',
+      arrivedAtMs: 1,
+      seq: 1,
+      context: { intent: '261114-agent-dialogs', stage: 'code-generation' },
+      permission,
+      toolCallId,
+      lastError: null,
+      via: null,
+      endedBy: null,
+      ...over
+    };
+  }
+  const pchoices = () => screen.getAllByTestId('agent-dialog-permission-choice');
+  const dialog = () => screen.getByTestId('agent-dialog');
+  const key = (k, target = dialog()) => fireEvent.keyDown(target, { key: k });
+  const later = (ms) => vi.setSystemTime(Date.now() + ms);
+  const payload = (over) => ({ ...JSON.parse(readFileSync(path.join(FIX, 'claude', 'permission-bash.json'), 'utf8')), ...over });
+
+  it('M3: the kind and "<harness> ber om behörighet", where, what, detail, cwd and the choices in order (BR5.13, AC2.1.1)', () => {
+    show(<AgentDialog {...base()} events={[permissionEvent()]} />);
+    expect(screen.getByTestId('agent-dialog-title').textContent).toBe('BEHÖRIGHET: Claude Code ber om behörighet');
+    expect(screen.getByTestId('agent-dialog-where').textContent).toBe('aidlc-dash · 261114-agent-dialogs · code-generation');
+    expect(screen.getByTestId('agent-dialog-what').textContent).toBe('Bash');
+    const detail = screen.getByTestId('agent-dialog-detail');
+    expect(detail.classList.contains('agent-dialog-detail')).toBe(true);
+    expect(detail.childNodes).toHaveLength(1);
+    expect(detail.firstChild.nodeType).toBe(Node.TEXT_NODE);
+    expect(detail.textContent).toBe('git push origin feat/US-0506');
+    expect(screen.getByTestId('agent-dialog-cwd').textContent).toBe('Mapp: /Users/dev/Projects/aidlc-dash');
+    expect(pchoices().map((b) => b.textContent)).toEqual(['1Tillåt en gång', '2Tillåt alltid:\nlocalSettings: Bash(git push:*)', '3Neka']);
+    expect(pchoices().map((b) => b.dataset.effect)).toEqual(['allowOnce', 'allowAlways', 'deny']);
+    const deny = pchoices()[2];
+    expect(deny.classList.contains('is-refusing')).toBe(true);
+    expect(deny.previousElementSibling.tagName).toBe('HR');
+    expect(
+      pchoices()
+        .slice(0, 2)
+        .some((b) => b.classList.contains('is-refusing'))
+    ).toBe(false);
+  });
+
+  it('shows every detail as plain text: no script, img or link element, ANSI and bidi as escapes (SD9, NFR3.16)', () => {
+    const command = `<script>alert(1)</script> <img src=x onerror=alert(1)> [klick](https://evil.example) ${'\x1b'}[31mröd ${cp(0x202e)}vänd`;
+    show(<AgentDialog {...base()} events={[permissionEvent('x', {}, 'claude', payload({ tool_input: { command } }))]} />);
+    expect(dialog().querySelector('script, img, a')).toBeNull();
+    const text = screen.getByTestId('agent-dialog-detail').textContent;
+    expect(text).toContain('<script>alert(1)</script>');
+    expect(text).toContain('[klick](https://evil.example)');
+    expect(text).toContain('\\u001b[31m');
+    expect(text).toContain('\\u202evänd');
+  });
+
+  it('Allow always shows its whole label and every rule line, with no ellipsis; too long says so (SD11)', () => {
+    const { unmount } = show(<AgentDialog {...base()} events={[permissionEvent('permission-bash-dirs')]} />);
+    const always = pchoices()[1];
+    expect(always.textContent).toBe(`2${permissionEvent('permission-bash-dirs').permission.choices[1].label}`);
+    for (const line of ['projectSettings: Bash(ls:*)', 'projectSettings: Read', 'session: /Users/dev/Projects/shared-assets'])
+      expect(always.textContent).toContain(line);
+    for (const el of [always, ...always.querySelectorAll('*')]) expect(getComputedStyle(el).textOverflow).not.toBe('ellipsis');
+    expect(screen.queryByTestId('agent-dialog-permission-note')).toBeNull();
+    unmount();
+    const rules = Array.from({ length: 9 }, (_, i) => ({ toolName: 'Bash', ruleContent: `r${i}` }));
+    show(
+      <AgentDialog
+        {...base()}
+        events={[
+          permissionEvent(
+            'long',
+            {},
+            'claude',
+            payload({ permission_suggestions: [{ type: 'addRules', rules, behavior: 'allow', destination: 'localSettings' }] })
+          )
+        ]}
+      />
+    );
+    expect(pchoices()[1].disabled).toBe(true);
+    expect(pchoices()[1].textContent).toBe('2Tillåt alltid');
+    expect(screen.getByTestId('agent-dialog-permission-note').textContent).toBe('För långt för att visas här. Använd terminalen för Tillåt alltid.');
+  });
+
+  it('preselects nothing: focus on the title, no aria-selected, aria-pressed or autofocus; Enter on the title sends nothing (NFR3.14, NFR6.4)', () => {
+    show(<AgentDialog {...base()} events={[permissionEvent()]} />);
+    expect(document.activeElement).toBe(screen.getByTestId('agent-dialog-title'));
+    for (const b of pchoices()) for (const attr of ['aria-selected', 'aria-pressed', 'autofocus']) expect(b.hasAttribute(attr)).toBe(false);
+    key('Enter', document.activeElement);
+    expect(agentEvents.answer).not.toHaveBeenCalled();
+  });
+
+  it('the guard swallows keys, clicks and Esc for GUARD_MS, restarts on a new page and on window focus (PD8, K8, R-03)', () => {
+    const props = base();
+    const two = [permissionEvent(), permissionEvent('permission-edit')];
+    render(<AgentDialog {...props} events={two} />);
+    for (const at of [0, 100, 199]) {
+      if (at) later(at === 100 ? 100 : 99);
+      key('1');
+      key('Enter', document.activeElement);
+    }
+    fireEvent.click(pchoices()[0]); // at 199 ms
+    later(200); // 399 ms
+    key('1');
+    key('Enter', document.activeElement);
+    fireEvent(dialog(), new Event('cancel', { cancelable: true })); // Esc
+    expect(agentEvents.answer).not.toHaveBeenCalled();
+    expect(agentEvents.close).not.toHaveBeenCalled();
+    expect(props.onClose).not.toHaveBeenCalled();
+    expect(pchoices()).not.toContain(document.activeElement);
+    later(1);
+    key('1');
+    expect(document.activeElement).toBe(pchoices()[0]);
+    key('Enter', document.activeElement);
+    expect(agentEvents.answer).toHaveBeenCalledTimes(1);
+    expect(agentEvents.answer).toHaveBeenCalledWith('p-permission-bash', { permission: { choice: 0 } });
+
+    fireEvent.click(screen.getByTestId('agent-dialog-next')); // a new page starts the guard again
+    expect(screen.getByTestId('agent-dialog-what').textContent).toBe('Edit');
+    key('1');
+    expect(pchoices()).not.toContain(document.activeElement);
+    settle();
+    act(() => window.dispatchEvent(new Event('focus'))); // the window came back: the guard starts again
+    key('1');
+    expect(pchoices()).not.toContain(document.activeElement);
+    settle();
+    key('1');
+    expect(document.activeElement).toBe(pchoices()[0]);
+  });
+
+  it('works by keyboard alone: a digit only focuses, ↓ moves, Enter sends the focused choice, Esc closes (NFR6.5, K9)', async () => {
+    for (const [digit, choice] of [
+      ['1', 0],
+      ['2', 1],
+      ['3', 2]
+    ]) {
+      const { unmount } = show(<AgentDialog {...base()} events={[permissionEvent()]} />);
+      key(digit);
+      expect(document.activeElement).toBe(pchoices()[choice]);
+      expect(agentEvents.answer).not.toHaveBeenCalledWith('p-permission-bash', { permission: { choice } });
+      key('Enter', document.activeElement);
+      expect(agentEvents.answer).toHaveBeenLastCalledWith('p-permission-bash', { permission: { choice } });
+      unmount();
+    }
+    const props = base();
+    show(<AgentDialog {...props} events={[permissionEvent()]} />);
+    key('1');
+    key('ArrowDown', document.activeElement);
+    expect(document.activeElement).toBe(pchoices()[1]);
+    key('ArrowUp', document.activeElement);
+    expect(document.activeElement).toBe(pchoices()[0]);
+    const calls = agentEvents.answer.mock.calls.length;
+    fireEvent(dialog(), new Event('cancel', { cancelable: true }));
+    await waitFor(() => expect(agentEvents.close).toHaveBeenCalledWith('p-permission-bash'));
+    expect(agentEvents.answer.mock.calls.length).toBe(calls);
+  });
+
+  it.each([
+    ['sending', { state: 'sending' }, 'Skickar…'],
+    ['sent', { state: 'sent', via: 'hook' }, 'Skickat till Claude Code.'],
+    ['timedOut', { state: 'timedOut' }, 'Claude Code slutade vänta på dialogen. Svara i terminalen.'],
+    ['failed', { lastError: 'Agenten tog inte emot svaret.' }, 'Kunde inte skicka: Agenten tog inte emot svaret.'],
+    ['ended in the terminal', { state: 'ended', endedBy: 'terminal' }, 'Besvarad i terminalen.'],
+    ['ended by the session', { state: 'ended', endedBy: 'session' }, 'Sessionen i Claude Code avslutades. Inget skickades.']
+  ])('state %s says so (NFR6.6, BR5.9, BR5.11)', (_name, over, text) => {
+    show(<AgentDialog {...base()} events={[permissionEvent('permission-bash', over)]} />);
+    expect(screen.getByTestId('agent-dialog-status').textContent).toBe(text);
+  });
+
+  it('timedOut: every choice disabled, Open the terminal and Close still work (AC2.1.3)', async () => {
+    const ev = permissionEvent();
+    const props = base();
+    show(
+      <AgentDialog
+        {...props}
+        events={[{ ...ev, state: 'timedOut', permission: { ...ev.permission, choices: ev.permission.choices.map((c) => ({ ...c, enabled: false })) } }]}
+      />
+    );
+    expect(pchoices().every((b) => b.disabled)).toBe(true);
+    fireEvent.click(screen.getByTestId('agent-dialog-close'));
+    await waitFor(() => expect(agentEvents.close).toHaveBeenCalled());
+    expect(props.onClose).toHaveBeenCalled();
+  });
+
+  it('a failed send keeps the choice enabled; a cut command disables both allows and keeps Deny (BR5.5, SCD8)', () => {
+    const { unmount } = show(<AgentDialog {...base()} events={[permissionEvent('permission-bash', { lastError: 'x' })]} />);
+    expect(pchoices().every((b) => !b.disabled)).toBe(true);
+    unmount();
+    show(<AgentDialog {...base()} events={[permissionEvent('cut', {}, 'claude', payload({ tool_input: { command: 'x'.repeat(70_000) } }))]} />);
+    expect(pchoices().map((b) => b.disabled)).toEqual([true, true, false]);
+    expect(screen.getByTestId('agent-dialog-permission-note').textContent).toBe('Förkortad vid 64 KB. Hela texten finns i terminalen.');
+    expect(screen.getByTestId('agent-dialog-terminal').disabled).toBe(false);
+  });
+
+  it('opencode says the prompt is also open in the terminal, with Reject as the refusing choice', () => {
+    show(<AgentDialog {...base()} events={[permissionEvent('permission-asked-always', {}, 'opencode')]} />);
+    expect(screen.getByText('Frågan om behörighet visas också i terminalen.')).toBeTruthy();
+    expect(pchoices()[2].textContent).toBe('3Avvisa');
+  });
+
+  it('Close during sending calls no close; Close on a shown permission handed back raises the notice (K10, K11)', async () => {
+    const onNotice = vi.fn();
+    const { unmount } = show(<AgentDialog {...base({ onNotice })} events={[permissionEvent('permission-bash', { state: 'sending' })]} />);
+    fireEvent.click(screen.getByTestId('agent-dialog-close'));
+    expect(agentEvents.close).not.toHaveBeenCalled();
+    unmount();
+    show(<AgentDialog {...base({ onNotice })} events={[permissionEvent()]} />);
+    fireEvent.click(screen.getByTestId('agent-dialog-close'));
+    await waitFor(() => expect(onNotice).toHaveBeenCalledWith('Lämnad tillbaka till terminalen. Svara där som vanligt.'));
+    agentEvents.close.mockResolvedValueOnce({ state: 'dismissed' });
+    onNotice.mockClear();
+    show(<AgentDialog {...base({ onNotice })} events={[permissionEvent('permission-edit')]} />);
+    fireEvent.click(screen.getAllByTestId('agent-dialog-close').at(-1));
+    await waitFor(() => expect(agentEvents.close).toHaveBeenCalledTimes(2));
+    expect(onNotice).not.toHaveBeenCalled();
+  });
+
+  it('a permission arriving while a question page is shown keeps the page and counts +1 ny (BR2.1, SCD9)', () => {
+    const { rerender } = show(<AgentDialog {...base()} events={[hookEvent()]} />);
+    rerender(<AgentDialog {...base()} events={[hookEvent(), permissionEvent('permission-bash', { arrivedAtMs: 2, seq: 2 })]} />);
+    expect(screen.getByTestId('agent-dialog-title').textContent).toBe('Fråga: Agenten väntar på ditt svar');
+    expect(screen.getByTestId('agent-dialog-new-count').textContent).toBe('+1 ny');
+  });
+
+  it('with stamp, answerClicked goes before the answer in the same tick (NFR1.12)', () => {
+    agentEvents.stamp = vi.fn();
+    show(<AgentDialog {...base()} events={[permissionEvent()]} />);
+    fireEvent.click(pchoices()[2]);
+    expect(agentEvents.stamp).toHaveBeenCalledWith('p-permission-bash', 'answerClicked');
+    expect(agentEvents.answer).toHaveBeenCalledWith('p-permission-bash', { permission: { choice: 2 } });
+    expect(agentEvents.stamp.mock.invocationCallOrder[0]).toBeLessThan(agentEvents.answer.mock.invocationCallOrder[0]);
+  });
+});

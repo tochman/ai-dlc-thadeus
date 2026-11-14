@@ -9,7 +9,12 @@
 // - an audit event (source "audit", projects without current hooks, BR2.7): today's audit-log question, answered
 //   exactly as the popup did, through the terminal path (onAuditSend → TerminalContext.answer(), BR3.6).
 // The calm steel frame turns glowing red after OVERDUE_MS without an answer, and the title says so too (BR4.6).
-import { useEffect, useRef, useState } from 'react';
+//
+// US-0506 u2 BR5.5, BR5.6, BR5.13, PD8, SD9: a permission page (M3) shows what the agent wants to do as plain text,
+// with the agent's own choices in its order and the refusing one below a rule. Nothing is preselected; a digit only
+// focuses a choice and Enter or a click sends it. For GUARD_MS after the page shows, or after the window gains focus,
+// every key, click and Esc on the dialog is swallowed (K8, review R-03).
+import { Fragment, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { t as translate } from '../shared/i18n.js';
 import { selectableHarness } from '../shared/harnesses.js';
@@ -352,15 +357,121 @@ function HookPage({ ev, keysRef, guarded }) {
   );
 }
 
+// --- Permission prompts (u2): the agent's own choices, sent by index ---------------------------------------------------
+
+function permissionStatus(ev, localError, label, t) {
+  if (ev.state === 'ended' && ev.endedBy === 'terminal') return { text: t('agentDialog.permission.answeredInTerminal') };
+  if (ev.state === 'handedBack') return { text: t('agentDialog.permission.handedBack') };
+  if (ev.state === 'timedOut') return { text: t('agentDialog.permission.timedOut', { harness: label }) };
+  return statusOf(ev, localError, label, t);
+}
+
+function PermissionPage({ ev, keysRef, guarded }) {
+  const { t } = useTranslation();
+  const label = selectableHarness(ev.harness)?.label ?? ev.harness;
+  const [localError, setLocalError] = useState(null);
+  const refs = useRef([]);
+  const p = ev.permission;
+  const live = ev.state === 'shown';
+
+  function send(i) {
+    if (guarded() || !live || !p.choices[i]?.enabled) return;
+    const bridge = agentBridge();
+    bridge?.stamp?.(ev.eventId, 'answerClicked'); // fire and forget, before the call (NFR1.12)
+    setLocalError(null);
+    bridge?.answer(ev.eventId, { permission: { choice: i } }).catch((err) => setLocalError(errorText(err)));
+  }
+
+  // K9: a digit focuses that choice and never sends; ↑/↓ move between choices; Enter sends only a focused choice
+  // (preventDefault, so the button's own click does not send it twice). Enter on the title does nothing.
+  keysRef.current = (e) => {
+    if (guarded()) return;
+    const buttons = refs.current;
+    const at = buttons.indexOf(e.target);
+    if (/^[1-9]$/.test(e.key)) {
+      const target = buttons[Number(e.key) - 1];
+      if (!target) return;
+      e.preventDefault();
+      target.focus();
+    } else if ((e.key === 'ArrowDown' || e.key === 'ArrowUp') && at !== -1) {
+      e.preventDefault();
+      buttons[(at + (e.key === 'ArrowDown' ? 1 : buttons.length - 1)) % buttons.length]?.focus();
+    } else if (e.key === 'Enter' && at !== -1) {
+      e.preventDefault();
+      send(at);
+    }
+  };
+
+  const tooLong = !p.truncated && ev.state !== 'timedOut' && p.choices.some((c) => c.effect === 'allowAlways' && !c.enabled);
+  const note = p.truncated ? t('agentDialog.permission.truncated') : tooLong ? t('agentDialog.permission.alwaysTooLong') : null;
+  const status = permissionStatus(ev, localError, label, t);
+  return (
+    <section className="agent-dialog-permission" data-testid="agent-dialog-permission">
+      {ev.harness === 'opencode' && <p className="question-popup-early">{t('agentDialog.permission.alsoInTerminal')}</p>}
+      <p className="agent-dialog-what" data-testid="agent-dialog-what">
+        {p.what}
+      </p>
+      <pre className="agent-dialog-detail" data-testid="agent-dialog-detail">
+        {p.detail}
+      </pre>
+      {p.cwd && (
+        <p className="muted" data-testid="agent-dialog-cwd">
+          {t('agentDialog.permission.cwd', { cwd: p.cwd })}
+        </p>
+      )}
+      {note && (
+        <p className="question-popup-status" data-testid="agent-dialog-permission-note">
+          {note}
+        </p>
+      )}
+      <div className="question-popup-choices">
+        {p.choices.map((c, i) => (
+          <Fragment key={i}>
+            {c.refuses && <hr className="agent-dialog-rule" />}
+            <button
+              type="button"
+              ref={(el) => (refs.current[i] = el)}
+              className={`question-popup-choice agent-dialog-permission-choice${c.refuses ? ' is-refusing' : ''}`}
+              disabled={!live || !c.enabled}
+              onClick={() => send(i)}
+              data-effect={c.effect}
+              data-testid="agent-dialog-permission-choice"
+            >
+              <span className="question-popup-key">{i + 1}</span>
+              <span className="agent-dialog-permission-label">{c.label}</span>
+            </button>
+          </Fragment>
+        ))}
+      </div>
+      {status && (
+        <p className={`question-popup-status${status.error ? ' is-error' : ''}`} role="status" data-testid="agent-dialog-status">
+          {status.text}
+        </p>
+      )}
+    </section>
+  );
+}
+
 // --- The dialog ------------------------------------------------------------------------------------------------------
 
 /**
  * @param {{open: boolean, events: object[], focus?: {id: string}|null, harnessOf?: (projectId) => object|null,
  *   projectNameOf?: (projectId) => string, onAuditSend?: (q, answer) => Promise<{ok, error?}>,
- *   onOpenTerminal: (ev) => void, onClose: () => void}} props events in pager order (AgentEvents, C3); harnessOf gives
- *   a project's running harness for audit events (a table entry) or null
+ *   onOpenTerminal: (ev) => void, onClose: () => void, onNotice?: (text: string) => void}} props events in pager order
+ *   (AgentEvents, C3); harnessOf gives a project's running harness for audit events (a table entry) or null; onNotice
+ *   shows a short app notice (u2 K11: a permission handed back to the terminal)
  */
-export default function AgentDialog({ open, events, focus = null, harnessOf = () => null, projectNameOf = () => '', onAuditSend, onOpenTerminal, onClose }) {
+export default function AgentDialog({
+  open,
+  events,
+  focus = null,
+  harnessOf = () => null,
+  projectNameOf = () => '',
+  onAuditSend,
+  onOpenTerminal,
+  onClose,
+  onNotice
+}) {
   const { t } = useTranslation();
   const ref = useRef(null);
   const titleRef = useRef(null);
@@ -380,6 +491,20 @@ export default function AgentDialog({ open, events, focus = null, harnessOf = ()
   // holds from the very first event the page can receive.
   if (shownId && shownAt.current.id !== shownId) shownAt.current = { id: shownId, at: Date.now() };
   const guarded = () => Date.now() - shownAt.current.at < GUARD_MS;
+  const permPage = Boolean(open && ev?.source === 'hook' && ev.kind === 'permission');
+  // K8, R-03: on a permission page the guard swallows every key, pointer and click on the dialog, and starts again
+  // when the window comes back into focus, so a keystroke meant for another app can never allow anything.
+  const swallow = (e) => {
+    if (!permPage || !guarded()) return;
+    e.preventDefault();
+    e.stopPropagation();
+  };
+  useEffect(() => {
+    if (!permPage) return undefined;
+    const restart = () => (shownAt.current = { id: shownId, at: Date.now() });
+    window.addEventListener('focus', restart);
+    return () => window.removeEventListener('focus', restart);
+  }, [permPage, shownId]);
   useEffect(() => {
     if (ev) setPageId(ev.eventId);
     setLastIndex(i);
@@ -428,10 +553,12 @@ export default function AgentDialog({ open, events, focus = null, harnessOf = ()
   function closeDialog() {
     const cur = ev;
     onClose();
-    // Close on a waiting hook question hands it back to the terminal (BR3.5).
+    // Close on a waiting hook question or permission hands it back to the terminal (BR3.5, BR5.10). During sending
+    // nothing is called: the delivery decides the state (K10).
     if (cur?.source === 'hook' && OPEN.has(cur.state))
       agentBridge()
         ?.close(cur.eventId)
+        .then((r) => cur.kind === 'permission' && r?.state === 'handedBack' && onNotice?.(translate('agentDialog.permission.handedBack')))
         .catch((err) => console.warn('Frågan kunde inte lämnas tillbaka:', errorText(err)));
   }
 
@@ -454,9 +581,12 @@ export default function AgentDialog({ open, events, focus = null, harnessOf = ()
     intent: ev.context?.intent ?? '?',
     stage: ev.context?.stage ?? '?'
   };
-  const waiting = hook
-    ? `${t('agentDialog.kind.question')}: ${t(red ? 'agentDialog.title.stillWaiting' : 'agentDialog.title.waiting')}`
-    : t(red ? 'app.question.stillWaiting' : 'app.question.waiting');
+  const harnessLabel = selectableHarness(ev?.harness)?.label ?? ev?.harness;
+  const waiting = permPage
+    ? `${t('agentDialog.kind.permission')}: ${t(red ? 'agentDialog.title.permissionStillWaiting' : 'agentDialog.title.permission', { harness: harnessLabel })}`
+    : hook
+      ? `${t('agentDialog.kind.question')}: ${t(red ? 'agentDialog.title.stillWaiting' : 'agentDialog.title.waiting')}`
+      : t(red ? 'app.question.stillWaiting' : 'app.question.waiting');
 
   return (
     <dialog
@@ -465,14 +595,18 @@ export default function AgentDialog({ open, events, focus = null, harnessOf = ()
       aria-labelledby="agent-dialog-title"
       onCancel={(e) => {
         e.preventDefault(); // Esc: close through our own state
+        if (permPage && guarded()) return; // Esc inside the guard closes nothing (R-03)
         closeDialog();
       }}
+      onKeyDownCapture={swallow}
+      onPointerDownCapture={swallow}
+      onClickCapture={swallow}
       onKeyDown={(e) => hook && keysRef.current?.(e)}
       data-testid="agent-dialog"
     >
       {open && ev && (
         <div>
-          <div className="question-popup-head">
+          <div className={`question-popup-head${permPage ? ' is-permission' : ''}`}>
             <h2 id="agent-dialog-title" ref={titleRef} tabIndex={-1} data-testid="agent-dialog-title">
               {waiting}
             </h2>
@@ -480,7 +614,9 @@ export default function AgentDialog({ open, events, focus = null, harnessOf = ()
           <p className="question-popup-where" data-testid="agent-dialog-where">
             {ev.context ? t('agentDialog.context', where) : where.project}
           </p>
-          {hook ? (
+          {permPage ? (
+            <PermissionPage key={ev.eventId} ev={ev} keysRef={keysRef} guarded={guarded} />
+          ) : hook ? (
             <HookPage key={ev.eventId} ev={ev} keysRef={keysRef} guarded={guarded} />
           ) : (
             <AuditPage key={ev.eventId} ev={ev} harness={harnessOf(ev.projectId)} onSend={onAuditSend} guarded={guarded} />

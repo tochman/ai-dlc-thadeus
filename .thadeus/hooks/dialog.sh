@@ -1,6 +1,7 @@
 # THADEUS agent dialogs: the hook script for Claude Code (US-0506 u1 FR4.6, NFR4, NFR5; channel protocol C1 v1).
-# Usage: sh dialog.sh <kind> with the hook input on stdin. Kinds: question (waits for an answer), answered (never waits).
-# It writes one event file into the session folder the app gave the agent ($THADEUS_SESSION_DIR) and, for a question,
+# Usage: sh dialog.sh <kind> with the hook input on stdin. Kinds: question and permission (US-0506 u2 RD14) wait for an
+# answer; answered never waits.
+# It writes one event file into the session folder the app gave the agent ($THADEUS_SESSION_DIR) and, for a waiting kind,
 # prints the app's answer when one arrives. Every other path prints nothing and exits 0, so the agent shows its own
 # picker. It never parses the input: the payload is copied by cat and no input is ever expanded (SD5).
 #
@@ -10,7 +11,7 @@
 # dash exits 2 when such a redirect fails, before `|| exit 0` runs).
 exec 2>/dev/null
 d=${THADEUS_SESSION_DIR:-}; s=${THADEUS_SESSION_SECRET:-}; w=${THADEUS_WAIT_SECONDS:-}
-case ${1:-} in question) waits=1 ;; answered) waits=0 ;; *) exit 0 ;; esac
+case ${1:-} in question | permission) waits=1 ;; answered) waits=0 ;; *) exit 0 ;; esac
 case $w in '' | *[!0-9]*) exit 0 ;; esac
 [ -n "$d" ] && [ -n "$s" ] && read -r last < "$d/alive" || exit 0
 # R-03: probe fractional sleep, and count it as the first of the 20 liveness sleeps, so 20 unchanged polls

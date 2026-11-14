@@ -323,4 +323,53 @@ describe('App shell: agent dialogs (US-0506 u1)', () => {
     act(() => push.agentEvents({ projectId: 'p1', events: [hookEvent] }));
     expect(screen.getByTestId('agent-dialog').hasAttribute('open')).toBe(false);
   });
+
+  // US-0506 u2 K11, K13: permissions before replies across projects, and the 5 s hand-back notice.
+  const permissionEvent = {
+    ...hookEvent,
+    eventId: 'perm-b',
+    projectId: 'p2',
+    tabId: 'agent:b',
+    kind: 'permission',
+    arrivedAtMs: 5,
+    seq: 2,
+    questions: undefined,
+    permission: {
+      what: 'Bash',
+      detail: 'git push',
+      cwd: null,
+      truncated: false,
+      choices: [
+        { label: 'Tillåt en gång', effect: 'allowOnce', refuses: false, enabled: true },
+        { label: 'Neka', effect: 'deny', refuses: true, enabled: true }
+      ]
+    }
+  };
+  const replyStandIn = { ...hookEvent, eventId: 'reply-a', tabId: 'agent:a', kind: 'reply', arrivedAtMs: 1, seq: 1 };
+
+  it('a permission from tab B reaches the dialog before a reply from tab A that arrived first (AC2.1.4)', async () => {
+    await withAgentEvents({ openProjects: ['/p/aidlc-dash-a', '/p/other-b'] });
+    await waitFor(() => expect(window.bridge.agentEvents.list).toHaveBeenCalledWith('p2'));
+    act(() => {
+      // both waiting when the dialog opens; an open page itself never jumps (BR2.1)
+      push.agentEvents({ projectId: 'p1', events: [replyStandIn] });
+      push.agentEvents({ projectId: 'p2', events: [permissionEvent] });
+    });
+    expect((await screen.findByTestId('agent-dialog-title')).textContent).toBe('BEHÖRIGHET: Claude Code ber om behörighet');
+    expect(screen.getByText('1 av 2')).toBeTruthy();
+  });
+
+  it('a handed-back permission shows the notice for 5 s, then it goes (K11)', { timeout: 15_000 }, async () => {
+    await withAgentEvents({});
+    act(() => push.agentEvents({ projectId: 'p1', events: [{ ...permissionEvent, projectId: 'p1' }] }));
+    await screen.findByTestId('agent-dialog-what');
+    await new Promise((r) => setTimeout(r, 450)); // past the input guard
+    fireEvent.click(screen.getByTestId('agent-dialog-close'));
+    const notice = await screen.findByTestId('app-notice');
+    expect(notice.textContent).toBe('Lämnad tillbaka till terminalen. Svara där som vanligt.');
+    expect(notice.getAttribute('role')).toBe('status');
+    await new Promise((r) => setTimeout(r, 4500));
+    expect(screen.getByTestId('app-notice')).toBeTruthy();
+    await waitFor(() => expect(screen.queryByTestId('app-notice')).toBeNull(), { timeout: 2000 });
+  });
 });

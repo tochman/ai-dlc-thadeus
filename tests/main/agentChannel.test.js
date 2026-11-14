@@ -300,4 +300,42 @@ describe('formatLog (OD2)', () => {
     expect(line).toMatch(/ text="a bx+"$/);
     expect(line.match(/text="(.*)"$/)[1]).toHaveLength(80);
   });
+
+  it('shows ESC and U+202E in the excerpt as escapes, still at most 80 characters cut from the text (US-0506 u2 K14, OD7)', () => {
+    const line = formatLog('adapter refused: no tool name', {
+      session: 's1',
+      file: '1-1.evt',
+      text: `a${'\x1b'}[31m${String.fromCodePoint(0x202e)}b${'y'.repeat(200)}`
+    });
+    const text = line.match(/text="(.*)"$/)[1];
+    expect(text.startsWith('a\\u001b[31m\\u202eb')).toBe(true);
+    expect(text).not.toMatch(/[\x1b‮]/); // eslint-disable-line no-control-regex -- the raw characters must be gone
+    expect(text.replace(/\\u[0-9a-f]{4}/g, '?').length).toBeLessThanOrEqual(80);
+  });
+});
+
+describe('permission events (US-0506 u2 K15, K16, RD11)', () => {
+  it('a too-large permission with the right secret is handed back; with a wrong secret it is not', async () => {
+    const { env } = await open();
+    const answers = path.join(env.THADEUS_SESSION_DIR, 'answers');
+    writeFileSync(path.join(answers, '4-1.wait'), '');
+    writeFileSync(path.join(answers, '4-2.wait'), '');
+    drop(env.THADEUS_SESSION_DIR, '4-1', header(env.THADEUS_SESSION_SECRET, 'permission') + 'x'.repeat(1_048_577));
+    drop(env.THADEUS_SESSION_DIR, '4-2', header('b'.repeat(64), 'permission') + 'x'.repeat(1_048_577));
+    await waitFor(() => existsSync(path.join(answers, '4-1.ans')) && logs.length === 2);
+    await sleep(100);
+    expect(readFileSync(path.join(answers, '4-1.ans'), 'utf8')).toBe('');
+    expect(readdirSync(answers).sort()).toEqual(['4-1.ans', '4-1.wait', '4-2.wait']);
+    expect(raws).toEqual([]);
+  });
+
+  it('a permission file in the folder of an unknown session is refused and nothing is emitted (K16)', async () => {
+    const { env } = await open();
+    const stray = path.join(root, 'not-a-session');
+    mkdirSync(path.join(stray, 'events'), { recursive: true });
+    drop(stray, '5-1', `${header(env.THADEUS_SESSION_SECRET, 'permission')}{"tool_name":"Bash"}`);
+    await waitFor(() => logs.length === 1);
+    expect(logs[0]).toContain('unknown session');
+    expect(raws).toEqual([]);
+  });
 });

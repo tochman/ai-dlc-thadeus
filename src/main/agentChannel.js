@@ -8,8 +8,11 @@ import fsp from 'node:fs/promises';
 import path from 'node:path';
 import { Worker } from 'node:worker_threads';
 import chokidar from 'chokidar';
+import { visibleText } from '../shared/agentText.js';
 
 export const MAX_EVENT_BYTES = 1_048_576;
+/** US-0506 u2 RD11: the kinds whose hook waits for an answer file, so a refusal can hand them back at once. */
+export const WAITING = new Set(['question', 'permission']);
 /** The hook's full wait per harness: Claude Code's 600 s entry timeout minus a 5 s margin, applied once here (C1). */
 export const WAIT_SECONDS = { claude: 595, opencode: 595 };
 const ACCEPTED_VERSIONS = ['v1']; // the app's own and the one before it, once one exists (C1 versions)
@@ -46,16 +49,21 @@ setInterval(() => {
   }
 }, ms);`;
 
-/** One log line in the OD2 shape; agent text is cut to 80 characters and kept on one line. Never holds a secret. */
+/**
+ * One log line in the OD2 shape; agent text is cut to 80 characters and kept on one line. Never holds a secret.
+ * US-0506 u2 OD7: after the cut, control and bidi characters show as escapes, so a log line cannot be disguised.
+ */
 export function formatLog(reason, { session, file, text } = {}) {
   const parts = [`[agent-events] ${reason}`];
   if (session) parts.push(`session=${session}`);
   if (file) parts.push(`file=${file}`);
   if (text != null)
     parts.push(
-      `text="${String(text)
-        .replace(/[\r\n]+/g, ' ')
-        .slice(0, 80)}"`
+      `text="${visibleText(
+        String(text)
+          .replace(/[\r\n]+/g, ' ')
+          .slice(0, 80)
+      )}"`
     );
   return parts.join(' ');
 }
@@ -193,7 +201,7 @@ export function createAgentChannel({ root, log = (line) => console.warn(line), h
         log(formatLog(parsed.reason, { session: sessionId, file: name }));
         // A waiting question that cannot be read, but whose secret matched, is handed back at once so the agent's own
         // picker shows now (as RD7 does for adapter refusals). A wrong secret gets nothing: it may be forged.
-        if (result.head && checkHeader(result.head, session).kind === 'question') {
+        if (result.head && WAITING.has(checkHeader(result.head, session).kind)) {
           api.writeAnswer({ sessionId, file: name.slice(0, -4), text: '' }).catch(() => {});
         }
         return;

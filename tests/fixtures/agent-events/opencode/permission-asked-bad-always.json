@@ -1,0 +1,11 @@
+{
+  "type": "permission.asked",
+  "properties": {
+    "requestID": "per_9a1f20b3c7",
+    "sessionID": "ses_7d1c0b2a9e",
+    "permission": "bash",
+    "patterns": ["npm test"],
+    "always": ["npm test", 42],
+    "metadata": { "command": "npm test" }
+  }
+}

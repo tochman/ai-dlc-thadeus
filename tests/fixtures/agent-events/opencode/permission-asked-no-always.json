@@ -1,0 +1,10 @@
+{
+  "type": "permission.asked",
+  "properties": {
+    "requestID": "per_9a1f20b3c5",
+    "sessionID": "ses_7d1c0b2a9e",
+    "permission": "edit",
+    "patterns": ["src/main/index.js", "src/main/ipc.js"],
+    "metadata": {}
+  }
+}

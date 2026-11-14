@@ -128,7 +128,8 @@ describe.each(SHELLS)('dialog.sh under %s: silent exits (NFR4)', (shell) => {
     for (const [kind, w] of [
       ['question', ''],
       ['question', '1x'],
-      ['permission', '595'],
+      ['bogus', '595'], // permission is a waiting kind since u2
+      ['permission', ''],
       ['', '595']
     ]) {
       const r = await run(shell, [SCRIPT, kind], { env: envFor(dir, { THADEUS_WAIT_SECONDS: w }) }).done;
@@ -283,5 +284,136 @@ describe.each(SHELLS)('dialog.sh under %s: waiting (NFR5)', (shell) => {
     stop();
     expect(polls).toBeGreaterThan(0); // the wrapper really counts
     expect(polls).toBeLessThanOrEqual(11);
+  });
+});
+
+// US-0506 u2 RD14: the same script with the permission argument (AC2.1.3; NFR4.4, NFR4.5, NFR5.13–NFR5.15, NFR5.17,
+// NFR5.22; PD7, PD11, SCD7, SD14). Every case asserts exit 0 and 0 bytes on stderr, and on stdout unless an answer prints.
+describe.each(SHELLS)('permission argument under %s', (shell) => {
+  const silent = (r) => {
+    quiet(r);
+    expect(r.stdout.length).toBe(0);
+  };
+  const ALLOW = '{"hookSpecificOutput":{"hookEventName":"PermissionRequest","decision":{"behavior":"allow"}}}';
+
+  it('the exact C6 command exits within 100 ms, 20 runs each, with the variable unset and with the script missing (NFR4.4, PD11)', async () => {
+    const noScript = session();
+    for (let i = 0; i < 20; i++) {
+      const unset = await run(shell, ['-c', C6('permission')], { env: { PATH: process.env.PATH, CLAUDE_PROJECT_DIR: ROOT } }).done;
+      silent(unset);
+      expect(unset.ms).toBeLessThanOrEqual(100);
+      const missing = await run(shell, ['-c', C6('permission')], { env: { ...envFor(noScript), CLAUDE_PROJECT_DIR: noScript } }).done;
+      silent(missing);
+      expect(missing.ms).toBeLessThanOrEqual(100);
+    }
+    expect([...files(noScript, 'events'), ...files(noScript, 'answers')]).toEqual([]);
+  });
+
+  it('a missing folder or alive file writes nothing (NFR4.5)', async () => {
+    silent(await run(shell, [SCRIPT, 'permission'], { env: envFor(path.join(TMP, 'no-such-folder')) }).done);
+    const dir = session({ alive: false });
+    silent(await run(shell, [SCRIPT, 'permission'], { env: envFor(dir) }).done);
+    expect([...files(dir, 'events'), ...files(dir, 'answers')]).toEqual([]);
+  });
+
+  it('events/ not writable, and answers/ missing: exit 0, silent, nothing left (NFR4.5, SD14)', async () => {
+    const dir = session();
+    chmodSync(path.join(dir, 'events'), 0o500);
+    const r = await run(shell, [SCRIPT, 'permission'], { env: envFor(dir) }).done;
+    chmodSync(path.join(dir, 'events'), 0o700);
+    silent(r);
+    expect(files(dir, 'answers')).toEqual([]);
+    const bare = session({ answers: false });
+    silent(await run(shell, [SCRIPT, 'permission'], { env: envFor(bare) }).done);
+    expect(files(bare, 'events')).toEqual([]);
+  });
+
+  timed('prints a dropped allow output byte for byte within 300 ms and leaves no .wait or .took (PD7, NFR1.9)', async () => {
+    const dir = session();
+    const stop = heartbeat(dir);
+    const { done } = run(shell, [SCRIPT, 'permission'], { env: envFor(dir), input: '{"tool_name":"Bash"}' });
+    const evt = await waitFor(() => files(dir, 'events').find((f) => f.endsWith('.evt')));
+    const base = evt.replace(/\.evt$/, '');
+    expect(files(dir, 'answers')).toEqual([`${base}.wait`]);
+    expect(readFileSync(path.join(dir, 'events', evt), 'utf8')).toBe(`THADEUS-EVENT v1 permission ${SECRET}\n{"tool_name":"Bash"}`);
+    writeFileSync(path.join(dir, 'answers', `${base}.x.tmp`), ALLOW);
+    renameSync(path.join(dir, 'answers', `${base}.x.tmp`), path.join(dir, 'answers', `${base}.ans`));
+    const dropped = Date.now();
+    const r = await done;
+    stop();
+    quiet(r);
+    expect(r.stdout.toString('utf8')).toBe(ALLOW);
+    expect(r.endedAt - dropped).toBeLessThanOrEqual(300);
+    expect(files(dir, 'answers')).toEqual([]);
+  });
+
+  timed('an empty answer prints nothing within 300 ms (NFR5.13, NFR5.17)', async () => {
+    const dir = session();
+    const stop = heartbeat(dir);
+    const { done } = run(shell, [SCRIPT, 'permission'], { env: envFor(dir) });
+    const evt = await waitFor(() => files(dir, 'events').find((f) => f.endsWith('.evt')));
+    writeFileSync(path.join(dir, 'answers', evt.replace(/\.evt$/, '.ans')), '');
+    const dropped = Date.now();
+    const r = await done;
+    stop();
+    silent(r);
+    expect(r.endedAt - dropped).toBeLessThanOrEqual(300);
+    expect(files(dir, 'answers')).toEqual([]);
+  });
+
+  timed('hands back 2.0 to 2.5 s after alive stops changing (NFR5.14, RD12)', async () => {
+    const dir = session();
+    const stop = heartbeat(dir);
+    const { done } = run(shell, [SCRIPT, 'permission'], { env: envFor(dir) });
+    await waitFor(() => files(dir, 'events').find((f) => f.endsWith('.evt')));
+    const last = stop();
+    const r = await done;
+    silent(r);
+    expect(r.endedAt - last).toBeGreaterThanOrEqual(2000);
+    expect(r.endedAt - last).toBeLessThanOrEqual(2500);
+    expect(files(dir, 'answers')).toEqual([]);
+  });
+
+  timed('gives up at THADEUS_WAIT_SECONDS=2 within 1.0 to 3.2 s (NFR5.15)', async () => {
+    const dir = session();
+    const stop = heartbeat(dir);
+    const r = await run(shell, [SCRIPT, 'permission'], { env: envFor(dir, { THADEUS_WAIT_SECONDS: '2' }) }).done;
+    stop();
+    silent(r);
+    expect(r.ms).toBeGreaterThanOrEqual(1000);
+    expect(r.ms).toBeLessThanOrEqual(3200);
+    expect(files(dir, 'answers')).toEqual([]);
+  });
+
+  timed('a payload with shell metacharacters arrives byte for byte and runs nothing (u1 NFR3.8)', async () => {
+    const dir = session();
+    const stop = heartbeat(dir);
+    const payload = '{"tool_input":{"command":"$(touch marker) `touch marker` ; touch marker \' \\" åäö"}}';
+    const { done } = run(shell, [SCRIPT, 'permission'], { env: envFor(dir), input: payload, cwd: dir });
+    const evt = await waitFor(() => files(dir, 'events').find((f) => f.endsWith('.evt')));
+    const body = readFileSync(path.join(dir, 'events', evt));
+    expect(body.subarray(body.indexOf(10) + 1).toString('utf8')).toBe(payload);
+    writeFileSync(path.join(dir, 'answers', evt.replace(/\.evt$/, '.ans')), '');
+    silent(await done);
+    stop();
+    expect(existsSync(path.join(dir, 'marker'))).toBe(false);
+  });
+
+  timed('two permission hooks started together get two event files and two wait markers (SCD7, NFR5.22)', async () => {
+    const dir = session();
+    const stop = heartbeat(dir);
+    const a = run(shell, [SCRIPT, 'permission'], { env: envFor(dir), input: '{"n":1}' });
+    const b = run(shell, [SCRIPT, 'permission'], { env: envFor(dir), input: '{"n":2}' });
+    const evts = await waitFor(() => {
+      const list = files(dir, 'events').filter((f) => f.endsWith('.evt'));
+      return list.length === 2 && list;
+    });
+    const waits = files(dir, 'answers').filter((f) => f.endsWith('.wait'));
+    expect(new Set(evts).size).toBe(2);
+    expect(waits.sort()).toEqual(evts.map((f) => f.replace(/\.evt$/, '.wait')).sort());
+    for (const f of evts) writeFileSync(path.join(dir, 'answers', f.replace(/\.evt$/, '.ans')), '');
+    silent(await a.done);
+    silent(await b.done);
+    stop();
   });
 });

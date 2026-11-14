@@ -64,7 +64,7 @@ describe('parse', () => {
 
   it('refuses a body that is not JSON, and ignores an unknown kind', () => {
     expect(adapters.claude.parse('question', Buffer.from('{oops'))).toEqual({ ok: false, reason: 'not JSON' });
-    expect(adapters.claude.parse('permission', load('claude', 'gate-2026-11-14'))).toBeNull();
+    expect(adapters.claude.parse('idle', load('claude', 'gate-2026-11-14'))).toBeNull(); // permission is a kind since u2
     expect(adapters.opencode.parse('reply', load('opencode', 'gate-2026-11-14'))).toBeNull();
   });
 

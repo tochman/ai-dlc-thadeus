@@ -2,9 +2,21 @@
 // payload into the questions of an AgentEvent, and an answer (option indexes) back into what the harness takes.
 // It reads only fields it knows and refuses anything else with a reason, never a guess (BR1.4, RD7). Agent text is
 // passed through as JSON.parse decoded it, never trimmed, normalised or re-encoded; only the 64 KB cut applies (BR2.6).
-import { cleanLine } from '../shared/agentText.js';
+//
+// US-0506 u2 BR5.1–BR5.5, BR5.8, SD9, SD11, SD12: the permission part. `parse('permission', …)` gives the event's
+// `permission` (what, detail, cwd, truncated, choices) and `alwaysRules`, which stays in main (SD11). Agent text is
+// cut first, then shown through visibleText, so a control or bidi character is seen as its escape (SCD8, SD9).
+// `permissionAnswer` builds the hook output (Claude Code) or the decision word (opencode) for one choice.
+import { cleanLine, visibleText } from '../shared/agentText.js';
+import { t } from '../shared/i18n.js';
 
 export const MAX_TEXT_BYTES = 65_536;
+/** SD12: the fixed reason Claude Code gets with a deny; never agent text. */
+export const DENY_MESSAGE = 'The person denied this in the app.';
+const MAX_WHAT = 200; // code points
+const MAX_CWD_BYTES = 4096;
+const RULE_CAPS = { lines: 8, line: 256, total: 1024 }; // code points, before escaping (SD11)
+const DECISION = { allowOnce: 'once', allowAlways: 'always', deny: 'reject' };
 const MAX_QUESTIONS = 4;
 const DOWN = '\x1b[B';
 const ENTER = '\r';
@@ -62,10 +74,136 @@ function chosen(event, answer, i) {
 const pickedIndex = (answer) => (answer.picks?.[0]?.length === 1 ? answer.picks[0][0] : null);
 const single = (event, answer) => (event.questions.length === 1 && !event.questions[0].multiSelect ? chosen(event, answer, 0) : null);
 
+// --- Permissions (u2) -------------------------------------------------------------------------------------------------
+
+const isObject = (v) => typeof v === 'object' && v !== null && !Array.isArray(v);
+const onlyKeys = (obj, allowed) => Object.keys(obj).every((k) => allowed.includes(k));
+const isTextList = (v) => Array.isArray(v) && v.length > 0 && v.every(isText);
+
+/** SCD8: one text cut to its cap, then made visible; `cut` says whether anything was dropped. */
+function capText(text, { bytes, points, multiline = false }) {
+  let s = String(text);
+  let cut = false;
+  if (points !== undefined) {
+    const all = Array.from(s);
+    cut = all.length > points;
+    if (cut) s = all.slice(0, points).join('');
+  } else {
+    ({ text: s, truncated: cut } = cutUtf8(s, bytes));
+  }
+  return { text: visibleText(s, { multiline }), cut };
+}
+
+/**
+ * SD11: the lines Allow always shows, or null when it may not be offered. Every Claude Code suggestion must be a
+ * shape whose whole effect can be put in words.
+ * ponytail: an unknown key or type drops the dialog's Allow always (the terminal still offers it) until the fixture
+ * is re-recorded for the newer Claude Code; widen the allowed keys only from a recorded payload.
+ */
+function suggestionLines(suggestions) {
+  if (!Array.isArray(suggestions) || suggestions.length === 0) return null;
+  const lines = [];
+  for (const s of suggestions) {
+    if (!isObject(s) || !isText(s.destination)) return null;
+    if (
+      s.type === 'addRules' &&
+      s.behavior === 'allow' &&
+      onlyKeys(s, ['type', 'rules', 'behavior', 'destination']) &&
+      Array.isArray(s.rules) &&
+      s.rules.length
+    ) {
+      for (const r of s.rules) {
+        if (!isObject(r) || !isText(r.toolName) || !onlyKeys(r, ['toolName', 'ruleContent'])) return null;
+        if (r.ruleContent !== undefined && !isText(r.ruleContent)) return null;
+        lines.push(r.ruleContent === undefined ? `${s.destination}: ${r.toolName}` : `${s.destination}: ${r.toolName}(${r.ruleContent})`);
+      }
+    } else if (s.type === 'addDirectories' && onlyKeys(s, ['type', 'directories', 'destination']) && isTextList(s.directories)) {
+      for (const d of s.directories) lines.push(`${s.destination}: ${d}`);
+    } else return null;
+  }
+  return lines;
+}
+
+/** SD11 caps on the raw lines: whole, or not at all. */
+function capLines(lines) {
+  const sizes = lines.map((l) => Array.from(l).length);
+  return lines.length <= RULE_CAPS.lines && sizes.every((n) => n <= RULE_CAPS.line) && sizes.reduce((a, b) => a + b, 0) <= RULE_CAPS.total;
+}
+
+/**
+ * BR5.3: the agent's own choices in its order. `lines` is null when Allow always is not offered at all.
+ * ponytail: labels are built in main in the current language (K3); a language switch while a permission is open keeps
+ * the old language on that page until the next event. Rebuild the labels on a `language` change if that matters.
+ */
+function permissionOf({ what, detail, cwd, lines, denyKey }) {
+  const w = capText(what, { points: MAX_WHAT });
+  const d = capText(detail, { bytes: MAX_TEXT_BYTES, multiline: true });
+  const c = cwd === null ? { text: null, cut: false } : capText(cwd, { bytes: MAX_CWD_BYTES });
+  const truncated = w.cut || d.cut || c.cut;
+  const choices = [{ label: t('agentDialog.permission.allowOnce'), effect: 'allowOnce', refuses: false, enabled: !truncated }];
+  if (lines) {
+    const fits = capLines(lines);
+    choices.push({
+      label: fits
+        ? t('agentDialog.permission.allowAlways', { rules: lines.map((l) => visibleText(l)).join('\n') })
+        : t('agentDialog.permission.allowAlwaysBare'),
+      effect: 'allowAlways',
+      refuses: false,
+      enabled: fits && !truncated
+    });
+  }
+  choices.push({ label: t(`agentDialog.permission.${denyKey}`), effect: 'deny', refuses: true, enabled: true });
+  return { what: w.text, detail: d.text, cwd: c.text, truncated, choices };
+}
+
+/** Claude Code PermissionRequest stdin (BR5.1). */
+function parseClaudePermission(body) {
+  const p = parseJson(body);
+  if (p === undefined) return { ok: false, reason: 'not JSON' };
+  if (!isText(p?.tool_name)) return { ok: false, reason: 'no tool name' };
+  if (p.tool_name === 'AskUserQuestion') return { ok: false, reason: 'question tool' }; // u1 handles it (RD11)
+  const input = p.tool_input;
+  if (!isObject(input)) return { ok: false, reason: 'tool input not an object', text: p.tool_name };
+  const detail = typeof input.command === 'string' ? input.command : typeof input.file_path === 'string' ? input.file_path : JSON.stringify(input, null, 2);
+  const lines = suggestionLines(p.permission_suggestions);
+  return {
+    ok: true,
+    kind: 'permission',
+    toolCallId: p.tool_use_id ?? null,
+    permission: permissionOf({ what: p.tool_name, detail, cwd: typeof p.cwd === 'string' ? p.cwd : null, lines, denyKey: 'deny' }),
+    alwaysRules: lines ? p.permission_suggestions : null // the parsed value itself, never rebuilt (SD11)
+  };
+}
+
+/** opencode permission.asked (BR5.2, Q1 A). */
+function parseOpencodePermission(body) {
+  const payload = parseJson(body);
+  if (payload === undefined) return { ok: false, reason: 'not JSON' };
+  const p = payload?.properties;
+  if (!isText(p?.requestID)) return { ok: false, reason: 'no request id' };
+  if (!isText(p.sessionID)) return { ok: false, reason: 'no session id' };
+  if (!isText(p.permission)) return { ok: false, reason: 'no permission type' };
+  const command = p.metadata?.command;
+  const detail = typeof command === 'string' ? command : isTextList(p.patterns) ? p.patterns.join('\n') : null;
+  if (detail === null) return { ok: false, reason: 'no command or patterns', text: p.permission };
+  const lines = isTextList(p.always) ? p.always.map((a) => `${p.permission}: ${a}`) : null;
+  return {
+    ok: true,
+    kind: 'permission',
+    toolCallId: p.requestID,
+    permission: permissionOf({ what: p.permission, detail, cwd: null, lines, denyKey: 'reject' }),
+    alwaysRules: lines ? p.always : null
+  };
+}
+
+/** The effect of choice `i` of a permission event. */
+const effectOf = (event, i) => event.permission.choices[i].effect;
+
 const claude = {
   /** Claude Code hook stdin: PreToolUse (kind question) or PostToolUse (kind answered) for AskUserQuestion. */
   parse(kind, body) {
     if (kind === 'answered') return { ok: true, kind, toolCallId: parseJson(body)?.tool_use_id ?? null };
+    if (kind === 'permission') return parseClaudePermission(body);
     if (kind !== 'question') return null; // unknown kinds are ignored (C1 ownership rules)
     const payload = parseJson(body);
     if (payload === undefined) return { ok: false, reason: 'not JSON' };
@@ -84,6 +222,17 @@ const claude = {
       hookSpecificOutput: { hookEventName: 'PreToolUse', permissionDecision: 'allow', updatedInput: { ...event.input, answers } }
     });
   },
+  /** BR5.8, SD12: PermissionRequest output for choice `i`; allow always carries `alwaysRules` unchanged. No updatedInput. */
+  permissionAnswer(event, i, alwaysRules) {
+    const effect = effectOf(event, i);
+    const decision =
+      effect === 'deny'
+        ? { behavior: 'deny', interrupt: true, message: DENY_MESSAGE }
+        : effect === 'allowAlways'
+          ? { behavior: 'allow', updatedPermissions: alwaysRules }
+          : { behavior: 'allow' };
+    return JSON.stringify({ hookSpecificOutput: { hookEventName: 'PermissionRequest', decision } });
+  },
   // ponytail: keys are built only for one single-select question (a pick, or an own answer). Claude Code's key
   // sequences for batch tabs and checkboxes are not documented, and a guessed sequence could pick the wrong option
   // (NFR2). Upgrade path: record the picker's key sequence for tabs and checkboxes in the manual run, then add them.
@@ -101,7 +250,11 @@ const claude = {
 const opencode = {
   /** The opencode plugin's form events: form.created (kind question), form.replied or form.cancelled (kind answered). */
   parse(kind, body) {
-    if (kind === 'answered') return { ok: true, kind, toolCallId: parseJson(body)?.properties?.formID ?? null };
+    if (kind === 'answered') {
+      const p = parseJson(body)?.properties;
+      return { ok: true, kind, toolCallId: p?.requestID ?? p?.formID ?? null }; // permission.replied, or a form event
+    }
+    if (kind === 'permission') return parseOpencodePermission(body);
     if (kind !== 'question') return null;
     const payload = parseJson(body);
     if (payload === undefined) return { ok: false, reason: 'not JSON' };
@@ -118,6 +271,8 @@ const opencode = {
     });
     return JSON.stringify(out);
   },
+  /** BR5.8: the answer file holds the decision word only; the plugin passes it to ctx.permission.reply. */
+  permissionAnswer: (event, i) => DECISION[effectOf(event, i)],
   // ponytail: as for Claude Code, one single-select pick only; opencode's own-answer row has no confirmed key sequence.
   keys(event, answer) {
     const c = single(event, answer);

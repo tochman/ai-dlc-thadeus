@@ -1,0 +1,10 @@
+{
+  "session_id": "4b6f6a2e-3f0d-4d55-9a57-2b1f0c3e9d11",
+  "transcript_path": "/Users/dev/.claude/projects/aidlc-dash/4b6f6a2e.jsonl",
+  "cwd": "/Users/dev/Projects/aidlc-dash",
+  "permission_mode": "default",
+  "hook_event_name": "PermissionRequest",
+  "tool_name": "Bash",
+  "tool_input": { "command": "git push origin feat/US-0506", "description": "Push the branch" },
+  "permission_suggestions": [{ "type": "addRules", "rules": [{ "toolName": "Bash", "ruleContent": "git push:*" }], "behavior": "allow", "destination": "localSettings" }]
+}

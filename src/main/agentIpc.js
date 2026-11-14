@@ -6,18 +6,26 @@ import { t } from '../shared/i18n.js';
 const MAX_ID = 64;
 const isIndexList = (v) => Array.isArray(v) && v.every((n) => Number.isInteger(n) && n >= 0);
 
-/** SD4, before the store sees it: an id of at most 64 characters and the C3 Answer shape for a question. */
+/** An object with exactly these keys. */
+const onlyKeys = (obj, keys) => typeof obj === 'object' && obj !== null && Object.keys(obj).length === keys.length && keys.every((k) => Object.hasOwn(obj, k));
+
+/**
+ * SD4, before the store sees it: an id of at most 64 characters and exactly one C3 Answer shape, a question's
+ * { picks, own } or (US-0506 u2 SD10) a permission's { choice } with a non-negative integer.
+ */
 function checkAnswer(eventId, answer) {
+  const idOk = typeof eventId === 'string' && eventId.length > 0 && eventId.length <= MAX_ID;
   const q = answer?.question;
-  const ok =
-    typeof eventId === 'string' &&
-    eventId.length > 0 &&
-    eventId.length <= MAX_ID &&
-    Array.isArray(q?.picks) &&
+  const p = answer?.permission;
+  const question =
+    onlyKeys(answer, ['question']) &&
+    onlyKeys(q, ['picks', 'own']) &&
+    Array.isArray(q.picks) &&
     q.picks.every(isIndexList) &&
     Array.isArray(q.own) &&
     q.own.every((o) => o === null || typeof o === 'string');
-  if (!ok) throw new Error(t('agentDialog.errors.doesNotFit'));
+  const permission = onlyKeys(answer, ['permission']) && onlyKeys(p, ['choice']) && Number.isInteger(p.choice) && p.choice >= 0;
+  if (!idOk || !(question || permission)) throw new Error(t('agentDialog.errors.doesNotFit'));
 }
 
 function checkId(id, key = 'agentDialog.errors.unknownEvent') {

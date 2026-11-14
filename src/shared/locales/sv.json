@@ -876,10 +876,27 @@
   "agentDialog": {
     "title": {
       "waiting": "Agenten väntar på ditt svar",
-      "stillWaiting": "Agenten väntar fortfarande på ditt svar"
+      "stillWaiting": "Agenten väntar fortfarande på ditt svar",
+      "permission": "{harness} ber om behörighet",
+      "permissionStillWaiting": "{harness} väntar fortfarande på behörighet"
     },
     "kind": {
-      "question": "Fråga"
+      "question": "Fråga",
+      "permission": "BEHÖRIGHET"
+    },
+    "permission": {
+      "allowOnce": "Tillåt en gång",
+      "allowAlways": "Tillåt alltid:\n{rules}",
+      "allowAlwaysBare": "Tillåt alltid",
+      "deny": "Neka",
+      "reject": "Avvisa",
+      "cwd": "Mapp: {cwd}",
+      "truncated": "Förkortad vid 64 KB. Hela texten finns i terminalen.",
+      "alwaysTooLong": "För långt för att visas här. Använd terminalen för Tillåt alltid.",
+      "timedOut": "{harness} slutade vänta på dialogen. Svara i terminalen.",
+      "handedBack": "Lämnad tillbaka till terminalen. Svara där som vanligt.",
+      "answeredInTerminal": "Besvarad i terminalen.",
+      "alsoInTerminal": "Frågan om behörighet visas också i terminalen."
     },
     "context": "{project} · {intent} · {stage}",
     "state": {

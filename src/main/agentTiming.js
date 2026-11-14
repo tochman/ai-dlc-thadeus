@@ -4,7 +4,8 @@
 import fsp from 'node:fs/promises';
 import path from 'node:path';
 
-const MAIN_STAMPS = new Set(['hookReceived', 'answerDelivered', 'notificationShown', 'notificationClicked']); // u5 amendment 4
+// u5 amendment 4; agentConfirmed: opencode reported a permission the app sent answered (US-0506 u2 OD6)
+const MAIN_STAMPS = new Set(['hookReceived', 'answerDelivered', 'notificationShown', 'notificationClicked', 'agentConfirmed']);
 const RENDERER_STAMPS = new Set(['dialogShown', 'answerClicked']);
 const MAX_ID = 64;
 

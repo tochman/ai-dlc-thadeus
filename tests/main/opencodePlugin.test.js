@@ -22,7 +22,7 @@ let dir, ctx, handlers, beat;
 const files = (sub) => readdirSync(path.join(dir, sub));
 const writeAlive = () => writeFileSync(path.join(dir, 'alive'), `${Date.now()}\n`);
 
-async function load({ env = true, reply = vi.fn(async () => {}), wait = '595' } = {}) {
+async function load({ env = true, reply = vi.fn(async () => {}), wait = '595', permReply = vi.fn(async () => {}) } = {}) {
   vi.resetModules();
   if (env) {
     process.env.THADEUS_SESSION_DIR = dir;
@@ -33,6 +33,7 @@ async function load({ env = true, reply = vi.fn(async () => {}), wait = '595' } 
   ctx = {
     event: { on: vi.fn((type, fn) => (handlers[type] = fn)) },
     session: reply === null ? {} : { form: { reply } }, // null: no reply member at all
+    permission: permReply === null ? { hook: vi.fn() } : { reply: permReply, hook: vi.fn() }, // US-0506 u2
     log: { error: vi.fn(), info: vi.fn() }
   };
   const plugin = (await import('../../.opencode/plugins/thadeus-dialog.js')).default;
@@ -156,5 +157,149 @@ describe('opencode plugin (thadeus-dialog.js)', () => {
     await waitFor(() => files('answers').length === 0, 3000);
     expect(Date.now() - started).toBeGreaterThanOrEqual(900);
     expect(Date.now() - started).toBeLessThanOrEqual(1600);
+  });
+});
+
+// US-0506 u2 LC9: the permission path (BR5.2, BR5.11; RD13, SD8; NFR3.13, NFR5.19, NFR8.6).
+describe('opencode plugin: permissions', () => {
+  const REQ = 'per_9a1f20b3c4';
+  const asked = () => fixture('permission-asked-always');
+  const evts = () => files('events').filter((f) => f.endsWith('.evt'));
+  const kindOf = (f) =>
+    readFileSync(path.join(dir, 'events', f), 'utf8')
+      .split('\n')[0]
+      .split(' ')[2];
+  const bodyOf = (f) => {
+    const s = readFileSync(path.join(dir, 'events', f), 'utf8');
+    return JSON.parse(s.slice(s.indexOf('\n') + 1));
+  };
+  async function askPermission(event = asked()) {
+    let waitFirst = false;
+    const before = new Set(evts());
+    expect(handlers['permission.asked'](event)).toBeUndefined();
+    const evt = await waitFor(() => {
+      const f = evts().find((n) => !before.has(n));
+      if (f) waitFirst = files('answers').includes(f.replace(/\.evt$/, '.wait'));
+      return f;
+    });
+    expect(waitFirst).toBe(true); // RD13: the wait marker exists before the event can be seen
+    return evt.replace(/\.evt$/, '');
+  }
+  const replied = () => handlers['permission.replied'](fixture('permission-replied'));
+
+  it('permission.asked writes a C1 permission event with the event unchanged, and its wait marker', async () => {
+    await load();
+    const base = await askPermission();
+    expect(kindOf(`${base}.evt`)).toBe('permission');
+    expect(readFileSync(path.join(dir, 'events', `${base}.evt`), 'utf8').split('\n')[0]).toBe(`THADEUS-EVENT v1 permission ${SECRET}`);
+    expect(bodyOf(`${base}.evt`)).toEqual(asked());
+  });
+
+  it.each(['once', 'always', 'reject'])('an answer file %s gives exactly one reply with that decision and leaves no marker (NFR2.4)', async (decision) => {
+    const permReply = vi.fn(async () => {});
+    await load({ permReply });
+    const base = await askPermission();
+    answer(base, decision);
+    await waitFor(() => files('answers').length === 0);
+    expect(permReply.mock.calls).toEqual([[{ sessionID: 'ses_7d1c0b2a9e', requestID: REQ, decision }]]);
+  });
+
+  it('any other answer text gives no reply (SD8)', async () => {
+    const permReply = vi.fn(async () => {});
+    await load({ permReply });
+    for (const text of ['', 'allow', 'once\n', 'ALWAYS']) {
+      const base = await askPermission();
+      answer(base, text);
+      await waitFor(() => files('answers').length === 0);
+    }
+    expect(permReply).not.toHaveBeenCalled();
+  });
+
+  it('permission.replied before the answer file means no reply; each replied writes an answered event (BR5.11, NFR5.19)', async () => {
+    const permReply = vi.fn(async () => {});
+    await load({ permReply });
+    const base = await askPermission();
+    replied();
+    await waitFor(() => evts().some((f) => kindOf(f) === 'answered'));
+    const ans = evts().find((f) => kindOf(f) === 'answered');
+    expect(bodyOf(ans).properties.requestID).toBe(REQ);
+    answer(base, 'once');
+    await waitFor(() => files('answers').length === 0);
+    expect(permReply).not.toHaveBeenCalled();
+  });
+
+  it('permission.replied after the reply changes nothing: one reply', async () => {
+    const permReply = vi.fn(async () => {});
+    await load({ permReply });
+    const base = await askPermission();
+    answer(base, 'always');
+    await waitFor(() => permReply.mock.calls.length === 1 && files('answers').length === 0);
+    replied();
+    await waitFor(() => evts().some((f) => kindOf(f) === 'answered'));
+    expect(permReply).toHaveBeenCalledTimes(1);
+  });
+
+  it('replied during reply: one reply call, nothing thrown, .nack and the answered event exist (RD13, review R-06)', async () => {
+    const permReply = vi.fn(async () => {
+      replied();
+      throw new Error('already answered');
+    });
+    await load({ permReply });
+    const base = await askPermission();
+    answer(base, 'once');
+    await waitFor(() => files('answers').includes(`${base}.nack`) && !files('answers').includes(`${base}.wait`));
+    await waitFor(() => evts().some((f) => kindOf(f) === 'answered'));
+    expect(permReply).toHaveBeenCalledTimes(1);
+    expect(files('answers')).toEqual([`${base}.nack`]);
+  });
+
+  it('a rejecting or missing reply leaves .nack and throws nothing; an fs error on the event write is logged (NFR5.19)', async () => {
+    for (const permReply of [vi.fn(async () => Promise.reject(new Error('no such request'))), null]) {
+      for (const f of files('answers')) rmSync(path.join(dir, 'answers', f));
+      await load({ permReply });
+      const base = await askPermission();
+      answer(base, 'reject');
+      await waitFor(() => files('answers').includes(`${base}.nack`) && !files('answers').includes(`${base}.wait`));
+    }
+    rmSync(path.join(dir, 'events'), { recursive: true });
+    expect(() => handlers['permission.asked'](asked())).not.toThrow();
+    expect(() => replied()).not.toThrow();
+    await waitFor(() => ctx.log.error.mock.calls.length === 2);
+  });
+
+  it('three permission.asked in the same millisecond get three names and wait at once (SCD7)', async () => {
+    await load();
+    vi.spyOn(Date, 'now').mockReturnValue(1_700_000_000_000);
+    for (let i = 0; i < 3; i++) handlers['permission.asked'](asked());
+    await waitFor(() => evts().length === 3 && files('answers').length === 3);
+    vi.restoreAllMocks();
+    expect(evts().sort()).toEqual([0, 1, 2].map((n) => `${1_700_000_000_000 + n}-${process.pid}.evt`));
+    for (const f of evts()) answer(f.replace(/\.evt$/, ''), '');
+    await waitFor(() => files('answers').length === 0);
+  });
+
+  it('never calls ctx.permission.hook, and the source holds no evaluate (SD8, NFR3.13)', async () => {
+    await load();
+    const base = await askPermission();
+    answer(base, 'once');
+    await waitFor(() => files('answers').length === 0);
+    expect(ctx.permission.hook).not.toHaveBeenCalled();
+    expect(readFileSync(path.resolve(__dirname, '../../.opencode/plugins/thadeus-dialog.js'), 'utf8')).not.toContain('evaluate');
+  });
+
+  it('writes nothing to the console on the quiet paths: asked, a reply, a hand-back, replied (OD8)', async () => {
+    const spies = ['log', 'info', 'warn', 'error'].map((m) => vi.spyOn(console, m));
+    await load();
+    let base = await askPermission();
+    answer(base, 'once');
+    await waitFor(() => files('answers').length === 0);
+    base = await askPermission();
+    answer(base, '');
+    await waitFor(() => files('answers').length === 0);
+    replied();
+    await waitFor(() => evts().some((f) => kindOf(f) === 'answered'));
+    for (const spy of spies) expect(spy).not.toHaveBeenCalled();
+    expect(ctx.log.error).not.toHaveBeenCalled();
+    vi.restoreAllMocks();
   });
 });

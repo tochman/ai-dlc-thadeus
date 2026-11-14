@@ -870,10 +870,27 @@
   "agentDialog": {
     "title": {
       "waiting": "The agent is waiting for your answer",
-      "stillWaiting": "The agent is still waiting for your answer"
+      "stillWaiting": "The agent is still waiting for your answer",
+      "permission": "{harness} asks for permission",
+      "permissionStillWaiting": "{harness} is still waiting for permission"
     },
     "kind": {
-      "question": "Question"
+      "question": "Question",
+      "permission": "PERMISSION"
+    },
+    "permission": {
+      "allowOnce": "Allow once",
+      "allowAlways": "Allow always:\n{rules}",
+      "allowAlwaysBare": "Allow always",
+      "deny": "Deny",
+      "reject": "Reject",
+      "cwd": "Folder: {cwd}",
+      "truncated": "Shortened at 64 KB. The full text is in the terminal.",
+      "alwaysTooLong": "Too long to show here. Use the terminal for Allow always.",
+      "timedOut": "{harness} stopped waiting for the dialog. Answer in the terminal.",
+      "handedBack": "Handed back to the terminal. Answer there as usual.",
+      "answeredInTerminal": "Answered in the terminal.",
+      "alsoInTerminal": "The permission prompt is also open in the terminal."
     },
     "context": "{project} · {intent} · {stage}",
     "state": {

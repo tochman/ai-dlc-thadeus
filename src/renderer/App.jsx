@@ -12,6 +12,9 @@ import UpdateNotice from './UpdateNotice.jsx';
 import { Bar, Frame } from './Lcars.jsx';
 import { APP_NAME } from '../shared/appName.js';
 import { selectableHarness } from '../shared/harnesses.js';
+import { byPager } from '../shared/agentOrder.js';
+
+const NOTICE_MS = 5000; // US-0506 u2 K11: how long the hand-back notice stays
 import { dirtyFiles } from './editor/EditorContext.jsx';
 
 const bridge = window.bridge;
@@ -67,6 +70,14 @@ export default function App() {
   const [agentEvents, setAgentEvents] = useState({}); // projectId -> AgentEvent[] from main, hook and audit (US-0506 C4)
   const [popupOpen, setPopupOpen] = useState(false);
   const [popupFocus, setPopupFocus] = useState(null); // {id} named by a clicked notification (FR3.2)
+  // ponytail: one notice at a time and no app-wide toast component (US-0506 u2 K11); replace it with u5's notice if
+  // one is built, or queue notices if two can ever arrive within NOTICE_MS.
+  const [notice, setNotice] = useState(null);
+  useEffect(() => {
+    if (!notice) return undefined;
+    const timer = setTimeout(() => setNotice(null), NOTICE_MS);
+    return () => clearTimeout(timer);
+  }, [notice]);
   const recentRef = useRef([]);
   const menuCommandRef = useRef(null);
   const [updateCheck, setUpdateCheck] = useState(0); // "Sök efter uppdatering…" bumps it (US-0407)
@@ -216,9 +227,10 @@ export default function App() {
     bridge.setActiveProject?.(activeId).catch((err) => console.warn('Aktivt projekt kunde inte skickas:', errorText(err)));
   }, [activeId]);
 
-  // The open projects' events in arrival order, new ones before those that waited from the start (FR2.2, BR2.1).
+  // The open projects' events in pager order (US-0506 u2 BR5.12: questions and permissions before replies, then
+  // arrival), new ones before those that waited from the start (FR2.2, BR2.1).
   // The dialog closes by itself once none of the events that opened it is left (FR2.4).
-  const dialogEvents = tabs.flatMap((tab) => agentEvents[tab.projectId] ?? []).sort((a, b) => a.arrivedAtMs - b.arrivedAtMs || a.seq - b.seq);
+  const dialogEvents = tabs.flatMap((tab) => agentEvents[tab.projectId] ?? []).sort(byPager);
   const popupEvents = [...dialogEvents.filter((e) => !e.early), ...dialogEvents.filter((e) => e.early)];
   const hasNewQuestion = dialogEvents.some((e) => !e.early);
   useEffect(() => {
@@ -611,7 +623,13 @@ export default function App() {
         onAuditSend={sendAnswer}
         onOpenTerminal={answerInAgent}
         onClose={closePopup}
+        onNotice={setNotice}
       />
+      {notice && (
+        <p className="app-notice" role="status" data-testid="app-notice">
+          {notice}
+        </p>
+      )}
     </div>
   );
 }

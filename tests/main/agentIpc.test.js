@@ -117,6 +117,24 @@ describe('handlers (C4, SD4)', () => {
     expect(store.answer).not.toHaveBeenCalled();
   });
 
+  it('passes a permission answer of exactly { permission: { choice } } to the store (US-0506 u2 SD10, C4)', async () => {
+    await answer('e1', { permission: { choice: 1 } });
+    expect(store.answer).toHaveBeenCalledWith('e1', { permission: { choice: 1 } });
+  });
+
+  it.each([
+    ['a fractional choice', 'e1', { permission: { choice: 0.5 } }, 'doesNotFit'],
+    ['a negative choice', 'e1', { permission: { choice: -1 } }, 'doesNotFit'],
+    ['a string choice', 'e1', { permission: { choice: '0' } }, 'doesNotFit'],
+    ['a key besides choice', 'e1', { permission: { choice: 0, extra: 1 } }, 'doesNotFit'],
+    ['both shapes at once', 'e1', { permission: { choice: 0 }, question: { picks: [[0]], own: [null] } }, 'doesNotFit'],
+    ['a question with an extra key', 'e1', { question: { picks: [[0]], own: [null], more: 1 } }, 'doesNotFit'],
+    ['an id over 64 characters', 'e'.repeat(65), { permission: { choice: 0 } }, 'doesNotFit']
+  ])('refuses a permission answer with %s before the store sees it', async (_name, eventId, a, key) => {
+    await expect(answer(eventId, a)).rejects.toThrow(t(`agentDialog.errors.${key}`));
+    expect(store.answer).not.toHaveBeenCalled();
+  });
+
   it('store changes are pushed to every live sender', () => {
     changed({ projectId: 'p1', events: [{ eventId: 'e1' }] });
     expect(senders[0].send).toHaveBeenCalledWith('agent-events:changed', { projectId: 'p1', events: [{ eventId: 'e1' }] });

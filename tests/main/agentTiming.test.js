@@ -57,6 +57,27 @@ describe('createTimingLog', () => {
     expect(lines().map((l) => l.stamp)).toEqual(['notificationShown', 'notificationClicked']);
   });
 
+  it('accepts agentConfirmed from main only (US-0506 u2 OD6)', async () => {
+    const log = createTimingLog({ dir, on: true });
+    expect(log.stampFromRenderer('e1', 'agentConfirmed', 'opencode')).toBe(false);
+    log.stamp('e1', 'opencode', 'agentConfirmed', 5);
+    await log.flush();
+    expect(lines()).toEqual([{ eventId: 'e1', harness: 'opencode', stamp: 'agentConfirmed', at: 5 }]);
+  });
+
+  it('one Claude Code permission gives four lines with only the four fields, no command or effect (OD5)', async () => {
+    const log = createTimingLog({ dir, on: true });
+    log.stamp('h1-p', 'claude', 'hookReceived', 1);
+    log.stampFromRenderer('h1-p', 'dialogShown', 'claude');
+    log.stampFromRenderer('h1-p', 'answerClicked', 'claude');
+    log.stamp('h1-p', 'claude', 'answerDelivered');
+    await log.flush();
+    const got = lines();
+    expect(got.map((l) => l.stamp)).toEqual(['hookReceived', 'dialogShown', 'answerClicked', 'answerDelivered']);
+    for (const l of got) expect(Object.keys(l).sort()).toEqual(['at', 'eventId', 'harness', 'stamp']);
+    expect(readFileSync(path.join(dir, 'agent-timing.jsonl'), 'utf8')).not.toMatch(/git push|allowOnce|deny/);
+  });
+
   it('appends through one queue, so 200 quick stamps give 200 whole lines in order', async () => {
     const log = createTimingLog({ dir, on: true });
     for (let i = 0; i < 200; i++) log.stamp(`e${i}`, 'opencode', 'hookReceived', i);
