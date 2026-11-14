@@ -913,6 +913,13 @@ a.md-link:hover { color: var(--steel-light); }
 .config-change { display: flex; flex-direction: column; gap: 6px; border-left: var(--gap) solid var(--steel); padding: 8px 12px; }
 .config-change code { overflow-wrap: anywhere; }
 .config-change-output { margin: 0; max-height: 220px; overflow: auto; white-space: pre-wrap; font-size: 12px; background: var(--slate-2); padding: 6px 8px; }
+/* The Plans view (EPIC-09 US-0903). */
+.config-change-actions { display: flex; flex-wrap: wrap; gap: var(--gap); align-items: center; }
+.plans-list li { flex-direction: column; align-items: stretch; padding: 8px 6px; }
+.plans-head { display: flex; flex-wrap: wrap; gap: 8px; align-items: baseline; }
+.plans-head .btn-link { background: none; border: 0; padding: 0; color: var(--amber); font: inherit; cursor: pointer; text-transform: none; }
+.plans-list p { margin: 2px 0; }
+.plans-stage-list ul { margin: 0; padding-left: 18px; columns: 2; }
 /* The update notice (EPIC-04 US-0407): a calm notice in the corner, never a modal. */
 .update-notice { position: fixed; right: 16px; bottom: 16px; z-index: 40; width: min(440px, calc(100vw - 32px)); max-height: 60vh; overflow: auto; border-left: var(--gap) solid var(--steel); display: flex; flex-direction: column; gap: 8px; }
 .update-notice h2 { margin: 0; color: var(--steel); font-size: 15px; letter-spacing: 0.04em; text-transform: uppercase; }

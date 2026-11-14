@@ -5,15 +5,13 @@
 // so each section is read with its own `aidlc config <section> --show --json --harness <h>`; the envelope is
 // the same one `config --show` nests under `sections.<section>`.
 import { defaultExec, runFixed } from './exec.js';
-import { listDir, readText } from './projectAccess.js';
-import { frontmatterField } from './models.js';
 import { agentName } from './parsers/ledger.js';
+import { OWN_PLANS_DIR, loadPlans } from './plans.js';
 import { toolPath } from './tools.js';
 import { HARNESSES, scopesDir, setupHarness } from '../shared/harnesses.js';
 import { t } from '../shared/i18n.js';
 
 const TIMEOUT_MS = 10000;
-const OWN_PLANS_DIR = 'aidlc/scopes';
 const isEnv = (source) => typeof source === 'string' && /^env\b/.test(source);
 
 /**
@@ -101,40 +99,6 @@ function parseList(out) {
   return Object.entries(out).map(([key, raw]) => ({ key, ...splitSource(raw), env: false }));
 }
 
-/** Plans in one folder; an unreadable or nameless file is skipped with a warning (FR3.4). */
-async function readPlans(root, dir, own) {
-  let entries;
-  try {
-    entries = (await listDir(root, dir)).filter((e) => !e.isDir && e.name.endsWith('.md'));
-  } catch (err) {
-    console.warn(`Kunde inte läsa ${dir}:`, err.message);
-    return [];
-  }
-  const plans = [];
-  for (const e of entries) {
-    try {
-      const text = await readText(root, `${dir}/${e.name}`);
-      const name = frontmatterField(text, 'name');
-      if (!name) throw new Error('inget name i frontmatter');
-      plans.push({ name, description: frontmatterField(text, 'description'), own });
-    } catch (err) {
-      console.warn(`Hoppar över planen ${dir}/${e.name}:`, err.message);
-    }
-  }
-  return plans.sort((a, b) => a.name.localeCompare(b.name));
-}
-
-/** The project's own plans first, then the harness's shipped ones without a copy of an own plan (FR3.1–FR3.3). */
-async function loadPlans(root, harness, activeScope) {
-  const shippedDir = scopesDir(setupHarness(harness));
-  const [own, shipped] = await Promise.all([
-    readPlans(root, OWN_PLANS_DIR, true),
-    shippedDir ? readPlans(root, shippedDir, false) : []
-  ]);
-  const ownNames = new Set(own.map((p) => p.name));
-  return [...own, ...shipped.filter((p) => !ownNames.has(p.name))].map((p) => ({ ...p, active: p.name === activeScope }));
-}
-
 const SECTIONS = ['models', 'flags', 'providers', 'project'];
 
 /**
@@ -168,7 +132,9 @@ export async function getAidlcConfig(root, { harness, activeScope = null, exec =
     read({ providers: 'provider', project: 'plugins' }[s] ?? s, sectionRuns[i], (out) => parse[s](envelopeData(out)))
   );
   const active = read('active', listRun, parseList);
-  return { harness, models, flags, active, provider, plugins, plans, errors };
+  // The view lists names only; the Plans view (US-0903) reads the rest through plans.js.
+  const shownPlans = plans.map(({ name, description, own, active: on }) => ({ name, description, own, active: on }));
+  return { harness, models, flags, active, provider, plugins, plans: shownPlans, errors };
 }
 
 /** Root-relative paths whose change can alter the configuration (FR6.1); the intent state comes via project:changed. */

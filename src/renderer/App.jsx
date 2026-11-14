@@ -283,10 +283,11 @@ export default function App() {
   const isAidlc = active?.detection.isAidlc === true;
   const showFeatures = activeMeta.showFeatures === true;
   // One view at a time. Features needs the feature docs, the rest AI-DLC (US-0901 FR1.1); else the intents view shows.
-  const offered = { features: showFeatures, config: isAidlc, cost: isAidlc, github: isAidlc };
+  const offered = { features: showFeatures, config: isAidlc, plans: isAidlc, cost: isAidlc, github: isAidlc };
   const view = offered[activeUi.view] ? activeUi.view : 'intents';
   const firstLabel = isAidlc ? t('app.intents') : t('app.setup');
-  const viewLabel = { features: t('app.features'), config: t('app.config'), cost: t('app.cost'), github: t('app.github') }[view] ?? firstLabel;
+  const viewLabel =
+    { features: t('app.features'), config: t('app.config'), plans: t('app.plans'), cost: t('app.cost'), github: t('app.github') }[view] ?? firstLabel;
 
   // Named actions shared by the left arm and the app menu (US-0404 FR2.4).
   function closeActiveProject() {
@@ -328,7 +329,7 @@ export default function App() {
     closeProject: () => closeActiveProject(),
     projectSettings: () => openProjectSettings(activeId),
     appSettings: () => openAppSettings(),
-    view: ({ view: v }) => pick(v, ['intents', 'features', 'config'], showView),
+    view: ({ view: v }) => pick(v, ['intents', 'features', 'config', 'plans'], showView),
     panel: ({ panel }) => isAidlc && pick(panel, ['cost', 'github'], showView), // Kostnad and Github are views too
     terminal: ({ action }) => pick(action, ['agent', 'shell', 'restart'], runTerminal),
     docs: () => openDocs(),
@@ -451,6 +452,11 @@ export default function App() {
             {isAidlc && (
               <ArmBlock current={!settingsView && view === 'config'} onClick={() => showView('config')} data-testid="project-view-switch-config">
                 {t('app.config')}
+              </ArmBlock>
+            )}
+            {isAidlc && (
+              <ArmBlock current={!settingsView && view === 'plans'} onClick={() => showView('plans')} data-testid="project-view-switch-plans">
+                {t('app.plans')}
               </ArmBlock>
             )}
             <ArmBlock

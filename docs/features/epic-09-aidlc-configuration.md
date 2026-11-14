@@ -26,7 +26,7 @@
 
 **Stories:** US-0901, US-0902, US-0903, US-0904
 
-**Status (2026-11-14):** 🔄 In progress. ✅ US-0901 released in v0.2.2. ✅ US-0902 released in v0.2.3. 📋 US-0903 planned for v0.2.4. ✅ US-0904 released in v0.2.3. US-0904 replaces US-0206 (moved here from EPIC-02).
+**Status (2026-11-14):** 🔄 In progress. ✅ US-0901 released in v0.2.2. ✅ US-0902 released in v0.2.3. ✅ US-0903 done for v0.2.4. ✅ US-0904 released in v0.2.3. US-0904 replaces US-0206 (moved here from EPIC-02).
 
 ---
 
@@ -128,25 +128,26 @@ The CLI refuses a harness that the project hasn't installed.
   - [x] **The Guard Policy lock (tier 2):** the strict lock in `aidlc/spaces/<space>/memory/*.md` has no CLI command. The app edits only that section, after showing the diff, and never touches the rest of the memory file.
 - **Dependencies:** US-0901
 
-**US-0903: Create and reuse custom plans** 📋 Planned for v0.2.4
+**US-0903: Create and reuse custom plans** ✅ Done for v0.2.4
 - As a **developer who keeps running the same kind of work**, in order to **start it with the right steps every time**, I would like to **see the saved plans, compose a new one for a task, and save the plan of a running piece of work**.
 - **Epic:** EPIC-09
 - **Priority:** Medium
 - **Complexity:** Medium
 - **Acceptance Criteria:**
-  - [ ] **A list of plans:**
+  - [x] **A list of plans:**
     - The stock scopes and the project's saved ones (from `.claude/scopes/*.md` and `aidlc/scopes/*.md` frontmatter), each with its name, description, depth, stage count and default settings (reviews, sensors, plan approval, and so on).
     - Opening one shows which stages it runs and which it skips.
-  - [ ] **Compose a plan:** "Ny plan / New plan" asks what the work is for and types `/aidlc compose "<task>"` into the agent tab. The approve, edit and reject choices happen there, in AI-DLC's own gate.
-  - [ ] **Save the running plan:** for an intent on a custom plan, "Spara plan / Save plan" asks for a name (lowercase words joined by hyphens, checked before running) and runs `aidlc engine scope save --name <name>` from the app (tier 1).
-  - [ ] **Start work on a saved plan:** "Starta med plan / Start with plan" types `/aidlc --scope <name> "<what to build>"` into the agent tab. This is an agent request, not a setting.
-  - [ ] **Edit a saved plan's description, depth or keywords (tier 2):**
+  - [x] **Compose a plan:** "Ny plan / New plan" asks what the work is for and types `/aidlc compose "<task>"` into the agent tab. The approve, edit and reject choices happen there, in AI-DLC's own gate.
+  - [x] **Save the running plan:** for an intent on a custom plan, "Spara plan / Save plan" asks for a name (lowercase words joined by hyphens, checked before running) and runs `aidlc engine scope save --name <name>` from the app (tier 1).
+  - [x] **Start work on a saved plan:** "Starta med plan / Start with plan" types `/aidlc --scope <name> "<what to build>"` into the agent tab. This is an agent request, not a setting.
+  - [x] **Edit a saved plan's description, depth or keywords (tier 2):**
     - The app edits the text above the END marker in `aidlc/scopes/<name>.md` after showing the diff.
     - It then removes the stale harness copy where AI-DLC requires that, and runs `aidlc engine graph compile`.
     - Stock scopes are read-only.
-  - [ ] **Delete a saved plan (tier 2):** after a confirmation that names the plan, the app removes both `aidlc/scopes/<name>.md` and its harness copy, then recompiles. A plan that a running intent uses can't be deleted.
-  - [ ] **Change which stages a plan runs:** not edited by the app (tier 3). "Ändra steg / Change steps" types an `/aidlc compose` request into the agent tab.
-  - [ ] A custom plan's own name is shown wherever an intent's plan is shown (built in US-0701).
+  - [x] **Delete a saved plan (tier 2):** after a confirmation that names the plan, the app removes both `aidlc/scopes/<name>.md` and its harness copy, then recompiles. A plan that a running intent uses can't be deleted.
+  - [x] **Change which stages a plan runs:** not edited by the app (tier 3). "Ändra steg / Change steps" types an `/aidlc compose` request into the agent tab.
+  - [x] A custom plan's own name is shown wherever an intent's plan is shown (built in US-0701).
+- **Notes:** Built in its own Plans view, reached from the left arm. A stock plan's stages come from the harness's compiled `tools/data/scope-grid.json`, since its scope file carries no grid block. An edit or a delete removes the copy `<harness>/scopes/aidlc-<name>.md` in every harness folder that has one. Not yet seen on screen: the person should look at the view once before the release.
 - **Dependencies:** US-0901, US-0801
 
 **US-0904: Choose models and effort per agent** ✅ Released in v0.2.3 (intent `261114-intent-0-2-3-release`; moved from US-0206)

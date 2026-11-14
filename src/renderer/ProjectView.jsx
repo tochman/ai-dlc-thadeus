@@ -8,6 +8,7 @@ import SetupAidlc from './SetupAidlc.jsx';
 import TerminalPanel from './TerminalPanel.jsx';
 import FeaturesView from './FeaturesView.jsx';
 import ConfigView from './ConfigView.jsx';
+import PlansView from './PlansView.jsx';
 import ProjectSettingsDialog, { confirmHarnessSwitch } from './ProjectSettingsDialog.jsx';
 import { Frame } from './Lcars.jsx';
 import { featureDocsPrompt } from './featureDocsPrompt.js';
@@ -275,7 +276,7 @@ function ProjectContent({ project, visible, settingsOpen = false, onCloseSetting
   const docsExist = features?.available === true;
   const showFeatures = settings.featureDocs === 'show' || (settings.featureDocs === 'auto' && docsExist);
   // One view at a time: Features needs the feature docs, the rest AI-DLC; otherwise the intents view shows (US-0901 FR1.1).
-  const offered = { features: showFeatures, config: isAidlc, cost: isAidlc, github: isAidlc };
+  const offered = { features: showFeatures, config: isAidlc, plans: isAidlc, cost: isAidlc, github: isAidlc };
   const view = offered[chosenView] ? chosenView : 'intents';
   // Configuration mounts the first time it is chosen, so its CLI reads wait until then, and then stays (FR6.1).
   const [configShown, setConfigShown] = useState(false);
@@ -310,7 +311,7 @@ function ProjectContent({ project, visible, settingsOpen = false, onCloseSetting
       <div className="project-main">
         {justSetUp && <SetupDone onClose={() => setJustSetUp(false)} onFeatureDocs={featureDocsChoice ? setupDocs : undefined} />}
         {/* Kept mounted while Features or Configuration is shown, so the intents view keeps its state (FR2.1). */}
-        <div className="project-mode" hidden={view === 'features' || view === 'config'}>
+        <div className="project-mode" hidden={view === 'features' || view === 'config' || view === 'plans'}>
           {isAidlc ? (
             <AidlcProject
               project={project}
@@ -352,6 +353,7 @@ function ProjectContent({ project, visible, settingsOpen = false, onCloseSetting
           </div>
         )}
       </div>
+        {view === 'plans' && <PlansView projectId={project.projectId} visible={visible} harness={harnessId} />}
       {isAidlc && <AddHarnessDialog open={addingHarness} onClose={() => setAddingHarness(false)} setupProps={setupProps} />}
       <TerminalPanel projectId={project.projectId} visible={visible} onChooseHarness={() => setChoosingHarness(true)} />
       <ProjectSettingsDialog

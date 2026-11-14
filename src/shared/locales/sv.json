@@ -55,6 +55,7 @@
     "github": "Github",
     "settings": "Inställningar",
     "config": "Konfiguration",
+    "plans": "Planer",
     "intentCount": "{n} intents",
     "emptyTitle": "Inget projekt öppet",
     "emptyText": "Öppna en projektmapp som innehåller {path}.",
@@ -582,6 +583,44 @@
     "missing": "AI-DLC:s kommandoradsverktyg aidlc hittades inte: {error}",
     "failed": "AI-DLC:s konfiguration kunde inte läsas: {error}"
   },
+  "plans": {
+    "loading": "Läser planerna…",
+    "new": "Ny plan",
+    "newAsk": "Vad ska arbetet göra?",
+    "save": "Spara plan",
+    "saveAsk": "Namn på planen för {intent} (små bokstäver, ord med bindestreck emellan)",
+    "start": "Starta med plan",
+    "startAsk": "Vad vill du bygga med {name}?",
+    "steps": "Ändra steg",
+    "stepsAsk": "Vad ska ändras i stegen som {name} kör?",
+    "stepsRequest": "Ändra stegen i planen {name}: {what}",
+    "type": "Skriv i agentfliken",
+    "edit": "Redigera",
+    "delete": "Ta bort",
+    "deleteConfirm": "Ta bort planen {name}? Dess fil i aidlc/scopes/ och dess harness-kopior tas bort.",
+    "inUse": "Används av en pågående intent: {intents}",
+    "own": "projektets egen",
+    "stock": "AI-DLC:s egen, skrivskyddad",
+    "active": "aktiv intent",
+    "facts": "Djup {depth} · {n, plural, one {# steg} other {# steg}}",
+    "execute": "Körs ({n})",
+    "skip": "Hoppas över ({n})",
+    "description": "Beskrivning",
+    "depth": "Djup",
+    "keywords": "Nyckelord",
+    "keywordsHint": "Kommaseparerade; tomt behåller dem",
+    "showDiff": "Visa ändringen",
+    "noChange": "Inget ändras.",
+    "defaults": {
+      "review_cap": "granskningar",
+      "sensors": "sensorer",
+      "learnings": "lärdomar",
+      "summary_confirmation": "sammanfattningsbekräftelse",
+      "plan_approval": "plangodkännande",
+      "guard_policy": "skyddspolicy",
+      "collaborators": "medarbetare"
+    }
+  },
   "configEdit": {
     "previewing": "Kontrollerar ändringen…",
     "command": "Kommando",
@@ -786,6 +825,10 @@
     "toolNoVersion": "Filen svarar inte med någon version.",
     "toolNotOnPath": "{name} hittades inte i inloggningsskalets PATH.",
     "unknownExternal": "Okänd extern länk: {key}",
-    "changedSincePreview": "{file} ändrades efter förhandsvisningen. Titta på ändringen igen innan du tillämpar den."
+    "changedSincePreview": "{file} ändrades efter förhandsvisningen. Titta på ändringen igen innan du tillämpar den.",
+    "invalidPlanName": "Ogiltigt plannamn: {name}. Använd små bokstäver och ord med bindestreck emellan, som min-plan.",
+    "stockPlan": "{name} är en av AI-DLC:s egna planer och kan inte ändras.",
+    "planInUse": "{name} används av en pågående intent ({intents}) och kan inte tas bort.",
+    "planNotFound": "Ingen plan med namnet {name} hittades."
   }
 }

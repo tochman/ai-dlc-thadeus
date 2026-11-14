@@ -20,6 +20,7 @@ import { notifyQuestions } from './notify.js';
 import { agentName, summarizeLedger } from './parsers/ledger.js';
 import { getConfiguredModels } from './models.js';
 import { CONFIG_WATCH_PATHS, checkHarness, getAidlcConfig } from './aidlcConfig.js';
+import { applyPlanEdit, deletePlan, listPlans, planStages, previewPlanEdit, savePlan } from './plans.js';
 import { apply as applyConfigChange, applyGuardLock, preview as previewConfigChange, previewGuardLock } from './aidlcWrite.js';
 import {
   applyModelChange,
@@ -146,6 +147,11 @@ function watchConfig(projectId) {
   } catch (err) {
     console.error(`Bevakning av AI-DLC-konfigurationen kunde inte startas för ${p.root}:`, err); // only live reload stops
   }
+}
+
+/** The watched space's intents from the cached list; [] without a space. */
+async function spaceIntents(p) {
+  return p.space ? (await loadIntentList(p.root, p.space, [])).intents : [];
 }
 
 /** The active intent of the watched space from the cached list, or null (US-0901 FR3.3). Never throws. */
@@ -383,6 +389,49 @@ const handlers = {
     const { before, ...request } = p.guardLock;
     p.guardLock = null;
     const result = await applyGuardLock(p.root, request, before);
+    sendConfigChanged(projectId, p);
+    return result;
+  },
+  // Plans (US-0903). The root is looked up here; the renderer names a harness id (checked) and a plan name
+  // (checked in plans.js) only. An edit is applied exactly as previewed, and only if the file is still as shown.
+  'plans:list': async (_event, projectId, harness) => {
+    const p = project(projectId);
+    checkHarness(harness, await p.harnesses);
+    const intents = await spaceIntents(p);
+    const active = intents.find((i) => i.active) ?? null;
+    const plans = await listPlans(p.root, harness, active ? active.plan ?? active.scope : null, intents);
+    return { plans, active: active && { dirName: active.dirName, slug: active.slug ?? null, plan: active.plan ?? null, scope: active.scope ?? null } };
+  },
+  'plans:stages': async (_event, projectId, harness, name) => {
+    const p = project(projectId);
+    checkHarness(harness, await p.harnesses);
+    return planStages(p.root, harness, name);
+  },
+  'plans:save': async (_event, projectId, name) => {
+    const p = project(projectId);
+    const result = await savePlan(p.root, name);
+    if (result.ok) sendConfigChanged(projectId, p);
+    return result;
+  },
+  'plans:previewEdit': async (_event, projectId, name, edit) => {
+    const p = project(projectId);
+    const shown = { description: edit?.description, depth: edit?.depth, keywords: edit?.keywords }; // nothing else
+    const { before, file, diff } = await previewPlanEdit(p.root, name, shown);
+    p.planEdit = { name, edit: shown, before };
+    return { file, diff };
+  },
+  'plans:applyEdit': async (_event, projectId) => {
+    const p = project(projectId);
+    if (!p.planEdit) throw new Error(t('errors.previewFirst'));
+    const { name, edit, before } = p.planEdit;
+    p.planEdit = null;
+    const result = await applyPlanEdit(p.root, name, edit, before);
+    sendConfigChanged(projectId, p);
+    return result;
+  },
+  'plans:delete': async (_event, projectId, name) => {
+    const p = project(projectId);
+    const result = await deletePlan(p.root, name, await spaceIntents(p));
     sendConfigChanged(projectId, p);
     return result;
   },

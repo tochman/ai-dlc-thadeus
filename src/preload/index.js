@@ -60,6 +60,13 @@ contextBridge.exposeInMainWorld('bridge', {
   applyConfigChange: call('config:apply'),
   previewGuardLock: call('config:guardLockPreview'),
   applyGuardLock: call('config:guardLockApply'),
+  // Plans (US-0903): a plan name and the three editable fields cross the bridge, never a path or a command.
+  listPlans: call('plans:list'),
+  getPlanStages: call('plans:stages'),
+  savePlan: call('plans:save'),
+  previewPlanEdit: call('plans:previewEdit'),
+  applyPlanEdit: call('plans:applyEdit'),
+  deletePlan: call('plans:delete'),
   // Models and effort per agent (US-0904).
   getModelOptions: call('models:options'),
   previewModelChange: call('models:preview'),
