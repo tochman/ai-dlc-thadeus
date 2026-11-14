@@ -8,7 +8,7 @@
 
 **Stories:** US-0801, US-0802, US-0803
 
-**Status (2026-11-14):** ✅ US-0801 and US-0802 released in v0.2.1 (Claude Code and opencode selectable in the agent tab; all six harnesses can be set up from the app). ✅ US-0803 done, ships in v0.2.3 (both harnesses side by side).
+**Status (2026-11-14):** ✅ US-0801 and US-0802 released in v0.2.1 (Claude Code and opencode selectable in the agent tab; all six harnesses can be set up from the app). ✅ US-0803 released in v0.2.3 (both harnesses side by side).
 
 ---
 
@@ -43,7 +43,7 @@
 - **Notes:** All six harness ids were checked against aidlc 2.11.3 with `--dry-run`. Codex, Kiro, Cursor and Copilot install AI-DLC's files but can't run in the agent tab yet.
 - **Dependencies:** US-0503, US-0801
 
-**US-0803: Use Claude Code and opencode side by side in the same project** ✅ Done (ships in v0.2.3, intent `261114-intent-0-2-3-release`)
+**US-0803: Use Claude Code and opencode side by side in the same project** ✅ Released in v0.2.3 (intent `261114-intent-0-2-3-release`)
 - As a **developer who uses both Claude Code and opencode**, in order to **pick the tool that fits each task without switching the project over**, I would like to **have an agent tab for each installed harness in the same project, both running at once**.
 - **Epic:** EPIC-08
 - **Priority:** Medium

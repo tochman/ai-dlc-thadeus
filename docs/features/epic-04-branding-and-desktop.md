@@ -8,7 +8,7 @@
 
 **Stories:** US-0401, US-0402, US-0403, US-0404, US-0405, US-0406, US-0407, US-0408
 
-**Status (2026-11-14):** ✅ US-0401 released in v0.1.1. ✅ US-0402, US-0403 and US-0404 released in v0.2.0. ✅ US-0406 released in v0.2.1 (intent `261113-thadeus-name`). ✅ US-0405 done, ships in v0.2.3 (settings view, intent `261114-settings-view`) — marked "Released in v0.2.3" when the tag is cut. ✅ US-0407 done, ships in v0.2.3 (update from a GitHub release). ✅ US-0408 done, ships in v0.2.3 (Om T.H.A.D.E.U.S. window with the app version).
+**Status (2026-11-14):** ✅ US-0401 released in v0.1.1. ✅ US-0402, US-0403 and US-0404 released in v0.2.0. ✅ US-0406 released in v0.2.1 (intent `261113-thadeus-name`). ✅ US-0405 released in v0.2.3 (settings view, intent `261114-settings-view`) — marked "Released in v0.2.3" when the tag is cut. ✅ US-0407 released in v0.2.3 (update from a GitHub release). ✅ US-0408 released in v0.2.3 (Om T.H.A.D.E.U.S. window with the app version).
 
 ---
 
@@ -104,7 +104,7 @@
   - [x] Menu items that need an open project are disabled when no project is open.
 - **Dependencies:** US-0403 (the left arm and its views), US-0101
 
-**US-0405: Settings view with native file pickers** ✅ Done (ships in v0.2.3, intent `261114-settings-view`)
+**US-0405: Settings view with native file pickers** ✅ Released in v0.2.3 (intent `261114-settings-view`)
 - As a **developer who runs the console in full screen**, in order to **change the app's settings and point it at the right tools without leaving the bridge view or hunting for config files**, I would like to **a full settings view inside the app, where paths are chosen with the operating system's own file dialogs**.
 - **Epic:** EPIC-04
 - **Priority:** Medium
@@ -164,7 +164,7 @@
   - [x] Tests that check the name (the splash `role="img"` contract, the menu labels in `menu.test.js`, settings paths) are updated to the new name. No old name is left in user-facing text. The design doc and feature docs mention the old name only in history.
 - **Dependencies:** US-0401, US-0403, US-0404
 
-**US-0407: Update the app from a GitHub release** ✅ Done (ships in v0.2.3, intent `261114-intent-0-2-3-release`)
+**US-0407: Update the app from a GitHub release** ✅ Released in v0.2.3 (intent `261114-intent-0-2-3-release`)
 - As a **developer using THADEUS day to day**, in order to **stay on the latest version without hunting for the download**, I would like to **have the app find a new release on GitHub, download it, install it and restart, and optionally remove the downloaded package afterwards**.
 - **Epic:** EPIC-04
 - **Priority:** Medium
@@ -187,7 +187,7 @@
 - **Notes:** Added 2026-11-14 at the person's request. Signing the macOS app would allow the standard `electron-updater` flow; that is a separate choice.
 - **Dependencies:** US-0404 (app menu), the release workflow
 
-**US-0408: See which version is running in an "Om T.H.A.D.E.U.S." window** ✅ Done (ships in v0.2.3, intent `261114-intent-0-2-3-release`)
+**US-0408: See which version is running in an "Om T.H.A.D.E.U.S." window** ✅ Released in v0.2.3 (intent `261114-intent-0-2-3-release`)
 - As a **developer using THADEUS**, in order to **know which version I'm running (for example after an update)**, I would like to **open "Om T.H.A.D.E.U.S." from the menu and see the splash screen's logo and name together with the app version**.
 - **Epic:** EPIC-04
 - **Priority:** Medium

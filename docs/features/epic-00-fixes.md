@@ -8,13 +8,13 @@
 
 **Stories:** US-0001, US-0002, US-0003, US-0004, US-0005
 
-**Status (2026-11-14):** ✅ US-0001 done, ships in v0.2.3 (epic badge). ✅ US-0002 done, ships in v0.2.3 (busy tab alignment). ✅ US-0003 done, ships in v0.2.3 (lifecycle rule for every harness). ✅ US-0004 done, ships in v0.2.3 (a popup answer reaches the agent once). ✅ US-0005 done, ships in v0.2.3 (Resume waits while the work runs).
+**Status (2026-11-14):** ✅ US-0001 released in v0.2.3 (epic badge). ✅ US-0002 released in v0.2.3 (busy tab alignment). ✅ US-0003 released in v0.2.3 (lifecycle rule for every harness). ✅ US-0004 released in v0.2.3 (a popup answer reaches the agent once). ✅ US-0005 released in v0.2.3 (Resume waits while the work runs).
 
 ---
 
 ## User Stories
 
-**US-0001: An epic only shows Done when all its stories are done** ✅ Done (ships in v0.2.3, intent `261114-intent-0-2-3-release`)
+**US-0001: An epic only shows Done when all its stories are done** ✅ Released in v0.2.3 (intent `261114-intent-0-2-3-release`)
 - As a **developer reading the Features view**, in order to **trust the badges**, I would like to **see an epic as Done only when every story in it is done**.
 - **Epic:** EPIC-00
 - **Priority:** High
@@ -26,7 +26,7 @@
 - **Notes:** `epicStatusOf()` in `src/main/parsers/features.js`, tests in `tests/main/features.test.js`.
 - **Dependencies:** EPIC-06
 
-**US-0002: A working agent tab lines up with the blocks and bar around it** ✅ Done (ships in v0.2.3, intent `261114-intent-0-2-3-release`)
+**US-0002: A working agent tab lines up with the blocks and bar around it** ✅ Released in v0.2.3 (intent `261114-intent-0-2-3-release`)
 - As a **developer who wants a pixel-perfect console**, in order to **not see edges jump while the agent works**, I would like to **have the busy agent tab keep the same edges as the SHELL block under it and the bar beside it**.
 - **Epic:** EPIC-00
 - **Priority:** Medium
@@ -38,7 +38,7 @@
 - **Notes:** `lcars-breathe` and `.is-breathing` in `src/renderer/theme.css`, test in `tests/main/theme.test.js`.
 - **Dependencies:** US-0402
 
-**US-0003: The story lifecycle rule follows the app into every project and every harness** ✅ Done (ships in v0.2.3, intent `261114-intent-0-2-3-release`)
+**US-0003: The story lifecycle rule follows the app into every project and every harness** ✅ Released in v0.2.3 (intent `261114-intent-0-2-3-release`)
 - As a **developer using feature docs in any project**, in order to **have every AI tool keep the stories current while the work runs**, I would like to **have the app save the full lifecycle rule in AI-DLC's memory when it sets up feature docs**.
 - **Epic:** EPIC-00
 - **Priority:** High
@@ -54,7 +54,7 @@
 - **Notes:** `features.prompt.rule` in the locales, test in `tests/renderer/featureDocsPrompt.test.jsx`.
 - **Dependencies:** US-0601
 
-**US-0004: An answer in the popup reaches the agent once, so no question is answered twice** ✅ Done (ships in v0.2.3, intent `261114-intent-0-2-3-release`)
+**US-0004: An answer in the popup reaches the agent once, so no question is answered twice** ✅ Released in v0.2.3 (intent `261114-intent-0-2-3-release`)
 - As a **developer answering AI-DLC's questions from the popup**, in order to **not answer the same question twice**, I would like to **have my answer in the popup reach the agent's question picker, and the popup close as soon as the agent has it**.
 - **Epic:** EPIC-00
 - **Priority:** High
@@ -74,7 +74,7 @@
 - **Notes:** The popup now reads the agent tab's screen and sends the picker's own key only when the picker shows exactly the logged options (`readPicker()` / `resolveAnswer()` in `src/renderer/picker.js`, `screenLines()` in `src/renderer/TerminalPanel.jsx`, `answer()` in `src/renderer/TerminalContext.jsx`). An own answer goes through the picker's "Type something" choice. Tests: `tests/renderer/picker.test.jsx`, `tests/renderer/TerminalPanel.test.jsx`, `tests/renderer/QuestionPopup.test.jsx`. The picker layout in the tests was written by hand; a check against Claude Code's real picker is still due. Part of the cause can sit in how AI-DLC logs a question (a summary of a batch instead of one row per question). That also belongs in an AI-DLC framework report.
 - **Dependencies:** US-0505, US-0803
 
-**US-0005: Resume waits while the work is already running** ✅ Done (ships in v0.2.3, intent `261114-intent-0-2-3-release`)
+**US-0005: Resume waits while the work is already running** ✅ Released in v0.2.3 (intent `261114-intent-0-2-3-release`)
 - As a **developer whose agent is working on an intent**, in order to **not type `/aidlc` into a conversation that already runs it**, I would like to **have the Resume button under the intent and in the intent list stay disabled while the work is running**.
 - **Epic:** EPIC-00
 - **Priority:** High

@@ -26,7 +26,7 @@
 
 **Stories:** US-0901, US-0902, US-0903, US-0904
 
-**Status (2026-11-14):** 🔄 In progress. ✅ US-0901 released in v0.2.2. ✅ US-0902 done, ships in v0.2.3. 📋 US-0903 planned for v0.2.4. ✅ US-0904 done, ships in v0.2.3. US-0904 replaces US-0206 (moved here from EPIC-02).
+**Status (2026-11-14):** 🔄 In progress. ✅ US-0901 released in v0.2.2. ✅ US-0902 released in v0.2.3. 📋 US-0903 planned for v0.2.4. ✅ US-0904 released in v0.2.3. US-0904 replaces US-0206 (moved here from EPIC-02).
 
 ---
 
@@ -109,7 +109,7 @@ The CLI refuses a harness that the project hasn't installed.
 - **Notes:** Shows every project-default switch, with its source. Plans list both the shipped plans and the project's own, the project's own are marked, and the active intent's plan is highlighted. The provider field names are assumed, because no provider record existed when this was built.
 - **Dependencies:** US-0801, US-0405
 
-**US-0902: Change project defaults and the active work's settings** ✅ Done (ships in v0.2.3, intent `261114-intent-0-2-3-release`)
+**US-0902: Change project defaults and the active work's settings** ✅ Released in v0.2.3 (intent `261114-intent-0-2-3-release`)
 - As a **developer who wants AI-DLC lighter or stricter**, in order to **change how it runs without looking up flags**, I would like to **change the project defaults and the current work's settings from the configuration view**.
 - **Epic:** EPIC-09
 - **Priority:** Medium
@@ -149,7 +149,7 @@ The CLI refuses a harness that the project hasn't installed.
   - [ ] A custom plan's own name is shown wherever an intent's plan is shown (built in US-0701).
 - **Dependencies:** US-0901, US-0801
 
-**US-0904: Choose models and effort per agent** ✅ Done (ships in v0.2.3, intent `261114-intent-0-2-3-release`; moved from US-0206)
+**US-0904: Choose models and effort per agent** ✅ Released in v0.2.3 (intent `261114-intent-0-2-3-release`; moved from US-0206)
 - As a **developer tuning how AI-DLC spends tokens**, in order to **choose which model and effort each agent uses without remembering `aidlc config` commands**, I would like to **see and change model and effort per agent, with the estimated cost of the choice beside it**.
 - **Epic:** EPIC-09
 - **Priority:** Medium
