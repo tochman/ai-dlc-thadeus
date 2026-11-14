@@ -31,3 +31,12 @@ node_modules/
 out/
 dist/
 tests/.tmp/
+
+# A local opencode harness (AI-DLC for opencode), installed only on one machine; this repo is developed with Claude Code
+/.aidlc/
+/.opencode/
+/AGENTS.md
+/opencode.json
+
+# AI-DLC's running-agent marker (machine-local)
+aidlc/.aidlc-subagent-inflight
