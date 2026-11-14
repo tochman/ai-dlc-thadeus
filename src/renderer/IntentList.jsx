@@ -111,7 +111,8 @@ export default function IntentList({ intents, selected, onSelect, cost }) {
             >
               <span className="intent-row-top">
                 <span className="intent-slug">{i.slug}</span>
-                {i.active && <span className="intent-badge">{t('intents.active')}</span>}
+                {/* active-intent is only the selection cursor; a finished intent stays selected but is not active */}
+                {i.active && i.status !== 'complete' && <span className="intent-badge">{t('intents.active')}</span>}
                 {costs && <RowCost c={costs[i.dirName]} />}
               </span>
               <span className="intent-row-meta">

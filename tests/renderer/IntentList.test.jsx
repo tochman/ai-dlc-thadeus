@@ -108,4 +108,10 @@ describe('IntentList', () => {
     rerender(<IntentList intents={intents} selected="261110-epic02-finish" onSelect={vi.fn()} />);
     expect(screen.queryByTestId('intent-resume')).toBeNull(); // finished
   });
+
+  it('does not badge a finished intent as active even when the cursor still points at it', () => {
+    const done = [{ ...intents[2], active: true }];
+    render(<IntentList intents={done} selected={null} onSelect={vi.fn()} />);
+    expect(screen.queryByText('Aktiv')).toBeNull();
+  });
 });
