@@ -6,9 +6,9 @@
 
 > The console should not only show AI-DLC work but make it easy to steer: pick up an intent that stopped, switch between pieces of work and answer what the workflow is waiting for, without remembering slash commands. The app still never writes AI-DLC files itself. Every action goes through Claude in the embedded terminal, so AI-DLC's own checks and records stay in charge.
 
-**Stories:** US-0501, US-0502, US-0503, US-0504, US-0505, US-0506
+**Stories:** US-0501, US-0502, US-0503, US-0504, US-0505, US-0506, US-0507
 
-**Status (2026-11-14):** ✅ US-0501–US-0503 released in v0.2.0. ✅ US-0505 released in v0.2.1 (answering from the popup added in v0.2.2). US-0504 📋 Planned. 🚧 US-0506 in progress, for v0.2.5 (intent `261114-agent-dialogs`: a full plan for how the dialogs show and talk to Claude Code and other agents). The popup double-answer fix is US-0004 in [EPIC-00](epic-00-fixes.md).
+**Status (2026-11-14):** ✅ US-0501–US-0503 released in v0.2.0. ✅ US-0505 released in v0.2.1 (answering from the popup added in v0.2.2). US-0504 📋 Planned. 🚧 US-0506 in progress, for v0.2.5 (intent `261114-agent-dialogs`: a full plan for how the dialogs show and talk to Claude Code and other agents). 📋 US-0507 Planned (agent progress). The popup double-answer fix is US-0004 in [EPIC-00](epic-00-fixes.md).
 
 ---
 
@@ -139,3 +139,18 @@
   - [ ] **Safety:** permission answers go only to the tab that asked. Nothing is approved automatically. Text is shown as text, never as HTML.
 - **Notes:** Added 2026-11-14 at the person's request ("answer questions from Claude or opencode in dialogs, not only from AI-DLC, and see messages from them").
 - **Dependencies:** US-0505, US-0801, US-0803
+
+**US-0507: See what the agents are doing and how far they have come** 📋 Planned
+- As a **developer running AI-DLC**, in order to **know what is actually going on while subagents work in the background**, I would like to **plain progress lines per running agent, such as "u2-permissions has 6 of 27 steps done and u3-replies has 16 of 42"**.
+- **Epic:** EPIC-05
+- **Priority:** Medium
+- **Complexity:** Medium
+- **Acceptance Criteria:**
+  - [ ] For the running intent, the app lists each active piece of agent work (a Unit's build, a design builder, a reviewer) with its stage, its Unit and how long it has run.
+  - [ ] A build shows steps done out of the plan's steps, read from the ticked boxes in that Unit's `code-generation-plan.md` in its worktree, plus its last commit subject.
+  - [ ] A review shows "review requested", then the verdict and how many findings by severity, from the audit log.
+  - [ ] One summary line sums it up in words, for example "The builds are moving along: u2-permissions has 6 of 27 steps done and u3-replies has 16 of 42."
+  - [ ] It updates live as files and the audit log change; finished work drops off with its result; a worktree or plan that cannot be read is named, not shown as 0.
+  - [ ] Every text goes through `t()` in Swedish and English; numbers are computed from the records, never typed in.
+- **Notes:** Added 2026-11-14 at the person's request.
+- **Dependencies:** US-0104, US-0506
