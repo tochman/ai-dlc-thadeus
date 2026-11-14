@@ -8,7 +8,7 @@
 
 **Stories:** US-0201, US-0202, US-0203, US-0204, US-0205, US-0206, US-0207
 
-**Status (2026-11-14):** ✅ US-0201–US-0205 released in v0.2.0. CSV export (US-0203) is deferred. US-0206 moved to US-0904 in EPIC-09. 📋 US-0207 planned for v0.2.4 (live token view).
+**Status (2026-11-14):** ✅ US-0201–US-0205 released in v0.2.0. CSV export (US-0203) is deferred. US-0206 moved to US-0904 in EPIC-09. ✅ US-0207 done for v0.2.4 (live token view).
 
 ---
 
@@ -115,16 +115,21 @@ The key format of `workflows` was confirmed during requirements analysis (see ab
 - **Dependencies:** US-0204, US-0405
 
 
-**US-0207: Live token view while the work runs** 📋 Planned for v0.2.4
+**US-0207: Live token view while the work runs** ✅ Done for v0.2.4
 - As a **developer watching agents work**, in order to **see how fast the work burns tokens and what kind**, I would like to **a live view of input, output and cache tokens with the token rate over time**.
 - **Epic:** EPIC-02
 - **Priority:** Medium
 - **Complexity:** Medium
 - **Background:** Asked for on 2026-11-14 for v0.2.4. The style follows the reference screenshot `Screenshot 2026-11-14 at 08.57.27.png`: glowing bar meters with a level scale, and a waveform. The screenshot guides layout, shape and colour only (FR9.5).
 - **Acceptance Criteria:**
-  - [ ] For the running intent, input, output, cache write and cache read tokens show as glowing bar meters with a level scale and the figure beside each. They come from the intent's `workflows` node in `usage-ledger.json`.
-  - [ ] A waveform shows the token rate over time, computed from the change between ledger updates.
-  - [ ] It updates live when the ledger changes, debounced like the other updates (US-0205).
-  - [ ] A missing or half-written ledger keeps the last good values and says so in one sentence. Figures are the ledger's own.
-  - [ ] Each meter has a text label, not colour alone. Swedish and English texts, and motion follows the animations setting.
+  - [x] For the running intent, input, output, cache write and cache read tokens show as glowing bar meters with a level scale and the figure beside each. They come from the intent's `workflows` node in `usage-ledger.json`.
+  - [x] A waveform shows the token rate over time, computed from the change between ledger updates.
+  - [x] It updates live when the ledger changes, debounced like the other updates (US-0205).
+  - [x] A missing or half-written ledger keeps the last good values and says so in one sentence. Figures are the ledger's own.
+  - [x] Each meter has a text label, not colour alone. Swedish and English texts, and motion follows the animations setting.
+- **Notes:**
+  - **Where.** `src/renderer/TokenView.jsx` sits in the intent's readout column, under the cost (`IntentDetail.jsx`). The numbers come from `src/renderer/tokenFlow.js`: `tokensOf`, `pushSample` (the last 120 readings, a rate in tokens per minute, a reset on a lower total) and `meterLevel` (10 segments on a 1/2/5 × 10ⁿ scale shared by the four meters).
+  - **Source.** The tokens are the ledger's own, read through the existing `project:cost` summary (`costOf` in `src/main/parsers/ledger.js`). No new watcher.
+  - **Limit.** The readout column is hidden in windows narrower than 1280 px, and the view with it.
+  - **Tests.** `tests/renderer/tokenFlow.test.jsx`, `tests/renderer/TokenView.test.jsx`.
 - **Dependencies:** US-0201, US-0205

@@ -680,6 +680,15 @@
     "upToDate": "Du har den senaste versionen.",
     "confirmRestart": "En agentflik arbetar. Uppdateringen startar om appen och avslutar dess terminalsessioner. Uppdatera ändå?"
   },
+  "tokens": {
+    "title": "Tokens live",
+    "input": "Input",
+    "output": "Output",
+    "cacheWrite": "Cache write",
+    "cacheRead": "Cache read",
+    "waveLabel": "Tokenflöde, {n} avläsningar",
+    "rate": "{rate} tokens/min"
+  },
   "aboutDialog": {
     "exit": "STÄNG"
   },

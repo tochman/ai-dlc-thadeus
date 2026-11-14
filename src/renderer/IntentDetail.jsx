@@ -6,6 +6,7 @@ import BoltDag from './BoltDag.jsx';
 import ArtifactReader from './ArtifactReader.jsx';
 import CostTab from './CostTab.jsx';
 import ResumeButton from './ResumeButton.jsx';
+import TokenView from './TokenView.jsx';
 import { Dots, Frame, Hairlines } from './Lcars.jsx';
 import { formatCost, isInFlight, shortModel, stagePosition, stageStatusLabel, stageTitle } from './format.js';
 
@@ -58,7 +59,7 @@ export function RequestText({ text }) {
 }
 
 /** The readout column to the right of the frame: Stages, Kostnad, Modell, Läge (FR3.5). */
-function ReadoutColumn({ pipeline, intentCost, intent, directive }) {
+function ReadoutColumn({ pipeline, intentCost, intent, directive, cost, dirName }) {
   const { t } = useTranslation();
   const live = isInFlight(intent?.status);
   const topModel = [...(intentCost?.byModel ?? [])].sort((a, b) => b.usd - a.usd)[0]?.name;
@@ -78,6 +79,8 @@ function ReadoutColumn({ pipeline, intentCost, intent, directive }) {
           <span className="readout-value readout-value--steel">{formatCost(intentCost.total)}</span>
         </div>
       )}
+      {/* Live tokens beside the cost while the work runs (EPIC-02 US-0207). */}
+      <TokenView cost={cost} dirName={dirName} live={live} />
       {topModel && (
         <div className="readout">
           <span className="readout-label">{t('intents.readoutModel')}</span>
@@ -199,7 +202,7 @@ export default function IntentDetail({ projectId, detail, intent, activeDirName,
           {tab === 'files' && <ArtifactReader projectId={projectId} groups={detail.files} selected={openFile} onSelect={setOpenFile} />}
         </div>
       </Frame>
-      <ReadoutColumn pipeline={pipeline} intentCost={intentCost} intent={intent} directive={detail.directive} />
+      <ReadoutColumn pipeline={pipeline} intentCost={intentCost} intent={intent} directive={detail.directive} cost={cost} dirName={detail.dirName} />
     </article>
   );
 }
