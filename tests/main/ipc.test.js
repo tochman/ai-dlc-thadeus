@@ -183,6 +183,18 @@ vi.mock('../../src/main/features.js', () => ({
   loadFeatures: m.svc.loadFeatures,
   loadStoryLinks: m.svc.loadStoryLinks
 }));
+// US-0506 u3: the real agent wiring, with a spy on terminalInput so pty:write's order can be checked.
+vi.mock('../../src/main/agentIpc.js', async (importOriginal) => {
+  const real = await importOriginal();
+  return {
+    createAgentIpc: (deps) => {
+      const wiring = real.createAgentIpc(deps);
+      m.agentWiring = wiring;
+      wiring.terminalInput = vi.fn(wiring.terminalInput);
+      return wiring;
+    }
+  };
+});
 vi.mock('../../src/main/pty.js', () => ({
   killAllSessions: m.svc.killAllSessions,
   killProjectSessions: m.svc.killProjectSessions,
@@ -705,6 +717,15 @@ describe('agent dialogs wiring (US-0506 u1 LC6)', () => {
     expect(sender.send).toHaveBeenCalledWith('agent-events:changed', expect.objectContaining({ projectId }));
     await expect(call('agentEvents:answer', {}, events[0].eventId, { question: { picks: [[0]], own: [null] } })).rejects.toThrow();
     expect(await call('agentEvents:close', {}, events[0].eventId)).toEqual({ state: 'dismissed' });
+  });
+
+  it('pty:write calls terminalInput before writeSession, in the same call (US-0506 u3 BR6.6, SD10)', async () => {
+    svc.writeSession.mockClear();
+    const write = call('pty:write', {}, 'pty-9', 'a');
+    expect(m.agentWiring.terminalInput).toHaveBeenCalledWith('pty-9', 'a');
+    expect(svc.writeSession).toHaveBeenCalledWith('pty-9', 'a'); // already written, before any await
+    expect(m.agentWiring.terminalInput.mock.invocationCallOrder.at(-1)).toBeLessThan(svc.writeSession.mock.invocationCallOrder.at(-1));
+    await write;
   });
 
   it('an agent tab spawns without channel variables while THADEUS_AGENT_HOOKS is unset (K4)', async () => {

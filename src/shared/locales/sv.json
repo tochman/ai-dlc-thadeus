@@ -882,7 +882,8 @@
     },
     "kind": {
       "question": "Fråga",
-      "permission": "BEHÖRIGHET"
+      "permission": "BEHÖRIGHET",
+      "message": "Meddelande"
     },
     "permission": {
       "allowOnce": "Tillåt en gång",
@@ -897,6 +898,21 @@
       "handedBack": "Lämnad tillbaka till terminalen. Svara där som vanligt.",
       "answeredInTerminal": "Besvarad i terminalen.",
       "alsoInTerminal": "Frågan om behörighet visas också i terminalen."
+    },
+    "reply": {
+      "title": "Meddelande från {harness}",
+      "titleOverdue": "Meddelande från {harness}: väntar fortfarande på ditt svar",
+      "where": "{project} · {tab} · {time}",
+      "empty": "{harness} avslutade sin tur utan meddelande.",
+      "truncated": "Förkortat vid 64 KB. Hela texten finns i terminalen.",
+      "answer": "Ditt svar",
+      "sent": "Skickat till {harness} som text, följt av Enter.",
+      "copy": "Kopiera",
+      "stale": {
+        "movedOn": "{harness} väntar inte längre på det här meddelandet. Din text finns kvar.",
+        "sessionEnded": "{harness}-sessionen avslutades. Inget skickades.",
+        "notShown": "{harness} skickade ett nyare meddelande som inte kunde visas. Det finns i terminalen. Din text finns kvar."
+      }
     },
     "context": "{project} · {intent} · {stage}",
     "state": {
@@ -928,7 +944,19 @@
       "pickerNotShowing": "Agentens val visas inte i terminalen.",
       "sendFailed": "Det gick inte att skicka: {cause}",
       "notTaken": "Agenten tog inte emot svaret.",
-      "answerInTerminal": "Det här svaret kan bara ges i terminalen."
+      "answerInTerminal": "Det här svaret kan bara ges i terminalen.",
+      "enterSkipped": "Texten skrevs men Enter skickades inte: fliken gick vidare. Tryck Enter i terminalen om du vill skicka den."
     }
+  },
+  "latestMessage": {
+    "label": "Senaste meddelandet från agenten",
+    "none": "Inget meddelande från agenten än",
+    "answer": "Svara",
+    "show": "Visa",
+    "answered": "(besvarat)",
+    "sessionEnded": "(sessionen avslutad)",
+    "notShown": "(nyare meddelande visas inte)",
+    "shortened": "(förkortat)",
+    "view": "Meddelande från {harness}"
   }
 }

@@ -9,6 +9,7 @@ import CostPanel from './CostPanel.jsx';
 import RefreshPanel from './RefreshPanel.jsx';
 import SetupAidlc from './SetupAidlc.jsx';
 import TerminalPanel from './TerminalPanel.jsx';
+import LatestMessageStrip from './LatestMessageStrip.jsx'; // US-0506 u3
 import FeaturesView from './FeaturesView.jsx';
 import ConfigView from './ConfigView.jsx';
 import PlansView from './PlansView.jsx';
@@ -215,7 +216,8 @@ function ProjectContent({
   onView,
   onMeta,
   terminalCommand,
-  editRequest
+  editRequest,
+  onOpenReply
 }) {
   const { t } = useTranslation();
   const terminal = useTerminal();
@@ -389,6 +391,7 @@ function ProjectContent({
           )}
         </div>
         {isAidlc && <AddHarnessDialog open={addingHarness} onClose={() => setAddingHarness(false)} setupProps={setupProps} />}
+        <LatestMessageStrip projectId={project.projectId} onOpenReply={onOpenReply} />
         <TerminalPanel projectId={project.projectId} visible={visible} onChooseHarness={() => setChoosingHarness(true)} />
         <ProjectSettingsDialog
           open={settingsOpen || choosingHarness}
@@ -410,7 +413,19 @@ function ProjectContent({
   );
 }
 
-export default function ProjectView({ project, visible, settingsOpen, onCloseSettings, view, onView, onMeta, terminalCommand, editRequest, askingIntents }) {
+export default function ProjectView({
+  project,
+  visible,
+  settingsOpen,
+  onCloseSettings,
+  view,
+  onView,
+  onMeta,
+  terminalCommand,
+  editRequest,
+  askingIntents,
+  onOpenReply
+}) {
   return (
     <TerminalProvider askingIntents={askingIntents}>
       <ProjectContent
@@ -423,6 +438,7 @@ export default function ProjectView({ project, visible, settingsOpen, onCloseSet
         onMeta={onMeta}
         terminalCommand={terminalCommand}
         editRequest={editRequest}
+        onOpenReply={onOpenReply}
       />
     </TerminalProvider>
   );

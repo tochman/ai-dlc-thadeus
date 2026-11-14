@@ -114,6 +114,29 @@ async function onWaiting(ctx, env, kind, event, deliver) {
 
 const onAnswered = (ctx, env, event) => writeEvent(env.dir, env.secret, 'answered', event, filesOf(env.dir, nextName()));
 
+// US-0506 u3 BR6.2, RD15, PD12, OD7: a top-level session gone idle is the agent's reply. One promise chain with its own
+// catch, never awaited by the handler, so a slow or failing context read cannot hold opencode. A log line names the
+// step and the error code only: never the message text, never the secret.
+// ponytail: provisional shapes (K12): the event { type: 'session.status', properties: { sessionID, status: { type } } }
+// and ctx.session.context({ sessionID }) giving { session: { id, parentID? }, messages }. The NFR2.5 manual run
+// confirms them or replaces them with the recorded payloads.
+const codeOf = (err) => err?.code ?? err?.name ?? 'unknown';
+function onIdle(ctx, env, event) {
+  const props = event?.properties;
+  if (props?.status?.type !== 'idle') return Promise.resolve();
+  return new Promise((resolve) => resolve(ctx.session.context({ sessionID: props.sessionID })))
+    .catch((err) => {
+      throw Object.assign(new Error('context read failed'), { step: codeOf(err) });
+    })
+    .then((context) => {
+      if (context?.session?.parentID) return undefined; // a sub-agent session: its end is not a reply
+      return writeEvent(env.dir, env.secret, 'reply', { event, context }, filesOf(env.dir, nextName())).catch((err) => {
+        throw Object.assign(new Error('event write failed'), { step: codeOf(err) });
+      });
+    })
+    .catch((err) => ctx.log?.error?.(`thadeus-dialog: ${err.message}: ${err.step}`));
+}
+
 export default {
   id: 'thadeus-dialog',
   /** FR4.4: does nothing without THADEUS_SESSION_DIR, so opencode started outside the app is untouched. */
@@ -137,5 +160,6 @@ export default {
       if (typeof id === 'string') env.replied.add(id);
       return onAnswered(ctx, env, event);
     });
+    on('session.status', (event) => onIdle(ctx, env, event)); // u3
   }
 };

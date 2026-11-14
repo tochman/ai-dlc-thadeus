@@ -44,6 +44,16 @@ describe('preload bridge (US-0506 u1)', () => {
     expect(m.ipcRenderer.removeListener).toHaveBeenCalledWith('agent-events:changed', listener);
   });
 
+  it('has agentEvents latest and reopen on their C4 channels (US-0506 u3)', async () => {
+    const bridge = await load(false);
+    await bridge.agentEvents.latest('p1');
+    await bridge.agentEvents.reopen('e1');
+    expect(m.ipcRenderer.invoke.mock.calls).toEqual([
+      ['agentEvents:latest', 'p1'],
+      ['agentEvents:reopen', 'e1']
+    ]);
+  });
+
   it('adds stamp only with --thadeus-timing, as a send, not an invoke (NFR1.7)', async () => {
     expect((await load(false)).agentEvents.stamp).toBeUndefined();
     const bridge = await load(true);

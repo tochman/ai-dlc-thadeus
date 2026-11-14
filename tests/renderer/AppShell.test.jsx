@@ -3,12 +3,20 @@ import { useEffect } from 'react';
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 
 // The project view has its own tests; here it only reports what the left arm needs, as the real one does.
-vi.mock('../../src/renderer/ProjectView.jsx', () => ({
-  default: function ProjectViewStub({ project, view, onMeta }) {
-    useEffect(() => onMeta(project.projectId, { showFeatures: true, intentCount: 7 }), [project.projectId, onMeta]);
-    return <div data-testid={`project-view-${project.projectId}`} data-view={view} />;
-  }
-}));
+// It renders the real latest-message strip (US-0506 u3), as the real one does above its terminal.
+vi.mock('../../src/renderer/ProjectView.jsx', async () => {
+  const { default: LatestMessageStrip } = await import('../../src/renderer/LatestMessageStrip.jsx');
+  return {
+    default: function ProjectViewStub({ project, view, onMeta, onOpenReply }) {
+      useEffect(() => onMeta(project.projectId, { showFeatures: true, intentCount: 7 }), [project.projectId, onMeta]);
+      return (
+        <div data-testid={`project-view-${project.projectId}`} data-view={view}>
+          <LatestMessageStrip projectId={project.projectId} onOpenReply={onOpenReply} />
+        </div>
+      );
+    }
+  };
+});
 
 // Same shapes as settings:get and project:open.
 const projectInfo = (root, projectId) => ({
@@ -371,5 +379,98 @@ describe('App shell: agent dialogs (US-0506 u1)', () => {
     await new Promise((r) => setTimeout(r, 4500));
     expect(screen.getByTestId('app-notice')).toBeTruthy();
     await waitFor(() => expect(screen.queryByTestId('app-notice')).toBeNull(), { timeout: 2000 });
+  });
+});
+
+describe('App shell: agent replies (US-0506 u3)', () => {
+  const question = {
+    eventId: 'h1',
+    sessionId: 's1',
+    projectId: 'p1',
+    tabId: 'agent:claude',
+    harness: 'claude',
+    source: 'hook',
+    kind: 'question',
+    state: 'shown',
+    arrivedAtMs: 5,
+    seq: 2,
+    context: null,
+    questions: [{ header: 'Val', text: 'Vilken?', truncated: false, options: [{ label: 'A', description: null }], multiSelect: false, allowOwn: true }],
+    lastError: null
+  };
+  const reply = (state, over = {}) => ({
+    ...question,
+    eventId: 'r1',
+    sessionId: 's2',
+    tabId: 'agent:opencode',
+    harness: 'opencode',
+    kind: 'reply',
+    state,
+    arrivedAt: '2026-11-14T10:00:00.000Z',
+    arrivedAtMs: 1,
+    seq: 1,
+    questions: undefined,
+    message: { text: 'Vilket namn ska filen få?', truncated: false, empty: false },
+    staleReason: null,
+    ...over
+  });
+  const subs = new Set();
+  const send = (events) => act(() => subs.forEach((cb) => cb({ projectId: 'p1', events })));
+  async function withReplies(latest = null) {
+    mockBridge({ openProjects: ['/p/aidlc-dash-a'], activeProject: '/p/aidlc-dash-a' });
+    window.bridge.agentEvents = {
+      list: vi.fn(async () => []),
+      onChanged: vi.fn((cb) => (subs.add(cb), () => subs.delete(cb))),
+      answer: vi.fn(),
+      close: vi.fn(async () => ({ state: 'dismissed' })),
+      latest: vi.fn(async () => latest),
+      reopen: vi.fn(async () => {
+        send([reply('shown')]);
+        return { state: 'shown' };
+      })
+    };
+    render(<App />);
+    await waitFor(() => expect(window.bridge.agentEvents.list).toHaveBeenCalledWith('p1'));
+  }
+  afterEach(() => {
+    subs.clear();
+    delete window.bridge.agentEvents;
+  });
+
+  it('pages questions before replies, whatever their arrival (BR6.8)', async () => {
+    await withReplies();
+    send([reply('shown'), question]);
+    expect((await screen.findByTestId('agent-dialog-title')).textContent).toMatch(/^Fråga/);
+    fireEvent.click(screen.getByTestId('agent-dialog-next'));
+    expect(screen.getByTestId('agent-dialog-title').textContent).toBe('Meddelande från opencode');
+  });
+
+  it('leaves queued and dismissed replies out of the pager and closes when only a dismissed one is left', async () => {
+    await withReplies();
+    send([reply('queued'), question]);
+    expect(await screen.findByText('1 av 1')).toBeTruthy();
+    send([reply('shown')]);
+    await waitFor(() => expect(screen.getByTestId('agent-dialog').hasAttribute('open')).toBe(true));
+    send([reply('dismissed')]);
+    await waitFor(() => expect(screen.getByTestId('agent-dialog').hasAttribute('open')).toBe(false));
+  });
+
+  it("the strip's Answer calls reopen once, then the dialog opens on that reply (AC3.1.3)", async () => {
+    await withReplies({
+      tabId: 'agent:opencode',
+      harness: 'opencode',
+      text: 'Vilket namn?',
+      arrivedAt: '2026-11-14T10:00:00.000Z',
+      status: 'waiting',
+      eventId: 'r1',
+      truncated: false,
+      empty: false
+    });
+    send([reply('dismissed')]);
+    fireEvent.click(await screen.findByTestId('latest-message-answer'));
+    await waitFor(() => expect(screen.getByTestId('agent-dialog').hasAttribute('open')).toBe(true));
+    expect(window.bridge.agentEvents.reopen).toHaveBeenCalledTimes(1);
+    expect(window.bridge.agentEvents.reopen).toHaveBeenCalledWith('r1');
+    expect(screen.getByTestId('agent-dialog-title').textContent).toBe('Meddelande från opencode');
   });
 });

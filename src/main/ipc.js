@@ -709,7 +709,11 @@ const handlers = {
       spawnSession({ projectId, root, kind, harness, cols, rows, toolPaths, sender: event.sender, ...extra })
     );
   },
-  'pty:write': async (_event, id, data) => writeSession(id, data),
+  // US-0506 u3 BR6.6, SD10: the person's input moves the tab's open reply on, in the same call, before it is written.
+  'pty:write': async (_event, id, data) => {
+    agent?.terminalInput(id, data);
+    return writeSession(id, data);
+  },
   'pty:resize': async (_event, id, cols, rows) => resizeSession(id, cols, rows),
   'pty:kill': async (_event, id) => killSession(id),
   // Fullscreen and the app menu (EPIC-04 US-0404). The new mode reaches the renderer as `window:fullscreen`.

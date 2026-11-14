@@ -20,6 +20,7 @@ import { t as translate } from '../shared/i18n.js';
 import { selectableHarness } from '../shared/harnesses.js';
 import { cleanBody, visibleText } from '../shared/agentText.js';
 import { FileContent } from './ArtifactReader.jsx';
+import ReplyPage from './ReplyPage.jsx'; // US-0506 u3: the MESSAGE page
 
 export const OVERDUE_MS = 20_000;
 /** After an audit send, how long the question may stay open before the dialog says the answer may not have arrived. */
@@ -533,12 +534,20 @@ export default function AgentDialog({
 
   // NFR6.1 as amended by review fix 1: the page title gets focus when a page shows, never an answer button, so
   // Enter or Space typed for something else cannot pick; Tab reaches the first choice. A new event moves nothing.
+  // u3: a reply page focuses its empty answer field instead (BR6.9, PD11); a page that is shown again focuses again.
   useEffect(() => {
     if (!shownId) return;
-    titleRef.current?.focus();
+    (ref.current?.querySelector('[data-autofocus]') ?? titleRef.current)?.focus();
+  }, [shownId]);
+  // dialogShown once per first paint of an event, not while a reply is still queued (OD1, u3 PD8).
+  const stamped = useRef(new Set());
+  const queued = ev?.state === 'queued';
+  useEffect(() => {
     const stamp = agentBridge()?.stamp;
-    if (stamp && ev?.source === 'hook') requestAnimationFrame(() => stamp(shownId, 'dialogShown')); // after paint (OD1)
-  }, [shownId]); // eslint-disable-line react-hooks/exhaustive-deps -- once per shown page
+    if (!shownId || queued || ev?.source !== 'hook' || !stamp || stamped.current.has(shownId)) return;
+    stamped.current.add(shownId);
+    requestAnimationFrame(() => stamp(shownId, 'dialogShown')); // after paint
+  }, [shownId, queued]); // eslint-disable-line react-hooks/exhaustive-deps -- once per shown event
 
   // Escalation per shown page; it starts over when another page is shown (BR4.6).
   useEffect(() => {
@@ -553,9 +562,10 @@ export default function AgentDialog({
   function closeDialog() {
     const cur = ev;
     onClose();
-    // Close on a waiting hook question or permission hands it back to the terminal (BR3.5, BR5.10). During sending
-    // nothing is called: the delivery decides the state (K10).
-    if (cur?.source === 'hook' && OPEN.has(cur.state))
+    // Close on a waiting hook question or permission hands it back to the terminal (BR3.5, BR5.10); on a shown or stale
+    // reply it dismisses or ends it, typing nothing (u3 BR6.13, BR6.14). During sending nothing is called: the delivery
+    // decides the state (K10).
+    if (cur?.source === 'hook' && (OPEN.has(cur.state) || (cur.kind === 'reply' && cur.state === 'stale')))
       agentBridge()
         ?.close(cur.eventId)
         .then((r) => cur.kind === 'permission' && r?.state === 'handedBack' && onNotice?.(translate('agentDialog.permission.handedBack')))
@@ -581,12 +591,21 @@ export default function AgentDialog({
     intent: ev.context?.intent ?? '?',
     stage: ev.context?.stage ?? '?'
   };
-  const harnessLabel = selectableHarness(ev?.harness)?.label ?? ev?.harness;
+  const reply = ev?.kind === 'reply';
+  const harnessLabel = ev ? (selectableHarness(ev.harness)?.label ?? ev.harness) : '';
   const waiting = permPage
     ? `${t('agentDialog.kind.permission')}: ${t(red ? 'agentDialog.title.permissionStillWaiting' : 'agentDialog.title.permission', { harness: harnessLabel })}`
-    : hook
-      ? `${t('agentDialog.kind.question')}: ${t(red ? 'agentDialog.title.stillWaiting' : 'agentDialog.title.waiting')}`
-      : t(red ? 'app.question.stillWaiting' : 'app.question.waiting');
+    : reply
+      ? t(red ? 'agentDialog.reply.titleOverdue' : 'agentDialog.reply.title', { harness: harnessLabel })
+      : hook
+        ? `${t('agentDialog.kind.question')}: ${t(red ? 'agentDialog.title.stillWaiting' : 'agentDialog.title.waiting')}`
+        : t(red ? 'app.question.stillWaiting' : 'app.question.waiting');
+  const time = reply ? new Date(ev.arrivedAt).toLocaleTimeString('sv-SE', { hour: '2-digit', minute: '2-digit' }) : '';
+  const whereText = reply
+    ? t('agentDialog.reply.where', { project: where.project, tab: harnessLabel, time })
+    : ev?.context
+      ? t('agentDialog.context', where)
+      : where?.project;
 
   return (
     <dialog
@@ -607,15 +626,22 @@ export default function AgentDialog({
       {open && ev && (
         <div>
           <div className={`question-popup-head${permPage ? ' is-permission' : ''}`}>
+            {reply && (
+              <span className="question-popup-where" data-testid="agent-dialog-kind">
+                {t('agentDialog.kind.message').toLocaleUpperCase()}
+              </span>
+            )}
             <h2 id="agent-dialog-title" ref={titleRef} tabIndex={-1} data-testid="agent-dialog-title">
               {waiting}
             </h2>
           </div>
           <p className="question-popup-where" data-testid="agent-dialog-where">
-            {ev.context ? t('agentDialog.context', where) : where.project}
+            {whereText}
           </p>
           {permPage ? (
             <PermissionPage key={ev.eventId} ev={ev} keysRef={keysRef} guarded={guarded} />
+          ) : reply ? (
+            <ReplyPage key={ev.eventId} ev={ev} harnessLabel={harnessLabel} keysRef={keysRef} guarded={guarded} />
           ) : hook ? (
             <HookPage key={ev.eventId} ev={ev} keysRef={keysRef} guarded={guarded} />
           ) : (

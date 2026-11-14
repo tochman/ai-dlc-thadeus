@@ -116,6 +116,8 @@ contextBridge.exposeInMainWorld('bridge', {
     list: call('agentEvents:list'),
     answer: call('agentEvents:answer'),
     close: call('agentEvents:close'),
+    latest: call('agentEvents:latest'), // US-0506 u3
+    reopen: call('agentEvents:reopen'), // US-0506 u3
     onChanged: subscribe('agent-events:changed'),
     ...(process.argv.includes('--thadeus-timing') ? { stamp: (eventId, stamp) => ipcRenderer.send('agent-timing:stamp', eventId, stamp) } : {})
   }

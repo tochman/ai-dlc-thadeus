@@ -28,6 +28,14 @@ function checkAnswer(eventId, answer) {
   if (!idOk || !(question || permission)) throw new Error(t('agentDialog.errors.doesNotFit'));
 }
 
+/** US-0506 u3 SD9: a reply answer is { reply: { text } }, text a string of at most 262 144 UTF-16 units. */
+const MAX_REPLY_UNITS = 262_144;
+function checkReply(eventId, answer) {
+  checkId(eventId, 'agentDialog.errors.doesNotFit');
+  const text = answer?.reply?.text;
+  if (typeof text !== 'string' || text.length > MAX_REPLY_UNITS) throw new Error(t('agentDialog.errors.doesNotFit'));
+}
+
 function checkId(id, key = 'agentDialog.errors.unknownEvent') {
   if (typeof id !== 'string' || id.length === 0 || id.length > MAX_ID) throw new Error(t(key));
 }
@@ -79,14 +87,25 @@ export function createAgentIpc({ channel, store, timing, hooksCurrent, senders }
         return store.list(projectId);
       },
       'agentEvents:answer': async (_event, eventId, answer) => {
-        checkAnswer(eventId, answer);
+        (answer?.reply ? checkReply : checkAnswer)(eventId, answer);
         return store.answer(eventId, answer);
       },
       'agentEvents:close': async (_event, eventId) => {
         checkId(eventId);
         return store.close(eventId);
+      },
+      // US-0506 u3 C4
+      'agentEvents:latest': async (_event, projectId) => {
+        if (typeof projectId !== 'string') throw new Error(t('errors.invalidProjectId'));
+        return store.latest(projectId);
+      },
+      'agentEvents:reopen': async (_event, eventId) => {
+        checkId(eventId);
+        return store.reopen(eventId);
       }
     },
+    /** US-0506 u3 C2: called by pty:write before writeSession; the person's input moves the tab's reply on (BR6.6). */
+    terminalInput: (ptyId, data) => store.terminalInput(ptyId, data),
     // OD1: registered only with THADEUS_TIMING=1; fire and forget, so Send never waits on it.
     listeners: timing.on ? { 'agent-timing:stamp': (_event, eventId, stamp) => timing.stampFromRenderer(eventId, stamp, store.harnessOf(eventId)) } : {},
     /** Pushes a project's list, e.g. after its audit questions changed (they are listed when no hook session runs). */

@@ -876,7 +876,8 @@
     },
     "kind": {
       "question": "Question",
-      "permission": "PERMISSION"
+      "permission": "PERMISSION",
+      "message": "Message"
     },
     "permission": {
       "allowOnce": "Allow once",
@@ -891,6 +892,21 @@
       "handedBack": "Handed back to the terminal. Answer there as usual.",
       "answeredInTerminal": "Answered in the terminal.",
       "alsoInTerminal": "The permission prompt is also open in the terminal."
+    },
+    "reply": {
+      "title": "Message from {harness}",
+      "titleOverdue": "Message from {harness}: still waiting for your answer",
+      "where": "{project} · {tab} · {time}",
+      "empty": "{harness} finished its turn without a message.",
+      "truncated": "Shortened at 64 KB. The full text is in the terminal.",
+      "answer": "Your answer",
+      "sent": "Sent to {harness} as typed, followed by Enter.",
+      "copy": "Copy",
+      "stale": {
+        "movedOn": "{harness} is no longer waiting for this message. Your text is kept.",
+        "sessionEnded": "The {harness} session ended. Nothing was sent.",
+        "notShown": "{harness} sent a newer message that could not be shown. It is in the terminal. Your text is kept."
+      }
     },
     "context": "{project} · {intent} · {stage}",
     "state": {
@@ -922,7 +938,19 @@
       "pickerNotShowing": "The agent's picker is not showing.",
       "sendFailed": "Sending failed: {cause}",
       "notTaken": "The agent did not take the answer.",
-      "answerInTerminal": "This answer can only be given in the terminal."
+      "answerInTerminal": "This answer can only be given in the terminal.",
+      "enterSkipped": "The text was typed but Enter was not sent: the tab moved on. Press Enter in the terminal to send it."
     }
+  },
+  "latestMessage": {
+    "label": "Latest message from the agent",
+    "none": "No message from the agent yet",
+    "answer": "Answer",
+    "show": "Show",
+    "answered": "(answered)",
+    "sessionEnded": "(session ended)",
+    "notShown": "(newer message not shown)",
+    "shortened": "(shortened)",
+    "view": "Message from {harness}"
   }
 }

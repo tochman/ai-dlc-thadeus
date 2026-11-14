@@ -5,7 +5,7 @@ import react from '@vitejs/plugin-react';
 // (Vitest 3+ replaced environmentMatchGlobs with projects; same split.)
 // The hook script tests measure real time against the design's windows (US-0506 RD1), so they run as their own
 // project after the others have finished, never beside a loaded machine (groupOrder 1).
-const TIMED = ['tests/main/dialogScript.test.js'];
+const TIMED = ['tests/main/dialogScript.test.js', 'tests/main/dialogScriptReply.test.js'];
 export default defineConfig({
   plugins: [react()],
   test: {
@@ -22,6 +22,8 @@ export default defineConfig({
         'src/shared/agentOrder.js': { lines: 80 }, // US-0506 u2
 
         'src/renderer/AgentDialog.jsx': { lines: 80 },
+        'src/renderer/ReplyPage.jsx': { lines: 80 }, // US-0506 u3
+        'src/renderer/LatestMessageStrip.jsx': { lines: 80 }, // US-0506 u3
         '.opencode/plugins/thadeus-dialog.js': { lines: 80 }
       }
     },

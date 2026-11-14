@@ -105,6 +105,7 @@ export function createAgentChannel({ root, log = (line) => console.warn(line), h
   const sessions = new Map(); // sessionId -> { dir, secret: Buffer, projectId, tabId, harness, ptyId }
   const ended = new Set();
   const listeners = new Set();
+  const refused = new Set(); // US-0506 u3 C2 onRefusedReply
   const reading = new Set();
   let ready = null;
   let worker = null;
@@ -201,9 +202,10 @@ export function createAgentChannel({ root, log = (line) => console.warn(line), h
         log(formatLog(parsed.reason, { session: sessionId, file: name }));
         // A waiting question that cannot be read, but whose secret matched, is handed back at once so the agent's own
         // picker shows now (as RD7 does for adapter refusals). A wrong secret gets nothing: it may be forged.
-        if (result.head && WAITING.has(checkHeader(result.head, session).kind)) {
-          api.writeAnswer({ sessionId, file: name.slice(0, -4), text: '' }).catch(() => {});
-        }
+        // RD7, RD11; US-0506 u3 RD11: an authentic over-limit reply is never shown, so the store marks the tab's reply instead.
+        const kind = result.head && checkHeader(result.head, session).kind;
+        if (WAITING.has(kind)) api.writeAnswer({ sessionId, file: name.slice(0, -4), text: '' }).catch(() => {});
+        if (kind === 'reply') for (const fn of refused) fn({ sessionId, reason: parsed.reason });
         return;
       }
       const raw = {
@@ -268,6 +270,11 @@ export function createAgentChannel({ root, log = (line) => console.warn(line), h
     onRawEvent(fn) {
       listeners.add(fn);
       return () => listeners.delete(fn);
+    },
+    /** US-0506 u3 C2: only for an over-limit reply file whose header is authentic (RD11). */
+    onRefusedReply(fn) {
+      refused.add(fn);
+      return () => refused.delete(fn);
     },
     /**
      * C2: writes `<file>.ans` by a `wx` temp file and a rename (SD7), only while the hook's wait marker exists (RD3).

@@ -65,7 +65,7 @@ describe('parse', () => {
   it('refuses a body that is not JSON, and ignores an unknown kind', () => {
     expect(adapters.claude.parse('question', Buffer.from('{oops'))).toEqual({ ok: false, reason: 'not JSON' });
     expect(adapters.claude.parse('idle', load('claude', 'gate-2026-11-14'))).toBeNull(); // permission is a kind since u2
-    expect(adapters.opencode.parse('reply', load('opencode', 'gate-2026-11-14'))).toBeNull();
+    expect(adapters.opencode.parse('notice', load('opencode', 'gate-2026-11-14'))).toBeNull(); // u3 made 'reply' a known kind
   });
 
   it('keeps Swedish, emoji, quotes, newlines and control characters byte-equal (NFR7.2, AC1.1.10)', () => {

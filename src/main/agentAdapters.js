@@ -198,10 +198,39 @@ function parseOpencodePermission(body) {
 
 /** The effect of choice `i` of a permission event. */
 const effectOf = (event, i) => event.permission.choices[i].effect;
+/** US-0506 u3 BR6.3, SCD7, NFR2.6: the reply message, cut at 64 KB; an empty message is still a reply. */
+const message = (text) => ({ ...cutUtf8(text), empty: text.trim() === '' });
+const NO_MESSAGE = { ok: false, reason: 'no last message' };
+
+/** US-0506 u3 SD12, PD13: Claude Code's Stop stdin. Only last_assistant_message is read; transcript_path never is. */
+function claudeReply(body) {
+  const payload = parseJson(body);
+  if (payload === undefined) return { ok: false, reason: 'not JSON' };
+  const text = payload?.last_assistant_message;
+  return typeof text === 'string' ? { ok: true, kind: 'reply', message: message(text) } : NO_MESSAGE;
+}
+
+/**
+ * US-0506 u3 AC3.1.4: the plugin's { event, context } body; the text parts of the last assistant message, joined
+ * with a blank line. ponytail: the context shape is provisional (K12) until the NFR2.5 manual run records it.
+ */
+function opencodeReply(body) {
+  const payload = parseJson(body);
+  if (payload === undefined) return { ok: false, reason: 'not JSON' };
+  const messages = Array.isArray(payload?.context?.messages) ? payload.context.messages : [];
+  const last = messages.findLast((m) => m?.info?.role === 'assistant');
+  if (!last || !Array.isArray(last.parts)) return NO_MESSAGE;
+  const text = last.parts
+    .filter((p) => p?.type === 'text' && typeof p.text === 'string')
+    .map((p) => p.text)
+    .join('\n\n');
+  return { ok: true, kind: 'reply', message: message(text) };
+}
 
 const claude = {
   /** Claude Code hook stdin: PreToolUse (kind question) or PostToolUse (kind answered) for AskUserQuestion. */
   parse(kind, body) {
+    if (kind === 'reply') return claudeReply(body);
     if (kind === 'answered') return { ok: true, kind, toolCallId: parseJson(body)?.tool_use_id ?? null };
     if (kind === 'permission') return parseClaudePermission(body);
     if (kind !== 'question') return null; // unknown kinds are ignored (C1 ownership rules)
@@ -255,6 +284,7 @@ const opencode = {
       return { ok: true, kind, toolCallId: p?.requestID ?? p?.formID ?? null }; // permission.replied, or a form event
     }
     if (kind === 'permission') return parseOpencodePermission(body);
+    if (kind === 'reply') return opencodeReply(body);
     if (kind !== 'question') return null;
     const payload = parseJson(body);
     if (payload === undefined) return { ok: false, reason: 'not JSON' };

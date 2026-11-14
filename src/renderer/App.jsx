@@ -230,7 +230,12 @@ export default function App() {
   // The open projects' events in pager order (US-0506 u2 BR5.12: questions and permissions before replies, then
   // arrival), new ones before those that waited from the start (FR2.2, BR2.1).
   // The dialog closes by itself once none of the events that opened it is left (FR2.4).
-  const dialogEvents = tabs.flatMap((tab) => agentEvents[tab.projectId] ?? []).sort(byPager);
+  // US-0506 u3: byPager puts replies after questions and permissions (BR6.8); a queued or dismissed reply is not in the
+  // pager (K4, BR6.14).
+  const dialogEvents = tabs
+    .flatMap((tab) => agentEvents[tab.projectId] ?? [])
+    .filter((e) => !(e.kind === 'reply' && (e.state === 'queued' || e.state === 'dismissed')))
+    .sort(byPager);
   const popupEvents = [...dialogEvents.filter((e) => !e.early), ...dialogEvents.filter((e) => e.early)];
   const hasNewQuestion = dialogEvents.some((e) => !e.early);
   useEffect(() => {
@@ -240,6 +245,17 @@ export default function App() {
   function closePopup() {
     setPopupOpen(false);
     setPopupFocus(null);
+  }
+  /** The latest-message strip's Answer (US-0506 u3 K11, PD11): main shows the dismissed reply again, then the dialog
+   *  opens on it. */
+  function openReply(eventId) {
+    bridge.agentEvents
+      ?.reopen(eventId)
+      .then(() => {
+        setPopupFocus({ id: eventId });
+        setPopupOpen(true);
+      })
+      .catch((err) => console.warn('Meddelandet kunde inte öppnas igen:', errorText(err)));
   }
   /** "Svara i terminalen": that project, its agent tab open and focused (FR2.3). Sets projectId directly, since
    *  runTerminal reads the active project from this render (developer scan, finding 6). */
@@ -593,6 +609,7 @@ export default function App() {
                 onMeta={reportMeta}
                 terminalCommand={terminalCommand}
                 editRequest={editRequest}
+                onOpenReply={openReply}
                 askingIntents={questions.filter((q) => !q.early && q.projectId === tab.projectId).map((q) => q.intent)}
               />
             </div>

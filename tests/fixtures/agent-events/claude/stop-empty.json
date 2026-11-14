@@ -1,0 +1,8 @@
+{
+  "session_id": "4b6f6a2e-3f0d-4d55-9a57-2b1f0c3e9d11",
+  "transcript_path": "tests/.tmp/u3-transcript-marker.jsonl",
+  "cwd": "/Users/dev/projects/notes",
+  "hook_event_name": "Stop",
+  "stop_hook_active": false,
+  "last_assistant_message": ""
+}

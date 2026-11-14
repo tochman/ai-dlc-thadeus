@@ -7,16 +7,19 @@
 // sender. A newer event ends the session's older questions and its timedOut permissions only, never a permission whose
 // hook still waits (SCD6). The pager order is byPager (SCD9).
 //
-// u1 deviation, by design: an accepted event goes straight to "shown". The pager in the dialog is the queue, and every
-// open event is answerable from it, so "queued" is not used by u1.
+// u1 deviation, by design: an accepted question goes straight to "shown". The pager in the dialog is the queue, and
+// every open event is answerable from it, so "queued" is used only by u3's replies (K4).
+// US-0506 u3: replies live in agentReplies.js (K3); this file only dispatches to it.
 import crypto from 'node:crypto';
 import { t } from '../shared/i18n.js';
 import { byPager } from '../shared/agentOrder.js';
 import { formatLog, WAITING } from './agentChannel.js';
 import { createPermissions } from './agentPermissions.js';
+import { createReplies } from './agentReplies.js';
 
-const ENDED_MS = 3000; // "the session ended" and "answered in the terminal" stay visible this long (BR2.3, BR5.11)
-const KEPT = new Set(['session', 'terminal']);
+// "the session ended", "answered in the terminal" (BR2.3, BR5.11) and a typed reply's "sent" line (u3 K6) stay this long
+const ENDED_MS = 3000;
+const KEPT = new Set(['session', 'terminal', 'typed']);
 const PICKER_WAIT_MS = 3000; // C2 picker readiness
 const TAKE_MS = 1000; // RD2 step 4
 const POLL_MS = 25;
@@ -76,6 +79,8 @@ const PUBLIC = [
   'context',
   'questions',
   'permission',
+  'message', // u3
+  'staleReason', // u3
   'lastError',
   'via',
   'endedBy'
@@ -100,6 +105,7 @@ export function createAgentEventStore({
   const changed = new Set();
   const added = new Set();
   let seq = 0;
+  const newId = () => `h${++seq}-${crypto.randomBytes(6).toString('hex')}`;
 
   const list = (projectId) => {
     const own = [...events.values()].filter((e) => e.projectId === projectId).map(view);
@@ -107,6 +113,7 @@ export function createAgentEventStore({
     return [...own, ...(live ? [] : auditEventsOf(projectId))].sort(byPager); // BR2.7, BR5.12
   };
   const emit = (projectId) => {
+    replies.promote(projectId); // u3 BR6.8: queued replies show once no question is open
     const payload = { projectId, events: list(projectId) };
     for (const fn of changed) fn(payload);
   };
@@ -125,7 +132,29 @@ export function createAgentEventStore({
     }
     emit(ev.projectId);
   }
-  const openOf = (sessionId) => [...events.values()].filter((e) => e.sessionId === sessionId && e.state !== 'ended');
+  const openOf = (sessionId) => [...events.values()].filter((e) => e.sessionId === sessionId && e.kind !== 'reply' && e.state !== 'ended');
+
+  function refuse(ev, key, reason) {
+    log(formatLog(reason, ev ? { session: ev.sessionId, file: `${ev.file}.evt` } : {}));
+    return new Error(t(`agentDialog.errors.${key}`));
+  }
+
+  const replies = createReplies({
+    events,
+    sessions,
+    move,
+    emit,
+    channel,
+    pty,
+    timing,
+    log,
+    refuse,
+    newId,
+    contextOf,
+    notifyAdded: (ev) => {
+      for (const fn of added) fn(view(ev));
+    }
+  });
 
   /** RD3: the hook still waits when its marker exists and the entry's own timeout has not passed. */
   async function hookWaits(ev) {
@@ -143,7 +172,7 @@ export function createAgentEventStore({
   function addEvent(raw, session, parsed) {
     for (const old of openOf(raw.sessionId).filter(endsOnNewer)) move(old, 'ended', { endedBy: 'movedOn' }); // BR2.2
     const ev = {
-      eventId: `h${++seq}-${crypto.randomBytes(6).toString('hex')}`,
+      eventId: newId(),
       sessionId: raw.sessionId,
       projectId: session.projectId,
       tabId: session.tabId,
@@ -193,12 +222,16 @@ export function createAgentEventStore({
       log(formatLog(reason, { session: raw.sessionId, file: `${raw.file}.evt`, text: parsed.text }));
       // RD7, RD11: hand an unreadable waiting event back at once, so the agent's own prompt shows now, not in 595 s.
       if (WAITING.has(raw.kind)) channel.writeAnswer({ sessionId: raw.sessionId, file: raw.file, text: '' }).catch(() => {});
+      if (raw.kind === 'reply') replies.refused(raw.sessionId); // u3 RD11
       return;
     }
+    if (parsed.kind === 'reply') return replies.add(raw, session, parsed);
+    replies.moveOn(raw.sessionId, 'movedOn'); // u3 BR6.5: any newer event of the session
     if (parsed.kind === 'answered') return onAnswered(raw.sessionId, parsed.toolCallId);
     addEvent(raw, session, parsed);
   }
   channel.onRawEvent(onRaw);
+  channel.onRefusedReply?.(({ sessionId }) => replies.refused(sessionId)); // u3 RD11
 
   /** RD2: write, then watch the markers. Returns 'hook' when taken, null to send as keys instead; throws a SendFailure. */
   async function sendViaHook(ev, text) {
@@ -257,11 +290,6 @@ export function createAgentEventStore({
     return sendViaKeys(ev, adapter.keys(ev, answer), adapter.pickerLabel(ev));
   }
 
-  function refuse(ev, key, reason) {
-    log(formatLog(reason, ev ? { session: ev.sessionId, file: `${ev.file}.evt` } : {}));
-    return new Error(t(`agentDialog.errors.${key}`));
-  }
-
   return {
     startSession({ sessionId, projectId, tabId, harness, waitSeconds }) {
       sessions.set(sessionId, { projectId, tabId, harness, waitSeconds });
@@ -270,6 +298,7 @@ export function createAgentEventStore({
     /** RD5: every event of the session ends, nothing is written, and "the session ended" is pushed (FR6.4). */
     endSession(sessionId) {
       const s = sessions.get(sessionId);
+      replies.endSession(sessionId); // u3 BR6.7: a shown reply goes stale and keeps its text
       sessions.delete(sessionId);
       for (const ev of openOf(sessionId)) move(ev, 'ended', { endedBy: 'session' });
       if (s) emit(s.projectId);
@@ -281,6 +310,7 @@ export function createAgentEventStore({
       const ev = events.get(eventId);
       if (!ev) throw refuse(null, String(eventId).startsWith('audit-') ? 'fallback' : 'unknownEvent', 'unknown event');
       if (ev.kind === 'permission') return permissions.answer(ev, answer);
+      if (ev.kind === 'reply') return replies.answer(ev, answer); // u3 BR6.10–BR6.12
       if (!OPEN.has(ev.state)) throw refuse(ev, 'eventNotOpen', 'event not open');
       if (!channel.isLive(ev.sessionId) || !sessions.has(ev.sessionId)) throw refuse(ev, 'sessionEnded', 'session ended');
       if (!fits(ev, answer)) throw refuse(ev, 'doesNotFit', 'answer does not fit the event');
@@ -298,15 +328,23 @@ export function createAgentEventStore({
         throw new Error(sentence);
       }
     },
-    /** C4 agentEvents.close: hands a waiting question back with the empty answer file (BR3.5); permissions: BR5.10. */
+    /** C4 agentEvents.close: hands a waiting question back with the empty answer file (BR3.5); permissions: BR5.10;
+     * dismisses a reply (u3). */
     async close(eventId) {
       const ev = events.get(eventId);
       if (ev?.kind === 'permission') return permissions.close(ev);
+      if (ev?.kind === 'reply') return replies.close(ev);
       if (!ev || !OPEN.has(ev.state)) return { state: 'dismissed' };
       if (await hookWaits(ev)) await channel.writeAnswer({ sessionId: ev.sessionId, file: ev.file, text: '' }).catch(() => {});
       if (events.get(eventId) === ev && OPEN.has(ev.state)) move(ev, 'handedBack');
       return { state: 'handedBack' };
     },
+    /** u3 C2 terminalInput: the person's input to a pty moves that tab's open reply on (BR6.6, SD10). */
+    terminalInput: (ptyId, data) => replies.terminalInput(ptyId, data),
+    /** u3 C4 agentEvents.reopen. */
+    reopen: (eventId) => replies.reopen(eventId),
+    /** u3 C4 agentEvents.latest. */
+    latest: (projectId) => replies.latest(projectId),
     onChanged(fn) {
       changed.add(fn);
       return () => changed.delete(fn);
@@ -319,6 +357,7 @@ export function createAgentEventStore({
     /** SCD10: how many events still hold the agent's Allow always rules (0 once every permission has ended). */
     rulesHeld: () => permissions.rulesHeld(),
     dispose() {
+      replies.dispose();
       for (const ev of events.values()) {
         clearTimeout(ev.timer);
         clearTimeout(ev.removal);

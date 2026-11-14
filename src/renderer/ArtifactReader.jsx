@@ -38,7 +38,19 @@ const markdownComponents = {
  * `html="text"` (US-0506 u1 K7, agent text): raw HTML is shown as escaped text instead of being dropped, so a
  * `<script>` in an agent's question is visible as text (AC1.1.3). It is never parsed into elements either way.
  */
-export function FileContent({ rel, content, html = 'skip' }) {
+// US-0506 u3 D11: inline mode keeps only inline elements; a paragraph, heading, list, quote or code block is unwrapped
+// to its text, so a one-line view (the latest-message strip) adds no block element. Same components, raw HTML skipped.
+const INLINE = ['strong', 'em', 'del', 'code', 'a', 'img'];
+
+export function FileContent({ rel, content, html = 'skip', inline = false }) {
+  if (inline)
+    return (
+      <span className="markdown markdown-inline">
+        <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents} allowedElements={INLINE} unwrapDisallowed skipHtml>
+          {content}
+        </ReactMarkdown>
+      </span>
+    );
   return rel.endsWith('.md') ? (
     <div className="markdown">
       <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents} skipHtml={html !== 'text'}>

@@ -1,0 +1,7 @@
+{
+  "event": { "type": "session.status", "properties": { "sessionID": "ses_02Child", "status": { "type": "idle" } } },
+  "context": {
+    "session": { "id": "ses_02Child", "parentID": "ses_01WhichName" },
+    "messages": [{ "info": { "role": "assistant" }, "parts": [{ "type": "text", "text": "Sub-agent finished." }] }]
+  }
+}
