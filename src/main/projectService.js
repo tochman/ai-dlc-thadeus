@@ -182,7 +182,7 @@ export async function loadWorkingAgents(root, space, dirName) {
 }
 
 /** An intent is in progress unless intents.json or aidlc-state.md says it is finished (US-0505 FR1.1). */
-function inProgress(intent) {
+export function inProgress(intent) {
   if (intent.missingOnDisk || intent.status === 'complete' || intent.status === 'archived') return false;
   if (/^complete/i.test(intent.stateStatus ?? '')) return false;
   return !(intent.executed > 0 && intent.done >= intent.executed);

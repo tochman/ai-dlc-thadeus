@@ -55,6 +55,7 @@
     "github": "Github",
     "settings": "Settings",
     "config": "Configuration",
+    "plans": "Plans",
     "intentCount":"{n, plural, one {# intent} other {# intents}}",
     "emptyTitle": "No project open",
     "emptyText": "Open a project folder that contains {path}.",
@@ -582,6 +583,44 @@
     "missing": "AI-DLC's command-line tool aidlc was not found: {error}",
     "failed": "The AI-DLC configuration could not be read: {error}"
   },
+  "plans": {
+    "loading": "Reading the plans…",
+    "new": "New plan",
+    "newAsk": "What is the work for?",
+    "save": "Save plan",
+    "saveAsk": "Name for the plan of {intent} (lowercase words joined by hyphens)",
+    "start": "Start with plan",
+    "startAsk": "What do you want to build with {name}?",
+    "steps": "Change steps",
+    "stepsAsk": "What should change in the stages {name} runs?",
+    "stepsRequest": "Change the stages of the plan {name}: {what}",
+    "type": "Type into the agent tab",
+    "edit": "Edit",
+    "delete": "Delete",
+    "deleteConfirm": "Delete the plan {name}? Its file in aidlc/scopes/ and its harness copies are removed.",
+    "inUse": "Used by an intent in progress: {intents}",
+    "own": "the project's own",
+    "stock": "stock, read-only",
+    "active": "active intent",
+    "facts": "Depth {depth} · {n, plural, one {# stage} other {# stages}}",
+    "execute": "Runs ({n})",
+    "skip": "Skips ({n})",
+    "description": "Description",
+    "depth": "Depth",
+    "keywords": "Keywords",
+    "keywordsHint": "Comma-separated; empty keeps them",
+    "showDiff": "Show the change",
+    "noChange": "Nothing changes.",
+    "defaults": {
+      "review_cap": "reviews",
+      "sensors": "sensors",
+      "learnings": "learnings",
+      "summary_confirmation": "summary confirmation",
+      "plan_approval": "plan approval",
+      "guard_policy": "guard policy",
+      "collaborators": "collaborators"
+    }
+  },
   "configEdit": {
     "previewing": "Checking the change…",
     "command": "Command",
@@ -786,6 +825,10 @@
     "toolNoVersion": "The file answers with no version.",
     "toolNotOnPath": "{name} was not found on the login shell's PATH.",
     "unknownExternal": "Unknown external link: {key}",
-    "changedSincePreview": "{file} changed after the preview. Look at the change again before applying it."
+    "changedSincePreview": "{file} changed after the preview. Look at the change again before applying it.",
+    "invalidPlanName": "Invalid plan name: {name}. Use lowercase words joined by hyphens, such as my-plan.",
+    "stockPlan": "{name} is a stock plan and is read-only.",
+    "planInUse": "{name} is used by an intent in progress ({intents}) and can't be deleted.",
+    "planNotFound": "No plan named {name} was found."
   }
 }
