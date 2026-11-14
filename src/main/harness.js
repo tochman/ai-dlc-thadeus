@@ -4,6 +4,7 @@
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import { runFixed } from './exec.js';
+import { toolPath } from './tools.js';
 import { HARNESSES } from '../shared/harnesses.js';
 
 export { HARNESSES, resolveHarness, selectableHarness } from '../shared/harnesses.js';
@@ -36,7 +37,7 @@ async function hasMarkers(root, { dirs = [], files = [], jsonWithAidlc = [] }) {
 async function probeCli(cli, root, exec) {
   if (!cli) return null;
   try {
-    const out = (await runFixed(cli, ['--version'], { cwd: root, exec })).trim();
+    const out = (await runFixed(toolPath(cli), ['--version'], { cwd: root, exec })).trim();
     return { found: true, version: out.split('\n')[0].slice(0, 80) };
   } catch {
     return { found: false, version: null };

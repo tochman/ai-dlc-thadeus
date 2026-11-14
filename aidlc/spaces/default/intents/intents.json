@@ -110,5 +110,13 @@
     "scope": "ultra-express",
     "status": "complete",
     "request": "1357c65d"
+  },
+  {
+    "uuid": "01a1d7d9-365f-7949-9a4a-59ad7a1dc8ec",
+    "slug": "settings-view",
+    "dirName": "261114-settings-view",
+    "scope": "ultra-express",
+    "status": "complete",
+    "request": "aa25414d"
   }
 ]

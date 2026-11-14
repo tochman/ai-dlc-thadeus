@@ -1,6 +1,6 @@
 // IPC surface for the renderer. Every handler validates its projectId and routes
 // file paths through projectAccess, so nothing outside an opened root is reachable.
-import { BrowserWindow, dialog, ipcMain, shell } from 'electron';
+import { BrowserWindow, app, dialog, ipcMain, shell } from 'electron';
 import { randomUUID } from 'node:crypto';
 import path from 'node:path';
 import { openRoot, readText, resolveInRoot } from './projectAccess.js';
@@ -23,6 +23,7 @@ import { CONFIG_WATCH_PATHS, checkHarness, getAidlcConfig } from './aidlcConfig.
 import { fetchRemote, getGitStatus, getRemoteChanges, listConflicts, showRemoteFile } from './git.js';
 import { getSetupInfo, runSetup } from './setup.js';
 import { detectHarnesses } from './harness.js';
+import { TOOL_IDS, getTools, setToolPaths, validateTool } from './tools.js';
 import { getProjectSettings, getSettings, setProjectSettings, setSettings } from './settings.js';
 import { watchFiles, watchForAidlc, watchIntents } from './watcher.js';
 import { featureWatchPaths, loadFeatures, loadStoryLinks } from './features.js';
@@ -32,6 +33,13 @@ import { currentLanguage, setLanguageFromSettings } from './i18n.js';
 import { t } from '../shared/i18n.js';
 
 const OPEN_IN_EDITOR_EXT = new Set(['.md', '.json', '.txt', '.yaml', '.yml']);
+// The Om section's links, by a fixed key: the renderer never names a URL (NFR1, US-0405 FR5.1).
+const REPO_URL = 'https://github.com/tochman/aidlc-dash';
+const EXTERNAL_URLS = {
+  repo: REPO_URL,
+  features: `${REPO_URL}/tree/main/docs/features`,
+  docs: AIDLC_DOCS_URL
+};
 // projectId -> { root, space, watcher, setupWatcher, featuresWatcher, featuresKey, configWatcher, sender, models, setupInfo, harnesses }
 const projects = new Map();
 
@@ -204,9 +212,12 @@ async function watchSpace(projectId, space) {
 
 const handlers = {
   'project:pick': async (event) => {
+    const { defaultProjectFolder } = await getSettings();
     const res = await dialog.showOpenDialog(BrowserWindow.fromWebContents(event.sender), {
       title: t('app.pickFolder'),
-      properties: ['openDirectory']
+      properties: ['openDirectory'],
+      // The saved default folder is where the dialog opens (US-0405 FR4.1).
+      ...(defaultProjectFolder ? { defaultPath: defaultProjectFolder } : {})
     });
     return res.canceled ? null : res.filePaths[0] ?? null;
   },
@@ -309,13 +320,73 @@ const handlers = {
     if (result.ok) p.harnesses = detectHarnesses(p.root); // the new harness shows as installed at once (FR4.1)
     return result;
   },
-  'settings:get': async () => getSettings(),
+  'settings:get': async () => {
+    const settings = await getSettings();
+    setToolPaths(settings.toolPaths); // every tool start from here on uses a chosen path (US-0405 FR2.4)
+    return settings;
+  },
   // A changed language applies at once: later dialogs and notifications, and the rebuilt menu (EPIC-07 FR4.4).
   'settings:set': async (event, partial) => {
     const next = await setSettings(partial);
+    setToolPaths(next.toolPaths);
     const before = currentLanguage();
     if (setLanguageFromSettings(next) !== before) applyMenu(BrowserWindow.fromWebContents(event.sender));
     return next;
+  },
+  // The three tools with their path, source and version (US-0405 FR2.1); getTools never rejects.
+  'tools:info': async () => getTools(),
+  // The native file dialog for one tool; the renderer names only a table id (FR2.2, C1).
+  'tools:pick': async (event, id) => {
+    if (!TOOL_IDS.includes(id)) throw new Error(t('errors.unknownTool', { id: String(id) }));
+    const res = await dialog.showOpenDialog(BrowserWindow.fromWebContents(event.sender), {
+      title: t('settings.tools.pickTitle'),
+      properties: ['openFile']
+    });
+    return res.canceled ? null : res.filePaths[0] ?? null;
+  },
+  // Checked before anything is stored: a failed check throws, so the earlier path stays (FR2.3).
+  'tools:save': async (_event, id, file) => {
+    const checked = await validateTool(id, file);
+    const current = await getSettings();
+    const next = await setSettings({ toolPaths: { ...current.toolPaths, [id]: file } });
+    setToolPaths(next.toolPaths);
+    return { id, path: file, ...checked };
+  },
+  'tools:reset': async (_event, id) => {
+    if (!TOOL_IDS.includes(id)) throw new Error(t('errors.unknownTool', { id: String(id) }));
+    const toolPaths = { ...(await getSettings()).toolPaths };
+    delete toolPaths[id]; // gone: the tool is found automatically again (FR2.2)
+    const next = await setSettings({ toolPaths });
+    setToolPaths(next.toolPaths);
+    return next.toolPaths ?? {};
+  },
+  // The folder "Öppna projekt…" starts in (US-0405 FR4.1); picking it saves it.
+  'settings:pickDefaultFolder': async (event) => {
+    const { defaultProjectFolder } = await getSettings();
+    const res = await dialog.showOpenDialog(BrowserWindow.fromWebContents(event.sender), {
+      title: t('settings.defaultFolder.pickTitle'),
+      properties: ['openDirectory'],
+      ...(defaultProjectFolder ? { defaultPath: defaultProjectFolder } : {})
+    });
+    if (res.canceled || !res.filePaths[0]) return null;
+    const next = await setSettings({ defaultProjectFolder: res.filePaths[0] });
+    return next.defaultProjectFolder ?? null;
+  },
+  'settings:clearDefaultFolder': async () => {
+    const next = await setSettings({ defaultProjectFolder: null }); // invalid: sanitize leaves the key out
+    return next.defaultProjectFolder ?? null;
+  },
+  // The Om section (US-0405 FR5.1): the app version and the AI-DLC row Verktyg already shows.
+  'app:info': async () => {
+    const aidlc = (await getTools()).find((row) => row.id === 'aidlc') ?? null;
+    return { version: app.getVersion(), aidlc };
+  },
+  // A fixed https address from the table above; anything else is refused before the browser opens (NFR1).
+  'app:openExternal': async (_event, key) => {
+    if (typeof key !== 'string' || !Object.hasOwn(EXTERNAL_URLS, key)) {
+      throw new Error(t('errors.unknownExternal', { key: String(key) }));
+    }
+    await shell.openExternal(EXTERNAL_URLS[key]);
   },
   // The language in effect (auto already resolved); the renderer switches to it (FR4.4).
   'i18n:language': async () => currentLanguage(),
@@ -343,8 +414,11 @@ const handlers = {
     return next;
   },
   // `harness` is only an id; pty.js refuses any id outside the fixed table (US-0801 NFR4).
-  'pty:spawn': async (event, { projectId, kind, harness, cols, rows }) =>
-    spawnSession({ projectId, root: project(projectId).root, kind, harness, cols, rows, sender: event.sender }),
+  // The saved tool paths come along, so both tabs start the chosen binary (US-0405 FR2.4).
+  'pty:spawn': async (event, { projectId, kind, harness, cols, rows }) => {
+    const { toolPaths } = await getSettings();
+    return spawnSession({ projectId, root: project(projectId).root, kind, harness, cols, rows, toolPaths, sender: event.sender });
+  },
   'pty:write': async (_event, id, data) => writeSession(id, data),
   'pty:resize': async (_event, id, cols, rows) => resizeSession(id, cols, rows),
   'pty:kill': async (_event, id) => killSession(id),

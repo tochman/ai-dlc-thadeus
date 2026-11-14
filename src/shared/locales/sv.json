@@ -445,6 +445,60 @@
       "sv": "Svenska",
       "en": "English"
     },
+    "sections": {
+      "tools": "Verktyg",
+      "appearance": "Utseende",
+      "project": "Projekt",
+      "about": "Om"
+    },
+    "tools": {
+      "aidlc": "AI-DLC CLI",
+      "claude": "Claude Code CLI",
+      "shell": "Skal",
+      "pathLabel": "Sökväg",
+      "versionLabel": "Version",
+      "notFound": "hittades inte",
+      "notOnPath": "hittades inte i PATH",
+      "checking": "Kontrollerar…",
+      "source": {
+        "saved": "Egen sökväg",
+        "auto": "Hittad automatiskt"
+      },
+      "pick": "Välj…",
+      "pickFor": "Välj sökväg till {tool}",
+      "pickTitle": "Välj sökväg till ett verktyg",
+      "reset": "Återställ",
+      "resetFor": "Återställ sökvägen till {tool}",
+      "nextStart": "En ändrad sökväg gäller nästa gång verktyget startas; terminaler som redan körs påverkas inte.",
+      "loadFailed": "Verktygen kunde inte läsas: {error}"
+    },
+    "fullscreenLabel": "Helskärm vid start",
+    "defaultFolder": {
+      "label": "Standardmapp för Öppna projekt",
+      "none": "Ingen mapp vald",
+      "pick": "Välj mapp…",
+      "pickTitle": "Välj standardmapp för projekt",
+      "reset": "Återställ",
+      "resetFor": "Återställ standardmappen"
+    },
+    "recent": {
+      "label": "Senaste projekt",
+      "empty": "Inga senaste projekt ännu.",
+      "remove": "Ta bort {path}",
+      "removeShort": "Ta bort"
+    },
+    "openProjects": {
+      "label": "Öppna projekt",
+      "empty": "Inga projekt är öppna."
+    },
+    "about": {
+      "version": "App-version {version}",
+      "aidlcVersion": "AI-DLC {version}",
+      "aidlcNotFound": "AI-DLC hittades inte: {error}",
+      "repo": "Källkoden på GitHub",
+      "features": "Feature-dokumentationen",
+      "loadFailed": "Appinformationen kunde inte läsas: {error}"
+    },
     "project": {
       "title": "Projektinställningar",
       "titleFor": "Projektinställningar: {name}",
@@ -593,6 +647,14 @@
     "setupTouchesExisting": "Förhandsvisningen visar filer som krockar eller skulle tas bort, så ingenting kördes.",
     "setupRunning": "En uppsättning körs redan för projektet.",
     "noSession": "Ingen terminalsession med id {id}",
-    "ptyDataNotString": "Terminaldata måste vara en sträng"
+    "ptyDataNotString": "Terminaldata måste vara en sträng",
+    "unknownTool": "Okänt verktyg: {id}",
+    "toolPathInvalid": "Ogiltig sökväg till {tool}: {path}. Ange en absolut sökväg.",
+    "toolMissing": "{path} finns inte.",
+    "toolNotExecutable": "{path} är inte körbar.",
+    "toolVersionFailed": "Filen svarar inte på --version: {error}",
+    "toolNoVersion": "Filen svarar inte med någon version.",
+    "toolNotOnPath": "{name} hittades inte i inloggningsskalets PATH.",
+    "unknownExternal": "Okänd extern länk: {key}"
   }
 }

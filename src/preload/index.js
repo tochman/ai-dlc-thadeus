@@ -28,6 +28,15 @@ contextBridge.exposeInMainWorld('bridge', {
   getSettings: call('settings:get'),
   setSettings: call('settings:set'),
   getLanguage: call('i18n:language'), // the language in effect, auto resolved (EPIC-07 FR4.4)
+  // The Settings view (EPIC-04 US-0405): the three tools, their native file dialog, and the Om information.
+  getTools: call('tools:info'),
+  pickTool: call('tools:pick'),
+  saveTool: call('tools:save'),
+  resetTool: call('tools:reset'),
+  pickDefaultFolder: call('settings:pickDefaultFolder'),
+  clearDefaultFolder: call('settings:clearDefaultFolder'),
+  getAppInfo: call('app:info'),
+  openExternal: call('app:openExternal'), // a fixed key, never a URL (US-0405 FR5.1)
   ptySpawn: call('pty:spawn'),
   ptyWrite: call('pty:write'),
   ptyResize: call('pty:resize'),

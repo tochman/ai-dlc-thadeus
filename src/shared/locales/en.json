@@ -445,6 +445,60 @@
       "sv": "Svenska",
       "en": "English"
     },
+    "sections": {
+      "tools": "Tools",
+      "appearance": "Appearance",
+      "project": "Project",
+      "about": "About"
+    },
+    "tools": {
+      "aidlc": "AI-DLC CLI",
+      "claude": "Claude Code CLI",
+      "shell": "Shell",
+      "pathLabel": "Path",
+      "versionLabel": "Version",
+      "notFound": "not found",
+      "notOnPath": "not found on PATH",
+      "checking": "Checking…",
+      "source": {
+        "saved": "Chosen path",
+        "auto": "Found automatically"
+      },
+      "pick": "Choose…",
+      "pickFor": "Choose the path to {tool}",
+      "pickTitle": "Choose the path to a tool",
+      "reset": "Reset",
+      "resetFor": "Reset the path to {tool}",
+      "nextStart": "A changed path applies the next time that tool starts; terminals already running are left alone.",
+      "loadFailed": "The tools could not be read: {error}"
+    },
+    "fullscreenLabel": "Full screen at start",
+    "defaultFolder": {
+      "label": "Default folder for Open project",
+      "none": "No folder chosen",
+      "pick": "Choose folder…",
+      "pickTitle": "Choose the default project folder",
+      "reset": "Reset",
+      "resetFor": "Reset the default folder"
+    },
+    "recent": {
+      "label": "Recent projects",
+      "empty": "No recent projects yet.",
+      "remove": "Remove {path}",
+      "removeShort": "Remove"
+    },
+    "openProjects": {
+      "label": "Open projects",
+      "empty": "No project is open."
+    },
+    "about": {
+      "version": "App version {version}",
+      "aidlcVersion": "AI-DLC {version}",
+      "aidlcNotFound": "AI-DLC was not found: {error}",
+      "repo": "The source code on GitHub",
+      "features": "The feature docs",
+      "loadFailed": "The app information could not be read: {error}"
+    },
     "project": {
       "title": "Project settings",
       "titleFor": "Project settings: {name}",
@@ -593,6 +647,14 @@
     "setupTouchesExisting": "The preview shows files that clash or would be removed, so nothing was run.",
     "setupRunning": "A setup is already running for this project.",
     "noSession": "No terminal session with id {id}",
-    "ptyDataNotString": "Terminal data must be a string"
+    "ptyDataNotString": "Terminal data must be a string",
+    "unknownTool": "Unknown tool: {id}",
+    "toolPathInvalid": "Invalid path to {tool}: {path}. Give an absolute path.",
+    "toolMissing": "{path} does not exist.",
+    "toolNotExecutable": "{path} is not executable.",
+    "toolVersionFailed": "The file does not answer --version: {error}",
+    "toolNoVersion": "The file answers with no version.",
+    "toolNotOnPath": "{name} was not found on the login shell's PATH.",
+    "unknownExternal": "Unknown external link: {key}"
   }
 }

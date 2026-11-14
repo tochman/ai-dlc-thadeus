@@ -4,6 +4,7 @@
 import { randomUUID } from 'node:crypto';
 import { t } from '../shared/i18n.js';
 import { selectableHarness } from '../shared/harnesses.js';
+import { setToolPaths, shellPath, toolPath } from './tools.js';
 
 const sessions = new Map(); // id -> { proc, projectId, sender }
 let ptyModule = null; // cached only after a successful load, so a failed load is retried next spawn
@@ -20,13 +21,18 @@ async function loadPty() {
   }
 }
 
+/** A bare command stays a bare word; a path with a space or a quote is wrapped so the login shell reads it as one. */
+function shellCommand(file) {
+  return /^[A-Za-z0-9_./-]+$/.test(file) ? file : `'${file.replace(/'/g, `'\\''`)}'`;
+}
+
 function shellArgs(kind, harness) {
   // -i makes zsh/bash read the interactive rc files (nvm usually lives in .zshrc), -l the login profile.
   if (kind === 'agent') {
     // The command comes from the fixed table, looked up by a validated id; the renderer never sends one (FR3.3, NFR4).
     const h = selectableHarness(harness);
     if (!h) throw new Error(t('errors.unknownHarness', { id: String(harness) }));
-    return ['-l', '-i', '-c', h.cli];
+    return ['-l', '-i', '-c', shellCommand(toolPath(h.cli))]; // a chosen CLI path wins (US-0405 FR2.4)
   }
   if (kind === 'shell') return ['-l'];
   throw new Error(t('errors.unknownTerminal', { kind: String(kind) }));
@@ -36,10 +42,11 @@ function clampSize(n, fallback) {
   return Number.isInteger(n) && n > 0 && n < 1000 ? n : fallback;
 }
 
-export async function spawnSession({ projectId, root, kind, harness, cols, rows, sender }) {
+export async function spawnSession({ projectId, root, kind, harness, cols, rows, toolPaths: paths, sender }) {
+  if (paths) setToolPaths(paths); // the saved paths at spawn time, so the two tabs use them (US-0405 FR2.4)
   const args = shellArgs(kind, harness); // validate before loading the native module
   const { spawn: spawnPty } = await loadPty();
-  const shell = process.env.SHELL || (process.platform === 'darwin' ? '/bin/zsh' : '/bin/bash');
+  const shell = shellPath(); // a saved shell path wins, else $SHELL (US-0405 FR2.2)
   const proc = spawnPty(shell, args, {
     name: 'xterm-256color',
     cols: clampSize(cols, 100),

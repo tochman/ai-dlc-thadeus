@@ -937,6 +937,34 @@ a.md-link:hover { color: var(--steel-light); }
 .question-popup.is-overdue .question-popup-choice { border-left-color: var(--alert); }
 .lcars-radio-group .lcars-block:has(input:focus-visible) { outline: 2px solid var(--amber); outline-offset: 2px; }
 
+/* ---------- Settings view (EPIC-04 US-0405 FR1.1–FR5.1): one scrolling page of sections in the content frame ---------- */
+.settings-view { grid-area: main; min-height: 0; display: flex; flex-direction: column; gap: 12px; overflow: auto; outline: none; }
+.settings-view:focus-visible { outline: 2px solid var(--amber); outline-offset: -2px; }
+.settings-view-head { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between; }
+.settings-view-title { margin: 0; color: var(--steel); font-size: 20px; letter-spacing: 0.04em; text-transform: uppercase; }
+.settings-section { display: flex; flex-direction: column; gap: 8px; }
+.settings-section > h2 { margin-bottom: 0; }
+.settings-subhead { margin: 6px 0 0; color: var(--muted); font-size: 12px; letter-spacing: 0.05em; text-transform: uppercase; }
+/* A tool row: name, path and version, then where the path came from and its buttons; wraps instead of overflowing. */
+.settings-tool { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: baseline; padding: 6px 0; border-bottom: 1px solid var(--slate-2); }
+.settings-tool:last-of-type { border-bottom: 0; }
+.settings-tool-name { flex: 0 0 150px; color: var(--steel-text); font-size: 14px; }
+.settings-tool-field { flex: 1 1 220px; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.settings-tool-field code { overflow-wrap: anywhere; }
+.settings-tool-source { flex: 0 0 auto; color: var(--muted); font-size: 12px; letter-spacing: 0.04em; text-transform: uppercase; }
+.settings-tool-actions { flex: 0 0 auto; display: flex; gap: 5px; }
+.settings-tool-error { flex: 1 1 100%; margin: 0; }
+.settings-folder { display: flex; flex-wrap: wrap; gap: 8px; align-items: baseline; }
+.settings-folder code { overflow-wrap: anywhere; }
+.settings-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.settings-list li { display: flex; flex-wrap: wrap; gap: 8px; align-items: baseline; justify-content: space-between; padding: 3px 6px; border-bottom: 1px solid var(--slate-2); }
+.settings-list code { overflow-wrap: anywhere; }
+.settings-about { display: flex; flex-wrap: wrap; gap: 14px; align-items: center; }
+.settings-about-mark { color: var(--amber); }
+.settings-about-text { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.settings-about-text p { margin: 0; }
+.settings-about-links { display: flex; flex-wrap: wrap; gap: 5px; }
+
 /* ---------- Splash (FR3.7, Splash) ---------- */
 .splash {
   position: fixed;

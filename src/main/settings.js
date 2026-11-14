@@ -6,6 +6,9 @@ import path from 'node:path';
 import { DEFAULT_FEATURES_PATH, isValidFeaturesPath } from './parsers/features.js';
 import { LANGUAGE_SETTINGS, t } from '../shared/i18n.js';
 import { selectableHarness } from '../shared/harnesses.js';
+import { TOOL_IDS, isStoredPath } from './tools.js';
+
+export { TOOL_IDS };
 
 const DEFAULTS = { openProjects: [], recentProjects: [], activeProject: null, projectSettings: {} };
 export const PROJECT_DEFAULTS = { featureDocs: 'auto', featuresPath: DEFAULT_FEATURES_PATH };
@@ -16,6 +19,12 @@ export const QUESTION_ALERTS = new Set(['popup-notify', 'popup', 'off']);
 const file = () => path.join(app.getPath('userData'), 'settings.json');
 
 const stringList = (v) => (Array.isArray(v) ? v.filter((s) => typeof s === 'string').slice(0, 50) : []);
+
+/** The chosen tool paths, kept per known id (US-0405 FR2.4). An empty result leaves the key out entirely. */
+function sanitizeToolPaths(raw) {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return {};
+  return Object.fromEntries(TOOL_IDS.filter((id) => isStoredPath(raw[id])).map((id) => [id, raw[id]]));
+}
 
 /** Per-project settings keyed by project root (EPIC-06 FR3.4); invalid values fall back to the defaults. */
 function sanitizeProject(raw) {
@@ -29,6 +38,7 @@ function sanitizeProject(raw) {
 
 function sanitize(raw) {
   const projects = raw?.projectSettings && typeof raw.projectSettings === 'object' ? raw.projectSettings : {};
+  const toolPaths = sanitizeToolPaths(raw?.toolPaths);
   return {
     openProjects: stringList(raw?.openProjects),
     recentProjects: stringList(raw?.recentProjects),
@@ -43,6 +53,10 @@ function sanitize(raw) {
     ...(typeof raw?.notificationSound === 'boolean' ? { notificationSound: raw.notificationSound } : {}),
     // "Språk / Language" (EPIC-07 US-0701 FR4.3); left out when invalid, so auto applies.
     ...(LANGUAGE_SETTINGS.includes(raw?.language) ? { language: raw.language } : {}),
+    // The chosen tool paths and the default project folder (EPIC-04 US-0405 FR2.4, FR4.1, FR7.1, FR7.3):
+    // absolute paths only, and each key is left out when it holds nothing usable.
+    ...(Object.keys(toolPaths).length ? { toolPaths } : {}),
+    ...(isStoredPath(raw?.defaultProjectFolder) ? { defaultProjectFolder: raw.defaultProjectFolder } : {}),
     // ponytail: capped at 200 projects, oldest kept; prune closed projects if that ever matters.
     projectSettings: Object.fromEntries(
       Object.entries(projects)

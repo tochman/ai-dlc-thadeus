@@ -1,0 +1,31 @@
+{
+  "stage": "code-generation",
+  "upstream_ids": ["FR1.1","FR1.2","FR1.3","FR2.1","FR2.2","FR2.3","FR2.4","FR2.5","FR3.1","FR4.1","FR4.2","FR4.3","FR5.1","FR6.1","FR6.2","FR6.3","FR7.1","FR7.2","FR7.3","NFR1","NFR2","NFR3","NFR4","NFR5"],
+  "coverage": [
+    { "id": "FR1.1", "status": "OK", "target": "tests/renderer/AppShell.test.jsx" },
+    { "id": "FR1.2", "status": "OK", "target": "tests/renderer/SettingsView.test.jsx" },
+    { "id": "FR1.3", "status": "OK", "target": "tests/renderer/SettingsView.test.jsx" },
+    { "id": "FR2.1", "status": "OK", "target": "tests/main/tools.test.js" },
+    { "id": "FR2.2", "status": "OK", "target": "tests/renderer/SettingsView.test.jsx" },
+    { "id": "FR2.3", "status": "OK", "target": "tests/main/tools.test.js" },
+    { "id": "FR2.4", "status": "OK", "target": "tests/main/pty.test.js" },
+    { "id": "FR2.5", "status": "OK", "target": "tests/renderer/SettingsView.test.jsx" },
+    { "id": "FR3.1", "status": "OK", "target": "tests/renderer/SettingsView.test.jsx" },
+    { "id": "FR4.1", "status": "OK", "target": "tests/renderer/SettingsView.test.jsx" },
+    { "id": "FR4.2", "status": "OK", "target": "tests/renderer/SettingsView.test.jsx" },
+    { "id": "FR4.3", "status": "OK", "target": "tests/renderer/SettingsView.test.jsx" },
+    { "id": "FR5.1", "status": "OK", "target": "tests/renderer/SettingsView.test.jsx" },
+    { "id": "FR6.1", "status": "OK", "target": "tests/renderer/AppShell.test.jsx" },
+    { "id": "FR6.2", "status": "OK", "target": "tests/renderer/SettingsView.test.jsx" },
+    { "id": "FR6.3", "status": "OK", "target": "src/renderer/SettingsView.jsx" },
+    { "id": "FR7.1", "status": "OK", "target": "tests/main/settings.test.js" },
+    { "id": "FR7.2", "status": "OK", "target": "src/main/settings.js" },
+    { "id": "FR7.3", "status": "OK", "target": "src/main/tools.js" },
+    { "id": "NFR1", "status": "OK", "target": "tests/renderer/SettingsView.test.jsx" },
+    { "id": "NFR2", "status": "OK", "target": "tests/main/i18nKeys.test.js" },
+    { "id": "NFR3", "status": "OK", "target": "src/renderer/theme.css" },
+    { "id": "NFR4", "status": "OK", "target": "tests/renderer/SettingsView.test.jsx" },
+    { "id": "NFR5", "status": "OK", "target": "tests/main/tools.test.js" }
+  ],
+  "reverse": []
+}

@@ -8,6 +8,7 @@ import { defaultExec, runFixed } from './exec.js';
 import { listDir, readText } from './projectAccess.js';
 import { frontmatterField } from './models.js';
 import { agentName } from './parsers/ledger.js';
+import { toolPath } from './tools.js';
 import { HARNESSES, scopesDir, setupHarness } from '../shared/harnesses.js';
 import { t } from '../shared/i18n.js';
 
@@ -29,7 +30,7 @@ export function checkHarness(id, detected) {
 /** Runs one `aidlc` command and returns its parsed JSON, or `{error, missing}`. Never throws. */
 async function runJson(root, args, exec) {
   try {
-    return { value: JSON.parse(await runFixed('aidlc', args, { cwd: root, timeout: TIMEOUT_MS, exec })) };
+    return { value: JSON.parse(await runFixed(toolPath('aidlc'), args, { cwd: root, timeout: TIMEOUT_MS, exec })) };
   } catch (err) {
     const error = err.killed ? t('errors.timeout') : err.message;
     console.warn(`aidlc ${args.join(' ')} misslyckades:`, error);

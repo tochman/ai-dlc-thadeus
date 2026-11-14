@@ -8,7 +8,7 @@
 
 **Stories:** US-0401, US-0402, US-0403, US-0404, US-0405, US-0406, US-0407
 
-**Status (2026-11-14):** ✅ US-0401 released in v0.1.1. ✅ US-0402, US-0403 and US-0404 released in v0.2.0. ✅ US-0406 released in v0.2.1 (intent `261113-thadeus-name`). US-0405 and US-0407 📋 Planned.
+**Status (2026-11-14):** ✅ US-0401 released in v0.1.1. ✅ US-0402, US-0403 and US-0404 released in v0.2.0. ✅ US-0406 released in v0.2.1 (intent `261113-thadeus-name`). ✅ US-0405 done, ships in v0.2.3 (settings view, intent `261114-settings-view`) — marked "Released in v0.2.3" when the tag is cut. 📋 US-0407 Planned for v0.2.3.
 
 ---
 
@@ -104,29 +104,30 @@
   - [x] Menu items that need an open project are disabled when no project is open.
 - **Dependencies:** US-0403 (the left arm and its views), US-0101
 
-**US-0405: Settings view with native file pickers** 📋 Planned (after v0.2.0)
+**US-0405: Settings view with native file pickers** ✅ Done (ships in v0.2.3, intent `261114-settings-view`)
 - As a **developer who runs the console in full screen**, in order to **change the app's settings and point it at the right tools without leaving the bridge view or hunting for config files**, I would like to **a full settings view inside the app, where paths are chosen with the operating system's own file dialogs**.
 - **Epic:** EPIC-04
 - **Priority:** Medium
 - **Complexity:** Medium
 - **Background:** Today the app finds `aidlc` and `claude` through the login shell's PATH, and settings are spread over small dialogs (Animationer in US-0402, Projektinställningar in EPIC-06). In full screen (US-0404) a separate dialog window feels out of place, and there is nowhere to fix a tool the app cannot find.
 - **Acceptance Criteria:**
-  - [ ] **A settings view** opens from "Inställningar" in the left arm, from the menu ("Inställningar…", `Cmd/Ctrl+,`) and works in full screen. It is a view in the content frame, in the LCARS style, not a separate window. It has sections as labelled blocks: **Verktyg**, **Utseende**, **Projekt**, **Om**.
-  - [ ] **Verktyg (tools):**
+  - [x] **A settings view** opens from "Inställningar" in the left arm, from the menu ("Inställningar…", `Cmd/Ctrl+,`) and works in full screen. It is a view in the content frame, in the LCARS style, not a separate window. It has sections as labelled blocks: **Verktyg**, **Utseende**, **Projekt**, **Om**.
+  - [x] **Verktyg (tools):**
     - path to the **AI-DLC CLI** (`aidlc`), the **Claude Code CLI** (`claude`) and the **shell** for the terminal tabs
     - each one shows what was found automatically (via the login shell's PATH) and its version (`aidlc --version`, `claude --version`, run with fixed arguments and no shell)
     - "Välj…" opens the **native file dialog** (`dialog.showOpenDialog`, files only) to point at another binary, and "Återställ" goes back to automatic
     - a chosen path is checked before it is saved: the file exists, is executable, and `--version` answers. Otherwise a short message explains why it was not saved.
     - all places that start `aidlc` or `claude` (setup, models, the terminal tabs) use the chosen path
-  - [ ] **Utseende:** Animationer (Full / Dämpad / Av, from US-0402), Helskärm vid start (US-0404) and, once EPIC-07 is built, Språk.
-  - [ ] **Projekt:**
+  - [x] **Utseende:** Animationer (Full / Dämpad / Av, from US-0402), Helskärm vid start (US-0404) and, once EPIC-07 is built, Språk.
+  - [x] **Projekt:**
     - the default folder for "Öppna projekt…", chosen with the native folder dialog
     - the list of recently opened projects, where entries can be removed
     - a link to each open project's Projektinställningar (EPIC-06)
-  - [ ] **Om:** the app version, the AI-DLC version found, the Auctum symbol, and links to the repo and the feature docs.
-  - [ ] Settings are saved in the app's own `settings.json`, validated by `sanitize()`. Nothing is written into any project. Paths are stored as absolute paths and never passed through a shell.
-  - [ ] The existing small dialogs either move into this view or open it at the right section, so each setting has one home.
-  - [ ] Keyboard and screen readers: every field has a label, file buttons have names ("Välj sökväg till aidlc"), and focus moves into the view when it opens.
+  - [x] **Om:** the app version, the AI-DLC version found, the Auctum symbol, and links to the repo and the feature docs.
+  - [x] Settings are saved in the app's own `settings.json`, validated by `sanitize()`. Nothing is written into any project. Paths are stored as absolute paths and never passed through a shell.
+  - [x] The existing small dialogs either move into this view or open it at the right section, so each setting has one home.
+  - [x] Keyboard and screen readers: every field has a label, file buttons have names ("Välj sökväg till aidlc"), and focus moves into the view when it opens.
+  *Verified in `261114-settings-view`: 36 scoped unit tests and 224 in the full suite, plus `electron-vite build`. The native file and folder dialogs, a real `--version` answer and "a saved path is used on the next start" are checked on an installed release at the v0.2.3 tag — the same point where US-0401's installed-release criterion closes.*
 - **Dependencies:** US-0402, US-0403, US-0404, EPIC-06
 
 **US-0406: Name the application T.H.A.D.E.U.S.** ✅ Released in v0.2.1 (intent `261113-thadeus-name`)
