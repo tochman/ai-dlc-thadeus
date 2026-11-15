@@ -6,9 +6,9 @@
 
 > Small fixes the person reports while using the app: something looks off, behaves wrongly or is missing a detail. Each fix becomes a story here, so nothing reported in passing gets lost. A fix that grows into a feature moves to its topic's epic.
 
-**Stories:** US-0001, US-0002, US-0003, US-0004, US-0005, US-0006, US-0007, US-0008, US-0009, US-0010, US-0011, US-0012, US-0013, US-0014, US-0015, US-0016, US-0017, US-0018, US-0019
+**Stories:** US-0001, US-0002, US-0003, US-0004, US-0005, US-0006, US-0007, US-0008, US-0009, US-0010, US-0011, US-0012, US-0013, US-0014, US-0015, US-0016, US-0017, US-0018, US-0019, US-0020
 
-**Status (2026-11-15):** ✅ US-0001–US-0019 released (v0.2.3–v0.2.6). Each story names its release.
+**Status (2026-11-15):** ✅ US-0001–US-0020 released (v0.2.3–v0.2.6). Each story names its release.
 
 ---
 
@@ -306,3 +306,22 @@
   - **Where.** `src/renderer/TerminalPanel.jsx`: `useTwoBusyWarning` and the notice removed; the `terminal.twoAgents` text removed from both locales.
   - **Tests.** `tests/renderer/TerminalPanel.test.jsx` (1 changed).
 - **Dependencies:** US-0803
+
+**US-0020: A leaner agent dialog** ✅ Released in v0.2.6
+- As a **developer getting the agent's messages in the app**, in order to **read and answer them at a glance**, I would like to **see less text and fewer controls, and have Send close the dialog**.
+- **Epic:** EPIC-00
+- **Priority:** High
+- **Complexity:** Low
+- **Background:** Reported 2026-11-15 with screenshots: every message showed its whole text, an answer field, Open the terminal and Close; choice names and descriptions ran together ("Tag v0.2.6 nowSet the tag…"); the title had an orange focus box. "Show less and have less options… the send button should close the dialog (animated) and we do not always need an input." Agreed in a dialog: as proposed.
+- **Acceptance Criteria:**
+  - [x] **Given** a message of several paragraphs, **then** only the last one shows, with Show all for the rest.
+  - [x] **Given** a message whose last paragraph does not end with a question mark, **then** there is no answer field and no Send, only Close.
+  - [x] **Given** a message that asks something, **when** the answer is sent and taken, **then** the dialog closes, folding shut with full motion.
+  - [x] A message has no Open the terminal button; questions and permissions keep it as their way out.
+  - [x] A choice's description stands on its own line under its name.
+  - [x] The title has no focus box when the dialog opens.
+- **Notes:**
+  - **Where.** `src/renderer/ReplyPage.jsx` (`replyParts`, the field only for a question, `onSent`), `src/renderer/AgentDialog.jsx` (Send closes; Open the terminal only off messages), `src/renderer/theme.css` (choice description, title focus, the fold under full motion), `agentDialog.reply.showAll` in both locales.
+  - **Tests.** `tests/renderer/AgentDialogReply.test.jsx` (6 new, 1 changed), `tests/main/theme.test.js` (3 new).
+  - **Open.** A question answered in the terminal was still shown in the dialog once (19:3x, 2026-11-15); not reproduced yet, the answered hook should end it.
+- **Dependencies:** US-0506, US-0018

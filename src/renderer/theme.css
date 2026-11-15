@@ -1115,6 +1115,23 @@ a.md-link:hover { color: var(--steel-light); }
 .question-popup-choice:hover:not(:disabled) { background: var(--steel-deep); }
 .question-popup-choice:focus-visible { outline: 2px solid var(--amber); outline-offset: 2px; }
 .question-popup-choice:disabled { color: var(--slate-4); }
+/* US-0020: a choice's description on its own line under its name; no focus box on the title focused at open. */
+.question-popup-choice small { display: block; margin-top: 2px; font-size: 13px; }
+#agent-dialog-title:focus { outline: none; }
+/* US-0020: the agent dialog folds shut (Send, Close, Esc); Dämpad and Av close at once. */
+:root[data-motion='full'] .agent-dialog {
+  transform-origin: top;
+  transition:
+    border-color 1.2s ease-out,
+    transform 220ms ease-in,
+    opacity 220ms ease-in,
+    overlay 220ms allow-discrete,
+    display 220ms allow-discrete;
+}
+:root[data-motion='full'] .agent-dialog:not([open]) { transform: scaleY(0); opacity: 0; }
+@starting-style {
+  :root[data-motion='full'] .agent-dialog[open] { transform: scaleY(0); opacity: 0; }
+}
 .question-popup-key { min-width: 32px; text-align: center; font-family: var(--font-head); font-size: 18px; color: var(--steel-text); }
 .question-popup-own { display: flex; gap: var(--gap); margin: 0 0 8px; }
 .question-popup-own input { flex: 1; min-width: 0; min-height: 32px; padding: 4px 10px; border: 1px solid var(--slate-3); background: var(--bg); color: var(--text); font: 15px var(--font-read); }
