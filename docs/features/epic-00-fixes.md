@@ -6,9 +6,9 @@
 
 > Small fixes the person reports while using the app: something looks off, behaves wrongly or is missing a detail. Each fix becomes a story here, so nothing reported in passing gets lost. A fix that grows into a feature moves to its topic's epic.
 
-**Stories:** US-0001, US-0002, US-0003, US-0004, US-0005, US-0006, US-0007, US-0008, US-0009, US-0010, US-0011, US-0012
+**Stories:** US-0001, US-0002, US-0003, US-0004, US-0005, US-0006, US-0007, US-0008, US-0009, US-0010, US-0011, US-0012, US-0013
 
-**Status (2026-11-15):** ✅ US-0001–US-0012 released (v0.2.3–v0.2.5). Each story names its release.
+**Status (2026-11-15):** ✅ US-0001–US-0012 released (v0.2.3–v0.2.5). ✅ US-0013 done. Each story names its release.
 
 ---
 
@@ -199,3 +199,18 @@
   - **Where.** `src/renderer/ProjectSettingsView.jsx` (was `ProjectSettingsDialog.jsx`), `App.jsx` (`ArmSubtabs`), `ProjectView.jsx`, `FeaturesView.jsx`, `SettingsView.jsx`, `AgentHooksStrip.jsx`, `theme.css`.
   - **Checked** in the built app with screenshots of every view and settings section.
 - **Dependencies:** US-0410, US-0603
+
+**US-0013: The intent list and the detail count the same stages** ✅ Done
+- As a **developer reading an intent's progress**, in order to **trust the numbers**, I would like to **see the same count in the intent list and in the intent's detail**.
+- **Epic:** EPIC-00
+- **Priority:** Medium
+- **Complexity:** Low
+- **Background:** Reported 2026-11-15: "note the discrepancy here - the list says 7/8 but the panel says 8 of 8 are done" (intent `project-defaults`). Its Code Generation was skipped by a jump (`[S]`). The list counted it as a stage left to do, which gave 7/8 with a hollow dot; the detail left it out of its dots but said "Step 8 of 8".
+- **Acceptance Criteria:**
+  - [x] A stage skipped by a jump (`[S]`) is not counted among the stages to run, so the list's n/m, the detail's dots and its "Step n of m" agree (7/7 for `project-defaults`).
+  - [x] The pipeline still shows the skipped stage, muted.
+  - [x] An intent whose remaining stages were all skipped counts as finished.
+- **Notes:**
+  - **Where.** `mergePipeline()` in `src/main/parsers/pipeline.js`.
+  - **Tests.** `tests/main/parsers.test.js` (1 new). The fixture's `[S]` observability-setup now leaves the totals one lower in two tests.
+- **Dependencies:** US-0102, US-0103

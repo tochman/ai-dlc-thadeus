@@ -15,7 +15,7 @@ describe('projectService.detectProject', () => {
     const root = await openRoot(path.join(FIXTURES, 'project'));
     const { intents } = await loadIntentList(root, 'default');
     const epic29 = intents.find((i) => i.dirName === '261112-epic29-small-k2-fixes');
-    expect(epic29).toMatchObject({ active: true, done: 6, executed: 10, request: expect.stringMatching(/^EPIC-29/) });
+    expect(epic29).toMatchObject({ active: true, done: 6, executed: 9, request: expect.stringMatching(/^EPIC-29/) });
 
     const detail = await loadIntentDetail(root, 'default', '261110-epic02-finish');
     expect(detail.graph.boltDag.units).toHaveLength(6);

@@ -46,7 +46,9 @@ export function mergePipeline(state, graph) {
     })
   }));
 
-  const executed = phases.flatMap((p) => p.stages).filter((s) => s.mode === 'EXECUTE');
+  // A stage skipped by a jump ([S]) is not left to do, so it is not counted: the list's n/m, the detail's dots and its
+  // "Step n of m" then agree (US-0013). The pipeline still shows it, muted.
+  const executed = phases.flatMap((p) => p.stages).filter((s) => s.mode === 'EXECUTE' && s.status !== 'skipped');
   return {
     phases,
     done: executed.filter((s) => s.status === 'done').length,
