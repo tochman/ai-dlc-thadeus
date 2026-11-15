@@ -6,9 +6,9 @@
 
 > AI-DLC runs on several AI coding tools ("harnesses"): Claude Code, opencode, Codex CLI, Kiro CLI, Cursor and GitHub Copilot. Each keeps its own engine folder (`.claude/`, `.aidlc/` for opencode, `.codex/`, `.kiro/`, `.cursor/`) beside the shared `aidlc/` workspace. The console is built around Claude today: the terminal tab runs `claude`, and setup runs `aidlc config --harness claude`. This epic lets the person choose another harness, for example opencode, per project, while the dashboard itself keeps working the same, since it reads the shared `aidlc/` records.
 
-**Stories:** US-0801, US-0802, US-0803, US-0804
+**Stories:** US-0801, US-0802, US-0803, US-0804, US-0805, US-0806
 
-**Status (2026-11-15):** ✅ US-0801–US-0803 released (v0.2.1–v0.2.3). 📋 US-0804 planned. Each story names its release.
+**Status (2026-11-15):** ✅ US-0801–US-0803 released (v0.2.1–v0.2.3). 📋 US-0804–US-0806 planned. Each story names its release.
 
 ---
 
@@ -72,3 +72,42 @@
   - [ ] Every text goes through `t()` in Swedish and English.
 - **Notes:** Find out first which tools can report their sign-in without starting it: `gh auth status` can; Claude Code and opencode need checking (a status command, or a harmless call that fails clearly when signed out).
 - **Dependencies:** US-0410, US-0801
+
+---
+
+**US-0805: A health check on the start screen, with install commands for what is missing** 📋 Planned
+- As a **new user opening the app for the first time**, in order to **get from install to a working project without guessing**, I would like to **see on the start screen whether the tools the app needs are found and signed in, with a command to copy for each one that is missing**.
+- **Epic:** EPIC-08
+- **Priority:** Medium
+- **Complexity:** Medium
+- **Background:** Asked for 2026-11-15: "an interactive onboarding / health check screen: on the start screen, a quick environment diagnostic check (which aidlc, which claude, gh auth status) with actionable copy-paste install commands if a dependency is missing from the login shell PATH."
+- **Acceptance Criteria:**
+  - [ ] **Given** the start screen, **then** a health check lists the AI-DLC CLI, Claude Code, opencode and the GitHub CLI, each as found (with its version), not found, or not signed in, from the same check as Settings › Tools (US-0410) and, once built, the sign-in state (US-0804).
+  - [ ] **Given** a tool that is not found on the login shell's PATH, **then** its row shows the install command for this platform, with a Copy button, and says what the tool is needed for. A tool that is optional (opencode, `gh`) says so and never blocks the rest.
+  - [ ] **Given** the person installed a tool, **when** they choose Check again, **then** the list is checked once more without restarting the app.
+  - [ ] When everything needed is found, the check folds down to one line ("Everything is ready") and stays out of the way.
+  - [ ] The app only shows commands; it never runs an install itself.
+  - [ ] Every text goes through `t()` in Swedish and English.
+- **Notes:**
+  - **Where.** The start screen (`docs/screenshots/splash.png`), `checkTools` and `TOOL_IDS` in `src/main/tools.js`. Install commands per platform are kept in one table, with a link to each tool's own install page.
+  - Overlaps US-0804 (sign-in state): build the check once and show it in both places.
+- **Dependencies:** US-0410, US-0804
+
+---
+
+**US-0806: Run any harness in the agent terminal with a custom command per project** 📋 Planned
+- As a **developer who uses Codex, Kiro, Cursor or Copilot with AI-DLC**, in order to **work in the app with the harness the project is set up for**, I would like to **choose a custom command for the agent terminal in a project's terminal settings**.
+- **Epic:** EPIC-08
+- **Priority:** Medium
+- **Complexity:** Medium
+- **Background:** Asked for 2026-11-15: setup supports six harnesses (Claude Code, opencode, Codex, Kiro, Cursor, GitHub Copilot), while the embedded agent terminal runs only `claude` and `opencode`. "Supporting custom CLI commands per project in the terminal settings would let users run any agent harness seamlessly."
+- **Acceptance Criteria:**
+  - [ ] **Given** a project's terminal settings, **when** I enter a command (for example `codex` or `kiro-cli chat`), **then** new agent tabs in that project start it in the project folder instead of `claude` or `opencode`.
+  - [ ] The project's harness picker offers the other set-up harnesses with their usual command filled in (`codex`, `kiro-cli`, …), which I can change.
+  - [ ] The command runs as given through the login shell, as the agent tab does today; it is saved per project and kept after a restart.
+  - [ ] **Given** a command that is not found, **then** the tab says so and points to the terminal settings.
+  - [ ] Features that need a Claude Code or opencode tab (resume, the agent dialog, cost per session) say they are not available for a custom command instead of failing.
+  - [ ] Every text goes through `t()` in Swedish and English.
+- **Notes:**
+  - **Where.** `HARNESSES` in `src/shared/harnesses.js` (Codex and Kiro are `selectable: false` today), the agent tab start in main, the project settings.
+- **Dependencies:** US-0801, US-0803

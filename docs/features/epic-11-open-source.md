@@ -6,9 +6,9 @@
 
 > The repository `tochman/aidlc-dash` is public since 2026-11-15, and the app is MIT-licensed (Copyright Auctum Solutions AB). Decided 2026-11-15: "we will make it an open repo and open source the app." This epic gets the repository ready to be public: what must not be published goes first, then the files a public project needs. Making it public is the person's own step.
 
-**Stories:** US-1101
+**Stories:** US-1101, US-1102
 
-**Status (2026-11-15):** ✅ US-1101 released in v0.2.6. Each story names its release.
+**Status (2026-11-15):** ✅ US-1101 released in v0.2.6. 📋 US-1102 planned. Each story names its release.
 
 ---
 
@@ -33,3 +33,20 @@
   - [x] Making the repository public is done only on the person's word (`gh repo edit --visibility public --accept-visibility-change-consequences`); afterwards, the release and its download URLs work without signing in.
 - **Notes:** US-0413 (updates without `gh`) builds on the public repository.
 - **Dependencies:** none
+
+---
+
+**US-1102: A visual first impression on GitHub, and topics to be found by** 📋 Planned
+- As a **developer who comes across the repository on GitHub**, in order to **see at a glance what the app does and find it by topic**, I would like **a short animated GIF or screenshot gallery at the top of the README, and repository topics**.
+- **Epic:** EPIC-11
+- **Priority:** Low
+- **Complexity:** Low
+- **Background:** Asked for 2026-11-15: "a short animated GIF or screenshot gallery directly at the top of README.md (currently referenced as text captions) and repository topics (electron, ai-agents, developer-tools, aidlc) will significantly help discoverability."
+- **Acceptance Criteria:**
+  - [ ] **Given** the repository page on GitHub, **then** the README opens with a short animated GIF (at most about 15 seconds and 5 MB) of the app at work, above the first heading's text, with alt text.
+  - [ ] The screenshots below it are a gallery of images with short captions, not text-only references.
+  - [ ] The GIF and the screenshots show only the demo project (no private paths, names or costs; US-1101 FR3.3), and `npm run screenshots` can retake them.
+  - [ ] The repository has the topics `electron`, `ai-agents`, `developer-tools` and `aidlc`, set only on the person's word (`gh repo edit --add-topic …`).
+- **Notes:**
+  - **Where.** `README.md`, `docs/screenshots/`, `scripts/screenshots.cjs` (could record frames for the GIF).
+- **Dependencies:** US-1101

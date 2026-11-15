@@ -12,10 +12,10 @@ Overview of all epics. Each epic lives in its own file under [features/](feature
 | [EPIC-05](features/epic-05-workflow-control.md) | Workflow Control: steer AI-DLC from the console (resume, refresh from GitHub, set up AI-DLC, switch, answer) | ✅ US-0501–US-0503, US-0505 and US-0506 released (v0.2.0–v0.2.5) · 📋 US-0504 and US-0507 planned for v0.2.7, US-0508 and US-0509 planned |
 | [EPIC-06](features/epic-06-feature-docs.md) | Feature Docs: offer FEATURES.md + epic files at setup, and view epics and stories in the console | ✅ US-0601–US-0603 released (v0.2.0–v0.2.5) · 📋 US-0604 and US-0605 planned for v0.2.7 |
 | [EPIC-07](features/epic-07-internationalisation.md) | Internationalisation: translation files, English, and languages users add themselves | ✅ US-0701 released in v0.2.1 · 📋 US-0702 planned for v0.3.0 |
-| [EPIC-08](features/epic-08-harnesses.md) | Harnesses: choose opencode, Codex or Kiro instead of Claude per project, and set them up | ✅ US-0801–US-0803 released (v0.2.1–v0.2.3) · 📋 US-0804 planned |
+| [EPIC-08](features/epic-08-harnesses.md) | Harnesses: choose opencode, Codex or Kiro instead of Claude per project, and set them up | ✅ US-0801–US-0803 released (v0.2.1–v0.2.3) · 📋 US-0804–US-0806 planned |
 | [EPIC-09](features/epic-09-aidlc-configuration.md) | AI-DLC Configuration: see and change a project's AI-DLC settings, custom plans and models per agent, per harness | ✅ US-0901–US-0904 released (v0.2.2–v0.2.4) |
 | [EPIC-10](features/epic-10-editing.md) | Editing: edit project files, docs and code in the app with the Monaco editor | ✅ US-1001 released in v0.2.4 |
-| [EPIC-11](features/epic-11-open-source.md) | Open Source: make the repository public and the app open source | ✅ US-1101 released in v0.2.6 |
+| [EPIC-11](features/epic-11-open-source.md) | Open Source: make the repository public and the app open source | ✅ US-1101 released in v0.2.6 · 📋 US-1102 planned |
 | [EPIC-12](features/epic-12-team-collaboration.md) | Team Collaboration: use git and AI-DLC so a team can work in the app together | 📋 US-1201 planned for v0.3.0 |
 
 ## Story numbering
