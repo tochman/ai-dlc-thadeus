@@ -8,7 +8,7 @@
 
 **Stories:** US-0001, US-0002, US-0003, US-0004, US-0005, US-0006, US-0007, US-0008, US-0009, US-0010, US-0011, US-0012, US-0013, US-0014, US-0015, US-0016, US-0017, US-0018
 
-**Status (2026-11-15):** ✅ US-0001–US-0012 released (v0.2.3–v0.2.5). ✅ US-0013–US-0016 done, for v0.2.6. 🚧 US-0018 in progress, for v0.2.6. 📋 US-0017 planned. Each story names its release.
+**Status (2026-11-15):** ✅ US-0001–US-0012 released (v0.2.3–v0.2.5). ✅ US-0013–US-0016 done, for v0.2.6. 🚧 US-0017 and US-0018 in progress, for v0.2.6. Each story names its release.
 
 ---
 
@@ -262,7 +262,7 @@
   - **Tests.** `tests/main/releases.test.js` (1 new).
 - **Dependencies:** US-0603, US-0014
 
-**US-0017: Only the first terminal tab has the LCARS bow** 📋 Planned
+**US-0017: Only the first terminal tab has the LCARS bow** 🚧 In progress, for v0.2.6
 - As a **developer who turns on a second agent tool in a project**, in order to **see the terminal arm drawn as one LCARS frame**, I would like to **have the rounded bow only on the first tab, not on the second agent tab**.
 - **Epic:** EPIC-00
 - **Priority:** Medium
@@ -272,7 +272,9 @@
   - [ ] **Given** two agent tabs (for example Claude and opencode) and the shell tab, **then** only the first tab in the arm has the bow; the second agent tab and the shell tab are plain blocks.
   - [ ] **Given** the second agent tab is the open one, **then** it gets the open colour but still no bow; the first tab keeps its bow.
   - [ ] The same holds with Codex or Kiro as the second tool, and with one agent tab after the second tool is turned off again.
-- **Notes:** The arm is in `src/renderer/TerminalPanel.jsx` and `src/renderer/theme.css`.
+- **Notes:**
+  - **Where.** `src/renderer/theme.css`: the bow and the taller block moved from `.term-tab--agent` to `.term-tab:first-child`, so every later tab is a plain block whatever its tool.
+  - **Tests.** `tests/main/theme.test.js` (1 new).
 - **Dependencies:** US-0801, US-0403
 
 **US-0018: The latest agent message stays out of the way** 🚧 In progress, for v0.2.6
