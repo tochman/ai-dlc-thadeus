@@ -51,6 +51,7 @@ function mockBridge(settings) {
     pickProject: vi.fn(async () => null),
     onProjectDetected: vi.fn(() => () => {}),
     getGitStatus: vi.fn(async () => ({ isRepo: true, branch: 'feat/epic04-living-lcars' })),
+    onGitHeadChanged: listen('gitHeadChanged'),
     // The Settings view (US-0405) reads these as it opens.
     getTools: vi.fn(async () => [
       { id: 'aidlc', path: '/usr/local/bin/aidlc', source: 'auto', found: true, version: '0.9.1' },
@@ -279,6 +280,22 @@ describe('App shell', () => {
     expect(await within(header).findByText('feat/epic04-living-lcars')).toBeTruthy();
     // The arm's watermark is decoration: hidden, so the header's mark is the only named one outside the splash.
     expect(within(screen.getByTestId('project-tabs')).queryByRole('img')).toBeNull();
+  });
+
+  // US-0015: a branch switch outside the app changes .git/HEAD, and main sends git:headChanged.
+  it('reads the branch again when HEAD changes, and names a detached HEAD (US-0015)', async () => {
+    await renderApp({ openProjects: ['/p/aidlc-dash-a'], activeProject: '/p/aidlc-dash-a' });
+    const header = screen.getByRole('banner');
+    expect(await within(header).findByText('feat/epic04-living-lcars')).toBeTruthy();
+    const projectId = window.bridge.getGitStatus.mock.calls.at(-1)[0];
+    window.bridge.getGitStatus.mockResolvedValue({ isRepo: true, branch: 'main' }); // other views read the status too
+    act(() => push.gitHeadChanged({ projectId: 'another-project' }));
+    expect(within(header).getByText('feat/epic04-living-lcars')).toBeTruthy(); // another project's switch is not ours
+    act(() => push.gitHeadChanged({ projectId }));
+    expect(await within(header).findByText('main')).toBeTruthy();
+    window.bridge.getGitStatus.mockResolvedValue({ isRepo: true, branch: 'HEAD' });
+    act(() => push.gitHeadChanged({ projectId }));
+    expect(await within(header).findByText('Ingen gren (frånkopplad HEAD)')).toBeTruthy();
   });
 
   it("labels the fullscreen block from the window's real mode, with aria-pressed, and toggles it on click (US-0404 FR1.2, NFR3)", async () => {

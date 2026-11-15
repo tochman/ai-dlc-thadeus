@@ -45,6 +45,7 @@
     "setup": "Uppsättning",
     "features": "Features",
     "branch": "Gren",
+    "detached": "Ingen gren (frånkopplad HEAD)",
     "noProject": "Inget projekt",
     "fullscreen": "Helskärm",
     "leaveFullscreen": "Lämna helskärm",
