@@ -124,8 +124,19 @@ describe('mergePipeline', () => {
   it('works from the state file alone when runtime-graph.json is missing (FR3.5, FR2.2)', () => {
     const p = mergePipeline(state, null);
     expect(stage(p, 'code-generation')).toMatchObject({ status: 'done', agent: null, mismatch: false });
-    expect(p.executed).toBe(10);
+    expect(p.executed).toBe(9); // observability-setup is [S], skipped by a jump (US-0013)
     expect(p.done).toBe(6);
+  });
+
+  it('leaves a stage skipped by a jump ([S]) out of the count, so list and detail agree (US-0013)', () => {
+    const jumped = {
+      ...state,
+      phases: state.phases.map((ph) => ({ ...ph, stages: ph.stages.map((st) => (st.slug === 'code-generation' ? { ...st, status: 'skipped' } : st)) }))
+    };
+    const p = mergePipeline(jumped, null);
+    expect(stage(p, 'code-generation')).toMatchObject({ mode: 'EXECUTE', status: 'skipped' });
+    expect(p.executed).toBe(8); // planned to run, but jumped over: not a stage left to do
+    expect(p.done).toBe(5);
   });
 });
 
