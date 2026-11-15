@@ -4,13 +4,13 @@ Overview of all epics. Each epic lives in its own file under [features/](feature
 
 | Epic | Topic | Status |
 |------|-------|--------|
-| [EPIC-00](features/epic-00-fixes.md) | Fixes: small things the person reports while using the app | ✅ US-0001–US-0012 released (v0.2.3–v0.2.5) · ✅ US-0013–US-0014 done, for v0.2.6 · 🚧 US-0015 in progress, for v0.2.6 · 📋 US-0016 planned for v0.2.6 |
+| [EPIC-00](features/epic-00-fixes.md) | Fixes: small things the person reports while using the app | ✅ US-0001–US-0020 released (v0.2.3–v0.2.6) |
 | [EPIC-01](features/epic-01-bridge-console-mvp.md) | Bridge Console: read-only AI-DLC visualisation and an embedded Claude terminal (foundation) | ✅ US-0101–US-0110 released in v0.1.0 |
 | [EPIC-02](features/epic-02-cost-and-models.md) | Cost & Models: what runs cost, and which model each agent uses | ✅ US-0201–US-0205 and US-0207 released (v0.2.0–v0.2.4; CSV export in US-0203 deferred) · ➡️ US-0206 moved to US-0904 · 📋 US-0208 planned for v0.2.7 |
 | [EPIC-03](features/epic-03-audit-timeline.md) | Audit Timeline: long histories and precise live updates | ✅ US-0301–US-0302 released in v0.2.0 · 📋 US-0303 planned for v0.3.0 |
-| [EPIC-04](features/epic-04-branding-and-desktop.md) | Branding, Look & Desktop Integration: Auctum icon, OS integration, glow and motion | ✅ US-0401–US-0411 released (v0.1.1–v0.2.5) · 📋 US-0412 planned, US-0413 planned for v0.2.6 |
-| [EPIC-05](features/epic-05-workflow-control.md) | Workflow Control: steer AI-DLC from the console (resume, refresh from GitHub, set up AI-DLC, switch, answer) | ✅ US-0501–US-0503, US-0505 and US-0506 released (v0.2.0–v0.2.5) · 📋 US-0507 planned for v0.2.6, US-0504 planned for v0.2.7, US-0508 and US-0509 planned |
-| [EPIC-06](features/epic-06-feature-docs.md) | Feature Docs: offer FEATURES.md + epic files at setup, and view epics and stories in the console | ✅ US-0601–US-0603 released (v0.2.0–v0.2.5) · 📋 US-0604 planned for v0.2.6, US-0605 planned for v0.2.7 |
+| [EPIC-04](features/epic-04-branding-and-desktop.md) | Branding, Look & Desktop Integration: Auctum icon, OS integration, glow and motion | ✅ US-0401–US-0411 released (v0.1.1–v0.2.5) · 📋 US-0412 planned, US-0413 planned for v0.2.7 |
+| [EPIC-05](features/epic-05-workflow-control.md) | Workflow Control: steer AI-DLC from the console (resume, refresh from GitHub, set up AI-DLC, switch, answer) | ✅ US-0501–US-0503, US-0505 and US-0506 released (v0.2.0–v0.2.5) · 📋 US-0504 and US-0507 planned for v0.2.7, US-0508 and US-0509 planned |
+| [EPIC-06](features/epic-06-feature-docs.md) | Feature Docs: offer FEATURES.md + epic files at setup, and view epics and stories in the console | ✅ US-0601–US-0603 released (v0.2.0–v0.2.5) · 📋 US-0604 and US-0605 planned for v0.2.7 |
 | [EPIC-07](features/epic-07-internationalisation.md) | Internationalisation: translation files, English, and languages users add themselves | ✅ US-0701 released in v0.2.1 · 📋 US-0702 planned for v0.3.0 |
 | [EPIC-08](features/epic-08-harnesses.md) | Harnesses: choose opencode, Codex or Kiro instead of Claude per project, and set them up | ✅ US-0801–US-0803 released (v0.2.1–v0.2.3) · 📋 US-0804 planned |
 | [EPIC-09](features/epic-09-aidlc-configuration.md) | AI-DLC Configuration: see and change a project's AI-DLC settings, custom plans and models per agent, per harness | ✅ US-0901–US-0904 released (v0.2.2–v0.2.4) |

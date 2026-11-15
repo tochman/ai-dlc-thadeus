@@ -635,11 +635,6 @@ export default function AgentDialog({
       {open && ev && (
         <div>
           <div className={`question-popup-head${permPage ? ' is-permission' : ''}`}>
-            {reply && (
-              <span className="question-popup-where" data-testid="agent-dialog-kind">
-                {t('agentDialog.kind.message').toLocaleUpperCase()}
-              </span>
-            )}
             <h2 id="agent-dialog-title" ref={titleRef} tabIndex={-1} data-testid="agent-dialog-title">
               {waiting}
             </h2>
@@ -650,27 +645,41 @@ export default function AgentDialog({
           {permPage ? (
             <PermissionPage key={ev.eventId} ev={ev} keysRef={keysRef} guarded={guarded} />
           ) : reply ? (
-            <ReplyPage key={ev.eventId} ev={ev} harnessLabel={harnessLabel} keysRef={keysRef} guarded={guarded} />
+            <ReplyPage key={ev.eventId} ev={ev} harnessLabel={harnessLabel} keysRef={keysRef} guarded={guarded} onSent={onClose} />
           ) : hook ? (
             <HookPage key={ev.eventId} ev={ev} keysRef={keysRef} guarded={guarded} />
           ) : (
             <AuditPage key={ev.eventId} ev={ev} harness={harnessOf(ev.projectId)} onSend={onAuditSend} guarded={guarded} />
           )}
           <div className="question-popup-foot">
+            {/* US-0018: paging only when there is something to page to. */}
             <div className="question-popup-pager">
-              <button type="button" className="btn btn-quiet" disabled={i === 0} onClick={() => browse(i - 1)} data-testid="agent-dialog-prev">
-                {t('agentDialog.previous')}
-              </button>
-              <span>{t('agentDialog.position', { i: i + 1, n: events.length })}</span>
-              <button type="button" className="btn btn-quiet" disabled={i >= events.length - 1} onClick={() => browse(i + 1)} data-testid="agent-dialog-next">
-                {t('agentDialog.next')}
-              </button>
+              {events.length > 1 && (
+                <>
+                  <button type="button" className="btn btn-quiet" disabled={i === 0} onClick={() => browse(i - 1)} data-testid="agent-dialog-prev">
+                    {t('agentDialog.previous')}
+                  </button>
+                  <span>{t('agentDialog.position', { i: i + 1, n: events.length })}</span>
+                  <button
+                    type="button"
+                    className="btn btn-quiet"
+                    disabled={i >= events.length - 1}
+                    onClick={() => browse(i + 1)}
+                    data-testid="agent-dialog-next"
+                  >
+                    {t('agentDialog.next')}
+                  </button>
+                </>
+              )}
               {newCount > 0 && <span data-testid="agent-dialog-new-count">{t('agentDialog.newCount', { n: newCount })}</span>}
             </div>
             <div className="question-popup-actions">
-              <button type="button" className="btn btn-quiet" onClick={openTerminal} data-testid="agent-dialog-terminal">
-                {t('agentDialog.openTerminal')}
-              </button>
+              {/* US-0020: a message has its terminal right behind the dialog; questions keep the way out. */}
+              {!reply && (
+                <button type="button" className="btn btn-quiet" onClick={openTerminal} data-testid="agent-dialog-terminal">
+                  {t('agentDialog.openTerminal')}
+                </button>
+              )}
               <button type="button" className="btn" onClick={closeDialog} data-testid="agent-dialog-close">
                 {t('common.close')}
               </button>

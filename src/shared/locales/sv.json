@@ -45,6 +45,7 @@
     "setup": "Uppsättning",
     "features": "Features",
     "branch": "Gren",
+    "detached": "Ingen gren (frånkopplad HEAD)",
     "noProject": "Inget projekt",
     "fullscreen": "Helskärm",
     "leaveFullscreen": "Lämna helskärm",
@@ -334,7 +335,6 @@
     "notInstalled": "AI-DLC är inte installerat för {harness} i det här projektet, så inget startades.",
     "pending": "Väntar på din Enter",
     "pendingHint": "{tab}: skrivet av appen. Inget körs förrän du trycker Enter.",
-    "twoAgents": "Två agenter arbetar samtidigt med projektets pågående arbete, så de ändrar samma underlag.",
     "noTab": "Terminalfliken {tab} finns inte.",
     "cannotStart": "{name} kunde inte startas.",
     "cannotRestart": "{name} kunde inte startas om.",
@@ -995,6 +995,7 @@
       "empty": "{harness} avslutade sin tur utan meddelande.",
       "truncated": "Förkortat vid 64 KB. Hela texten finns i terminalen.",
       "answer": "Ditt svar",
+      "showAll": "Visa allt",
       "sent": "Skickat till {harness} som text, följt av Enter.",
       "copy": "Kopiera",
       "stale": {
@@ -1125,7 +1126,6 @@
   },
   "latestMessage": {
     "label": "Senaste meddelandet från agenten",
-    "none": "Inget meddelande från agenten än",
     "answer": "Svara",
     "show": "Visa",
     "answered": "(besvarat)",

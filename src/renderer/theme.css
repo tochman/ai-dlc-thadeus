@@ -368,10 +368,28 @@ button.lcars-chip:hover { border-color: var(--steel-text); color: var(--steel-li
   padding: 20px;
   display: grid;
   grid-template-columns: var(--arm) minmax(0, 1fr);
-  grid-template-rows: 64px minmax(0, 1fr) auto;
-  grid-template-areas: 'head head' 'arm main' 'term term';
+  grid-template-rows: 64px minmax(0, 1fr) auto auto;
+  grid-template-areas: 'head head' 'arm main' 'msg msg' 'term term';
   gap: 14px 16px;
 }
+/* US-0018: the latest agent message, one line above the hidden terminal. Without it the message row is dropped, so
+   no empty row costs a gap. */
+.app:not(:has(.latest-message)) {
+  grid-template-rows: 64px minmax(0, 1fr) auto;
+  grid-template-areas: 'head head' 'arm main' 'term term';
+}
+.latest-message {
+  grid-area: msg;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--gap);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.latest-message-line { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.latest-message-tab { color: var(--amber); font-family: var(--font-head); text-transform: uppercase; letter-spacing: 0.06em; }
 
 .app-header { grid-area: head; display: flex; gap: var(--gap); min-width: 0; height: 64px; }
 .app-brand {
@@ -800,7 +818,8 @@ a.md-link:hover { color: var(--steel-light); }
 .terminal-arm { width: var(--arm); flex-shrink: 0; display: flex; flex-direction: column; gap: 5px; }
 .terminal-tabs { display: flex; flex-direction: column; gap: 5px; }
 .term-tab { width: 100%; height: 48px; flex-direction: column; align-items: flex-end; justify-content: space-between; padding: 6px 10px; }
-.term-tab--agent { height: 64px; border-radius: 32px 0 0 0; }
+/* US-0017: only the first tab carries the bow; a second agent tab is a plain block like the shell. */
+.term-tab:first-child { height: 64px; border-radius: 32px 0 0 0; }
 .term-tab-name { font-size: 18px; font-weight: 700; }
 .term-state { font-size: 11px; letter-spacing: 0.05em; }
 .terminal-elbow {
@@ -1100,6 +1119,23 @@ a.md-link:hover { color: var(--steel-light); }
 .question-popup-choice:hover:not(:disabled) { background: var(--steel-deep); }
 .question-popup-choice:focus-visible { outline: 2px solid var(--amber); outline-offset: 2px; }
 .question-popup-choice:disabled { color: var(--slate-4); }
+/* US-0020: a choice's description on its own line under its name; no focus box on the title focused at open. */
+.question-popup-choice small { display: block; margin-top: 2px; font-size: 13px; }
+#agent-dialog-title:focus { outline: none; }
+/* US-0020: the agent dialog folds shut (Send, Close, Esc); Dämpad and Av close at once. */
+:root[data-motion='full'] .agent-dialog {
+  transform-origin: top;
+  transition:
+    border-color 1.2s ease-out,
+    transform 220ms ease-in,
+    opacity 220ms ease-in,
+    overlay 220ms allow-discrete,
+    display 220ms allow-discrete;
+}
+:root[data-motion='full'] .agent-dialog:not([open]) { transform: scaleY(0); opacity: 0; }
+@starting-style {
+  :root[data-motion='full'] .agent-dialog[open] { transform: scaleY(0); opacity: 0; }
+}
 .question-popup-key { min-width: 32px; text-align: center; font-family: var(--font-head); font-size: 18px; color: var(--steel-text); }
 .question-popup-own { display: flex; gap: var(--gap); margin: 0 0 8px; }
 .question-popup-own input { flex: 1; min-width: 0; min-height: 32px; padding: 4px 10px; border: 1px solid var(--slate-3); background: var(--bg); color: var(--text); font: 15px var(--font-read); }

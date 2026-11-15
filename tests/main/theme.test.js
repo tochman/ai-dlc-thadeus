@@ -123,3 +123,34 @@ describe('busy glow keeps block edges aligned', () => {
     }
   });
 });
+
+describe('the terminal arm (US-0017)', () => {
+  it('gives the bow to the first tab only, so a second agent tab is a plain block', () => {
+    expect(css).not.toMatch(/\.term-tab--agent\s*\{[^}]*border-radius/);
+    expect(css).toMatch(/\.term-tab:first-child\s*\{[^}]*border-radius:\s*32px 0 0 0/);
+  });
+});
+
+describe('the latest-message line in the frame (US-0018)', () => {
+  it('has its own full-width row above the terminal, on one line', () => {
+    const app = css.match(/\.app\s*\{[^}]*\}/)?.[0] ?? '';
+    expect(app).toMatch(/grid-template-areas:\s*'head head'\s*'arm main'\s*'msg msg'\s*'term term'/);
+    const line = css.match(/\.latest-message\s*\{[^}]*\}/)?.[0] ?? '';
+    expect(line).toMatch(/grid-area:\s*msg/);
+    expect(line).toMatch(/white-space:\s*nowrap/);
+    expect(line).toMatch(/text-overflow:\s*ellipsis/);
+  });
+});
+
+describe('the agent dialog (US-0020)', () => {
+  it('puts a choice description on its own line', () => {
+    expect(css).toMatch(/\.question-popup-choice small\s*\{[^}]*display:\s*block/);
+  });
+  it('draws no focus box around the title it focuses on open', () => {
+    expect(css).toMatch(/#agent-dialog-title:focus\s*\{[^}]*outline:\s*none/);
+  });
+  it('folds shut when it closes, with full motion only', () => {
+    expect(css).toMatch(/:root\[data-motion='full'\] \.agent-dialog\s*\{[^}]*transition:[^}]*allow-discrete/);
+    expect(css).toMatch(/:root\[data-motion='full'\] \.agent-dialog:not\(\[open\]\)\s*\{[^}]*transform:\s*scaleY\(0\)/);
+  });
+});

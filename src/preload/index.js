@@ -96,6 +96,7 @@ contextBridge.exposeInMainWorld('bridge', {
   revealUpdate: call('update:reveal'),
   onUpdateState: subscribe('update:state'),
   onConfigChanged: subscribe('config:changed'),
+  onGitHeadChanged: subscribe('git:headChanged'), // US-0015
   onFeaturesChanged: subscribe('features:changed'),
   onProjectChanged: subscribe('project:changed'),
   onProjectDetected: subscribe('project:detected'),

@@ -6,9 +6,9 @@
 
 > Small fixes the person reports while using the app: something looks off, behaves wrongly or is missing a detail. Each fix becomes a story here, so nothing reported in passing gets lost. A fix that grows into a feature moves to its topic's epic.
 
-**Stories:** US-0001, US-0002, US-0003, US-0004, US-0005, US-0006, US-0007, US-0008, US-0009, US-0010, US-0011, US-0012, US-0013, US-0014, US-0015, US-0016
+**Stories:** US-0001, US-0002, US-0003, US-0004, US-0005, US-0006, US-0007, US-0008, US-0009, US-0010, US-0011, US-0012, US-0013, US-0014, US-0015, US-0016, US-0017, US-0018, US-0019, US-0020
 
-**Status (2026-11-15):** ✅ US-0001–US-0012 released (v0.2.3–v0.2.5). ✅ US-0013–US-0014 done, for v0.2.6. 🚧 US-0015 in progress, for v0.2.6. 📋 US-0016 planned for v0.2.6. Each story names its release.
+**Status (2026-11-15):** ✅ US-0001–US-0020 released (v0.2.3–v0.2.6). Each story names its release.
 
 ---
 
@@ -200,7 +200,7 @@
   - **Checked** in the built app with screenshots of every view and settings section.
 - **Dependencies:** US-0410, US-0603
 
-**US-0013: The intent list and the detail count the same stages** ✅ Done, for v0.2.6
+**US-0013: The intent list and the detail count the same stages** ✅ Released in v0.2.6
 - As a **developer reading an intent's progress**, in order to **trust the numbers**, I would like to **see the same count in the intent list and in the intent's detail**.
 - **Epic:** EPIC-00
 - **Priority:** Medium
@@ -215,7 +215,7 @@
   - **Tests.** `tests/main/parsers.test.js` (1 new). The fixture's `[S]` observability-setup now leaves the totals one lower in two tests.
 - **Dependencies:** US-0102, US-0103
 
-**US-0014: The lifecycle rule prompt says how to replace an older rule** ✅ Done, for v0.2.6
+**US-0014: The lifecycle rule prompt says how to replace an older rule** ✅ Released in v0.2.6
 - As a **developer setting up or updating a project's feature docs**, in order to **have one story lifecycle rule, not two that drift apart**, I would like to **have the agent take out the older lifecycle rule when it saves the new one**.
 - **Epic:** EPIC-00
 - **Priority:** Medium
@@ -231,27 +231,97 @@
   - **This project.** The older Swedish lifecycle rule under `## Mandated` in `aidlc/spaces/default/memory/project.md` was taken out by hand. The new rule is saved under `## Corrections`.
 - **Dependencies:** US-0603
 
-**US-0015: The header shows the branch that is checked out now** 🚧 In progress, for v0.2.6
+**US-0015: The header shows the branch that is checked out now** ✅ Released in v0.2.6
 - As a **developer switching branches in the terminal**, in order to **know which branch the app is showing me**, I would like to **see the current branch in the header, also after I switch outside the app**.
 - **Epic:** EPIC-00
 - **Priority:** High
 - **Complexity:** Low
 - **Background:** Reported 2026-11-15 with a screenshot: after `git switch main` in a terminal, the header still read `FIX/US-0014` while the views already showed `main`'s files, so the lifecycle rule notice looked wrong.
 - **Acceptance Criteria:**
-  - [ ] **Given** the project is open, **when** the branch is switched outside the app, **then** the header shows the new branch within a few seconds, without reopening the project.
-  - [ ] **Given** a detached HEAD, **then** the header says so instead of showing an old branch name.
-  - [ ] The notices and views that read files from the project refresh with the branch.
-- **Notes:** The branch comes from `getGitStatus()` in `src/main/git.js`. Watching `.git/HEAD` is likely enough.
+  - [x] **Given** the project is open, **when** the branch is switched outside the app, **then** the header shows the new branch within a few seconds, without reopening the project.
+  - [x] **Given** a detached HEAD, **then** the header says so instead of showing an old branch name.
+  - [x] The notices and views that read files from the project refresh with the branch.
+- **Notes:**
+  - **Where.** `watchGitHead()` in `src/main/ipc.js` watches `.git/HEAD` and sends `git:headChanged`; the header in `src/renderer/App.jsx` reads the branch again on it and shows `app.detached` for a detached HEAD.
+  - **Views.** The feature docs, the lifecycle notice and the intents already reload from their own file watchers when a switch changes the files.
+  - **Ceiling.** A project below the repo root, or opened from a worktree (where `.git` is a file), has no `.git/HEAD` to watch; its label stays as first read (`ponytail:` comment).
+  - **Tests.** `tests/main/ipc.test.js` and `tests/renderer/AppShell.test.jsx` (1 new each).
 - **Dependencies:** US-0502
 
-**US-0016: An older lifecycle rule in other words counts as older, not missing** 📋 Planned, for v0.2.6
+**US-0016: An older lifecycle rule in other words counts as older, not missing** ✅ Released in v0.2.6
 - As a **developer with an older story lifecycle rule in the project's memory**, in order to **be told the rule needs updating rather than that it is missing**, I would like to **have an untagged lifecycle rule recognised even when it does not use all three status markers**.
 - **Epic:** EPIC-00
 - **Priority:** Low
 - **Complexity:** Low
 - **Background:** Reported 2026-11-15. `main`'s `project.md` holds an untagged Swedish lifecycle rule with 🚧 and ✅ but no 📋, so the app said "no story lifecycle rule" instead of "out of date".
 - **Acceptance Criteria:**
-  - [ ] **Given** an untagged rule that names 🚧 and ✅, **then** the status is 'older', and the notice says the rule is out of date.
-  - [ ] **Given** no lifecycle rule at all, **then** the status stays 'missing'.
-- **Notes:** The fallback in `ruleStatus()` in `src/main/parsers/releases.js` requires 📋, 🚧 and ✅.
+  - [x] **Given** an untagged rule that names 🚧 and ✅, **then** the status is 'older', and the notice says the rule is out of date.
+  - [x] **Given** no lifecycle rule at all, **then** the status stays 'missing'.
+- **Notes:**
+  - **Where.** `ruleStatus()` in `src/main/parsers/releases.js`: an untagged rule now counts as 'older' when it names 🚧 and ✅; 📋 is no longer required. A memory file with no lifecycle markers at all stays 'missing'.
+  - **Tests.** `tests/main/releases.test.js` (1 new).
 - **Dependencies:** US-0603, US-0014
+
+**US-0017: Only the first terminal tab has the LCARS bow** ✅ Released in v0.2.6
+- As a **developer who turns on a second agent tool in a project**, in order to **see the terminal arm drawn as one LCARS frame**, I would like to **have the rounded bow only on the first tab, not on the second agent tab**.
+- **Epic:** EPIC-00
+- **Priority:** Medium
+- **Complexity:** Low
+- **Background:** Reported 2026-11-15 with a screenshot, right after switching opencode on: the arm beside the terminal showed CLAUDE with the bow, then OPENCODE with a bow of its own, then SHELL as a plain block. "There should be no bow if it is the second AI agent. Only the first one should have a bow."
+- **Acceptance Criteria:**
+  - [x] **Given** two agent tabs (for example Claude and opencode) and the shell tab, **then** only the first tab in the arm has the bow; the second agent tab and the shell tab are plain blocks.
+  - [x] **Given** the second agent tab is the open one, **then** it gets the open colour but still no bow; the first tab keeps its bow.
+  - [x] The same holds with Codex or Kiro as the second tool, and with one agent tab after the second tool is turned off again.
+- **Notes:**
+  - **Where.** `src/renderer/theme.css`: the bow and the taller block moved from `.term-tab--agent` to `.term-tab:first-child`, so every later tab is a plain block whatever its tool.
+  - **Tests.** `tests/main/theme.test.js` (1 new).
+- **Dependencies:** US-0801, US-0403
+
+**US-0018: The latest agent message stays out of the way** ✅ Released in v0.2.6
+- As a **developer with the terminal open**, in order to **keep the LCARS frame on screen**, I would like to **see the latest agent message only when the terminal is hidden, on one line above it**.
+- **Epic:** EPIC-00
+- **Priority:** High
+- **Complexity:** Low
+- **Background:** Reported 2026-11-15 with screenshots, in v0.2.5: the latest-message line (US-0506) sat below the frame in the bottom-left corner, wrapped word by word, and pushed the whole frame up and out of the window. "We need to be careful with the space… only show notifications like this if the terminal is hidden."
+- **Acceptance Criteria:**
+  - [x] **Given** the terminal is open, **then** the latest-message line is not shown; the terminal already shows the agent's reply.
+  - [x] **Given** the terminal is hidden, **then** the line shows on one row across the frame, just above the hidden terminal, cut with an ellipsis when too long, and the frame keeps its size.
+  - [x] **Given** no message yet, **then** nothing is shown (no "no message yet" line).
+  - [x] **Given** the agent dialog holds one item, **then** it shows no Previous, position or Next; the separate "Message" label above the title is gone (the title already says it).
+  - [x] The suite passes inside the app's own terminal and in a checkout where the app's hooks are installed.
+- **Notes:**
+  - **Where.** The line had no place in the app's grid and no styles, so it fell into a new row under the left arm. `src/renderer/LatestMessageStrip.jsx` reads the terminal's open state; `src/renderer/theme.css` gives it a `msg` row that is dropped when the line is not shown. `src/renderer/AgentDialog.jsx` pages only with more than one item.
+  - **Tests.** `tests/renderer/LatestMessageStrip.test.jsx` (2 new, 1 changed), `tests/main/theme.test.js` (1 new), `tests/renderer/AgentDialog.test.jsx` (1 new), `AgentDialogReply.test.jsx`, `AppShell.test.jsx`. `tests/main/opencodePlugin.test.js` unsets the app's session variables for its no-session case; `tests/helpers/agentHooksFixtures.js` takes the app's own hook entries out of the repository copy.
+- **Dependencies:** US-0506
+
+**US-0019: No "two agents at once" notice under the terminal** ✅ Released in v0.2.6
+- As a **developer with two agent tabs**, in order to **not be alarmed by a guess**, I would like to **have the "two agents are working at once" line removed**.
+- **Epic:** EPIC-00
+- **Priority:** Medium
+- **Complexity:** Low
+- **Background:** Reported 2026-11-15 with a screenshot: the line stayed under the terminal while only Claude worked. The app guesses "busy" from when a tab last printed, so a redraw in the idle opencode tab was enough. "It is confusing to the user."
+- **Acceptance Criteria:**
+  - [x] **Given** two agent tabs that both count as busy, **then** no notice shows and the terminal keeps its height.
+- **Notes:**
+  - **Where.** `src/renderer/TerminalPanel.jsx`: `useTwoBusyWarning` and the notice removed; the `terminal.twoAgents` text removed from both locales.
+  - **Tests.** `tests/renderer/TerminalPanel.test.jsx` (1 changed).
+- **Dependencies:** US-0803
+
+**US-0020: A leaner agent dialog** ✅ Released in v0.2.6
+- As a **developer getting the agent's messages in the app**, in order to **read and answer them at a glance**, I would like to **see less text and fewer controls, and have Send close the dialog**.
+- **Epic:** EPIC-00
+- **Priority:** High
+- **Complexity:** Low
+- **Background:** Reported 2026-11-15 with screenshots: every message showed its whole text, an answer field, Open the terminal and Close; choice names and descriptions ran together ("Tag v0.2.6 nowSet the tag…"); the title had an orange focus box. "Show less and have less options… the send button should close the dialog (animated) and we do not always need an input." Agreed in a dialog: as proposed.
+- **Acceptance Criteria:**
+  - [x] **Given** a message of several paragraphs, **then** only the last one shows, with Show all for the rest.
+  - [x] **Given** a message whose last paragraph does not end with a question mark, **then** there is no answer field and no Send, only Close.
+  - [x] **Given** a message that asks something, **when** the answer is sent and taken, **then** the dialog closes, folding shut with full motion.
+  - [x] A message has no Open the terminal button; questions and permissions keep it as their way out.
+  - [x] A choice's description stands on its own line under its name.
+  - [x] The title has no focus box when the dialog opens.
+- **Notes:**
+  - **Where.** `src/renderer/ReplyPage.jsx` (`replyParts`, the field only for a question, `onSent`), `src/renderer/AgentDialog.jsx` (Send closes; Open the terminal only off messages), `src/renderer/theme.css` (choice description, title focus, the fold under full motion), `agentDialog.reply.showAll` in both locales.
+  - **Tests.** `tests/renderer/AgentDialogReply.test.jsx` (6 new, 1 changed), `tests/main/theme.test.js` (3 new).
+  - **Open.** A question answered in the terminal was still shown in the dialog once (19:3x, 2026-11-15); not reproduced yet, the answered hook should end it.
+- **Dependencies:** US-0506, US-0018

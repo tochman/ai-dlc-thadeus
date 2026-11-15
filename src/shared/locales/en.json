@@ -45,6 +45,7 @@
     "setup": "Setup",
     "features": "Features",
     "branch": "Branch",
+    "detached": "No branch (detached HEAD)",
     "noProject": "No project",
     "fullscreen": "Full screen",
     "leaveFullscreen": "Leave full screen",
@@ -334,7 +335,6 @@
     "notInstalled": "AI-DLC is not installed for {harness} in this project, so nothing was started.",
     "pending": "Waiting for your Enter",
     "pendingHint": "{tab}: typed by the app. Nothing runs until you press Enter.",
-    "twoAgents": "Two agents are working at once on this project's active work, so they are changing the same records.",
     "noTab": "The terminal tab {tab} does not exist.",
     "cannotStart": "{name} could not be started.",
     "cannotRestart": "{name} could not be restarted.",
@@ -995,6 +995,7 @@
       "empty": "{harness} finished its turn without a message.",
       "truncated": "Shortened at 64 KB. The full text is in the terminal.",
       "answer": "Your answer",
+      "showAll": "Show all",
       "sent": "Sent to {harness} as typed, followed by Enter.",
       "copy": "Copy",
       "stale": {
@@ -1125,7 +1126,6 @@
   },
   "latestMessage": {
     "label": "Latest message from the agent",
-    "none": "No message from the agent yet",
     "answer": "Answer",
     "show": "Show",
     "answered": "(answered)",

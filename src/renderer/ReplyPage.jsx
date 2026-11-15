@@ -32,20 +32,39 @@ export function sendable(text) {
   return line.trim() !== '' && utf8Bytes(line) <= MAX_LINE_BYTES;
 }
 
-export default function ReplyPage({ ev, harnessLabel, keysRef, guarded }) {
+/**
+ * US-0020: the message split for the dialog. Only the last paragraph is shown at first (usually the part that asks
+ * something); a message asks something when that paragraph ends with a question mark.
+ */
+export function replyParts(message) {
+  const paragraphs = message.empty
+    ? []
+    : cleanBody(message.text)
+        .trim()
+        .split(/\n\s*\n/);
+  const last = paragraphs.at(-1) ?? '';
+  return { last, more: paragraphs.length > 1, asks: /[?？]\s*$/.test(last) };
+}
+
+export default function ReplyPage({ ev, harnessLabel, keysRef, guarded, onSent }) {
   const { t } = useTranslation();
   const [text, setText] = useState('');
   const [localError, setLocalError] = useState(null);
+  const [all, setAll] = useState(false);
   keysRef.current = null; // a question page's digit keys must never act on a reply
   const open = ev.state === 'shown';
   const canSend = open && sendable(text);
+  const parts = replyParts(ev.message);
 
   function send() {
     if (guarded() || !canSend) return; // review fix 1: nothing typed for something else answers
     const bridge = agentBridge();
     bridge?.stamp?.(ev.eventId, 'answerClicked'); // before the call (OD5)
     setLocalError(null);
-    bridge?.answer(ev.eventId, { reply: { text } }).catch((err) => setLocalError(errorText(err)));
+    bridge
+      ?.answer(ev.eventId, { reply: { text } })
+      .then(() => onSent?.()) // US-0020: a taken answer closes the dialog
+      .catch((err) => setLocalError(errorText(err)));
   }
   function copy() {
     navigator.clipboard?.writeText(text).catch((err) => console.warn('Texten kunde inte kopieras:', errorText(err)));
@@ -59,29 +78,40 @@ export default function ReplyPage({ ev, harnessLabel, keysRef, guarded }) {
 
   return (
     <div data-testid="agent-dialog-reply">
-      <ReplyMessage message={ev.message} harnessLabel={harnessLabel} />
-      <form
-        className="question-popup-own"
-        onSubmit={(e) => {
-          e.preventDefault();
-          send();
-        }}
-      >
-        <input
-          type="text"
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-          placeholder={t('agentDialog.reply.answer')}
-          aria-label={t('agentDialog.reply.answer')}
-          disabled={!open}
-          data-autofocus
-          data-testid="agent-dialog-reply-text"
-        />
-        <button type="submit" className="btn btn-accent" disabled={!canSend} data-testid="agent-dialog-reply-send">
-          {t('agentDialog.send')}
-        </button>
-      </form>
-      {ev.state === 'stale' && (
+      {all || !parts.more ? (
+        <ReplyMessage message={ev.message} harnessLabel={harnessLabel} />
+      ) : (
+        <>
+          <FileContent rel="reply.md" content={parts.last} />
+          <button type="button" className="link" onClick={() => setAll(true)} data-testid="agent-dialog-reply-more">
+            {t('agentDialog.reply.showAll')}
+          </button>
+        </>
+      )}
+      {parts.asks && (
+        <form
+          className="question-popup-own"
+          onSubmit={(e) => {
+            e.preventDefault();
+            send();
+          }}
+        >
+          <input
+            type="text"
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            placeholder={t('agentDialog.reply.answer')}
+            aria-label={t('agentDialog.reply.answer')}
+            disabled={!open}
+            data-autofocus
+            data-testid="agent-dialog-reply-text"
+          />
+          <button type="submit" className="btn btn-accent" disabled={!canSend} data-testid="agent-dialog-reply-send">
+            {t('agentDialog.send')}
+          </button>
+        </form>
+      )}
+      {parts.asks && ev.state === 'stale' && (
         <div className="question-popup-own">
           <p className="question-popup-status" role="status" data-testid="agent-dialog-reply-stale">
             {t(`agentDialog.reply.stale.${ev.staleReason ?? 'movedOn'}`, { harness: harnessLabel })}
