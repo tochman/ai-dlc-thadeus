@@ -76,7 +76,7 @@ describe('Inställningar as a view in the content frame (EPIC-04 US-0405)', () =
     renderView();
 
     const view = screen.getByRole('region', { name: 'Inställningar' });
-    expect(within(view).getByRole('heading', { level: 2, name: 'Inställningar' })).toBeTruthy();
+    expect(within(view).queryByRole('heading', { level: 2, name: 'Inställningar' })).toBeNull(); // the header names it (US-0012)
     await waitFor(() => expect(document.activeElement).toBe(view)); // keyboard works without a click (NFR1)
 
     // US-0410: one tab at a time, so each section is rendered on its own tab.
@@ -241,10 +241,9 @@ describe('Inställningar as a view in the content frame (EPIC-04 US-0405)', () =
   it('closes with its button and with Escape, giving the content frame back (FR1.1)', async () => {
     stubBridge({ tools: TOOLS });
     const { onClose } = renderView();
-    fireEvent.click(screen.getByTestId('settings-view-close'));
-    expect(onClose).toHaveBeenCalledTimes(1);
+    expect(screen.queryByTestId('settings-view-close')).toBeNull(); // no Close button (US-0012)
     fireEvent.keyDown(screen.getByTestId('settings-view'), { key: 'Escape' });
-    expect(onClose).toHaveBeenCalledTimes(2);
+    expect(onClose).toHaveBeenCalledTimes(1);
   });
 });
 

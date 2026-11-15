@@ -48,7 +48,7 @@ export default function AgentHooksSection({ projectId, focus = false }) {
   const word = (status) => t(`agentHooks.status.${status}`);
   return (
     <fieldset ref={ref} tabIndex={-1} className="settings-group" data-testid="agent-hooks-section">
-      <legend>{t('agentHooks.section.title')}</legend>
+      <legend className="sr-only">{t('agentHooks.section.title')}</legend>
       <span className="muted">{t('agentHooks.section.help')}</span>
       {!harnesses && <p className="muted">{t('agentHooks.section.pending')}</p>}
       {harnesses?.map((h) => (

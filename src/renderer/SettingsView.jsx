@@ -57,22 +57,22 @@ function ErrorLine({ error }) {
  * The panel of one tab in its LCARS frame (US-0410 FR3.1, FR6.1): the shared card with an elbow, a header strip with
  * the tab's name and a dark body. On Full the frame sweeps and the rows cascade in (FR3.2); otherwise no motion class.
  */
-function Section({ id, motion, children }) {
+export function Section({ id, motion, title, children }) {
   const { t } = useTranslation();
   const moving = motion === 'full' ? ' settings-frame--sweep settings-cascade' : '';
   return (
     <section className={`lcars-card settings-frame${moving}`} aria-labelledby={`settings-section-${id}`} data-testid={`settings-view-${id}`}>
       <header className="lcars-card-head">
         <span className="settings-frame-elbow" aria-hidden="true" />
-        <h2 id={`settings-section-${id}`}>{t(`settings.sections.${id}`)}</h2>
+        <h2 id={`settings-section-${id}`}>{title ?? t(`settings.sections.${id}`)}</h2>
       </header>
       <div className="lcars-card-body">{children}</div>
     </section>
   );
 }
 
-/** LCARS radio blocks: a label.lcars-block around a visually hidden radio. */
-function RadioBlocks({ name, ids, labelKey, value, onPick }) {
+/** LCARS radio blocks: a label.lcars-block around a visually hidden radio. Shared with the project settings (US-0012). */
+export function RadioBlocks({ name, ids, labelKey, value, onPick, testIdPrefix }) {
   const { t } = useTranslation();
   return (
     <div className="lcars-radio-group">
@@ -84,7 +84,7 @@ function RadioBlocks({ name, ids, labelKey, value, onPick }) {
             name={`app-${name}`}
             checked={value === id}
             onChange={() => onPick(id)}
-            data-testid={`app-settings-${name}-${id}`}
+            data-testid={`${testIdPrefix ?? `app-settings-${name}`}-${id}`}
           />
           {t(`${labelKey}.${id}`)}
         </label>
@@ -351,7 +351,7 @@ function Project({ motion, onReload, settings, recentProjects = [], onRemoveRece
               </code>
               <button
                 type="button"
-                className="btn btn-quiet"
+                className="btn"
                 aria-label={t('settings.recent.remove', { path: dir })}
                 onClick={() => onRemoveRecent?.(dir)}
                 data-testid="settings-recent-remove"
@@ -370,7 +370,7 @@ function Project({ motion, onReload, settings, recentProjects = [], onRemoveRece
           {projects.map((p) => (
             <li key={p.projectId} data-testid="settings-project-item">
               <span>{p.name}</span>
-              {/* The per-project settings stay in their own dialog, reached from here (FR4.3, FR6.2). */}
+              {/* Each open project's settings live in its Configuration view, reached from here (FR4.3, US-0012). */}
               <button
                 type="button"
                 className="btn"
@@ -499,20 +499,13 @@ export default function SettingsView({ onClose, tab = 'tools', animations = 'ful
       ref={ref}
       tabIndex={-1}
       role="region"
-      aria-labelledby="settings-view-title"
+      aria-label={t('settings.title')}
       data-testid="settings-view"
       onKeyDown={(e) => {
         if (e.key === 'Escape') onClose(); // closes like the arm's block; no modal here (FR1.1)
       }}
     >
-      <div className="settings-view-head">
-        <h2 id="settings-view-title" className="settings-view-title">
-          {t('settings.title')}
-        </h2>
-        <button type="button" className="btn" onClick={onClose} data-testid="settings-view-close">
-          {t('common.close')}
-        </button>
-      </div>
+      {/* No Close button (US-0012): any view block in the arm, or Esc, leaves Settings. */}
       {/* The key remounts the panel on a tab change, so its motion runs again (FR3.2). */}
       <Panel key={tab} motion={animations} animations={animations} settings={settings} onReload={loadSettings} {...rest} />
       <ErrorLine error={error} />

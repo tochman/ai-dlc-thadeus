@@ -345,7 +345,36 @@
     "status": {
       "planned": "Planned",
       "progress": "In progress",
-      "done": "Done"
+      "done": "Done",
+      "deployed": "Deployed"
+    },
+    "delivery": {
+      "releases": "Releases",
+      "continuous": "Continuous deployment"
+    },
+    "release": {
+      "label": "Release",
+      "none": "None",
+      "releasedIn": "Released in {version}",
+      "conflict": "{file} changed on disk since it was read, so nothing more was written. Try again once the view has reloaded.",
+      "failed": "The release could not be set: {error}",
+      "stale": "Tag {version} exists, but the story is still marked “for {version}”.",
+      "noStory": "{id} was not found in the feature docs.",
+      "released": "{id} is already released in {version} and cannot be marked for another release."
+    },
+    "releases": {
+      "title": "Releases",
+      "empty": "No releases yet. Mark a story for a release, or tag one.",
+      "planned": "Planned",
+      "releasedOn": "Released {date}",
+      "released": "Released",
+      "storyCount": "{n, plural, one {# story} other {# stories}}"
+    },
+    "rule": {
+      "missing": "This project's AI-DLC memory has no story lifecycle rule for {delivery}.",
+      "older": "This project's story lifecycle rule is an older version. Update it for {delivery}.",
+      "other": "This project's story lifecycle rule is for the other delivery setting. Update it for {delivery}.",
+      "run": "Type the request into the agent tab"
     },
     "unknownStatus": "Unknown status",
     "emptyTitle": "No feature docs",
@@ -383,7 +412,9 @@
     },
     "prompt": {
       "format": "Create feature docs for this project from what is already there (README, code, documentation): docs/FEATURES.md with a short introduction and a table with one row per epic (link, topic, status), and one file per epic in docs/features/epic-XX-<slug>.md with a description, a line **Stories:**, a line **Status (date):** and stories such as **US-XXYY: Title** <status> followed by As a / in order to / I would like to, Epic, Priority, Complexity, Acceptance Criteria as checkboxes in the form Given/When/Then, Notes and Dependencies. Status markers: 📋 Planned, 🚧 In progress, ✅ Done (merged; add \"Released in vX.Y.Z\" when released). Order the epics by topic, not by release.",
-      "rule": "Also add a project rule through AI-DLC's own way of saving rules, not by editing the memory files directly, so every AI tool in the project (Claude Code, opencode and the others) follows it: a new story the person describes goes into the right epic file right away; when work on a story starts, set it to 🚧 In progress in its status marker, the epic's **Status (…)** line and its FEATURES.md row; when it is built and approved, set it to ✅ Done and tick its met acceptance criteria; as soon as the release it goes into is known, write it out (\"for vX.Y.Z\", and \"Released in vX.Y.Z\" when the tag is cut); a delivered story never stays in progress.",
+      "rule": "Also add a project rule through AI-DLC's own way of saving rules, not by editing the memory files directly, so every AI tool in the project (Claude Code, opencode and the others) follows it: a new story the person describes goes into the right epic file right away; when work on a story starts, set it to 🚧 In progress in its status marker, the epic's **Status (…)** line and its FEATURES.md row; when it is built and approved, set it to ✅ Done and tick its met acceptance criteria; as soon as the release it goes into is known, write it out (\"for vX.Y.Z\", and \"Released in vX.Y.Z\" when the tag is cut); a delivered story never stays in progress. If the project already has a story lifecycle rule, replace it with this one. End the rule with {tag}, exactly as written, so the app can tell which rule it is.",
+      "ruleContinuous": "Also add a project rule through AI-DLC's own way of saving rules, not by editing the memory files directly, so every AI tool in the project (Claude Code, opencode and the others) follows it: a new story the person describes goes into the right epic file right away; when work on a story starts, set it to 🚧 In progress in its status marker, the epic's **Status (…)** line and its FEATURES.md row; when it is built and approved, set it to ✅ Done and tick its met acceptance criteria; when it is deployed, set it to 🚀 Deployed in the same three places; a delivered story never stays in progress. If the project already has a story lifecycle rule, replace it with this one. End the rule with {tag}, exactly as written, so the app can tell which rule it is.",
+      "update": "The story lifecycle rule in this project's AI-DLC memory is missing or out of date. {rule}",
       "exists": "The project already has feature docs in {path} (an overview and one file per epic). {rule}"
     }
   },
@@ -530,7 +561,10 @@
     },
     "update": {
       "cleanup": "Delete the downloaded package after updating",
-      "cleanupOption": { "on": "On", "off": "Off" }
+      "cleanupOption": {
+        "on": "On",
+        "off": "Off"
+      }
     },
     "about": {
       "version": "App version {version}",
@@ -544,6 +578,11 @@
       "title": "Project settings",
       "titleFor": "Project settings: {name}",
       "featureDocsLegend": "Feature docs",
+      "deliveryLegend": "How the project ships",
+      "deliveryHelp": {
+        "releases": "Stories are marked for a release and listed per release.",
+        "continuous": "Every merge is deployed; stories end at 🚀 Deployed."
+      },
       "mode": {
         "auto": "Automatic",
         "show": "Show",
@@ -565,7 +604,13 @@
       "harnessSwitchConfirm": "{from} is working. Switching to {to} closes the session. Switch anyway?",
       "addHarness": "Add harness…",
       "installedHarnesses": "Installed: {list}",
-      "openConfig": "Show the AI-DLC configuration"
+      "sections": {
+        "docs": "Feature docs",
+        "agent": "Agent",
+        "aidlc": "AI-DLC"
+      },
+      "saved": "Saved.",
+      "reset": "Reset"
     }
   },
   "config": {
@@ -706,8 +751,14 @@
         "name": "Plan approval",
         "protects": "Code Generation waits for your approval of its plan before it writes code."
       },
-      "AIDLC_DISABLE_REVIEW_FREEZE_HOOK": { "name": "Review freeze", "protects": "Files under review can't be changed until the review is done." },
-      "AIDLC_DISABLE_REVIEWER_SCOPE_HOOK": { "name": "Reviewer read scope", "protects": "A reviewer reads only what it was asked to review." },
+      "AIDLC_DISABLE_REVIEW_FREEZE_HOOK": {
+        "name": "Review freeze",
+        "protects": "Files under review can't be changed until the review is done."
+      },
+      "AIDLC_DISABLE_REVIEWER_SCOPE_HOOK": {
+        "name": "Reviewer read scope",
+        "protects": "A reviewer reads only what it was asked to review."
+      },
       "AIDLC_DISABLE_SUMMARY_CONFIRMATION": {
         "name": "Summary confirmation",
         "protects": "AI-DLC asks you to confirm its summary of a stage before it moves on."
@@ -716,10 +767,22 @@
         "name": "Summary confirmation check",
         "protects": "A stage can't close until its summary was really confirmed."
       },
-      "AIDLC_SKIP_HUMAN_PRESENCE_GUARD": { "name": "Human presence", "protects": "An approval counts only when a person gave it." },
-      "AIDLC_SKIP_ARTIFACT_GUARD": { "name": "Stage output", "protects": "A stage can't be completed without the files it must produce." },
-      "AIDLC_SKIP_REVISION_BACKSTOP": { "name": "Revision backstop", "protects": "A stage can't be revised again and again without a person deciding." },
-      "AIDLC_DISABLE_ENSEMBLE_EVIDENCE": { "name": "Pipeline handoff", "protects": "Work handed from one agent to the next must carry its evidence." }
+      "AIDLC_SKIP_HUMAN_PRESENCE_GUARD": {
+        "name": "Human presence",
+        "protects": "An approval counts only when a person gave it."
+      },
+      "AIDLC_SKIP_ARTIFACT_GUARD": {
+        "name": "Stage output",
+        "protects": "A stage can't be completed without the files it must produce."
+      },
+      "AIDLC_SKIP_REVISION_BACKSTOP": {
+        "name": "Revision backstop",
+        "protects": "A stage can't be revised again and again without a person deciding."
+      },
+      "AIDLC_DISABLE_ENSEMBLE_EVIDENCE": {
+        "name": "Pipeline handoff",
+        "protects": "Work handed from one agent to the next must carry its evidence."
+      }
     },
     "lock": {
       "title": "Guard Policy lock",
@@ -742,7 +805,11 @@
       "keep": "keep",
       "preset": "Preset for all agents",
       "group": "Group effort",
-      "groups": { "deciding": "Deciding", "reviewing": "Reviewing", "writing-up": "Writing up" },
+      "groups": {
+        "deciding": "Deciding",
+        "reviewing": "Reviewing",
+        "writing-up": "Writing up"
+      },
       "estimate": "Cost on this project's ledger, estimate: {before} → {after} ({delta}).",
       "noEstimate": "No cost estimate: the ledger has no price for that model, or the change sets only effort.",
       "check": "Check agent files",
@@ -842,6 +909,7 @@
     "fileTypeBlocked": "This file type is not opened from the app: {rel}",
     "projectRootMissing": "The project root is missing",
     "unknownFeatureDocs": "Unknown value for feature docs: {value}",
+    "unknownDelivery": "Unknown delivery setting: {value}",
     "invalidFeaturesPath": "Invalid path: {path}. It must be relative, end in .md and be inside the project.",
     "invalidName": "Invalid {what} name: {name}",
     "notAidlc": "The folder has no aidlc/spaces/ and is not an AI-DLC project.",

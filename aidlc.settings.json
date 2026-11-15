@@ -8,6 +8,11 @@
           "claude": "opus"
         }
       },
+      "delivery": {
+        "model": {
+          "claude": "sonnet"
+        }
+      },
       "pipeline-deploy": {
         "model": {
           "claude": "haiku"

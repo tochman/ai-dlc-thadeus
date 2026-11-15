@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it } from 'vitest';
 import i18n from '../../src/shared/i18n.js';
-import { featureDocsPrompt } from '../../src/renderer/featureDocsPrompt.js';
+import { featureDocsPrompt, lifecycleRulePrompt } from '../../src/renderer/featureDocsPrompt.js';
+import { lifecycleTag } from '../../src/main/parsers/releases.js';
 
 afterEach(() => i18n.changeLanguage('sv'));
 
@@ -18,6 +19,23 @@ describe('feature-docs prompt carries the story lifecycle rule', () => {
         expect(prompt).toMatch(/opencode/);
         expect(prompt).not.toMatch(/\n/); // a newline would send it in the terminal
       }
+    });
+  }
+
+  for (const lang of ['sv', 'en']) {
+    it(`the rule follows the delivery setting and ends with its tag, also in the setup prompt (US-0603 FR5.1, ${lang})`, async () => {
+      await i18n.changeLanguage(lang);
+      const releases = lifecycleRulePrompt('releases');
+      const continuous = lifecycleRulePrompt('continuous');
+      expect(releases).toContain(lifecycleTag('releases'));
+      expect(releases).toContain('Released in vX.Y.Z');
+      expect(releases).not.toContain('🚀');
+      expect(continuous).toContain(lifecycleTag('continuous'));
+      expect(continuous).toContain('🚀 Deployed');
+      expect(continuous).not.toContain('for vX.Y.Z');
+      for (const p of [releases, continuous]) expect(p).not.toMatch(/\n/);
+      expect(featureDocsPrompt({ exists: true })).toContain(lifecycleTag('releases'));
+      expect(featureDocsPrompt({ exists: false, delivery: 'continuous' })).toContain(lifecycleTag('continuous'));
     });
   }
 

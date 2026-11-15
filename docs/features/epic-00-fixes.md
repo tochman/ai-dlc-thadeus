@@ -6,9 +6,9 @@
 
 > Small fixes the person reports while using the app: something looks off, behaves wrongly or is missing a detail. Each fix becomes a story here, so nothing reported in passing gets lost. A fix that grows into a feature moves to its topic's epic.
 
-**Stories:** US-0001, US-0002, US-0003, US-0004, US-0005, US-0006, US-0007, US-0008, US-0009, US-0010, US-0011
+**Stories:** US-0001, US-0002, US-0003, US-0004, US-0005, US-0006, US-0007, US-0008, US-0009, US-0010, US-0011, US-0012
 
-**Status (2026-11-15):** ✅ US-0001 released in v0.2.3 (epic badge). ✅ US-0002 released in v0.2.3 (busy tab alignment). ✅ US-0003 released in v0.2.3 (lifecycle rule for every harness). ✅ US-0004 released in v0.2.3 (a popup answer reaches the agent once). ✅ US-0005 released in v0.2.3 (Resume waits while the work runs). ✅ US-0006 released in v0.2.4 (popup answers reach Claude Code's real picker). ✅ US-0007 released in v0.2.4 (Resume stays disabled while an agent session runs the work). ✅ US-0008 released in v0.2.4 (the token wave shows from the first reading). ✅ US-0009 released in v0.2.4 (Resume waits while an agent outside the app runs the work). ✅ US-0010 for v0.2.5 (timing tests stop failing under load). ✅ US-0011 for v0.2.5 (no false Mismatch on a stage built unit by unit).
+**Status (2026-11-15):** ✅ US-0001 released in v0.2.3 (epic badge). ✅ US-0002 released in v0.2.3 (busy tab alignment). ✅ US-0003 released in v0.2.3 (lifecycle rule for every harness). ✅ US-0004 released in v0.2.3 (a popup answer reaches the agent once). ✅ US-0005 released in v0.2.3 (Resume waits while the work runs). ✅ US-0006 released in v0.2.4 (popup answers reach Claude Code's real picker). ✅ US-0007 released in v0.2.4 (Resume stays disabled while an agent session runs the work). ✅ US-0008 released in v0.2.4 (the token wave shows from the first reading). ✅ US-0009 released in v0.2.4 (Resume waits while an agent outside the app runs the work). ✅ US-0010 for v0.2.5 (timing tests stop failing under load). ✅ US-0011 for v0.2.5 (no false Mismatch on a stage built unit by unit). ✅ US-0012 for v0.2.5 (one way to move between panels, LCARS settings).
 
 ---
 
@@ -180,3 +180,22 @@
   - **Where.** `unitTimes()` in `src/main/parsers/runtimeGraph.js`.
   - **Tests.** `tests/main/parsers.test.js` (1 new).
 - **Dependencies:** US-0506
+
+**US-0012: One way to move between panels, and settings that look like the rest of the app** ✅ Done, for v0.2.5
+- As a **developer using the console every day**, in order to **find every setting in one place and move between panels the same way everywhere**, I would like to **have one navigation pattern and LCARS-styled settings**.
+- **Epic:** EPIC-00
+- **Priority:** Medium
+- **Complexity:** Medium
+- **Background:** Reported 2026-11-15: "I am not happy with how these views look … I need the navigation between panels to be consistent and cohesive", and "part of the interface elements are not very LCARS".
+- **Acceptance Criteria:**
+  - [x] A view's sections are picked in the left arm, indented under the view's block, in every view: Settings (Tools … About), Features (Epics | Releases) and Configuration.
+  - [x] A project's settings are its Configuration view, with the sections Feature docs, Agent and AI-DLC (the last only in an AI-DLC project). ⚙ on the project block, the menu and Settings › Project all open it; the modal dialog is gone.
+  - [x] Settings has no orange frame, no second title and no Close button; the header names the view, and any view block in the arm or Esc leaves it.
+  - [x] Choices are LCARS blocks, text fields are LCARS bars, and checkboxes are LCARS pills. Quiet buttons are dark blocks, not outlines. Frames and cards are solid-colour elbows, with no hairline borders.
+  - [x] The project notices at the top share one banner style: text on the left, actions on the right.
+  - [x] With a view's sections open, the arm still shows every block.
+  - [x] The fullscreen toggle is a small control in the header bar's light segment, like the quick commands in the terminal bar, not a large block; the segment turns steel while fullscreen is on.
+- **Notes:**
+  - **Where.** `src/renderer/ProjectSettingsView.jsx` (was `ProjectSettingsDialog.jsx`), `App.jsx` (`ArmSubtabs`), `ProjectView.jsx`, `FeaturesView.jsx`, `SettingsView.jsx`, `AgentHooksStrip.jsx`, `theme.css`.
+  - **Checked** in the built app with screenshots of every view and settings section.
+- **Dependencies:** US-0410, US-0603

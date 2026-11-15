@@ -1,4 +1,6 @@
-// Features view (EPIC-06 US-0602): epics and user stories from the project's feature docs. Read-only.
+// Features view (EPIC-06 US-0602): epics and user stories from the project's feature docs. Read-only, except a
+// story's release, which main writes as a "for vX.Y.Z" marker (US-0603 FR2). With the Releases delivery setting
+// the view also lists releases (US-0603 FR3); with Continuous deployment both are hidden (FR4.1).
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { FileContent } from './ArtifactReader.jsx';
@@ -6,10 +8,11 @@ import { useEditor } from './editor/EditorContext.jsx';
 import { Frame } from './Lcars.jsx';
 import { withSlots } from './format.js';
 import { STATUS_MARKER } from '../main/parsers/features.js';
+import { DELIVERY_DEFAULT, buildReleases, releaseOf, releaseOptions } from '../main/parsers/releases.js';
 
 const errorText = (err) => String(err?.message ?? err).replace(/^Error invoking remote method '[^']+': (Error: )?/, '');
-// Pågår is steel (active), Klar a light slate block, Planerad an outline (FR1.3).
-const STATUS_CLASS = { planned: 'tag', progress: 'tag tag-live', done: 'tag tag-done' };
+// Pågår is steel (active), Klar and Driftsatt a light slate block, Planerad an outline (FR1.3, US-0603 FR6).
+const STATUS_CLASS = { planned: 'tag', progress: 'tag tag-live', done: 'tag tag-done', deployed: 'tag tag-done' };
 const STATUSES = Object.keys(STATUS_MARKER);
 
 /** Status as marker and text, never colour alone (NFR3). */
@@ -81,10 +84,118 @@ function FileActions({ projectId, rel }) {
   );
 }
 
-function StoryDetail({ id, story, links, onOpenIntent }) {
+const isTagged = (tags, version) => (tags ?? []).some((tag) => tag.name === version);
+
+/** US-0603 FR7: a story still marked "for vX.Y.Z" when tag vX.Y.Z exists. */
+function StaleFlag({ version }) {
+  const { t } = useTranslation();
+  return (
+    <span className="tag-warn" role="note" data-testid="features-view-release-stale">
+      {t('features.release.stale', { version })}
+    </span>
+  );
+}
+
+/**
+ * US-0603 FR2.1–FR2.4: the story's release, as a picker of the planned and next versions and None. A released story
+ * shows its release and no picker. A refused or failed write is shown under it.
+ */
+function ReleasePicker({ projectId, features, epic, story }) {
+  const { t } = useTranslation();
+  const [error, setError] = useState(null);
+  const [busy, setBusy] = useState(false);
+  const { planned, released } = releaseOf(story.statusText);
+  if (released) return <p className="features-release">{t('features.release.releasedIn', { version: released })}</p>;
+  const options = releaseOptions(features.epics, features.tags);
+  if (planned && !options.includes(planned)) options.unshift(planned); // a stale marker still shows as chosen
+
+  async function pick(value) {
+    setBusy(true);
+    setError(null);
+    try {
+      const res = await window.bridge.setStoryRelease(projectId, {
+        storyId: story.id,
+        version: value || null,
+        epicHash: epic.hash,
+        overviewHash: features.overviewHash
+      });
+      if (res?.conflict) setError(t('features.release.conflict', { file: res.conflict }));
+    } catch (err) {
+      setError(t('features.release.failed', { error: errorText(err) }));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="features-release">
+      <label className="field">
+        <span className="field-label">{t('features.release.label')}</span>
+        <select
+          className="lcars-select"
+          value={planned ?? ''}
+          disabled={busy}
+          onChange={(e) => pick(e.target.value)}
+          data-testid="features-view-release-picker"
+        >
+          {options.map((v) => (
+            <option key={v} value={v}>
+              {v}
+            </option>
+          ))}
+          <option value="">{t('features.release.none')}</option>
+        </select>
+      </label>
+      {planned && isTagged(features.tags, planned) && <StaleFlag version={planned} />}
+      {error && (
+        <p className="refresh-error" role="alert">
+          {error}
+        </p>
+      )}
+    </div>
+  );
+}
+
+/** US-0603 FR3: every release from the markers and the tags, newest first; a story opens its detail (FR3.3). */
+function ReleasesView({ features, onOpenStory }) {
+  const { t } = useTranslation();
+  const releases = buildReleases(features.epics, features.tags);
+  if (releases.length === 0) return <p className="muted">{t('features.releases.empty')}</p>;
+  return (
+    <ul className="intent-rows" aria-label={t('features.releases.title')}>
+      {releases.map((r) => (
+        <li key={r.version} className="intent-row" data-testid="features-view-release">
+          <span className="intent-row-top">
+            <span className="intent-slug">{r.version}</span>
+            <span className={r.released ? 'tag tag-done' : 'tag'}>
+              {!r.released ? t('features.releases.planned') : r.date ? t('features.releases.releasedOn', { date: r.date }) : t('features.releases.released')}
+            </span>
+          </span>
+          <span className="muted">{t('features.releases.storyCount', { n: r.stories.length })}</span>
+          {r.stories.length > 0 && (
+            <ul className="features-release-stories">
+              {r.stories.map(({ epicId, story, stale }) => (
+                <li key={story.id}>
+                  <button className="btn btn-quiet" onClick={() => onOpenStory(epicId, story.id)}>
+                    {story.id}: {story.title}
+                  </button>{' '}
+                  <StatusBadge status={story.status} text={story.statusText} />
+                  {stale && <StaleFlag version={r.version} />}
+                </li>
+              ))}
+            </ul>
+          )}
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+function StoryDetail({ id, story, links, onOpenIntent, release }) {
   const { t } = useTranslation();
   return (
     <div id={id} className="file-view features-story" role="region" aria-label={story.id} data-testid="features-view-story-detail">
+      {release && <ReleasePicker {...release} story={story} />}
       {links.length > 0 && (
         <p className="features-links">
           <span className="field-label">{t('features.intents')}</span>
@@ -100,7 +211,8 @@ function StoryDetail({ id, story, links, onOpenIntent }) {
   );
 }
 
-function EpicDetail({ projectId, epic, links, storyId, setStoryId, onOpenIntent }) {
+/** `features`: given with the Releases delivery setting, so each story gets its release picker (US-0603 FR2). */
+function EpicDetail({ projectId, epic, links, storyId, setStoryId, onOpenIntent, features }) {
   const { t } = useTranslation();
   const [status, setStatus] = useState('');
   const [priority, setPriority] = useState('');
@@ -190,7 +302,13 @@ function EpicDetail({ projectId, epic, links, storyId, setStoryId, onOpenIntent 
                   </button>
                   {open && (
                     <div className="features-story-reveal">
-                      <StoryDetail id={`story-${s.id}`} story={s} links={links[s.id] ?? []} onOpenIntent={onOpenIntent} />
+                      <StoryDetail
+                        id={`story-${s.id}`}
+                        story={s}
+                        links={links[s.id] ?? []}
+                        onOpenIntent={onOpenIntent}
+                        release={features ? { projectId, features, epic } : null}
+                      />
                     </div>
                   )}
                 </li>
@@ -206,21 +324,44 @@ function EpicDetail({ projectId, epic, links, storyId, setStoryId, onOpenIntent 
 
 /**
  * @param {{projectId: string, features: object|null, links: Record<string, string[]>, focusStory?: {id: string}|null,
- *          onOpenIntent?: (dirName: string) => void, onSetup?: () => void}} props
+ *          delivery?: 'releases'|'continuous', onOpenIntent?: (dirName: string) => void, onSetup?: () => void,
+ *          tab?: 'epics'|'releases', onTab?: (id: string) => void}} props
+ *   tab, onTab: Epics | Releases, chosen in the left arm like every other section (US-0012)
  */
-export default function FeaturesView({ projectId, features, links = {}, focusStory = null, onOpenIntent, onSetup }) {
+export default function FeaturesView({
+  projectId,
+  features,
+  links = {},
+  focusStory = null,
+  delivery = DELIVERY_DEFAULT,
+  onOpenIntent,
+  onSetup,
+  tab = 'epics',
+  onTab
+}) {
   const { t } = useTranslation();
   const epics = features?.available ? features.epics : [];
   const [epicId, setEpicId] = useState(null);
   const [storyId, setStoryId] = useState(null);
+  const setTab = (id) => id !== tab && onTab?.(id); // Epics | Releases (US-0603 FR3.1)
+  const releases = delivery === 'releases';
+  const showReleases = releases && tab === 'releases';
 
   // A story link from an intent opens that story (FR2.6).
   useEffect(() => {
     const epic = focusStory && epics.find((e) => e.parsed?.stories.some((s) => s.id === focusStory.id));
     if (!epic) return;
+    setTab('epics');
     setEpicId(epic.id);
     setStoryId(focusStory.id);
   }, [focusStory, features]);
+
+  /** A story in the Releases view opens under its epic, as in the epic view (US-0603 FR3.3). */
+  function openStory(epic, story) {
+    setTab('epics');
+    setEpicId(epic);
+    setStoryId(story);
+  }
 
   if (!features)
     return (
@@ -282,11 +423,27 @@ export default function FeaturesView({ projectId, features, links = {}, focusSto
         </aside>
         <section className="content">
           <Frame>
-            <EpicDetail key={epic.id} projectId={projectId} epic={epic} links={links} storyId={storyId} setStoryId={setStoryId} onOpenIntent={onOpenIntent} />
+            <EpicDetail
+              key={epic.id}
+              projectId={projectId}
+              epic={epic}
+              links={links}
+              storyId={storyId}
+              setStoryId={setStoryId}
+              onOpenIntent={onOpenIntent}
+              features={releases ? features : null}
+            />
           </Frame>
         </section>
       </div>
     );
+    if (showReleases) {
+      body = (
+        <Frame>
+          <ReleasesView features={features} onOpenStory={openStory} />
+        </Frame>
+      );
+    }
   }
 
   return (

@@ -1,10 +1,13 @@
-// Reads the feature docs (EPIC-06) through the root-confined projectAccess. Read-only (FR4.6, NFR2).
+// Reads the feature docs (EPIC-06) through the root-confined projectAccess. Read-only (FR4.6, NFR2); the only
+// write, a story's release marker, is in releases.js and checks the hashes given here (US-0603 FR2.3).
+import { createHash } from 'node:crypto';
 import path from 'node:path';
 import { readText } from './projectAccess.js';
 import { DEFAULT_FEATURES_PATH, isValidFeaturesPath, parseEpic, parseOverview, storyIdsIn } from './parsers/features.js';
 import { t } from '../shared/i18n.js';
 
 const posix = path.posix;
+const sha256 = (text) => createHash('sha256').update(text, 'utf8').digest('hex');
 
 /** Epic link from the overview table -> root-relative path, or null for links that are not local files. */
 function epicPath(overviewRel, link) {
@@ -22,8 +25,9 @@ function epicPath(overviewRel, link) {
 
 /**
  * @returns {Promise<{available: false, overviewPath: string, reason?: string} |
- *   {available: true, overviewPath: string, overviewText: string, intro: string, epics: object[], warnings: string[]}>}
- *   each epic: the overview row plus `file` (root-relative) and `parsed` (parseEpic result or null)
+ *   {available: true, overviewPath: string, overviewText: string, overviewHash: string, intro: string, epics: object[], warnings: string[]}>}
+ *   each epic: the overview row plus `file` (root-relative), `parsed` (parseEpic result or null) and `hash` (sha256 of
+ *   the text read, or null; US-0603 FR2.3)
  */
 export async function loadFeatures(root, overviewRel = DEFAULT_FEATURES_PATH) {
   if (!isValidFeaturesPath(overviewRel)) {
@@ -46,17 +50,20 @@ export async function loadFeatures(root, overviewRel = DEFAULT_FEATURES_PATH) {
       continue;
     }
     let parsed = null;
+    let hash = null;
     if (target) {
       try {
-        parsed = parseEpic(await readText(root, target.rel));
+        const text = await readText(root, target.rel);
+        hash = sha256(text);
+        parsed = parseEpic(text);
       } catch (err) {
         const error = err.code === 'ENOENT' ? t('features.fileMissing') : err.message;
         warnings.push(t('features.epicFileUnreadable', { id: row.id, file: target.rel, error }));
       }
     }
-    epics.push({ ...row, file: target?.rel ?? null, parsed });
+    epics.push({ ...row, file: target?.rel ?? null, parsed, hash });
   }
-  return { available: true, overviewPath: overviewRel, overviewText, intro: overview.intro, epics, warnings };
+  return { available: true, overviewPath: overviewRel, overviewText, overviewHash: sha256(overviewText), intro: overview.intro, epics, warnings };
 }
 
 /** Paths to watch for one overview: the overview itself and the folders its epic files live in (FR2.7). */

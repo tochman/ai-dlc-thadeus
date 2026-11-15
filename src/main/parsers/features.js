@@ -5,12 +5,15 @@
 import { t } from '../../shared/i18n.js';
 
 export const DEFAULT_FEATURES_PATH = 'docs/FEATURES.md';
-export const STATUS_MARKER = { planned: '📋', progress: '🚧', done: '✅' };
+// 🚀 Deployed is the last status, after ✅ Done, for projects with continuous deployment (US-0603 FR4.2, FR6).
+export const STATUS_MARKER = { planned: '📋', progress: '🚧', done: '✅', deployed: '🚀' };
 const MARKERS = [
+  ['🚀', 'deployed'],
   ['✅', 'done'],
   ['🚧', 'progress'],
   ['📋', 'planned']
 ];
+const MARKER_RE = /[🚀✅🚧📋]/gu;
 
 /** Overview path from the settings: relative, ending in .md, without `..` segments (FR3.3, NFR2). */
 export function isValidFeaturesPath(p) {
@@ -32,12 +35,14 @@ export function statusOf(text) {
 
 /**
  * An epic's status from every marker in its overview cell, which lists one marker per story:
- * done only when all are ✅, planned when all are 📋, progress for any 🚧 or a mix, null without markers.
+ * done only when all are ✅ (or ✅ and 🚀, US-0603), deployed when all are 🚀, planned when all are 📋, progress for
+ * any 🚧 or another mix, null without markers.
  */
 export function epicStatusOf(text) {
-  const kinds = new Set((String(text ?? '').match(/[✅🚧📋]/gu) ?? []).map((m) => MARKERS.find(([k]) => k === m)[1]));
+  const kinds = new Set((String(text ?? '').match(MARKER_RE) ?? []).map((m) => MARKERS.find(([k]) => k === m)[1]));
   if (kinds.size === 0) return null;
-  return kinds.size === 1 ? [...kinds][0] : 'progress';
+  if (kinds.size === 1) return [...kinds][0];
+  return kinds.size === 2 && kinds.has('done') && kinds.has('deployed') ? 'done' : 'progress';
 }
 
 /** Every distinct story id (US-XXYY) in a text, in order of appearance. */
@@ -109,7 +114,7 @@ function parseStory(id, title, rest, body) {
     id,
     title: title.trim(),
     status: statusOf(rest),
-    statusText: rest.replace(/[📋🚧✅]/gu, '').trim(),
+    statusText: rest.replace(MARKER_RE, '').trim(),
     asA: null,
     inOrderTo: null,
     wouldLike: null,

@@ -14,9 +14,10 @@ import AgentHooksStrip from './AgentHooksStrip.jsx'; // US-0506 u4
 import FeaturesView from './FeaturesView.jsx';
 import ConfigView from './ConfigView.jsx';
 import PlansView from './PlansView.jsx';
-import ProjectSettingsDialog, { confirmHarnessSwitch } from './ProjectSettingsDialog.jsx';
+import ProjectSettingsView, { confirmHarnessSwitch } from './ProjectSettingsView.jsx';
 import { Frame } from './Lcars.jsx';
-import { featureDocsPrompt } from './featureDocsPrompt.js';
+import { featureDocsPrompt, lifecycleRulePrompt } from './featureDocsPrompt.js';
+import { DELIVERY_DEFAULT } from '../main/parsers/releases.js';
 import { TerminalProvider, useTerminal } from './TerminalContext.jsx';
 import { useProject } from './useProject.js';
 import { useFeatures } from './useFeatures.js';
@@ -211,9 +212,9 @@ function SetupDone({ onClose, onFeatureDocs }) {
 function ProjectContent({
   project,
   visible,
-  settingsOpen = false,
-  onCloseSettings,
   view: chosenView = 'intents',
+  section = 'docs',
+  featuresTab = 'epics',
   onView,
   onMeta,
   terminalCommand,
@@ -267,7 +268,8 @@ function ProjectContent({
   }, [isAidlc]); // only the switch from "not AI-DLC" to AI-DLC matters here
 
   // Feature docs (EPIC-06): the view follows the project setting and whether the overview exists (FR2.1, FR3.2).
-  const { features, settings, settingsLoaded, links } = useFeatures(project.projectId, isAidlc ? project.detection.activeSpace : null);
+  const { features, settings, settingsLoaded, links, ruleStatus } = useFeatures(project.projectId, isAidlc ? project.detection.activeSpace : null);
+  const delivery = settings.delivery ?? DELIVERY_DEFAULT; // US-0603 FR1.1
 
   // The agent tab's harness (US-0801 FR2.2): known once the saved choice and the detection are both in.
   const [detectRun, setDetectRun] = useState(0);
@@ -285,8 +287,12 @@ function ProjectContent({
     terminal.setAgent({ harness, problem, extras });
     onMeta?.(project.projectId, { harness: problem ? null : harnessId }); // the question popup answers only a running harness
   }, [harness, problem, extrasKey]); // setAgent is stable
-  const [choosingHarness, setChoosingHarness] = useState(false); // opened from the agent tab's warning (FR5.1)
-  const [hooksDetails, setHooksDetails] = useState(false); // opened from the agent hooks strip's Details (US-0506 u4 BR7.15)
+  // The agent tab's warning (FR5.1) and the hooks strip's Details (US-0506 u4 BR7.15) open Configuration › Agent (US-0012).
+  const [hooksFocus, setHooksFocus] = useState(false);
+  const openAgentSettings = (focusHooks) => {
+    setHooksFocus(focusHooks);
+    onView?.('config', { configSection: 'agent' });
+  };
   const [addingHarness, setAddingHarness] = useState(false); // setup in add mode, from Projektinställningar (US-0802 FR3.1)
   // The switch offer after setup goes the same way as the dialog's: asked first while the tab works (FR4.2).
   async function switchHarness(id) {
@@ -312,19 +318,24 @@ function ProjectContent({
   const docsExist = features?.available === true;
   const showFeatures = settings.featureDocs === 'show' || (settings.featureDocs === 'auto' && docsExist);
   // One view at a time: Features needs the feature docs, the rest AI-DLC; otherwise the intents view shows (US-0901 FR1.1).
-  const offered = { features: showFeatures, config: isAidlc, plans: isAidlc, cost: isAidlc, github: isAidlc, editor: true };
+  // Configuration holds the project's own settings for every project, and the AI-DLC configuration in an AI-DLC one (US-0012).
+  const offered = { features: showFeatures, config: true, plans: isAidlc, cost: isAidlc, github: isAidlc, editor: true };
   const view = offered[chosenView] ? chosenView : 'intents';
-  // Configuration mounts the first time it is chosen, so its CLI reads wait until then, and then stays (FR6.1).
+  const configSection = section === 'aidlc' && !isAidlc ? 'docs' : section;
+  const aidlcShown = view === 'config' && configSection === 'aidlc';
+  // The AI-DLC configuration mounts the first time it is chosen, so its CLI reads wait until then, and then stays (FR6.1).
   const [configShown, setConfigShown] = useState(false);
   useEffect(() => {
-    if (view === 'config') setConfigShown(true);
-  }, [view]);
-  const setupDocs = () => terminal?.type('agent', featureDocsPrompt({ exists: docsExist, path: settings.featuresPath }), { submit: false });
+    if (aidlcShown) setConfigShown(true);
+  }, [aidlcShown]);
+  const setupDocs = () => terminal?.type('agent', featureDocsPrompt({ exists: docsExist, path: settings.featuresPath, delivery }), { submit: false });
+  // US-0603 FR5.2: only a project with AI-DLC and feature docs has stories for the lifecycle rule to keep.
+  const ruleNotice = isAidlc && docsExist && ruleStatus && ruleStatus !== 'current' ? ruleStatus : null;
   const offerSetup = isAidlc && !docsExist ? setupDocs : undefined; // FR3.6, FR4.5
 
   useEffect(() => {
-    onMeta?.(project.projectId, { showFeatures });
-  }, [project.projectId, showFeatures, onMeta]);
+    onMeta?.(project.projectId, { showFeatures, delivery }); // the arm offers Epics | Releases with Releases (US-0012)
+  }, [project.projectId, showFeatures, delivery, onMeta]);
 
   // Whether any agent tab here is "Arbetar", so the update notice asks before a restart (EPIC-04 US-0407).
   const agentBusy = terminal.anyBusy();
@@ -345,7 +356,19 @@ function ProjectContent({
     <EditorCtx.Provider value={editorCtx}>
       <div className="project-view">
         <div className="project-main">
-          <AgentHooksStrip projectId={project.projectId} onDetails={() => setHooksDetails(true)} />
+          <AgentHooksStrip projectId={project.projectId} onDetails={() => openAgentSettings(true)} />
+          {ruleNotice && (
+            <p className="banner banner-warn" role="status" data-testid="lifecycle-rule-notice">
+              <span>{t(`features.rule.${ruleNotice}`, { delivery: t(`features.delivery.${delivery}`) })}</span>
+              <button
+                className="btn"
+                onClick={() => terminal?.type('agent', lifecycleRulePrompt(delivery), { submit: false })}
+                data-testid="lifecycle-rule-notice-run"
+              >
+                {t('features.rule.run')}
+              </button>
+            </p>
+          )}
           {justSetUp && <SetupDone onClose={() => setJustSetUp(false)} onFeatureDocs={featureDocsChoice ? setupDocs : undefined} />}
           {/* Kept mounted while Features or Configuration is shown, so the intents view keeps its state (FR2.1). */}
           <div className="project-mode" hidden={['features', 'config', 'plans', 'editor'].includes(view)}>
@@ -370,12 +393,27 @@ function ProjectContent({
               features={features}
               links={links}
               focusStory={focusStory}
+              delivery={delivery}
+              tab={featuresTab}
+              onTab={(id) => onView?.('features', { featuresTab: id })}
               onOpenIntent={isAidlc ? openIntent : undefined}
               onSetup={offerSetup}
             />
           )}
-          {isAidlc && (configShown || view === 'config') && (
-            <div className="project-mode" hidden={view !== 'config'}>
+          {view === 'config' && configSection !== 'aidlc' && (
+            <ProjectSettingsView
+              section={configSection}
+              agentHooksFocus={hooksFocus}
+              projectId={project.projectId}
+              settings={settings}
+              harness={harnessId}
+              harnesses={detected}
+              onSetup={offerSetup}
+              onAddHarness={isAidlc ? () => setAddingHarness(true) : undefined}
+            />
+          )}
+          {isAidlc && (configShown || aidlcShown) && (
+            <div className="project-mode" hidden={!aidlcShown}>
               <ConfigView
                 projectId={project.projectId}
                 visible={visible && view === 'config'}
@@ -395,24 +433,7 @@ function ProjectContent({
         </div>
         {isAidlc && <AddHarnessDialog open={addingHarness} onClose={() => setAddingHarness(false)} setupProps={setupProps} />}
         <LatestMessageStrip projectId={project.projectId} onOpenReply={onOpenReply} />
-        <TerminalPanel projectId={project.projectId} visible={visible} onChooseHarness={() => setChoosingHarness(true)} />
-        <ProjectSettingsDialog
-          open={settingsOpen || choosingHarness || hooksDetails}
-          onClose={() => {
-            setChoosingHarness(false);
-            setHooksDetails(false);
-            onCloseSettings?.();
-          }}
-          agentHooksFocus={hooksDetails}
-          projectId={project.projectId}
-          name={project.name}
-          settings={settings}
-          harness={harnessId}
-          harnesses={detected}
-          onSetup={offerSetup}
-          onAddHarness={isAidlc ? () => setAddingHarness(true) : undefined}
-          onOpenConfig={isAidlc ? () => onView?.('config') : undefined}
-        />
+        <TerminalPanel projectId={project.projectId} visible={visible} onChooseHarness={() => openAgentSettings(false)} />
       </div>
     </EditorCtx.Provider>
   );
@@ -421,9 +442,9 @@ function ProjectContent({
 export default function ProjectView({
   project,
   visible,
-  settingsOpen,
-  onCloseSettings,
   view,
+  section,
+  featuresTab,
   onView,
   onMeta,
   terminalCommand,
@@ -436,9 +457,9 @@ export default function ProjectView({
       <ProjectContent
         project={project}
         visible={visible}
-        settingsOpen={settingsOpen}
-        onCloseSettings={onCloseSettings}
         view={view}
+        section={section}
+        featuresTab={featuresTab}
         onView={onView}
         onMeta={onMeta}
         terminalCommand={terminalCommand}

@@ -62,6 +62,9 @@ contextBridge.exposeInMainWorld('bridge', {
   runSetup: call('setup:run'), // runs the setup after the preview (US-0802 FR2.2)
   loadFeatures: call('features:load'),
   getStoryLinks: call('features:storyLinks'),
+  // US-0603: a story id, a version and the read hashes cross the bridge, never a path.
+  setStoryRelease: call('features:setRelease'),
+  getLifecycleRuleStatus: call('features:ruleStatus'),
   getProjectSettings: call('projectSettings:get'),
   setProjectSettings: call('projectSettings:set'),
   getAidlcConfig: call('config:get'), // read-only AI-DLC configuration for one harness (EPIC-09 US-0901)
