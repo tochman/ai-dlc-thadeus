@@ -190,5 +190,13 @@
     "scope": "ultra-express",
     "status": "complete",
     "request": "e0a30ee2"
+  },
+  {
+    "uuid": "01a1e138-33f9-7af2-89f3-0d49b3214423",
+    "slug": "manual-releases",
+    "dirName": "261115-manual-releases",
+    "scope": "express",
+    "status": "in-flight",
+    "request": "eca1c669"
   }
 ]
