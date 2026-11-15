@@ -1,5 +1,6 @@
 // Normalises a parsed runtime-graph.json. Unknown fields are ignored; a bad
 // shape yields null rather than throwing.
+// US-0411 FR2.1: per stage, `unitsApproved` and `unitsSeen` count its unit instances.
 
 function durationMs(start, end) {
   const a = Date.parse(start);
@@ -37,7 +38,13 @@ function unitTimes(instances) {
     .filter((t) => typeof t === 'string')
     .sort();
   const allDone = units.length > 0 && units.every((i) => i.outcome === 'approved' && typeof i.completed_at === 'string');
-  return { startedAt: starts[0] ?? null, completedAt: allDone ? ends[ends.length - 1] : null };
+  return {
+    startedAt: starts[0] ?? null,
+    completedAt: allDone ? ends[ends.length - 1] : null,
+    // US-0411 FR2.1: counts for the level bar.
+    approved: units.filter((i) => i.outcome === 'approved').length,
+    seen: units.length
+  };
 }
 
 export function parseRuntimeGraph(json) {
@@ -55,6 +62,8 @@ export function parseRuntimeGraph(json) {
         completedAt,
         outcome: s.outcome ?? null,
         durationMs: durationMs(startedAt, completedAt),
+        unitsApproved: units.approved,
+        unitsSeen: units.seen,
         sensorFirings: Array.isArray(s.sensor_firings) ? s.sensor_firings.length : 0
       };
     });

@@ -91,6 +91,36 @@ describe('mergePipeline', () => {
     expect(parseRuntimeGraph(raw([])).stages[0]).toMatchObject({ startedAt: null, completedAt: null });
   });
 
+  // US-0411: per-unit counts for the level bar, and a failed outcome.
+  const inst = (bolt, outcome) => ({ bolt, started_at: '2026-11-14T19:00:00Z', completed_at: outcome ? '2026-11-14T20:00:00Z' : null, outcome });
+  const unitGraph = (instances, dag) => ({ stages: [{ stage_slug: 'code-generation', instances }], bolt_dag: dag });
+  const fiveUnits = { units: ['u1', 'u2', 'u3', 'u4', 'u5'].map((name) => ({ name })) };
+
+  it('parseRuntimeGraph counts approved and seen units per stage (US-0411 FR2.1)', () => {
+    const g = parseRuntimeGraph(unitGraph([inst('u1', 'approved'), inst('u2', 'approved'), inst('u3', null)], fiveUnits));
+    expect(g.stages[0]).toMatchObject({ unitsApproved: 2, unitsSeen: 3 });
+    expect(parseRuntimeGraph({ stages: [{ stage_slug: 'x' }] }).stages[0]).toMatchObject({ unitsApproved: 0, unitsSeen: 0 });
+  });
+
+  it('mergePipeline gives units from bolt_dag, else from instances, else null (US-0411 FR2.1)', () => {
+    const two = [inst('u1', 'approved'), inst('u2', 'approved'), inst('u3', null)];
+    expect(stage(mergePipeline(state, parseRuntimeGraph(unitGraph(two, fiveUnits))), 'code-generation').units).toEqual({ approved: 2, total: 5 });
+    expect(stage(mergePipeline(state, parseRuntimeGraph(unitGraph(two))), 'code-generation').units).toEqual({ approved: 2, total: 3 });
+    expect(stage(mergePipeline(state, graph), 'build-and-test').units).toBeNull();
+    expect(stage(mergePipeline(state, null), 'code-generation').units).toBeNull();
+  });
+
+  it('mergePipeline flags a stage whose runtime outcome is set and not approved as failed (US-0411 FR3.4)', () => {
+    const rejected = {
+      ...graph,
+      stages: graph.stages.map((g) => (g.slug === 'build-and-test' ? { ...g, outcome: 'rejected' } : g))
+    };
+    expect(stage(mergePipeline(state, rejected), 'build-and-test').failed).toBe(true);
+    expect(stage(mergePipeline(state, graph), 'code-generation').failed).toBe(false);
+    expect(stage(mergePipeline(state, graph), 'build-and-test').failed).toBe(false);
+    expect(stage(mergePipeline(state, null), 'code-generation').failed).toBe(false);
+  });
+
   it('works from the state file alone when runtime-graph.json is missing (FR3.5, FR2.2)', () => {
     const p = mergePipeline(state, null);
     expect(stage(p, 'code-generation')).toMatchObject({ status: 'done', agent: null, mismatch: false });

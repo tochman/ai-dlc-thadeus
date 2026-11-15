@@ -662,35 +662,45 @@ button.lcars-chip:hover { border-color: var(--steel-text); color: var(--steel-li
   font-weight: 400;
 }
 .stage-grid { flex: 1; min-width: 0; list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--gap); }
-.stage-block {
-  width: 100%;
-  height: 64px;
-  padding: 6px 10px;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  border: 1px solid var(--slate-3);
-  background: var(--slate-1);
-  color: var(--muted);
-  text-align: left;
-  transition: filter 150ms ease-out;
-}
-.stage-block:hover { filter: brightness(1.15); }
-.stage-block[aria-expanded='true'] { outline: 1px solid var(--slate-5); outline-offset: 2px; }
-.stage-top { display: flex; justify-content: space-between; gap: 8px; min-width: 0; font-size: 12px; font-variant-numeric: tabular-nums; text-transform: uppercase; white-space: nowrap; overflow: hidden; }
+/* US-0411: each stage is an .lcars-card (FR1). Head: name; body: "NN · Status"; foot: agent, duration, level bar (FR2).
+   Colour by state on the <li> (FR3): current steel fill, awaiting approval coral fill, done grey outline, skipped muted,
+   mismatch or failure amber outline and flag. Black text on steel (7.6:1) and coral (7.0:1) keeps AA (NFR2).
+   The glow is the shared is-breathing / is-attn, so Dämpad and Av apply through data-motion (FR4, NFR1). */
+.stage-card { width: 100%; min-height: 76px; padding: 0; color: var(--muted); text-align: left; transition: filter 150ms ease-out; }
+.stage-card:hover { filter: brightness(1.15); }
+.stage-card[aria-expanded='true'] { outline: 1px solid var(--slate-5); outline-offset: 2px; }
+.stage-card > .lcars-card-head { min-height: 22px; padding: 4px 14px 2px; }
+.stage-card > .lcars-card-body { flex: 1; padding: 6px 12px; }
+.stage-card > .lcars-card-foot { flex-wrap: nowrap; padding: 3px 12px; }
+.stage-top { display: flex; flex-direction: row; justify-content: space-between; gap: 8px; min-width: 0; font-size: 12px; font-variant-numeric: tabular-nums; text-transform: uppercase; white-space: nowrap; overflow: hidden; }
 .stage-top > span:first-child { overflow: hidden; text-overflow: ellipsis; }
 .stage-cost { text-transform: none; }
-.stage-flag { color: var(--coral); }
-.stage-name { align-self: flex-end; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 16px; color: var(--text-2); }
-.stage.status-done .stage-block { background: var(--slate-4); border-color: transparent; color: var(--on-light); }
-.stage.status-in-progress .stage-block, .stage.status-revising .stage-block { background: var(--steel); border-color: transparent; color: var(--on-light); }
-.stage.status-awaiting-approval .stage-block { background: var(--coral); border-color: transparent; color: var(--on-light); }
-.stage.status-failed .stage-block { border: 2px solid var(--coral); color: var(--coral-soft); padding: 5px 9px; }
-.stage.status-done .stage-name, .stage.status-in-progress .stage-name, .stage.status-revising .stage-name, .stage.status-awaiting-approval .stage-name { color: var(--on-light); }
-.stage.status-in-progress .stage-name, .stage.status-revising .stage-name { font-weight: 600; }
-.stage.status-failed .stage-name { color: var(--text); }
-.stage.is-muted .stage-block { background: transparent; border: 1px dashed var(--slate-2); color: var(--muted); }
-.stage.is-muted .stage-name { color: var(--muted); }
+.stage-flag { color: var(--amber); }
+.stage-name { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 14px; letter-spacing: 0.05em; color: var(--steel-light); }
+.stage-code { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 11px; text-transform: uppercase; color: var(--text-2); }
+.stage-level { display: flex; gap: 2px; flex-shrink: 0; }
+.stage-level-seg { width: 8px; height: 6px; background: var(--slate-3); }
+.stage-level-seg.is-lit { background: var(--steel); }
+
+.stage.status-done .stage-card { background: transparent; border-color: var(--slate-4); }
+.stage.status-done .stage-card > :is(.lcars-card-head, .lcars-card-body, .lcars-card-foot) { background: transparent; }
+.stage.status-done .stage-name { color: var(--text-2); }
+
+.stage:is(.is-current, .status-awaiting-approval) .stage-card { background: var(--steel); border-color: transparent; color: var(--on-light); }
+.stage.status-awaiting-approval .stage-card { background: var(--coral); }
+.stage:is(.is-current, .status-awaiting-approval) .stage-card::before { background: var(--on-light); }
+.stage:is(.is-current, .status-awaiting-approval) .stage-card > :is(.lcars-card-head, .lcars-card-body, .lcars-card-foot) { background: transparent; }
+.stage:is(.is-current, .status-awaiting-approval) :is(.stage-name, .stage-code, .stage-flag) { color: var(--on-light); }
+.stage:is(.is-current, .status-awaiting-approval) .stage-name { font-weight: 600; }
+.stage:is(.is-current, .status-awaiting-approval) .stage-level-seg { background: var(--steel-deep); }
+.stage:is(.is-current, .status-awaiting-approval) .stage-level-seg.is-lit { background: var(--on-light); }
+
+.stage.is-muted .stage-card { background: transparent; border: 1px dashed var(--slate-2); color: var(--muted); }
+.stage.is-muted .stage-card::before { content: none; }
+.stage.is-muted .stage-card > :is(.lcars-card-head, .lcars-card-body, .lcars-card-foot) { background: transparent; }
+.stage.is-muted :is(.stage-name, .stage-code) { color: var(--muted); }
+
+.stage:is(.is-mismatch, .is-failed, .status-failed) .stage-card { border: 2px solid var(--amber); }
 .stage-files { margin: 0 0 4px calc(var(--arm) + var(--gap)); padding: 8px 12px; background: var(--slate-1); display: flex; flex-direction: column; gap: 4px; }
 .stage-files-meta { margin: 0; color: var(--muted); font-size: 13px; }
 .stage-file-list { list-style: none; margin: 0; padding: 0; }
