@@ -8,7 +8,7 @@
 
 **Stories:** US-0001, US-0002, US-0003, US-0004, US-0005, US-0006, US-0007, US-0008, US-0009, US-0010, US-0011, US-0012, US-0013, US-0014, US-0015, US-0016, US-0017
 
-**Status (2026-11-15):** ✅ US-0001–US-0012 released (v0.2.3–v0.2.5). ✅ US-0013–US-0014 done, for v0.2.6. 🚧 US-0015 in progress, for v0.2.6. 📋 US-0016 planned for v0.2.6, US-0017 planned. Each story names its release.
+**Status (2026-11-15):** ✅ US-0001–US-0012 released (v0.2.3–v0.2.5). ✅ US-0013–US-0014 done, for v0.2.6. 🚧 US-0015–US-0016 in progress, for v0.2.6. 📋 US-0017 planned. Each story names its release.
 
 ---
 
@@ -244,7 +244,7 @@
 - **Notes:** The branch comes from `getGitStatus()` in `src/main/git.js`. Watching `.git/HEAD` is likely enough.
 - **Dependencies:** US-0502
 
-**US-0016: An older lifecycle rule in other words counts as older, not missing** 📋 Planned, for v0.2.6
+**US-0016: An older lifecycle rule in other words counts as older, not missing** 🚧 In progress, for v0.2.6
 - As a **developer with an older story lifecycle rule in the project's memory**, in order to **be told the rule needs updating rather than that it is missing**, I would like to **have an untagged lifecycle rule recognised even when it does not use all three status markers**.
 - **Epic:** EPIC-00
 - **Priority:** Low
@@ -253,7 +253,9 @@
 - **Acceptance Criteria:**
   - [ ] **Given** an untagged rule that names 🚧 and ✅, **then** the status is 'older', and the notice says the rule is out of date.
   - [ ] **Given** no lifecycle rule at all, **then** the status stays 'missing'.
-- **Notes:** The fallback in `ruleStatus()` in `src/main/parsers/releases.js` requires 📋, 🚧 and ✅.
+- **Notes:**
+  - **Where.** `ruleStatus()` in `src/main/parsers/releases.js`: an untagged rule now counts as 'older' when it names 🚧 and ✅; 📋 is no longer required. A memory file with no lifecycle markers at all stays 'missing'.
+  - **Tests.** `tests/main/releases.test.js` (1 new).
 - **Dependencies:** US-0603, US-0014
 
 **US-0017: Only the first terminal tab has the LCARS bow** 📋 Planned
