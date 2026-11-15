@@ -123,3 +123,10 @@ describe('busy glow keeps block edges aligned', () => {
     }
   });
 });
+
+describe('the terminal arm (US-0017)', () => {
+  it('gives the bow to the first tab only, so a second agent tab is a plain block', () => {
+    expect(css).not.toMatch(/\.term-tab--agent\s*\{[^}]*border-radius/);
+    expect(css).toMatch(/\.term-tab:first-child\s*\{[^}]*border-radius:\s*32px 0 0 0/);
+  });
+});
