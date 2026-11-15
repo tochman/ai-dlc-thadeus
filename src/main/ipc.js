@@ -127,14 +127,16 @@ async function closeWatcher(p) {
   const f = p.featuresWatcher;
   const c = p.configWatcher;
   const e = p.editorWatcher;
+  const h = p.headWatcher;
   p.watcher = null;
   p.setupWatcher = null;
   p.featuresWatcher = null;
   p.featuresKey = null;
   p.configWatcher = null;
   p.editorWatcher = null;
+  p.headWatcher = null;
   // US-0506 u4 SCD31: the hooks watcher, previews and isCurrent keys go with the project.
-  await Promise.all([w?.close(), s?.close(), f?.close(), c?.close(), e?.close(), installer?.closeProject(p.id)]);
+  await Promise.all([w?.close(), s?.close(), f?.close(), c?.close(), e?.close(), h?.close(), installer?.closeProject(p.id)]);
 }
 
 /** Watches exactly the files open in the editor; each change sends `file:changed` with its relative path (US-1001). */
@@ -178,6 +180,26 @@ export function guardClose(win) {
     win.webContents.send('app:confirmClose');
   });
   win.webContents.on('render-process-gone', () => closeAllowed.add(win));
+}
+
+/**
+ * US-0015: git rewrites `.git/HEAD` on every branch switch, also one made outside the app; each change sends
+ * git:headChanged, so the header reads the branch again.
+ */
+function watchGitHead(projectId) {
+  const p = project(projectId);
+  try {
+    // ponytail: a project below the repo root, or a worktree (`.git` is a file), has no `.git/HEAD` here; its label stays as read.
+    p.headWatcher = watchOpenFiles({
+      files: [path.join(p.root, '.git', 'HEAD')],
+      onChange: () => {
+        if (!p.sender.isDestroyed()) p.sender.send('git:headChanged', { projectId });
+      },
+      onError: (err) => console.error(`Bevakning av grenen misslyckades för ${p.root}:`, err)
+    });
+  } catch (err) {
+    console.error(`Bevakning av grenen kunde inte startas för ${p.root}:`, err); // only the live label stops
+  }
 }
 
 /** The settings files and plan folders behind the Configuration view; each change sends config:changed (US-0901 FR6.1). */
@@ -402,6 +424,7 @@ const handlers = {
     else watchForSetup(projectId);
     syncFeaturesWatch(projectId); // not awaited: opening a project never waits on the feature docs
     watchConfig(projectId);
+    watchGitHead(projectId);
     // US-0506 u4 PD31: the hooks status is computed after the first render and pushed as agent-hooks:changed.
     agentWiring();
     installer.openProject(projectId, root).catch((err) => console.error(`[agent-hooks] status failed for ${root}:`, err.code ?? err.message));

@@ -168,17 +168,24 @@ export default function App() {
       .catch((err) => setError(t('app.settingsSaveFailed', { error: errorText(err) })));
   }, [tabs, activeId, restored]);
 
-  // The branch in the header. Read-only; it is only a label, so a failure just leaves it out.
+  // The branch in the header. Read-only; it is only a label, so a failure just leaves it out. It is read again
+  // when HEAD changes, also from a switch outside the app (US-0015).
   useEffect(() => {
     setBranch(null);
     if (!activeId || !bridge.getGitStatus) return undefined;
     let cancelled = false;
-    bridge
-      .getGitStatus(activeId)
-      .then((s) => !cancelled && setBranch(s?.isRepo ? (s.branch ?? null) : null))
-      .catch((err) => console.warn('Grenen kunde inte läsas:', errorText(err)));
+    const read = () =>
+      bridge
+        .getGitStatus(activeId)
+        .then((s) => !cancelled && setBranch(s?.isRepo ? (s.branch ?? null) : null))
+        .catch((err) => console.warn('Grenen kunde inte läsas:', errorText(err)));
+    read();
+    const off = bridge.onGitHeadChanged?.((c) => {
+      if (c.projectId === activeId) read();
+    });
     return () => {
       cancelled = true;
+      off?.();
     };
   }, [activeId]);
 
@@ -478,7 +485,7 @@ export default function App() {
               <>
                 <span className="app-meta-label">{t('app.branch')}</span>
                 <span className="app-branch" title={branch}>
-                  {branch}
+                  {branch === 'HEAD' ? t('app.detached') : branch}
                 </span>
               </>
             )}

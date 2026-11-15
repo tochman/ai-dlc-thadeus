@@ -45,6 +45,7 @@
     "setup": "Setup",
     "features": "Features",
     "branch": "Branch",
+    "detached": "No branch (detached HEAD)",
     "noProject": "No project",
     "fullscreen": "Full screen",
     "leaveFullscreen": "Leave full screen",

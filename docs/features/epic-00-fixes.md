@@ -8,7 +8,7 @@
 
 **Stories:** US-0001, US-0002, US-0003, US-0004, US-0005, US-0006, US-0007, US-0008, US-0009, US-0010, US-0011, US-0012, US-0013, US-0014, US-0015, US-0016
 
-**Status (2026-11-15):** ✅ US-0001–US-0012 released (v0.2.3–v0.2.5). ✅ US-0013–US-0014 done, for v0.2.6. 🚧 US-0015 in progress, for v0.2.6. 📋 US-0016 planned for v0.2.6. Each story names its release.
+**Status (2026-11-15):** ✅ US-0001–US-0012 released (v0.2.3–v0.2.5). ✅ US-0013–US-0015 done, for v0.2.6. 📋 US-0016 planned for v0.2.6. Each story names its release.
 
 ---
 
@@ -231,17 +231,21 @@
   - **This project.** The older Swedish lifecycle rule under `## Mandated` in `aidlc/spaces/default/memory/project.md` was taken out by hand. The new rule is saved under `## Corrections`.
 - **Dependencies:** US-0603
 
-**US-0015: The header shows the branch that is checked out now** 🚧 In progress, for v0.2.6
+**US-0015: The header shows the branch that is checked out now** ✅ Done, for v0.2.6
 - As a **developer switching branches in the terminal**, in order to **know which branch the app is showing me**, I would like to **see the current branch in the header, also after I switch outside the app**.
 - **Epic:** EPIC-00
 - **Priority:** High
 - **Complexity:** Low
 - **Background:** Reported 2026-11-15 with a screenshot: after `git switch main` in a terminal, the header still read `FIX/US-0014` while the views already showed `main`'s files, so the lifecycle rule notice looked wrong.
 - **Acceptance Criteria:**
-  - [ ] **Given** the project is open, **when** the branch is switched outside the app, **then** the header shows the new branch within a few seconds, without reopening the project.
-  - [ ] **Given** a detached HEAD, **then** the header says so instead of showing an old branch name.
-  - [ ] The notices and views that read files from the project refresh with the branch.
-- **Notes:** The branch comes from `getGitStatus()` in `src/main/git.js`. Watching `.git/HEAD` is likely enough.
+  - [x] **Given** the project is open, **when** the branch is switched outside the app, **then** the header shows the new branch within a few seconds, without reopening the project.
+  - [x] **Given** a detached HEAD, **then** the header says so instead of showing an old branch name.
+  - [x] The notices and views that read files from the project refresh with the branch.
+- **Notes:**
+  - **Where.** `watchGitHead()` in `src/main/ipc.js` watches `.git/HEAD` and sends `git:headChanged`; the header in `src/renderer/App.jsx` reads the branch again on it and shows `app.detached` for a detached HEAD.
+  - **Views.** The feature docs, the lifecycle notice and the intents already reload from their own file watchers when a switch changes the files.
+  - **Ceiling.** A project below the repo root, or opened from a worktree (where `.git` is a file), has no `.git/HEAD` to watch; its label stays as first read (`ponytail:` comment).
+  - **Tests.** `tests/main/ipc.test.js` and `tests/renderer/AppShell.test.jsx` (1 new each).
 - **Dependencies:** US-0502
 
 **US-0016: An older lifecycle rule in other words counts as older, not missing** 📋 Planned, for v0.2.6
