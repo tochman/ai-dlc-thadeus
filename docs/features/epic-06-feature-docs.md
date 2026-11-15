@@ -8,7 +8,7 @@
 
 **Stories:** US-0601, US-0602, US-0603, US-0604
 
-**Status (2026-11-15):** ✅ US-0601 and US-0602 released in v0.2.0. 📋 US-0603 Planned for v0.2.5 (releases or continuous deployment). 📋 US-0604 Planned for v0.2.6 (filter epics and stories). Both stories are built with AI-DLC in `express` scope (intent `261113-feature-docs`) and the unit tests are green. The manual checks in Electron (live updates, settings, setup offer, timing) are done in Build and Test.
+**Status (2026-11-15):** ✅ US-0601 and US-0602 released in v0.2.0. ✅ US-0603 Done, for v0.2.5 (releases or continuous deployment; unit tests green, hand check in the app before the release). 📋 US-0604 Planned for v0.2.6 (filter epics and stories). Both stories are built with AI-DLC in `express` scope (intent `261113-feature-docs`) and the unit tests are green. The manual checks in Electron (live updates, settings, setup offer, timing) are done in Build and Test.
 
 **Decisions:**
 - **Q1 (where the view lives):** a switch "Intents | Features" at the top of the project view. Features replaces the sidebar and content area; the terminal stays.
@@ -65,22 +65,22 @@
   - [x] Read-only: the view never changes the files. Links "Öppna i editor" and "Visa i Finder" as in the artifact reader.
 - **Dependencies:** US-0107, US-0109, US-0601
 
-**US-0603: Releases or continuous deployment, and stories marked for a release** 📋 Planned, for v0.2.5
+**US-0603: Releases or continuous deployment, and stories marked for a release** ✅ Done, for v0.2.5 (intent `261115-release-handling`, ultra-express)
 - As a **developer planning what ships when**, in order to **see and shape each release**, I would like to **choose per project whether it ships in releases or continuously, and mark stories for a release in the app**.
 - **Epic:** EPIC-06
 - **Priority:** High
 - **Complexity:** Medium
 - **Background:** Asked for 2026-11-15: "in some project (like this one) we work with releases. In others we do continuous deployment. I would like to add release handling to this app and to be able to mark user stories to a release. that would help in planning."
 - **Acceptance Criteria:**
-  - [ ] Each project has a setting: **Releases** or **Continuous deployment**.
-  - [ ] With Releases, a story can be marked for a release (`for vX.Y.Z`) or have it removed, from the story in the app. The app writes the same marker the epic file and `FEATURES.md` already use, and nothing else in the files changes.
-  - [ ] A release list shows each release with its stories and their status: planned releases from the story markers, released ones from the project's git tags (`vX.Y.Z`), with the date.
-  - [ ] With Continuous deployment, release fields and the release list are hidden, and a story has its own last status, **🚀 Deployed**, set when its change is deployed (after ✅ Done).
-  - [ ] The story lifecycle rule follows the project's choice and keeps every story's status current at all times: 📋 Planned → 🚧 In progress when work starts → ✅ Done when built and approved → "for vX.Y.Z" and "Released in vX.Y.Z" at the tag (Releases), or 🚀 Deployed at deploy (Continuous deployment).
-  - [ ] The rule applies to every project opened in the app, not only at feature-docs setup: when a project's AI-DLC memory lacks the rule, or holds an older one, the app offers to add or update it through AI-DLC's own rule mechanism (as US-0003), and changing the project's setting updates the rule.
-  - [ ] The epic and story views and the docs status check understand 🚀 Deployed (counts, colours, filter).
-  - [ ] A story whose release is tagged but still says "for vX.Y.Z" is flagged, as `featureDocsStatus.test.js` would flag it.
-  - [ ] Every text goes through `t()` in Swedish and English.
+  - [x] Each project has a setting: **Releases** or **Continuous deployment**.
+  - [x] With Releases, a story can be marked for a release (`for vX.Y.Z`) or have it removed, from the story in the app. The app writes the same marker the epic file and `FEATURES.md` already use, and nothing else in the files changes.
+  - [x] A release list shows each release with its stories and their status: planned releases from the story markers, released ones from the project's git tags (`vX.Y.Z`), with the date.
+  - [x] With Continuous deployment, release fields and the release list are hidden, and a story has its own last status, **🚀 Deployed**, set when its change is deployed (after ✅ Done).
+  - [x] The story lifecycle rule follows the project's choice and keeps every story's status current at all times: 📋 Planned → 🚧 In progress when work starts → ✅ Done when built and approved → "for vX.Y.Z" and "Released in vX.Y.Z" at the tag (Releases), or 🚀 Deployed at deploy (Continuous deployment).
+  - [x] The rule applies to every project opened in the app, not only at feature-docs setup: when a project's AI-DLC memory lacks the rule, or holds an older one, the app offers to add or update it through AI-DLC's own rule mechanism (as US-0003), and changing the project's setting updates the rule.
+  - [x] The epic and story views and the docs status check understand 🚀 Deployed (counts, colours, filter).
+  - [x] A story whose release is tagged but still says "for vX.Y.Z" is flagged, as `featureDocsStatus.test.js` would flag it.
+  - [x] Every text goes through `t()` in Swedish and English.
 - **Notes:** The release markers are already the docs' own format (project rule: "for vX.Y.Z", then "Released in vX.Y.Z"), so no new data store is needed.
 - **Dependencies:** US-0602, US-0003
 

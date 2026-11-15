@@ -17,9 +17,11 @@ import { alertPlan } from '../shared/alertPlan.js';
 
 const NOTICE_MS = 5000; // US-0506 u2 K11: how long the hand-back notice stays
 import { dirtyFiles } from './editor/EditorContext.jsx';
+import { PROJECT_SECTIONS } from './ProjectSettingsView.jsx';
 
 const bridge = window.bridge;
-const UI_DEFAULT = { view: 'intents' };
+// The view and, for Features and Configuration, the section chosen in the arm (US-0012).
+const UI_DEFAULT = { view: 'intents', configSection: 'docs', featuresTab: 'epics' };
 
 function errorText(err) {
   return String(err?.message ?? err).replace(/^Error invoking remote method '[^']+': (Error: )?/, '');
@@ -47,13 +49,25 @@ function ArmBlock({ current = false, tone = 'mid', children, ...rest }) {
   );
 }
 
+/** A view's sections, indented under its block in the arm: the one way to pick a section anywhere (US-0012). */
+function ArmSubtabs({ label, ids, current, labelOf, onPick, testIdPrefix }) {
+  return (
+    <div className="arm-subtabs" role="group" aria-label={label}>
+      {ids.map((id) => (
+        <ArmBlock key={id} current={current === id} onClick={() => onPick(id)} data-testid={`${testIdPrefix}-${id}`}>
+          {labelOf(id)}
+        </ArmBlock>
+      ))}
+    </div>
+  );
+}
+
 export default function App() {
   const { t } = useTranslation(); // a language switch re-renders the whole app, state kept (EPIC-07 NFR3)
   const [tabs, setTabs] = useState([]); // { projectId, root, name, detection }
   const [activeId, setActiveId] = useState(null);
   const [error, setError] = useState(null);
   const [restored, setRestored] = useState(false);
-  const [settingsFor, setSettingsFor] = useState(null); // projectId whose "Projektinställningar" is open (EPIC-06 FR3.1)
   const [settingsView, setSettingsView] = useState(false); // "Inställningar" shows in the content frame, not a dialog (US-0405 FR1.1)
   const [settingsTab, setSettingsTab] = useState('tools'); // the tab shown in it, saved as settingsTab (US-0410 FR5.1)
   const [startFullscreen, setStartFullscreen] = useState(false); // the saved "Helskärm vid start", apart from the live mode below
@@ -357,7 +371,7 @@ export default function App() {
   const isAidlc = active?.detection.isAidlc === true;
   const showFeatures = activeMeta.showFeatures === true;
   // One view at a time. Features needs the feature docs, the rest AI-DLC (US-0901 FR1.1); else the intents view shows.
-  const offered = { features: showFeatures, config: isAidlc, plans: isAidlc, cost: isAidlc, github: isAidlc, editor: true };
+  const offered = { features: showFeatures, config: true, plans: isAidlc, cost: isAidlc, github: isAidlc, editor: true };
   const view = offered[activeUi.view] ? activeUi.view : 'intents';
   const firstLabel = isAidlc ? t('app.intents') : t('app.setup');
   const viewLabel =
@@ -374,8 +388,11 @@ export default function App() {
   function closeActiveProject() {
     if (activeId) closeTab(activeId); // nothing open: Cmd/Ctrl+W does nothing (FR2.6)
   }
-  function showView(next) {
-    if (active) setUiOf(active.projectId, { view: next });
+  /** A view block in the arm also leaves Settings, which has no Close button (US-0012). */
+  function showView(next, extra) {
+    if (!active) return;
+    setSettingsView(false);
+    setUiOf(active.projectId, { view: next, ...extra });
   }
   const openAppSettings = () => setSettingsView(true);
   /** A Settings tab from the rail: shown at once and remembered for the next start (US-0410 FR1.2, FR5.1). */
@@ -383,16 +400,12 @@ export default function App() {
     setSettingsTab(id);
     bridge.setSettings({ settingsTab: id }).catch((err) => setError(t('app.settingsSaveFailed', { error: errorText(err) })));
   }
+  /** A project's own settings are its Configuration view (US-0012): ⚙, the menu and Settings › Project all go there. */
   function openProjectSettings(projectId) {
     if (!projectId) return;
-    setActiveId(projectId);
-    setSettingsFor(projectId);
-  }
-  /** The view's link into a project's own settings: the view gives the content frame back first (FR4.3, FR6.2). */
-  function openProjectSettingsFromView(projectId) {
-    if (!projectId) return;
     setSettingsView(false);
-    openProjectSettings(projectId);
+    setActiveId(projectId);
+    setUiOf(projectId, { view: 'config', configSection: 'docs' });
   }
   function runTerminal(action) {
     if (active) setTerminalCommand((c) => ({ seq: (c?.seq ?? 0) + 1, action, projectId: active.projectId }));
@@ -445,12 +458,19 @@ export default function App() {
           <span className="app-brand-text">{APP_NAME}</span>
         </div>
         <div className="app-header-main">
+          {/* The fullscreen toggle sits in the bar's light segment, as the quick commands sit in the terminal's bar (US-0012). */}
           <Bar
             segs={[
               ['slate-4', 3],
               ['steel-deep', 90],
               ['slate-3', 1],
-              ['slate-5', 54]
+              [
+                fullscreen ? 'steel' : 'slate-5',
+                54,
+                <button className="lcars-bar-btn" aria-pressed={fullscreen} onClick={toggleFullscreen} data-testid="fullscreen-toggle">
+                  {fullscreen ? t('app.leaveFullscreen') : t('app.fullscreen')}
+                </button>
+              ]
             ]}
           />
           <div className="app-header-row">
@@ -481,14 +501,6 @@ export default function App() {
               <span />
               <span />
             </span>
-            <button
-              className={`lcars-block lcars-block--sm app-fullscreen lcars-block--${fullscreen ? 'active' : 'dark'}`}
-              aria-pressed={fullscreen}
-              onClick={toggleFullscreen}
-              data-testid="fullscreen-toggle"
-            >
-              {fullscreen ? t('app.leaveFullscreen') : t('app.fullscreen')}
-            </button>
           </div>
         </div>
       </header>
@@ -544,10 +556,28 @@ export default function App() {
                 {t('app.features')}
               </ArmBlock>
             )}
-            {isAidlc && (
-              <ArmBlock current={!settingsView && view === 'config'} onClick={() => showView('config')} data-testid="project-view-switch-config">
-                {t('app.config')}
-              </ArmBlock>
+            {showFeatures && !settingsView && view === 'features' && activeMeta.delivery !== 'continuous' && (
+              <ArmSubtabs
+                label={t('features.releases.title')}
+                ids={['epics', 'releases']}
+                current={activeUi.featuresTab}
+                labelOf={(id) => (id === 'epics' ? t('features.epics') : t('features.releases.title'))}
+                onPick={(id) => showView('features', { featuresTab: id })}
+                testIdPrefix="features-view-tab"
+              />
+            )}
+            <ArmBlock current={!settingsView && view === 'config'} onClick={() => showView('config')} data-testid="project-view-switch-config">
+              {t('app.config')}
+            </ArmBlock>
+            {!settingsView && view === 'config' && (
+              <ArmSubtabs
+                label={t('app.config')}
+                ids={PROJECT_SECTIONS.filter((id) => id !== 'aidlc' || isAidlc)}
+                current={activeUi.configSection === 'aidlc' && !isAidlc ? 'docs' : activeUi.configSection}
+                labelOf={(id) => t(`settings.project.sections.${id}`)}
+                onPick={(id) => showView('config', { configSection: id })}
+                testIdPrefix="config-section"
+              />
             )}
             {isAidlc && (
               <ArmBlock current={!settingsView && view === 'plans'} onClick={() => showView('plans')} data-testid="project-view-switch-plans">
@@ -570,13 +600,14 @@ export default function App() {
         </ArmBlock>
         {/* The Settings tabs, only while Settings is open (US-0410 FR1.1–FR1.3). */}
         {settingsView && (
-          <div className="arm-subtabs" role="group" aria-label={t('settings.tabsLabel')}>
-            {SETTINGS_TABS.map((id) => (
-              <ArmBlock key={id} current={settingsTab === id} onClick={() => chooseSettingsTab(id)} data-testid={`app-settings-tab-${id}`}>
-                {t(`settings.sections.${id}`)}
-              </ArmBlock>
-            ))}
-          </div>
+          <ArmSubtabs
+            label={t('settings.tabsLabel')}
+            ids={SETTINGS_TABS}
+            current={settingsTab}
+            labelOf={(id) => t(`settings.sections.${id}`)}
+            onPick={chooseSettingsTab}
+            testIdPrefix="app-settings-tab"
+          />
         )}
         <div className="arm-foot">
           <AuctumMark size={128} className="arm-foot-mark" decorative />
@@ -624,7 +655,7 @@ export default function App() {
             recentProjects={recent}
             onRemoveRecent={removeRecent}
             projects={tabs.map((tab) => ({ projectId: tab.projectId, name: tab.name }))}
-            onProjectSettings={openProjectSettingsFromView}
+            onProjectSettings={openProjectSettings}
           />
         )}
         {/* Every tab stays mounted so its terminals and watchers survive tab switches (FR8.4). */}
@@ -635,10 +666,10 @@ export default function App() {
               <ProjectView
                 project={tab}
                 visible={!settingsView && tab.projectId === activeId}
-                settingsOpen={settingsFor === tab.projectId}
-                onCloseSettings={() => setSettingsFor(null)}
                 view={tabUi.view}
-                onView={(v) => setUiOf(tab.projectId, { view: v })}
+                section={tabUi.configSection}
+                featuresTab={tabUi.featuresTab}
+                onView={(v, extra) => setUiOf(tab.projectId, { view: v, ...extra })}
                 onMeta={reportMeta}
                 terminalCommand={terminalCommand}
                 editRequest={editRequest}

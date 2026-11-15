@@ -4,6 +4,7 @@ import { app } from 'electron';
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import { DEFAULT_FEATURES_PATH, isValidFeaturesPath } from './parsers/features.js';
+import { DELIVERY } from './parsers/releases.js';
 import { LANGUAGE_SETTINGS, t } from '../shared/i18n.js';
 import { HARNESSES, selectableHarness } from '../shared/harnesses.js';
 import { TOOL_IDS, isStoredPath } from './tools.js';
@@ -61,7 +62,9 @@ function sanitizeProject(raw) {
     featuresPath: isValidFeaturesPath(raw?.featuresPath) ? raw.featuresPath : PROJECT_DEFAULTS.featuresPath,
     // "Agent-terminal" (EPIC-08 US-0801 FR2.3); left out when invalid, so the detected default applies.
     ...(selectableHarness(raw?.harness) ? { harness: raw.harness } : {}),
-    ...(tabs ? { harnessTabs: tabs } : {})
+    ...(tabs ? { harnessTabs: tabs } : {}),
+    // "Releases / Continuous deployment" (US-0603 FR1.1); left out when unset or invalid, so DELIVERY_DEFAULT applies.
+    ...(DELIVERY.includes(raw?.delivery) ? { delivery: raw.delivery } : {})
   };
 }
 
@@ -157,6 +160,9 @@ export async function setProjectSettings(root, partial) {
   }
   if (partial?.featureDocs !== undefined && !FEATURE_DOCS.has(partial.featureDocs)) {
     throw new Error(t('errors.unknownFeatureDocs', { value: String(partial.featureDocs) }));
+  }
+  if (partial?.delivery !== undefined && !DELIVERY.includes(partial.delivery)) {
+    throw new Error(t('errors.unknownDelivery', { value: String(partial.delivery) }));
   }
   if (partial?.featuresPath !== undefined && !isValidFeaturesPath(partial.featuresPath)) {
     throw new Error(t('errors.invalidFeaturesPath', { path: String(partial.featuresPath) }));

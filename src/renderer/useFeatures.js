@@ -14,7 +14,19 @@ export function useFeatures(projectId, space) {
   const [features, setFeatures] = useState(null); // null while loading
   const [settings, setSettings] = useState(null); // null until the saved project settings are read
   const [links, setLinks] = useState({});
+  // The story lifecycle rule in the space's memory (US-0603 FR5.2): null until read, or when it cannot be read.
+  const [ruleStatus, setRuleStatus] = useState(null);
   const bridge = window.bridge;
+
+  const loadRule = useCallback(async () => {
+    if (!space) return setRuleStatus(null);
+    try {
+      setRuleStatus(await bridge.getLifecycleRuleStatus(projectId, space));
+    } catch (err) {
+      console.error('Livscykelregeln kunde inte läsas:', err); // no notice then; the rest of the view is unaffected
+      setRuleStatus(null);
+    }
+  }, [projectId, space]);
 
   const loadDocs = useCallback(async () => {
     try {
@@ -39,17 +51,28 @@ export function useFeatures(projectId, space) {
   useEffect(() => {
     loadDocs();
     loadLinks();
-  }, [loadDocs, loadLinks]);
+    loadRule();
+  }, [loadDocs, loadLinks, loadRule]);
 
+  // A setting change sends features:changed, so the rule is checked again for the new setting (US-0603 FR5.3);
+  // a project change may be the agent saving the rule.
   useEffect(() => {
-    const offFeatures = bridge.onFeaturesChanged?.((c) => c.projectId === projectId && loadDocs());
-    const offProject = bridge.onProjectChanged?.((c) => c.projectId === projectId && c.indexChanged && loadLinks());
+    const offFeatures = bridge.onFeaturesChanged?.((c) => {
+      if (c.projectId !== projectId) return;
+      loadDocs();
+      loadRule();
+    });
+    const offProject = bridge.onProjectChanged?.((c) => {
+      if (c.projectId !== projectId) return;
+      if (c.indexChanged) loadLinks();
+      loadRule();
+    });
     return () => {
       offFeatures?.();
       offProject?.();
     };
-  }, [projectId, loadDocs, loadLinks]);
+  }, [projectId, loadDocs, loadLinks, loadRule]);
 
   // settingsLoaded: the agent tab waits for the saved harness choice before it starts anything (US-0801).
-  return { features, settings: settings ?? DEFAULT_SETTINGS, settingsLoaded: settings !== null, links };
+  return { features, settings: settings ?? DEFAULT_SETTINGS, settingsLoaded: settings !== null, links, ruleStatus };
 }

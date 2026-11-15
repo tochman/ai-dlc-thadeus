@@ -19,10 +19,24 @@ vi.mock('../../src/renderer/useProject.js', () => ({
     lastIntentChangeAt: null
   })
 }));
+const featuresHook = vi.hoisted(() => ({ extra: {} }));
 vi.mock('../../src/renderer/useFeatures.js', () => ({
-  useFeatures: () => ({ features: null, settings: { featureDocs: 'hide', featuresPath: 'docs/FEATURES.md', harness: null }, settingsLoaded: true, links: {} })
+  useFeatures: () => ({
+    features: null,
+    settings: { featureDocs: 'hide', featuresPath: 'docs/FEATURES.md', harness: null },
+    settingsLoaded: true,
+    links: {},
+    ruleStatus: null,
+    ...featuresHook.extra
+  })
 }));
 vi.mock('../../src/renderer/TerminalPanel.jsx', () => ({ default: () => null }));
+// The agent tab's typing, spied on; everything else is the real terminal context (US-0603 FR5.2).
+const typed = vi.hoisted(() => vi.fn(async () => true));
+vi.mock('../../src/renderer/TerminalContext.jsx', async (importOriginal) => {
+  const real = await importOriginal();
+  return { ...real, useTerminal: () => ({ ...real.useTerminal(), type: typed }) };
+});
 const { default: ProjectView } = await import('../../src/renderer/ProjectView.jsx');
 
 const project = { projectId: 'p1', root: '/p/app', name: 'app', detection: { isAidlc: true, activeSpace: 'default', spaces: ['default'] } };
@@ -93,7 +107,7 @@ describe('ProjectView: one view at a time', () => {
   });
 
   it('mounts Konfiguration only once chosen, so its CLI reads wait until then, and never stacks it with another view', async () => {
-    const { show } = renderView('intents');
+    const { show } = renderView('intents', { section: 'aidlc' }); // Configuration › AI-DLC (US-0012)
     await screen.findByTestId('intent-list');
     show('cost');
     await waitFor(() => expect(window.bridge.detectHarnesses).toHaveBeenCalled());
@@ -119,9 +133,54 @@ describe('ProjectView: one view at a time', () => {
   });
 });
 
+describe('ProjectView: lifecycle rule notice (US-0603 FR5.2, FR5.3)', () => {
+  const docs = { features: { available: true, epics: [] }, settings: { featureDocs: 'auto', featuresPath: 'docs/FEATURES.md', harness: null } };
+  afterEach(() => {
+    featuresHook.extra = {};
+  });
+
+  it('shows the notice for a missing, older or other rule, and its button types the request without Enter', async () => {
+    for (const [status, re] of [
+      ['missing', /har ingen livscykelregel för storys för Releaser/],
+      ['older', /äldre version/],
+      ['other', /andra leveranssättet/]
+    ]) {
+      featuresHook.extra = { ...docs, ruleStatus: status };
+      renderView('intents');
+      expect((await screen.findByTestId('lifecycle-rule-notice')).textContent).toMatch(re);
+      cleanup();
+    }
+
+    featuresHook.extra = { ...docs, settings: { ...docs.settings, delivery: 'continuous' }, ruleStatus: 'other' };
+    renderView('intents');
+    expect(screen.getByTestId('lifecycle-rule-notice').textContent).toMatch(/Kontinuerlig driftsättning/);
+    fireEvent.click(screen.getByTestId('lifecycle-rule-notice-run'));
+    expect(typed).toHaveBeenCalledWith('agent', expect.stringContaining('(story-lifecycle: continuous v1)'), { submit: false });
+  });
+
+  it('shows no notice for a current rule, without feature docs, or without AI-DLC', async () => {
+    featuresHook.extra = { ...docs, ruleStatus: 'current' };
+    renderView('intents');
+    await screen.findByTestId('intent-list');
+    expect(screen.queryByTestId('lifecycle-rule-notice')).toBeNull();
+    cleanup();
+
+    featuresHook.extra = { ruleStatus: 'missing' }; // features: null, no docs
+    renderView('intents');
+    await screen.findByTestId('intent-list');
+    expect(screen.queryByTestId('lifecycle-rule-notice')).toBeNull();
+    cleanup();
+
+    featuresHook.extra = { ...docs, ruleStatus: 'missing' };
+    renderView('intents', { project: { ...project, detection: { isAidlc: false, reason: 'Ingen aidlc/.' } } });
+    await screen.findByTestId('project-not-aidlc');
+    expect(screen.queryByTestId('lifecycle-rule-notice')).toBeNull();
+  });
+});
+
 describe('ProjectView: Lägg till harness', () => {
   async function openAddHarness() {
-    renderView('intents', { settingsOpen: true, onCloseSettings: () => {} });
+    renderView('config', { section: 'agent' }); // the project's settings are Configuration › Agent (US-0012)
     fireEvent.click(await screen.findByTestId('project-settings-add-harness'));
     const dialog = screen.getByTestId('add-harness-dialog');
     await waitFor(() => expect(dialog.open).toBe(true));

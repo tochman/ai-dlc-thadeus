@@ -114,13 +114,17 @@ describe('App shell', () => {
     expect(screen.getByTestId('project-view-switch-intents').getAttribute('aria-current')).toBe('page'); // views are per project
   });
 
-  it('opens the Configuration view from its arm block and the menu, only in an AI-DLC project (US-0901 FR1.1)', async () => {
+  it('opens Configuration from its arm block and the menu, with the AI-DLC section only in an AI-DLC project (US-0901 FR1.1, US-0012)', async () => {
     await renderApp({ openProjects: ['/p/aidlc-dash-a'], activeProject: '/p/aidlc-dash-a' });
     const block = await screen.findByTestId('project-view-switch-config');
     expect(block.textContent).toBe('Konfiguration');
     fireEvent.click(block);
     expect(screen.getByTestId('project-view-switch-config').getAttribute('aria-current')).toBe('page');
     expect(screen.getByRole('heading', { level: 1 }).textContent).toMatch(/aidlc-dash-a.*Konfiguration/);
+    // Its sections sit under it in the arm, like the Settings tabs (US-0012).
+    expect(screen.getByTestId('config-section-docs').getAttribute('aria-current')).toBe('page');
+    fireEvent.click(screen.getByTestId('config-section-aidlc'));
+    expect(screen.getByTestId('config-section-aidlc').getAttribute('aria-current')).toBe('page');
 
     act(() => push.menuCommand({ command: 'view', view: 'intents' }));
     expect(screen.getByTestId('project-view-switch-intents').getAttribute('aria-current')).toBe('page');
@@ -131,8 +135,9 @@ describe('App shell', () => {
     mockBridge({ openProjects: ['/p/plain-a'], activeProject: '/p/plain-a' });
     window.bridge.openProject = vi.fn(async (dir) => ({ ...projectInfo(dir, 'p1'), detection: { isAidlc: false } }));
     render(<App />);
-    await screen.findByTestId('project-view-switch-intents');
-    expect(screen.queryByTestId('project-view-switch-config')).toBeNull();
+    fireEvent.click(await screen.findByTestId('project-view-switch-config'));
+    expect(screen.getByTestId('config-section-agent')).toBeTruthy();
+    expect(screen.queryByTestId('config-section-aidlc')).toBeNull();
   });
 
   it('makes Kostnad and Github views of their own, one at a time, from the arm and the menu; disabled without AI-DLC', async () => {
@@ -160,7 +165,7 @@ describe('App shell', () => {
     act(() => push.menuCommand({ command: 'panel', panel: 'github' }));
     expect(current()).toEqual(['arm-github']);
     act(() => push.menuCommand({ command: 'view', view: 'config' }));
-    expect(current()).toEqual(['project-view-switch-config']);
+    expect(current()).toEqual(['project-view-switch-config', 'config-section-docs']);
     expect(shownView()).toBe('config');
     act(() => push.menuCommand({ command: 'panel', panel: 'cost' }));
     expect(current()).toEqual(['arm-cost']);
@@ -218,7 +223,7 @@ describe('App shell', () => {
     expect(screen.getByTestId('project-view-switch-features').hasAttribute('aria-current')).toBe(false);
     expect(pane().hidden).toBe(true); // the project stays mounted, hidden
 
-    fireEvent.click(screen.getByTestId('settings-view-close'));
+    fireEvent.click(screen.getByTestId('project-view-switch-intents')); // a view block leaves Settings (US-0012)
     expect(screen.queryByTestId('settings-view')).toBeNull();
     expect(screen.getByRole('heading', { level: 1 }).textContent).toMatch(/aidlc-dash-a.*Intents/);
     expect(screen.getByTestId('project-view-switch-intents').getAttribute('aria-current')).toBe('page');
@@ -245,7 +250,7 @@ describe('App shell', () => {
     expect(screen.queryByTestId('settings-view-tools')).toBeNull();
     await waitFor(() => expect(window.bridge.setSettings).toHaveBeenCalledWith({ settingsTab: 'notifications' }));
 
-    fireEvent.click(screen.getByTestId('settings-view-close'));
+    fireEvent.keyDown(screen.getByTestId('settings-view'), { key: 'Escape' });
     expect(screen.queryByTestId('app-settings-tab-notifications')).toBeNull();
   });
 
@@ -307,7 +312,7 @@ describe('App shell', () => {
     act(() => push.menuCommand({ command: 'appSettings' }));
     expect(screen.getByTestId('settings-view')).toBeTruthy(); // the same view as the arm's Inställningar
     expect(screen.getByRole('heading', { level: 1 }).textContent).toBe('Inställningar');
-    fireEvent.click(screen.getByTestId('settings-view-close')); // back to the view that was shown
+    fireEvent.keyDown(screen.getByTestId('settings-view'), { key: 'Escape' }); // back to the view that was shown
     expect(screen.getByTestId('project-view-switch-features').getAttribute('aria-current')).toBe('page');
 
     act(() => push.menuCommand({ command: 'nope' }));

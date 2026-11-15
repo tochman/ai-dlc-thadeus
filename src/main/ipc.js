@@ -24,7 +24,9 @@ import { applyPlanEdit, deletePlan, listPlans, planStages, previewPlanEdit, save
 import { apply as applyConfigChange, applyGuardLock, preview as previewConfigChange, previewGuardLock } from './aidlcWrite.js';
 import { applyModelChange, checkDrift, estimateCost, ledgerRows, modelOptions, previewModelChange, pricesFromLedger } from './modelChoice.js';
 import { createUpdater } from './updater.js';
-import { fetchRemote, getGitStatus, getRemoteChanges, listConflicts, showRemoteFile } from './git.js';
+import { fetchRemote, getGitStatus, getRemoteChanges, listConflicts, listReleaseTags, showRemoteFile } from './git.js';
+import { readRuleStatus, setStoryRelease } from './releases.js';
+import { DELIVERY_DEFAULT } from './parsers/releases.js';
 import { getSetupInfo, runSetup } from './setup.js';
 import { detectHarnesses } from './harness.js';
 import { TOOL_IDS, getTools, setToolPaths, validateTool } from './tools.js';
@@ -701,7 +703,25 @@ const handlers = {
   // Feature docs (EPIC-06). The root is always looked up here; the renderer never names one.
   'features:load': async (_event, projectId) => {
     const p = project(projectId);
-    return loadFeatures(p.root, (await getProjectSettings(p.root)).featuresPath);
+    const [features, tags] = await Promise.all([loadFeatures(p.root, (await getProjectSettings(p.root)).featuresPath), listReleaseTags(p.root)]);
+    return { ...features, tags }; // the vX.Y.Z tags for the release picker and the Releases view (US-0603 FR2.1, FR3.2)
+  },
+  // A story's release marker (US-0603 FR2.2, FR2.3): named fields only; main finds the files from the overview.
+  'features:setRelease': async (_event, projectId, req) => {
+    const p = project(projectId);
+    const res = await setStoryRelease(p.root, (await getProjectSettings(p.root)).featuresPath, {
+      storyId: req?.storyId,
+      version: req?.version ?? null,
+      epicHash: req?.epicHash,
+      overviewHash: req?.overviewHash
+    });
+    if (res.ok) sendFeaturesChanged(projectId, p); // the view reloads with the new hashes at once
+    return res;
+  },
+  // The lifecycle rule in the space's memory, for the saved delivery setting (US-0603 FR5.2, FR5.3).
+  'features:ruleStatus': async (_event, projectId, space) => {
+    const p = project(projectId);
+    return readRuleStatus(p.root, String(space), (await getProjectSettings(p.root)).delivery ?? DELIVERY_DEFAULT);
   },
   'features:storyLinks': async (_event, projectId, space) => {
     const p = project(projectId);
@@ -720,7 +740,8 @@ const handlers = {
       featureDocs: partial?.featureDocs,
       featuresPath: partial?.featuresPath,
       harness: partial?.harness,
-      harnessTabs: partial?.harnessTabs // the agent tabs side by side (US-0803)
+      harnessTabs: partial?.harnessTabs, // the agent tabs side by side (US-0803)
+      delivery: partial?.delivery // Releases or Continuous deployment (US-0603 FR1.1)
     });
     await syncFeaturesWatch(projectId);
     sendFeaturesChanged(projectId, p); // the open view reloads with the new setting

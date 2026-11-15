@@ -1,11 +1,14 @@
 // Keeps the feature docs honest (project rule: feature docs are updated in Deployment Execution, before the PR,
 // and a delivered story never shows as in progress). CI runs this on every PR, so the merge is blocked when:
-// a built story still says 📋 Planned, a delivered story (its intent is complete) isn't ✅ Done, or an epic
-// status line / FEATURES.md row doesn't mention a 🚧/✅ story with its marker.
+// a built story still says 📋 Planned, a delivered story (its intent is complete) isn't ✅ Done (or 🚀 Deployed), an
+// epic status line / FEATURES.md row doesn't mention a 🚧/✅/🚀 story with its marker, or a story still says
+// "for vX.Y.Z" after tag vX.Y.Z was cut (US-0603 FR6, FR7).
 import { describe, expect, it } from 'vitest';
+import { execFileSync } from 'node:child_process';
 import { readFileSync, readdirSync, existsSync } from 'node:fs';
 import path from 'node:path';
 import { parseEpic, parseOverview, statusOf } from '../../src/main/parsers/features.js';
+import { releaseOf } from '../../src/main/parsers/releases.js';
 import { parseState } from '../../src/main/parsers/state.js';
 
 const ROOT = path.resolve(__dirname, '../..');
@@ -41,10 +44,10 @@ export function mentionsWithStatus(text, id, status) {
 /**
  * @param {{overview: string, epics: Record<string, string>, built: Set<string>}} docs
  *   epics: link → markdown; built: story ids whose intent has finished Code Generation;
- *   delivered: story ids whose intent is complete (merged)
+ *   delivered: story ids whose intent is complete (merged); tags: the repository's vX.Y.Z tags (US-0603 FR7)
  * @returns {string[]} problems, empty when the docs are consistent
  */
-export function checkFeatureDocs({ overview, epics, built, delivered = new Set() }) {
+export function checkFeatureDocs({ overview, epics, built, delivered = new Set(), tags = new Set() }) {
   const problems = [];
   for (const row of parseOverview(overview).epics) {
     const md = epics[row.link];
@@ -56,7 +59,13 @@ export function checkFeatureDocs({ overview, epics, built, delivered = new Set()
     const tracked = epic.stories.filter((s) => s.status); // ➡️ moved and unmarked stories are skipped
     const uniform = tracked.length > 0 && tracked.every((s) => s.status === tracked[0].status);
     for (const s of tracked) {
-      if (delivered.has(s.id) && s.status !== 'done') problems.push(`${s.id} is delivered (its intent is complete) but isn't marked ✅ Done`);
+      // 🚀 Deployed comes after ✅ Done, so it counts as delivered too (US-0603 FR6).
+      if (delivered.has(s.id) && s.status !== 'done' && s.status !== 'deployed')
+        problems.push(`${s.id} is delivered (its intent is complete) but isn't marked ✅ Done`);
+      const { planned, released } = releaseOf(s.statusText);
+      if (planned && !released && tags.has(planned)) {
+        problems.push(`${s.id} is still marked "for ${planned}", but tag ${planned} exists: mark it "Released in ${planned}"`);
+      }
       if (s.status === 'planned') {
         if (built.has(s.id)) problems.push(`${s.id} is built (its intent finished Code Generation) but still says 📋 Planned`);
         continue;
@@ -94,6 +103,15 @@ function intentStories() {
   return { built, delivered };
 }
 
+/** The repository's v* tags; none without git or tags, as in a shallow CI checkout (US-0603 FR7). */
+function repoTags() {
+  try {
+    return new Set(execFileSync('git', ['tag', '--list', 'v*'], { cwd: ROOT, encoding: 'utf8' }).split('\n').filter(Boolean));
+  } catch {
+    return new Set();
+  }
+}
+
 describe('feature docs status', () => {
   it('this repo: built and delivered stories are marked, and epic status lines and FEATURES.md rows match', () => {
     const overview = readFileSync(path.join(ROOT, 'docs/FEATURES.md'), 'utf8');
@@ -102,7 +120,7 @@ describe('feature docs status', () => {
       const file = path.join(ROOT, 'docs', row.link);
       if (existsSync(file)) epics[row.link] = readFileSync(file, 'utf8');
     }
-    expect(checkFeatureDocs({ overview, epics, ...intentStories() })).toEqual([]);
+    expect(checkFeatureDocs({ overview, epics, ...intentStories(), tags: repoTags() })).toEqual([]);
   });
 
   const overview = '| Epic | Topic | Status |\n|---|---|---|\n| [EPIC-09](e.md) | T | 📋 Planned (US-0901) |\n';
@@ -132,6 +150,21 @@ describe('feature docs status', () => {
       delivered: new Set(['US-0901'])
     });
     expect(problems).toEqual([expect.stringContaining('US-0901 is delivered')]);
+  });
+
+  it('accepts 🚀 Deployed for a delivered story (US-0603 FR6)', () => {
+    const ov = '| Epic | Topic | Status |\n|---|---|---|\n| [EPIC-09](e.md) | T | 🚀 US-0901 deployed |\n';
+    const docs = { overview: ov, epics: { 'e.md': epic('🚀 Deployed', '🚀 US-0901 deployed.') }, built: new Set(['US-0901']) };
+    expect(checkFeatureDocs({ ...docs, delivered: new Set(['US-0901']) })).toEqual([]);
+  });
+
+  it('fails a story still marked "for vX.Y.Z" when tag vX.Y.Z exists, and passes without tags (US-0603 FR7)', () => {
+    const ov = '| Epic | Topic | Status |\n|---|---|---|\n| [EPIC-09](e.md) | T | ✅ US-0901 done, for v0.2.5 |\n';
+    const docs = { overview: ov, epics: { 'e.md': epic('✅ Done, for v0.2.5', '✅ US-0901 done, for v0.2.5.') }, built: new Set() };
+    expect(checkFeatureDocs({ ...docs, tags: new Set(['v0.2.4', 'v0.2.5']) })).toEqual([
+      'US-0901 is still marked "for v0.2.5", but tag v0.2.5 exists: mark it "Released in v0.2.5"'
+    ]);
+    expect(checkFeatureDocs(docs)).toEqual([]); // a shallow CI checkout has no tags
   });
 
   it('passes ranges and uniform released epics', () => {

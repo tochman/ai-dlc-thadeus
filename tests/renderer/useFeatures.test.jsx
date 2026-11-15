@@ -11,6 +11,7 @@ beforeEach(() => {
     getProjectSettings: vi.fn(async () => ({ featureDocs: 'show', featuresPath: 'docs/F.md', harness: 'claude' })),
     loadFeatures: vi.fn(async () => ({ available: true, epics: [] })),
     getStoryLinks: vi.fn(async () => ({ 'US-1': 'd1' })),
+    getLifecycleRuleStatus: vi.fn(async () => 'missing'),
     onFeaturesChanged: vi.fn((fn) => {
       listeners.features = fn;
       return vi.fn();
@@ -35,6 +36,30 @@ describe('useFeatures', () => {
     expect(result.current.settings.harness).toBe('claude');
     expect(result.current.features).toEqual({ available: true, epics: [] });
     await waitFor(() => expect(result.current.links).toEqual({ 'US-1': 'd1' }));
+  });
+
+  it('reads the lifecycle rule status for the space, again on features:changed and on a project change (US-0603 FR5.2, FR5.3)', async () => {
+    const { result } = renderHook(() => useFeatures('p1', 'default'));
+    await waitFor(() => expect(result.current.ruleStatus).toBe('missing'));
+    expect(bridge.getLifecycleRuleStatus).toHaveBeenCalledWith('p1', 'default');
+    bridge.getLifecycleRuleStatus.mockResolvedValueOnce('current');
+    await act(async () => listeners.features({ projectId: 'p1' }));
+    await waitFor(() => expect(result.current.ruleStatus).toBe('current'));
+    const calls = bridge.getLifecycleRuleStatus.mock.calls.length;
+    await act(async () => listeners.project({ projectId: 'p1', indexChanged: false }));
+    expect(bridge.getLifecycleRuleStatus.mock.calls.length).toBe(calls + 1);
+
+    bridge.getLifecycleRuleStatus.mockRejectedValueOnce(new Error('läsfel'));
+    await act(async () => listeners.features({ projectId: 'p1' }));
+    await waitFor(() => expect(result.current.ruleStatus).toBeNull()); // no notice on a failed read; it is logged
+    expect(console.error).toHaveBeenCalled();
+  });
+
+  it('has no rule status without a space', async () => {
+    const { result } = renderHook(() => useFeatures('p1', null));
+    await waitFor(() => expect(result.current.settingsLoaded).toBe(true));
+    expect(bridge.getLifecycleRuleStatus).not.toHaveBeenCalled();
+    expect(result.current.ruleStatus).toBeNull();
   });
 
   it('has no links without a space', async () => {

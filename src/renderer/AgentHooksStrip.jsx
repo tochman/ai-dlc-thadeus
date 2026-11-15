@@ -31,32 +31,35 @@ export default function AgentHooksStrip({ projectId, onDetails }) {
       {shown.map((h) => {
         const action = h.files.some((f) => f.reason) ? null : h.status === 'missing' ? 'install' : 'update';
         return (
-          <div key={h.harness} className="latest-message" role="status" data-testid="agent-hooks-strip">
-            <span>{lineOf(h)}</span>{' '}
-            {action && (
-              <button
-                type="button"
-                className="btn"
-                onClick={() => {
-                  setDone(null);
-                  setOpen({ harness: h.harness, action });
-                }}
-                data-testid="agent-hooks-strip-action"
-              >
-                {t(`agentHooks.action.${action}`)}
+          <div key={h.harness} className="banner banner-warn" role="status" data-testid="agent-hooks-strip">
+            <span>{lineOf(h)}</span>
+            {/* The same banner as the other project notices (US-0012): text left, actions right. */}
+            <span className="banner-actions">
+              {action && (
+                <button
+                  type="button"
+                  className="btn"
+                  onClick={() => {
+                    setDone(null);
+                    setOpen({ harness: h.harness, action });
+                  }}
+                  data-testid="agent-hooks-strip-action"
+                >
+                  {t(`agentHooks.action.${action}`)}
+                </button>
+              )}{' '}
+              <button type="button" className="btn" onClick={onDetails} data-testid="agent-hooks-strip-details">
+                {t('agentHooks.strip.details')}
+              </button>{' '}
+              <button type="button" className="btn" onClick={() => setDismissed(true)} data-testid="agent-hooks-strip-dismiss">
+                {t('agentHooks.strip.dismiss')}
               </button>
-            )}{' '}
-            <button type="button" className="btn" onClick={onDetails} data-testid="agent-hooks-strip-details">
-              {t('agentHooks.strip.details')}
-            </button>{' '}
-            <button type="button" className="btn" onClick={() => setDismissed(true)} data-testid="agent-hooks-strip-dismiss">
-              {t('agentHooks.strip.dismiss')}
-            </button>
+            </span>
           </div>
         );
       })}
       {done && (
-        <div className="latest-message" role="status" data-testid="agent-hooks-done">
+        <div className="banner" role="status" data-testid="agent-hooks-done">
           {done}
         </div>
       )}

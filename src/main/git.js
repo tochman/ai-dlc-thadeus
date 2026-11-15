@@ -1,5 +1,5 @@
-// Read-only git for "Uppdatera från GitHub" (US-0502). Only fetch, rev-parse, rev-list, diff, status
-// and show run here, with fixed arguments and no shell (FR3.1, NFR1). Anything that changes the
+// Read-only git for "Uppdatera från GitHub" (US-0502). Only fetch, rev-parse, rev-list, diff, status,
+// show and tag --list (US-0603) run here, with fixed arguments and no shell (FR3.1, NFR1). Anything that changes the
 // working tree is typed into the visible shell tab by the renderer instead.
 import { runFixed } from './exec.js';
 import { readJsonSafe } from './projectAccess.js';
@@ -138,6 +138,24 @@ export async function showRemoteFile(root, ref, rel, { exec } = {}) {
   if (!rel.startsWith(AIDLC_PREFIX) || rel.split('/').includes('..')) throw new Error(t('errors.onlyAidlcFiles', { rel }));
   await assertCompareRef(root, ref, exec);
   return git(root, ['show', `${ref}:./${rel}`], exec);
+}
+
+/**
+ * US-0603 FR3.2, NFR2: the project's `v*` tags with their dates, from one local git command (no network).
+ * No git, no repository or no tags gives [].
+ * @returns {Promise<{name: string, date: string|null}[]>}
+ */
+export async function listReleaseTags(root, { exec } = {}) {
+  try {
+    const out = await git(root, ['tag', '--list', 'v*', '--format=%(refname:short)%09%(creatordate:short)'], exec);
+    return lines(out).map((l) => {
+      const [name, date] = l.split('\t');
+      return { name, date: date || null };
+    });
+  } catch (err) {
+    console.info('git tag gick inte, releaser visas utan taggar:', err.message);
+    return [];
+  }
 }
 
 /** Files with unresolved conflicts after a pull, rebase or merge (FR3.8). */

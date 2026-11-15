@@ -1,7 +1,7 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import path from 'node:path';
 import { openRoot } from '../../src/main/projectAccess.js';
-import { getGitStatus, getRemoteChanges, showRemoteFile } from '../../src/main/git.js';
+import { getGitStatus, getRemoteChanges, listReleaseTags, showRemoteFile } from '../../src/main/git.js';
 
 const PROJECT = path.resolve(__dirname, '../fixtures/project');
 
@@ -101,5 +101,26 @@ describe('showRemoteFile', () => {
     await expect(showRemoteFile('/repo', '--output=/tmp/x', 'aidlc/a.md', { exec })).rejects.toThrow(/Ogiltigt/);
     await expect(showRemoteFile('/repo', 'origin/other', 'aidlc/a.md', { exec })).rejects.toThrow(/Bara upstream/);
     expect(calls.filter((c) => c.args[0] === 'show')).toHaveLength(1);
+  });
+});
+
+describe('listReleaseTags (US-0603 NFR2)', () => {
+  const ARGS = 'tag --list v* --format=%(refname:short)%09%(creatordate:short)';
+  it('reads every v* tag with its date in one fixed git command', async () => {
+    const { exec, calls } = fakeExec({ [ARGS]: 'v0.2.0\t2026-11-10\nv0.2.4\t2026-11-14\n\nvnext\n' });
+    expect(await listReleaseTags('/repo', { exec })).toEqual([
+      { name: 'v0.2.0', date: '2026-11-10' },
+      { name: 'v0.2.4', date: '2026-11-14' },
+      { name: 'vnext', date: null }
+    ]);
+    const gitCalls = calls.filter((c) => c.file === 'git');
+    expect(gitCalls).toHaveLength(1);
+    expect(gitCalls[0].opts.shell).toBeUndefined();
+  });
+
+  it('gives no tags without git or a repository, without throwing', async () => {
+    vi.spyOn(console, 'info').mockImplementation(() => {});
+    expect(await listReleaseTags('/repo', { exec: fakeExec({}).exec })).toEqual([]);
+    expect(await listReleaseTags('/repo', { exec: fakeExec({ [ARGS]: '' }).exec })).toEqual([]);
   });
 });

@@ -341,7 +341,36 @@
     "status": {
       "planned": "Planerad",
       "progress": "Pågår",
-      "done": "Klar"
+      "done": "Klar",
+      "deployed": "Driftsatt"
+    },
+    "delivery": {
+      "releases": "Releaser",
+      "continuous": "Kontinuerlig driftsättning"
+    },
+    "release": {
+      "label": "Release",
+      "none": "Ingen",
+      "releasedIn": "Släppt i {version}",
+      "conflict": "{file} har ändrats på disken sedan den lästes, så inget mer skrevs. Försök igen när vyn har laddats om.",
+      "failed": "Releasen kunde inte sättas: {error}",
+      "stale": "Taggen {version} finns, men storyn är fortfarande märkt ”for {version}”.",
+      "noStory": "{id} finns inte i feature-beskrivningarna.",
+      "released": "{id} är redan släppt i {version} och kan inte märkas för en annan release."
+    },
+    "releases": {
+      "title": "Releaser",
+      "empty": "Inga releaser än. Märk en story för en release, eller tagga en.",
+      "planned": "Planerad",
+      "releasedOn": "Släppt {date}",
+      "released": "Släppt",
+      "storyCount": "{n, plural, one {# story} other {# storys}}"
+    },
+    "rule": {
+      "missing": "Projektets AI-DLC-minne har ingen livscykelregel för storys för {delivery}.",
+      "older": "Projektets livscykelregel för storys är en äldre version. Uppdatera den för {delivery}.",
+      "other": "Projektets livscykelregel för storys gäller det andra leveranssättet. Uppdatera den för {delivery}.",
+      "run": "Skriv in begäran i agentfliken"
     },
     "unknownStatus": "Okänd status",
     "emptyTitle": "Inga feature-beskrivningar",
@@ -379,7 +408,9 @@
     },
     "prompt": {
       "format": "Skapa feature-beskrivningar för det här projektet utifrån det som redan finns (README, kod, dokumentation): docs/FEATURES.md med en kort inledning och en tabell med en rad per epic (länk, ämne, status), och en fil per epic i docs/features/epic-XX-<slug>.md med en beskrivning, en rad **Stories:**, en rad **Status (datum):** och storys som **US-XXYY: Titel** <status> följt av As a / in order to / I would like to, Epic, Priority, Complexity, Acceptance Criteria som kryssrutor i formen Given/When/Then, Notes och Dependencies. Statusmarkörer: 📋 Planned, 🚧 In progress, ✅ Done (mergad; lägg till \"Released in vX.Y.Z\" vid release). Ordna epics efter ämne, inte efter release.",
-      "rule": "Lägg också till en projektregel genom AI-DLC:s eget sätt att spara regler, inte genom att redigera minnesfilerna direkt, så att varje AI-verktyg i projektet (Claude Code, opencode och de andra) följer den: en ny story som personen beskriver läggs in i rätt epic-fil direkt; när arbetet på en story startar sätts den till 🚧 In progress i statusmarkören, epicens rad **Status (…)** och raden i FEATURES.md; när den är byggd och godkänd sätts den till ✅ Done och uppfyllda acceptanskriterier kryssas; så snart det är känt vilken release den ingår i skrivs releasen ut (\"for vX.Y.Z\", och \"Released in vX.Y.Z\" när taggen sätts); en levererad story får aldrig stå som pågående.",
+      "rule": "Lägg också till en projektregel genom AI-DLC:s eget sätt att spara regler, inte genom att redigera minnesfilerna direkt, så att varje AI-verktyg i projektet (Claude Code, opencode och de andra) följer den: en ny story som personen beskriver läggs in i rätt epic-fil direkt; när arbetet på en story startar sätts den till 🚧 In progress i statusmarkören, epicens rad **Status (…)** och raden i FEATURES.md; när den är byggd och godkänd sätts den till ✅ Done och uppfyllda acceptanskriterier kryssas; så snart det är känt vilken release den ingår i skrivs releasen ut (\"for vX.Y.Z\", och \"Released in vX.Y.Z\" när taggen sätts); en levererad story får aldrig stå som pågående. Har projektet redan en livscykelregel för storys ersätts den med den här. Avsluta regeln med {tag}, exakt så, så att appen kan se vilken regel det är.",
+      "ruleContinuous": "Lägg också till en projektregel genom AI-DLC:s eget sätt att spara regler, inte genom att redigera minnesfilerna direkt, så att varje AI-verktyg i projektet (Claude Code, opencode och de andra) följer den: en ny story som personen beskriver läggs in i rätt epic-fil direkt; när arbetet på en story startar sätts den till 🚧 In progress i statusmarkören, epicens rad **Status (…)** och raden i FEATURES.md; när den är byggd och godkänd sätts den till ✅ Done och uppfyllda acceptanskriterier kryssas; när den är driftsatt sätts den till 🚀 Deployed på samma tre ställen; en levererad story får aldrig stå som pågående. Har projektet redan en livscykelregel för storys ersätts den med den här. Avsluta regeln med {tag}, exakt så, så att appen kan se vilken regel det är.",
+      "update": "Livscykelregeln för storys i projektets AI-DLC-minne saknas eller är inaktuell. {rule}",
       "exists": "Projektet har redan feature-beskrivningar i {path} (en översikt och en fil per epic). {rule}"
     }
   },
@@ -526,7 +557,10 @@
     },
     "update": {
       "cleanup": "Ta bort hämtat paket efter uppdatering",
-      "cleanupOption": { "on": "På", "off": "Av" }
+      "cleanupOption": {
+        "on": "På",
+        "off": "Av"
+      }
     },
     "about": {
       "version": "App-version {version}",
@@ -540,6 +574,11 @@
       "title": "Projektinställningar",
       "titleFor": "Projektinställningar: {name}",
       "featureDocsLegend": "Feature-beskrivningar",
+      "deliveryLegend": "Hur projektet levereras",
+      "deliveryHelp": {
+        "releases": "Storys märks för en release och listas per release.",
+        "continuous": "Varje merge driftsätts; storys slutar på 🚀 Driftsatt."
+      },
       "mode": {
         "auto": "Automatiskt",
         "show": "Visa",
@@ -561,7 +600,13 @@
       "harnessSwitchConfirm": "{from} arbetar. Byter du till {to} stängs sessionen. Byta ändå?",
       "addHarness": "Lägg till harness…",
       "installedHarnesses": "Installerade: {list}",
-      "openConfig": "Visa AI-DLC:s konfiguration"
+      "sections": {
+        "docs": "Feature-beskrivningar",
+        "agent": "Agent",
+        "aidlc": "AI-DLC"
+      },
+      "saved": "Sparat.",
+      "reset": "Återställ"
     }
   },
   "config": {
@@ -706,7 +751,10 @@
         "name": "Frysning under granskning",
         "protects": "Filer som granskas kan inte ändras förrän granskningen är klar."
       },
-      "AIDLC_DISABLE_REVIEWER_SCOPE_HOOK": { "name": "Granskarens läsområde", "protects": "En granskare läser bara det den ombads granska." },
+      "AIDLC_DISABLE_REVIEWER_SCOPE_HOOK": {
+        "name": "Granskarens läsområde",
+        "protects": "En granskare läser bara det den ombads granska."
+      },
       "AIDLC_DISABLE_SUMMARY_CONFIRMATION": {
         "name": "Bekräftelse av sammanfattning",
         "protects": "AI-DLC ber dig bekräfta sin sammanfattning av ett steg innan det går vidare."
@@ -715,9 +763,18 @@
         "name": "Kontroll av bekräftelsen",
         "protects": "Ett steg kan inte stängas förrän sammanfattningen verkligen bekräftats."
       },
-      "AIDLC_SKIP_HUMAN_PRESENCE_GUARD": { "name": "Mänsklig närvaro", "protects": "Ett godkännande räknas bara när en person gav det." },
-      "AIDLC_SKIP_ARTIFACT_GUARD": { "name": "Stegets resultat", "protects": "Ett steg kan inte slutföras utan filerna det ska ta fram." },
-      "AIDLC_SKIP_REVISION_BACKSTOP": { "name": "Spärr mot omtag", "protects": "Ett steg kan inte göras om gång på gång utan att en person beslutar." },
+      "AIDLC_SKIP_HUMAN_PRESENCE_GUARD": {
+        "name": "Mänsklig närvaro",
+        "protects": "Ett godkännande räknas bara när en person gav det."
+      },
+      "AIDLC_SKIP_ARTIFACT_GUARD": {
+        "name": "Stegets resultat",
+        "protects": "Ett steg kan inte slutföras utan filerna det ska ta fram."
+      },
+      "AIDLC_SKIP_REVISION_BACKSTOP": {
+        "name": "Spärr mot omtag",
+        "protects": "Ett steg kan inte göras om gång på gång utan att en person beslutar."
+      },
       "AIDLC_DISABLE_ENSEMBLE_EVIDENCE": {
         "name": "Överlämning i kedjan",
         "protects": "Arbete som lämnas från en agent till nästa måste ha med sitt underlag."
@@ -744,7 +801,11 @@
       "keep": "behåll",
       "preset": "Förval för alla agenter",
       "group": "Effort per grupp",
-      "groups": { "deciding": "Beslutande", "reviewing": "Granskande", "writing-up": "Dokumenterande" },
+      "groups": {
+        "deciding": "Beslutande",
+        "reviewing": "Granskande",
+        "writing-up": "Dokumenterande"
+      },
       "estimate": "Kostnad enligt projektets ledger, uppskattning: {before} → {after} ({delta}).",
       "noEstimate": "Ingen kostnadsuppskattning: ledgern har inget pris för modellen, eller så ändrar valet bara effort.",
       "check": "Kontrollera agentfilerna",
@@ -844,6 +905,7 @@
     "fileTypeBlocked": "Filtypen öppnas inte från appen: {rel}",
     "projectRootMissing": "Projektroten saknas",
     "unknownFeatureDocs": "Okänt värde för feature-beskrivningar: {value}",
+    "unknownDelivery": "Okänt sätt att leverera: {value}",
     "invalidFeaturesPath": "Ogiltig sökväg: {path}. Den ska vara relativ, sluta på .md och ligga i projektet.",
     "invalidName": "Ogiltigt namn på {what}: {name}",
     "notAidlc": "Mappen saknar aidlc/spaces/ och är inget AI-DLC-projekt.",
