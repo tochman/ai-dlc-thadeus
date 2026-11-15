@@ -6,9 +6,9 @@
 
 > Small fixes the person reports while using the app: something looks off, behaves wrongly or is missing a detail. Each fix becomes a story here, so nothing reported in passing gets lost. A fix that grows into a feature moves to its topic's epic.
 
-**Stories:** US-0001, US-0002, US-0003, US-0004, US-0005, US-0006, US-0007, US-0008, US-0009, US-0010, US-0011, US-0012, US-0013, US-0014
+**Stories:** US-0001, US-0002, US-0003, US-0004, US-0005, US-0006, US-0007, US-0008, US-0009, US-0010, US-0011, US-0012, US-0013, US-0014, US-0015, US-0016
 
-**Status (2026-11-15):** ✅ US-0001–US-0012 released (v0.2.3–v0.2.5). ✅ US-0013–US-0014 done. Each story names its release.
+**Status (2026-11-15):** ✅ US-0001–US-0012 released (v0.2.3–v0.2.5). ✅ US-0013–US-0014 done. 📋 US-0015–US-0016 planned for v0.2.6. Each story names its release.
 
 ---
 
@@ -230,3 +230,28 @@
   - **Tests.** `tests/renderer/featureDocsPrompt.test.jsx` (2 new).
   - **This project.** The older Swedish lifecycle rule under `## Mandated` in `aidlc/spaces/default/memory/project.md` was taken out by hand. The new rule is saved under `## Corrections`.
 - **Dependencies:** US-0603
+
+**US-0015: The header shows the branch that is checked out now** 📋 Planned, for v0.2.6
+- As a **developer switching branches in the terminal**, in order to **know which branch the app is showing me**, I would like to **see the current branch in the header, also after I switch outside the app**.
+- **Epic:** EPIC-00
+- **Priority:** High
+- **Complexity:** Low
+- **Background:** Reported 2026-11-15 with a screenshot: after `git switch main` in a terminal, the header still read `FIX/US-0014` while the views already showed `main`'s files, so the lifecycle rule notice looked wrong.
+- **Acceptance Criteria:**
+  - [ ] **Given** the project is open, **when** the branch is switched outside the app, **then** the header shows the new branch within a few seconds, without reopening the project.
+  - [ ] **Given** a detached HEAD, **then** the header says so instead of showing an old branch name.
+  - [ ] The notices and views that read files from the project refresh with the branch.
+- **Notes:** The branch comes from `getGitStatus()` in `src/main/git.js`. Watching `.git/HEAD` is likely enough.
+- **Dependencies:** US-0502
+
+**US-0016: An older lifecycle rule in other words counts as older, not missing** 📋 Planned, for v0.2.6
+- As a **developer with an older story lifecycle rule in the project's memory**, in order to **be told the rule needs updating rather than that it is missing**, I would like to **have an untagged lifecycle rule recognised even when it does not use all three status markers**.
+- **Epic:** EPIC-00
+- **Priority:** Low
+- **Complexity:** Low
+- **Background:** Reported 2026-11-15. `main`'s `project.md` holds an untagged Swedish lifecycle rule with 🚧 and ✅ but no 📋, so the app said "no story lifecycle rule" instead of "out of date".
+- **Acceptance Criteria:**
+  - [ ] **Given** an untagged rule that names 🚧 and ✅, **then** the status is 'older', and the notice says the rule is out of date.
+  - [ ] **Given** no lifecycle rule at all, **then** the status stays 'missing'.
+- **Notes:** The fallback in `ruleStatus()` in `src/main/parsers/releases.js` requires 📋, 🚧 and ✅.
+- **Dependencies:** US-0603, US-0014
