@@ -6,9 +6,9 @@
 
 > Auctum AIDLC Control should look and behave like a proper Auctum desktop app wherever it shows up: in the Dock, the application menu, the window switcher, the installer and the Linux launcher. Inside the app it should feel like a living bridge console. EPIC-01 added the name, splash screen, in-app logo and the restrained LCARS theme. This epic covers the parts of the operating system that still show Electron defaults, and the motion and light that make the theme come alive without hurting readability.
 
-**Stories:** US-0401, US-0402, US-0403, US-0404, US-0405, US-0406, US-0407, US-0408, US-0409, US-0410
+**Stories:** US-0401, US-0402, US-0403, US-0404, US-0405, US-0406, US-0407, US-0408, US-0409, US-0410, US-0411
 
-**Status (2026-11-15):** ✅ US-0401 released in v0.1.1. ✅ US-0402, US-0403 and US-0404 released in v0.2.0. ✅ US-0406 released in v0.2.1 (intent `261113-thadeus-name`). ✅ US-0405 released in v0.2.3 (settings view, intent `261114-settings-view`) — marked "Released in v0.2.3" when the tag is cut. ✅ US-0407 released in v0.2.3 (update from a GitHub release). ✅ US-0408 released in v0.2.3 (Om T.H.A.D.E.U.S. window with the app version). ✅ US-0409 released in v0.2.4 (About window in a new design). 📋 US-0410 Planned for v0.2.5 (Settings in LCARS tabs, all tools checked).
+**Status (2026-11-15):** ✅ US-0401 released in v0.1.1. ✅ US-0402, US-0403 and US-0404 released in v0.2.0. ✅ US-0406 released in v0.2.1 (intent `261113-thadeus-name`). ✅ US-0405 released in v0.2.3 (settings view, intent `261114-settings-view`) — marked "Released in v0.2.3" when the tag is cut. ✅ US-0407 released in v0.2.3 (update from a GitHub release). ✅ US-0408 released in v0.2.3 (Om T.H.A.D.E.U.S. window with the app version). ✅ US-0409 released in v0.2.4 (About window in a new design). 📋 US-0410 Planned for v0.2.5 (Settings in LCARS tabs, all tools checked). 📋 US-0411 Planned (pipeline stages as LCARS cards).
 
 ---
 
@@ -229,7 +229,7 @@
 - **Complexity:** Medium
 - **Background:** Asked for 2026-11-15 with a screenshot of today's Settings: one long scrolling page; notification settings sit under Appearance; a long Claude Code path breaks mid-word. "We want it more LCARS and animated, perhaps use tabs (but LCARS-style)" and "opencode and gh cli is missing".
 - **Acceptance Criteria:**
-  - [ ] Settings shows LCARS-style tabs (pill buttons like the side rail): Tools, Appearance, Notifications, Project, About. One tab's panel shows at a time, in an LCARS frame with an elbow and a header bar.
+  - [ ] Settings shows LCARS-style tabs (pill buttons like the side rail): Tools, Appearance, Notifications, Project, About. One tab's panel shows at a time, in an LCARS frame with an elbow and a header bar. Each tool is an LCARS card (see US-0411 for the card's anatomy); the card is built here once as a shared style.
   - [ ] Notifications holds the questions-from-AI-DLC, agent dialog and reply settings and the sound; Appearance keeps animations, full screen at start and language.
   - [ ] Choosing a tab lights its pill and sweeps to its panel; rows appear one after another. Reduced gives a static glow, Off no motion, as the animations setting does everywhere.
   - [ ] Tools lists the AI-DLC CLI, Claude Code, **opencode**, the **GitHub CLI (`gh`)** and the shell, each with path, version, "found automatically" or the chosen path, and Choose…. A chosen path is used the next time the app runs that tool.
@@ -239,3 +239,20 @@
   - **Where.** `src/renderer/SettingsView.jsx`, `TOOL_IDS` in `src/main/tools.js` (today `aidlc`, `claude`, `shell`).
   - **Plan.** Ultra-express, own branch after PR #31 (US-0506) merges, since Settings carries US-0506's notification settings.
 - **Dependencies:** US-0405, US-0506
+
+**US-0411: Pipeline stages as LCARS cards** 📋 Planned
+- As a **developer following a workflow**, in order to **read where the work is at a glance**, I would like to **see each pipeline stage as an LCARS card, with the current one lit**.
+- **Epic:** EPIC-04
+- **Priority:** Medium
+- **Complexity:** Medium
+- **Background:** Asked for 2026-11-15 with an LCARS reference screen (a row of ship cards): "I like the framing on these cards and I think we can use something similar when we display cards on for example the pipeline".
+- **Acceptance Criteria:**
+  - [ ] Each stage is a card: a thin outline with one rounded corner at the top right and a lighter bar segment on its top edge; a header strip with the stage name aligned right; a dark body; a footer strip with a short code (agent or duration) and a segmented level bar.
+  - [ ] The level bar shows progress the records give: units approved out of all units for a per-unit stage, otherwise done or not. No number is made up.
+  - [ ] The current stage's card is filled blue like a selected card; done cards are grey outlines; skipped ones are muted; a mismatch or failure shows in orange.
+  - [ ] The current card glows; Reduced gives a static glow, Off none, as the animations setting does everywhere.
+  - [ ] Clicking a card still opens its files, as today; cost, mismatch and status keep their titles and texts through `t()`.
+- **Notes:**
+  - **Where.** `src/renderer/Pipeline.jsx` (`stage-block` today), with the shared card style from US-0410.
+  - The reference image is not stored in the repository (third-party artwork); this story describes the card instead.
+- **Dependencies:** US-0410
