@@ -26,7 +26,7 @@
 
 **Stories:** US-0901, US-0902, US-0903, US-0904
 
-**Status (2026-11-14):** 🔄 In progress. ✅ US-0901 released in v0.2.2. ✅ US-0902 released in v0.2.3. ✅ US-0903 released in v0.2.4. ✅ US-0904 released in v0.2.3. US-0904 replaces US-0206 (moved here from EPIC-02).
+**Status (2026-11-15):** ✅ US-0901–US-0904 released (v0.2.2–v0.2.4). Each story names its release.
 
 ---
 

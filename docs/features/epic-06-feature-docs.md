@@ -8,7 +8,7 @@
 
 **Stories:** US-0601, US-0602, US-0603, US-0604
 
-**Status (2026-11-15):** ✅ US-0601 and US-0602 released in v0.2.0. ✅ US-0603 Done, for v0.2.5 (releases or continuous deployment; unit tests green, hand check in the app before the release). 📋 US-0604 Planned for v0.2.6 (filter epics and stories). Both stories are built with AI-DLC in `express` scope (intent `261113-feature-docs`) and the unit tests are green. The manual checks in Electron (live updates, settings, setup offer, timing) are done in Build and Test.
+**Status (2026-11-15):** ✅ US-0601–US-0603 released (v0.2.0–v0.2.5). 📋 US-0604 planned for v0.2.6. Each story names its release.
 
 **Decisions:**
 - **Q1 (where the view lives):** a switch "Intents | Features" at the top of the project view. Features replaces the sidebar and content area; the terminal stays.
@@ -65,7 +65,7 @@
   - [x] Read-only: the view never changes the files. Links "Öppna i editor" and "Visa i Finder" as in the artifact reader.
 - **Dependencies:** US-0107, US-0109, US-0601
 
-**US-0603: Releases or continuous deployment, and stories marked for a release** ✅ Done, for v0.2.5 (intent `261115-release-handling`, ultra-express)
+**US-0603: Releases or continuous deployment, and stories marked for a release** ✅ Released in v0.2.5 (intent `261115-release-handling`, ultra-express)
 - As a **developer planning what ships when**, in order to **see and shape each release**, I would like to **choose per project whether it ships in releases or continuously, and mark stories for a release in the app**.
 - **Epic:** EPIC-06
 - **Priority:** High

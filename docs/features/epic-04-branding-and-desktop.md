@@ -8,7 +8,7 @@
 
 **Stories:** US-0401, US-0402, US-0403, US-0404, US-0405, US-0406, US-0407, US-0408, US-0409, US-0410, US-0411, US-0412
 
-**Status (2026-11-15):** ✅ US-0401 released in v0.1.1. ✅ US-0402, US-0403 and US-0404 released in v0.2.0. ✅ US-0406 released in v0.2.1 (intent `261113-thadeus-name`). ✅ US-0405 released in v0.2.3 (settings view, intent `261114-settings-view`) — marked "Released in v0.2.3" when the tag is cut. ✅ US-0407 released in v0.2.3 (update from a GitHub release). ✅ US-0408 released in v0.2.3 (Om T.H.A.D.E.U.S. window with the app version). ✅ US-0409 released in v0.2.4 (About window in a new design). ✅ US-0410 done, for v0.2.5 (Settings in LCARS tabs, all tools checked). ✅ US-0411 done, for v0.2.5 (pipeline stages as LCARS cards). 📋 US-0412 Planned (more LCARS feeling and motion on the pipeline cards).
+**Status (2026-11-15):** ✅ US-0401–US-0411 released (v0.1.1–v0.2.5). 📋 US-0412 planned. Each story names its release.
 
 ---
 
@@ -222,7 +222,7 @@
   - Test: `tests/renderer/AboutDialog.test.jsx`. No screenshot was taken in this build (no screen access); one is due before the release.
 - **Dependencies:** US-0408
 
-**US-0410: Settings in LCARS tabs, with every tool the app needs checked** ✅ Done, for v0.2.5 (intent `261115-lcars-settings`, ultra-express)
+**US-0410: Settings in LCARS tabs, with every tool the app needs checked** ✅ Released in v0.2.5 (intent `261115-lcars-settings`, ultra-express)
 - As a **developer setting up and tuning the console**, in order to **find a setting at a glance and know the app has everything it needs**, I would like to **have Settings as animated LCARS tabs, and see every tool the app runs checked, opencode and the GitHub CLI included**.
 - **Epic:** EPIC-04
 - **Priority:** High
@@ -240,7 +240,7 @@
   - **Plan.** Ultra-express, own branch after PR #31 (US-0506) merges, since Settings carries US-0506's notification settings.
 - **Dependencies:** US-0405, US-0506
 
-**US-0411: Pipeline stages as LCARS cards** ✅ Done, for v0.2.5 (intent `261115-pipeline-cards`, ultra-express)
+**US-0411: Pipeline stages as LCARS cards** ✅ Released in v0.2.5 (intent `261115-pipeline-cards`, ultra-express)
 - As a **developer following a workflow**, in order to **read where the work is at a glance**, I would like to **see each pipeline stage as an LCARS card, with the current one lit**.
 - **Epic:** EPIC-04
 - **Priority:** Medium

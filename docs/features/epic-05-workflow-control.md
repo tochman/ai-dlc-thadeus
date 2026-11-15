@@ -8,7 +8,7 @@
 
 **Stories:** US-0501, US-0502, US-0503, US-0504, US-0505, US-0506, US-0507, US-0508, US-0509
 
-**Status (2026-11-15):** ✅ US-0501–US-0503 released in v0.2.0. ✅ US-0505 released in v0.2.1 (answering from the popup added in v0.2.2). US-0504 📋 Planned for v0.2.6. ✅ US-0506 done, for v0.2.5 (intent `261114-agent-dialogs`: a full plan for how the dialogs show and talk to Claude Code and other agents). 📋 US-0507 Planned for v0.2.6 (agent progress). 📋 US-0508 Planned (rename an intent). 📋 US-0509 Planned (change the plan of a started intent). The popup double-answer fix is US-0004 in [EPIC-00](epic-00-fixes.md).
+**Status (2026-11-15):** ✅ US-0501–US-0503, US-0505 and US-0506 released (v0.2.0–v0.2.5). 📋 US-0504 and US-0507 planned for v0.2.6, US-0508 and US-0509 planned. Each story names its release.
 
 ---
 
@@ -121,7 +121,7 @@
   - [x] **Later (not in this story):** answering straight from the popup by typing the chosen option into the Claude tab. Done in a UI hotfix with US-0901 (PR #18), released in v0.2.2. Claude Code gets the option's digit, a gate gets 1 or 2, and the own-answer field types the text and presses Enter. opencode gets the own-answer field only, until its picker keys are checked.
 - **Dependencies:** US-0101 (watcher), EPIC-03 (audit parsing), US-0501 (Claude tab states), US-0402 (coral pulse)
 
-**US-0506: Answer Claude Code's and opencode's own questions in a dialog, and see their messages** ✅ Done, for v0.2.5 (intent `261114-agent-dialogs`, classic)
+**US-0506: Answer Claude Code's and opencode's own questions in a dialog, and see their messages** ✅ Released in v0.2.5 (intent `261114-agent-dialogs`, classic)
 - As a **developer running an agent in the console while I do other things**, in order to **not miss anything the agent asks or tells me, AI-DLC or not**, I would like to **get every question and permission prompt from Claude Code or opencode as a dialog I can answer in, and see the agent's messages without opening the terminal**.
 - **Epic:** EPIC-05
 - **Priority:** High
