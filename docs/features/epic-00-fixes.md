@@ -6,9 +6,9 @@
 
 > Small fixes the person reports while using the app: something looks off, behaves wrongly or is missing a detail. Each fix becomes a story here, so nothing reported in passing gets lost. A fix that grows into a feature moves to its topic's epic.
 
-**Stories:** US-0001, US-0002, US-0003, US-0004, US-0005, US-0006, US-0007, US-0008, US-0009, US-0010, US-0011, US-0012, US-0013, US-0014, US-0015, US-0016, US-0017, US-0018
+**Stories:** US-0001, US-0002, US-0003, US-0004, US-0005, US-0006, US-0007, US-0008, US-0009, US-0010, US-0011, US-0012, US-0013, US-0014, US-0015, US-0016, US-0017, US-0018, US-0019
 
-**Status (2026-11-15):** ✅ US-0001–US-0018 released (v0.2.3–v0.2.6). Each story names its release.
+**Status (2026-11-15):** ✅ US-0001–US-0019 released (v0.2.3–v0.2.6). Each story names its release.
 
 ---
 
@@ -293,3 +293,16 @@
   - **Where.** The line had no place in the app's grid and no styles, so it fell into a new row under the left arm. `src/renderer/LatestMessageStrip.jsx` reads the terminal's open state; `src/renderer/theme.css` gives it a `msg` row that is dropped when the line is not shown. `src/renderer/AgentDialog.jsx` pages only with more than one item.
   - **Tests.** `tests/renderer/LatestMessageStrip.test.jsx` (2 new, 1 changed), `tests/main/theme.test.js` (1 new), `tests/renderer/AgentDialog.test.jsx` (1 new), `AgentDialogReply.test.jsx`, `AppShell.test.jsx`. `tests/main/opencodePlugin.test.js` unsets the app's session variables for its no-session case; `tests/helpers/agentHooksFixtures.js` takes the app's own hook entries out of the repository copy.
 - **Dependencies:** US-0506
+
+**US-0019: No "two agents at once" notice under the terminal** ✅ Released in v0.2.6
+- As a **developer with two agent tabs**, in order to **not be alarmed by a guess**, I would like to **have the "two agents are working at once" line removed**.
+- **Epic:** EPIC-00
+- **Priority:** Medium
+- **Complexity:** Low
+- **Background:** Reported 2026-11-15 with a screenshot: the line stayed under the terminal while only Claude worked. The app guesses "busy" from when a tab last printed, so a redraw in the idle opencode tab was enough. "It is confusing to the user."
+- **Acceptance Criteria:**
+  - [x] **Given** two agent tabs that both count as busy, **then** no notice shows and the terminal keeps its height.
+- **Notes:**
+  - **Where.** `src/renderer/TerminalPanel.jsx`: `useTwoBusyWarning` and the notice removed; the `terminal.twoAgents` text removed from both locales.
+  - **Tests.** `tests/renderer/TerminalPanel.test.jsx` (1 changed).
+- **Dependencies:** US-0803

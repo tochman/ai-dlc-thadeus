@@ -275,19 +275,17 @@ describe('Claude Code and opencode side by side (EPIC-08 US-0803)', () => {
     expect(window.bridge.ptyWrite).toHaveBeenLastCalledWith('pty-claude', 'x');
   });
 
-  it('anyBusy() is true when only the second tab is busy, and two busy tabs warn once', async () => {
+  it('anyBusy() is true when only the second tab is busy; two busy tabs show no notice (US-0019)', async () => {
     ownIds();
     await renderPanel(both);
-    await waitFor(() => expect(terminal.busyAgents()).toBe(2)); // both just started: one sentence warns
-    expect((await screen.findByTestId('terminal-panel-two-agents')).textContent).toMatch(/Två agenter arbetar samtidigt/);
-    fireEvent.click(screen.getByTestId('terminal-panel-two-agents-dismiss'));
+    await waitFor(() => expect(terminal.busyAgents()).toBe(2)); // both just started
     expect(screen.queryByTestId('terminal-panel-two-agents')).toBeNull();
+    expect(screen.queryByTestId('terminal-panel-foot')).toBeNull(); // the terminal keeps its height
 
     // Claude goes quiet after 1.5 s; opencode's 4 s quiet keeps it "Arbetar".
     await waitFor(() => expect(screen.getByTestId('terminal-panel-state-agent').textContent).toBe('Ledig'), { timeout: 3000 });
     expect(screen.getByTestId('terminal-panel-state-agent-opencode').textContent).toBe('Arbetar');
     expect(terminal.state('agent:claude')).toBe('idle');
     expect(terminal.anyBusy()).toBe(true);
-    expect(screen.queryByTestId('terminal-panel-two-agents')).toBeNull(); // not repeated in the same busy period
   });
 });

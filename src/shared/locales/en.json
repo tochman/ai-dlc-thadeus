@@ -335,7 +335,6 @@
     "notInstalled": "AI-DLC is not installed for {harness} in this project, so nothing was started.",
     "pending": "Waiting for your Enter",
     "pendingHint": "{tab}: typed by the app. Nothing runs until you press Enter.",
-    "twoAgents": "Two agents are working at once on this project's active work, so they are changing the same records.",
     "noTab": "The terminal tab {tab} does not exist.",
     "cannotStart": "{name} could not be started.",
     "cannotRestart": "{name} could not be restarted.",
