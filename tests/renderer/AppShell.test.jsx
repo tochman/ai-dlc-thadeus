@@ -199,6 +199,7 @@ describe('App shell', () => {
     await waitFor(() => expect(document.documentElement.dataset.motion).toBe('full'));
 
     fireEvent.click(screen.getByTestId('app-settings-open'));
+    fireEvent.click(screen.getByTestId('app-settings-tab-appearance')); // the animations live on Utseende (US-0410)
     expect(screen.getByTestId('app-settings-animations-full').checked).toBe(true);
     fireEvent.click(screen.getByTestId('app-settings-animations-off'));
     expect(document.documentElement.dataset.motion).toBe('off');
@@ -222,6 +223,46 @@ describe('App shell', () => {
     expect(screen.getByRole('heading', { level: 1 }).textContent).toMatch(/aidlc-dash-a.*Intents/);
     expect(screen.getByTestId('project-view-switch-intents').getAttribute('aria-current')).toBe('page');
     expect(pane().hidden).toBe(false);
+  });
+
+  it('shows the five Settings tabs under SETTINGS only while Settings is open, and saves the chosen one (US-0410 FR1.1–FR1.3, FR5.1)', async () => {
+    await renderApp({});
+    await waitFor(() => expect(window.bridge.getSettings).toHaveBeenCalled());
+    const ids = ['tools', 'appearance', 'notifications', 'project', 'about'];
+    for (const id of ids) expect(screen.queryByTestId(`app-settings-tab-${id}`)).toBeNull();
+
+    fireEvent.click(screen.getByTestId('app-settings-open'));
+    const tabs = ids.map((id) => screen.getByTestId(`app-settings-tab-${id}`));
+    expect(tabs.map((b) => b.textContent)).toEqual(['Verktyg', 'Utseende', 'Notiser', 'Projekt', 'Om']);
+    expect(tabs.map((b) => b.tagName)).toEqual(Array(5).fill('BUTTON')); // keyboard reachable
+    expect(tabs[0].getAttribute('aria-current')).toBe('page'); // first time: Tools
+    expect(screen.getByTestId('settings-view-tools')).toBeTruthy();
+
+    fireEvent.click(tabs[2]);
+    expect(screen.getByTestId('app-settings-tab-notifications').getAttribute('aria-current')).toBe('page');
+    expect(screen.getByTestId('app-settings-tab-tools').hasAttribute('aria-current')).toBe(false);
+    expect(screen.getByTestId('settings-view-notifications')).toBeTruthy();
+    expect(screen.queryByTestId('settings-view-tools')).toBeNull();
+    await waitFor(() => expect(window.bridge.setSettings).toHaveBeenCalledWith({ settingsTab: 'notifications' }));
+
+    fireEvent.click(screen.getByTestId('settings-view-close'));
+    expect(screen.queryByTestId('app-settings-tab-notifications')).toBeNull();
+  });
+
+  it('opens Settings on the saved tab, and on Tools for an unknown one (US-0410 FR5.1)', async () => {
+    await renderApp({ settingsTab: 'about' });
+    await waitFor(() => expect(window.bridge.getSettings).toHaveBeenCalled());
+    await act(async () => {}); // the restore effect has applied the saved tab
+    fireEvent.click(screen.getByTestId('app-settings-open'));
+    expect(screen.getByTestId('settings-view-about')).toBeTruthy();
+    expect(screen.getByTestId('app-settings-tab-about').getAttribute('aria-current')).toBe('page');
+    cleanup();
+
+    await renderApp({ settingsTab: 'pipeline' });
+    await waitFor(() => expect(window.bridge.getSettings).toHaveBeenCalled());
+    await act(async () => {});
+    fireEvent.click(screen.getByTestId('app-settings-open'));
+    expect(screen.getByTestId('settings-view-tools')).toBeTruthy();
   });
 
   it('shows the Auctum mark in the header with its name, next to the project and view title (FR2.1)', async () => {

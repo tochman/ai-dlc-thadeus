@@ -1,17 +1,20 @@
-// "Inställningar" for the whole app (EPIC-04 US-0405): one view in the content frame, in the LCARS style, with
-// the four sections Verktyg, Utseende, Projekt and Om. Everything is saved in the app's own settings.json and
-// nothing is written into a project. Focus moves into the view when it opens (FR1.1–FR1.3).
-import { useCallback, useEffect, useRef, useState } from 'react';
+// "Inställningar" for the whole app (EPIC-04 US-0405): one view in the content frame, in the LCARS style. Since
+// US-0410 it shows one tab at a time (Verktyg, Utseende, Notiser, Projekt, Om), chosen from the left rail, each in an
+// LCARS frame. Everything is saved in the app's own settings.json and nothing is written into a project. Focus moves
+// into the view when it opens (FR1.1–FR1.3).
+import { Fragment, useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import i18n, { LANGUAGE_SETTINGS } from '../shared/i18n.js';
 import AuctumMark from './AuctumMark.jsx';
 
+/** The tabs in rail order (US-0410 FR1.1); main keeps the same list as SETTINGS_TABS. */
+export const SETTINGS_TABS = ['tools', 'appearance', 'notifications', 'project', 'about'];
 const ANIMATION_IDS = ['full', 'reduced', 'off'];
 // Waiting questions from AI-DLC (EPIC-05 US-0505 FR4.1): the same three choices as before.
 const ALERT_IDS = ['popup-notify', 'popup', 'off'];
 const REPLY_IDS = ['dialog-notify', 'line', 'off']; // US-0506 u5 D1, M9
 const SOUND_IDS = ['on', 'off'];
-const TOOL_IDS = ['aidlc', 'claude', 'shell'];
+const TOOL_IDS = ['aidlc', 'claude', 'opencode', 'gh', 'shell']; // US-0410 FR4.1, as main's TOOL_IDS
 const errorText = (err) => String(err?.message ?? err).replace(/^Error invoking remote method '[^']+': (Error: )?/, '');
 
 /** One tool row before any check has answered: the saved path, or nothing yet (NFR4). */
@@ -26,13 +29,44 @@ export async function saveLanguage(language) {
   await i18n.changeLanguage(await window.bridge.getLanguage());
 }
 
-/** An LCARS block of sections, labelled by its own heading (FR1.2). */
-function Section({ id, children }) {
+/** A save that reports its failure on the panel's alert line (FR2.6: the same behaviour as before US-0410). */
+function useSave() {
   const { t } = useTranslation();
+  const [error, setError] = useState(null);
+  async function save(run) {
+    setError(null);
+    try {
+      await run();
+    } catch (err) {
+      setError(t('settings.saveFailed', { error: errorText(err) }));
+    }
+  }
+  return [save, error, setError];
+}
+
+function ErrorLine({ error }) {
+  if (!error) return null;
   return (
-    <section className="config-section settings-section" aria-labelledby={`settings-section-${id}`} data-testid={`settings-view-${id}`}>
-      <h2 id={`settings-section-${id}`}>{t(`settings.sections.${id}`)}</h2>
-      {children}
+    <p className="refresh-error" role="alert">
+      {error}
+    </p>
+  );
+}
+
+/**
+ * The panel of one tab in its LCARS frame (US-0410 FR3.1, FR6.1): the shared card with an elbow, a header strip with
+ * the tab's name and a dark body. On Full the frame sweeps and the rows cascade in (FR3.2); otherwise no motion class.
+ */
+function Section({ id, motion, children }) {
+  const { t } = useTranslation();
+  const moving = motion === 'full' ? ' settings-frame--sweep settings-cascade' : '';
+  return (
+    <section className={`lcars-card settings-frame${moving}`} aria-labelledby={`settings-section-${id}`} data-testid={`settings-view-${id}`}>
+      <header className="lcars-card-head">
+        <span className="settings-frame-elbow" aria-hidden="true" />
+        <h2 id={`settings-section-${id}`}>{t(`settings.sections.${id}`)}</h2>
+      </header>
+      <div className="lcars-card-body">{children}</div>
     </section>
   );
 }
@@ -59,8 +93,78 @@ function RadioBlocks({ name, ids, labelKey, value, onPick }) {
   );
 }
 
-/** Verktyg: the three tools with their path, where that path came from, and the version each reports (FR2.1). */
-function Tools({ settings, onReload }) {
+/** A path that may wrap after each `/` and never mid-word (US-0410 FR4.4). */
+export function PathText({ path }) {
+  const parts = path.split(/(?<=\/)/);
+  return parts.map((part, i) => (
+    <Fragment key={i}>
+      {part}
+      {i < parts.length - 1 && <wbr />}
+    </Fragment>
+  ));
+}
+
+/**
+ * One tool as an LCARS card (US-0410 FR4.1, FR4.3): the name in the header strip, path and version in the body, where
+ * the path came from and Välj… / Återställ in the footer. A tool that is not found says what the app needs it for.
+ */
+function ToolCard({ row: r, error, onChoose, onReset }) {
+  const { t } = useTranslation();
+  const label = t(`settings.tools.${r.id}`);
+  const path = r.path ? <PathText path={r.path} /> : r.found === false ? '–' : t('settings.tools.checking');
+  return (
+    <div className="lcars-card settings-tool" data-testid={`settings-tool-${r.id}`}>
+      <div className="lcars-card-head">
+        <h3 className="settings-tool-name">{label}</h3>
+      </div>
+      <div className="lcars-card-body">
+        <span className="settings-tool-field">
+          <span className="field-label">{t('settings.tools.pathLabel')}</span>
+          <code>{path}</code>
+        </span>
+        <span className="settings-tool-field">
+          <span className="field-label">{t('settings.tools.versionLabel')}</span>
+          <span>{r.found === null ? t('settings.tools.checking') : r.found ? r.version : t('settings.tools.notFound')}</span>
+        </span>
+        {r.found === false && <p className="settings-tool-needed">{t(`settings.tools.neededFor.${r.id}`)}</p>}
+        {error && (
+          <p className="refresh-error settings-tool-error" role="alert" data-testid={`settings-tool-error-${r.id}`}>
+            {error}
+          </p>
+        )}
+        {r.error && !error && <p className="muted settings-tool-error">{r.error}</p>}
+      </div>
+      <div className="lcars-card-foot">
+        <span className="settings-tool-source">{t(`settings.tools.source.${r.source}`)}</span>
+        <span className="settings-tool-actions">
+          <button
+            type="button"
+            className="btn"
+            aria-label={t('settings.tools.pickFor', { tool: label })}
+            onClick={() => onChoose(r.id)}
+            data-testid={`settings-tool-pick-${r.id}`}
+          >
+            {t('settings.tools.pick')}
+          </button>
+          {r.source === 'saved' && (
+            <button
+              type="button"
+              className="btn btn-quiet"
+              aria-label={t('settings.tools.resetFor', { tool: label })}
+              onClick={() => onReset(r.id)}
+              data-testid={`settings-tool-reset-${r.id}`}
+            >
+              {t('settings.tools.reset')}
+            </button>
+          )}
+        </span>
+      </div>
+    </div>
+  );
+}
+
+/** Verktyg: the five tools with their path, where that path came from, and the version each reports (FR2.1). */
+function Tools({ settings, onReload, motion }) {
   const { t } = useTranslation();
   const [rows, setRows] = useState(() => TOOL_IDS.map((id) => emptyRow(id, null)));
   const [error, setError] = useState(null);
@@ -81,73 +185,34 @@ function Tools({ settings, onReload }) {
     refresh();
   }, [settings, refresh]);
 
-  async function choose(id) {
+  async function run(id, action) {
     setRowError((e) => ({ ...e, [id]: null }));
     try {
+      await action();
+    } catch (err) {
+      setRowError((e) => ({ ...e, [id]: errorText(err) }));
+    }
+  }
+  const choose = (id) =>
+    run(id, async () => {
       const file = await window.bridge.pickTool(id);
       if (!file) return; // cancelled: nothing changes
       await window.bridge.saveTool(id, file); // main checks it first, so an invalid path is never stored (FR2.3)
       await onReload();
-    } catch (err) {
-      setRowError((e) => ({ ...e, [id]: errorText(err) }));
-    }
-  }
-
-  async function reset(id) {
-    setRowError((e) => ({ ...e, [id]: null }));
-    try {
+    });
+  const reset = (id) =>
+    run(id, async () => {
       await window.bridge.resetTool(id);
       await onReload();
-    } catch (err) {
-      setRowError((e) => ({ ...e, [id]: errorText(err) }));
-    }
-  }
+    });
 
-  const label = (id) => t(`settings.tools.${id}`);
   return (
-    <Section id="tools">
-      {rows.map((r) => (
-        <div className="settings-tool" key={r.id} data-testid={`settings-tool-${r.id}`}>
-          <span className="settings-tool-name">{label(r.id)}</span>
-          <span className="settings-tool-field">
-            <span className="field-label">{t('settings.tools.pathLabel')}</span>
-            <code>{r.path ?? t('settings.tools.checking')}</code>
-          </span>
-          <span className="settings-tool-field">
-            <span className="field-label">{t('settings.tools.versionLabel')}</span>
-            <span>{r.found === null ? t('settings.tools.checking') : r.found ? r.version : t('settings.tools.notFound')}</span>
-          </span>
-          <span className="settings-tool-source">{t(`settings.tools.source.${r.source}`)}</span>
-          <span className="settings-tool-actions">
-            <button
-              type="button"
-              className="btn"
-              aria-label={t('settings.tools.pickFor', { tool: label(r.id) })}
-              onClick={() => choose(r.id)}
-              data-testid={`settings-tool-pick-${r.id}`}
-            >
-              {t('settings.tools.pick')}
-            </button>
-            {r.source === 'saved' && (
-              <button
-                type="button"
-                className="btn btn-quiet"
-                aria-label={t('settings.tools.resetFor', { tool: label(r.id) })}
-                onClick={() => reset(r.id)}
-                data-testid={`settings-tool-reset-${r.id}`}
-              >
-                {t('settings.tools.reset')}
-              </button>
-            )}
-          </span>
-          {rowError[r.id] && (
-            <p className="refresh-error settings-tool-error" role="alert" data-testid={`settings-tool-error-${r.id}`}>
-              {rowError[r.id]}
-            </p>
-          )}
-          {r.error && !rowError[r.id] && <p className="muted settings-tool-error">{r.error}</p>}
-        </div>
-      ))}
+    <Section id="tools" motion={motion}>
+      <div className="settings-tool-grid">
+        {rows.map((r) => (
+          <ToolCard key={r.id} row={r} error={rowError[r.id]} onChoose={choose} onReset={reset} />
+        ))}
+      </div>
       {/* FR2.5: running sessions are left alone. */}
       <p className="muted settings-help">{t('settings.tools.nextStart')}</p>
       {error && (
@@ -159,31 +224,12 @@ function Tools({ settings, onReload }) {
   );
 }
 
-/** Utseende: the five settings the app already had, each with exactly the choices it has today (FR3.1). */
-function Appearance({
-  animations,
-  onAnimations,
-  fullscreen,
-  onFullscreen,
-  language,
-  onLanguage,
-  questionAlerts,
-  replyAlerts,
-  notificationSound,
-  onAlertSettings
-}) {
+/** Utseende: animations, full screen at start and language, each with exactly the choices it has today (FR3.1, US-0410 FR2.2). */
+function Appearance({ motion, animations, onAnimations, fullscreen = false, onFullscreen, language = 'auto', onLanguage }) {
   const { t } = useTranslation();
-  const [error, setError] = useState(null);
-  async function save(run) {
-    setError(null);
-    try {
-      await run();
-    } catch (err) {
-      setError(t('settings.saveFailed', { error: errorText(err) }));
-    }
-  }
+  const [save, error] = useSave();
   return (
-    <Section id="appearance">
+    <Section id="appearance" motion={motion}>
       <fieldset className="settings-group">
         <legend>{t('settings.animationsLegend')}</legend>
         <RadioBlocks name="animations" ids={ANIMATION_IDS} labelKey="settings.animations" value={animations} onPick={(id) => save(() => onAnimations(id))} />
@@ -209,6 +255,17 @@ function Appearance({
           ))}
         </select>
       </label>
+      <ErrorLine error={error} />
+    </Section>
+  );
+}
+
+/** Notiser: questions from AI-DLC, the agent's replies and the sound, moved here from Utseende (US-0410 FR2.3, FR2.6). */
+function Notifications({ motion, questionAlerts = 'popup-notify', replyAlerts = 'dialog-notify', notificationSound = true, onAlertSettings }) {
+  const { t } = useTranslation();
+  const [save, error] = useSave();
+  return (
+    <Section id="notifications" motion={motion}>
       <fieldset className="settings-group">
         <legend>{t('settings.alertsLegend')}</legend>
         <RadioBlocks
@@ -242,44 +299,31 @@ function Appearance({
           onPick={(id) => save(() => onAlertSettings({ notificationSound: id === 'on' }))}
         />
       </fieldset>
-      {error && (
-        <p className="refresh-error" role="alert">
-          {error}
-        </p>
-      )}
+      <ErrorLine error={error} />
     </Section>
   );
 }
 
 /** Projekt: the default folder, the recent projects and a way into each open project's settings (FR4.1–FR4.3). */
-function Project({ settings, onReload, recentProjects = [], onRemoveRecent, projects = [], onProjectSettings }) {
+function Project({ motion, onReload, settings, recentProjects = [], onRemoveRecent, projects = [], onProjectSettings }) {
   const { t } = useTranslation();
-  const [error, setError] = useState(null);
+  const [save, error] = useSave();
   const folder = settings?.defaultProjectFolder ?? null;
-
-  async function pickFolder() {
-    setError(null);
-    try {
+  const pickFolder = () =>
+    save(async () => {
       if (await window.bridge.pickDefaultFolder()) await onReload();
-    } catch (err) {
-      setError(t('settings.saveFailed', { error: errorText(err) }));
-    }
-  }
-  async function clearFolder() {
-    setError(null);
-    try {
+    });
+  const clearFolder = () =>
+    save(async () => {
       await window.bridge.clearDefaultFolder();
       await onReload();
-    } catch (err) {
-      setError(t('settings.saveFailed', { error: errorText(err) }));
-    }
-  }
+    });
 
   return (
-    <Section id="project">
+    <Section id="project" motion={motion}>
       <div className="settings-folder">
         <span className="field-label">{t('settings.defaultFolder.label')}</span>
-        <code data-testid="settings-default-folder">{folder ?? t('settings.defaultFolder.none')}</code>
+        <code data-testid="settings-default-folder">{folder ? <PathText path={folder} /> : t('settings.defaultFolder.none')}</code>
         <button type="button" className="btn" onClick={pickFolder} data-testid="settings-default-folder-pick">
           {t('settings.defaultFolder.pick')}
         </button>
@@ -302,7 +346,9 @@ function Project({ settings, onReload, recentProjects = [], onRemoveRecent, proj
         <ul className="settings-list">
           {recentProjects.map((dir) => (
             <li key={dir} data-testid="settings-recent-item">
-              <code>{dir}</code>
+              <code>
+                <PathText path={dir} />
+              </code>
               <button
                 type="button"
                 className="btn btn-quiet"
@@ -338,16 +384,11 @@ function Project({ settings, onReload, recentProjects = [], onRemoveRecent, proj
           ))}
         </ul>
       )}
-      {error && (
-        <p className="refresh-error" role="alert">
-          {error}
-        </p>
-      )}
+      <ErrorLine error={error} />
     </Section>
   );
 }
 
-/** Om: the app version, the AI-DLC version that was found, the mark and the two fixed links (FR5.1). */
 /** "Ta bort hämtat paket efter uppdatering: På / Av" (EPIC-04 US-0407); På unless saved as Av. */
 function UpdateCleanup({ settings, onReload, onError }) {
   const { t } = useTranslation();
@@ -368,7 +409,8 @@ function UpdateCleanup({ settings, onReload, onError }) {
   );
 }
 
-function About({ settings, onReload }) {
+/** Om: the app version, the AI-DLC version that was found, the mark and the two fixed links (FR5.1). */
+function About({ motion, settings, onReload }) {
   const { t } = useTranslation();
   const [info, setInfo] = useState(null);
   const [error, setError] = useState(null);
@@ -388,7 +430,7 @@ function About({ settings, onReload }) {
   }
   const aidlcTool = info?.aidlc;
   return (
-    <Section id="about">
+    <Section id="about" motion={motion}>
       <div className="settings-about">
         <AuctumMark size={72} className="settings-about-mark" />
         <div className="settings-about-text">
@@ -409,42 +451,26 @@ function About({ settings, onReload }) {
         </div>
       </div>
       <UpdateCleanup settings={settings} onReload={onReload} onError={setError} />
-      {error && (
-        <p className="refresh-error" role="alert">
-          {error}
-        </p>
-      )}
+      <ErrorLine error={error} />
     </Section>
   );
 }
 
+const PANELS = { tools: Tools, appearance: Appearance, notifications: Notifications, project: Project, about: About };
+
 /**
- * @param {{onClose: () => void, animations?: 'full'|'reduced'|'off', onAnimations: (value: string) => Promise<unknown>,
+ * @param {{onClose: () => void, tab?: 'tools'|'appearance'|'notifications'|'project'|'about',
+ *          animations?: 'full'|'reduced'|'off', onAnimations: (value: string) => Promise<unknown>,
  *          fullscreen?: boolean, onFullscreen: (on: boolean) => Promise<unknown>,
  *          language?: 'auto'|'sv'|'en', onLanguage: (value: string) => Promise<unknown>,
  *          questionAlerts?: 'popup-notify'|'popup'|'off', replyAlerts?: 'dialog-notify'|'line'|'off', notificationSound?: boolean,
  *          onAlertSettings: (partial: {questionAlerts?: string, replyAlerts?: string, notificationSound?: boolean}) => Promise<unknown>,
  *          recentProjects?: string[], onRemoveRecent?: (dir: string) => Promise<unknown>,
  *          projects?: Array<{projectId: string, name: string}>, onProjectSettings?: (projectId: string) => void}} props
- *   animations: the mode in effect; fullscreen: the saved "Helskärm vid start" state; projects: the open tabs
+ *   tab: the one panel shown (US-0410 FR1.2, default Tools); animations: the mode in effect, which also picks the
+ *   panel's motion (FR3.2, FR3.3); fullscreen: the saved "Helskärm vid start" state; projects: the open tabs
  */
-export default function SettingsView({
-  onClose,
-  animations = 'full',
-  onAnimations,
-  fullscreen = false,
-  onFullscreen,
-  language = 'auto',
-  onLanguage,
-  questionAlerts = 'popup-notify',
-  replyAlerts = 'dialog-notify', // US-0506 u5 D1
-  notificationSound = true,
-  onAlertSettings,
-  recentProjects = [],
-  onRemoveRecent,
-  projects = [],
-  onProjectSettings
-}) {
+export default function SettingsView({ onClose, tab = 'tools', animations = 'full', ...rest }) {
   const { t } = useTranslation();
   const ref = useRef(null);
   const [settings, setSettings] = useState(null); // toolPaths and defaultProjectFolder as saved
@@ -466,6 +492,7 @@ export default function SettingsView({
     loadSettings();
   }, [loadSettings]);
 
+  const Panel = PANELS[tab] ?? Tools;
   return (
     <div
       className="settings-view"
@@ -486,33 +513,9 @@ export default function SettingsView({
           {t('common.close')}
         </button>
       </div>
-      <Tools settings={settings} onReload={loadSettings} />
-      <Appearance
-        animations={animations}
-        onAnimations={onAnimations}
-        fullscreen={fullscreen}
-        onFullscreen={onFullscreen}
-        language={language}
-        onLanguage={onLanguage}
-        questionAlerts={questionAlerts}
-        replyAlerts={replyAlerts}
-        notificationSound={notificationSound}
-        onAlertSettings={onAlertSettings}
-      />
-      <Project
-        settings={settings}
-        onReload={loadSettings}
-        recentProjects={recentProjects}
-        onRemoveRecent={onRemoveRecent}
-        projects={projects}
-        onProjectSettings={onProjectSettings}
-      />
-      <About settings={settings} onReload={loadSettings} />
-      {error && (
-        <p className="refresh-error" role="alert">
-          {error}
-        </p>
-      )}
+      {/* The key remounts the panel on a tab change, so its motion runs again (FR3.2). */}
+      <Panel key={tab} motion={animations} animations={animations} settings={settings} onReload={loadSettings} {...rest} />
+      <ErrorLine error={error} />
     </div>
   );
 }

@@ -434,6 +434,7 @@
   },
   "settings": {
     "title": "Settings",
+    "tabsLabel": "Settings tabs",
     "saveFailed": "The setting could not be saved: {error}",
     "animationsLegend": "Animations",
     "animationsHelp": "Reduced: a static glow, no loops and no sweep. Off: no animations. Without a choice of your own it is Reduced when the computer asks for less motion, otherwise Full.",
@@ -470,13 +471,23 @@
     "sections": {
       "tools": "Tools",
       "appearance": "Appearance",
+      "notifications": "Notifications",
       "project": "Project",
       "about": "About"
     },
     "tools": {
       "aidlc": "AI-DLC CLI",
       "claude": "Claude Code CLI",
+      "opencode": "opencode CLI",
+      "gh": "GitHub CLI (gh)",
       "shell": "Shell",
+      "neededFor": {
+        "aidlc": "Needed for the AI-DLC views and to run AI-DLC commands.",
+        "claude": "Needed for the agent tabs with Claude Code.",
+        "opencode": "Needed for the agent tabs with opencode.",
+        "gh": "Needed to check for and download app updates.",
+        "shell": "Needed for the terminal tabs."
+      },
       "pathLabel": "Path",
       "versionLabel": "Version",
       "notFound": "not found",

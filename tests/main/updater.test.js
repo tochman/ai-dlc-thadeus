@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 
 vi.mock('electron', () => ({ app: { getPath: () => '/unused' } }));
 const { assertOwnAsset, checksumFor, createUpdater, pickAsset, releaseStatus } = await import('../../src/main/updater.js');
+const { setToolPaths } = await import('../../src/main/tools.js');
 
 const asset = (tag, name, size = 100) => ({ name, size, url: `https://github.com/tochman/aidlc-dash/releases/download/${tag}/${name}` });
 // Shaped like `gh release view --repo tochman/aidlc-dash --json tagName,body,isDraft,isPrerelease,assets` (2026-11-14).
@@ -95,6 +96,21 @@ describe('update check (EPIC-04 US-0407)', () => {
     expect(calls).toHaveLength(1);
     await updater.check({ force: true });
     expect(calls).toHaveLength(2);
+  });
+
+  it('runs the gh path chosen in Settings, for the check and the download (US-0410 FR4.2)', async () => {
+    const GH = '/opt/homebrew/bin/gh';
+    setToolPaths({ gh: GH });
+    try {
+      const { updater, calls } = setup({ answers: { [GH]: JSON.stringify(release('v0.2.4')) } });
+      expect((await updater.check()).status).toBe('available');
+      expect(calls[0][0]).toBe(GH);
+      await updater.download();
+      expect(calls.some(([file, ...args]) => file === GH && args[0] === 'release' && args[1] === 'download')).toBe(true);
+      expect(calls.some(([file]) => file === 'gh')).toBe(false);
+    } finally {
+      setToolPaths({});
+    }
   });
 
   it('a missing, logged-out or offline gh gives unavailable in one sentence and never throws (NFR5)', async () => {

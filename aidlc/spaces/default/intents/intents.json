@@ -150,5 +150,13 @@
     "scope": "classic",
     "status": "complete",
     "request": "c1f92d61"
+  },
+  {
+    "uuid": "01a1de69-abbe-7524-8529-69f2ae27f84c",
+    "slug": "lcars-settings",
+    "dirName": "261115-lcars-settings",
+    "scope": "ultra-express",
+    "status": "complete",
+    "request": "4b372c4b"
   }
 ]

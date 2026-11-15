@@ -6,7 +6,8 @@ import path from 'node:path';
 import { loginPath, runFixed } from './exec.js';
 import { t } from '../shared/i18n.js';
 
-export const TOOL_IDS = ['aidlc', 'claude', 'shell'];
+// opencode for its agent tabs, gh for the updater (US-0410 FR4.1, FR4.2).
+export const TOOL_IDS = ['aidlc', 'claude', 'opencode', 'gh', 'shell'];
 const VERSION_MAX = 80;
 
 // The saved absolute paths per tool id, applied from settings on every read and write (FR2.4, FR7.1).
@@ -91,14 +92,14 @@ async function toolRow(id, exec) {
     if (!file) return { id, path: null, source, found: false, version: null, error: t('errors.toolNotOnPath', { name: id }) };
     return { id, path: file, source, ...(await probeTool(file, { exec })) };
   } catch (err) {
-    // A row never rejects: the view always gets three rows to show (NFR4).
+    // A row never rejects: the view always gets every row to show (NFR4).
     return { id, path: null, source: 'auto', found: false, version: null, error: err.message };
   }
 }
 
 /**
- * The three tools with their path, whether it was chosen or found automatically, and the version they report.
- * All three run in parallel and never reject (FR2.1, NFR4). `exec` is injectable for tests.
+ * The tools with their path, whether it was chosen or found automatically, and the version they report.
+ * All run in parallel and never reject (FR2.1, NFR4; five tools since US-0410 FR4.1). `exec` is injectable for tests.
  * @returns {Promise<Array<{id: string, path: string|null, source: 'saved'|'auto', found: boolean,
  *   version: string|null, error?: string}>>}
  */
