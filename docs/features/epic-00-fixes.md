@@ -6,9 +6,9 @@
 
 > Small fixes the person reports while using the app: something looks off, behaves wrongly or is missing a detail. Each fix becomes a story here, so nothing reported in passing gets lost. A fix that grows into a feature moves to its topic's epic.
 
-**Stories:** US-0001, US-0002, US-0003, US-0004, US-0005, US-0006, US-0007, US-0008, US-0009, US-0010, US-0011, US-0012, US-0013
+**Stories:** US-0001, US-0002, US-0003, US-0004, US-0005, US-0006, US-0007, US-0008, US-0009, US-0010, US-0011, US-0012, US-0013, US-0014, US-0015, US-0016
 
-**Status (2026-11-15):** ✅ US-0001–US-0012 released (v0.2.3–v0.2.5). ✅ US-0013 done. Each story names its release.
+**Status (2026-11-15):** ✅ US-0001–US-0012 released (v0.2.3–v0.2.5). ✅ US-0013–US-0014 done, for v0.2.6. 📋 US-0015–US-0016 planned for v0.2.6. Each story names its release.
 
 ---
 
@@ -200,7 +200,7 @@
   - **Checked** in the built app with screenshots of every view and settings section.
 - **Dependencies:** US-0410, US-0603
 
-**US-0013: The intent list and the detail count the same stages** ✅ Done
+**US-0013: The intent list and the detail count the same stages** ✅ Done, for v0.2.6
 - As a **developer reading an intent's progress**, in order to **trust the numbers**, I would like to **see the same count in the intent list and in the intent's detail**.
 - **Epic:** EPIC-00
 - **Priority:** Medium
@@ -214,3 +214,44 @@
   - **Where.** `mergePipeline()` in `src/main/parsers/pipeline.js`.
   - **Tests.** `tests/main/parsers.test.js` (1 new). The fixture's `[S]` observability-setup now leaves the totals one lower in two tests.
 - **Dependencies:** US-0102, US-0103
+
+**US-0014: The lifecycle rule prompt says how to replace an older rule** ✅ Done, for v0.2.6
+- As a **developer setting up or updating a project's feature docs**, in order to **have one story lifecycle rule, not two that drift apart**, I would like to **have the agent take out the older lifecycle rule when it saves the new one**.
+- **Epic:** EPIC-00
+- **Priority:** Medium
+- **Complexity:** Low
+- **Background:** Reported 2026-11-15. The prompt the app types asks the agent to save the rule through AI-DLC and to replace an older one, but AI-DLC's save command only adds rules. The agent saved the new rule and left the old one in place.
+- **Acceptance Criteria:**
+  - [x] Given a project whose memory files already hold a story lifecycle rule, when the person sends the app's rule prompt, then the prompt tells the agent to save the new rule through AI-DLC and delete the older line by hand, as the one direct edit allowed, and say which line it took out.
+  - [x] The prompt says how to recognise the older rule: a `(story-lifecycle: …)` tag, or an older rule about the status markers.
+  - [x] It holds for both delivery settings and both languages, and the prompt stays one line.
+- **Notes:**
+  - **Where.** `features.prompt.rule` and `features.prompt.ruleContinuous` in `src/shared/locales/en.json` and `sv.json`.
+  - **Tests.** `tests/renderer/featureDocsPrompt.test.jsx` (2 new).
+  - **This project.** The older Swedish lifecycle rule under `## Mandated` in `aidlc/spaces/default/memory/project.md` was taken out by hand. The new rule is saved under `## Corrections`.
+- **Dependencies:** US-0603
+
+**US-0015: The header shows the branch that is checked out now** 📋 Planned, for v0.2.6
+- As a **developer switching branches in the terminal**, in order to **know which branch the app is showing me**, I would like to **see the current branch in the header, also after I switch outside the app**.
+- **Epic:** EPIC-00
+- **Priority:** High
+- **Complexity:** Low
+- **Background:** Reported 2026-11-15 with a screenshot: after `git switch main` in a terminal, the header still read `FIX/US-0014` while the views already showed `main`'s files, so the lifecycle rule notice looked wrong.
+- **Acceptance Criteria:**
+  - [ ] **Given** the project is open, **when** the branch is switched outside the app, **then** the header shows the new branch within a few seconds, without reopening the project.
+  - [ ] **Given** a detached HEAD, **then** the header says so instead of showing an old branch name.
+  - [ ] The notices and views that read files from the project refresh with the branch.
+- **Notes:** The branch comes from `getGitStatus()` in `src/main/git.js`. Watching `.git/HEAD` is likely enough.
+- **Dependencies:** US-0502
+
+**US-0016: An older lifecycle rule in other words counts as older, not missing** 📋 Planned, for v0.2.6
+- As a **developer with an older story lifecycle rule in the project's memory**, in order to **be told the rule needs updating rather than that it is missing**, I would like to **have an untagged lifecycle rule recognised even when it does not use all three status markers**.
+- **Epic:** EPIC-00
+- **Priority:** Low
+- **Complexity:** Low
+- **Background:** Reported 2026-11-15. `main`'s `project.md` holds an untagged Swedish lifecycle rule with 🚧 and ✅ but no 📋, so the app said "no story lifecycle rule" instead of "out of date".
+- **Acceptance Criteria:**
+  - [ ] **Given** an untagged rule that names 🚧 and ✅, **then** the status is 'older', and the notice says the rule is out of date.
+  - [ ] **Given** no lifecycle rule at all, **then** the status stays 'missing'.
+- **Notes:** The fallback in `ruleStatus()` in `src/main/parsers/releases.js` requires 📋, 🚧 and ✅.
+- **Dependencies:** US-0603, US-0014
