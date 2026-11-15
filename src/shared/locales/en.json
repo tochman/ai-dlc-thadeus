@@ -45,6 +45,7 @@
     "setup": "Setup",
     "features": "Features",
     "branch": "Branch",
+    "detached": "No branch (detached HEAD)",
     "noProject": "No project",
     "fullscreen": "Full screen",
     "leaveFullscreen": "Leave full screen",
@@ -1123,7 +1124,6 @@
   },
   "latestMessage": {
     "label": "Latest message from the agent",
-    "none": "No message from the agent yet",
     "answer": "Answer",
     "show": "Show",
     "answered": "(answered)",

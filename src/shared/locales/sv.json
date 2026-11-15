@@ -45,6 +45,7 @@
     "setup": "Uppsättning",
     "features": "Features",
     "branch": "Gren",
+    "detached": "Ingen gren (frånkopplad HEAD)",
     "noProject": "Inget projekt",
     "fullscreen": "Helskärm",
     "leaveFullscreen": "Lämna helskärm",
@@ -1123,7 +1124,6 @@
   },
   "latestMessage": {
     "label": "Senaste meddelandet från agenten",
-    "none": "Inget meddelande från agenten än",
     "answer": "Svara",
     "show": "Visa",
     "answered": "(besvarat)",

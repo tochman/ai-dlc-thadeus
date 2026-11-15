@@ -532,6 +532,15 @@ describe('files, shell and git', () => {
     expect(await call('project:listTree', {}, projectId)).toEqual(['a']);
   });
 
+  it('watches .git/HEAD and sends git:headChanged when the branch switches, also outside the app (US-0015)', async () => {
+    const { projectId, sender } = await openProject('/work/head');
+    const head = svc.watchOpenFiles.mock.calls.find(([o]) => o.files?.[0] === '/work/head/.git/HEAD');
+    expect(head).toBeTruthy();
+    head[0].onChange('/work/head/.git/HEAD');
+    expect(sender.send).toHaveBeenCalledWith('git:headChanged', { projectId });
+    head[0].onError(new Error('x')); // only the live label stops
+  });
+
   it('watches open editor files and sends file:changed with the relative path', async () => {
     const { projectId, sender } = await openProject('/work/edit');
     await call('file:watch', {}, projectId, ['a.md']);

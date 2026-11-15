@@ -368,10 +368,28 @@ button.lcars-chip:hover { border-color: var(--steel-text); color: var(--steel-li
   padding: 20px;
   display: grid;
   grid-template-columns: var(--arm) minmax(0, 1fr);
-  grid-template-rows: 64px minmax(0, 1fr) auto;
-  grid-template-areas: 'head head' 'arm main' 'term term';
+  grid-template-rows: 64px minmax(0, 1fr) auto auto;
+  grid-template-areas: 'head head' 'arm main' 'msg msg' 'term term';
   gap: 14px 16px;
 }
+/* US-0018: the latest agent message, one line above the hidden terminal. Without it the message row is dropped, so
+   no empty row costs a gap. */
+.app:not(:has(.latest-message)) {
+  grid-template-rows: 64px minmax(0, 1fr) auto;
+  grid-template-areas: 'head head' 'arm main' 'term term';
+}
+.latest-message {
+  grid-area: msg;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--gap);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.latest-message-line { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.latest-message-tab { color: var(--amber); font-family: var(--font-head); text-transform: uppercase; letter-spacing: 0.06em; }
 
 .app-header { grid-area: head; display: flex; gap: var(--gap); min-width: 0; height: 64px; }
 .app-brand {
