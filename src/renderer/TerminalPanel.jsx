@@ -224,25 +224,6 @@ function QuickSelect({ harness, onPick }) {
 }
 
 /**
- * "Two agents are changing the same work" (US-0803): both agent tabs share the project's aidlc/ records, so its
- * one active intent. Shown once when two are busy at the same time, until closed; armed again only after no
- * agent tab is busy, so the busy/idle flicker of a working agent never repeats it within one busy period.
- */
-function useTwoBusyWarning(busyCount) {
-  const [shown, setShown] = useState(false);
-  const armed = useRef(true);
-  useEffect(() => {
-    if (busyCount >= 2 && armed.current) {
-      armed.current = false;
-      setShown(true);
-    } else if (busyCount === 0) {
-      armed.current = true;
-    }
-  }, [busyCount]);
-  return { shown, dismiss: () => setShown(false) };
-}
-
-/**
  * Must sit inside a TerminalProvider: which tab is open and active is shared with the other views (FR1.4).
  * The agent tab runs `terminal.harness` (US-0801); while it is null (detection runs) or `terminal.harnessProblem`
  * is set, nothing starts there, and `onChooseHarness` opens the project settings (FR5.1).
@@ -288,7 +269,6 @@ export default function TerminalPanel({ projectId, visible, onChooseHarness }) {
   const clampHeight = (h) => Math.round(Math.min(window.innerHeight * 0.6, Math.max(180, h)));
   const currentHeight = () => height ?? panelRef.current?.offsetHeight ?? 220;
   const pendingTabs = tabs.filter((tab) => terminal.pending(tab));
-  const twoBusy = useTwoBusyWarning(terminal.busyAgents());
 
   function startDrag(e) {
     e.preventDefault();
@@ -417,16 +397,9 @@ export default function TerminalPanel({ projectId, visible, onChooseHarness }) {
           />
         </div>
         {/* Only while something waits for Enter or went wrong, so the terminal keeps the height otherwise. */}
-        {(pendingTabs.length > 0 || terminal.error || twoBusy.shown) && (
+        {/* US-0019: no "two agents at once" notice; busy is guessed from output timing and the guess confused people. */}
+        {(pendingTabs.length > 0 || terminal.error) && (
           <div className="terminal-foot" data-testid="terminal-panel-foot">
-            {twoBusy.shown && (
-              <span className="term-pending-row" role="status" data-testid="terminal-panel-two-agents">
-                <span className="term-pending-hint">{t('terminal.twoAgents')}</span>
-                <button className="btn btn-quiet" onClick={twoBusy.dismiss} data-testid="terminal-panel-two-agents-dismiss">
-                  {t('common.close')}
-                </button>
-              </span>
-            )}
             {pendingTabs.map((tab) => (
               <span key={tab} className="term-pending-row">
                 <span className="term-pending is-attn" data-testid={`terminal-panel-pending-${testId(tab)}`}>
