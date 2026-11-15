@@ -256,16 +256,15 @@
 - **Notes:** The fallback in `ruleStatus()` in `src/main/parsers/releases.js` requires 📋, 🚧 and ✅.
 - **Dependencies:** US-0603, US-0014
 
-**US-0017: The terminal tabs look right after turning on opencode** 📋 Planned
-- As a **developer who turns on a second agent tool in a project**, in order to **tell at a glance which terminal tab is open**, I would like to **see only the open tab drawn as the open one**.
+**US-0017: Only the first terminal tab has the LCARS bow** 📋 Planned
+- As a **developer who turns on a second agent tool in a project**, in order to **see the terminal arm drawn as one LCARS frame**, I would like to **have the rounded bow only on the first tab, not on the second agent tab**.
 - **Epic:** EPIC-00
 - **Priority:** Medium
 - **Complexity:** Low
-- **Background:** Reported 2026-11-15 with a screenshot, right after switching opencode on in the agent bar. The arm beside the terminal showed CLAUDE (open, blue, with the rounded LCARS corner), then OPENCODE drawn with the same rounded corner and a blue outline although it was not the open tab, then SHELL as a plain block. OPENCODE also said "Working" straight away.
+- **Background:** Reported 2026-11-15 with a screenshot, right after switching opencode on: the arm beside the terminal showed CLAUDE with the bow, then OPENCODE with a bow of its own, then SHELL as a plain block. "There should be no bow if it is the second AI agent. Only the first one should have a bow."
 - **Acceptance Criteria:**
-  - [ ] **Given** opencode is turned on while the Claude tab is open, **then** only the open tab has the rounded corner and the open colour; OPENCODE and SHELL are plain blocks of the same shape.
-  - [ ] **Given** a tab has keyboard focus or was just added, **then** any highlight it gets follows the LCARS style (no stray outline) and is gone once focus moves.
-  - [ ] **Given** an agent tab was just started and has not received any work, **then** it says "Idle", not "Working".
-  - [ ] The same holds with Codex or Kiro as the second tool, and after turning the tool off again.
-- **Notes:** The arm is in `src/renderer/TerminalPanel.jsx` and `src/renderer/theme.css`. Confirm with the person which of the three symptoms they meant before fixing.
+  - [ ] **Given** two agent tabs (for example Claude and opencode) and the shell tab, **then** only the first tab in the arm has the bow; the second agent tab and the shell tab are plain blocks.
+  - [ ] **Given** the second agent tab is the open one, **then** it gets the open colour but still no bow; the first tab keeps its bow.
+  - [ ] The same holds with Codex or Kiro as the second tool, and with one agent tab after the second tool is turned off again.
+- **Notes:** The arm is in `src/renderer/TerminalPanel.jsx` and `src/renderer/theme.css`.
 - **Dependencies:** US-0801, US-0403
