@@ -8,7 +8,7 @@
 
 **Stories:** US-0001, US-0002, US-0003, US-0004, US-0005, US-0006, US-0007, US-0008, US-0009, US-0010, US-0011, US-0012, US-0013, US-0014, US-0015, US-0016, US-0017, US-0018, US-0019
 
-**Status (2026-11-15):** ✅ US-0001–US-0012 released (v0.2.3–v0.2.5). ✅ US-0013–US-0016 and US-0019 done, for v0.2.6. 🚧 US-0017 and US-0018 in progress, for v0.2.6. Each story names its release.
+**Status (2026-11-15):** ✅ US-0001–US-0019 released (v0.2.3–v0.2.6). Each story names its release.
 
 ---
 
@@ -200,7 +200,7 @@
   - **Checked** in the built app with screenshots of every view and settings section.
 - **Dependencies:** US-0410, US-0603
 
-**US-0013: The intent list and the detail count the same stages** ✅ Done, for v0.2.6
+**US-0013: The intent list and the detail count the same stages** ✅ Released in v0.2.6
 - As a **developer reading an intent's progress**, in order to **trust the numbers**, I would like to **see the same count in the intent list and in the intent's detail**.
 - **Epic:** EPIC-00
 - **Priority:** Medium
@@ -215,7 +215,7 @@
   - **Tests.** `tests/main/parsers.test.js` (1 new). The fixture's `[S]` observability-setup now leaves the totals one lower in two tests.
 - **Dependencies:** US-0102, US-0103
 
-**US-0014: The lifecycle rule prompt says how to replace an older rule** ✅ Done, for v0.2.6
+**US-0014: The lifecycle rule prompt says how to replace an older rule** ✅ Released in v0.2.6
 - As a **developer setting up or updating a project's feature docs**, in order to **have one story lifecycle rule, not two that drift apart**, I would like to **have the agent take out the older lifecycle rule when it saves the new one**.
 - **Epic:** EPIC-00
 - **Priority:** Medium
@@ -231,7 +231,7 @@
   - **This project.** The older Swedish lifecycle rule under `## Mandated` in `aidlc/spaces/default/memory/project.md` was taken out by hand. The new rule is saved under `## Corrections`.
 - **Dependencies:** US-0603
 
-**US-0015: The header shows the branch that is checked out now** ✅ Done, for v0.2.6
+**US-0015: The header shows the branch that is checked out now** ✅ Released in v0.2.6
 - As a **developer switching branches in the terminal**, in order to **know which branch the app is showing me**, I would like to **see the current branch in the header, also after I switch outside the app**.
 - **Epic:** EPIC-00
 - **Priority:** High
@@ -248,7 +248,7 @@
   - **Tests.** `tests/main/ipc.test.js` and `tests/renderer/AppShell.test.jsx` (1 new each).
 - **Dependencies:** US-0502
 
-**US-0016: An older lifecycle rule in other words counts as older, not missing** ✅ Done, for v0.2.6
+**US-0016: An older lifecycle rule in other words counts as older, not missing** ✅ Released in v0.2.6
 - As a **developer with an older story lifecycle rule in the project's memory**, in order to **be told the rule needs updating rather than that it is missing**, I would like to **have an untagged lifecycle rule recognised even when it does not use all three status markers**.
 - **Epic:** EPIC-00
 - **Priority:** Low
@@ -262,39 +262,39 @@
   - **Tests.** `tests/main/releases.test.js` (1 new).
 - **Dependencies:** US-0603, US-0014
 
-**US-0017: Only the first terminal tab has the LCARS bow** 🚧 In progress, for v0.2.6
+**US-0017: Only the first terminal tab has the LCARS bow** ✅ Released in v0.2.6
 - As a **developer who turns on a second agent tool in a project**, in order to **see the terminal arm drawn as one LCARS frame**, I would like to **have the rounded bow only on the first tab, not on the second agent tab**.
 - **Epic:** EPIC-00
 - **Priority:** Medium
 - **Complexity:** Low
 - **Background:** Reported 2026-11-15 with a screenshot, right after switching opencode on: the arm beside the terminal showed CLAUDE with the bow, then OPENCODE with a bow of its own, then SHELL as a plain block. "There should be no bow if it is the second AI agent. Only the first one should have a bow."
 - **Acceptance Criteria:**
-  - [ ] **Given** two agent tabs (for example Claude and opencode) and the shell tab, **then** only the first tab in the arm has the bow; the second agent tab and the shell tab are plain blocks.
-  - [ ] **Given** the second agent tab is the open one, **then** it gets the open colour but still no bow; the first tab keeps its bow.
-  - [ ] The same holds with Codex or Kiro as the second tool, and with one agent tab after the second tool is turned off again.
+  - [x] **Given** two agent tabs (for example Claude and opencode) and the shell tab, **then** only the first tab in the arm has the bow; the second agent tab and the shell tab are plain blocks.
+  - [x] **Given** the second agent tab is the open one, **then** it gets the open colour but still no bow; the first tab keeps its bow.
+  - [x] The same holds with Codex or Kiro as the second tool, and with one agent tab after the second tool is turned off again.
 - **Notes:**
   - **Where.** `src/renderer/theme.css`: the bow and the taller block moved from `.term-tab--agent` to `.term-tab:first-child`, so every later tab is a plain block whatever its tool.
   - **Tests.** `tests/main/theme.test.js` (1 new).
 - **Dependencies:** US-0801, US-0403
 
-**US-0018: The latest agent message stays out of the way** 🚧 In progress, for v0.2.6
+**US-0018: The latest agent message stays out of the way** ✅ Released in v0.2.6
 - As a **developer with the terminal open**, in order to **keep the LCARS frame on screen**, I would like to **see the latest agent message only when the terminal is hidden, on one line above it**.
 - **Epic:** EPIC-00
 - **Priority:** High
 - **Complexity:** Low
 - **Background:** Reported 2026-11-15 with screenshots, in v0.2.5: the latest-message line (US-0506) sat below the frame in the bottom-left corner, wrapped word by word, and pushed the whole frame up and out of the window. "We need to be careful with the space… only show notifications like this if the terminal is hidden."
 - **Acceptance Criteria:**
-  - [ ] **Given** the terminal is open, **then** the latest-message line is not shown; the terminal already shows the agent's reply.
-  - [ ] **Given** the terminal is hidden, **then** the line shows on one row across the frame, just above the hidden terminal, cut with an ellipsis when too long, and the frame keeps its size.
-  - [ ] **Given** no message yet, **then** nothing is shown (no "no message yet" line).
-  - [ ] **Given** the agent dialog holds one item, **then** it shows no Previous, position or Next; the separate "Message" label above the title is gone (the title already says it).
-  - [ ] The suite passes inside the app's own terminal and in a checkout where the app's hooks are installed.
+  - [x] **Given** the terminal is open, **then** the latest-message line is not shown; the terminal already shows the agent's reply.
+  - [x] **Given** the terminal is hidden, **then** the line shows on one row across the frame, just above the hidden terminal, cut with an ellipsis when too long, and the frame keeps its size.
+  - [x] **Given** no message yet, **then** nothing is shown (no "no message yet" line).
+  - [x] **Given** the agent dialog holds one item, **then** it shows no Previous, position or Next; the separate "Message" label above the title is gone (the title already says it).
+  - [x] The suite passes inside the app's own terminal and in a checkout where the app's hooks are installed.
 - **Notes:**
   - **Where.** The line had no place in the app's grid and no styles, so it fell into a new row under the left arm. `src/renderer/LatestMessageStrip.jsx` reads the terminal's open state; `src/renderer/theme.css` gives it a `msg` row that is dropped when the line is not shown. `src/renderer/AgentDialog.jsx` pages only with more than one item.
   - **Tests.** `tests/renderer/LatestMessageStrip.test.jsx` (2 new, 1 changed), `tests/main/theme.test.js` (1 new), `tests/renderer/AgentDialog.test.jsx` (1 new), `AgentDialogReply.test.jsx`, `AppShell.test.jsx`. `tests/main/opencodePlugin.test.js` unsets the app's session variables for its no-session case; `tests/helpers/agentHooksFixtures.js` takes the app's own hook entries out of the repository copy.
 - **Dependencies:** US-0506
 
-**US-0019: No "two agents at once" notice under the terminal** ✅ Done, for v0.2.6
+**US-0019: No "two agents at once" notice under the terminal** ✅ Released in v0.2.6
 - As a **developer with two agent tabs**, in order to **not be alarmed by a guess**, I would like to **have the "two agents are working at once" line removed**.
 - **Epic:** EPIC-00
 - **Priority:** Medium

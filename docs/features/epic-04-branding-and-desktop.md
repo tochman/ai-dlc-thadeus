@@ -8,7 +8,7 @@
 
 **Stories:** US-0401, US-0402, US-0403, US-0404, US-0405, US-0406, US-0407, US-0408, US-0409, US-0410, US-0411, US-0412, US-0413
 
-**Status (2026-11-15):** ✅ US-0401–US-0411 released (v0.1.1–v0.2.5). 📋 US-0412 planned, US-0413 planned for v0.2.6. Each story names its release.
+**Status (2026-11-15):** ✅ US-0401–US-0411 released (v0.1.1–v0.2.5). 📋 US-0412 planned, US-0413 planned for v0.2.7. Each story names its release.
 
 ---
 
@@ -271,7 +271,7 @@
   - **Where.** `src/renderer/Pipeline.jsx`, the `stage-card` rules in `src/renderer/theme.css`.
 - **Dependencies:** US-0411
 
-**US-0413: Update the app from a public release without the GitHub CLI** 📋 Planned, for v0.2.6
+**US-0413: Update the app from a public release without the GitHub CLI** 📋 Planned, for v0.2.7
 - As a **user of the open-source app**, in order to **get updates without installing and signing in to `gh`**, I would like to **have the app check and download its updates straight from the public GitHub release**.
 - **Epic:** EPIC-04
 - **Priority:** High
