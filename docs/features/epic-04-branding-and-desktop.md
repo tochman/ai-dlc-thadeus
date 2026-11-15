@@ -6,9 +6,9 @@
 
 > Auctum AIDLC Control should look and behave like a proper Auctum desktop app wherever it shows up: in the Dock, the application menu, the window switcher, the installer and the Linux launcher. Inside the app it should feel like a living bridge console. EPIC-01 added the name, splash screen, in-app logo and the restrained LCARS theme. This epic covers the parts of the operating system that still show Electron defaults, and the motion and light that make the theme come alive without hurting readability.
 
-**Stories:** US-0401, US-0402, US-0403, US-0404, US-0405, US-0406, US-0407, US-0408, US-0409
+**Stories:** US-0401, US-0402, US-0403, US-0404, US-0405, US-0406, US-0407, US-0408, US-0409, US-0410
 
-**Status (2026-11-14):** ✅ US-0401 released in v0.1.1. ✅ US-0402, US-0403 and US-0404 released in v0.2.0. ✅ US-0406 released in v0.2.1 (intent `261113-thadeus-name`). ✅ US-0405 released in v0.2.3 (settings view, intent `261114-settings-view`) — marked "Released in v0.2.3" when the tag is cut. ✅ US-0407 released in v0.2.3 (update from a GitHub release). ✅ US-0408 released in v0.2.3 (Om T.H.A.D.E.U.S. window with the app version). ✅ US-0409 released in v0.2.4 (About window in a new design).
+**Status (2026-11-15):** ✅ US-0401 released in v0.1.1. ✅ US-0402, US-0403 and US-0404 released in v0.2.0. ✅ US-0406 released in v0.2.1 (intent `261113-thadeus-name`). ✅ US-0405 released in v0.2.3 (settings view, intent `261114-settings-view`) — marked "Released in v0.2.3" when the tag is cut. ✅ US-0407 released in v0.2.3 (update from a GitHub release). ✅ US-0408 released in v0.2.3 (Om T.H.A.D.E.U.S. window with the app version). ✅ US-0409 released in v0.2.4 (About window in a new design). 📋 US-0410 Planned for v0.2.5 (Settings in LCARS tabs, all tools checked).
 
 ---
 
@@ -221,3 +221,21 @@
   - No new animation: the mark's glow already follows the animations setting.
   - Test: `tests/renderer/AboutDialog.test.jsx`. No screenshot was taken in this build (no screen access); one is due before the release.
 - **Dependencies:** US-0408
+
+**US-0410: Settings in LCARS tabs, with every tool the app needs checked** 📋 Planned, for v0.2.5
+- As a **developer setting up and tuning the console**, in order to **find a setting at a glance and know the app has everything it needs**, I would like to **have Settings as animated LCARS tabs, and see every tool the app runs checked, opencode and the GitHub CLI included**.
+- **Epic:** EPIC-04
+- **Priority:** High
+- **Complexity:** Medium
+- **Background:** Asked for 2026-11-15 with a screenshot of today's Settings: one long scrolling page; notification settings sit under Appearance; a long Claude Code path breaks mid-word. "We want it more LCARS and animated, perhaps use tabs (but LCARS-style)" and "opencode and gh cli is missing".
+- **Acceptance Criteria:**
+  - [ ] Settings shows LCARS-style tabs (pill buttons like the side rail): Tools, Appearance, Notifications, Project, About. One tab's panel shows at a time, in an LCARS frame with an elbow and a header bar.
+  - [ ] Notifications holds the questions-from-AI-DLC, agent dialog and reply settings and the sound; Appearance keeps animations, full screen at start and language.
+  - [ ] Choosing a tab lights its pill and sweeps to its panel; rows appear one after another. Reduced gives a static glow, Off no motion, as the animations setting does everywhere.
+  - [ ] Tools lists the AI-DLC CLI, Claude Code, **opencode**, the **GitHub CLI (`gh`)** and the shell, each with path, version, "found automatically" or the chosen path, and Choose…. A chosen path is used the next time the app runs that tool.
+  - [ ] A tool that is not found says so and what it is needed for (for example: opencode for opencode agent tabs, `gh` for the GitHub features), without blocking the rest.
+  - [ ] Paths wrap at path separators, never mid-word. Every text goes through `t()` in Swedish and English; the tabs work with the keyboard and say which one is selected.
+- **Notes:**
+  - **Where.** `src/renderer/SettingsView.jsx`, `TOOL_IDS` in `src/main/tools.js` (today `aidlc`, `claude`, `shell`).
+  - **Plan.** Ultra-express, own branch after PR #31 (US-0506) merges, since Settings carries US-0506's notification settings.
+- **Dependencies:** US-0405, US-0506
