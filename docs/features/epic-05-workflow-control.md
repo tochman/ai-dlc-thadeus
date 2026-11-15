@@ -8,7 +8,7 @@
 
 **Stories:** US-0501, US-0502, US-0503, US-0504, US-0505, US-0506, US-0507, US-0508, US-0509
 
-**Status (2026-11-15):** ✅ US-0501–US-0503, US-0505 and US-0506 released (v0.2.0–v0.2.5). 📋 US-0504 and US-0507 planned for v0.2.6, US-0508 and US-0509 planned. Each story names its release.
+**Status (2026-11-15):** ✅ US-0501–US-0503, US-0505 and US-0506 released (v0.2.0–v0.2.5). 📋 US-0507 planned for v0.2.6, US-0504 planned for v0.2.7, US-0508 and US-0509 planned. Each story names its release.
 
 ---
 
@@ -90,7 +90,7 @@
     The section is collapsed by default, and **the defaults are AI-DLC's standard settings**: no extra plugins and no model preset (shipped defaults). If the person changes nothing, only `aidlc config --harness claude --yes` runs. Every chosen setting is added as its own command after setup, joined with `&&`, so the person sees the whole chain before pressing Enter.
 - **Dependencies:** US-0101, US-0107, US-0108
 
-**US-0504: Update the AI-DLC framework from the console** 📋 Planned, for v0.2.6
+**US-0504: Update the AI-DLC framework from the console** 📋 Planned, for v0.2.7
 - As a **developer using AI-DLC**, in order to **keep the framework in my project current without remembering the CLI commands**, I would like to **see when a newer `aidlc` release or changed `.claude/` files are available, and get the update command typed into the terminal**.
 - **Epic:** EPIC-05
 - **Priority:** Medium
