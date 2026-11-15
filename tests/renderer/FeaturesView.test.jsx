@@ -323,3 +323,119 @@ describe('FeaturesView: releases made by hand (US-0605)', () => {
     for (const id of ['releases-new', 'releases-add-story', 'releases-remove-story', 'releases-delete']) expect(screen.queryByTestId(id)).toBeNull();
   });
 });
+
+// US-0604: a second epic next to EPIC-06, with priorities, a complexity and a released story.
+const EPIC7 = [
+  '# EPIC-07: Search',
+  '',
+  '## User Stories',
+  '',
+  '**US-0701: Filter by text** 🚧 In progress',
+  '- **Priority:** High',
+  '- **Complexity:** Low',
+  '',
+  '**US-0702: Text everywhere** ✅ Released in v0.2.4',
+  '- **Priority:** Low',
+  '',
+  '**US-0703: Saved views** 📋 Planned',
+  '- **Priority:** High',
+  '- Remember the TEXT filter.',
+  ''
+].join('\n');
+const twoEpics = () => {
+  const docs = releaseDocs();
+  return {
+    ...docs,
+    epics: [
+      ...docs.epics,
+      { id: 'EPIC-07', title: 'Search', topic: 'Search', status: '🚧', statusKind: 'progress', file: 'e7.md', parsed: parseEpic(EPIC7), hash: 'h7' }
+    ]
+  };
+};
+const allBar = () => within(screen.getByTestId('features-view-all-filters'));
+const optionValues = (testId) => [...screen.getByTestId(testId).options].map((o) => o.value);
+
+describe('FeaturesView: story filters (US-0604)', () => {
+  it('on the Epics tab a filter replaces the epic list with the matching stories of every epic, with their count (FR1, FR1.1)', () => {
+    render(<FeaturesView projectId="p1" features={twoEpics()} delivery="releases" />);
+    expect(texts('features-view-epic')).toHaveLength(2);
+    expect(screen.queryByTestId('features-view-matches')).toBeNull();
+    expect(allBar().getByTestId('features-view-all-filter-count').getAttribute('aria-live')).toBe('polite');
+
+    fireEvent.change(screen.getByTestId('features-view-all-filter-status'), { target: { value: 'progress' } });
+    expect(screen.queryAllByTestId('features-view-epic')).toEqual([]);
+    const matches = texts('features-view-match');
+    expect(matches).toEqual([expect.stringMatching(/US-0603.*🚧 Pågår.*EPIC-06/), expect.stringMatching(/US-0701.*🚧 Pågår.*EPIC-07/)]);
+    expect(screen.getByTestId('features-view-all-filter-count').textContent).toBe('2 storys');
+  });
+
+  it('choosing a match opens the story on its epic page (FR1.1)', () => {
+    render(<FeaturesView projectId="p1" features={twoEpics()} delivery="releases" />);
+    fireEvent.change(screen.getByTestId('features-view-all-filter-text'), { target: { value: 'saved' } });
+    fireEvent.click(screen.getByTestId('features-view-match'));
+    expect(screen.getByRole('heading', { level: 2, name: /EPIC-07: Search/ })).toBeTruthy();
+    expect(screen.getByTestId('features-view-story-detail').getAttribute('aria-label')).toBe('US-0703');
+  });
+
+  it('Clear filters empties every filter and the epic list returns (FR1.2, FR3)', () => {
+    render(<FeaturesView projectId="p1" features={twoEpics()} delivery="releases" />);
+    expect(screen.queryByTestId('features-view-all-filter-clear')).toBeNull();
+    fireEvent.change(screen.getByTestId('features-view-all-filter-priority'), { target: { value: 'High' } });
+    fireEvent.change(screen.getByTestId('features-view-all-filter-epic'), { target: { value: 'EPIC-07' } });
+    fireEvent.change(screen.getByTestId('features-view-all-filter-release'), { target: { value: '-' } });
+    expect(texts('features-view-match')).toEqual([expect.stringMatching(/^US-0701/), expect.stringMatching(/^US-0703/)]);
+
+    fireEvent.click(screen.getByTestId('features-view-all-filter-clear'));
+    for (const id of ['status', 'release', 'epic', 'priority', 'complexity', 'text'])
+      expect(screen.getByTestId(`features-view-all-filter-${id}`).value).toBe('');
+    expect(texts('features-view-epic')).toHaveLength(2);
+    expect(screen.queryByTestId('features-view-matches')).toBeNull();
+    expect(screen.queryByTestId('features-view-all-filter-clear')).toBeNull();
+  });
+
+  it('an epic page filters by state, release, priority, complexity and text, with no epic filter, and they combine (FR2, FR3)', () => {
+    render(<FeaturesView projectId="p1" features={twoEpics()} delivery="releases" />);
+    fireEvent.click(screen.getAllByTestId('features-view-epic')[1]);
+    const page = within(screen.getByTestId('features-view-filters'));
+    expect(page.queryByTestId('features-view-filter-epic')).toBeNull();
+    expect(optionValues('features-view-filter-status')).toEqual(['', 'planned', 'progress', 'done', 'released', 'deployed']);
+    expect(optionValues('features-view-filter-priority')).toEqual(['', 'High', 'Low']);
+    expect(optionValues('features-view-filter-complexity')).toEqual(['', 'Low']);
+
+    fireEvent.change(screen.getByTestId('features-view-filter-text'), { target: { value: 'TEXT' } });
+    expect(texts('features-view-story')).toEqual([expect.stringMatching(/^US-0701/), expect.stringMatching(/^US-0702/), expect.stringMatching(/^US-0703/)]);
+    fireEvent.change(screen.getByTestId('features-view-filter-priority'), { target: { value: 'High' } });
+    expect(texts('features-view-story')).toEqual([expect.stringMatching(/^US-0701/), expect.stringMatching(/^US-0703/)]);
+    fireEvent.change(screen.getByTestId('features-view-filter-status'), { target: { value: 'released' } });
+    expect(screen.queryAllByTestId('features-view-story')).toEqual([]);
+    expect(screen.getByTestId('features-view-filter-count').textContent).toBe('0 storys');
+    fireEvent.click(screen.getByTestId('features-view-filter-clear'));
+    expect(texts('features-view-story')).toHaveLength(3);
+  });
+
+  it('offers the release filter, with every release and No release, only with the Releases setting (FR4.2)', () => {
+    render(<FeaturesView projectId="p1" features={twoEpics()} delivery="continuous" />);
+    expect(screen.queryByTestId('features-view-all-filter-release')).toBeNull();
+    expect(screen.queryByTestId('features-view-filter-release')).toBeNull();
+    cleanup();
+
+    render(<FeaturesView projectId="p1" features={twoEpics()} delivery="releases" />);
+    expect(optionValues('features-view-all-filter-release')).toEqual(['', 'v0.2.5', 'v0.2.4', 'v0.2.0', '-']);
+    expect(optionValues('features-view-filter-release')).toEqual(['', 'v0.2.5', 'v0.2.4', 'v0.2.0', '-']);
+    expect(screen.getByTestId('features-view-filter-release').options[4].textContent).toBe('Ingen release');
+    fireEvent.change(screen.getByTestId('features-view-all-filter-release'), { target: { value: 'v0.2.4' } });
+    expect(texts('features-view-match')).toEqual([expect.stringMatching(/^US-0702/)]);
+  });
+
+  it('starts with empty filters each time the view opens (FR5)', () => {
+    render(<FeaturesView projectId="p1" features={twoEpics()} delivery="releases" />);
+    fireEvent.change(screen.getByTestId('features-view-all-filter-text'), { target: { value: 'saved' } });
+    fireEvent.change(screen.getByTestId('features-view-filter-priority'), { target: { value: 'High' } });
+    cleanup();
+
+    render(<FeaturesView projectId="p1" features={twoEpics()} delivery="releases" />);
+    expect(screen.getByTestId('features-view-all-filter-text').value).toBe('');
+    expect(screen.getByTestId('features-view-filter-priority').value).toBe('');
+    expect(texts('features-view-epic')).toHaveLength(2);
+  });
+});

@@ -346,7 +346,17 @@
       "planned": "Planerad",
       "progress": "Pågår",
       "done": "Klar",
+      "released": "Släppt",
       "deployed": "Driftsatt"
+    },
+    "filter": {
+      "epic": "Epic",
+      "complexity": "Komplexitet",
+      "text": "Sök",
+      "noRelease": "Ingen release",
+      "count": "{n, plural, one {# story} other {# storys}}",
+      "clear": "Rensa filter",
+      "matches": "Storys som matchar filtret"
     },
     "delivery": {
       "releases": "Releaser",

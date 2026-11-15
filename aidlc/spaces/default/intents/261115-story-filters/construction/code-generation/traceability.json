@@ -1,0 +1,19 @@
+{
+  "stage": "code-generation",
+  "upstream_ids": ["FR1.1", "FR1.2", "FR2", "FR3", "FR4.1", "FR4.2", "FR4.3", "FR4.4", "FR5", "FR6", "NFR1", "NFR2", "NFR3"],
+  "coverage": [
+    { "id": "FR1.1", "status": "OK", "target": "src/renderer/FeaturesView.jsx" },
+    { "id": "FR1.2", "status": "OK", "target": "src/renderer/FeaturesView.jsx" },
+    { "id": "FR2", "status": "OK", "target": "src/renderer/FeaturesView.jsx" },
+    { "id": "FR3", "status": "OK", "target": "src/renderer/storyFilter.js" },
+    { "id": "FR4.1", "status": "OK", "target": "src/renderer/storyFilter.js" },
+    { "id": "FR4.2", "status": "OK", "target": "src/renderer/storyFilter.js" },
+    { "id": "FR4.3", "status": "OK", "target": "src/renderer/storyFilter.js" },
+    { "id": "FR4.4", "status": "OK", "target": "src/renderer/storyFilter.js" },
+    { "id": "FR5", "status": "OK", "target": "src/renderer/FeaturesView.jsx" },
+    { "id": "FR6", "status": "OK", "target": "src/shared/locales/sv.json" },
+    { "id": "NFR1", "status": "OK", "target": "package.json" },
+    { "id": "NFR2", "status": "OK", "target": "src/renderer/FeaturesView.jsx" },
+    { "id": "NFR3", "status": "OK", "target": "src/renderer/storyFilter.js" }
+  ]
+}
