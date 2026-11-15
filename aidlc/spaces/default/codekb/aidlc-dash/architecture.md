@@ -79,6 +79,18 @@ Text fallback: the App Shell holds the QuestionPopup and one ProjectView per ope
 4. **Terminal**: `pty:spawn` starts `$SHELL -l -i -c <cli>` (agent, CLI from the fixed harness table) or `$SHELL -l` (shell). Output streams as `pty:data`; the renderer's `createActivity` turns output timing into `busy`/`idle`/`exited`.
 5. **Steering**: Resume, quick commands, Plans requests and the feature-docs prompt type text into the agent tab (usually without Enter); Refresh types git commands into the shell tab; Setup, Configuration and Models run `aidlc` in main after a preview.
 6. **Cost**: `project:cost` reads `aidlc/.aidlc-sessions/usage-ledger.json` and summarises it per intent, stage, agent, model and scope (`summarizeLedger`).
+7. **Feature docs and releases**: `features:load` returns `loadFeatures()` (overview, epics, each file's sha256 `hash`) plus `tags` from `listReleaseTags()` (`git tag --list v*`). The renderer computes the release list and picker options itself from those two inputs (see below). The feature-docs watcher (`featureWatchPaths`: the overview file and the epic folders) sends `features:changed`, and the view reloads.
+
+### Releases: derived, not stored
+
+`src/main/parsers/releases.js` (pure, used by main and the renderer) holds every release rule:
+
+- `releaseOf(statusText)` reads `for vX.Y.Z` (planned) and `Released in vX.Y.Z` (released) from a story's status text.
+- `buildReleases(epics, tags)`: one entry per version that appears in a marker or a `vX.Y.Z` tag, newest first, `{version, released, date, stories[{epicId, story, stale}]}`. `released` from the tag or a "Released in" marker; `date` from the tag; `stale` = still "for" a tagged version.
+- `releaseOptions(epics, tags)`: the picker's versions: planned versions without a tag, plus the next patch and next minor after the latest tag.
+- `setReleaseMarker(text, storyId, version|null)`: rewrites only the story's head line, the epic's `**Status (…)**` line and table rows, segment by segment; throws for a version that is not `vX.Y.Z`.
+
+There is no list of planned releases: a release with no story and no tag cannot exist today (the gap US-0605 fills). The only write is a story's marker, through main (`src/main/releases.js` `setStoryRelease`).
 
 ### Key Design Decisions
 
@@ -92,6 +104,8 @@ Text fallback: the App Shell holds the QuestionPopup and one ProjectView per ope
 | node-pty loaded lazily | `pty.js` | A broken native binary breaks the terminal tab, not the app |
 | Every project tab stays mounted | `App.jsx` | Terminals and watchers survive tab switches; memory grows with open projects |
 | Harness folders and engine files read-only in the editor | `fileWrite.js` `isEngineOwned` | Writing harness settings (hooks, plugins) would be a new, deliberate exception |
+| Releases derived from story markers and git tags; the docs' own text is the store (US-0603) | `parsers/releases.js`, `releases.js` | no new data file, every tool sees the same markers; an empty planned release has nowhere to live |
+| A story's release is the only write the Features view makes: main finds the files from the overview, the renderer sends only `{storyId, version, epicHash, overviewHash}` | `releases.js`, `ipc.js` `features:setRelease` | a file changed since it was read is refused; two writes (epic, then overview) without a transaction |
 | Distribution through GitHub Releases of the own repo, built by CI on a tag; the app updates itself from them via `gh` | `release.yml`, `electron-builder.yml` (`publish: null`), `updater.js` | Download and update depend on access to `tochman/aidlc-dash`; a public repo opens downloads, the in-app update still needs `gh` until US-0413 |
 
 ### Improvement Opportunities
@@ -212,3 +226,37 @@ sequenceDiagram
 ```
 
 Text fallback: opening a project validates the root, detects AI-DLC and starts harness detection without waiting. An AI-DLC project gets an intents/ledger watcher and a question baseline; a plain folder gets a small watcher that re-detects once `aidlc/spaces/<space>` appears. Later changes reach the renderer as `project:changed`, which reloads only the changed intents.
+
+### Mark a story for a release (US-0603, the path US-0605 reuses)
+
+```mermaid
+sequenceDiagram
+  participant P as Person
+  participant FV as FeaturesView (ReleasePicker)
+  participant BR as window.bridge
+  participant IPC as IPC Router
+  participant RS as releases.js (main)
+  participant FL as features.js loadFeatures
+  participant FW as fileWrite.js writeFileSafe
+  participant WA as feature-docs watcher
+  P->>FV: picks vX.Y.Z or None
+  FV->>BR: setStoryRelease(projectId, storyId, version, epicHash, overviewHash)
+  BR->>IPC: features:setRelease
+  IPC->>RS: setStoryRelease(root, featuresPath, request)
+  RS->>FL: loadFeatures, find the story's epic
+  alt unknown or released story, bad version
+    RS-->>FV: throws, shown under the picker
+  else
+    RS->>FW: epic file with setReleaseMarker, expectHash epicHash
+    RS->>FW: FEATURES.md with setReleaseMarker, expectHash overviewHash
+    alt a hash differs
+      RS-->>FV: conflict with the file name
+    else
+      RS-->>IPC: ok
+      IPC-->>FV: features:changed, view reloads with new hashes
+    end
+  end
+  WA-->>FV: features:changed also on any outside edit
+```
+
+Text fallback: the picker sends only the story id, the version (or null) and the two hashes it read. Main reloads the docs, refuses an unknown or released story, then writes the epic file and the overview, each only if its hash still matches; a mismatch returns `{conflict: file}` and stops. On success main sends `features:changed` and the view reloads with fresh hashes. Because each write changes `FEATURES.md`, a second write sent with the old hashes is refused.

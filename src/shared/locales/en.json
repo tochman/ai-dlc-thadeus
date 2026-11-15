@@ -360,7 +360,25 @@
       "failed": "The release could not be set: {error}",
       "stale": "Tag {version} exists, but the story is still marked “for {version}”.",
       "noStory": "{id} was not found in the feature docs.",
-      "released": "{id} is already released in {version} and cannot be marked for another release."
+      "released": "{id} is already released in {version} and cannot be marked for another release.",
+      "planUnreadable": "The release plan {file} could not be read: {error}",
+      "new": {
+        "button": "New release",
+        "label": "Version",
+        "suggestions": "Suggestions",
+        "create": "Create",
+        "format": "{version} is not a version shaped vX.Y.Z.",
+        "exists": "{version} already exists.",
+        "failed": "The release could not be created: {error}"
+      },
+      "add": "Add story…",
+      "remove": "Remove",
+      "removeLabel": "Remove from {version}",
+      "delete": {
+        "button": "Delete",
+        "refused": "{version} cannot be deleted: it has stories, a tag or text in its plan file.",
+        "failed": "The release could not be deleted: {error}"
+      }
     },
     "releases": {
       "title": "Releases",

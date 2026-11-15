@@ -1,9 +1,11 @@
-// Reads the feature docs (EPIC-06) through the root-confined projectAccess. Read-only (FR4.6, NFR2); the only
-// write, a story's release marker, is in releases.js and checks the hashes given here (US-0603 FR2.3).
+// Reads the feature docs (EPIC-06) through the root-confined projectAccess. Read-only (FR4.6, NFR2); the writes, a
+// story's release marker and a release plan file, are in releases.js and check the hashes given here (US-0603 FR2.3,
+// US-0605 NFR1).
 import { createHash } from 'node:crypto';
 import path from 'node:path';
-import { readText } from './projectAccess.js';
+import { listDir, readText } from './projectAccess.js';
 import { DEFAULT_FEATURES_PATH, isValidFeaturesPath, parseEpic, parseOverview, storyIdsIn } from './parsers/features.js';
+import { isHeadingOnly } from './parsers/releases.js';
 import { t } from '../shared/i18n.js';
 
 const posix = path.posix;
@@ -63,14 +65,47 @@ export async function loadFeatures(root, overviewRel = DEFAULT_FEATURES_PATH) {
     }
     epics.push({ ...row, file: target?.rel ?? null, parsed, hash });
   }
-  return { available: true, overviewPath: overviewRel, overviewText, overviewHash: sha256(overviewText), intro: overview.intro, epics, warnings };
+  const plans = await loadPlans(root, overviewRel, warnings);
+  return { available: true, overviewPath: overviewRel, overviewText, overviewHash: sha256(overviewText), intro: overview.intro, epics, plans, warnings };
 }
 
-/** Paths to watch for one overview: the overview itself and the folders its epic files live in (FR2.7). */
+/** US-0605 FR2: the release plans folder beside the overview's own folder, e.g. docs/releases/. */
+export const plansDir = (overviewRel) => posix.join(posix.dirname(overviewRel), 'releases');
+const PLAN_FILE = /^(\d+\.\d+\.\d+)\.md$/;
+
+/**
+ * US-0605 FR2: each `X.Y.Z.md` in the plans folder as `{version: 'vX.Y.Z', file, hash, headingOnly}`, by name; other
+ * names are ignored and a missing folder gives []. An unreadable file is a warning.
+ */
+async function loadPlans(root, overviewRel, warnings) {
+  const dir = plansDir(overviewRel);
+  let entries;
+  try {
+    entries = await listDir(root, dir);
+  } catch (err) {
+    warnings.push(t('features.release.planUnreadable', { file: dir, error: err.message }));
+    return [];
+  }
+  const names = entries.filter((e) => !e.isDir && PLAN_FILE.test(e.name)).map((e) => e.name);
+  const plans = [];
+  for (const name of names.sort()) {
+    const version = `v${name.match(PLAN_FILE)[1]}`;
+    const file = `${dir}/${name}`;
+    try {
+      const text = await readText(root, file);
+      plans.push({ version, file, hash: sha256(text), headingOnly: isHeadingOnly(text, version) });
+    } catch (err) {
+      warnings.push(t('features.release.planUnreadable', { file, error: err.message }));
+    }
+  }
+  return plans;
+}
+
+/** Paths to watch for one overview: the overview itself, the folders its epic files live in (FR2.7) and the plans folder (US-0605 FR2.2). */
 export function featureWatchPaths(overviewRel, features) {
   const dirs = new Set((features?.epics ?? []).filter((e) => e.file).map((e) => posix.dirname(e.file)));
   if (dirs.size === 0) dirs.add(posix.join(posix.dirname(overviewRel), 'features'));
-  return [overviewRel, ...dirs];
+  return [overviewRel, ...dirs, plansDir(overviewRel)];
 }
 
 async function readOrEmpty(root, rel) {

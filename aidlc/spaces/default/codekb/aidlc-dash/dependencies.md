@@ -57,6 +57,7 @@ Main process imports are listed in `code-structure.md` ("Internal dependency gra
 | `Timeline.jsx` | `src/main/parsers/audit.js` (`NOISY_EVENTS`) | shared noise list |
 | `CostTab.jsx`, `ConfigEdit.jsx` | `src/main/parsers/ledger.js` (`compareModels`) | configured vs actual model |
 | `FeaturesView.jsx`, `ProjectSettingsDialog.jsx` | `src/main/parsers/features.js` | status markers, path validation |
+| `FeaturesView.jsx`, `ProjectView.jsx`, `ProjectSettingsView.jsx`, `featureDocsPrompt.js` | `src/main/parsers/releases.js` | `DELIVERY`, `DELIVERY_DEFAULT`, `lifecycleTag`, `buildReleases`, `releaseOf`, `releaseOptions`: the same release rules as main |
 | many | `src/shared/harnesses.js`, `configTables.js`, `i18n.js`, `appName.js`, `planName.js` | same rules on both sides |
 
 Main and renderer never import each other's process-specific modules; the parsers above are pure (no Node imports).
@@ -90,3 +91,27 @@ flowchart TD
 Text fallback: `questions.js` and the audit parser feed `projectService.js`, which `ipc.js` uses together with `notify.js`, `settings.js` and `pty.js` (which reads the harness table). The preload bridge carries the result to `App.jsx`, which renders `QuestionPopup.jsx` and passes answers through `ProjectView.jsx` to `TerminalContext.jsx`, which uses `picker.js`, `terminalControl.js` and `TerminalPanel.jsx`. The harness table, the locales and `SettingsView.jsx` (question alert settings) are shared inputs.
 
 Tests touching this area: `tests/main/questions.test.js`, `notify.test.js`, `pty.test.js`, `harness.test.js`, `settings.test.js`, `i18nKeys.test.js`; `tests/renderer/QuestionPopup.test.jsx`, `picker.test.jsx`, `pickerSmoke.test.jsx`, `TerminalPanel.test.jsx`, `terminalControl.test.jsx`, `ResumeButton.test.jsx`, `AppShell.test.jsx`, `SettingsView.test.jsx`; fixtures `tests/fixtures/picker/`.
+
+## Dependencies of the release area (US-0605 blast radius)
+
+```mermaid
+flowchart TD
+  PF["src/main/parsers/features.js"] --> PR["src/main/parsers/releases.js"]
+  PF --> FL["src/main/features.js"]
+  PR --> RS["src/main/releases.js"]
+  FL --> RS
+  FW["src/main/fileWrite.js"] --> RS
+  GIT["src/main/git.js listReleaseTags"] --> IPC["src/main/ipc.js"]
+  RS --> IPC
+  FL --> IPC
+  SET["src/main/settings.js delivery"] --> IPC
+  IPC --> PRE["src/preload/index.js"]
+  PRE --> FV["src/renderer/FeaturesView.jsx"]
+  PR --> FV
+  PV["src/renderer/ProjectView.jsx"] --> FV
+  LOC["src/shared/locales/*.json"] --> FV
+```
+
+Text fallback: the features parser feeds the releases parser and the features loader; both feed the releases service, which writes through `fileWrite.js`. `ipc.js` combines the loader, the service, `listReleaseTags` and the saved `delivery` setting and hands them over the preload bridge to `FeaturesView.jsx`, which also imports the releases parser directly and gets `delivery` from `ProjectView.jsx`. Texts come from the locale files (`features.release.*`, `features.releases.*`).
+
+Tests touching this area: `tests/main/releases.test.js`, `tests/main/featureDocsStatus.test.js`, `tests/main/i18nKeys.test.js`, `tests/renderer/FeaturesView.test.jsx`; fixtures `tests/fixtures/features/`.

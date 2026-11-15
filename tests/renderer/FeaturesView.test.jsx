@@ -143,7 +143,8 @@ const releaseDocs = (
   tags = [
     { name: 'v0.2.0', date: '2026-11-10' },
     { name: 'v0.2.4', date: '2026-11-14' }
-  ]
+  ],
+  plans = []
 ) => ({
   available: true,
   overviewPath: 'docs/FEATURES.md',
@@ -152,6 +153,7 @@ const releaseDocs = (
   intro: '',
   warnings: [],
   tags,
+  plans,
   epics: [
     {
       id: 'EPIC-06',
@@ -174,6 +176,7 @@ describe('FeaturesView: releases (US-0603)', () => {
     openStory('US-0604');
     const picker = screen.getByTestId('features-view-release-picker');
     expect([...picker.options].map((o) => [o.value, o.textContent])).toEqual([
+      ['v1.0.0', 'v1.0.0'],
       ['v0.3.0', 'v0.3.0'],
       ['v0.2.5', 'v0.2.5'],
       ['', 'Ingen']
@@ -239,5 +242,84 @@ describe('FeaturesView: releases (US-0603)', () => {
     expect(texts('features-view-story')[3]).toMatch(/US-0605.*🚀 Driftsatt/);
     fireEvent.change(screen.getByTestId('features-view-filter-status'), { target: { value: 'deployed' } });
     expect(texts('features-view-story')).toEqual([expect.stringMatching(/^US-0605/)]);
+  });
+});
+
+// US-0605: plan files as features:load lists them; v0.2.7 holds only its heading, v0.2.8 has more text.
+const PLANS = [
+  { version: 'v0.2.7', file: 'docs/releases/0.2.7.md', hash: 'h7', headingOnly: true },
+  { version: 'v0.2.8', file: 'docs/releases/0.2.8.md', hash: 'h8', headingOnly: false }
+];
+const releaseRow = (version) => screen.getAllByTestId('features-view-release').find((el) => el.textContent.startsWith(version));
+const inRelease = (version) => within(releaseRow(version));
+
+describe('FeaturesView: releases made by hand (US-0605)', () => {
+  it('New release suggests the next patch, minor and major, refuses a bad or known version and creates a good one (FR1, FR1.1, FR1.2)', async () => {
+    window.bridge.createRelease = vi.fn(async () => ({ ok: true, file: 'docs/releases/0.2.9.md' }));
+    render(<FeaturesView projectId="p1" features={releaseDocs()} delivery="releases" tab="releases" />);
+    fireEvent.click(screen.getByTestId('releases-new'));
+    expect(texts('releases-new-suggestion')).toEqual(['v0.2.5', 'v0.3.0', 'v1.0.0']);
+    const input = screen.getByTestId('releases-new-version');
+
+    fireEvent.change(input, { target: { value: '1.2' } });
+    fireEvent.click(screen.getByTestId('releases-new-create'));
+    expect(screen.getByRole('alert').textContent).toBe('1.2 är inte en version på formen vX.Y.Z.');
+    fireEvent.click(screen.getAllByTestId('releases-new-suggestion')[0]);
+    expect(input.value).toBe('v0.2.5');
+    fireEvent.click(screen.getByTestId('releases-new-create'));
+    expect(screen.getByRole('alert').textContent).toBe('v0.2.5 finns redan.');
+    expect(window.bridge.createRelease).not.toHaveBeenCalled();
+
+    fireEvent.change(input, { target: { value: ' v0.2.9 ' } });
+    fireEvent.click(screen.getByTestId('releases-new-create'));
+    await waitFor(() => expect(window.bridge.createRelease).toHaveBeenCalledWith('p1', 'v0.2.9'));
+    expect(screen.queryByRole('alert')).toBeNull();
+  });
+
+  it('adds a story with no release, removes one, and keeps every action disabled until the view has reloaded (FR3.1–FR3.3)', async () => {
+    window.bridge.setStoryRelease = vi.fn(async () => ({ ok: true }));
+    const { rerender } = render(<FeaturesView projectId="p1" features={releaseDocs(undefined, PLANS)} delivery="releases" tab="releases" />);
+    const add = inRelease('v0.2.7').getByTestId('releases-add-story');
+    expect([...add.options].map((o) => o.value)).toEqual(['', 'US-0604', 'US-0605']);
+    expect(inRelease('v0.2.4').queryByTestId('releases-add-story')).toBeNull(); // released
+
+    fireEvent.change(add, { target: { value: 'US-0604' } });
+    await waitFor(() =>
+      expect(window.bridge.setStoryRelease).toHaveBeenCalledWith('p1', { storyId: 'US-0604', version: 'v0.2.7', epicHash: 'eh', overviewHash: 'oh' })
+    );
+    expect(screen.getByTestId('releases-new').disabled).toBe(true);
+    expect(inRelease('v0.2.8').getByTestId('releases-add-story').disabled).toBe(true);
+    expect(inRelease('v0.2.5').getByTestId('releases-remove-story').disabled).toBe(true);
+
+    rerender(<FeaturesView projectId="p1" features={releaseDocs(undefined, PLANS)} delivery="releases" tab="releases" />);
+    const remove = inRelease('v0.2.5').getByTestId('releases-remove-story');
+    expect(remove.disabled).toBe(false);
+    fireEvent.click(remove);
+    await waitFor(() => expect(window.bridge.setStoryRelease).toHaveBeenLastCalledWith('p1', expect.objectContaining({ storyId: 'US-0603', version: null })));
+
+    // A refused write unlocks the list at once and says so.
+    window.bridge.setStoryRelease.mockResolvedValueOnce({ conflict: 'docs/FEATURES.md' });
+    rerender(<FeaturesView projectId="p1" features={releaseDocs(undefined, PLANS)} delivery="releases" tab="releases" />);
+    fireEvent.change(inRelease('v0.2.7').getByTestId('releases-add-story'), { target: { value: 'US-0605' } });
+    expect((await screen.findByRole('alert')).textContent).toMatch(/docs\/FEATURES\.md har ändrats på disken/);
+    expect(screen.getByTestId('releases-new').disabled).toBe(false);
+  });
+
+  it('offers Delete only for an untagged, story-less, heading-only release and says a failure (FR4, FR4.1, NFR3)', async () => {
+    window.bridge.deleteRelease = vi.fn(async () => ({ ok: true }));
+    const { rerender } = render(<FeaturesView projectId="p1" features={releaseDocs(undefined, PLANS)} delivery="releases" tab="releases" />);
+    expect(screen.getAllByTestId('releases-delete')).toHaveLength(1);
+    fireEvent.click(inRelease('v0.2.7').getByTestId('releases-delete'));
+    await waitFor(() => expect(window.bridge.deleteRelease).toHaveBeenCalledWith('p1', { version: 'v0.2.7', hash: 'h7' }));
+
+    window.bridge.deleteRelease.mockRejectedValueOnce(new Error("Error invoking remote method 'features:deleteRelease': Error: trasig"));
+    rerender(<FeaturesView projectId="p1" features={releaseDocs(undefined, PLANS)} delivery="releases" tab="releases" />);
+    fireEvent.click(inRelease('v0.2.7').getByTestId('releases-delete'));
+    await waitFor(() => expect(screen.getByRole('alert').textContent).toBe('Releasen kunde inte raderas: trasig'));
+  });
+
+  it('with continuous deployment shows none of the release actions (FR5)', () => {
+    render(<FeaturesView projectId="p1" features={releaseDocs(undefined, PLANS)} delivery="continuous" tab="releases" />);
+    for (const id of ['releases-new', 'releases-add-story', 'releases-remove-story', 'releases-delete']) expect(screen.queryByTestId(id)).toBeNull();
   });
 });

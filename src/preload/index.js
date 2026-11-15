@@ -65,6 +65,9 @@ contextBridge.exposeInMainWorld('bridge', {
   getStoryLinks: call('features:storyLinks'),
   // US-0603: a story id, a version and the read hashes cross the bridge, never a path.
   setStoryRelease: call('features:setRelease'),
+  // US-0605: a version (and for delete the plan's read hash), never a path.
+  createRelease: call('features:createRelease'),
+  deleteRelease: call('features:deleteRelease'),
   getLifecycleRuleStatus: call('features:ruleStatus'),
   getProjectSettings: call('projectSettings:get'),
   setProjectSettings: call('projectSettings:set'),

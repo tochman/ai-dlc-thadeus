@@ -360,7 +360,25 @@
       "failed": "Releasen kunde inte sättas: {error}",
       "stale": "Taggen {version} finns, men storyn är fortfarande märkt ”for {version}”.",
       "noStory": "{id} finns inte i feature-beskrivningarna.",
-      "released": "{id} är redan släppt i {version} och kan inte märkas för en annan release."
+      "released": "{id} är redan släppt i {version} och kan inte märkas för en annan release.",
+      "planUnreadable": "Releaseplanen {file} kunde inte läsas: {error}",
+      "new": {
+        "button": "Ny release",
+        "label": "Version",
+        "suggestions": "Förslag",
+        "create": "Skapa",
+        "format": "{version} är inte en version på formen vX.Y.Z.",
+        "exists": "{version} finns redan.",
+        "failed": "Releasen kunde inte skapas: {error}"
+      },
+      "add": "Lägg till story…",
+      "remove": "Ta bort",
+      "removeLabel": "Ta bort från {version}",
+      "delete": {
+        "button": "Radera",
+        "refused": "{version} kan inte raderas: den har storys, en tagg eller text i sin releaseplan.",
+        "failed": "Releasen kunde inte raderas: {error}"
+      }
     },
     "releases": {
       "title": "Releaser",

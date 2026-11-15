@@ -2,7 +2,7 @@
 
 ## Purpose
 
-T.H.A.D.E.U.S. (Transformative Human-AI Development Environment for Ubiquitous Systems, repository `aidlc-dash`, package `thadeus` 0.2.5) is a desktop "bridge console" for software projects that use AI-DLC (AI-Driven Development Life Cycle). It is built by Auctum Solutions AB and released under the MIT licence. It runs on macOS (universal .dmg) and Linux (x64 .deb).
+T.H.A.D.E.U.S. (Transformative Human-AI Development Environment for Ubiquitous Systems, repository `aidlc-dash`, package `thadeus` 0.2.6) is a desktop "bridge console" for software projects that use AI-DLC (AI-Driven Development Life Cycle). It is built by Auctum Solutions AB and released under the MIT licence. It runs on macOS (universal .dmg) and Linux (x64 .deb).
 
 The app puts three things in one window per project:
 
@@ -23,7 +23,7 @@ The app reads AI-DLC's files and leaves the writing to AI-DLC. Actions that chan
 
 ## Key functionality (by epic)
 
-Status from `docs/FEATURES.md` at commit `bc1dd3d`; the epic files hold the detail.
+Status from `docs/FEATURES.md` at commit `bc1dd3d`, with the EPIC-06 and EPIC-11 rows re-read at `4867a36`; the epic files hold the detail.
 
 | Epic | Capability | Status |
 |---|---|---|
@@ -33,18 +33,20 @@ Status from `docs/FEATURES.md` at commit `bc1dd3d`; the epic files hold the deta
 | EPIC-03 | Virtualised audit timeline | Released v0.2.0; US-0303 for v0.3.0 |
 | EPIC-04 | LCARS design, desktop integration, self-update from GitHub releases, About | Released up to v0.2.5; US-0412, US-0413 planned |
 | EPIC-05 | Workflow control incl. agent dialogs (US-0506) | Released up to v0.2.5 |
-| EPIC-06 | Feature docs view and setup offer | Released; US-0604 planned |
+| EPIC-06 | Feature docs view and setup offer; releases or continuous deployment per project (US-0603) | US-0601–0603 released (v0.2.0–v0.2.5); US-0604 planned and **US-0605 (this intent)** in progress, both for v0.2.7 |
 | EPIC-07 | Swedish and English UI | US-0702 for v0.3.0 |
 | EPIC-08 | Harness per project, set up six harnesses | Released up to v0.2.3 |
 | EPIC-09 | AI-DLC configuration, custom plans, models per agent | Released up to v0.2.4 |
 | EPIC-10 | Edit project files with Monaco | Released v0.2.4 |
-| EPIC-11 | Open source: make the repository public | **US-1101 (this intent)**, for v0.2.6 |
+| EPIC-11 | Open source: make the repository public | US-1101 released in v0.2.6 |
 | EPIC-12 | Team collaboration | US-1201 for v0.3.0 |
 
-## The active intent: US-1101 (repository ready to be public)
+## Releases in the Features view (EPIC-06)
 
-Intent `261115-repo-public-ready` (scope `express`) covers EPIC-11 US-1101 (`docs/features/epic-11-open-source.md`). The repository `tochman/aidlc-dash` is private today; the app's updater fails without `gh` access, which triggered the decision to open-source it. US-0413 (updates without `gh`) builds on the public repository.
+With the per-project delivery setting **Releases** (default; the other is **Continuous deployment**), the Features view lets a person mark a story for a release and lists releases with their stories (US-0603). A release is not stored anywhere: it exists only while a story carries "for vX.Y.Z" or "Released in vX.Y.Z" in the feature docs, or a git tag `vX.Y.Z` exists. The mechanics are in `architecture.md` ("Releases: derived, not stored").
 
-The acceptance criteria ask for: a keep/clean/remove review of what would become public (AI-DLC records, personal paths and emails, fixtures and screenshots, anything secret-like); a whole-history secret scan with rotation of anything ever committed; removal of what is private (history rewrite only on the person's word); the usual public files (outside-user README, `CONTRIBUTING.md`, `SECURITY.md`, `CODE_OF_CONDUCT.md`, issue and PR templates); MIT `LICENSE` agreeing with `package.json` and third-party licences listed for the packaged app; and the visibility switch only on the person's word.
+## The active intent: US-0605 (create a release by hand)
 
-What the code and files show for this intent is in `code-quality-assessment.md` ("Public-readiness review"); licences in `dependencies.md` ("Licences").
+Intent `261115-manual-releases` (scope `express`) covers US-0605 (`docs/features/epic-06-feature-docs.md`): a "New release" action in the release list (with patch, minor and major suggestions after the latest tag, refusing a non-`vX.Y.Z` or existing version), the new release shown as planned with 0 stories and offered in every story's picker after a restart, adding and removing stories there with the same marker as US-0603, deleting a release with no stories and no tag, hidden with Continuous deployment, all texts through `t()`. Open question in the story: where an empty release is kept (suggested `docs/RELEASES.md`, or app settings). The facts that bear on it are in `code-quality-assessment.md` ("Brownfield notes for US-0605").
+
+The previous intent, US-1101 (`261115-repo-public-ready`), is released; its findings stay in `code-quality-assessment.md` ("Public-readiness review") and `dependencies.md` ("Licences").

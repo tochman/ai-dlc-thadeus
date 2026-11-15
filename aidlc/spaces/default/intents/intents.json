@@ -196,7 +196,7 @@
     "slug": "manual-releases",
     "dirName": "261115-manual-releases",
     "scope": "express",
-    "status": "in-flight",
+    "status": "complete",
     "request": "eca1c669"
   }
 ]

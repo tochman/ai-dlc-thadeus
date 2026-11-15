@@ -108,6 +108,24 @@ Scope of this review: `package.json`, `package-lock.json`, `electron-builder.yml
 | Actions pinned by tag | `release.yml` (`@v4`) | common; SHA pinning is a hardening option once outsiders send PRs |
 | Swedish console messages | `scripts/*.cjs`, `scripts/check-glibc.mjs` | contributor-facing |
 
+## Brownfield notes for US-0605 (release area, at `4867a36`)
+
+Ratings for the area: naming good, function size good (all release functions are short and pure but `setStoryRelease`), error handling good (bad input throws a translated error, a stale hash returns `{conflict}`, `listReleaseTags` falls back to `[]`), tests good (see below). Facts the design must keep:
+
+| Fact | Where | Consequence for US-0605 |
+|---|---|---|
+| No store for planned releases; `docs/RELEASES.md` does not exist and nothing reads it | `parsers/releases.js`, `features.js` | a new reader (pure parser) and a write path are needed, whichever store is chosen |
+| `releaseOptions` suggests the next patch and minor only | `parsers/releases.js:83` | AC1 adds the next major; created releases must also join the picker options |
+| `writeFileSafe` refuses a file that does not exist (it stats it first) | `fileWrite.js:79` | creating `docs/RELEASES.md` needs a create path (`writeAtomic` exists) |
+| The watcher covers only the overview and the epic folders | `features.js` `featureWatchPaths` | a file beside `FEATURES.md` must be added, or the view will not reload on its change |
+| Every marker write changes `FEATURES.md`, and each write is hash-checked | `releases.js` `setStoryRelease` | adding several stories from the release list needs one call at a time with fresh hashes, or a batch call in main |
+| `docs/releases/` already holds hand-written release plans (`0.2.3.md`, `0.2.4.md`) | `docs/` | a `docs/RELEASES.md` next to it has a near name; say how they relate |
+| App settings drop unknown keys | `settings.js` `setProjectSettings` | the app-settings alternative needs a new sanitised key and is not seen by other clones or tools |
+| `ReleasesView` has no `projectId`; the `vX.Y.Z` regex and sort are private | `FeaturesView.jsx:160`, `parsers/releases.js:6,22` | small prop and export changes |
+| Two-file write without a transaction (`ponytail:`) | `releases.js:24` | a third file (RELEASES.md) widens the same gap |
+
+Tests in the area: `tests/main/releases.test.js` (pure functions on lines shaped like the real epic and overview, plus `setStoryRelease`/`readRuleStatus` in a temp project, conflict and refusal cases); `tests/renderer/FeaturesView.test.jsx` "releases (US-0603)" (picker options and bridge call, refused and failed writes, release list order and dates, stale flags, continuous deployment hiding). No test covers several writes in a row.
+
 ## Brownfield notes for the next stages
 
 - **Test baseline**: the suite was not run in this stage; Code Generation should record a baseline (`npm test`) before changes.

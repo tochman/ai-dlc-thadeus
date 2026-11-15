@@ -1,0 +1,20 @@
+{
+  "stage": "code-generation",
+  "upstream_ids": ["FR1.1", "FR1.2", "FR1.3", "FR2.1", "FR2.2", "FR3.1", "FR3.2", "FR3.3", "FR4.1", "FR5", "FR6", "NFR1", "NFR2", "NFR3"],
+  "coverage": [
+    { "id": "FR1.1", "status": "OK", "target": "src/main/parsers/releases.js" },
+    { "id": "FR1.2", "status": "OK", "target": "src/main/parsers/releases.js" },
+    { "id": "FR1.3", "status": "OK", "target": "src/main/releases.js" },
+    { "id": "FR2.1", "status": "OK", "target": "src/main/parsers/releases.js" },
+    { "id": "FR2.2", "status": "OK", "target": "src/main/features.js" },
+    { "id": "FR3.1", "status": "OK", "target": "src/renderer/FeaturesView.jsx" },
+    { "id": "FR3.2", "status": "OK", "target": "src/renderer/FeaturesView.jsx" },
+    { "id": "FR3.3", "status": "OK", "target": "src/renderer/FeaturesView.jsx" },
+    { "id": "FR4.1", "status": "OK", "target": "src/main/parsers/releases.js" },
+    { "id": "FR5", "status": "OK", "target": "src/renderer/FeaturesView.jsx" },
+    { "id": "FR6", "status": "OK", "target": "src/shared/locales/sv.json" },
+    { "id": "NFR1", "status": "OK", "target": "src/main/releases.js" },
+    { "id": "NFR2", "status": "OK", "target": "package.json" },
+    { "id": "NFR3", "status": "OK", "target": "src/renderer/FeaturesView.jsx" }
+  ]
+}

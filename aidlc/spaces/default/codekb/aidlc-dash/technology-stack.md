@@ -1,6 +1,6 @@
 # Technology Stack
 
-Versions are those resolved in `package-lock.json` at commit `2d111d6`, re-checked for the tooling rows at `bc1dd3d` (package 0.2.5); the ranges in `package.json` are caret ranges unless noted.
+Versions are those resolved in `package-lock.json` at commit `2d111d6`, re-checked for the tooling rows at `bc1dd3d` (package 0.2.5; 0.2.6 at `4867a36`, lockfile not re-read). The release area (US-0603, US-0605) adds no library; the ranges in `package.json` are caret ranges unless noted.
 
 ## Languages and runtime
 

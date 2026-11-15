@@ -3,9 +3,19 @@ import { promises as fs } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { openRoot } from '../../src/main/projectAccess.js';
-import { loadFeatures } from '../../src/main/features.js';
-import { readRuleStatus, setStoryRelease } from '../../src/main/releases.js';
-import { buildReleases, lifecycleTag, releaseOf, releaseOptions, ruleStatus, setReleaseMarker } from '../../src/main/parsers/releases.js';
+import { featureWatchPaths, loadFeatures } from '../../src/main/features.js';
+import { createRelease, deleteRelease, readRuleStatus, setStoryRelease } from '../../src/main/releases.js';
+import {
+  buildReleases,
+  canDelete,
+  lifecycleTag,
+  newReleaseError,
+  nextVersions,
+  releaseOf,
+  releaseOptions,
+  ruleStatus,
+  setReleaseMarker
+} from '../../src/main/parsers/releases.js';
 import { parseEpic } from '../../src/main/parsers/features.js';
 
 // Lines shaped like docs/features/epic-06-feature-docs.md and its docs/FEATURES.md row (US-0603).
@@ -92,6 +102,8 @@ describe('setReleaseMarker', () => {
 });
 
 const epicsOf = (md) => [{ id: 'EPIC-06', parsed: parseEpic(md) }];
+/** A plan file as loadFeatures lists it (US-0605 FR2). */
+const PLAN = (version, headingOnly = true) => ({ version, file: `docs/releases/${version.slice(1)}.md`, hash: `h-${version}`, headingOnly });
 const TAGS = [
   { name: 'v0.2.0', date: '2026-11-10' },
   { name: 'v0.2.4', date: '2026-11-14' },
@@ -99,10 +111,17 @@ const TAGS = [
 ];
 
 describe('releaseOptions', () => {
-  it('offers planned versions, then the next patch and minor after the latest tag, newest first, deduplicated (FR2.1)', () => {
+  it('offers planned versions, then the next patch, minor and major after the latest tag, newest first, deduplicated (FR2.1)', () => {
     const md = EPIC.replace('📋 Planned\n', '📋 Planned, for v0.2.5\n');
-    expect(releaseOptions(epicsOf(md), TAGS)).toEqual(['v0.3.0', 'v0.2.5']);
-    expect(releaseOptions(epicsOf(EPIC.replace('for v0.2.5 (intent', 'for v0.4.1 (intent')), TAGS)).toEqual(['v0.4.1', 'v0.3.0', 'v0.2.5']);
+    expect(releaseOptions(epicsOf(md), TAGS)).toEqual(['v1.0.0', 'v0.3.0', 'v0.2.5']);
+    expect(releaseOptions(epicsOf(EPIC.replace('for v0.2.5 (intent', 'for v0.4.1 (intent')), TAGS)).toEqual(['v1.0.0', 'v0.4.1', 'v0.3.0', 'v0.2.5']);
+  });
+
+  it('adds untagged plan versions and the next major; the next versions alone are the suggestions (US-0605 FR1.1, FR2.1)', () => {
+    const plans = [PLAN('v0.2.7'), PLAN('v0.2.4', false)];
+    expect(releaseOptions(epicsOf(EPIC), TAGS, plans)).toEqual(['v1.0.0', 'v0.3.0', 'v0.2.7', 'v0.2.5']);
+    expect(nextVersions(TAGS)).toEqual(['v0.2.5', 'v0.3.0', 'v1.0.0']);
+    expect(nextVersions([])).toEqual([]);
   });
 
   it('offers only planned versions without tags, and nothing for no docs (NFR2)', () => {
@@ -127,6 +146,41 @@ describe('buildReleases', () => {
     expect(list[0]).toMatchObject({ version: 'v0.2.5', released: true, date: '2026-11-16' });
     expect(list[0].stories[0]).toMatchObject({ stale: true });
     expect(list.find((r) => r.version === 'v0.2.0').stories[0].stale).toBe(false);
+  });
+
+  it('makes an entry for a plan file, merged with the markers and the tag of the same version (US-0605 FR2, FR2.1)', () => {
+    const list = buildReleases(epicsOf(EPIC), TAGS, [PLAN('v0.2.7'), PLAN('v0.2.5', false), PLAN('v0.2.4')]);
+    expect(list.map((r) => [r.version, r.released, r.stories.length, r.plan?.file ?? null])).toEqual([
+      ['v0.2.7', false, 0, 'docs/releases/0.2.7.md'],
+      ['v0.2.5', false, 1, 'docs/releases/0.2.5.md'],
+      ['v0.2.4', true, 0, 'docs/releases/0.2.4.md'],
+      ['v0.2.0', true, 1, null]
+    ]);
+    expect(list[0].plan).toEqual({ file: 'docs/releases/0.2.7.md', hash: 'h-v0.2.7', headingOnly: true });
+  });
+});
+
+describe('newReleaseError and canDelete (US-0605)', () => {
+  const releases = buildReleases(epicsOf(EPIC), TAGS, [PLAN('v0.2.7'), PLAN('v0.2.8', false), PLAN('v0.2.4')]);
+  const entry = (v) => releases.find((r) => r.version === v);
+
+  it("refuses a version not shaped vX.Y.Z as 'format' and a known one as 'exists' (FR1.2)", () => {
+    expect(newReleaseError('v0.2.9', releases)).toBeNull();
+    expect(newReleaseError('1.2.3', releases)).toBe('format');
+    expect(newReleaseError('v1.2', releases)).toBe('format');
+    expect(newReleaseError(undefined, releases)).toBe('format');
+    expect(newReleaseError('v0.2.0', releases)).toBe('exists'); // a tag
+    expect(newReleaseError('v0.2.5', releases)).toBe('exists'); // a marker
+    expect(newReleaseError('v0.2.7', releases)).toBe('exists'); // a plan file
+  });
+
+  it('lets only an untagged, story-less release with a heading-only plan be deleted (FR4, FR4.1)', () => {
+    expect(canDelete(entry('v0.2.7'))).toBe(true);
+    expect(canDelete(entry('v0.2.8'))).toBe(false); // text beyond the heading
+    expect(canDelete(entry('v0.2.4'))).toBe(false); // tagged
+    expect(canDelete(entry('v0.2.5'))).toBe(false); // stories, no plan
+    expect(canDelete(buildReleases(epicsOf(EPIC), [], [PLAN('v0.2.5')]).find((r) => r.version === 'v0.2.5'))).toBe(false); // stories
+    expect(canDelete(undefined)).toBe(false);
   });
 });
 
@@ -211,5 +265,79 @@ describe('setStoryRelease and readRuleStatus in a project (US-0603 FR2.3, FR2.4,
     expect(await readRuleStatus(root, 'default', 'continuous')).toBe('other');
     await expect(readRuleStatus(root, '../x', 'releases')).rejects.toThrow();
     await expect(readRuleStatus(root, 'default', 'weekly')).rejects.toThrow();
+  });
+});
+
+describe('release plan files in a project (US-0605)', () => {
+  let tmp;
+  let root;
+  const put = async (rel, text) => {
+    await fs.mkdir(path.dirname(path.join(tmp, rel)), { recursive: true });
+    await fs.writeFile(path.join(tmp, rel), text);
+  };
+  const get = (rel) => fs.readFile(path.join(tmp, rel), 'utf8');
+  const has = (rel) =>
+    fs.stat(path.join(tmp, rel)).then(
+      () => true,
+      () => false
+    );
+  const planOf = async (version) => (await loadFeatures(root)).plans.find((p) => p.version === version);
+
+  beforeEach(async () => {
+    tmp = await fs.mkdtemp(path.join(os.tmpdir(), 'release-plans-'));
+    await put('docs/FEATURES.md', OVERVIEW);
+    await put('docs/features/epic-06-feature-docs.md', EPIC);
+    root = await openRoot(tmp);
+  });
+  afterEach(() => fs.rm(tmp, { recursive: true, force: true }));
+
+  it('lists docs/releases/X.Y.Z.md as plans with headingOnly, ignores other names, and gives [] with no folder (FR2)', async () => {
+    expect((await loadFeatures(root)).plans).toEqual([]);
+    await put('docs/releases/0.2.7.md', '# Release plan v0.2.7\n');
+    await put('docs/releases/0.2.3.md', '# Release plan v0.2.3\n\nGoal: ship the picker.\n');
+    await put('docs/releases/notes.md', '# Notes\n');
+    await put('docs/releases/v0.2.8.md', '# Release plan v0.2.8\n');
+    const { plans } = await loadFeatures(root);
+    expect(plans.map(({ version, file, headingOnly }) => [version, file, headingOnly])).toEqual([
+      ['v0.2.3', 'docs/releases/0.2.3.md', false],
+      ['v0.2.7', 'docs/releases/0.2.7.md', true]
+    ]);
+    expect(plans[1].hash).toMatch(/^[0-9a-f]{64}$/);
+  });
+
+  it('creates a heading-only plan file and its folder, and refuses a bad version, a known one and an existing file (FR1.2, FR1.3, NFR1)', async () => {
+    expect(await createRelease(root, 'docs/FEATURES.md', 'v0.2.7', TAGS)).toEqual({ ok: true, file: 'docs/releases/0.2.7.md' });
+    expect(await get('docs/releases/0.2.7.md')).toBe('# Release plan v0.2.7\n');
+    await expect(createRelease(root, 'docs/FEATURES.md', '0.2.9', TAGS)).rejects.toThrow(/0\.2\.9/);
+    await expect(createRelease(root, 'docs/FEATURES.md', 'v0.2.7', TAGS)).rejects.toThrow(/v0\.2\.7/); // a plan
+    await expect(createRelease(root, 'docs/FEATURES.md', 'v0.2.5', TAGS)).rejects.toThrow(/v0\.2\.5/); // a marker
+    await expect(createRelease(root, 'docs/FEATURES.md', 'v0.2.4', TAGS)).rejects.toThrow(/v0\.2\.4/); // a tag
+    expect(await has('docs/releases/0.2.4.md')).toBe(false);
+    // Something already at the file's name that is not a plan is never replaced.
+    await fs.mkdir(path.join(tmp, 'docs/releases/0.2.9.md'));
+    await expect(createRelease(root, 'docs/FEATURES.md', 'v0.2.9', TAGS)).rejects.toThrow();
+    expect((await fs.stat(path.join(tmp, 'docs/releases/0.2.9.md'))).isDirectory()).toBe(true);
+  });
+
+  it('deletes a heading-only plan, and refuses one with text, with stories, with a tag or with a stale hash (FR4, FR4.1, NFR1)', async () => {
+    await put('docs/releases/0.2.7.md', '# Release plan v0.2.7\n');
+    await put('docs/releases/0.2.8.md', '# Release plan v0.2.8\n\nGoal.\n');
+    await put('docs/releases/0.2.5.md', '# Release plan v0.2.5\n');
+    await put('docs/releases/0.2.4.md', '# Release plan v0.2.4\n');
+    const del = async (version, hash) => deleteRelease(root, 'docs/FEATURES.md', { version, hash: hash ?? (await planOf(version)).hash }, TAGS);
+
+    await expect(del('v0.2.8')).rejects.toThrow(/v0\.2\.8/);
+    await expect(del('v0.2.5')).rejects.toThrow(/v0\.2\.5/); // US-0603 is marked for it
+    await expect(del('v0.2.4')).rejects.toThrow(/v0\.2\.4/);
+    await expect(del('v0.2.6', 'x')).rejects.toThrow(/v0\.2\.6/); // no plan file
+    expect(await del('v0.2.7', 'stale')).toEqual({ conflict: 'docs/releases/0.2.7.md' });
+    expect(await has('docs/releases/0.2.7.md')).toBe(true);
+    expect(await del('v0.2.7')).toEqual({ ok: true });
+    expect(await has('docs/releases/0.2.7.md')).toBe(false);
+    for (const v of ['0.2.8', '0.2.5', '0.2.4']) expect(await has(`docs/releases/${v}.md`)).toBe(true);
+  });
+
+  it('watches the plans folder beside the overview (FR2.2)', () => {
+    expect(featureWatchPaths('docs/FEATURES.md', { epics: [{ file: 'docs/features/e.md' }] })).toEqual(['docs/FEATURES.md', 'docs/features', 'docs/releases']);
   });
 });
