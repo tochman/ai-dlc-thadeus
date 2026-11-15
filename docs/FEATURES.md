@@ -1,6 +1,6 @@
-# T.H.A.D.E.U.S. (aidlc-dash) — Features
+# T.H.A.D.E.U.S. — Features
 
-Overview of all epics. Each epic lives in its own file under [features/](features/). Epics are organised by **topic** (what the app is about), not by release. A release can contain stories from several epics.
+Overview of all epics. Each epic lives in its own file under [features/](features/). Epics are organised by **topic**, not by release. A release can contain stories from several epics.
 
 | Epic | Topic | Status |
 |------|-------|--------|
