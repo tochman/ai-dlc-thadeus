@@ -4,7 +4,7 @@
 
 ---
 
-> The repository `tochman/aidlc-dash` is private today, and the app is MIT-licensed (Copyright Auctum Solutions AB). Decided 2026-11-15: "we will make it an open repo and open source the app." This epic gets the repository ready to be public: what must not be published goes first, then the files a public project needs. Making it public is the person's own step.
+> The repository `tochman/aidlc-dash` is public since 2026-11-15, and the app is MIT-licensed (Copyright Auctum Solutions AB). Decided 2026-11-15: "we will make it an open repo and open source the app." This epic gets the repository ready to be public: what must not be published goes first, then the files a public project needs. Making it public is the person's own step.
 
 **Stories:** US-1101
 
@@ -30,6 +30,6 @@
   - [x] What is decided as private is removed from the files, and from the history when it must not stay there (a history rewrite is agreed with the person first, since it changes every commit id).
   - [x] The repository has the usual public files: `README.md` written for outside users (what it is, install, build, test), `CONTRIBUTING.md`, `SECURITY.md` (how to report a vulnerability), `CODE_OF_CONDUCT.md`, and issue and pull request templates.
   - [x] The MIT `LICENSE` and the `license` field in `package.json` agree, and third-party licences in the packaged app are listed.
-  - [ ] Making the repository public is done only on the person's word (`gh repo edit --visibility public --accept-visibility-change-consequences`); afterwards, the release and its download URLs work without signing in.
+  - [x] Making the repository public is done only on the person's word (`gh repo edit --visibility public --accept-visibility-change-consequences`); afterwards, the release and its download URLs work without signing in.
 - **Notes:** US-0413 (updates without `gh`) builds on the public repository.
 - **Dependencies:** none
