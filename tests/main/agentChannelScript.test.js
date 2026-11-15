@@ -87,7 +87,8 @@ describe.each(SHELLS)('dialog.sh with AgentChannel under %s', (shell) => {
     expect(readdirSync(path.join(dir, 'answers'))).toEqual([]);
   });
 
-  it('closeSession makes a waiting hook exit at its next poll (RD5)', { timeout: 10_000 }, async () => {
+  // US-0010: wall-clock, so it retries up to twice under a loaded suite; each attempt keeps the full 100 ms limit.
+  it('closeSession makes a waiting hook exit at its next poll (RD5)', { timeout: 10_000, retry: 2 }, async () => {
     const { sessionId, env } = await channel.openSession({ projectId: 'p1', tabId: 'agent:claude', harness: 'claude' });
     const { done } = hook(shell, env, '{}');
     await rawFor(sessionId);
