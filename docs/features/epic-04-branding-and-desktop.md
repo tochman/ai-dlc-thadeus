@@ -6,9 +6,9 @@
 
 > Auctum AIDLC Control should look and behave like a proper Auctum desktop app wherever it shows up: in the Dock, the application menu, the window switcher, the installer and the Linux launcher. Inside the app it should feel like a living bridge console. EPIC-01 added the name, splash screen, in-app logo and the restrained LCARS theme. This epic covers the parts of the operating system that still show Electron defaults, and the motion and light that make the theme come alive without hurting readability.
 
-**Stories:** US-0401, US-0402, US-0403, US-0404, US-0405, US-0406, US-0407, US-0408, US-0409, US-0410, US-0411
+**Stories:** US-0401, US-0402, US-0403, US-0404, US-0405, US-0406, US-0407, US-0408, US-0409, US-0410, US-0411, US-0412
 
-**Status (2026-11-15):** ✅ US-0401 released in v0.1.1. ✅ US-0402, US-0403 and US-0404 released in v0.2.0. ✅ US-0406 released in v0.2.1 (intent `261113-thadeus-name`). ✅ US-0405 released in v0.2.3 (settings view, intent `261114-settings-view`) — marked "Released in v0.2.3" when the tag is cut. ✅ US-0407 released in v0.2.3 (update from a GitHub release). ✅ US-0408 released in v0.2.3 (Om T.H.A.D.E.U.S. window with the app version). ✅ US-0409 released in v0.2.4 (About window in a new design). ✅ US-0410 done, for v0.2.5 (Settings in LCARS tabs, all tools checked). ✅ US-0411 done, for v0.2.5 (pipeline stages as LCARS cards).
+**Status (2026-11-15):** ✅ US-0401 released in v0.1.1. ✅ US-0402, US-0403 and US-0404 released in v0.2.0. ✅ US-0406 released in v0.2.1 (intent `261113-thadeus-name`). ✅ US-0405 released in v0.2.3 (settings view, intent `261114-settings-view`) — marked "Released in v0.2.3" when the tag is cut. ✅ US-0407 released in v0.2.3 (update from a GitHub release). ✅ US-0408 released in v0.2.3 (Om T.H.A.D.E.U.S. window with the app version). ✅ US-0409 released in v0.2.4 (About window in a new design). ✅ US-0410 done, for v0.2.5 (Settings in LCARS tabs, all tools checked). ✅ US-0411 done, for v0.2.5 (pipeline stages as LCARS cards). 📋 US-0412 Planned (more LCARS feeling and motion on the pipeline cards).
 
 ---
 
@@ -256,3 +256,17 @@
   - **Where.** `src/renderer/Pipeline.jsx` (`stage-block` today), with the shared card style from US-0410.
   - The reference image is not stored in the repository (third-party artwork); this story describes the card instead.
 - **Dependencies:** US-0410
+
+**US-0412: Pipeline cards with more LCARS feeling and motion** 📋 Planned
+- As a **developer following a workflow**, in order to **feel the pipeline is a living console**, I would like to **the stage cards from US-0411 to look and move more like LCARS**.
+- **Epic:** EPIC-04
+- **Priority:** Medium
+- **Complexity:** Medium
+- **Background:** After US-0411 (2026-11-15): "I was hoping for more LCARS feeling and animations. But let's add that to the next time we iterate over this story."
+- **Acceptance Criteria:**
+  - [ ] The cards have more LCARS character than US-0411's first version (details to settle when the story starts, for example bolder header strips, elbows or segment blocks).
+  - [ ] Purposeful animations on the cards, for example a power-up when the pipeline opens, a sweep when a stage changes state, a flash when a stage completes (the leftover from US-0402).
+  - [ ] Reduced gives static effects and Off no motion, as the animations setting does everywhere; nothing flashes more than 3 times per second; only transform, opacity, `filter` and `box-shadow` animate.
+- **Notes:**
+  - **Where.** `src/renderer/Pipeline.jsx`, the `stage-card` rules in `src/renderer/theme.css`.
+- **Dependencies:** US-0411
