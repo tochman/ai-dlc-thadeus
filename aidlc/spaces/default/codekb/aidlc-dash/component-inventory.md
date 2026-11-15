@@ -10,7 +10,7 @@ One heading per component; the heading text is the component's name in the Scope
 - **Depends on**: IPC Router, App Menu, Settings Store, Tools Registry, Main i18n, App Name Module.
 
 ### IPC Router
-- **Path**: `src/main/ipc.js` (709 lines)
+- **Path**: `src/main/ipc.js` (709 lines at `2d111d6`, 837 at `4867a36`)
 - **Responsibility**: the 71 invoke handlers; per-project state (`projects` map: root, space, watchers, sender, cached models/harnesses/setup info/previews); question baseline (`startedWith`), `allQuestions()`, `publishQuestions()`, `refreshQuestions()`; space, feature-docs, config and open-file watchers; window close confirmation; fixed external URL table.
 - **Depends on**: nearly every main module.
 
@@ -99,7 +99,13 @@ One heading per component; the heading text is the component's name in the Scope
 
 ### Features Loader
 - **Path**: `src/main/features.js`
-- **Responsibility**: loads `FEATURES.md` and linked epic files (root-confined), watch paths, story ids mentioned by each intent.
+- **Responsibility**: loads `FEATURES.md` and linked epic files (root-confined, read-only), with a sha256 `hash` per epic and `overviewHash` for the release write's conflict check; `featureWatchPaths()` (the overview and the epic folders only); story ids mentioned by each intent.
+- **Depends on**: Project Access, Features Parser.
+
+### Releases Service
+- **Path**: `src/main/releases.js`
+- **Responsibility**: `setStoryRelease()` (US-0603 FR2.2–FR2.4): validates the story id, reloads the docs, refuses an unknown or released story, writes the marker into the epic file then the overview through `writeFileSafe` with `expectHash`; returns `{ok}` or `{conflict}`. `readRuleStatus()` reads the lifecycle rule from the space's `project.md`.
+- **Depends on**: Features Loader, Releases Parser, File Editor Service, Project Access, Shared i18n.
 
 ### App Menu
 - **Path**: `src/main/menu.js`
@@ -139,13 +145,18 @@ One heading per component; the heading text is the component's name in the Scope
 
 ### Features Parser
 - **Path**: `src/main/parsers/features.js`
-- **Responsibility**: `parseOverview`, `parseEpic`, status markers, `isValidFeaturesPath`, `storyIdsIn`. Pure (also used by the renderer).
+- **Responsibility**: `parseOverview`, `parseEpic` (stories with `status` and `statusText`, the head line's text without markers), status markers including 🚀 Deployed, `isValidFeaturesPath`, `storyIdsIn`. Pure (also used by the renderer).
+
+### Releases Parser
+- **Path**: `src/main/parsers/releases.js`
+- **Responsibility**: `DELIVERY` (`releases`, `continuous`), `releaseOf`, `setReleaseMarker`, `releaseOptions`, `buildReleases`, `lifecycleTag`, `ruleStatus` (see `architecture.md`, "Releases: derived, not stored"). The `vX.Y.Z` regex and the newest-first sort are module-private. Pure (also used by the renderer).
+- **Depends on**: Features Parser (`storyIdsIn`).
 
 ## Preload
 
 ### Preload Bridge
 - **Path**: `src/preload/index.js`
-- **Responsibility**: `window.bridge` with 87 named members (see `api-documentation.md` section 1). The question members are read-only: answering goes through `ptyWrite`.
+- **Responsibility**: `window.bridge` with named members only (see `api-documentation.md` section 1). The question members are read-only: answering goes through `ptyWrite`. Release members: `loadFeatures`, `setStoryRelease` (story id, version and hashes, never a path), `getLifecycleRuleStatus`, `onFeaturesChanged`.
 
 ## Shared (`src/shared/`)
 
@@ -284,7 +295,8 @@ One heading per component; the heading text is the component's name in the Scope
 
 ### FeaturesView
 - **Path**: `src/renderer/FeaturesView.jsx`
-- **Responsibility**: epics and stories from the feature docs with filters, story detail and intent links.
+- **Responsibility**: epics and stories from the feature docs with filters, story detail and intent links. With `delivery` `releases`: `ReleasePicker` in the story detail (options from `releaseOptions`, plus a stale planned version; None removes; no picker for a released story) and `ReleasesView` (the Releases tab chosen in the left arm: `buildReleases` rows with version, planned/released date, story count, stories that open their detail, stale flags). `ReleasesView` receives no `projectId`. With `continuous` both are hidden.
+- **Depends on**: Features Parser, Releases Parser, ArtifactReader, Editor, LCARS Primitives, Format Helpers, Preload Bridge.
 
 ### Editor
 - **Path**: `src/renderer/editor/` (`EditorPanel.jsx`, `EditorContext.jsx`, `ConflictDialog.jsx`, `FileTree.jsx`, `MonacoPane.jsx`, `monacoSetup.js`)

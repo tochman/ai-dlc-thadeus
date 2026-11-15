@@ -4,7 +4,7 @@ The app has no network API. Its API surfaces are the Electron IPC boundary betwe
 
 ## 1. Preload bridge (`window.bridge`)
 
-`src/preload/index.js` exposes 87 members: 71 request/response calls (`ipcRenderer.invoke`), 14 subscriptions (`ipcRenderer.on`, each returns an unsubscribe function), plus `platform` (`process.platform`) and `pathForFile(file)` (`webUtils.getPathForFile`, for dropped files). There is no generic `invoke` or `send`.
+`src/preload/index.js` exposed 87 members at `2d111d6` (US-0603 added `setStoryRelease` and `getLifecycleRuleStatus`; later stories added more, so the counts in sections 1–3 are low and were not recounted at `4867a36`): 71 request/response calls (`ipcRenderer.invoke`), 14 subscriptions (`ipcRenderer.on`, each returns an unsubscribe function), plus `platform` (`process.platform`) and `pathForFile(file)` (`webUtils.getPathForFile`, for dropped files). There is no generic `invoke` or `send`.
 
 ## 2. Invoke channels (renderer → main), 71
 
@@ -44,8 +44,11 @@ Every handler that takes a `projectId` looks it up in the `projects` map and thr
 | Tools (US-0405) | `tools:info`, `tools:pick`, `tools:save`, `tools:reset` → `getTools`, `pickTool`, `saveTool`, `resetTool` | tool id from `aidlc|claude|shell` | a path is validated before it is stored |
 | App | `app:info` → `getAppInfo`, `app:openExternal` → `openExternal`, `app:openDocsUrl` → `openDocsUrl` | external links by fixed key (`repo`, `features`, `docs`) | |
 | i18n | `i18n:language` → `getLanguage` | () → `sv` or `en` | auto resolved |
-| Feature docs | `features:load` → `loadFeatures`, `features:storyLinks` → `getStoryLinks` | | |
-| Project settings | `projectSettings:get`, `projectSettings:set` → `getProjectSettings`, `setProjectSettings` | `{featureDocs, featuresPath, harness, harnessTabs}` | per project root, in the app's settings |
+| Feature docs | `features:load` → `loadFeatures` | (projectId) → `loadFeatures()` result + `tags: {name, date}[]` | epics carry `file`, `parsed`, `hash`; the overview `overviewHash` (US-0603 FR2.3) |
+| | `features:setRelease` → `setStoryRelease` | (projectId, `{storyId, version|null, epicHash, overviewHash}`) → `{ok: true}` or `{conflict: rel}` | throws for a bad id/version, an unknown or released story; sends `features:changed` on ok |
+| | `features:ruleStatus` → `getLifecycleRuleStatus` | (projectId, space) → `current|older|other|missing` | lifecycle rule in `aidlc/spaces/<space>/memory/project.md` for the saved delivery |
+| | `features:storyLinks` → `getStoryLinks` | (projectId, space) → `{storyId: dirName[]}` | |
+| Project settings | `projectSettings:get`, `projectSettings:set` → `getProjectSettings`, `setProjectSettings` | `{featureDocs, featuresPath, harness, harnessTabs, delivery}` | per project root, in the app's settings; `delivery` is `releases` (default when unset) or `continuous`; unknown keys are dropped |
 | Terminal | `pty:spawn` → `ptySpawn` | `{projectId, kind:'agent'|'shell', harness, cols, rows}` → session id | the agent CLI comes from the harness table by id |
 | | `pty:write` → `ptyWrite` | (id, string) | any string to any live session id |
 | | `pty:resize` → `ptyResize`, `pty:kill` → `ptyKill` | | |
@@ -130,5 +133,6 @@ The agent and shell terminals are not `runFixed` calls: `pty.js` spawns `$SHELL 
 | `aidlc/.aidlc-sessions/usage-ledger.json` | `parsers/ledger.js` | schemaVersion 3, `workflows["intent:<uuid>"]`, `byStage/byAgent/byModel`, `totals.tokens`, `usd` |
 | `aidlc/.aidlc-subagent-inflight` | `projectService.js` | `{entries: [...]}` |
 | `aidlc/active-space`, `<intents>/active-intent` | `projectService.js` | one line |
-| `docs/FEATURES.md`, `docs/features/epic-*.md` | `parsers/features.js` | epic table; `**US-XXYY: title** status`, `- [x]` criteria |
+| `docs/FEATURES.md`, `docs/features/epic-*.md` | `parsers/features.js`, `parsers/releases.js` | epic table; `**US-XXYY: title** status`, `- [x]` criteria; release markers `for vX.Y.Z` / `Released in vX.Y.Z` in the story head, the epic `**Status (…)**` line and the table cell (also written, by `setReleaseMarker`) |
+| git tags `v*` | `git.js` `listReleaseTags` | `%(refname:short)\t%(creatordate:short)`; only `vX.Y.Z` names count; a failing `git` gives `[]` |
 | `<harness dir>/scopes/*.md`, `aidlc/scopes/*.md`, `<harness dir>/tools/data/scope-grid.json` | `plans.js` | frontmatter, composed-grid JSON block |

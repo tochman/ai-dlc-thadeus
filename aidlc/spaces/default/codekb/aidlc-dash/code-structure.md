@@ -18,7 +18,7 @@ aidlc-dash/
 │   └── fixtures/        picker screens, audit shards, ledger, feature docs, a fixture AI-DLC project
 ├── scripts/             check-glibc.mjs (CI), fix-pty-perms.cjs (postinstall), make-icon.cjs
 ├── build/               icon.svg, icon.png, icons/NxN.png (electron-builder resources)
-├── docs/                FEATURES.md, features/epic-*.md, releases/, screenshots/
+├── docs/                FEATURES.md, features/epic-*.md, releases/ (hand-written release plans, e.g. 0.2.3.md), screenshots/
 ├── .github/workflows/   release.yml (the only file under .github/)
 ├── package.json, electron.vite.config.mjs, vitest.config.mjs, electron-builder.yml, .nvmrc
 ├── eslint.config.mjs, .prettierrc.json, .prettierignore
@@ -36,9 +36,9 @@ Build output (`out/`, `dist/`), `coverage/`, `node_modules/` and `tests/.tmp/` a
 |---|---|
 | Configuration / entry | `src/main/index.js` (app lifecycle, window options), `src/renderer/main.jsx`, `src/renderer/index.html`, build configs |
 | Controller / handler | `src/main/ipc.js` (all IPC handlers), `src/preload/index.js` (bridge), `src/main/menu.js` (menu commands) |
-| Service / use case | `projectService.js`, `questions.js`, `notify.js`, `pty.js`, `harness.js`, `setup.js`, `aidlcConfig.js`, `aidlcWrite.js`, `plans.js`, `modelChoice.js`, `models.js`, `git.js`, `updater.js`, `features.js`, `fileWrite.js`, `watcher.js`, `tools.js` |
+| Service / use case | `projectService.js`, `questions.js`, `notify.js`, `pty.js`, `harness.js`, `setup.js`, `aidlcConfig.js`, `aidlcWrite.js`, `plans.js`, `modelChoice.js`, `models.js`, `git.js`, `updater.js`, `features.js`, `releases.js`, `fileWrite.js`, `watcher.js`, `tools.js` |
 | Repository / data access | `projectAccess.js` (root-confined reads), `settings.js` (app settings file), `fileWrite.js` (atomic editor writes) |
-| Model / parser | `src/main/parsers/` (`audit`, `state`, `runtimeGraph`, `pipeline`, `intents`, `units`, `ledger`, `features`) |
+| Model / parser | `src/main/parsers/` (`audit`, `state`, `runtimeGraph`, `pipeline`, `intents`, `units`, `ledger`, `features`, `releases`) |
 | Utility | `exec.js`, `i18n.js`, `src/shared/*`, `src/renderer/format.js`, `tokens.js`, `tokenFlow.js`, `terminalControl.js`, `picker.js`, `featureDocsPrompt.js` |
 | UI component | every `src/renderer/*.jsx` and `src/renderer/editor/*.jsx` |
 | Hooks (React) | `useProject.js`, `useFeatures.js`, `useEditorTabs` (in `EditorPanel.jsx`), `useDetectedHarnesses` (in `ProjectView.jsx`), `useTwoBusyWarning` (in `TerminalPanel.jsx`) |
@@ -53,7 +53,10 @@ The full per-component list with responsibilities is in `component-inventory.md`
 index.js      -> ipc.js, menu.js, settings.js, tools.js, i18n.js, shared/appName
 ipc.js        -> projectAccess, projectService, notify, parsers/ledger, models, aidlcConfig, plans,
                  aidlcWrite, modelChoice, updater, git, setup, harness, tools, settings, watcher,
-                 fileWrite, features, pty, menu, i18n, shared/i18n
+                 fileWrite, features, releases, parsers/releases, pty, menu, i18n, shared/i18n
+features      -> projectAccess, parsers/features, shared/i18n
+releases      -> projectAccess, fileWrite, features, parsers/releases, shared/i18n
+parsers/releases -> parsers/features (storyIdsIn)
 projectService-> projectAccess, parsers/{intents,state,runtimeGraph,audit,pipeline,units,ledger}, questions
 questions     -> (none; pure)
 notify        -> electron Notification, shared/i18n
@@ -82,7 +85,7 @@ main.jsx -> App.jsx -> ProjectView.jsx -> TerminalContext.jsx (provider) -> Term
                                           ├ FeaturesView ; editor/EditorPanel, editor/FileTree
                    App.jsx -> QuestionPopup, SettingsView, DocsDialog, AboutDialog, UpdateNotice, Splash
 TerminalContext -> terminalControl.js, picker.js
-Renderer -> src/main/parsers/{audit,ledger,features}.js (pure imports, bundled)
+Renderer -> src/main/parsers/{audit,ledger,features,releases}.js (pure imports, bundled)
 ```
 
 ## Code patterns

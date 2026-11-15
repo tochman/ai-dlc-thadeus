@@ -79,31 +79,41 @@ export function setReleaseMarker(text, storyId, version) {
 const allStories = (epics) => (epics ?? []).flatMap((e) => (e.parsed?.stories ?? []).map((story) => ({ epicId: e.id, story })));
 const releaseTags = (tags) => (tags ?? []).filter((t) => VERSION.test(t?.name ?? ''));
 
-/** US-0603 FR2.1: planned versions without a tag, then the next patch and minor after the latest tag; newest first. */
-export function releaseOptions(epics, tags) {
+/** US-0605 FR1.1: the next patch, minor and major after the latest vX.Y.Z tag; none without a tag. */
+export function nextVersions(tags) {
+  const latest = releaseTags(tags)
+    .map((t) => t.name)
+    .sort(byVersionDesc)[0];
+  if (!latest) return [];
+  const [major, minor, patch] = semver(latest);
+  return [`v${major}.${minor}.${patch + 1}`, `v${major}.${minor + 1}.0`, `v${major + 1}.0.0`];
+}
+
+/**
+ * US-0603 FR2.1, US-0605 FR1.1, FR2.1: planned versions (markers and plan files) without a tag, then the next
+ * versions after the latest tag; newest first.
+ */
+export function releaseOptions(epics, tags, plans = []) {
   const tagged = new Set(releaseTags(tags).map((t) => t.name));
-  const versions = new Set(
-    allStories(epics)
-      .map(({ story }) => releaseOf(story.statusText).planned)
-      .filter((v) => v && !tagged.has(v))
-  );
-  const latest = [...tagged].sort(byVersionDesc)[0];
-  if (latest) {
-    const [major, minor, patch] = semver(latest);
-    versions.add(`v${major}.${minor}.${patch + 1}`).add(`v${major}.${minor + 1}.0`);
-  }
+  const planned = [...allStories(epics).map(({ story }) => releaseOf(story.statusText).planned), ...plans.map((p) => p.version)];
+  const versions = new Set([...planned.filter((v) => v && !tagged.has(v)), ...nextVersions(tags)]);
   return [...versions].sort(byVersionDesc);
 }
 
 /**
- * US-0603 FR3.2, FR7: one entry per version from the markers and the tags, newest first. `released` comes from the
- * tag or a "Released in" marker (a shallow checkout has no tags), `date` from the tag. A story still marked
- * "for vX.Y.Z" when the tag exists is `stale`.
- * @returns {{version: string, released: boolean, date: string|null, stories: {epicId: string, story: object, stale: boolean}[]}[]}
+ * US-0603 FR3.2, FR7, US-0605 FR2.1: one entry per version from the markers, the tags and the plan files in
+ * docs/releases/, newest first. `released` comes from the tag or a "Released in" marker (a shallow checkout has no
+ * tags), `date` from the tag, `plan` from the plan file (or null). A story still marked "for vX.Y.Z" when the tag
+ * exists is `stale`.
+ * @returns {{version: string, released: boolean, date: string|null, plan: {file: string, hash: string, headingOnly: boolean}|null,
+ *   stories: {epicId: string, story: object, stale: boolean}[]}[]}
  */
-export function buildReleases(epics, tags) {
+export function buildReleases(epics, tags, plans = []) {
   const dates = new Map(releaseTags(tags).map((t) => [t.name, t.date || null]));
-  const map = new Map([...dates.keys()].map((v) => [v, []]));
+  const planOf = new Map(
+    plans.filter((p) => VERSION.test(p?.version ?? '')).map(({ version, file, hash, headingOnly }) => [version, { file, hash, headingOnly }])
+  );
+  const map = new Map([...dates.keys(), ...planOf.keys()].map((v) => [v, []]));
   for (const { epicId, story } of allStories(epics)) {
     const { planned, released } = releaseOf(story.statusText);
     const version = released ?? planned;
@@ -115,9 +125,23 @@ export function buildReleases(epics, tags) {
     version,
     released: dates.has(version) || map.get(version).some(({ story }) => releaseOf(story.statusText).released === version),
     date: dates.get(version) ?? null,
+    plan: planOf.get(version) ?? null,
     stories: map.get(version)
   }));
 }
+
+/** US-0605 FR1.2: null for a new 'vX.Y.Z', 'format' for another shape, 'exists' for a version in `releases`. */
+export function newReleaseError(version, releases) {
+  if (typeof version !== 'string' || !VERSION.test(version)) return 'format';
+  return (releases ?? []).some((r) => r.version === version) ? 'exists' : null;
+}
+
+/** US-0605 FR4, FR4.1: only an untagged release with no stories and a plan file that holds just its heading. */
+export const canDelete = (entry) => Boolean(entry && !entry.released && entry.stories.length === 0 && entry.plan?.headingOnly);
+
+/** US-0605 FR1.3: the whole text of a new plan file, and the test for a file that holds nothing else. */
+export const planHeading = (version) => `# Release plan ${version}\n`;
+export const isHeadingOnly = (text, version) => String(text).trim() === planHeading(version).trim();
 
 /** US-0603 FR5.1: the tag that ends the lifecycle rule for one delivery setting. */
 export const lifecycleTag = (delivery) => `(story-lifecycle: ${delivery} v${LIFECYCLE_RULE_VERSION})`;

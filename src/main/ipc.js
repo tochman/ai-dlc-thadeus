@@ -25,7 +25,7 @@ import { apply as applyConfigChange, applyGuardLock, preview as previewConfigCha
 import { applyModelChange, checkDrift, estimateCost, ledgerRows, modelOptions, previewModelChange, pricesFromLedger } from './modelChoice.js';
 import { createUpdater } from './updater.js';
 import { fetchRemote, getGitStatus, getRemoteChanges, listConflicts, listReleaseTags, showRemoteFile } from './git.js';
-import { readRuleStatus, setStoryRelease } from './releases.js';
+import { createRelease, deleteRelease, readRuleStatus, setStoryRelease } from './releases.js';
 import { DELIVERY_DEFAULT } from './parsers/releases.js';
 import { getSetupInfo, runSetup } from './setup.js';
 import { detectHarnesses } from './harness.js';
@@ -745,6 +745,24 @@ const handlers = {
       overviewHash: req?.overviewHash
     });
     if (res.ok) sendFeaturesChanged(projectId, p); // the view reloads with the new hashes at once
+    return res;
+  },
+  // A release plan file in docs/releases/ (US-0605 FR1.3, FR4): a version and a read hash only, checked against the tags.
+  'features:createRelease': async (_event, projectId, version) => {
+    const p = project(projectId);
+    const res = await createRelease(p.root, (await getProjectSettings(p.root)).featuresPath, version, await listReleaseTags(p.root));
+    sendFeaturesChanged(projectId, p); // FR2.2: the new release shows at once
+    return res;
+  },
+  'features:deleteRelease': async (_event, projectId, req) => {
+    const p = project(projectId);
+    const res = await deleteRelease(
+      p.root,
+      (await getProjectSettings(p.root)).featuresPath,
+      { version: req?.version, hash: req?.hash },
+      await listReleaseTags(p.root)
+    );
+    if (res.ok) sendFeaturesChanged(projectId, p);
     return res;
   },
   // The lifecycle rule in the space's memory, for the saved delivery setting (US-0603 FR5.2, FR5.3).

@@ -1,6 +1,7 @@
 // Features view (EPIC-06 US-0602): epics and user stories from the project's feature docs. Read-only, except a
 // story's release, which main writes as a "for vX.Y.Z" marker (US-0603 FR2). With the Releases delivery setting
-// the view also lists releases (US-0603 FR3); with Continuous deployment both are hidden (FR4.1).
+// the view also lists releases (US-0603 FR3), where releases are made, filled and deleted by hand (US-0605); with
+// Continuous deployment all of it is hidden (FR4.1, US-0605 FR5).
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { FileContent } from './ArtifactReader.jsx';
@@ -8,7 +9,7 @@ import { useEditor } from './editor/EditorContext.jsx';
 import { Frame } from './Lcars.jsx';
 import { withSlots } from './format.js';
 import { STATUS_MARKER } from '../main/parsers/features.js';
-import { DELIVERY_DEFAULT, buildReleases, releaseOf, releaseOptions } from '../main/parsers/releases.js';
+import { DELIVERY_DEFAULT, buildReleases, canDelete, newReleaseError, nextVersions, releaseOf, releaseOptions } from '../main/parsers/releases.js';
 
 const errorText = (err) => String(err?.message ?? err).replace(/^Error invoking remote method '[^']+': (Error: )?/, '');
 // Pågår is steel (active), Klar and Driftsatt a light slate block, Planerad an outline (FR1.3, US-0603 FR6).
@@ -106,7 +107,7 @@ function ReleasePicker({ projectId, features, epic, story }) {
   const [busy, setBusy] = useState(false);
   const { planned, released } = releaseOf(story.statusText);
   if (released) return <p className="features-release">{t('features.release.releasedIn', { version: released })}</p>;
-  const options = releaseOptions(features.epics, features.tags);
+  const options = releaseOptions(features.epics, features.tags, features.plans); // plan files too (US-0605 FR2.1)
   if (planned && !options.includes(planned)) options.unshift(planned); // a stale marker still shows as chosen
 
   async function pick(value) {
@@ -156,38 +157,184 @@ function ReleasePicker({ projectId, features, epic, story }) {
   );
 }
 
-/** US-0603 FR3: every release from the markers and the tags, newest first; a story opens its detail (FR3.3). */
-function ReleasesView({ features, onOpenStory }) {
+/** US-0605 FR1, FR1.1: the New release form, with the next patch, minor and major as suggestions that fill the input. */
+function NewRelease({ tags, locked, onCreate }) {
   const { t } = useTranslation();
-  const releases = buildReleases(features.epics, features.tags);
-  if (releases.length === 0) return <p className="muted">{t('features.releases.empty')}</p>;
+  const [draft, setDraft] = useState(null); // null while closed
+  const suggestions = nextVersions(tags);
+  async function submit(e) {
+    e.preventDefault();
+    if (await onCreate(draft.trim())) setDraft(null);
+  }
   return (
-    <ul className="intent-rows" aria-label={t('features.releases.title')}>
-      {releases.map((r) => (
-        <li key={r.version} className="intent-row" data-testid="features-view-release">
-          <span className="intent-row-top">
-            <span className="intent-slug">{r.version}</span>
-            <span className={r.released ? 'tag tag-done' : 'tag'}>
-              {!r.released ? t('features.releases.planned') : r.date ? t('features.releases.releasedOn', { date: r.date }) : t('features.releases.released')}
-            </span>
-          </span>
-          <span className="muted">{t('features.releases.storyCount', { n: r.stories.length })}</span>
-          {r.stories.length > 0 && (
-            <ul className="features-release-stories">
-              {r.stories.map(({ epicId, story, stale }) => (
-                <li key={story.id}>
-                  <button className="btn btn-quiet" onClick={() => onOpenStory(epicId, story.id)}>
-                    {story.id}: {story.title}
-                  </button>{' '}
-                  <StatusBadge status={story.status} text={story.statusText} />
-                  {stale && <StaleFlag version={r.version} />}
-                </li>
-              ))}
-            </ul>
-          )}
-        </li>
-      ))}
-    </ul>
+    <>
+      <div className="features-release">
+        <button className="btn btn-accent" disabled={locked} onClick={() => setDraft(draft === null ? '' : null)} data-testid="releases-new">
+          {t('features.release.new.button')}
+        </button>
+      </div>
+      {draft !== null && (
+        <form className="features-release" onSubmit={submit}>
+          <label className="field">
+            <span className="field-label">{t('features.release.new.label')}</span>
+            <input type="text" value={draft} placeholder="vX.Y.Z" onChange={(e) => setDraft(e.target.value)} autoFocus data-testid="releases-new-version" />
+          </label>
+          {suggestions.length > 0 && <span className="muted">{t('features.release.new.suggestions')}</span>}
+          {suggestions.map((v) => (
+            <button key={v} type="button" className="btn btn-quiet" onClick={() => setDraft(v)} data-testid="releases-new-suggestion">
+              {v}
+            </button>
+          ))}
+          <button type="submit" className="btn" disabled={locked} data-testid="releases-new-create">
+            {t('features.release.new.create')}
+          </button>
+        </form>
+      )}
+    </>
+  );
+}
+
+/** US-0605 FR3: the stories with no planned or released version, for a release's Add story picker. */
+const storiesWithoutRelease = (epics) =>
+  (epics ?? []).flatMap((e) =>
+    (e.parsed?.stories ?? [])
+      .filter((s) => {
+        const { planned, released } = releaseOf(s.statusText);
+        return !planned && !released;
+      })
+      .map((story) => ({ epicId: e.id, story }))
+  );
+
+/**
+ * US-0603 FR3: every release from the markers, the tags and the plan files, newest first; a story opens its detail
+ * (FR3.3). US-0605: New release, Add story and Remove under a planned release, and Delete for a deletable one. A write
+ * locks every action until the next `features` arrives, so no write goes out with stale hashes (FR3.3); a refusal or
+ * failure unlocks at once and is said in one sentence (NFR3).
+ */
+function ReleasesView({ projectId, features, onOpenStory }) {
+  const { t } = useTranslation();
+  const [sentWith, setSentWith] = useState(null); // the features a write went out with
+  const [error, setError] = useState(null);
+  const releases = buildReleases(features.epics, features.tags, features.plans);
+  const unassigned = storiesWithoutRelease(features.epics);
+  // ponytail: a write that succeeds unlocks only when features:changed reloads the view; reload by hand if one is lost.
+  const locked = sentWith === features;
+  const bridge = window.bridge;
+
+  async function write(call, failedKey) {
+    setSentWith(features);
+    setError(null);
+    try {
+      const res = await call();
+      if (res?.ok) return true;
+      setError(t('features.release.conflict', { file: res?.conflict }));
+    } catch (err) {
+      setError(t(failedKey, { error: errorText(err) }));
+    }
+    setSentWith(null);
+    return false;
+  }
+  function setStory(epicId, storyId, version) {
+    const epicHash = features.epics.find((e) => e.id === epicId)?.hash;
+    return write(() => bridge.setStoryRelease(projectId, { storyId, version, epicHash, overviewHash: features.overviewHash }), 'features.release.failed');
+  }
+  async function create(version) {
+    const refused = newReleaseError(version, releases);
+    if (refused) {
+      setError(t(`features.release.new.${refused}`, { version }));
+      return false;
+    }
+    return write(() => bridge.createRelease(projectId, version), 'features.release.new.failed');
+  }
+
+  return (
+    <>
+      <NewRelease tags={features.tags} locked={locked} onCreate={create} />
+      {error && (
+        <p className="refresh-error" role="alert">
+          {error}
+        </p>
+      )}
+      {releases.length === 0 ? (
+        <p className="muted">{t('features.releases.empty')}</p>
+      ) : (
+        <ul className="intent-rows" aria-label={t('features.releases.title')}>
+          {releases.map((r) => (
+            <li key={r.version} className="intent-row" data-testid="features-view-release">
+              <span className="intent-row-top">
+                <span className="intent-slug">{r.version}</span>
+                <span className={r.released ? 'tag tag-done' : 'tag'}>
+                  {!r.released
+                    ? t('features.releases.planned')
+                    : r.date
+                      ? t('features.releases.releasedOn', { date: r.date })
+                      : t('features.releases.released')}
+                </span>
+              </span>
+              <span className="muted">{t('features.releases.storyCount', { n: r.stories.length })}</span>
+              {r.stories.length > 0 && (
+                <ul className="features-release-stories">
+                  {r.stories.map(({ epicId, story, stale }) => (
+                    <li key={story.id}>
+                      <button className="btn btn-quiet" onClick={() => onOpenStory(epicId, story.id)}>
+                        {story.id}: {story.title}
+                      </button>{' '}
+                      <StatusBadge status={story.status} text={story.statusText} />
+                      {stale && <StaleFlag version={r.version} />}
+                      {!r.released && (
+                        <button
+                          className="btn btn-quiet"
+                          disabled={locked}
+                          aria-label={t('features.release.removeLabel', { version: r.version })}
+                          onClick={() => setStory(epicId, story.id, null)}
+                          data-testid="releases-remove-story"
+                        >
+                          {t('features.release.remove')}
+                        </button>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              )}
+              {!r.released && (
+                <span className="features-release">
+                  {unassigned.length > 0 && (
+                    <select
+                      className="lcars-select"
+                      value=""
+                      disabled={locked}
+                      aria-label={t('features.release.add')}
+                      onChange={(e) => {
+                        const pick = unassigned.find(({ story }) => story.id === e.target.value);
+                        if (pick) setStory(pick.epicId, pick.story.id, r.version);
+                      }}
+                      data-testid="releases-add-story"
+                    >
+                      <option value="">{t('features.release.add')}</option>
+                      {unassigned.map(({ story }) => (
+                        <option key={story.id} value={story.id}>
+                          {story.id}: {story.title}
+                        </option>
+                      ))}
+                    </select>
+                  )}
+                  {canDelete(r) && (
+                    <button
+                      className="btn btn-quiet"
+                      disabled={locked}
+                      onClick={() => write(() => bridge.deleteRelease(projectId, { version: r.version, hash: r.plan.hash }), 'features.release.delete.failed')}
+                      data-testid="releases-delete"
+                    >
+                      {t('features.release.delete.button')}
+                    </button>
+                  )}
+                </span>
+              )}
+            </li>
+          ))}
+        </ul>
+      )}
+    </>
   );
 }
 
@@ -440,7 +587,7 @@ export default function FeaturesView({
     if (showReleases) {
       body = (
         <Frame>
-          <ReleasesView features={features} onOpenStory={openStory} />
+          <ReleasesView projectId={projectId} features={features} onOpenStory={openStory} />
         </Frame>
       );
     }
