@@ -15,7 +15,7 @@ Kontrollen kördes med ett tillfälligt skript i `tests/.tmp/`, som är git-igno
 
 | Kontroll | Resultat |
 |----------|----------|
-| visinvs `epic02-finish`, inget tak (FR1.1) | "1726 av 1726 händelser" med brus påslaget och "868 av 1726" utan brus. 22 rader renderas. |
+| a reference project's `epic02-finish`, inget tak (FR1.1) | "1726 av 1726 händelser" med brus påslaget och "868 av 1726" utan brus. 22 rader renderas. |
 | 20 000 händelser i två filer (NFR1, FR1.2) | "20000 av 20000 händelser", 22 rader renderade |
 | Tid från filterändring till renderad lista (NFR1, < 200 ms) | 24, 34, 34, 32, 34 och 33 ms |
 | Scrollning genom 20 000 händelser | Bildrutetid p50 20 ms, p95 25 ms, max 95 ms (en enstaka topp), 32 renderade rader |

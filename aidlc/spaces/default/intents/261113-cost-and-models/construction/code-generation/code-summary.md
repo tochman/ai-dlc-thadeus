@@ -48,12 +48,12 @@ Underlag: `requirements.md` för den här intenten och kodbas-kunskapen `aidlc/s
 - **PATH-sonden** är en fast sträng med en markör, för att undvika brus från rc-filerna. Den körs en gång per process.
 - **Kostnaden laddas om** både vid `costChanged` och `indexChanged`.
 - **Fel i kostnad och modeller** visas bara i kostnadsvyerna, aldrig i den gemensamma felbannern (NFR3).
-- **visinv:** `claude-haiku-5-5` har tokens men `usd: 0`. Totalen visas därför som ofullständig (FR6.2).
+- **a reference project:** `claude-haiku-5-5` har tokens men `usd: 0`. Totalen visas därför som ofullständig (FR6.2).
 
 ## Testtäckning
 
 - 38/38 gröna (`npx vitest run tests/`), varav 12 nya. `npx electron-vite build` går igenom.
-- **NFR1**, mätt mot visinvs riktiga ledger: läsning 5,8 ms och `summarizeLedger` 6,5 ms kall, 2,3 ms varm. Målet är under 300 ms.
+- **NFR1**, mätt mot a reference project's riktiga ledger: läsning 5,8 ms och `summarizeLedger` 6,5 ms kall, 2,3 ms varm. Målet är under 300 ms.
 
 ## Inte verifierat i det här steget
 

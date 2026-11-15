@@ -34,5 +34,5 @@ Det finns inget golv för radtäckning (express och Minimal). Varje ny komponent
 
 ## Manuell verifiering (Build and Test)
 
-- Kostnader för visinv visas i appen, och en ny ledger-skrivning syns live.
+- Kostnader för a reference project visas i appen, och en ny ledger-skrivning syns live.
 - `aidlc config models` körs i den paketerade appen och hittar `aidlc` via inloggningsskalets PATH.

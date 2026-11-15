@@ -12,16 +12,17 @@
   "main": "out/main/index.js",
   "scripts": {
     "dev": "electron-vite dev",
-    "build": "electron-vite build && electron-builder --mac",
+    "build": "electron-vite build && node scripts/third-party-licenses.mjs && electron-builder --mac",
     "test": "vitest run tests/",
     "coverage": "vitest run tests/ --coverage",
     "lint": "eslint .",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "icon": "electron scripts/make-icon.cjs",
+    "screenshots": "electron-vite build && electron scripts/screenshots.cjs",
     "postinstall": "electron-builder install-app-deps && node scripts/fix-pty-perms.cjs",
-    "build:mac": "electron-vite build && electron-builder --mac",
-    "build:linux": "electron-vite build && electron-builder --linux"
+    "build:mac": "electron-vite build && node scripts/third-party-licenses.mjs && electron-builder --mac",
+    "build:linux": "electron-vite build && node scripts/third-party-licenses.mjs && electron-builder --linux"
   },
   "dependencies": {
     "@fontsource/antonio": "^5.3.0",

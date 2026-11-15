@@ -11,12 +11,12 @@ Underlag: `construction/code-generation/code-generation-plan.md`, `unit-test-ins
 
 ## Kontroll i riktig Electron
 
-Skriptet `tests/.tmp/shots/qpop.cjs` (git-ignorerat) öppnar visinv, som aktivt projekt, och aidlc-dash med sandlådade inställningar och ett låtsasskal. Inget skrivs till något projekt. Skriptet väntar på en **riktig** väntande fråga i aidlc-dash: grinden för Build and Test, som AI-DLC loggar när stagen läggs fram för godkännande. Ett första försök, som skulle skriva testfrågor i den riktiga audit-loggen, nekades och användes inte.
+Skriptet `tests/.tmp/shots/qpop.cjs` (git-ignorerat) öppnar a reference project, som aktivt projekt, och aidlc-dash med sandlådade inställningar och ett låtsasskal. Inget skrivs till något projekt. Skriptet väntar på en **riktig** väntande fråga i aidlc-dash: grinden för Build and Test, som AI-DLC loggar när stagen läggs fram för godkännande. Ett första försök, som skulle skriva testfrågor i den riktiga audit-loggen, nekades och användes inte.
 
 | Kontroll | Resultat |
 |----------|----------|
 | Vid start (FR1.4) | Ingen popup |
-| Riktig grind i aidlc-dash medan visinv är aktivt (FR1.1, FR2.1, FR2.2) | Popupen öppnas mitt i fönstret med "Claude väntar på ditt svar", "aidlc-dash · 261113-question-popup · build-and-test" och "Godkännande: build-and-test → deployment-pipeline". Den visar "1 av 2", där den andra är en fråga som väntade redan vid start. |
+| Riktig grind i aidlc-dash medan a reference project är aktivt (FR1.1, FR2.1, FR2.2) | Popupen öppnas mitt i fönstret med "Claude väntar på ditt svar", "aidlc-dash · 261113-question-popup · build-and-test" och "Godkännande: build-and-test → deployment-pipeline". Den visar "1 av 2", där den andra är en fråga som väntade redan vid start. |
 | Systemnotis (FR3.1, FR3.3) | En notis: "aidlc-dash: Claude väntar på ditt svar" / "Godkännande: build-and-test → deployment-pipeline", `silent: false` |
 | Eskalering efter 21 s (FR2.5, NFR5) | `is-overdue`, rubriken "Väntar fortfarande på ditt svar" i glödande rött (`qpop-overdue.png`) |
 | "Svara i Claude" (FR2.3) | Popupen stängs, aidlc-dash blir aktivt och Claude-fliken är vald. **Fokus hamnar inte i terminalen** (se F-01). |

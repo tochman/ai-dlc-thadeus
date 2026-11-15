@@ -1,6 +1,6 @@
 # Test Results — US-0405 Inställningar som vy
 
-**Körning:** 2026-11-14 · repo-roten `/Users/thomasochman/Projects/aidlc-dash` · `main` med storyns ändringar ocommittade.
+**Körning:** 2026-11-14 · repo-roten `~/Projects/aidlc-dash` · `main` med storyns ändringar ocommittade.
 
 ## Bygge
 

@@ -4,7 +4,7 @@
 **Timestamp**: 2026-11-13T08:10:23Z
 **Event**: WORKFLOW_STARTED
 **Scope**: bugfix
-**Request**: /aidlc Bugfix: Linux-bygget (.deb) startar inte på Ubuntu 22.04. Appen måste fungera på äldre Linux-versioner, minst Ubuntu 22.04 LTS. Gör samtidigt Auctum-appikonen klar enligt US-0401 i docs/features/epic-04-branding-and-desktop.md (Dock, programmeny, .dmg och Linux-startmenyn, från den nya loggan visinv/public/auctum.svg). Referensdata i ~/Projects/visinv.
+**Request**: /aidlc Bugfix: Linux-bygget (.deb) startar inte på Ubuntu 22.04. Appen måste fungera på äldre Linux-versioner, minst Ubuntu 22.04 LTS. Gör samtidigt Auctum-appikonen klar enligt US-0401 i docs/features/epic-04-branding-and-desktop.md (Dock, programmeny, .dmg och Linux-startmenyn, från den nya loggan a reference project/public/auctum.svg). Referensdata i a reference project.
 **Source Baseline**: sha256:fbed70a84a1be1f345ca12dd1d57c888d4f0e7cff60b21fa46ec9491c3b38119
 
 ---
@@ -38,7 +38,7 @@
 ## Workspace Scaffolded
 **Timestamp**: 2026-11-13T08:10:23Z
 **Event**: WORKSPACE_SCAFFOLDED
-**Request**: /aidlc Bugfix: Linux-bygget (.deb) startar inte på Ubuntu 22.04. Appen måste fungera på äldre Linux-versioner, minst Ubuntu 22.04 LTS. Gör samtidigt Auctum-appikonen klar enligt US-0401 i docs/features/epic-04-branding-and-desktop.md (Dock, programmeny, .dmg och Linux-startmenyn, från den nya loggan visinv/public/auctum.svg). Referensdata i ~/Projects/visinv.
+**Request**: /aidlc Bugfix: Linux-bygget (.deb) startar inte på Ubuntu 22.04. Appen måste fungera på äldre Linux-versioner, minst Ubuntu 22.04 LTS. Gör samtidigt Auctum-appikonen klar enligt US-0401 i docs/features/epic-04-branding-and-desktop.md (Dock, programmeny, .dmg och Linux-startmenyn, från den nya loggan a reference project/public/auctum.svg). Referensdata i a reference project.
 **Details**: 4 in-scope phase dirs + verification/ + space-level knowledge/ ensured (shell shipped by SEED)
 
 ---
@@ -89,7 +89,7 @@
 ## Workspace Initialised
 **Timestamp**: 2026-11-13T08:10:23Z
 **Event**: WORKSPACE_INITIALISED
-**Request**: /aidlc Bugfix: Linux-bygget (.deb) startar inte på Ubuntu 22.04. Appen måste fungera på äldre Linux-versioner, minst Ubuntu 22.04 LTS. Gör samtidigt Auctum-appikonen klar enligt US-0401 i docs/features/epic-04-branding-and-desktop.md (Dock, programmeny, .dmg och Linux-startmenyn, från den nya loggan visinv/public/auctum.svg). Referensdata i ~/Projects/visinv.
+**Request**: /aidlc Bugfix: Linux-bygget (.deb) startar inte på Ubuntu 22.04. Appen måste fungera på äldre Linux-versioner, minst Ubuntu 22.04 LTS. Gör samtidigt Auctum-appikonen klar enligt US-0401 i docs/features/epic-04-branding-and-desktop.md (Dock, programmeny, .dmg och Linux-startmenyn, från den nya loggan a reference project/public/auctum.svg). Referensdata i a reference project.
 **Project Type**: Brownfield
 **Project Type Source**: workspace scan
 **Scope**: bugfix

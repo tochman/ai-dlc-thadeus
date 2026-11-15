@@ -338,11 +338,25 @@ One heading per component; the heading text is the component's name in the Scope
 
 ### Release Workflow
 - **Path**: `.github/workflows/release.yml`
-- **Responsibility**: on PR to `main` and `v*.*.*` tags: tag/version check, `npm ci`, `vitest run tests/`, mac universal .dmg, Linux .deb on ubuntu-22.04 with the glibc check; on tags a GitHub Release with `SHA256SUMS.txt`.
+- **Responsibility**: on PR to `main` and `v*.*.*` tags: tag/version check, `npm ci`, tests with coverage (80% floor), ESLint, Prettier (separate steps), mac universal .dmg, Linux .deb on ubuntu-22.04 with the glibc check; on tags a GitHub Release (`gh release create --generate-notes`) with `SHA256SUMS.txt`. Token scope `contents: read`, write only in the release job. The header comment still calls the repo private and the builds internal.
+- **Depends on**: Build Scripts, Packaging Config.
 
 ### Build Scripts
-- **Path**: `scripts/check-glibc.mjs`, `scripts/fix-pty-perms.cjs`, `scripts/make-icon.cjs`, `electron.vite.config.mjs`, `electron-builder.yml`, `vitest.config.mjs`
-- **Responsibility**: bundling, packaging, glibc and foreign-prebuild check, spawn-helper permissions, icon rendering, test projects.
+- **Path**: `scripts/check-glibc.mjs`, `scripts/fix-pty-perms.cjs`, `scripts/make-icon.cjs`, `electron.vite.config.mjs`, `vitest.config.mjs`
+- **Responsibility**: bundling, glibc and foreign-prebuild check (CI), spawn-helper permissions (postinstall), icon rendering from `build/icon.svg` (the Auctum mark), test projects. Script messages are in Swedish.
+
+### Packaging Config
+- **Path**: `electron-builder.yml`, `package.json` (metadata), `build/`
+- **Responsibility**: app id `se.auctum.thadeus`; ships `out/**` and `package.json`, unpacks `node-pty`; unsigned mac dmg, Linux deb (maintainer `info@auctum.se`, replaces `aidlc-dash`); `publish: null`. Package metadata: `private: true`, `license: MIT`, author Auctum Solutions AB, homepage `github.com/tochman/aidlc-dash`. No third-party licence notice is packaged (see `dependencies.md` "Licences").
+- **Depends on**: Build Scripts (icon).
+
+### Test Fixtures
+- **Path**: `tests/fixtures/` (95 tracked files)
+- **Responsibility**: sample inputs for the main and renderer tests; layout in `code-structure.md`, privacy findings in `code-quality-assessment.md` ("Public-readiness review").
+
+### Project Docs
+- **Path**: `README.md`, `LICENSE`, `docs/FEATURES.md`, `docs/features/epic-*.md` (13), `docs/releases/` (0.2.3, 0.2.4), `docs/screenshots/` (5 PNG)
+- **Responsibility**: outside-facing description, install and development guide, MIT licence, roadmap and story status (read by Features Parser and checked in CI), README images.
 
 ### Test Suite
 - **Path**: `tests/` (32 main and 27 renderer test files, fixtures)

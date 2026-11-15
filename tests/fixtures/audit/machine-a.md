@@ -4,7 +4,7 @@
 **Timestamp**: 2026-11-12T20:51:25Z
 **Event**: WORKFLOW_STARTED
 **Scope**: express
-**Request**: /aidlc EPIC-29 omgång 4: US-2939, US-2942 och US-2943.
+**Request**: /aidlc EPIC-29 batch 4: US-2939, US-2942 and US-2943.
 
 ---
 
@@ -35,7 +35,7 @@
 ## Question Replied
 **Timestamp**: 2026-11-12T20:51:41Z
 **Event**: QUESTION_REPLIED
-**Question**: Hur ska skanningen göras?
+**Question**: How should the scan be done?
 **Reply**: Focused scan
 **Options**: ["Focused scan","Full rescan"]
 

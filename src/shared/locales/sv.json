@@ -856,7 +856,9 @@
     "rate": "{rate} tokens/min"
   },
   "aboutDialog": {
-    "exit": "STÄNG"
+    "exit": "STÄNG",
+    "licenses": "LICENSER",
+    "licensesFailed": "Licenserna kunde inte öppnas: {error}"
   },
   "menu": {
     "about": "Om {app}",

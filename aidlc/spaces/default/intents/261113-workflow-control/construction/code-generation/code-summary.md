@@ -71,7 +71,7 @@ Allt detta kontrolleras manuellt i Build and Test.
 - **F-02:** `setup.js` kör förhandsvisningen med `--project-dir <root>`, och kommandokedjan skriver `aidlc --project-dir . config --harness claude --yes`. `parsePreview` tolkar också `merge`, `preserve`, `remove` och `notes`, och `SetupAidlc.jsx` visar notes som varning.
 - 61/61 tester gröna.
 - **Kontrollerat i riktig Electron:**
-  - claude-fliken startar i visinv och växlar mellan "ledig" och "arbetar"
+  - claude-fliken startar i a reference project och växlar mellan "ledig" och "arbetar"
   - förhandsvisningen visar create=360 och conflict=0
   - kommandot får `--project-dir .`
 

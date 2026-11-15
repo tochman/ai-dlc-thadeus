@@ -99,7 +99,7 @@ Lagret "Data model / database behavior" gäller inte här. Appen har ingen datab
 - [ ] **Steg 2 — Testkörare** (FR10.5)
   - `vitest.config.mjs` med miljön `node` som standard och `jsdom` för `tests/renderer/**`.
   - Kommando: `npx vitest run tests/` (se `unit-test-instructions.md`).
-  - Fixtures under `tests/fixtures/project/` med en kopia av en verklig AI-DLC-struktur från `~/Projects/visinv`:
+  - Fixtures under `tests/fixtures/project/` med en kopia av en verklig AI-DLC-struktur från `a reference project`:
     - `aidlc/active-space`
     - `intents.json`, med ett extra id som saknar mapp
     - två intent-mappar, varav den ena (`261110-epic02-finish`) har en `runtime-graph.json` med `bolt_dag`
@@ -200,7 +200,7 @@ Lagret "Data model / database behavior" gäller inte här. Appen har ingen datab
 
 - [x] **Steg 13 — Auctum-profilering** (önskemål från användaren 2026-11-13: "brand it with Auctum … the new one", "Call it Auctu AIDLC Coltrol or soething. the logo should be on a splash screen and on the interface"; utvidgar US-0109)
   - Namn: **Auctum AIDLC Control**. Det ska stå i `productName` i `package.json` och `electron-builder.yml` (`appId: se.auctum.aidlc-control`), i fönstertiteln (`src/main/index.js`), i `<title>` i `src/renderer/index.html` och i sidhuvudet, där det ersätter "BRIDGE CONSOLE".
-  - Logga: den nya geometriska loggan från `~/Projects/visinv/public/auctum.svg`. Använd inte de äldre varianterna i `public/logos/`. Den kopieras som en React-komponent `src/renderer/AuctumMark.jsx` med samma två paths och viewBox `202 274 848 708`, `fill="currentColor"` och `role="img"` + `aria-label="Auctum"`, så att färgen följer temat.
+  - Logga: den nya geometriska loggan från `a reference project/public/auctum.svg`. Använd inte de äldre varianterna i `public/logos/`. Den kopieras som en React-komponent `src/renderer/AuctumMark.jsx` med samma två paths och viewBox `202 274 848 708`, `fill="currentColor"` och `role="img"` + `aria-label="Auctum"`, så att färgen följer temat.
   - Startskärm: `src/renderer/Splash.jsx` visas när appen startar. Den visar loggan (stor, i amber), namnet och en diskret laddrad. Den döljs när flikarna har återställts, dock tidigast efter 900 ms och senast efter 4 s, och tonar ut. Med `prefers-reduced-motion` visas den utan animation. `data-testid="splash"`.
   - Gränssnitt: liten logga och namnet i sidhuvudet (`App.jsx`). Loggan används också i tomläget "Inget projekt öppet".
   - Test: `tests/renderer/Splash.test.jsx` (jsdom) kontrollerar att startskärmen visar loggan (role img med namnet "Auctum") och texten "Auctum AIDLC Control", och att den försvinner när `ready` blir sann efter minimitiden.

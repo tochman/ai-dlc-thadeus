@@ -114,6 +114,8 @@ All through `runFixed()` (`src/main/exec.js`): `execFile` without a shell, every
 | `<harness cli> --version` | `harness.js`, `tools.js` | 10 s |
 | `gh release view|download --repo tochman/aidlc-dash …`, `hdiutil`, `ditto`, `xattr`, `osascript`, `pkexec dpkg -i` | `updater.js` | 20 s to 30 min |
 
+The release side of that contract (`.github/workflows/release.yml`): each `vX.Y.Z` tag publishes `THADEUS-<v>-universal.dmg`, `thadeus_<v>_amd64.deb` and `SHA256SUMS.txt`; asset names come from `electron-builder.yml` `artifactName`.
+
 The agent and shell terminals are not `runFixed` calls: `pty.js` spawns `$SHELL -l -i -c <cli>` (agent, `cli` from `HARNESSES` or the saved tool path, single-quoted when it is not a bare word) or `$SHELL -l` (shell) with `TERM=xterm-256color`.
 
 ## 6. Files read (contracts with AI-DLC)

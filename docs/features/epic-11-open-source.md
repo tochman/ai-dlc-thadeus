@@ -8,13 +8,13 @@
 
 **Stories:** US-1101
 
-**Status (2026-11-15):** 📋 US-1101 planned for v0.2.6. Each story names its release.
+**Status (2026-11-15):** 🚧 US-1101 in progress, for v0.2.6. Each story names its release.
 
 ---
 
 ## User Stories
 
-**US-1101: Get the repository ready to be public** 📋 Planned, for v0.2.6
+**US-1101: Get the repository ready to be public** 🚧 In progress, for v0.2.6
 - As **the maintainer**, in order to **open-source the app without publishing anything private**, I would like to **review and clean what the repository and its history contain, and add what a public project needs**.
 - **Epic:** EPIC-11
 - **Priority:** High

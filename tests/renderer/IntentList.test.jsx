@@ -17,12 +17,20 @@ const intents = [
     status: 'in-flight',
     date: '2026-11-12',
     active: true,
-    request: 'K2-regeln om 7 000 kronor',
+    request: 'a 7 000 character limit for notes',
     done: 6,
     executed: 10
   },
   { ...base, dirName: '261111-orphan-notes', slug: 'orphan-notes', scope: 'workshop', status: null, date: '2026-11-11', missingInIndex: true },
-  { ...base, dirName: '261110-epic02-finish', slug: 'epic02-finish', scope: 'feature', status: 'complete', date: '2026-11-10', request: 'team och avdelningar' }
+  {
+    ...base,
+    dirName: '261110-epic02-finish',
+    slug: 'epic02-finish',
+    scope: 'feature',
+    status: 'complete',
+    date: '2026-11-10',
+    request: 'teams and departments'
+  }
 ];
 
 const rowSlugs = () => screen.getAllByTestId('intent-list-row').map((r) => r.querySelector('.intent-slug').textContent);
@@ -34,7 +42,7 @@ describe('IntentList', () => {
     render(<IntentList intents={intents} selected={null} onSelect={vi.fn()} />);
     expect(rowSlugs()).toEqual(['epic29-small-k2-fixes', 'orphan-notes', 'epic02-finish']);
 
-    fireEvent.change(screen.getByTestId('intent-list-search'), { target: { value: 'avdelningar' } });
+    fireEvent.change(screen.getByTestId('intent-list-search'), { target: { value: 'departments' } });
     expect(rowSlugs()).toEqual(['epic02-finish']);
 
     fireEvent.change(screen.getByTestId('intent-list-search'), { target: { value: '' } });

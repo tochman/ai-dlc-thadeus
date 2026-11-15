@@ -1,5 +1,5 @@
 # Builds T.H.A.D.E.U.S. for macOS (universal .dmg) and Linux (.deb, x64).
-# On a version tag it also publishes both to a GitHub Release in this private repo (unsigned internal builds).
+# On a version tag it also publishes both to a GitHub Release in this repository (unsigned builds).
 # On a pull request it only tests and builds, so packaging problems (e.g. the Linux glibc check) show up before a tag.
 name: Release
 
@@ -11,12 +11,20 @@ on:
 
 permissions:
   contents: read
+  pull-requests: read # gitleaks-action lists a pull request's commits
 
 jobs:
   verify:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # gitleaks scans every commit of the pull request (US-1101 FR4.2)
+      # A secret in any commit blocks the merge; false positives go in .gitleaksignore with their fingerprint.
+      - name: Secret scan
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - uses: actions/setup-node@v4
         with:
           node-version-file: .nvmrc

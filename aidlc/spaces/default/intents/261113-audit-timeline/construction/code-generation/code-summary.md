@@ -40,7 +40,7 @@ Underlag: `requirements.md` för den här intenten och kodbaskunskapen `aidlc/sp
 
 - Prestanda och jämn scrollning i riktig Electron med 20 000 händelser.
 - Scrollankring, tangentbordsfokus och att ett klick på räknaren flyttar scrollen. jsdom saknar layout.
-- visinvs `epic02-finish` med 1 726 händelser.
+- a reference project's `epic02-finish` med 1 726 händelser.
 
 ## Avvikelser från planen
 

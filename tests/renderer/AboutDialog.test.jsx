@@ -98,6 +98,27 @@ describe('AboutDialog (EPIC-04 US-0408, US-0409)', () => {
     warn.mockRestore();
   });
 
+  it('opens the third-party licences from the LICENSES button (US-1101 FR6.2)', async () => {
+    window.bridge.openLicenses = vi.fn().mockResolvedValue('');
+    openDialog();
+    const button = screen.getByTestId('about-dialog-licenses');
+    expect(button.textContent).toBe('LICENSER');
+    expect(button.closest('.about-lcars-arm')).toBeTruthy(); // an arm block, like EXIT
+    fireEvent.click(button);
+    await waitFor(() => expect(window.bridge.openLicenses).toHaveBeenCalledTimes(1));
+    expect(screen.queryByTestId('about-dialog-licenses-error')).toBeNull();
+  });
+
+  it('shows why the licences could not be opened, and keeps the dialog open (US-1101 FR6.2)', async () => {
+    window.bridge.openLicenses = vi.fn().mockRejectedValueOnce(new Error('ipc down')).mockResolvedValueOnce('Failed to open path');
+    openDialog();
+    fireEvent.click(screen.getByTestId('about-dialog-licenses'));
+    await waitFor(() => expect(screen.getByTestId('about-dialog-licenses-error').textContent).toBe('Licenserna kunde inte öppnas: ipc down'));
+    fireEvent.click(screen.getByTestId('about-dialog-licenses')); // openPath's own error text comes back resolved
+    await waitFor(() => expect(screen.getByTestId('about-dialog-licenses-error').textContent).toBe('Licenserna kunde inte öppnas: Failed to open path'));
+    expect(screen.getByTestId('about-dialog-close')).toBeTruthy();
+  });
+
   it('shows English texts after a language switch', async () => {
     await i18n.changeLanguage('en');
     openDialog();

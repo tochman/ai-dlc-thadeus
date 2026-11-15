@@ -1,6 +1,6 @@
 # Technology Stack
 
-Versions are those resolved in `package-lock.json` at commit `2d111d6`; the ranges in `package.json` are caret ranges unless noted.
+Versions are those resolved in `package-lock.json` at commit `2d111d6`, re-checked for the tooling rows at `bc1dd3d` (package 0.2.5); the ranges in `package.json` are caret ranges unless noted.
 
 ## Languages and runtime
 
@@ -47,7 +47,17 @@ Versions are those resolved in `package-lock.json` at commit `2d111d6`; the rang
 | jsdom | 29.1.1 | DOM for renderer tests |
 | @testing-library/react | 16.3.3 | component tests |
 
-No coverage provider, linter or formatter is installed or configured.
+| @vitest/coverage-v8 | 5.1.0 | line coverage; CI enforces an 80% floor (`npx vitest run tests/ --coverage`) |
+
+## Linting and formatting (added since `2d111d6`)
+
+| Tool | Version | Config |
+|---|---|---|
+| eslint, @eslint/js, globals | 9.39.5, 9.39.5, 17.14.0 | `eslint.config.mjs` (flat config) |
+| eslint-plugin-react, eslint-plugin-react-hooks, eslint-config-prettier | 7.37.5, 7.1.1, 10.1.8 | same |
+| prettier | 3.10.1 | `.prettierrc.json` (width 160, single quotes, semicolons, no trailing commas); `.prettierignore` skips `docs/`, `*.md`, `*.css`, `tests/fixtures/`, AI-DLC folders |
+
+All three run as separate steps in the `verify` job of `.github/workflows/release.yml`.
 
 ## External tools the app runs
 

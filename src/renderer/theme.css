@@ -1039,6 +1039,10 @@ a.md-link:hover { color: var(--steel-light); }
 }
 .about-lcars-exit::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 5px; background: var(--alert); }
 .about-lcars-exit:focus-visible { outline: 2px solid var(--amber); outline-offset: 2px; }
+/* US-1101 FR6.2: LICENSES, an arm block like EXIT with an amber tab instead of the alert one. */
+.about-lcars-licenses { margin-top: 0; }
+.about-lcars-licenses::before { background: var(--amber); }
+.about-lcars-error { margin: 12px 0 0; color: var(--alert); font-size: 14px; letter-spacing: 0.04em; overflow-wrap: anywhere; }
 .about-lcars-title { margin: 0; align-self: flex-end; color: var(--amber); font: 700 44px/1 var(--font-head); letter-spacing: 0.08em; text-transform: uppercase; white-space: nowrap; }
 .about-lcars-content { display: flex; align-items: center; gap: 20px; }
 .about-lcars-content .splash-mark { flex-shrink: 0; }

@@ -1,7 +1,7 @@
 # AI-DLC State Tracking
 
 ## Project Information
-- **Project**: Bugfix: Linux-bygget (.deb) startar inte på Ubuntu 22.04. Appen måste fungera på äldre Linux-versioner, minst Ubuntu 22.04 LTS. Gör samtidigt Auctum-appikonen klar enligt US-0401 i docs/features/epic-04-branding-and-desktop.md (Dock, programmeny, .dmg och Linux-startmenyn, från den nya loggan visinv/public/auctum.svg). Referensdata i ~/Projects/visinv.
+- **Project**: Bugfix: Linux-bygget (.deb) startar inte på Ubuntu 22.04. Appen måste fungera på äldre Linux-versioner, minst Ubuntu 22.04 LTS. Gör samtidigt Auctum-appikonen klar enligt US-0401 i docs/features/epic-04-branding-and-desktop.md (Dock, programmeny, .dmg och Linux-startmenyn, från den nya loggan a reference project/public/auctum.svg). Referensdata i a reference project.
 - **Project Description Source**: project-description.json
 - **Project Type**: Brownfield
 - **Project Type Source**: workspace scan

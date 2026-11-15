@@ -176,12 +176,12 @@ describe('notifyEvent (D2, D4–D6, PD50, PD53)', () => {
 describe('notifyQuestions, the audit path (Amendment 5)', () => {
   it('gives today gate and ask texts through notifyEvent, titled as AI-DLC questions, with the audit event id', () => {
     const c = ctx({ activeProjectId: null });
-    const gate = { id: 'g1', projectId: 'p1', projectName: 'visinv', kind: 'gate', stage: 'requirements-analysis', nextStage: 'user-stories', timeMs: 1 };
-    const ask = { id: 'a1', projectId: 'p1', projectName: 'visinv', kind: 'question', ask: 'plan-approval', stage: 'code-generation', timeMs: 2 };
+    const gate = { id: 'g1', projectId: 'p1', projectName: 'demo-app', kind: 'gate', stage: 'requirements-analysis', nextStage: 'user-stories', timeMs: 1 };
+    const ask = { id: 'a1', projectId: 'p1', projectName: 'demo-app', kind: 'question', ask: 'plan-approval', stage: 'code-generation', timeMs: 2 };
     notifyQuestions([gate, ask, gate], c);
     expect(shown.map((x) => x.options.body)).toEqual([
-      'visinv · Approval: requirements-analysis → user-stories',
-      'visinv · Approve the plan for code-generation'
+      'demo-app · Approval: requirements-analysis → user-stories',
+      'demo-app · Approve the plan for code-generation'
     ]);
     expect(shown[0].options.title).toBe('AI-DLC is waiting for you');
     shown[0].handlers.click();

@@ -20,7 +20,7 @@ X. Other (please specify)
 
 ## Q2. [Design] Hur ska appikonen se ut?
 
-Ikonen byggs av den nya geometriska Auctum-loggan (`visinv/public/auctum.svg`). Startskärmen visar loggan i amber på nästan svart bakgrund.
+Ikonen byggs av den nya geometriska Auctum-loggan (`a reference project/public/auctum.svg`). Startskärmen visar loggan i amber på nästan svart bakgrund.
 
 A. Amber logga på en mörk rundad kvadrat, samma uttryck som startskärmen
 B. Vit logga på en amber rundad kvadrat, som syns bra i både ljus och mörk Dock

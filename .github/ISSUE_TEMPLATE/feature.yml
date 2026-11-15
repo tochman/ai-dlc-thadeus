@@ -1,0 +1,32 @@
+name: Feature idea
+description: Suggest something T.H.A.D.E.U.S. could do.
+labels: [enhancement]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Ideas are welcome. Accepted ideas become user stories in an epic under docs/features/.
+  - type: textarea
+    id: problem
+    attributes:
+      label: The problem
+      description: What are you trying to do, and what makes it hard today?
+    validations:
+      required: true
+  - type: textarea
+    id: idea
+    attributes:
+      label: Your idea
+      description: What should the app do? A user story helps, for example "As a developer I want ... so that ...".
+    validations:
+      required: true
+  - type: textarea
+    id: criteria
+    attributes:
+      label: How we would know it works
+      description: Optional acceptance criteria, for example "Given ... when ... then ...".
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives
+      description: Other ways you considered or use today.

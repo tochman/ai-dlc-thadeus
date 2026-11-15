@@ -1,4 +1,4 @@
-// The geometric Auctum mark (paths from visinv/public/auctum.svg). Colour follows `color` via currentColor.
+// The geometric Auctum mark (paths from the Auctum logo SVG). Colour follows `color` via currentColor.
 // `decorative` hides it from screen readers where visible text already names the app.
 export default function AuctumMark({ size = 24, className, decorative = false }) {
   const a11y = decorative ? { 'aria-hidden': true } : { role: 'img', 'aria-label': 'Auctum' };

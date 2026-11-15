@@ -27,7 +27,7 @@ npx vitest run tests/main/projectAccess.test.js tests/main/projectService.test.j
 
 ## Kontroller i riktig Electron (Chromium-renderare)
 
-Ett tillfälligt kontrollskript startade den byggda appen (`out/main/index.js`) i Electron. Det öppnade `~/Projects/visinv` och aidlc-dash som flikar, styrde gränssnittet via DOM och `window.bridge` och återställde sedan inställningarna. Skriptet låg under `tests/.tmp/` och är borttaget.
+Ett tillfälligt kontrollskript startade den byggda appen (`out/main/index.js`) i Electron. Det öppnade `a reference project` och aidlc-dash som flikar, styrde gränssnittet via DOM och `window.bridge` och återställde sedan inställningarna. Skriptet låg under `tests/.tmp/` och är borttaget.
 
 | Kontroll | Resultat |
 |----------|----------|
@@ -35,9 +35,9 @@ Ett tillfälligt kontrollskript startade den byggda appen (`out/main/index.js`) 
 | `webPreferences` | `contextIsolation: true`, `nodeIntegration: false`, `sandbox: true` |
 | `typeof require` i renderaren | `undefined` |
 | `window.bridge` | 19 namngivna funktioner, ingen generisk invoke |
-| Flikar återställda från inställningar (FR1.4, FR1.5) | `["visinv","aidlc-dash"]` |
+| Flikar återställda från inställningar (FR1.4, FR1.5) | `["a reference project","aidlc-dash"]` |
 | Intent-lista (FR2) | 23 + 1 rader. Första raden är t.ex. `epic29-status-order complete express 2026-11-12 8/10`. |
-| Fritextsökning "epic02" (FR2.4) | Bara `epic02-finish` visas i visinv-fliken |
+| Fritextsökning "epic02" (FR2.4) | Bara `epic02-finish` visas i a reference project-fliken |
 | Pipeline för epic02-finish (FR3) | 33 stages per flik med status, agent och tider, t.ex. `workspace-scaffold Klar orchestrator … 0 s` |
 | Tidslinje (FR4) | 868 händelser synliga med brusfiltret på, av 1 726 totalt |
 | Bolt-DAG (FR5) | SVG renderad med 6 units |
@@ -51,7 +51,7 @@ Ett tillfälligt kontrollskript startade den byggda appen (`out/main/index.js`) 
 
 | Mätning | Metod | Resultat |
 |---------|-------|----------|
-| Ladda intent-listan för visinv (23 intents) | `detectProject` + `loadIntentList` i Node | 30 ms |
+| Ladda intent-listan för a reference project (23 intents) | `detectProject` + `loadIntentList` i Node | 30 ms |
 | Ladda den största intentens detaljer (epic02-finish, 1 726 audit-händelser) | `loadIntentDetail` i Node | 30 ms |
 | Tid från filändring till `onChange` | `watchIntents` på en temporär mapp i Node | 314 ms (debounce 300 ms, maxväntan 800 ms) |
 | Kontrast i temat | WCAG-formeln på färgerna i `theme.css` | Lägst 6,61:1 (röd på panel-2). Brödtext 13,94–16,40:1, dämpad text 7,07–8,32:1. |

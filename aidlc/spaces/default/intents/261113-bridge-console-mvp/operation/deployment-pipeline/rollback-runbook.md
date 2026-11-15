@@ -11,7 +11,7 @@ Appen är en lokal skrivbordsapp. Den skriver bara sina egna inställningar (`~/
 ## Smoke-test efter varje release (ca 2 minuter)
 
 1. Installera från releasen och starta appen. Startskärmen med Auctum-loggan ska visas och sedan tona bort.
-2. Klicka på **+ Öppna projekt** och välj ett AI-DLC-projekt, till exempel `~/Projects/visinv`. Intent-listan ska fyllas.
+2. Klicka på **+ Öppna projekt** och välj ett AI-DLC-projekt, till exempel `a reference project`. Intent-listan ska fyllas.
 3. Klicka på en intent. Pipeline och tidslinje ska visa data.
 4. Öppna terminalpanelen och fliken **shell**. Kör `pwd`, som ska visa projektmappen. I fliken **claude** ska Claude starta.
 

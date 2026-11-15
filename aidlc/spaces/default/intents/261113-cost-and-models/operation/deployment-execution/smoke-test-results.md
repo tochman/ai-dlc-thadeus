@@ -2,7 +2,7 @@
 
 Underlag: `construction/build-and-test/test-results.md`.
 
-Röktestet kördes i riktig Electron mot `~/Projects/visinv`, med samma kod som ligger i PR #5:
+Röktestet kördes i riktig Electron mot `a reference project`, med samma kod som ligger i PR #5:
 
 | Kontroll | Resultat |
 |----------|----------|

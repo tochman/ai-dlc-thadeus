@@ -33,7 +33,7 @@ Det finns inget golv för radtäckning (express och Minimal). Utseendet verifier
 
 ## Manuell verifiering (Build and Test)
 
-- **Jämförelse med mockupen:** skärmdumpar av projektvyn, konsolen och splashen i riktig Electron jämförs med mockupen, för både aidlc-dash och visinv.
+- **Jämförelse med mockupen:** skärmdumpar av projektvyn, konsolen och splashen i riktig Electron jämförs med mockupen, för både aidlc-dash och a reference project.
 - **Kontrast:** stickprov på de viktigaste paren.
 - **Rörelse:** andning, puls och svep syns med Full. Med Dämpad blir glöden statisk. Med Av finns inga animationer.
 - **Bildfrekvens:** cirka 60 fps i projektvyn, mätt med `requestAnimationFrame`.

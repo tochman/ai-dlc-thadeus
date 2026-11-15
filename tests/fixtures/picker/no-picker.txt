@@ -1,6 +1,6 @@
 ⏺ Läser audit-loggen.
   1. aidlc-state.md
-  2. audit/macbookpro.md
+  2. audit/machine.md
 
 ✻ Arbetar… (esc to interrupt)
 

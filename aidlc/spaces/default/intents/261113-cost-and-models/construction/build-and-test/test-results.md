@@ -9,7 +9,7 @@ Underlag: `construction/code-generation/code-generation-plan.md`, `unit-test-ins
 | `npx vitest run tests/` | 0 | 12 filer, 39/39 gröna (efter loop-back 1) |
 | `npx electron-vite build` | 0 | Bygget lyckades |
 
-## Kontroll i riktig Electron (Chromium) mot `~/Projects/visinv`
+## Kontroll i riktig Electron (Chromium) mot `a reference project`
 
 | Kontroll | Resultat |
 |----------|----------|

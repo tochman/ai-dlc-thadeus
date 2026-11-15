@@ -14,7 +14,7 @@
 
 ## Data sources
 
-All read-only. Verified against `~/Projects/visinv` (AI-DLC 2.11.3).
+All read-only. Verified against a local reference project (AI-DLC 2.11.3).
 
 | Source | What it holds |
 |--------|---------------|

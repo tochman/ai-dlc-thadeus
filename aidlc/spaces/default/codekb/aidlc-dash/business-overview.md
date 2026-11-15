@@ -2,7 +2,7 @@
 
 ## Purpose
 
-T.H.A.D.E.U.S. (Transformative Human-AI Development Environment for Ubiquitous Systems, repository `aidlc-dash`, package `thadeus` 0.2.4) is a desktop "bridge console" for software projects that use AI-DLC (AI-Driven Development Life Cycle). It is built by Auctum Solutions AB and released under the MIT licence. It runs on macOS (universal .dmg) and Linux (x64 .deb).
+T.H.A.D.E.U.S. (Transformative Human-AI Development Environment for Ubiquitous Systems, repository `aidlc-dash`, package `thadeus` 0.2.5) is a desktop "bridge console" for software projects that use AI-DLC (AI-Driven Development Life Cycle). It is built by Auctum Solutions AB and released under the MIT licence. It runs on macOS (universal .dmg) and Linux (x64 .deb).
 
 The app puts three things in one window per project:
 
@@ -19,34 +19,32 @@ The app reads AI-DLC's files and leaves the writing to AI-DLC. Actions that chan
 - **Developer running AI-DLC**: sees where each intent stands, what it costs, and what the agent is waiting for, while doing other work.
 - **Developer on several machines or in a team**: brings in AI-DLC work pushed to GitHub safely (US-0502).
 - **Project owner**: reads epics and stories (feature docs) and their link to intents.
+- **Outside users and contributors** (new with EPIC-11): download releases without a GitHub account, read the README, report issues and send pull requests.
 
 ## Key functionality (by epic)
 
-| Epic | Capability | Status at this commit |
+Status from `docs/FEATURES.md` at commit `bc1dd3d`; the epic files hold the detail.
+
+| Epic | Capability | Status |
 |---|---|---|
+| EPIC-00 | Small fixes reported in use | US-0001–0012 released (v0.2.3–v0.2.5); US-0013–0014 done for v0.2.6; US-0015 in progress |
 | EPIC-01 | Read-only AI-DLC visualisation and embedded terminal (foundation) | Released v0.1.0 |
-| EPIC-02 | Cost and models per intent, stage, agent and model; live token view | Released up to v0.2.4 |
-| EPIC-03 | Virtualised audit timeline with live highlights | Released v0.2.0 |
-| EPIC-04 | LCARS design, icon, fullscreen and menu, settings view, self-update from GitHub releases, About window | Released up to v0.2.4 |
-| EPIC-05 | Workflow control: Resume, Refresh from GitHub, Set up AI-DLC, question popup (US-0505); **US-0506 in progress** | US-0504 planned |
-| EPIC-06 | Feature docs view and setup offer | Released v0.2.0 |
-| EPIC-07 | Swedish and English UI with a language setting | US-0702 planned |
-| EPIC-08 | Harness per project (Claude Code, opencode), set up any of six harnesses, two agent tabs side by side | Released up to v0.2.3 |
-| EPIC-09 | AI-DLC configuration view and changes, custom plans, models and effort per agent | In progress |
-| EPIC-10 | Edit project files in the app with Monaco | Released v0.2.4 |
-| EPIC-00 | Small fixes reported in use (US-0001 to US-0009) | Released v0.2.3 / v0.2.4 |
+| EPIC-02 | Cost and models; live token view | Released up to v0.2.4 |
+| EPIC-03 | Virtualised audit timeline | Released v0.2.0; US-0303 for v0.3.0 |
+| EPIC-04 | LCARS design, desktop integration, self-update from GitHub releases, About | Released up to v0.2.5; US-0412, US-0413 planned |
+| EPIC-05 | Workflow control incl. agent dialogs (US-0506) | Released up to v0.2.5 |
+| EPIC-06 | Feature docs view and setup offer | Released; US-0604 planned |
+| EPIC-07 | Swedish and English UI | US-0702 for v0.3.0 |
+| EPIC-08 | Harness per project, set up six harnesses | Released up to v0.2.3 |
+| EPIC-09 | AI-DLC configuration, custom plans, models per agent | Released up to v0.2.4 |
+| EPIC-10 | Edit project files with Monaco | Released v0.2.4 |
+| EPIC-11 | Open source: make the repository public | **US-1101 (this intent)**, for v0.2.6 |
+| EPIC-12 | Team collaboration | US-1201 for v0.3.0 |
 
-## The active intent: US-0506 (agent dialogs)
+## The active intent: US-1101 (repository ready to be public)
 
-Intent `261114-agent-dialogs` (scope `classic`) covers EPIC-05 US-0506: every question, permission prompt and message from Claude Code and other AI clients (opencode, later others) shown in, and answered from, the app's dialog.
+Intent `261115-repo-public-ready` (scope `express`) covers EPIC-11 US-1101 (`docs/features/epic-11-open-source.md`). The repository `tochman/aidlc-dash` is private today; the app's updater fails without `gh` access, which triggered the decision to open-source it. US-0413 (updates without `gh`) builds on the public repository.
 
-The business problem, as the code stands:
+The acceptance criteria ask for: a keep/clean/remove review of what would become public (AI-DLC records, personal paths and emails, fixtures and screenshots, anything secret-like); a whole-history secret scan with rotation of anything ever committed; removal of what is private (history rewrite only on the person's word); the usual public files (outside-user README, `CONTRIBUTING.md`, `SECURITY.md`, `CODE_OF_CONDUCT.md`, issue and PR templates); MIT `LICENSE` agreeing with `package.json` and third-party licences listed for the packaged app; and the visibility switch only on the person's word.
 
-- The popup (US-0505, extended by US-0004 and US-0006) only knows AI-DLC's own questions, because they are the ones in the audit log. Claude Code's own picker questions, its permission prompts ("Allow this command?") and plain chat replies are invisible.
-- An answer reaches Claude Code only when the picker on screen shows exactly the options AI-DLC logged. When the wording differs the person sees "Could not send: Claude shows other choices than the ones AI-DLC logged" and has to answer in the terminal.
-- A question that was answered some other way, or whose picker went away, can stay in the popup because only an audit event closes it.
-- opencode gets an own-answer field only, since its picker keys were never verified.
-
-US-0506's acceptance criteria (in `docs/features/epic-05-workflow-control.md`) ask for: questions and permission prompts from Claude Code and opencode in the same dialog with answers in place; the agent's latest message per project rendered as Markdown with a background notification; a source per harness (Claude Code hooks, opencode event API or plugin, installed only after consent with a preview, falling back to the terminal); the US-0505 escalation and settings plus a separate messages setting; and safety rules (answers only to the asking tab, nothing approved automatically, text never HTML).
-
-See `architecture.md` for how the current question flow works and `code-quality-assessment.md` for the risks it carries into US-0506.
+What the code and files show for this intent is in `code-quality-assessment.md` ("Public-readiness review"); licences in `dependencies.md` ("Licences").

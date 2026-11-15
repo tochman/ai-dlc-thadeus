@@ -37,6 +37,6 @@ Det finns inget golv för radtäckning (express och Minimal). Varje ny komponent
 
 ## Manuell verifiering (Build and Test)
 
-- **Fortsätt:** prova på en aktiv och en inaktiv in-flight-intent i visinv. Bytet skickas, och `/aidlc` väntar på Enter.
+- **Fortsätt:** prova på en aktiv och en inaktiv in-flight-intent i a reference project. Bytet skickas, och `/aidlc` väntar på Enter.
 - **Uppdatera:** prova i aidlc-dash mot GitHub. Status och märke ska visas, och valet Rebase/Merge ska skriva rätt kommando i shell-fliken.
 - **Initiera AI-DLC:** prova i en tom tillfällig mapp (som inte committas). Förutsättningar, förhandsvisning och kommandokedja ska visas, och vyn ska växla när `aidlc/spaces` dyker upp.

@@ -51,7 +51,7 @@ Express-scope och Minimal-strategi har inget golv för radtäckning. Varje kompo
 
 ## Testdata
 
-- `tests/fixtures/project/` är en nedkortad kopia av AI-DLC-filer från `~/Projects/visinv`. Maskinnamn byts mot `machine-a`/`machine-b` och beställningstexter kortas ner.
+- `tests/fixtures/project/` är en nedkortad kopia av AI-DLC-filer från `a reference project`. Maskinnamn byts mot `machine-a`/`machine-b` och beställningstexter kortas ner.
 - Audit-fixturerna (`machine-a.md`, `machine-b.md` och `epic02-units.md`) ligger i `tests/fixtures/audit/` och inte i intent-mapparnas `audit/`. AI-DLC:s audit-skydd tillåter bara ramverkets egna verktyg att skriva filer under en `intents/<intent>/audit/`-sökväg, även i testfixturer. Parsertesterna läser filerna direkt därifrån.
 - Fixtures ändras aldrig av testerna.
 
@@ -59,6 +59,6 @@ Express-scope och Minimal-strategi har inget golv för radtäckning. Varje kompo
 
 - Mappväljare och flikar (FR1.1, FR1.4, FR1.5)
 - Terminalflikarna claude och skal, med `PATH`/`aidlc` tillgängliga, storleksändring, snabbknappar, omstart och att processerna avslutas när fliken stängs (FR8)
-- Liveuppdatering mot `~/Projects/visinv` medan en workflow kör (FR7.3, NFR1)
+- Liveuppdatering mot `a reference project` medan en workflow kör (FR7.3, NFR1)
 - Tema, kontrast och `prefers-reduced-motion` (FR9, NFR3)
 - `npm run build` ger en osignerad `.app`/`.dmg` (FR10.4)

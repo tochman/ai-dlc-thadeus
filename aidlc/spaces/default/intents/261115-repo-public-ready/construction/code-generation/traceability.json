@@ -1,0 +1,31 @@
+{
+  "stage": "code-generation",
+  "upstream_ids": ["FR1.1", "FR1.2", "FR2.1", "FR2.2", "FR3.1", "FR3.2", "FR3.3", "FR3.4", "FR4.1", "FR4.2", "FR5.1", "FR5.2", "FR5.3", "FR5.4", "FR5.5", "FR5.6", "FR6.1", "FR6.2", "FR6.3", "FR7", "FR8.1", "FR8.2", "NFR1", "NFR2", "NFR3"],
+  "coverage": [
+    { "id": "FR1.1", "status": "OK", "target": "docs/public-readiness-review.md" },
+    { "id": "FR1.2", "status": "OK", "target": "docs/public-readiness-review.md" },
+    { "id": "FR2.1", "status": "OK", "target": "docs/public-readiness-review.md" },
+    { "id": "FR2.2", "status": "OK", "target": "docs/public-readiness-review.md" },
+    { "id": "FR3.1", "status": "OK", "target": "docs/features/epic-01-bridge-console-mvp.md" },
+    { "id": "FR3.2", "status": "OK", "target": "tests/fixtures/audit/machine-a.md" },
+    { "id": "FR3.3", "status": "OK", "target": "scripts/screenshots.cjs" },
+    { "id": "FR3.4", "status": "OK", "target": "tests/fixtures/picker/no-picker.txt" },
+    { "id": "FR4.1", "status": "OK", "target": "docs/public-readiness-review.md" },
+    { "id": "FR4.2", "status": "OK", "target": ".github/workflows/release.yml" },
+    { "id": "FR5.1", "status": "OK", "target": "README.md" },
+    { "id": "FR5.2", "status": "OK", "target": "CONTRIBUTING.md" },
+    { "id": "FR5.3", "status": "OK", "target": "CODE_OF_CONDUCT.md" },
+    { "id": "FR5.4", "status": "OK", "target": "SECURITY.md" },
+    { "id": "FR5.5", "status": "OK", "target": ".github/pull_request_template.md" },
+    { "id": "FR5.6", "status": "OK", "target": "electron-builder.yml" },
+    { "id": "FR6.1", "status": "OK", "target": "scripts/third-party-licenses.mjs" },
+    { "id": "FR6.2", "status": "OK", "target": "src/renderer/AboutDialog.jsx" },
+    { "id": "FR6.3", "status": "OK", "target": "LICENSE" },
+    { "id": "FR7", "status": "OK", "target": "docs/public-readiness-review.md" },
+    { "id": "FR8.1", "status": "Deferred", "target": "Only on the person's explicit word after the merge (requirements FR8.1)" },
+    { "id": "FR8.2", "status": "Deferred", "target": "Checked after the repository is made public (requirements FR8.2)" },
+    { "id": "NFR1", "status": "OK", "target": "docs/public-readiness-review.md" },
+    { "id": "NFR2", "status": "OK", "target": "docs/public-readiness-review.md" },
+    { "id": "NFR3", "status": "OK", "target": "tests/main/thirdPartyLicenses.test.js" }
+  ]
+}

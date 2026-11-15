@@ -1176,7 +1176,7 @@
 **Actor**: subagent
 **Stage**: code-generation
 **Tool**: Bash
-**Details**: find <project-dir>/src -name 'SetupAidlc*'; grep -rn "buildSetupCommand\|aidlc config --harness" /Users/thomasochman/Projects/aidlc-da
+**Details**: find <project-dir>/src -name 'SetupAidlc*'; grep -rn "buildSetupCommand\|aidlc config --harness" ~/Projects/aidlc-da
 
 ---
 

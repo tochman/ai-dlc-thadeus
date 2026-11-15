@@ -698,6 +698,12 @@ const handlers = {
     }
     await shell.openExternal(EXTERNAL_URLS[key]);
   },
+  // US-1101 FR6.2: the licence list the build ships (scripts/third-party-licenses.mjs) in the OS text viewer.
+  // A fixed path, no input; returns '' or openPath's own error text, which About shows.
+  'app:openLicenses': async () =>
+    shell.openPath(
+      app.isPackaged ? path.join(process.resourcesPath, 'THIRD_PARTY_LICENSES.txt') : path.join(app.getAppPath(), 'build/THIRD_PARTY_LICENSES.txt')
+    ),
   // The language in effect (auto already resolved); the renderer switches to it (FR4.4).
   'i18n:language': async () => currentLanguage(),
   // Feature docs (EPIC-06). The root is always looked up here; the renderer never names one.

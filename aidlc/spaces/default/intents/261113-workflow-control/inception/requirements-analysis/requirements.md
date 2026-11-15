@@ -80,7 +80,7 @@ Grundprincipen från EPIC-01 gäller oförändrad: **appen skriver aldrig AI-DLC
 
 - **NFR1 — Säkerhet:** varje kommando som appens egen process kör har fasta argument (inga argument som användaren skrivit) och körs utan shell, med timeout 10 s (`git fetch` 30 s). Allt som ändrar arbetsträdet eller AI-DLC-filer skrivs i en synlig terminal. Inga nya skrivanrop läggs till i `projectAccess`.
 - **NFR2 — Robusthet:** saknar ett projekt git eller fjärr, eller misslyckas ett kommando, visas felet i den aktuella vyn med en mening. Resten av appen fortsätter fungera, och den gemensamma felbannern används inte.
-- **NFR3 — Respons:** tillståndet `idle`/`busy` ska uppdateras inom 2 s efter att utskriften har ändrats. Statusraden för lokal git-status ska vara klar inom 1 s i ett repo i visinvs storlek.
+- **NFR3 — Respons:** tillståndet `idle`/`busy` ska uppdateras inom 2 s efter att utskriften har ändrats. Statusraden för lokal git-status ska vara klar inom 1 s i ett repo i a reference project's storlek.
 
 ## Begränsningar
 

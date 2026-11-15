@@ -48,6 +48,7 @@ contextBridge.exposeInMainWorld('bridge', {
   clearDefaultFolder: call('settings:clearDefaultFolder'),
   getAppInfo: call('app:info'),
   openExternal: call('app:openExternal'), // a fixed key, never a URL (US-0405 FR5.1)
+  openLicenses: call('app:openLicenses'), // the bundled THIRD_PARTY_LICENSES.txt; resolves '' or an error text (US-1101 FR6.2)
   ptySpawn: call('pty:spawn'),
   ptyWrite: call('pty:write'),
   ptyResize: call('pty:resize'),

@@ -822,7 +822,7 @@
 **Timestamp**: 2026-11-13T11:44:22Z
 **Event**: QUESTION_REPLIED
 **Session**: 9494c4f1-b3db-40d1-90f0-5844274da5a1
-**Question**: Build and Test i den riktiga appen: allt håller måtten. visinv visar alla 1 726 händelser, 20 000 händelser filtreras på cirka 33 ms (kravet är under 200 ms), scrollningen är jämn, och en sen händelse markeras exakt med räknaren "1 ny händelse". Ett fel hittades: Pil ned flyttar inte fokus varannan gång, eftersom fokus bara flyttas när listan renderas om. Rättelsen är ungefär 5 rader och ett test, utan kostnad och med låg risk. Loop-backs använda: 0/3. Hur vill du gå vidare?
+**Question**: Build and Test i den riktiga appen: allt håller måtten. a reference project visar alla 1 726 händelser, 20 000 händelser filtreras på cirka 33 ms (kravet är under 200 ms), scrollningen är jämn, och en sen händelse markeras exakt med räknaren "1 ny händelse". Ett fel hittades: Pil ned flyttar inte fokus varannan gång, eftersom fokus bara flyttas när listan renderas om. Rättelsen är ungefär 5 rader och ett test, utan kostnad och med låg risk. Loop-backs använda: 0/3. Hur vill du gå vidare?
 **Reply**: Accept failure
 **Options**: ["Retry with fix","Accept failure","Abort"]
 
