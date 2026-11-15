@@ -1,0 +1,18 @@
+{
+  "stage": "code-generation",
+  "upstream_ids": ["FR1.1", "FR1.2", "FR2.1", "FR2.2", "FR3", "FR4.1", "FR5.1", "FR6", "FR7", "NFR1", "NFR2", "NFR3"],
+  "coverage": [
+    { "id": "FR1.1", "status": "OK", "target": "src/main/updater.js" },
+    { "id": "FR1.2", "status": "OK", "target": "src/main/updater.js" },
+    { "id": "FR2.1", "status": "OK", "target": "src/main/updater.js" },
+    { "id": "FR2.2", "status": "OK", "target": "src/main/updater.js" },
+    { "id": "FR3", "status": "OK", "target": "src/main/updater.js" },
+    { "id": "FR4.1", "status": "OK", "target": "src/main/updater.js" },
+    { "id": "FR5.1", "status": "OK", "target": "src/main/updater.js" },
+    { "id": "FR6", "status": "OK", "target": "src/shared/locales/en.json" },
+    { "id": "FR7", "status": "OK", "target": "src/shared/locales/sv.json" },
+    { "id": "NFR1", "status": "OK", "target": "src/main/updater.js" },
+    { "id": "NFR2", "status": "OK", "target": "src/main/updater.js" },
+    { "id": "NFR3", "status": "OK", "target": "src/main/updater.js" }
+  ]
+}
