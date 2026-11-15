@@ -8,7 +8,7 @@
 
 **Stories:** US-0601, US-0602, US-0603, US-0604, US-0605
 
-**Status (2026-11-15):** ✅ US-0601–US-0603 released (v0.2.0–v0.2.5). 📋 US-0604 planned for v0.2.7. ✅ US-0605 done, for v0.2.7. Each story names its release.
+**Status (2026-11-15):** ✅ US-0601–US-0603 released (v0.2.0–v0.2.5). 🚧 US-0604 in progress, for v0.2.7. ✅ US-0605 done, for v0.2.7. Each story names its release.
 
 **Decisions:**
 - **Q1 (where the view lives):** a switch "Intents | Features" at the top of the project view. Features replaces the sidebar and content area; the terminal stays.
@@ -84,7 +84,7 @@
 - **Notes:** The release markers are already the docs' own format (project rule: "for vX.Y.Z", then "Released in vX.Y.Z"), so no new data store is needed.
 - **Dependencies:** US-0602, US-0003
 
-**US-0604: Filter epics and user stories** 📋 Planned, for v0.2.7
+**US-0604: Filter epics and user stories** 🚧 In progress, for v0.2.7
 - As a **developer looking for the next thing to work on**, in order to **find stories quickly in a long backlog**, I would like to **filter epics and stories by status and other data**.
 - **Epic:** EPIC-06
 - **Priority:** Medium
