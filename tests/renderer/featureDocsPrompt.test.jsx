@@ -40,7 +40,10 @@ describe('feature-docs prompt carries the story lifecycle rule', () => {
   }
 
   // US-0014: AI-DLC's save command only adds rules, so the old lifecycle rule is the one line taken out by hand.
-  for (const [lang, byHand] of [['sv', 'för hand'], ['en', 'by hand']]) {
+  for (const [lang, byHand] of [
+    ['sv', 'för hand'],
+    ['en', 'by hand']
+  ]) {
     it(`says how to take out an older lifecycle rule, which the save command cannot (US-0014, ${lang})`, async () => {
       await i18n.changeLanguage(lang);
       for (const p of [lifecycleRulePrompt('releases'), lifecycleRulePrompt('continuous'), featureDocsPrompt({ exists: true })]) {
