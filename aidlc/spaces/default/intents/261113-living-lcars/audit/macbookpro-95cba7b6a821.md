@@ -1029,7 +1029,7 @@
 **Actor**: subagent
 **Stage**: code-generation
 **Tool**: Bash
-**Details**: sed -n 630,662p <project-dir>/src/renderer/theme.css; grep -n "lcars-block--tab\|--frame:\|--gap:\|--arm:" /Users/thomasochman/Project
+**Details**: sed -n 630,662p <project-dir>/src/renderer/theme.css; grep -n "lcars-block--tab\|--frame:\|--gap:\|--arm:" ~/Project
 
 ---
 

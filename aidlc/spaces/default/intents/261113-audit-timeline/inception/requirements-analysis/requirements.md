@@ -7,7 +7,7 @@ Källor:
 
 ## Avsiktsanalys
 
-Riktiga intents har tusentals audit-händelser. visinvs `epic02-finish` har till exempel 1 726. Användaren vill kunna bläddra i hela historiken utan att appen blir långsam eller döljer händelser. Användaren vill också se exakt vilka händelser som är nya när en körning pågår.
+Riktiga intents har tusentals audit-händelser. a reference project's `epic02-finish` har till exempel 1 726. Användaren vill kunna bläddra i hela historiken utan att appen blir långsam eller döljer händelser. Användaren vill också se exakt vilka händelser som är nya när en körning pågår.
 
 Skanningen visar fyra brister i dag:
 - ett tak på 1 500 rader

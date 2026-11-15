@@ -4,7 +4,7 @@
 **Timestamp**: 2026-11-13T06:21:13Z
 **Event**: WORKFLOW_STARTED
 **Scope**: express
-**Request**: /aidlc Bygg EPIC-01 Bridge Console MVP enligt docs/features/epic-01-bridge-console-mvp.md (US-0101 till US-0110): en Electron-desktopapp (aidlc-dash) som visualiserar AI-DLC-arbete i valfri projektmapp — intent-lista, fas/stage-pipeline, audit-tidslinje, bolt/unit-DAG, artefaktläsare, live-uppdatering via filbevakning, inbäddad claude-terminal (xterm.js + node-pty) och ett återhållsamt LCARS-inspirerat tema. Läser AI-DLC-filerna, skriver aldrig i dem. Feature-dokumentet är källan för krav och acceptanskriterier; uppdatera storyernas status där när de byggs. Referensdata finns i ~/Projects/visinv. Gren feat/epic01-bridge-console-mvp.
+**Request**: /aidlc Bygg EPIC-01 Bridge Console MVP enligt docs/features/epic-01-bridge-console-mvp.md (US-0101 till US-0110): en Electron-desktopapp (aidlc-dash) som visualiserar AI-DLC-arbete i valfri projektmapp — intent-lista, fas/stage-pipeline, audit-tidslinje, bolt/unit-DAG, artefaktläsare, live-uppdatering via filbevakning, inbäddad claude-terminal (xterm.js + node-pty) och ett återhållsamt LCARS-inspirerat tema. Läser AI-DLC-filerna, skriver aldrig i dem. Feature-dokumentet är källan för krav och acceptanskriterier; uppdatera storyernas status där när de byggs. Referensdata finns i a reference project. Gren feat/epic01-bridge-console-mvp.
 **Source Baseline**: sha256:d5a5b0052f43667aceb7ac314d39a259b330a83c2c249f23fc05771e77809d83
 
 ---
@@ -38,7 +38,7 @@
 ## Workspace Scaffolded
 **Timestamp**: 2026-11-13T06:21:13Z
 **Event**: WORKSPACE_SCAFFOLDED
-**Request**: /aidlc Bygg EPIC-01 Bridge Console MVP enligt docs/features/epic-01-bridge-console-mvp.md (US-0101 till US-0110): en Electron-desktopapp (aidlc-dash) som visualiserar AI-DLC-arbete i valfri projektmapp — intent-lista, fas/stage-pipeline, audit-tidslinje, bolt/unit-DAG, artefaktläsare, live-uppdatering via filbevakning, inbäddad claude-terminal (xterm.js + node-pty) och ett återhållsamt LCARS-inspirerat tema. Läser AI-DLC-filerna, skriver aldrig i dem. Feature-dokumentet är källan för krav och acceptanskriterier; uppdatera storyernas status där när de byggs. Referensdata finns i ~/Projects/visinv. Gren feat/epic01-bridge-console-mvp.
+**Request**: /aidlc Bygg EPIC-01 Bridge Console MVP enligt docs/features/epic-01-bridge-console-mvp.md (US-0101 till US-0110): en Electron-desktopapp (aidlc-dash) som visualiserar AI-DLC-arbete i valfri projektmapp — intent-lista, fas/stage-pipeline, audit-tidslinje, bolt/unit-DAG, artefaktläsare, live-uppdatering via filbevakning, inbäddad claude-terminal (xterm.js + node-pty) och ett återhållsamt LCARS-inspirerat tema. Läser AI-DLC-filerna, skriver aldrig i dem. Feature-dokumentet är källan för krav och acceptanskriterier; uppdatera storyernas status där när de byggs. Referensdata finns i a reference project. Gren feat/epic01-bridge-console-mvp.
 **Details**: 4 in-scope phase dirs + verification/ + space-level knowledge/ ensured (shell shipped by SEED)
 
 ---
@@ -89,7 +89,7 @@
 ## Workspace Initialised
 **Timestamp**: 2026-11-13T06:21:13Z
 **Event**: WORKSPACE_INITIALISED
-**Request**: /aidlc Bygg EPIC-01 Bridge Console MVP enligt docs/features/epic-01-bridge-console-mvp.md (US-0101 till US-0110): en Electron-desktopapp (aidlc-dash) som visualiserar AI-DLC-arbete i valfri projektmapp — intent-lista, fas/stage-pipeline, audit-tidslinje, bolt/unit-DAG, artefaktläsare, live-uppdatering via filbevakning, inbäddad claude-terminal (xterm.js + node-pty) och ett återhållsamt LCARS-inspirerat tema. Läser AI-DLC-filerna, skriver aldrig i dem. Feature-dokumentet är källan för krav och acceptanskriterier; uppdatera storyernas status där när de byggs. Referensdata finns i ~/Projects/visinv. Gren feat/epic01-bridge-console-mvp.
+**Request**: /aidlc Bygg EPIC-01 Bridge Console MVP enligt docs/features/epic-01-bridge-console-mvp.md (US-0101 till US-0110): en Electron-desktopapp (aidlc-dash) som visualiserar AI-DLC-arbete i valfri projektmapp — intent-lista, fas/stage-pipeline, audit-tidslinje, bolt/unit-DAG, artefaktläsare, live-uppdatering via filbevakning, inbäddad claude-terminal (xterm.js + node-pty) och ett återhållsamt LCARS-inspirerat tema. Läser AI-DLC-filerna, skriver aldrig i dem. Feature-dokumentet är källan för krav och acceptanskriterier; uppdatera storyernas status där när de byggs. Referensdata finns i a reference project. Gren feat/epic01-bridge-console-mvp.
 **Project Type**: Greenfield
 **Project Type Source**: workspace scan
 **Scope**: express

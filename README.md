@@ -55,6 +55,13 @@ That isn't AI's fault. An AI coding agent is an incredibly capable tool, and lik
 | ![Features: epics and user stories](docs/screenshots/features.png) | ![Start screen](docs/screenshots/splash.png) |
 | **Features:** the project's epics and stories | **Start screen** |
 
+## Prerequisites
+
+- **[AI-DLC](https://github.com/awslabs/aidlc-workflows)** with its `aidlc` command on your login shell's `PATH`. The app reads AI-DLC projects and runs the `aidlc` CLI; it does not install it.
+- **An agent CLI** for the terminal: [Claude Code](https://docs.claude.com/en/docs/claude-code) (`claude`) or [opencode](https://opencode.ai) (`opencode`).
+- **[GitHub CLI](https://cli.github.com)** (`gh`), signed in, for the in-app update check. The rest of the app works without it.
+- **To build from source:** macOS or Linux, Node.js in the version named in [`.nvmrc`](.nvmrc), npm and git.
+
 ## Installation
 
 Download the build for your platform from the [releases page](https://github.com/tochman/aidlc-dash/releases):
@@ -62,7 +69,7 @@ Download the build for your platform from the [releases page](https://github.com
 - **macOS** (universal `.dmg`): open the disk image and drag `THADEUS.app` to Applications. The build is unsigned, so the first time, right-click the app and choose **Open**.
 - **Linux** (`.deb`, x64, Ubuntu 22.04 or later): `sudo apt install ./thadeus_<version>_amd64.deb`.
 
-The app expects `aidlc` and your agent CLI (`claude` or `opencode`) to be available in your login shell. It does not install them.
+The app expects the tools under [Prerequisites](#prerequisites) to be available in your login shell. It does not install them.
 
 ## Usage
 
@@ -75,18 +82,21 @@ Open projects are restored on the next start. **Full screen:** `Ctrl+Cmd+F` on m
 
 ## Development
 
-Requires macOS or Linux, Node 22 and npm.
+Requires macOS or Linux, Node.js from [`.nvmrc`](.nvmrc) (`nvm use`) and npm.
 
 ```bash
+git clone https://github.com/tochman/aidlc-dash.git && cd aidlc-dash
 npm install            # install dependencies and rebuild node-pty for Electron
 npm run dev            # run the app with hot reload
 npm test               # run the test suite
+npm run lint           # ESLint
+npm run format:check   # Prettier
 npm run build          # build an unsigned macOS app (.app and .dmg) in dist/
 npm run build:linux    # build the Linux .deb in dist/
 npm run icon           # regenerate the app icon from build/icon.svg
 ```
 
-Releases are built by GitHub Actions when a `vX.Y.Z` tag matching `package.json` is pushed. This project is developed with AI-DLC itself; its records are in `aidlc/spaces/default/intents/`, and the roadmap is in [docs/FEATURES.md](docs/FEATURES.md).
+The builds also write `build/THIRD_PARTY_LICENSES.txt`, the licences of everything the app bundles, which the app shows from **About → Licenses**. Releases are built by GitHub Actions when a `vX.Y.Z` tag matching `package.json` is pushed. This project is developed with AI-DLC itself; its records are in `aidlc/spaces/default/intents/`, and the roadmap is in [docs/FEATURES.md](docs/FEATURES.md).
 
 ## Testing
 
@@ -104,7 +114,7 @@ npx vitest run --project main             # only the main-process tests
 npx vitest run tests/renderer/Timeline.test.jsx   # a single file
 ```
 
-Every pull request runs the full suite in GitHub Actions before the macOS and Linux builds, and a release is only built from a green run. The tests need Node 22; on older versions some of them fail to start.
+Every pull request runs a secret scan (gitleaks), the full suite with an 80% line-coverage floor, ESLint and Prettier in GitHub Actions before the macOS and Linux builds, and a release is only built from a green run. The tests need the Node version in `.nvmrc`; on older versions some of them fail to start.
 
 ## Security
 
@@ -116,9 +126,15 @@ Every pull request runs the full suite in GitHub Actions before the macOS and Li
 - **Artifacts:** Markdown is rendered without raw HTML, so no script in an artifact can run. "Open in editor" is limited to document files (`.md`, `.json`, `.txt`, `.yaml`, `.yml`).
 - **Terminal:** the terminal tabs run with your normal environment and permissions, like a terminal you start yourself.
 
+Found a vulnerability? Please report it privately as described in [SECURITY.md](SECURITY.md), not in a public issue.
+
 ## Open source
 
 I'm open-sourcing T.H.A.D.E.U.S. because I think it's a good thing to do. If you find it useful and decide to use it, that will make me happy. Issues, ideas and pull requests are welcome.
+
+## Contributing
+
+Read [CONTRIBUTING.md](CONTRIBUTING.md) for how work is organised (stories in epics, test first, one pull request per story) and what CI checks. Everyone taking part follows the [Code of Conduct](CODE_OF_CONDUCT.md). Bugs and feature ideas go in [GitHub issues](https://github.com/tochman/aidlc-dash/issues/new/choose).
 
 ## License
 

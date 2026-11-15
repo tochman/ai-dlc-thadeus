@@ -1417,7 +1417,7 @@
 **Timestamp**: 2026-11-13T16:30:46Z
 **Event**: QUESTION_REPLIED
 **Session**: 9494c4f1-b3db-40d1-90f0-5844274da5a1
-**Question**: US-0404 ligger i PR #10 (https://github.com/tochman/aidlc-dash/pull/10), tillsammans med README-skärmbilderna i docs/screenshots/ och versionen 0.2.0. Bilderna visar dina riktiga projekt och kostnadssiffror, eftersom de är tagna med aidlc-dash och visinv öppna. Godkänner du leveransen? Observability hoppar jag över som tidigare. När du har mergat taggar jag v0.2.0.
+**Question**: US-0404 ligger i PR #10 (https://github.com/tochman/aidlc-dash/pull/10), tillsammans med README-skärmbilderna i docs/screenshots/ och versionen 0.2.0. Bilderna visar dina riktiga projekt och kostnadssiffror, eftersom de är tagna med aidlc-dash och a reference project öppna. Godkänner du leveransen? Observability hoppar jag över som tidigare. När du har mergat taggar jag v0.2.0.
 **Reply**: Approve
 **Options**: ["Approve","Request Changes"]
 

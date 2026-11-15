@@ -1,7 +1,7 @@
 # AI-DLC State Tracking
 
 ## Project Information
-- **Project**: EPIC-29 omgång 4: US-2939, US-2942 och US-2943. Gren feat/epic29-small-k2-fixes.
+- **Project**: EPIC-29 batch 4: US-2939, US-2942 and US-2943. Branch feat/epic29-small-k2-fixes.
 - **Project Description Source**: project-description.json
 - **Project Type**: Brownfield
 - **Project Type Source**: workspace scan

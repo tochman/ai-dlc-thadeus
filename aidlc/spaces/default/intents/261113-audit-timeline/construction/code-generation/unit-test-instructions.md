@@ -31,5 +31,5 @@ Det finns inget golv för radtäckning (express och Minimal). Varje ny eller än
 ## Manuell verifiering (Build and Test)
 
 - **Prestanda (NFR1):** 20 000 syntetiska händelser i riktig Electron. Mät tiden från filterändring till renderad lista (under 200 ms) och kontrollera att scrollningen är jämn.
-- **Riktigt projekt:** visinvs `epic02-finish`, med 1 726 händelser, ska visa alla händelser utan tak.
+- **Riktigt projekt:** a reference project's `epic02-finish`, med 1 726 händelser, ska visa alla händelser utan tak.
 - **Liveflöde:** lägg till ett block med äldre tidsstämpel i en kopia av en audit-fil. Bara den nya raden ska markeras.

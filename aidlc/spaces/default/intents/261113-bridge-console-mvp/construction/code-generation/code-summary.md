@@ -58,7 +58,7 @@ Inga skrivna tester har lämnats okörda. Följande saknar automatiska tester oc
 ## Steg 13 — Auctum-profilering (tillagt 2026-11-13 på användarens begäran)
 
 - **Nya filer:** `src/renderer/AuctumMark.jsx`, `src/renderer/Splash.jsx` och `tests/renderer/Splash.test.jsx`.
-  - Loggan är den nya geometriska loggan från `visinv/public/auctum.svg`.
+  - Loggan är den nya geometriska loggan från `a reference project/public/auctum.svg`.
   - Startskärmen visas i minst 900 ms och högst 4 s och tonar ut på 300 ms. Med reducerad rörelse visas den utan animation.
   - Testfilen har 4 tester.
 - **Ändrade filer:** `App.jsx` (startskärm, logga och namn i sidhuvudet, logga i tomläget), `theme.css`, `index.html`, `src/main/index.js`, `package.json`, `electron-builder.yml`, `README.md`, `docs/features/epic-01-bridge-console-mvp.md` och `docs/FEATURES.md`.

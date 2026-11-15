@@ -1,14 +1,14 @@
-# Krav — EPIC-29 omgång 4
+# Requirements — EPIC-29 batch 4
 
-## Funktionella krav
+## Functional requirements
 
-| Id | Krav |
+| Id | Requirement |
 |----|------|
-| FR1 | Periodiseringsguiden markerar poster under 7 000 kr som inte nödvändiga för K2. |
-| FR2 | Egna aktier visas som egen rubrik i förvaltningsberättelsen. |
+| FR1 | The note editor warns when a note is longer than 7 000 characters. |
+| FR2 | Pinned notes are shown under their own heading in the list. |
 
-- [x] FR1 analyserad
-- [ ] FR2 analyserad
+- [x] FR1 analysed
+- [ ] FR2 analysed
 
 ```js
 const limit = 7000;

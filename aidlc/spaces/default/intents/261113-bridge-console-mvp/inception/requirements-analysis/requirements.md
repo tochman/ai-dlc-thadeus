@@ -98,7 +98,7 @@ Användaren kör AI-DLC-workflows med Claude och har svårt att följa vad agent
 - Varje projektflik har egna terminalsessioner och en egen filbevakning (följer av Q2 och Q3).
 - `claude` och `aidlc` finns installerade på användarens maskin. Appen installerar dem inte.
 - Det räcker att återöppna senaste flikar vid start. Terminalsessioner återställs inte mellan körningar.
-- Referensdata för fixtures hämtas från `~/Projects/visinv`. Fixtures innehåller ingen hemlig data, bara AI-DLC-filer.
+- Referensdata för fixtures hämtas från `a reference project`. Fixtures innehåller ingen hemlig data, bara AI-DLC-filer.
 
 ## Utanför omfånget
 

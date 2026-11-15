@@ -17,3 +17,5 @@ tests/fixtures/
 tests/.tmp/
 aidlc.settings.json
 opencode.json
+# The gitleaks step in CI writes its report here (US-1101).
+results.sarif

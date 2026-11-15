@@ -4,7 +4,7 @@ Underlag:
 - `docs/features/epic-02-cost-and-models.md` (US-0201–US-0205)
 - kodbas-kunskapen `aidlc/spaces/default/codekb/aidlc-dash/` (`business-overview.md`, `architecture.md`, `code-structure.md`)
 
-Verifierat mot visinv:
+Verifierat mot a reference project:
 - `usage-ledger.json` grupperar workflows som `intent:<uuid>`, med samma uuid som i `intents.json`.
 - Körningar från före uuid-tiden ligger under `record:default/legacy`.
 - Varje nod har `tokens` (input, output, cacheCreate5m, cacheCreate1h, cacheRead) och `usd`.

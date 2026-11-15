@@ -19,12 +19,16 @@ aidlc-dash/
 ├── scripts/             check-glibc.mjs (CI), fix-pty-perms.cjs (postinstall), make-icon.cjs
 ├── build/               icon.svg, icon.png, icons/NxN.png (electron-builder resources)
 ├── docs/                FEATURES.md, features/epic-*.md, releases/, screenshots/
-├── .github/workflows/   release.yml
+├── .github/workflows/   release.yml (the only file under .github/)
 ├── package.json, electron.vite.config.mjs, vitest.config.mjs, electron-builder.yml, .nvmrc
+├── eslint.config.mjs, .prettierrc.json, .prettierignore
+├── README.md, LICENSE (MIT), AGENTS.md
 └── (AI-DLC install: .claude/, .aidlc/, .opencode/, aidlc/, opencode.json — not part of the app)
 ```
 
-Build output (`out/`, `dist/`), `node_modules/` and `tests/.tmp/` are git-ignored.
+Build output (`out/`, `dist/`), `coverage/`, `node_modules/` and `tests/.tmp/` are git-ignored; `.gitignore` also carries AI-DLC's managed block. Of 1823 tracked files, 749 are AI-DLC records under `aidlc/` and 357 are outside AI-DLC's folders. No `CONTRIBUTING.md`, `SECURITY.md`, `CODE_OF_CONDUCT.md` or issue/PR templates exist (US-1101).
+
+`tests/fixtures/` (95 files): `agent-events/{claude,opencode}/` (hook and event JSON), `agent-hooks/` (settings files for the hook installer, with a README), `audit/` (shards `machine-a`, `machine-b`, `epic02-units`), `features/`, `ledger/`, `picker/` (screen transcripts), `plain-folder/`, `project/` (a small AI-DLC project with three intents) and `broken.json`.
 
 ## File classification
 

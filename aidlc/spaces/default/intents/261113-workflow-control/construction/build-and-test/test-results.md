@@ -15,13 +15,13 @@ Kontrollen kördes med ett tillfälligt skript (`tests/.tmp/`, git-ignorerat). I
 
 | Kontroll | Resultat |
 |----------|----------|
-| Fortsätt-knappar i visinv (FR2.1, FR2.5) | Visas på intents med status in-flight, t.ex. "Fortsätt vid Code Generation (steg 6 av 10)" |
+| Fortsätt-knappar i a reference project (FR2.1, FR2.5) | Visas på intents med status in-flight, t.ex. "Fortsätt vid Code Generation (steg 6 av 10)" |
 | Git-status i aidlc-dash (FR3.5) | gren `feat/epic05-workflow-control`, jämfört med `origin/main` (ingen tracking), 14 ändringar under `aidlc/` och 32 övriga |
 | Fetch och fjärrändringar (FR3.2, FR3.3) | Fungerar. 0 nya AI-DLC-commits mot `origin/main` |
 | `showRemoteFile` med `../package.json` (NFR1) | Avvisas |
 | Upptäckt av AI-DLC efter uppsättning (FR4.6) | `project:detected` kommer med `isAidlc: true` när `aidlc/spaces/default` skapas |
 | `aidlc --version` (FR4.2) | `aidlc 2.11.3` |
-| Claude-fliken i visinv (FR1.2, efter loop-back 1) | Startar, och statusen växlar mellan "ledig" och "arbetar" |
+| Claude-fliken i a reference project (FR1.2, efter loop-back 1) | Startar, och statusen växlar mellan "ledig" och "arbetar" |
 | Förhandsvisning i en mapp utan AI-DLC (FR4.3, efter loop-back 1) | create=360 och conflict=0. Raden Note visas som en varning. |
 | Kommandokedjan (FR4.4, efter loop-back 1) | `aidlc --project-dir . config --harness claude --yes` |
 | Konsolfel i renderaren | 0 |

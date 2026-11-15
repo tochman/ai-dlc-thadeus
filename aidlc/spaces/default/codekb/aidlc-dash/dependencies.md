@@ -34,7 +34,19 @@ Package versions are listed once in `technology-stack.md`; this file records who
 | `aidlc` | setup, configuration, plans, models | readers return the error as a value; views show one sentence |
 | `claude`, `opencode` | agent tabs | `harnessProblem` message and "Choose harness" |
 | `git` | Refresh, setup (`git init`), file tree | panel error; file tree falls back to a walk |
-| `gh` (logged in, access to `tochman/aidlc-dash`) | update check and download | `update:check` returns `unavailable` with a reason |
+| `gh` (logged in, access to `tochman/aidlc-dash`) | update check and download | `update:check` returns `unavailable` with a reason; still required after the repo goes public until US-0413 |
+
+## Licences (US-1101)
+
+From the `license` fields in `package-lock.json` (lockfile v3, 742 entries) at `bc1dd3d`. The project itself: `package.json` `"license": "MIT"` and `LICENSE` (MIT, © 2026 Auctum Solutions AB) agree.
+
+| Set | Entries | Licences |
+|---|---|---|
+| Production (`dependencies` and their tree) | 122 | 119 MIT, 1 ISC, 1 BSD-3-Clause, 1 OFL-1.1 (`@fontsource/antonio`, font files bundled into the renderer) |
+| Bundled from `devDependencies` by Vite | `monaco-editor`, `@monaco-editor/react` | MIT (Monaco ships its own third-party notices) |
+| Build and test only (not shipped) | rest | adds Apache-2.0, MPL-2.0, BlueOak-1.0.0, BSD-2-Clause, CC-BY-4.0, Python-2.0, WTFPL, CC0, 0BSD, MIT-0 |
+
+What ships is `out/**` (bundled main, preload, renderer), `package.json`, the asar-unpacked `node_modules/node-pty/**` and the Electron runtime (`electron-builder.yml` `files`, `asarUnpack`). Electron's own notices (`LICENSE.electron.txt`, `LICENSES.chromium.html`) come with the runtime (the Electron distribution's standard files; not checked in a built package here); the app adds no notice file today: no `extraResources` entry, no `copyright` field, no generated third-party list. Because Vite bundles the JavaScript, the listing must be made from the bundled module set, not from `dependencies` alone.
 
 ## Internal cross-module dependencies
 

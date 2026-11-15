@@ -11224,7 +11224,7 @@
 **Event**: ERROR_LOGGED
 **Tool**: aidlc-worktree
 **Command**: aidlc-worktree engine worktree merge --slug u1-questions --target feat/US-0506 --strategy squash
-**Error**: [slug=u1-questions] Unit u1-questions's landing changes 5 files that have changes not committed in <project-dir> (aidlc/spaces/default/intents/261114-agent-dialogs/construction/u1-questions/code-generation/code-generation-plan.md, aidlc/spaces/default/intents/261114-agent-dialogs/construction/u1-questions/code-generation/code-summary.md, aidlc/spaces/default/intents/261114-agent-dialogs/construction/u1-questions/code-generation/source-manifest.json, aidlc/spaces/default/intents/261114-agent-dialogs/construction/u1-questions/code-generation/traceability.json, aidlc/spaces/default/intents/261114-agent-dialogs/inception/contract-design/contract-summary.md), so git did not start it and nothing in the checkout changed. Commit those changes in /Users/thomasochman/Projects/aidlc-dash, then run this same merge again.
+**Error**: [slug=u1-questions] Unit u1-questions's landing changes 5 files that have changes not committed in <project-dir> (aidlc/spaces/default/intents/261114-agent-dialogs/construction/u1-questions/code-generation/code-generation-plan.md, aidlc/spaces/default/intents/261114-agent-dialogs/construction/u1-questions/code-generation/code-summary.md, aidlc/spaces/default/intents/261114-agent-dialogs/construction/u1-questions/code-generation/source-manifest.json, aidlc/spaces/default/intents/261114-agent-dialogs/construction/u1-questions/code-generation/traceability.json, aidlc/spaces/default/intents/261114-agent-dialogs/inception/contract-design/contract-summary.md), so git did not start it and nothing in the checkout changed. Commit those changes in ~/Projects/aidlc-dash, then run this same merge again.
 
 ---
 
@@ -12385,7 +12385,7 @@
 **Event**: ERROR_LOGGED
 **Tool**: aidlc-worktree
 **Command**: aidlc-worktree engine worktree merge --slug u2-permissions --target feat/US-0506 --strategy squash
-**Error**: [slug=u2-permissions] Unit u2-permissions's landing changes 6 files that have changes not committed in <project-dir> (aidlc/spaces/default/intents/261114-agent-dialogs/construction/u2-permissions/code-generation/code-generation-plan.md, aidlc/spaces/default/intents/261114-agent-dialogs/construction/u2-permissions/code-generation/code-summary.md, aidlc/spaces/default/intents/261114-agent-dialogs/construction/u2-permissions/code-generation/source-manifest.json, aidlc/spaces/default/intents/261114-agent-dialogs/construction/u2-permissions/code-generation/traceability.json, aidlc/spaces/default/intents/261114-agent-dialogs/construction/u2-permissions/functional-design/rules.md, aidlc/spaces/default/intents/261114-agent-dialogs/inception/contract-design/contract-summary.md), so git did not start it and nothing in the checkout changed. Commit those changes in /Users/thomasochman/Projects/aidlc-dash, then run this same merge again.
+**Error**: [slug=u2-permissions] Unit u2-permissions's landing changes 6 files that have changes not committed in <project-dir> (aidlc/spaces/default/intents/261114-agent-dialogs/construction/u2-permissions/code-generation/code-generation-plan.md, aidlc/spaces/default/intents/261114-agent-dialogs/construction/u2-permissions/code-generation/code-summary.md, aidlc/spaces/default/intents/261114-agent-dialogs/construction/u2-permissions/code-generation/source-manifest.json, aidlc/spaces/default/intents/261114-agent-dialogs/construction/u2-permissions/code-generation/traceability.json, aidlc/spaces/default/intents/261114-agent-dialogs/construction/u2-permissions/functional-design/rules.md, aidlc/spaces/default/intents/261114-agent-dialogs/inception/contract-design/contract-summary.md), so git did not start it and nothing in the checkout changed. Commit those changes in ~/Projects/aidlc-dash, then run this same merge again.
 
 ---
 
@@ -12458,7 +12458,7 @@
 **Actor**: main
 **Stage**: code-generation
 **Tool**: Bash
-**Details**: /private/tmp/claude-501/-Users-thomasochman-Projects-aidlc-dash/d3598609-5999-4b21-87cc-b2282f8fac5e/scratchpad/resolve.py
+**Details**: /private/tmp/claude-501/-Users-me-Projects-aidlc-dash/d3598609-5999-4b21-87cc-b2282f8fac5e/scratchpad/resolve.py
 
 ---
 

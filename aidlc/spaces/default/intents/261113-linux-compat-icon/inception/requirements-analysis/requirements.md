@@ -27,7 +27,7 @@ Enligt `architecture.md` och `code-structure.md` importerar huvudprocessen `node
 - **FR2.3** Terminalpanelen ska då visa ett felmeddelande med orsaken (modulens felmeddelande) i stället för en tom terminal. Felet ska också loggas i huvudprocessens konsol.
 
 ### FR3 — Auctum-appikon (US-0401, Q2: A)
-- **FR3.1** Ikonen är den nya geometriska Auctum-loggan (samma paths som `src/renderer/AuctumMark.jsx`) i amber `#ff9e40`, på en nästan svart (`#0b0b10`) rundad kvadrat med macOS-standardmarginal. Den ska inte byggas av de äldre varianterna i `visinv/public/logos/`.
+- **FR3.1** Ikonen är den nya geometriska Auctum-loggan (samma paths som `src/renderer/AuctumMark.jsx`) i amber `#ff9e40`, på en nästan svart (`#0b0b10`) rundad kvadrat med macOS-standardmarginal. Den ska inte byggas av de äldre varianterna i `a reference project/public/logos/`.
 - **FR3.2** macOS: `build/icon.icns` med alla storlekar. Dock, Finder, appväxlaren och `.dmg`-fönstret ska visa Auctum-ikonen, och electron-builder ska inte längre varna "default Electron icon is used".
 - **FR3.3** Linux: PNG-ikoner i storlekarna 16–512 px, som används av `.desktop`-posten i `.deb`. Programmenyn och fönsterlistan ska visa ikonen. Fönstret får dessutom samma ikon via `BrowserWindow`-optionen `icon` på Linux.
 - **FR3.4** Under `npm run dev` på macOS ska Dock-ikonen också vara Auctum (`app.dock.setIcon`).

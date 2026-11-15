@@ -51,7 +51,7 @@
     { "id": "FR10.3", "status": "OK", "target": "package.json" },
     { "id": "FR10.4", "status": "OK", "target": "electron-builder.yml" },
     { "id": "FR10.5", "status": "OK", "target": "tests/main/parsers.test.js" },
-    { "id": "NFR1", "status": "Deferred", "target": "Prestandan (2 s för listan, 1 s för live) mäts manuellt i Build and Test mot ~/Projects/visinv; watchern har 300 ms debounce och 800 ms maxväntan (src/main/watcher.js)" },
+    { "id": "NFR1", "status": "Deferred", "target": "Prestandan (2 s för listan, 1 s för live) mäts manuellt i Build and Test mot a reference project; watchern har 300 ms debounce och 800 ms maxväntan (src/main/watcher.js)" },
     { "id": "NFR2", "status": "OK", "target": "src/main/projectService.js" },
     { "id": "NFR3", "status": "OK", "target": "src/renderer/theme.css" },
     { "id": "NFR4", "status": "OK", "target": "src/main/projectAccess.js" },

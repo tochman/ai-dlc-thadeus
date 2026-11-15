@@ -3,7 +3,7 @@
 // full name, tagline and version in light bars with coloured end tabs, an EXIT block in the arm and a status row.
 // Layout and colour only follow the person's reference; every text is the app's own (NFR3), the code labels come
 // from the version and platform. A native modal <dialog>; closes on Esc, EXIT or a click on the backdrop, and gives
-// focus back.
+// focus back. A LICENSES block under EXIT opens the bundled third-party licence list (US-1101 FR6.2).
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import AuctumMark from './AuctumMark.jsx';
@@ -30,7 +30,17 @@ export default function AboutDialog({ open, onClose }) {
   const ref = useRef(null);
   const returnFocus = useRef(null);
   const [version, setVersion] = useState(null);
+  const [licensesError, setLicensesError] = useState(null);
   const platform = window.bridge?.platform ?? null;
+
+  // openPath resolves with its own error text ('' when the viewer opened); an IPC failure rejects.
+  const openLicenses = () => {
+    setLicensesError(null);
+    window.bridge
+      .openLicenses()
+      .then((err) => err && setLicensesError(err))
+      .catch((err) => setLicensesError(err?.message ?? String(err)));
+  };
 
   useEffect(() => {
     const d = ref.current;
@@ -95,6 +105,9 @@ export default function AboutDialog({ open, onClose }) {
             <button type="button" className="about-lcars-exit" onClick={onClose} data-testid="about-dialog-close">
               {t('aboutDialog.exit')}
             </button>
+            <button type="button" className="about-lcars-exit about-lcars-licenses" onClick={openLicenses} data-testid="about-dialog-licenses">
+              {t('aboutDialog.licenses')}
+            </button>
             <span className="about-lcars-code" aria-hidden="true">
               {codes[2]}
             </span>
@@ -124,6 +137,11 @@ export default function AboutDialog({ open, onClose }) {
                 ))}
               </div>
             </div>
+            {licensesError && (
+              <p className="about-lcars-error" role="alert" data-testid="about-dialog-licenses-error">
+                {t('aboutDialog.licensesFailed', { error: licensesError })}
+              </p>
+            )}
           </div>
           <div className="about-lcars-foot" aria-hidden="true" />
           <p className="about-lcars-status">

@@ -85,7 +85,7 @@ afterEach(() => {
 
 describe('App shell', () => {
   it('lists projects and views in the left arm with aria-current, settings and close per project (FR2.2, NFR1)', async () => {
-    await renderApp({ openProjects: ['/p/aidlc-dash-a', '/p/visinv'], activeProject: '/p/aidlc-dash-a' });
+    await renderApp({ openProjects: ['/p/aidlc-dash-a', '/p/demo-app'], activeProject: '/p/aidlc-dash-a' });
     const arm = screen.getByTestId('project-tabs');
     expect(arm.tagName).toBe('NAV');
     await waitFor(() => expect(within(arm).getAllByTestId('project-tabs-tab')).toHaveLength(2));
@@ -98,7 +98,7 @@ describe('App shell', () => {
       within(arm)
         .getAllByTestId('project-tabs-close')
         .map((b) => b.getAttribute('aria-label'))
-    ).toEqual(['Stäng aidlc-dash-a', 'Stäng visinv']);
+    ).toEqual(['Stäng aidlc-dash-a', 'Stäng demo-app']);
 
     // Views: Intents is the current page; Features shows because the project offers it (EPIC-06 rule).
     const intents = await screen.findByTestId('project-view-switch-intents');

@@ -4,7 +4,7 @@
 
 ---
 
-> The audit log is the most honest record of what the agents did, but real intents produce thousands of events (visinv's `epic02-finish` has 1 726). This epic makes the timeline handle any length smoothly and makes it precise about what is new, so the user can follow a run as it happens and dig into history without the app slowing down or hiding events.
+> The audit log is the most honest record of what the agents did, but real intents produce thousands of events (one reference project's `epic02-finish` has 1 726). This epic makes the timeline handle any length smoothly and makes it precise about what is new, so the user can follow a run as it happens and dig into history without the app slowing down or hiding events.
 
 **Stories:** US-0301, US-0302, US-0303
 

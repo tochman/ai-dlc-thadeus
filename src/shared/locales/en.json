@@ -856,7 +856,9 @@
     "rate": "{rate} tokens/min"
   },
   "aboutDialog": {
-    "exit": "EXIT"
+    "exit": "EXIT",
+    "licenses": "LICENSES",
+    "licensesFailed": "The licences could not be opened: {error}"
   },
   "menu": {
     "about": "About {app}",

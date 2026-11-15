@@ -57,7 +57,7 @@ function renderView(props = {}) {
       animations="full"
       questionAlerts="popup-notify"
       notificationSound
-      recentProjects={['/p/aidlc-dash-a', '/p/visinv']}
+      recentProjects={['/p/aidlc-dash-a', '/p/demo-app']}
       projects={[{ projectId: 'p1', name: 'aidlc-dash-a' }]}
       {...handlers}
     />
@@ -215,7 +215,7 @@ describe('Inställningar as a view in the content frame (EPIC-04 US-0405)', () =
 
     expect(screen.getAllByTestId('settings-recent-item')).toHaveLength(2);
     fireEvent.click(screen.getAllByTestId('settings-recent-remove')[1]);
-    expect(onRemoveRecent).toHaveBeenCalledWith('/p/visinv');
+    expect(onRemoveRecent).toHaveBeenCalledWith('/p/demo-app');
 
     fireEvent.click(screen.getByTestId('settings-project-settings-p1'));
     expect(onProjectSettings).toHaveBeenCalledWith('p1');

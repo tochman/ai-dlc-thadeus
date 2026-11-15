@@ -12,7 +12,7 @@ Källor:
 
 Användaren vill se vad AI-DLC-körningar kostar och vilken modell agenterna använder, direkt i appen. Kostnaden är en **uppskattning** som AI-DLC räknar fram från tokens gånger API-pris. Den är inte en faktura, och den får aldrig visas som en faktisk kostnad. Alla modeller är Claude-modeller som körs via Claude Code.
 
-## Datakällor (verifierade mot `~/Projects/visinv`)
+## Datakällor (verifierade mot `a reference project`)
 
 - `aidlc/.aidlc-sessions/usage-ledger.json` (`schemaVersion: 3`) innehåller `totals`, `byStage`, `byModel`, `byAgent` och `workflows`. Varje nod har `tokens` (`input`, `output`, `cacheCreate5m`, `cacheCreate1h`, `cacheRead`) och `usd`.
 - Nycklarna i `workflows` är **`intent:<uuid>`**, där uuid är samma som `uuid` i `intents.json`. Körningar från före uuid-tiden ligger under `record:<space>/legacy`. Detta rättar antagandet `record:<space>/<dir>` i feature-dokumentet.
@@ -61,7 +61,7 @@ Användaren vill se vad AI-DLC-körningar kostar och vilken modell agenterna anv
 
 ## Icke-funktionella krav
 
-- **NFR1 — Prestanda:** Ledgern i visinv (flera MB) ska tolkas på under 300 ms, och en ändring i ledgern ska synas i vyn inom 1 s.
+- **NFR1 — Prestanda:** Ledgern i a reference project (flera MB) ska tolkas på under 300 ms, och en ändring i ledgern ska synas i vyn inom 1 s.
 - **NFR2 — Säkerhet:** Appen skriver inte till några nya filer. Det enda nya processanropet är `aidlc config models` med fasta argument, utan skal och utan användarstyrd indata. Ledgern läses bara via den rotbegränsade projektåtkomsten.
 - **NFR3 — Robusthet:** Ett fel i ledgern eller i `aidlc`-kommandot får bara påverka kostnads- och modellvisningen.
 

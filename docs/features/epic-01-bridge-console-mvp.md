@@ -30,7 +30,7 @@ All paths are relative to the opened project root. The app **only reads** these 
 | `<intent>/<phase>/<stage>/*.md` | Stage artifacts (phases: `initialization`, `ideation`, `inception`, `construction`, `operation`, `verification`) |
 | `<intent>/.aidlc-engine/active-directive.json` | Current engine directive: `kind`, `stage`, `delivery` |
 
-Reference project with real data: `~/Projects/visinv` (20+ intents, `261110-epic02-finish` has a 6-unit bolt DAG).
+Reference project with real data: a local AI-DLC project (20+ intents, `261110-epic02-finish` has a 6-unit bolt DAG).
 
 ---
 

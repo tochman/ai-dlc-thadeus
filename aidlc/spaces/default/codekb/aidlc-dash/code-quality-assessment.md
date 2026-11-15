@@ -1,6 +1,6 @@
 # Code Quality Assessment
 
-Read-only assessment at commit `2d111d6`. No tests, builds or app runs were made, so pass/fail and coverage figures are not measured here.
+Read-only assessment at commit `2d111d6`; the testing, linting, documentation and public-readiness sections were updated at `bc1dd3d` (US-1101). No tests, builds or app runs were made, so pass/fail and coverage figures are not measured here.
 
 ## Summary ratings
 
@@ -16,8 +16,8 @@ Read-only assessment at commit `2d111d6`. No tests, builds or app runs were made
 ## Testing
 
 - **Runner**: vitest with two projects (`vitest.config.mjs`): `main` (node, `tests/main/**/*.test.js`) and `renderer` (jsdom, `tests/renderer/**/*.test.jsx`, Swedish UI via `tests/renderer/setup-i18n.js`).
-- **CI**: `.github/workflows/release.yml` runs `npx vitest run tests/` on every PR to `main` and on tags, before the mac and Linux builds.
-- **Coverage**: no coverage configuration or provider. The `classic` scope's default 80% line-coverage floor (org `## Testing Posture`) cannot be verified without adding one (for example `@vitest/coverage-v8`).
+- **CI**: `.github/workflows/release.yml` `verify` job runs, as separate steps, `npx vitest run tests/ --coverage` (with `THADEUS_REQUIRE_DASH=1`), `npx eslint .` and `npx prettier --check .` on every PR to `main` and on tags, before the mac and Linux builds.
+- **Coverage**: `@vitest/coverage-v8` with an 80% line floor, enforced in CI (added since `2d111d6`; configuration in `vitest.config.mjs`, not re-read in this run).
 - **Fixtures**: `tests/fixtures/picker/*.txt` are Claude Code picker screens transcribed from a screenshot (US-0006), not live captures; `tests/fixtures/project/` is a small AI-DLC project; audit shards and a ledger mirror real formats.
 
 ### Coverage of the intent area
@@ -39,11 +39,11 @@ Gaps: nothing tests `ipc.js`'s `refreshQuestions`/`early` baseline or `notifyQue
 
 ## Linting, formatting, typing
 
-None configured: no ESLint, Prettier, editorconfig or TypeScript/`tsc --checkJs`. The org rule "defer to project-level configurations" therefore has nothing to defer to. Style is consistent by hand (2 spaces, single quotes, semicolons, long lines up to about 160 characters).
+ESLint 9 (`eslint.config.mjs`) and Prettier 3 (`.prettierrc.json`) are configured and block CI (versions in `technology-stack.md`). Prettier skips `docs/`, `*.md`, `*.css` and `tests/fixtures/`, so Markdown files (README and the new public files) are not format-checked. No editorconfig or TypeScript/`tsc --checkJs`.
 
 ## Documentation
 
-- `README.md`: background, features, install, usage, development, testing, security, licence.
+- `README.md`: background, features, install, usage, development, testing, security, an "Open source" paragraph and licence. Already mostly written for outside users; see "Public-readiness review" for gaps.
 - `docs/FEATURES.md` and `docs/features/epic-*.md`: stories with Given/When/Then criteria, status markers and release notes per story; kept current by a mandated project rule.
 - `docs/releases/0.2.3.md`, `0.2.4.md`.
 - In code: a header comment per module and a doc comment per exported function, each naming its story and requirement ids; texts for translators described in `src/shared/i18n.js`.
@@ -79,7 +79,6 @@ Weak points relevant to US-0506:
 | Questions close only on audit events | `questions.js`, `App.jsx` popup rule | a question answered without a matching event (or abandoned) stays and keeps the popup open |
 | Activity from output timing | `terminalControl.js` | "idle" can mean waiting for input, thinking quietly, or waiting on a subagent |
 | opencode picker keys unverified | `shared/harnesses.js` (`pickerKeys` only on Claude Code) | opencode gets only free text |
-| No coverage tool, no linter | repo | scope floors and style not enforceable |
 | Large modules | `ipc.js`, `App.jsx`, `ConfigEdit.jsx`, `ProjectView.jsx`, `TerminalPanel.jsx`, `theme.css` | changes in the question flow touch several large files |
 | Renderer imports from `src/main/parsers/` | `Timeline.jsx`, `CostTab.jsx`, `ConfigEdit.jsx`, `FeaturesView.jsx`, `ProjectSettingsDialog.jsx` | safe while the parsers stay pure |
 | Duplicated helpers | `errorText()` in renderer files; `gateText`/`askText` | drift risk |
@@ -87,7 +86,30 @@ Weak points relevant to US-0506:
 | Swedish log messages and a few internal errors | `console.*` across main, `exec.js`, `models.js`, `scripts/check-glibc.mjs` | inconsistent with the English UI default; not user-facing |
 | `tests/.tmp/` used by tests in the repo folder | `tests/main/harness.test.js` and others | git-ignored; harmless |
 
+## Public-readiness review (US-1101, at `bc1dd3d`)
+
+Scope of this review: `package.json`, `package-lock.json`, `electron-builder.yml`, `.github/`, `.gitignore`, `LICENSE`, `README.md`, `build/`, `scripts/`, `tests/fixtures/`, `docs/`. The 749 tracked files under `aidlc/` (of 1823 tracked) and AI-DLC's install folders were not reviewed here. Secret checks: `git grep` over these paths and a pattern grep over `git log -p --all` (private keys, AWS, GitHub, Anthropic, OpenAI, Slack, Google keys); no dedicated scanner (`gitleaks`) is installed, so AC2 still needs one.
+
+| Finding | Where | Note |
+|---|---|---|
+| No secret-like values | scanned paths; history grep | history hits were regex sources in AI-DLC's redaction code, not keys; `release.yml` uses only `github.token` |
+| Personal author emails in commit metadata | `git log` (54 + 36 + 4 commits, three personal addresses) | public with the history; changing them needs a history rewrite (AC3) |
+| References to another local project | `docs/features/epic-01…:33`, `epic-02…:17`, `epic-03…:7`, `epic-04…:23` (the reference project's local path) | names a private project path |
+| Fixtures derived from that project | `tests/fixtures/project/…/261112-epic29-small-k2-fixes/`, `261110-epic02-finish/`, `tests/fixtures/audit/machine-a.md` | Swedish K2-accounting story texts and ids; no personal data |
+| Machine-name string | `tests/fixtures/picker/no-picker.txt:3` (`audit/macbookpro.md`) | minor |
+| Generic home paths | `tests/fixtures/agent-events/claude/*.json` (`/Users/dev/…`) | fine as is |
+| Screenshots with private context | `docs/screenshots/intents.png`, `cost.png` (second project tab of the reference project, branch, cost figures; Swedish UI) | `features.png`, `timeline.png`, `splash.png` not viewed |
+| Company email | `package.json` author, `electron-builder.yml` maintainer (`info@auctum.se`) | public contact, intended |
+| Private-repo wording | `release.yml:2`, `electron-builder.yml:30` | update when public |
+| Public files missing | repo root, `.github/` | no `CONTRIBUTING.md`, `SECURITY.md`, `CODE_OF_CONDUCT.md`, `ISSUE_TEMPLATE/`, `pull_request_template.md`; `.github/` holds only `workflows/release.yml` |
+| README gaps for outsiders | `README.md` | links and download URLs assume `tochman/aidlc-dash`; no prerequisites list for `gh`/`aidlc`, no contributing/security pointers; "Development" mentions the `aidlc/` records |
+| Licence agreement | `LICENSE`, `package.json` | both MIT; third-party listing missing (see `dependencies.md` "Licences") |
+| Test tied to `.claude/` | `tests/fixtures/agent-hooks/README.md` (`aidlc.json` reads this repo's `.claude/settings.json`) | removing `.claude/` from the public tree breaks it |
+| Actions pinned by tag | `release.yml` (`@v4`) | common; SHA pinning is a hardening option once outsiders send PRs |
+| Swedish console messages | `scripts/*.cjs`, `scripts/check-glibc.mjs` | contributor-facing |
+
 ## Brownfield notes for the next stages
 
 - **Test baseline**: the suite was not run in this stage; Code Generation should record a baseline (`npm test`) before changes.
+- **US-1101 blast radius**: mostly new files (public docs, templates, a licence notice) plus edits to `README.md`, `release.yml`, `electron-builder.yml`, fixtures and docs named in the review above. Removing or ignoring `.claude/` breaks the `agent-hooks` fixture case; run the full suite after any removal.
 - **Blast radius of US-0506**: see the intent-area graph in `dependencies.md`; the high-impact files are `src/main/ipc.js`, `src/main/questions.js`, `src/preload/index.js`, `src/renderer/App.jsx`, `src/renderer/QuestionPopup.jsx`, `src/renderer/TerminalContext.jsx`, `src/shared/harnesses.js`, `src/main/settings.js` and both locale files.

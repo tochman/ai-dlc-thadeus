@@ -92,13 +92,15 @@ Text fallback: the App Shell holds the QuestionPopup and one ProjectView per ope
 | node-pty loaded lazily | `pty.js` | A broken native binary breaks the terminal tab, not the app |
 | Every project tab stays mounted | `App.jsx` | Terminals and watchers survive tab switches; memory grows with open projects |
 | Harness folders and engine files read-only in the editor | `fileWrite.js` `isEngineOwned` | Writing harness settings (hooks, plugins) would be a new, deliberate exception |
+| Distribution through GitHub Releases of the own repo, built by CI on a tag; the app updates itself from them via `gh` | `release.yml`, `electron-builder.yml` (`publish: null`), `updater.js` | Download and update depend on access to `tochman/aidlc-dash`; a public repo opens downloads, the in-app update still needs `gh` until US-0413 |
 
 ### Improvement Opportunities
 
 - A structured event source per harness (Claude Code hooks, opencode events/plugin) would replace both the audit-only question source and the screen-scraped answer path; the picker reader could remain the fallback.
 - A main-side "answer" IPC that names a question id and an option index, checked against the session that asked, would close the gap that `pty:write` accepts any string for any session.
 - `ipc.js` could split per area (questions, projects, config, updater) without changing the bridge.
-- Coverage measurement and a linter would let the `classic` scope's floor be enforced.
+- Coverage, ESLint and Prettier now gate CI (added since `2d111d6`).
+- For a public release: package a generated third-party licence notice with the app, and drop the "private repo / internal build" wording from `release.yml` and `electron-builder.yml` (see `code-quality-assessment.md`, "Public-readiness review").
 
 ## Interaction Diagrams
 

@@ -9,7 +9,7 @@ Det påverkar hela kodbasen och hur lätt det blir att bygga vyerna (pipeline, t
 A. React + TypeScript med electron-vite (Vite-baserad hot reload, stort ekosystem för markdown, grafer och xterm.js)
 B. Svelte + TypeScript med electron-vite (mindre kod och lättare paket, mindre ekosystem)
 C. Vanilla TypeScript utan ramverk (minst beroenden, mer handskriven UI-kod)
-D. React med vanlig JavaScript (som visinv) i stället för TypeScript
+D. React med vanlig JavaScript (som a reference project) i stället för TypeScript
 X. Other (please specify)
 
 [Answer]: D

@@ -6,7 +6,7 @@ Röktestet kördes i riktig Electron med samma kod som i PR #7:
 
 | Kontroll | Resultat |
 |----------|----------|
-| visinvs `epic02-finish` | 1 726 av 1 726 händelser när brus visas. Inget tak |
+| a reference project's `epic02-finish` | 1 726 av 1 726 händelser när brus visas. Inget tak |
 | 20 000 händelser | En filterändring tar 24–34 ms. Scrollningen ligger på p95 25 ms per bildruta |
 | Sen händelse | Markeras exakt, och räknaren visar "1 ny händelse" |
 | Konsolfel | 0 |

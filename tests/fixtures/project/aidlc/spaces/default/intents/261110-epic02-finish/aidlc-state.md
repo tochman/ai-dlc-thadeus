@@ -1,7 +1,7 @@
 # AI-DLC State Tracking
 
 ## Project Information
-- **Project**: Färdigställ allt som återstår i EPIC-02.
+- **Project**: Finish everything left in EPIC-02.
 - **Project Description Source**: project-description.json
 - **Project Type**: Brownfield
 - **Scope**: feature

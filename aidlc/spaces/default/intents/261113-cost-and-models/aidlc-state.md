@@ -1,7 +1,7 @@
 # AI-DLC State Tracking
 
 ## Project Information
-- **Project**: Bygg EPIC-02 Cost & Models enligt docs/features/epic-02-cost-and-models.md (US-0201 till US-0205): uppskattad kostnad per intent, fördelning per stage/agent/modell, kostnadsöversikt för projektet med CSV-export, konfigurerad och faktisk modell per agent, och livekostnad under körning. Data från aidlc/.aidlc-sessions/usage-ledger.json (skrivskyddat) och aidlc config models --show --json. Kostnaden ska alltid märkas som uppskattad (API-pris), aldrig som faktisk. Feature-dokumentet är källan för acceptanskriterierna; uppdatera storyernas status där. Referensdata i ~/Projects/visinv. Gren feat/epic02-cost-and-models.
+- **Project**: Bygg EPIC-02 Cost & Models enligt docs/features/epic-02-cost-and-models.md (US-0201 till US-0205): uppskattad kostnad per intent, fördelning per stage/agent/modell, kostnadsöversikt för projektet med CSV-export, konfigurerad och faktisk modell per agent, och livekostnad under körning. Data från aidlc/.aidlc-sessions/usage-ledger.json (skrivskyddat) och aidlc config models --show --json. Kostnaden ska alltid märkas som uppskattad (API-pris), aldrig som faktisk. Feature-dokumentet är källan för acceptanskriterierna; uppdatera storyernas status där. Referensdata i a reference project. Gren feat/epic02-cost-and-models.
 - **Project Description Source**: project-description.json
 - **Project Type**: Brownfield
 - **Project Type Source**: workspace scan

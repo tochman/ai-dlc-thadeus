@@ -13,7 +13,7 @@
   - `architecture.md`: huvudprocessen äger fil- och processåtkomst, och renderaren använder `window.bridge`
   - `api-documentation.md`: IPC-kanalerna
   - `code-structure.md`
-- Ledgerformat (verifierat i visinv):
+- Ledgerformat (verifierat i a reference project):
   - `workflows` har nycklarna `intent:<uuid>` och `record:<space>/legacy`.
   - Varje nod har `totals`, `byStage`, `byModel` och `byAgent`, med `tokens` och `usd`.
   - `byStage[stage]` har egna `byModel` och `byAgent`.
@@ -162,7 +162,7 @@ Lagret "Data model / database" gäller inte här, eftersom appen inte har någon
   - Kör `npx vitest run tests/renderer/IntentList.test.jsx tests/renderer/CostPanel.test.jsx`.
 
 - [ ] **Steg 9 — Prestanda och bygge** (NFR1)
-  - Mät tiden för `summarizeLedger` mot visinvs riktiga ledger med ett tillfälligt Node-kommando som inte sparas. Målet är under 300 ms, och värdet noteras i code-summary.
+  - Mät tiden för `summarizeLedger` mot a reference project's riktiga ledger med ett tillfälligt Node-kommando som inte sparas. Målet är under 300 ms, och värdet noteras i code-summary.
   - Kör hela sviten med `npx vitest run tests/` och `npx electron-vite build`.
 
 - [ ] **Steg 10 — Dokumentation**
