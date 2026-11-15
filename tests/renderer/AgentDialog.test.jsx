@@ -440,6 +440,17 @@ describe('AgentDialog: audit fallback (US-0505, BR3.6, ADR-006)', () => {
     expect(openWhenCalled).toBe(false);
   });
 
+  it('shows Previous, the position and Next only with more than one item (US-0018)', () => {
+    const props = base();
+    const { rerender } = show(<AgentDialog {...props} events={[audit()]} />);
+    expect(screen.queryByTestId('agent-dialog-prev')).toBeNull();
+    expect(screen.queryByTestId('agent-dialog-next')).toBeNull();
+    expect(screen.queryByText('1 av 1')).toBeNull();
+    rerender(<AgentDialog {...props} events={[audit(), audit({ id: 'two', timeMs: 2 })]} />);
+    expect(screen.getByTestId('agent-dialog-next')).toBeTruthy();
+    expect(screen.getByText('1 av 2')).toBeTruthy();
+  });
+
   it('starts calm and turns red after OVERDUE_MS, reset by a new question', () => {
     vi.useRealTimers(); // leave the Date-only fake of beforeEach
     vi.useFakeTimers();
@@ -451,7 +462,6 @@ describe('AgentDialog: audit fallback (US-0505, BR3.6, ADR-006)', () => {
     act(() => vi.advanceTimersByTime(1));
     expect(dialog.classList.contains('is-overdue')).toBe(true);
     expect(screen.getByTestId('agent-dialog-title').textContent).toBe('Väntar fortfarande på ditt svar');
-    fireEvent.click(screen.getByTestId('agent-dialog-next'), {}); // nothing next: stays
     rerender(<AgentDialog {...props} events={[audit({ id: 'new', timeMs: 2 })]} />);
     expect(dialog.classList.contains('is-calm')).toBe(true);
     expect(screen.getByTestId('agent-dialog-title').textContent).toBe('AI-DLC väntar på ditt svar');

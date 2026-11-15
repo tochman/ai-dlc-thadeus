@@ -4,6 +4,10 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import LatestMessageStrip from '../../src/renderer/LatestMessageStrip.jsx';
 
+// US-0018: the strip reads the terminal's open state; null = no terminal around it (the cases below).
+let terminal = null;
+vi.mock('../../src/renderer/TerminalContext.jsx', () => ({ useTerminal: () => terminal }));
+
 const RLO = String.fromCodePoint(0x202e);
 const latestOf = (over = {}) => ({
   tabId: 'agent:claude',
@@ -50,13 +54,29 @@ beforeEach(() => {
     this.removeAttribute('open');
   };
 });
-afterEach(cleanup);
+afterEach(() => {
+  cleanup();
+  terminal = null;
+});
+
+describe('LatestMessageStrip with the terminal (US-0018)', () => {
+  it('is not shown while the terminal is open', async () => {
+    terminal = { view: { open: true, active: 'agent' } };
+    await mount(latestOf());
+    expect(screen.queryByTestId('latest-message-strip')).toBeNull();
+  });
+
+  it('is shown while the terminal is hidden', async () => {
+    terminal = { view: { open: false, active: 'agent' } };
+    await mount(latestOf());
+    expect(strip().textContent).toContain('namn ska filen få?');
+  });
+});
 
 describe('LatestMessageStrip', () => {
-  it('with no message shows "Inget meddelande från agenten än" and no button (BR6.18, RD16)', async () => {
+  it('with no message shows nothing (US-0018: no "no message yet" line taking space)', async () => {
     await mount(null);
-    expect(strip().textContent).toContain('Inget meddelande från agenten än');
-    expect(strip().querySelectorAll('button')).toHaveLength(0);
+    expect(screen.queryByTestId('latest-message-strip')).toBeNull();
   });
 
   it('waiting: tab, time, the first non-empty line as inline Markdown (no block element) and Answer', async () => {

@@ -71,9 +71,9 @@ const sendButton = () => screen.getByTestId('agent-dialog-reply-send');
 const type = (value) => fireEvent.change(field(), { target: { value } });
 
 describe('the M4 page (BR6.9)', () => {
-  it('shows the kind, the title, the where line, the body and an empty focused field', () => {
+  it('shows the title (no separate kind label, US-0018), the where line, the body and an empty focused field', () => {
     show([replyEvent()]);
-    expect(screen.getByTestId('agent-dialog-kind').textContent).toBe('MEDDELANDE');
+    expect(screen.queryByTestId('agent-dialog-kind')).toBeNull();
     expect(screen.getByTestId('agent-dialog-title').textContent).toBe('Meddelande från Claude Code');
     const where = screen.getByTestId('agent-dialog-where').textContent;
     expect(where).toContain('aidlc-dash');

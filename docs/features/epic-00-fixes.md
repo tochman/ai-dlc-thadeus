@@ -6,9 +6,9 @@
 
 > Small fixes the person reports while using the app: something looks off, behaves wrongly or is missing a detail. Each fix becomes a story here, so nothing reported in passing gets lost. A fix that grows into a feature moves to its topic's epic.
 
-**Stories:** US-0001, US-0002, US-0003, US-0004, US-0005, US-0006, US-0007, US-0008, US-0009, US-0010, US-0011, US-0012, US-0013, US-0014, US-0015, US-0016, US-0017
+**Stories:** US-0001, US-0002, US-0003, US-0004, US-0005, US-0006, US-0007, US-0008, US-0009, US-0010, US-0011, US-0012, US-0013, US-0014, US-0015, US-0016, US-0017, US-0018
 
-**Status (2026-11-15):** ✅ US-0001–US-0012 released (v0.2.3–v0.2.5). ✅ US-0013–US-0014 and US-0016 done, for v0.2.6. 🚧 US-0015 in progress, for v0.2.6. 📋 US-0017 planned. Each story names its release.
+**Status (2026-11-15):** ✅ US-0001–US-0012 released (v0.2.3–v0.2.5). ✅ US-0013–US-0014 and US-0016 done, for v0.2.6. 🚧 US-0015 in progress, for v0.2.6. 🚧 US-0018 in progress, for v0.2.6. 📋 US-0017 planned. Each story names its release.
 
 ---
 
@@ -270,3 +270,20 @@
   - [ ] The same holds with Codex or Kiro as the second tool, and with one agent tab after the second tool is turned off again.
 - **Notes:** The arm is in `src/renderer/TerminalPanel.jsx` and `src/renderer/theme.css`.
 - **Dependencies:** US-0801, US-0403
+
+**US-0018: The latest agent message stays out of the way** 🚧 In progress, for v0.2.6
+- As a **developer with the terminal open**, in order to **keep the LCARS frame on screen**, I would like to **see the latest agent message only when the terminal is hidden, on one line above it**.
+- **Epic:** EPIC-00
+- **Priority:** High
+- **Complexity:** Low
+- **Background:** Reported 2026-11-15 with screenshots, in v0.2.5: the latest-message line (US-0506) sat below the frame in the bottom-left corner, wrapped word by word, and pushed the whole frame up and out of the window. "We need to be careful with the space… only show notifications like this if the terminal is hidden."
+- **Acceptance Criteria:**
+  - [ ] **Given** the terminal is open, **then** the latest-message line is not shown; the terminal already shows the agent's reply.
+  - [ ] **Given** the terminal is hidden, **then** the line shows on one row across the frame, just above the hidden terminal, cut with an ellipsis when too long, and the frame keeps its size.
+  - [ ] **Given** no message yet, **then** nothing is shown (no "no message yet" line).
+  - [ ] **Given** the agent dialog holds one item, **then** it shows no Previous, position or Next; the separate "Message" label above the title is gone (the title already says it).
+  - [ ] The suite passes inside the app's own terminal and in a checkout where the app's hooks are installed.
+- **Notes:**
+  - **Where.** The line had no place in the app's grid and no styles, so it fell into a new row under the left arm. `src/renderer/LatestMessageStrip.jsx` reads the terminal's open state; `src/renderer/theme.css` gives it a `msg` row that is dropped when the line is not shown. `src/renderer/AgentDialog.jsx` pages only with more than one item.
+  - **Tests.** `tests/renderer/LatestMessageStrip.test.jsx` (2 new, 1 changed), `tests/main/theme.test.js` (1 new), `tests/renderer/AgentDialog.test.jsx` (1 new), `AgentDialogReply.test.jsx`, `AppShell.test.jsx`. `tests/main/opencodePlugin.test.js` unsets the app's session variables for its no-session case; `tests/helpers/agentHooksFixtures.js` takes the app's own hook entries out of the repository copy.
+- **Dependencies:** US-0506

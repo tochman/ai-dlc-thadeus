@@ -8,11 +8,29 @@ export const TMP = path.resolve(__dirname, '../.tmp');
 
 const read = (name) => readFileSync(path.join(FIXTURES, name));
 
+/**
+ * US-0018: the repository copy holds AI-DLC's hooks only. A checkout where the app's own dialog hooks were
+ * installed (entries running `.thadeus/hooks/`) gets them taken out, so the fixture does not depend on the machine.
+ * Unchanged bytes when there is nothing to take out.
+ */
+function aidlcOnly(bytes) {
+  const settings = JSON.parse(bytes.toString('utf8'));
+  const own = (entry) => entry?.hooks?.some((h) => String(h?.command ?? '').includes('.thadeus/hooks/'));
+  let removed = false;
+  for (const [event, entries] of Object.entries(settings.hooks ?? {})) {
+    if (!Array.isArray(entries) || !entries.some(own)) continue;
+    settings.hooks[event] = entries.filter((e) => !own(e));
+    if (settings.hooks[event].length === 0) delete settings.hooks[event];
+    removed = true;
+  }
+  return removed ? Buffer.from(`${JSON.stringify(settings, null, 2)}\n`, 'utf8') : bytes;
+}
+
 /** The bytes of one fixture; the byte-exact ones and the repository copy are built here (see the README). */
 export function fixture(name) {
   switch (name) {
     case 'aidlc.json':
-      return readFileSync(path.join(REPO, '.claude/settings.json'));
+      return aidlcOnly(readFileSync(path.join(REPO, '.claude/settings.json')));
     case 'crlf.json':
       return Buffer.from(read('other-pretooluse.json').toString('utf8').replace(/\n/g, '\r\n'), 'utf8');
     case 'bom.json':
