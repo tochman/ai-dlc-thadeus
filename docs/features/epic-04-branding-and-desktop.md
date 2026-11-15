@@ -8,7 +8,7 @@
 
 **Stories:** US-0401, US-0402, US-0403, US-0404, US-0405, US-0406, US-0407, US-0408, US-0409, US-0410, US-0411
 
-**Status (2026-11-15):** ✅ US-0401 released in v0.1.1. ✅ US-0402, US-0403 and US-0404 released in v0.2.0. ✅ US-0406 released in v0.2.1 (intent `261113-thadeus-name`). ✅ US-0405 released in v0.2.3 (settings view, intent `261114-settings-view`) — marked "Released in v0.2.3" when the tag is cut. ✅ US-0407 released in v0.2.3 (update from a GitHub release). ✅ US-0408 released in v0.2.3 (Om T.H.A.D.E.U.S. window with the app version). ✅ US-0409 released in v0.2.4 (About window in a new design). ✅ US-0410 done, for v0.2.5 (Settings in LCARS tabs, all tools checked). 📋 US-0411 Planned for v0.2.5 (pipeline stages as LCARS cards).
+**Status (2026-11-15):** ✅ US-0401 released in v0.1.1. ✅ US-0402, US-0403 and US-0404 released in v0.2.0. ✅ US-0406 released in v0.2.1 (intent `261113-thadeus-name`). ✅ US-0405 released in v0.2.3 (settings view, intent `261114-settings-view`) — marked "Released in v0.2.3" when the tag is cut. ✅ US-0407 released in v0.2.3 (update from a GitHub release). ✅ US-0408 released in v0.2.3 (Om T.H.A.D.E.U.S. window with the app version). ✅ US-0409 released in v0.2.4 (About window in a new design). ✅ US-0410 done, for v0.2.5 (Settings in LCARS tabs, all tools checked). ✅ US-0411 done, for v0.2.5 (pipeline stages as LCARS cards).
 
 ---
 
@@ -240,18 +240,18 @@
   - **Plan.** Ultra-express, own branch after PR #31 (US-0506) merges, since Settings carries US-0506's notification settings.
 - **Dependencies:** US-0405, US-0506
 
-**US-0411: Pipeline stages as LCARS cards** 📋 Planned, for v0.2.5
+**US-0411: Pipeline stages as LCARS cards** ✅ Done, for v0.2.5 (intent `261115-pipeline-cards`, ultra-express)
 - As a **developer following a workflow**, in order to **read where the work is at a glance**, I would like to **see each pipeline stage as an LCARS card, with the current one lit**.
 - **Epic:** EPIC-04
 - **Priority:** Medium
 - **Complexity:** Medium
 - **Background:** Asked for 2026-11-15 with an LCARS reference screen (a row of ship cards): "I like the framing on these cards and I think we can use something similar when we display cards on for example the pipeline".
 - **Acceptance Criteria:**
-  - [ ] Each stage is a card: a thin outline with one rounded corner at the top right and a lighter bar segment on its top edge; a header strip with the stage name aligned right; a dark body; a footer strip with a short code (agent or duration) and a segmented level bar.
-  - [ ] The level bar shows progress the records give: units approved out of all units for a per-unit stage, otherwise done or not. No number is made up.
-  - [ ] The current stage's card is filled blue like a selected card; done cards are grey outlines; skipped ones are muted; a mismatch or failure shows in orange.
-  - [ ] The current card glows; Reduced gives a static glow, Off none, as the animations setting does everywhere.
-  - [ ] Clicking a card still opens its files, as today; cost, mismatch and status keep their titles and texts through `t()`.
+  - [x] Each stage is a card: a thin outline with one rounded corner at the top right and a lighter bar segment on its top edge; a header strip with the stage name aligned right; a dark body; a footer strip with a short code (agent or duration) and a segmented level bar.
+  - [x] The level bar shows progress the records give: units approved out of all units for a per-unit stage, otherwise done or not. No number is made up.
+  - [x] The current stage's card is filled blue like a selected card; done cards are grey outlines; skipped ones are muted; a mismatch or failure shows in orange. *A stage waiting for approval is filled coral instead of blue, so "needs you" keeps its colour (decided in Requirements Analysis).*
+  - [x] The current card glows; Reduced gives a static glow, Off none, as the animations setting does everywhere.
+  - [x] Clicking a card still opens its files, as today; cost, mismatch and status keep their titles and texts through `t()`.
 - **Notes:**
   - **Where.** `src/renderer/Pipeline.jsx` (`stage-block` today), with the shared card style from US-0410.
   - The reference image is not stored in the repository (third-party artwork); this story describes the card instead.

@@ -1,3 +1,4 @@
+// The intent's pipeline: phases of stages, each stage an LCARS card with a unit level bar (US-0411 FR1–FR5).
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { formatCost, formatDuration, formatTime, shortModel, stageStatusLabel, tokenBreakdown } from './format.js';
@@ -18,6 +19,23 @@ export function pipelineSteps(pipeline) {
     .map((s) => DOT_OF[s.status] ?? (s.current ? 'current' : 'todo'));
 }
 
+const MAX_SEGMENTS = 8;
+
+/**
+ * US-0411 FR2: the card's level bar from the records. One segment per unit up to 8, approved lit;
+ * above 8, 8 segments lit in proportion (rounded down); a stage without units has one segment, lit when done.
+ */
+export function levelBar(stage) {
+  const u = stage.units;
+  if (!u) {
+    const done = stage.status === 'done';
+    return { segments: [done], label: translate(done ? 'pipeline.levelDone' : 'pipeline.levelTodo') };
+  }
+  const count = Math.min(u.total, MAX_SEGMENTS);
+  const on = u.total > MAX_SEGMENTS ? Math.floor((u.approved / u.total) * MAX_SEGMENTS) : u.approved;
+  return { segments: Array.from({ length: count }, (_, i) => i < on), label: translate('pipeline.levelUnits', { approved: u.approved, total: u.total }) };
+}
+
 function stageDetails(stage, stageModels, fileCount) {
   return [
     [stage.agent, stageModels?.length ? stageModels.map(shortModel).join(', ') : null].filter(Boolean).join(' · ') || null,
@@ -29,16 +47,54 @@ function stageDetails(stage, stageModels, fileCount) {
     .join(' · ');
 }
 
-/** "NN · Status" at the top, the name at the bottom right; model and cost on the stage in progress (FR3.4). */
+/** "aidlc-product-agent" -> "product" (US-0411 FR1.3). */
+const agentShort = (agent) =>
+  String(agent)
+    .replace(/^aidlc-/, '')
+    .replace(/-agent$/, '');
+
+/** US-0411 FR2.4: the level bar's segments, read out by its label. */
+function LevelBar({ stage }) {
+  const bar = levelBar(stage);
+  return (
+    <span className="stage-level" role="img" aria-label={bar.label} title={bar.label}>
+      {bar.segments.map((on, i) => (
+        <span key={i} className={`stage-level-seg ${on ? 'is-lit' : ''}`} />
+      ))}
+    </span>
+  );
+}
+
+/**
+ * US-0411 FR1, FR3, FR5: a stage as an LCARS card. Name in the head; "NN · Status", flags, model and cost in the body;
+ * agent, duration and the level bar in the foot. The card's colour comes from its state classes on the <li>.
+ */
 function StageBlock({ stage, index, open, onToggle, stageCost, stageModels, details }) {
   const { t } = useTranslation();
   const statusText = stage.mode === 'SKIP' ? t('pipeline.notIncluded') : (stageStatusLabel(stage.status) ?? stage.status);
   const extra = stage.current && stage.status !== 'in-progress' ? ` · ${t('pipeline.current')}` : '';
   const models = stage.current && stageModels?.length ? `${stageModels.map(shortModel).join(', ')} · ` : '';
+  const code = [stage.agent ? agentShort(stage.agent) : null, stage.durationMs != null ? formatDuration(stage.durationMs) : null].filter(Boolean).join(' · ');
+  const states = [
+    `status-${stage.status}`,
+    isSkipped(stage) && 'is-muted',
+    stage.current && 'is-current',
+    stage.mismatch && 'is-mismatch',
+    stage.failed && 'is-failed'
+  ];
   return (
-    <li className={`stage status-${stage.status} ${isSkipped(stage) ? 'is-muted' : ''} ${stage.current ? 'is-current' : ''}`}>
-      <button className={`stage-block ${EFFECT[stage.status] ?? ''}`} onClick={onToggle} aria-expanded={open} title={details} data-testid="pipeline-stage">
-        <span className="stage-top">
+    <li className={['stage', ...states].filter(Boolean).join(' ')}>
+      <button
+        className={`lcars-card stage-card ${EFFECT[stage.status] ?? (stage.current ? 'is-breathing' : '')}`}
+        onClick={onToggle}
+        aria-expanded={open}
+        title={details}
+        data-testid="pipeline-stage"
+      >
+        <span className="lcars-card-head">
+          <span className="stage-name">{stage.slug}</span>
+        </span>
+        <span className="lcars-card-body stage-top">
           <span>
             {index ?? '—'} · {statusText}
             {extra}
@@ -48,6 +104,7 @@ function StageBlock({ stage, index, open, onToggle, stageCost, stageModels, deta
                 · {t('pipeline.mismatch')}
               </span>
             )}
+            {stage.failed && <span className="stage-flag"> · {t('pipeline.failed', { outcome: String(stage.outcome) })}</span>}
           </span>
           <span
             className="stage-cost"
@@ -57,7 +114,10 @@ function StageBlock({ stage, index, open, onToggle, stageCost, stageModels, deta
             {stageCost ? `${models}${formatCost(stageCost)}` : ''}
           </span>
         </span>
-        <span className="stage-name">{stage.slug}</span>
+        <span className="lcars-card-foot">
+          <span className="stage-code">{code}</span>
+          <LevelBar stage={stage} />
+        </span>
       </button>
     </li>
   );
