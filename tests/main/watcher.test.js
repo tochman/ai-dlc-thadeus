@@ -28,7 +28,8 @@ afterEach(async () => {
   await fs.rm(TMP, { recursive: true, force: true });
 });
 
-describe('watchIntents', () => {
+// US-0010: the debounce waits are wall-clock; retry up to twice under a loaded suite.
+describe('watchIntents', { retry: 2 }, () => {
   it('debounces writes into one change for that intent and ignores .aidlc-engine/ (FR7.1, FR7.2)', async () => {
     const calls = [];
     watcher = watchIntents({ intentsDir: INTENTS, onChange: (c) => calls.push(c), debounceMs: 150 });
@@ -78,7 +79,7 @@ describe('watchIntents', () => {
   });
 });
 
-describe('watchFiles', () => {
+describe('watchFiles', { retry: 2 }, () => {
   it('reports .md changes in the watched file and folder, also when the folder appears later (EPIC-06 FR2.7)', async () => {
     const root = path.join(TMP, 'docs-project');
     await fs.mkdir(path.join(root, 'src'), { recursive: true });
@@ -161,7 +162,7 @@ describe('watchFiles', () => {
   });
 });
 
-describe('watchForAidlc', () => {
+describe('watchForAidlc', { retry: 2 }, () => {
   it('calls onFound once when a space appears under aidlc/spaces/, ignoring other folders (FR4.6)', async () => {
     const root = path.join(TMP, 'plain');
     await fs.mkdir(path.join(root, 'src'), { recursive: true });

@@ -14,7 +14,8 @@ const C6 = (kind) =>
   `[ -n "$THADEUS_SESSION_DIR" ] && [ -f "$CLAUDE_PROJECT_DIR/.thadeus/hooks/dialog.sh" ] && sh "$CLAUDE_PROJECT_DIR/.thadeus/hooks/dialog.sh" ${kind}; exit 0`;
 const REAL_SLEEP = spawnSync('sh', ['-c', 'command -v sleep']).stdout.toString().trim();
 /** Real-time cases, one at a time so they do not load each other; their windows carry the design's slack (RD1). */
-const timed = (name, fn) => it(name, { timeout: 15_000 }, fn);
+// US-0010: wall-clock tests retry up to twice; each attempt keeps the full limit. ponytail: retry hides load spikes, not a slow script that fails 3 times in a row.
+const timed = (name, fn) => it(name, { timeout: 15_000, retry: 2 }, fn);
 
 mkdirSync(TMP, { recursive: true });
 const made = [];

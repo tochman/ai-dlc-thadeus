@@ -6,9 +6,9 @@
 
 > Small fixes the person reports while using the app: something looks off, behaves wrongly or is missing a detail. Each fix becomes a story here, so nothing reported in passing gets lost. A fix that grows into a feature moves to its topic's epic.
 
-**Stories:** US-0001, US-0002, US-0003, US-0004, US-0005, US-0006, US-0007, US-0008, US-0009
+**Stories:** US-0001, US-0002, US-0003, US-0004, US-0005, US-0006, US-0007, US-0008, US-0009, US-0010, US-0011
 
-**Status (2026-11-14):** ✅ US-0001 released in v0.2.3 (epic badge). ✅ US-0002 released in v0.2.3 (busy tab alignment). ✅ US-0003 released in v0.2.3 (lifecycle rule for every harness). ✅ US-0004 released in v0.2.3 (a popup answer reaches the agent once). ✅ US-0005 released in v0.2.3 (Resume waits while the work runs). ✅ US-0006 released in v0.2.4 (popup answers reach Claude Code's real picker). ✅ US-0007 released in v0.2.4 (Resume stays disabled while an agent session runs the work). ✅ US-0008 released in v0.2.4 (the token wave shows from the first reading). ✅ US-0009 released in v0.2.4 (Resume waits while an agent outside the app runs the work).
+**Status (2026-11-15):** ✅ US-0001 released in v0.2.3 (epic badge). ✅ US-0002 released in v0.2.3 (busy tab alignment). ✅ US-0003 released in v0.2.3 (lifecycle rule for every harness). ✅ US-0004 released in v0.2.3 (a popup answer reaches the agent once). ✅ US-0005 released in v0.2.3 (Resume waits while the work runs). ✅ US-0006 released in v0.2.4 (popup answers reach Claude Code's real picker). ✅ US-0007 released in v0.2.4 (Resume stays disabled while an agent session runs the work). ✅ US-0008 released in v0.2.4 (the token wave shows from the first reading). ✅ US-0009 released in v0.2.4 (Resume waits while an agent outside the app runs the work). ✅ US-0010 for v0.2.5 (timing tests stop failing under load). ✅ US-0011 for v0.2.5 (no false Mismatch on a stage built unit by unit).
 
 ---
 
@@ -151,3 +151,32 @@
   - **Limit.** A step that writes nothing to the log for over 10 minutes can turn Resume on early. The button re-checks on the next refresh, not on a timer.
   - **Tests.** `tests/renderer/ResumeButton.test.jsx` (2 new).
 - **Dependencies:** US-0007
+
+**US-0010: Timing tests stop failing under a loaded suite** ✅ Done, for v0.2.5 (intent `261114-agent-dialogs`)
+- As a **developer running the whole suite**, in order to **trust a red run**, I would like to **have the wall-clock tests pass when the code meets its limits, even while the machine is busy**.
+- **Epic:** EPIC-00
+- **Priority:** Medium
+- **Complexity:** Low
+- **Background:** Found 2026-11-15 during US-0506 Code Generation: "the exact C6 Stop string ends within 100 ms" took 197 ms once in a full parallel run, and earlier `dialogScript` and `watcher` timing tests failed the same way. Each passed on rerun.
+- **Acceptance Criteria:**
+  - [x] The wall-clock tests in `dialogScript.test.js`, `dialogScriptReply.test.js` and `watcher.test.js` are retried up to twice.
+  - [x] No limit changes: every attempt must still meet the full 100 ms, 300 ms or 2.5 s window.
+- **Notes:**
+  - **Where.** `retry: 2` on the `timed` helpers, the two C6 tests and the `watcher` describe blocks.
+  - **Limit.** A script that is really too slow still fails, three times in a row.
+- **Dependencies:** US-0506
+
+**US-0011: No false Mismatch on a stage built unit by unit** ✅ Done, for v0.2.5 (intent `261114-agent-dialogs`)
+- As a **developer reading the pipeline**, in order to **trust the Mismatch badge**, I would like to **see a stage whose Units were built in parallel shown as done, with its time, once every Unit is approved**.
+- **Epic:** EPIC-00
+- **Priority:** Medium
+- **Complexity:** Low
+- **Background:** Reported 2026-11-15: "I also see a mismatch badge on code-generation". `aidlc-state.md` marked Code Generation done; `runtime-graph.json` had it approved but with its times only on the five Units (`instances`), so the app read the stage as not started.
+- **Acceptance Criteria:**
+  - [x] A stage with no times of its own takes its start from the earliest Unit start, and its completion from the latest Unit end once every Unit is approved.
+  - [x] With a Unit still open, the stage has no completion time; a stage with neither times nor Units is unchanged.
+  - [x] Its duration shows from those times.
+- **Notes:**
+  - **Where.** `unitTimes()` in `src/main/parsers/runtimeGraph.js`.
+  - **Tests.** `tests/main/parsers.test.js` (1 new).
+- **Dependencies:** US-0506

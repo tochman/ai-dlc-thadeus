@@ -73,6 +73,24 @@ describe('mergePipeline', () => {
     expect(stage(mergePipeline(state, disagreeing), 'build-and-test')).toMatchObject({ status: 'in-progress', mismatch: true });
   });
 
+  it('a stage built unit by unit is done when every unit is approved, timed from its units (US-0011)', () => {
+    const unit = (bolt, start, end, outcome = 'approved') => ({ bolt, started_at: start, completed_at: end, outcome });
+    const raw = (instances) => ({
+      stages: [{ stage_slug: 'code-generation', started_at: null, completed_at: null, outcome: 'approved', instances }]
+    });
+    const done = parseRuntimeGraph(
+      raw([unit('u1', '2026-11-14T19:00:00Z', '2026-11-14T20:00:00Z'), unit('u2', '2026-11-14T19:30:00Z', '2026-11-14T21:00:00Z')])
+    );
+    expect(done.stages[0]).toMatchObject({ startedAt: '2026-11-14T19:00:00Z', completedAt: '2026-11-14T21:00:00Z', durationMs: 2 * 3600 * 1000 });
+    expect(stage(mergePipeline(state, done), 'code-generation')).toMatchObject({ status: 'done', mismatch: false });
+
+    // One unit still open: no completion time, so the stage is not done.
+    const open = parseRuntimeGraph(raw([unit('u1', '2026-11-14T19:00:00Z', '2026-11-14T20:00:00Z'), unit('u2', '2026-11-14T19:30:00Z', null, null)]));
+    expect(open.stages[0]).toMatchObject({ startedAt: '2026-11-14T19:00:00Z', completedAt: null });
+    // No units and no times: unchanged.
+    expect(parseRuntimeGraph(raw([])).stages[0]).toMatchObject({ startedAt: null, completedAt: null });
+  });
+
   it('works from the state file alone when runtime-graph.json is missing (FR3.5, FR2.2)', () => {
     const p = mergePipeline(state, null);
     expect(stage(p, 'code-generation')).toMatchObject({ status: 'done', agent: null, mismatch: false });

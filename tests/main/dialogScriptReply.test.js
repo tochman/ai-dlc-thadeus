@@ -14,7 +14,8 @@ const TMP = path.join(ROOT, 'tests/.tmp');
 const SECRET = 'b'.repeat(64);
 const FIXTURE = path.join(ROOT, 'tests/fixtures/agent-events/claude/stop-which-name.json');
 const STOP = `[ -n "$THADEUS_SESSION_DIR" ] && [ -f "$CLAUDE_PROJECT_DIR/.thadeus/hooks/dialog.sh" ] && sh "$CLAUDE_PROJECT_DIR/.thadeus/hooks/dialog.sh" reply; exit 0`;
-const timed = (name, fn) => it(name, { timeout: 15_000 }, fn);
+// US-0010: wall-clock tests retry up to twice; each attempt keeps the full limit. ponytail: retry hides load spikes, not a slow script that fails 3 times in a row.
+const timed = (name, fn) => it(name, { timeout: 15_000, retry: 2 }, fn);
 const header = (secret = SECRET) => Buffer.from(`THADEUS-EVENT v1 reply ${secret}\n`);
 
 mkdirSync(TMP, { recursive: true });
@@ -189,7 +190,7 @@ describe.each(SHELLS)('dialog.sh reply under %s (BR6.1, RD10)', (shell) => {
     expect(o.evts).toBe(0);
   });
 
-  it('6. the app absent: the exact C6 Stop string ends within 100 ms in each of 20 runs (PD7, NFR4.4, NFR4.8)', { timeout: 30_000 }, async () => {
+  it('6. the app absent: the exact C6 Stop string ends within 100 ms in each of 20 runs (PD7, NFR4.4, NFR4.8)', { timeout: 30_000, retry: 2 }, async () => {
     const o = await outcomes.absent(shell);
     o.r.forEach(silent);
     expect(o.evts).toBe(0);

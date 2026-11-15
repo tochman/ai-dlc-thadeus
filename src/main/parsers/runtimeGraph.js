@@ -22,19 +22,42 @@ function parseBoltDag(dag) {
   return { units, batches };
 }
 
+/**
+ * US-0011: a stage built unit by unit (parallel Units) carries its times only on `instances`.
+ * Started at the earliest unit start; completed at the latest unit end, only once every unit is approved.
+ */
+function unitTimes(instances) {
+  const units = Array.isArray(instances) ? instances.filter((i) => i && typeof i === 'object') : [];
+  const starts = units
+    .map((i) => i.started_at)
+    .filter((t) => typeof t === 'string')
+    .sort();
+  const ends = units
+    .map((i) => i.completed_at)
+    .filter((t) => typeof t === 'string')
+    .sort();
+  const allDone = units.length > 0 && units.every((i) => i.outcome === 'approved' && typeof i.completed_at === 'string');
+  return { startedAt: starts[0] ?? null, completedAt: allDone ? ends[ends.length - 1] : null };
+}
+
 export function parseRuntimeGraph(json) {
   if (!json || typeof json !== 'object' || !Array.isArray(json.stages)) return null;
   const stages = json.stages
     .filter((s) => s && typeof s.stage_slug === 'string')
-    .map((s) => ({
-      slug: s.stage_slug,
-      agent: s.agent ?? null,
-      startedAt: s.started_at ?? null,
-      completedAt: s.completed_at ?? null,
-      outcome: s.outcome ?? null,
-      durationMs: durationMs(s.started_at, s.completed_at),
-      sensorFirings: Array.isArray(s.sensor_firings) ? s.sensor_firings.length : 0
-    }));
+    .map((s) => {
+      const units = unitTimes(s.instances);
+      const startedAt = s.started_at ?? units.startedAt;
+      const completedAt = s.completed_at ?? units.completedAt;
+      return {
+        slug: s.stage_slug,
+        agent: s.agent ?? null,
+        startedAt,
+        completedAt,
+        outcome: s.outcome ?? null,
+        durationMs: durationMs(startedAt, completedAt),
+        sensorFirings: Array.isArray(s.sensor_firings) ? s.sensor_firings.length : 0
+      };
+    });
   return {
     workflowId: json.workflow_id ?? null,
     scope: json.scope ?? null,
