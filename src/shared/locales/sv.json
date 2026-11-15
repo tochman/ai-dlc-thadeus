@@ -948,6 +948,92 @@
       "enterSkipped": "Texten skrevs men Enter skickades inte: fliken gick vidare. Tryck Enter i terminalen om du vill skicka den."
     }
   },
+  "agentHooks": {
+    "status": {
+      "current": "finns och är aktuella",
+      "outOfDate": "inaktuella",
+      "missing": "saknas",
+      "editedByHand": "ändrade för hand"
+    },
+    "reason": {
+      "invalidJson": "{file} är inte ren JSON, så appen ändrar den inte.",
+      "unexpectedShape": "{file} har hooks i en form som appen inte ändrar.",
+      "cannotRead": "{file} kan inte läsas ({cause}).",
+      "cannotWrite": "{file} kan inte skrivas ({cause}).",
+      "outsideRoot": "{file} pekar utanför projektet."
+    },
+    "refusal": {
+      "previewUnknown": "Förhandsvisningen är inte längre öppen. Titta på den nya förhandsvisningen.",
+      "changedSincePreview": "{file} har ändrats sedan förhandsvisningen. Titta på den nya förhandsvisningen.",
+      "invalidJson": "Inget skrevs: {file} är inte ren JSON, så appen ändrar den inte.",
+      "unexpectedShape": "Inget skrevs: {file} har hooks i en form som appen inte ändrar.",
+      "cannotRead": "Inget skrevs: {file} kan inte läsas ({cause}).",
+      "cannotWrite": "Inget skrevs: {file} kan inte skrivas ({cause}).",
+      "outsideRoot": "Inget skrevs: {file} pekar utanför projektet.",
+      "partiallyWritten": "{file} skrevs inte ({cause}). Uppdatera för att bli klar."
+    },
+    "cause": {
+      "EACCES": "åtkomst nekad",
+      "EPERM": "inte tillåtet",
+      "EROFS": "skrivskyddad disk",
+      "ENOSPC": "disken är full",
+      "ENOTDIR": "en mapp på vägen är en fil",
+      "notAFile": "inte en vanlig fil",
+      "link": "är en länk",
+      "changedSincePreview": "ändrad sedan förhandsvisningen",
+      "unknown": "okänd orsak"
+    },
+    "summary": {
+      "create": "Ny fil.",
+      "modify": "Ersätts med appens version.",
+      "delete": "Tas bort.",
+      "none": "Redan aktuell, ändras inte.",
+      "settingsModify": "Bara appens poster ändras; alla andra poster står kvar som de är.",
+      "replacesHandEdit": "Ändrad för hand, ersätts med appens version."
+    },
+    "action": {
+      "install": "Installera",
+      "update": "Uppdatera",
+      "remove": "Ta bort"
+    },
+    "preview": {
+      "title": {
+        "install": "Lägg till agentdialoger i projektet",
+        "update": "Uppdatera agentdialogerna i projektet",
+        "remove": "Ta bort agentdialoger från projektet"
+      },
+      "committed": "Filerna checkas in och delas med ditt team.",
+      "teammates": "Kollegor utan appen påverkas inte.",
+      "loading": "Läser filerna…",
+      "nothing": "Alla filer är redan aktuella. Det finns inget att ändra.",
+      "change": {
+        "create": "skapas",
+        "modify": "ändras",
+        "delete": "tas bort",
+        "none": "ändras inte"
+      },
+      "fileLabel": "{path}, {change}"
+    },
+    "strip": {
+      "missing": "{harness}: appens hooks saknas ({files}). Agentdialogerna går via terminalen.",
+      "outOfDate": "{harness}: appens hooks är inaktuella ({files}). Agentdialogerna går via terminalen.",
+      "fileStatus": "{path} {status}",
+      "details": "Detaljer",
+      "dismiss": "Dölj nu"
+    },
+    "section": {
+      "title": "Agentdialoger",
+      "help": "Appens hooks låter agentflikarna ställa sina frågor i appens egen dialog.",
+      "pending": "Kontrollerar hooks…",
+      "harness": "{harness}: {status}"
+    },
+    "busy": "Skriver…",
+    "done": {
+      "install": "Agentdialogerna är installerade. Starta om körande {harness}-flikar för att använda dem.",
+      "update": "Agentdialogerna är uppdaterade. Starta om körande {harness}-flikar för att använda dem.",
+      "remove": "Agentdialogerna är borttagna. {harness}-flikar går via terminalen från nästa fråga."
+    }
+  },
   "latestMessage": {
     "label": "Senaste meddelandet från agenten",
     "none": "Inget meddelande från agenten än",

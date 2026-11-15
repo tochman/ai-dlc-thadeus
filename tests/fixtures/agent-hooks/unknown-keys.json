@@ -1,0 +1,11 @@
+{
+  "futureSetting": { "nested": [1, 2, { "deep": "åäö é" }] },
+  "hooks": {
+    "Notification": [
+      {
+        "hooks": [{ "type": "command", "command": "notify-send hi" }]
+      }
+    ]
+  },
+  "zLast": null
+}

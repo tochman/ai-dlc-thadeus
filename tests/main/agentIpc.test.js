@@ -151,3 +151,51 @@ describe('handlers (C4, SD4)', () => {
     expect(timing.stampFromRenderer).toHaveBeenCalledWith('e1', 'dialogShown', 'claude');
   });
 });
+
+// US-0506 u4 C5, BR7.18, RD42: the source choice follows the installer's status, captured when a tab spawns.
+describe('source choice from the installer (u4)', () => {
+  let current, installer;
+  beforeEach(() => {
+    current = new Set();
+    installer = { isCurrent: vi.fn((root, harness) => current.has(`${root}:${harness}`)) };
+    let n = 0;
+    channel.openSession.mockImplementation(async ({ harness }) => ({ sessionId: `s${++n}-${harness}`, waitSeconds: 595, env: {} }));
+    ipc = make({ hooksCurrent: installer.isCurrent });
+  });
+
+  it('a tab spawned before Install stays on the fallback after it', async () => {
+    const spawnFn = vi.fn(async () => 'pty-1');
+    await ipc.spawn(args, spawnFn);
+    current.add('/proj:claude');
+    expect(spawnFn).toHaveBeenCalledWith({});
+    expect(channel.openSession).not.toHaveBeenCalled();
+    expect(store.startSession).not.toHaveBeenCalled();
+  });
+
+  it('a tab spawned after Install gets a session', async () => {
+    current.add('/proj:claude');
+    await ipc.spawn(args, async () => 'pty-2');
+    expect(store.startSession).toHaveBeenCalledWith(expect.objectContaining({ projectId: 'p1', harness: 'claude' }));
+  });
+
+  it('demote ends that root’s sessions of that harness only, in the store and the channel', async () => {
+    current.add('/proj:claude').add('/proj:opencode').add('/other:claude');
+    await ipc.spawn(args, async () => 'pty-a');
+    await ipc.spawn({ ...args, harness: 'opencode' }, async () => 'pty-b');
+    await ipc.spawn({ ...args, projectId: 'p2', root: '/other' }, async () => 'pty-c');
+    await ipc.demote('/proj', 'claude');
+    expect(store.endSession.mock.calls).toEqual([['s1-claude']]);
+    expect(channel.closeSession.mock.calls).toEqual([['s1-claude']]);
+    await ipc.demote('/proj', 'claude'); // nothing left to end
+    expect(store.endSession).toHaveBeenCalledTimes(1);
+  });
+
+  it('spawn reads isCurrent with no file system call', async () => {
+    const fsp = (await import('node:fs')).promises;
+    const spies = ['readFile', 'lstat', 'stat', 'realpath'].map((n) => vi.spyOn(fsp, n));
+    await ipc.spawn(args, async () => 'pty-3');
+    expect(installer.isCurrent).toHaveBeenCalledWith('/proj', 'claude');
+    expect(spies.every((s) => s.mock.calls.length === 0)).toBe(true);
+    vi.restoreAllMocks();
+  });
+});

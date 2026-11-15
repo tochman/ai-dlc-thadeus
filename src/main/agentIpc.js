@@ -45,7 +45,7 @@ function checkId(id, key = 'agentDialog.errors.unknownEvent') {
  *   senders: () => Iterable<{isDestroyed: () => boolean, send: Function}>}} deps
  */
 export function createAgentIpc({ channel, store, timing, hooksCurrent, senders }) {
-  const live = new Set(); // sessionIds with a running pty
+  const live = new Map(); // sessionId with a running pty -> { root, harness } (US-0506 u4 RD42)
 
   const push = (payload) => {
     for (const s of senders()) if (!s.isDestroyed()) s.send('agent-events:changed', payload);
@@ -61,8 +61,8 @@ export function createAgentIpc({ channel, store, timing, hooksCurrent, senders }
 
   return {
     /**
-     * pty:spawn for one tab. An agent tab whose hooks are current (BR2.7; until u4 the THADEUS_AGENT_HOOKS switch, K4)
-     * gets a channel session and its three variables; every other tab spawns exactly as before.
+     * pty:spawn for one tab. An agent tab whose hooks are current when it spawns (BR2.7, US-0506 u4 BR7.18: the
+     * installer's isCurrent, C5) gets a channel session and its three variables; every other tab spawns exactly as before.
      * @param {(extra: {env?: object, onExit?: Function}) => Promise<string>} spawnFn spawnSession with the tab's own arguments
      */
     async spawn({ projectId, root, kind, harness }, spawnFn) {
@@ -77,7 +77,7 @@ export function createAgentIpc({ channel, store, timing, hooksCurrent, senders }
         throw err;
       }
       channel.bindPty({ sessionId, ptyId });
-      live.add(sessionId);
+      live.set(sessionId, { root, harness });
       store.startSession({ sessionId, projectId, tabId, harness, waitSeconds });
       return ptyId;
     },
@@ -110,9 +110,17 @@ export function createAgentIpc({ channel, store, timing, hooksCurrent, senders }
     listeners: timing.on ? { 'agent-timing:stamp': (_event, eventId, stamp) => timing.stampFromRenderer(eventId, stamp, store.harnessOf(eventId)) } : {},
     /** Pushes a project's list, e.g. after its audit questions changed (they are listed when no hook session runs). */
     publish: (projectId) => push({ projectId, events: store.list(projectId) }),
+    /**
+     * US-0506 u4 RD42, BR7.18: the harness stopped being current for this root (for example after Remove). Its sessions
+     * end in the store and the channel; the tabs' ptys keep running and their script finds no session folder (u1 NFR4.2).
+     */
+    async demote(root, harness) {
+      const ids = [...live].filter(([, s]) => s.root === root && s.harness === harness).map(([id]) => id);
+      await Promise.all(ids.map(end));
+    },
     /** App quit: every session is closed before the ptys are killed (RD5). */
     async shutdown() {
-      await Promise.all([...live].map(end));
+      await Promise.all([...live.keys()].map(end));
       store.dispose?.();
       await channel.dispose?.();
     }

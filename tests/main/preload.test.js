@@ -70,4 +70,24 @@ describe('preload bridge (US-0506 u1)', () => {
     bridge.onQuestionFocus(() => {});
     expect(m.ipcRenderer.on.mock.calls.map((c) => c[0])).toEqual(['questions:changed', 'questions:focus']);
   });
+
+  it('has agentHooks status, preview, apply, cancel and onChanged, passing exactly their arguments (US-0506 u4 SD32)', async () => {
+    const bridge = await load(false);
+    await bridge.agentHooks.status('p1');
+    await bridge.agentHooks.preview('p1', 'claude', 'install');
+    await bridge.agentHooks.apply('p1', 'id-1');
+    await bridge.agentHooks.cancel('p1', 'id-1');
+    expect(m.ipcRenderer.invoke.mock.calls).toEqual([
+      ['agentHooks:status', 'p1'],
+      ['agentHooks:preview', 'p1', 'claude', 'install'],
+      ['agentHooks:apply', 'p1', 'id-1'],
+      ['agentHooks:cancel', 'p1', 'id-1']
+    ]);
+    const cb = vi.fn();
+    bridge.agentHooks.onChanged(cb);
+    const [[channel, listener]] = m.ipcRenderer.on.mock.calls;
+    expect(channel).toBe('agent-hooks:changed');
+    listener({}, { projectId: 'p1', harnesses: [] });
+    expect(cb).toHaveBeenCalledWith({ projectId: 'p1', harnesses: [] });
+  });
 });

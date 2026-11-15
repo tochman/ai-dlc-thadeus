@@ -1,0 +1,51 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "AskUserQuestion",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "[ -n \"$THADEUS_SESSION_DIR\" ] && sh \"$CLAUDE_PROJECT_DIR/.thadeus/hooks/dialog.sh\" question; exit 0",
+            "timeout": 120
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "AskUserQuestion",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "[ -n \"$THADEUS_SESSION_DIR\" ] && [ -f \"$CLAUDE_PROJECT_DIR/.thadeus/hooks/dialog.sh\" ] && sh \"$CLAUDE_PROJECT_DIR/.thadeus/hooks/dialog.sh\" answered; exit 0",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "PermissionRequest": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "[ -n \"$THADEUS_SESSION_DIR\" ] && [ -f \"$CLAUDE_PROJECT_DIR/.thadeus/hooks/dialog.sh\" ] && sh \"$CLAUDE_PROJECT_DIR/.thadeus/hooks/dialog.sh\" permission; exit 0",
+            "timeout": 600
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "[ -n \"$THADEUS_SESSION_DIR\" ] && [ -f \"$CLAUDE_PROJECT_DIR/.thadeus/hooks/dialog.sh\" ] && sh \"$CLAUDE_PROJECT_DIR/.thadeus/hooks/dialog.sh\" reply; exit 0",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  }
+}

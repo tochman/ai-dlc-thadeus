@@ -13,7 +13,7 @@ const m = vi.hoisted(() => {
     electron: {
       ipcMain: { handle: vi.fn((ch, fn) => handlers.set(ch, fn)), on: vi.fn() },
       BrowserWindow: { fromWebContents: vi.fn(() => win), getAllWindows: vi.fn(() => []) },
-      // userData is only read; no channel folder is made while THADEUS_AGENT_HOOKS is unset (US-0506 K4).
+      // userData is only read; no channel folder is made while no project's hooks are current (US-0506 u4 C5).
       app: { getVersion: vi.fn(() => '9.9.9'), quit: vi.fn(), getPath: vi.fn(() => '/nonexistent/thadeus-ipc-test') },
       dialog: { showOpenDialog: vi.fn(async () => ({ canceled: false, filePaths: ['/picked'] })) },
       shell: { showItemInFolder: vi.fn(), openPath: vi.fn(async () => ''), openExternal: vi.fn(async () => {}) }
@@ -728,7 +728,7 @@ describe('agent dialogs wiring (US-0506 u1 LC6)', () => {
     await write;
   });
 
-  it('an agent tab spawns without channel variables while THADEUS_AGENT_HOOKS is unset (K4)', async () => {
+  it('an agent tab spawns without channel variables while its hooks are not current (US-0506 u4 C5)', async () => {
     const { projectId, event } = await openProject('/work/nohooks');
     await call('pty:spawn', event, { projectId, kind: 'agent', harness: 'claude', cols: 80, rows: 24 });
     const args = svc.spawnSession.mock.calls.at(-1)[0];

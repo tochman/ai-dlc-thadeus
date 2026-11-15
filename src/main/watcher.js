@@ -33,7 +33,13 @@ function debounce(flush, debounceMs, maxWaitMs) {
 }
 
 /**
- * Watches a few root-relative paths: files (ending in .md or .json, or dot-named) and folders (their direct .md files), and
+ * A watched target is a file when it ends in .md, .json, .sh or .js (US-0506 u4 PD32: dialog.sh and the opencode plugin),
+ * or is dot-named such as aidlc/.aidlc-subagent-inflight; any other target is a folder.
+ */
+export const isWatchedFile = (t) => /\.(md|json|sh|js)$/i.test(t) || path.posix.basename(t).startsWith('.');
+
+/**
+ * Watches a few root-relative paths: files (see isWatchedFile) and folders (their direct .md files), and
  * calls `onChange()` debounced (EPIC-06 FR2.7, US-0901 FR6.1). The root itself is watched with everything else ignored, so paths
  * whose folder does not exist yet are still seen once they appear (chokidar v4 misses those otherwise, F-01).
  * @param {{root: string, paths: string[], onChange: () => void, onError?: (err: Error) => void, debounceMs?: number, maxWaitMs?: number}} opts
@@ -42,8 +48,7 @@ export function watchFiles({ root, paths, onChange, onError = console.error, deb
   const base = path.resolve(root);
   const targets = paths.map((p) => path.posix.normalize(p.split(path.sep).join('/')));
   const relOf = (p) => path.relative(base, path.resolve(p)).split(path.sep).join('/');
-  // A dot-named target such as aidlc/.aidlc-subagent-inflight is a file too, though it has no extension.
-  const isFile = (t) => /\.(md|json)$/i.test(t) || path.posix.basename(t).startsWith('.');
+  const isFile = isWatchedFile;
   const matches = (rel) => targets.some((t) => (isFile(t) ? rel === t : path.posix.dirname(rel) === t && rel.toLowerCase().endsWith('.md')));
   const keep = (rel) => rel === '' || targets.some((t) => t === rel || t.startsWith(`${rel}/`)) || matches(rel);
   const { schedule, cancel } = debounce(onChange, debounceMs, maxWaitMs);

@@ -10,6 +10,7 @@ import RefreshPanel from './RefreshPanel.jsx';
 import SetupAidlc from './SetupAidlc.jsx';
 import TerminalPanel from './TerminalPanel.jsx';
 import LatestMessageStrip from './LatestMessageStrip.jsx'; // US-0506 u3
+import AgentHooksStrip from './AgentHooksStrip.jsx'; // US-0506 u4
 import FeaturesView from './FeaturesView.jsx';
 import ConfigView from './ConfigView.jsx';
 import PlansView from './PlansView.jsx';
@@ -285,6 +286,7 @@ function ProjectContent({
     onMeta?.(project.projectId, { harness: problem ? null : harnessId }); // the question popup answers only a running harness
   }, [harness, problem, extrasKey]); // setAgent is stable
   const [choosingHarness, setChoosingHarness] = useState(false); // opened from the agent tab's warning (FR5.1)
+  const [hooksDetails, setHooksDetails] = useState(false); // opened from the agent hooks strip's Details (US-0506 u4 BR7.15)
   const [addingHarness, setAddingHarness] = useState(false); // setup in add mode, from Projektinställningar (US-0802 FR3.1)
   // The switch offer after setup goes the same way as the dialog's: asked first while the tab works (FR4.2).
   async function switchHarness(id) {
@@ -343,6 +345,7 @@ function ProjectContent({
     <EditorCtx.Provider value={editorCtx}>
       <div className="project-view">
         <div className="project-main">
+          <AgentHooksStrip projectId={project.projectId} onDetails={() => setHooksDetails(true)} />
           {justSetUp && <SetupDone onClose={() => setJustSetUp(false)} onFeatureDocs={featureDocsChoice ? setupDocs : undefined} />}
           {/* Kept mounted while Features or Configuration is shown, so the intents view keeps its state (FR2.1). */}
           <div className="project-mode" hidden={['features', 'config', 'plans', 'editor'].includes(view)}>
@@ -394,11 +397,13 @@ function ProjectContent({
         <LatestMessageStrip projectId={project.projectId} onOpenReply={onOpenReply} />
         <TerminalPanel projectId={project.projectId} visible={visible} onChooseHarness={() => setChoosingHarness(true)} />
         <ProjectSettingsDialog
-          open={settingsOpen || choosingHarness}
+          open={settingsOpen || choosingHarness || hooksDetails}
           onClose={() => {
             setChoosingHarness(false);
+            setHooksDetails(false);
             onCloseSettings?.();
           }}
+          agentHooksFocus={hooksDetails}
           projectId={project.projectId}
           name={project.name}
           settings={settings}

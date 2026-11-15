@@ -33,7 +33,8 @@ import { watchFiles, watchForAidlc, watchIntents, watchOpenFiles } from './watch
 import { listTree, readForEdit, writeFileSafe } from './fileWrite.js';
 import { featureWatchPaths, loadFeatures, loadStoryLinks } from './features.js';
 import { killAllSessions, killProjectSessions, killSession, resizeSession, spawnSession, tapOutput, writeSession } from './pty.js';
-import { WAIT_SECONDS, createAgentChannel } from './agentChannel.js';
+import { createAgentChannel } from './agentChannel.js';
+import { createHookInstaller, hooksHandlers, statusPusher } from './agentHooks.js';
 import { adapters } from './agentAdapters.js';
 import { createAgentEventStore } from './agentEvents.js';
 import { createAgentIpc } from './agentIpc.js';
@@ -130,7 +131,8 @@ async function closeWatcher(p) {
   p.featuresKey = null;
   p.configWatcher = null;
   p.editorWatcher = null;
-  await Promise.all([w?.close(), s?.close(), f?.close(), c?.close(), e?.close()]);
+  // US-0506 u4 SCD31: the hooks watcher, previews and isCurrent keys go with the project.
+  await Promise.all([w?.close(), s?.close(), f?.close(), c?.close(), e?.close(), installer?.closeProject(p.id)]);
 }
 
 /** Watches exactly the files open in the editor; each change sends `file:changed` with its relative path (US-1001). */
@@ -307,13 +309,28 @@ async function refreshQuestions(projectId, dirNames) {
 }
 
 // Agent dialogs (US-0506 u1). Built once in registerIpc, where userData is known.
-// K4: until u4's installer (C5), THADEUS_AGENT_HOOKS=1 is the development switch for "hooks current"; with it off no
-// channel session opens, agent tabs get no THADEUS_* variable, and the dialog shows today's audit questions.
-const hooksCurrent = (_projectRoot, harness) => process.env.THADEUS_AGENT_HOOKS === '1' && Object.hasOwn(WAIT_SECONDS, harness);
+// US-0506 u4 C5: an agent tab gets a channel session only when the installer finds its harness's hooks current for the
+// project (isCurrent, from memory); every other tab gets no THADEUS_* variable and the dialog shows today's audit questions.
 let agent = null;
+let installer = null;
+
+/** BR7.15: the harnesses a project uses: its folder markers, or an agent tab of it opened in this app run. */
+async function usedHarnesses(projectId) {
+  const p = projects.get(projectId);
+  if (!p) return [];
+  const detected = await Promise.resolve(p.harnesses).catch(() => []);
+  return [...new Set([...(detected ?? []).filter((d) => d.installed).map((d) => d.id), ...p.agentTabs])];
+}
 
 function agentWiring() {
   if (agent) return agent;
+  installer = createHookInstaller({
+    log: (line) => console.warn(line),
+    usedOf: usedHarnesses,
+    // RD42: a harness that stops being current ends its running sessions; the push reaches every window (BR7.17).
+    onStatus: statusPusher({ senders: () => new Set([...projects.values()].map((p) => p.sender)), demote: (root, harness) => agent.demote(root, harness) })
+  });
+  const hooksCurrent = installer.isCurrent;
   const userData = app.getPath('userData');
   const timing = createTimingLog({ dir: path.join(userData, 'logs'), on: process.env.THADEUS_TIMING === '1' });
   const channel = createAgentChannel({ root: path.join(userData, 'agent-channel') });
@@ -371,11 +388,14 @@ const handlers = {
     const projectId = randomUUID();
     // Harness detection starts now, in the background; harness:detect returns the same promise (US-0801 NFR3).
     const harnesses = detectHarnesses(root);
-    projects.set(projectId, { root, space: null, watcher: null, setupWatcher: null, sender: event.sender, harnesses });
+    projects.set(projectId, { id: projectId, root, space: null, watcher: null, setupWatcher: null, sender: event.sender, harnesses, agentTabs: new Set() });
     if (detection.isAidlc) await watchSpace(projectId, detection.activeSpace);
     else watchForSetup(projectId);
     syncFeaturesWatch(projectId); // not awaited: opening a project never waits on the feature docs
     watchConfig(projectId);
+    // US-0506 u4 PD31: the hooks status is computed after the first render and pushed as agent-hooks:changed.
+    agentWiring();
+    installer.openProject(projectId, root).catch((err) => console.error(`[agent-hooks] status failed for ${root}:`, err.code ?? err.message));
     return { projectId, root, name: path.basename(root), detection };
   },
   'project:close': async (_event, projectId) => {
@@ -704,7 +724,12 @@ const handlers = {
   // An agent tab with current hooks also gets its channel session (US-0506 u1 RD5); agentIpc decides.
   'pty:spawn': async (event, { projectId, kind, harness, cols, rows }) => {
     const { toolPaths } = await getSettings();
-    const root = project(projectId).root;
+    const p = project(projectId);
+    const root = p.root;
+    if (kind === 'agent' && !p.agentTabs.has(harness)) {
+      p.agentTabs.add(harness); // BR7.15: a harness with an agent tab in this run is used
+      installer?.refresh(projectId).catch((err) => console.error('[agent-hooks] status failed:', err.code ?? err.message));
+    }
     return agentWiring().spawn({ projectId, root, kind, harness }, (extra) =>
       spawnSession({ projectId, root, kind, harness, cols, rows, toolPaths, sender: event.sender, ...extra })
     );
@@ -735,7 +760,7 @@ const handlers = {
 export function registerIpc() {
   const { handlers: agentHandlers, listeners } = agentWiring();
   for (const [channel, listener] of Object.entries(listeners)) ipcMain.on(channel, listener); // timing only (OD1)
-  for (const [channel, handler] of Object.entries({ ...handlers, ...agentHandlers })) {
+  for (const [channel, handler] of Object.entries({ ...handlers, ...agentHandlers, ...hooksHandlers(installer) })) {
     ipcMain.handle(channel, async (...args) => {
       try {
         return await handler(...args);

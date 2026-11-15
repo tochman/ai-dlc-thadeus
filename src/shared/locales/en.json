@@ -942,6 +942,92 @@
       "enterSkipped": "The text was typed but Enter was not sent: the tab moved on. Press Enter in the terminal to send it."
     }
   },
+  "agentHooks": {
+    "status": {
+      "current": "present and current",
+      "outOfDate": "out of date",
+      "missing": "missing",
+      "editedByHand": "edited by hand"
+    },
+    "reason": {
+      "invalidJson": "{file} is not plain JSON, so the app does not change it.",
+      "unexpectedShape": "{file} has hooks in a shape the app does not change.",
+      "cannotRead": "{file} cannot be read ({cause}).",
+      "cannotWrite": "{file} cannot be written ({cause}).",
+      "outsideRoot": "{file} points outside the project."
+    },
+    "refusal": {
+      "previewUnknown": "This preview is no longer open. Look at the new preview.",
+      "changedSincePreview": "{file} changed since this preview. Look at the new preview.",
+      "invalidJson": "Nothing was written: {file} is not plain JSON, so the app does not change it.",
+      "unexpectedShape": "Nothing was written: {file} has hooks in a shape the app does not change.",
+      "cannotRead": "Nothing was written: {file} cannot be read ({cause}).",
+      "cannotWrite": "Nothing was written: {file} cannot be written ({cause}).",
+      "outsideRoot": "Nothing was written: {file} points outside the project.",
+      "partiallyWritten": "{file} was not written ({cause}). Update to finish."
+    },
+    "cause": {
+      "EACCES": "permission denied",
+      "EPERM": "not permitted",
+      "EROFS": "read-only disk",
+      "ENOSPC": "disk full",
+      "ENOTDIR": "a folder on the path is a file",
+      "notAFile": "not a regular file",
+      "link": "is a link",
+      "changedSincePreview": "changed since the preview",
+      "unknown": "unknown cause"
+    },
+    "summary": {
+      "create": "New file.",
+      "modify": "Replaced with the app's version.",
+      "delete": "Deleted.",
+      "none": "Already current, not changed.",
+      "settingsModify": "Only the app's entries change; every other entry stays as it is.",
+      "replacesHandEdit": "Edited by hand, will be replaced by the app's version."
+    },
+    "action": {
+      "install": "Install",
+      "update": "Update",
+      "remove": "Remove"
+    },
+    "preview": {
+      "title": {
+        "install": "Add agent dialogs to this project",
+        "update": "Update the agent dialogs in this project",
+        "remove": "Remove agent dialogs from this project"
+      },
+      "committed": "These files are committed and shared with your team.",
+      "teammates": "Teammates without the app are not affected.",
+      "loading": "Reading the files…",
+      "nothing": "Every file is already current. There is nothing to change.",
+      "change": {
+        "create": "create",
+        "modify": "change",
+        "delete": "delete",
+        "none": "no change"
+      },
+      "fileLabel": "{path}, {change}"
+    },
+    "strip": {
+      "missing": "{harness}: the app's hooks are missing ({files}). Agent dialogs use the terminal path.",
+      "outOfDate": "{harness}: the app's hooks are out of date ({files}). Agent dialogs use the terminal path.",
+      "fileStatus": "{path} {status}",
+      "details": "Details",
+      "dismiss": "Hide for now"
+    },
+    "section": {
+      "title": "Agent dialogs",
+      "help": "The app's hooks let agent tabs ask their questions in the app's own dialog.",
+      "pending": "Checking the hooks…",
+      "harness": "{harness}: {status}"
+    },
+    "busy": "Writing…",
+    "done": {
+      "install": "Agent dialogs installed. Restart running {harness} tabs to use them.",
+      "update": "Agent dialogs updated. Restart running {harness} tabs to use them.",
+      "remove": "Agent dialogs removed. {harness} tabs use the terminal path from their next question."
+    }
+  },
   "latestMessage": {
     "label": "Latest message from the agent",
     "none": "No message from the agent yet",

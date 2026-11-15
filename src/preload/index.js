@@ -120,5 +120,14 @@ contextBridge.exposeInMainWorld('bridge', {
     reopen: call('agentEvents:reopen'), // US-0506 u3
     onChanged: subscribe('agent-events:changed'),
     ...(process.argv.includes('--thadeus-timing') ? { stamp: (eventId, stamp) => ipcRenderer.send('agent-timing:stamp', eventId, stamp) } : {})
+  },
+  // The agent dialog hooks in a project (US-0506 u4, C4): a project, a harness, an action and a preview id cross the
+  // bridge, never a path or file content (SD32, SD33).
+  agentHooks: {
+    status: call('agentHooks:status'),
+    preview: call('agentHooks:preview'),
+    apply: call('agentHooks:apply'),
+    cancel: call('agentHooks:cancel'),
+    onChanged: subscribe('agent-hooks:changed')
   }
 });
