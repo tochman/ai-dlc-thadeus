@@ -16,7 +16,7 @@ import {
   loadPendingQuestions,
   loadWorkingAgents
 } from './projectService.js';
-import { notifyQuestions } from './notify.js';
+import { notifyEvent, notifyQuestions } from './notify.js';
 import { agentName, summarizeLedger } from './parsers/ledger.js';
 import { getConfiguredModels } from './models.js';
 import { CONFIG_WATCH_PATHS, checkHarness, getAidlcConfig } from './aidlcConfig.js';
@@ -28,7 +28,7 @@ import { fetchRemote, getGitStatus, getRemoteChanges, listConflicts, showRemoteF
 import { getSetupInfo, runSetup } from './setup.js';
 import { detectHarnesses } from './harness.js';
 import { TOOL_IDS, getTools, setToolPaths, validateTool } from './tools.js';
-import { getProjectSettings, getSettings, setProjectSettings, setSettings } from './settings.js';
+import { getProjectSettings, getSettings, setProjectSettings, setSettings, settingsNow } from './settings.js';
 import { watchFiles, watchForAidlc, watchIntents, watchOpenFiles } from './watcher.js';
 import { listTree, readForEdit, writeFileSafe } from './fileWrite.js';
 import { featureWatchPaths, loadFeatures, loadStoryLinks } from './features.js';
@@ -301,7 +301,7 @@ async function refreshQuestions(projectId, dirNames) {
     const fresh = list.filter((q) => !startedWith.has(q.id));
     if (fresh.length) {
       const win = p.sender.isDestroyed() ? null : BrowserWindow.fromWebContents(p.sender);
-      notifyQuestions(fresh, { settings: await getSettings(), win, activeProjectId });
+      notifyQuestions(fresh, { settings: settingsNow(), win, activeProjectId }); // US-0506 u5 PD51: no await
     }
   } catch (err) {
     console.error(`Väntande frågor kunde inte räknas om för ${p.root}:`, err);
@@ -341,7 +341,14 @@ function agentWiring() {
     pty: { write: writeSession, tapOutput },
     timing,
     contextOf: (projectId) => auditContext(questionsOf(projectId)),
-    auditEventsOf: (projectId) => questionsOf(projectId).map((q) => auditEvent({ ...q, early: startedWith.has(q.id) }))
+    auditEventsOf: (projectId) => questionsOf(projectId).map((q) => auditEvent({ ...q, early: startedWith.has(q.id) })),
+    settings: settingsNow // US-0506 u5 D2: a reply's state at arrival
+  });
+  // US-0506 u5 D5, PD50: one notification decision per accepted event, in the store's own turn.
+  store.onAdded((ev) => {
+    const p = projects.get(ev.projectId);
+    const win = p && !p.sender.isDestroyed() ? BrowserWindow.fromWebContents(p.sender) : null;
+    notifyEvent(ev, { settings: settingsNow(), win, activeProjectId, projectName: p ? path.basename(p.root) : '', timing });
   });
   agent = createAgentIpc({ channel, store, timing, hooksCurrent, senders: () => new Set([...projects.values()].map((p) => p.sender)) });
   return agent;

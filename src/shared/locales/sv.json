@@ -86,7 +86,10 @@
       "batch": "AI-DLC ställer {n} frågor på en gång, och dem kan popupen inte svara på. Svara i terminalen."
     },
     "notification": {
-      "title": "{project}: AI-DLC väntar på ditt svar"
+      "question": "{harness} väntar på dig",
+      "permission": "{harness} ber om lov",
+      "reply": "Meddelande från {harness}",
+      "body": "{project} · {text}"
     }
   },
   "intents": {
@@ -439,13 +442,20 @@
       "reduced": "Dämpad",
       "off": "Av"
     },
-    "alertsLegend": "Frågor från AI-DLC",
-    "alertsHelp": "En popup när AI-DLC väntar på ditt svar, och en systemnotis när appen ligger i bakgrunden eller frågan gäller ett annat projekt.",
+    "alertsLegend": "Frågor och behörighetsfrågor",
+    "alertsHelp": "En dialog när en agent eller AI-DLC väntar på ditt svar, och en systemnotis när appen ligger i bakgrunden eller visar ett annat projekt.",
     "alerts": {
       "popup-notify": "Popup och notis",
       "popup": "Bara popup",
       "off": "Av"
     },
+    "repliesLegend": "Meddelanden från agenten",
+    "replies": {
+      "dialog-notify": "Dialog och notis",
+      "line": "Bara raden",
+      "off": "Av"
+    },
+    "repliesHelp": "När agenten är klar med sin tur. Frågor och behörighetsfrågor följer inställningen ovan.",
     "soundLegend": "Ljud vid notis",
     "sound": {
       "on": "På",

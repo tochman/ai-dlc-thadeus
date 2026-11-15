@@ -235,3 +235,51 @@ describe('Inställningar as a view in the content frame (EPIC-04 US-0405)', () =
     expect(onClose).toHaveBeenCalledTimes(2);
   });
 });
+
+// US-0506 u5 D1, D9, M9: the reply alerts row.
+describe('Meddelanden från agenten (US-0506 u5)', () => {
+  const legends = () => [...document.querySelectorAll('legend')].map((l) => l.textContent);
+
+  it('sits between the alerts and sound fieldsets with three radios and the saved value checked', () => {
+    stubBridge({ tools: TOOLS });
+    renderView({ replyAlerts: 'line' });
+    const all = legends();
+    const at = all.indexOf('Meddelanden från agenten');
+    expect(all[at - 1]).toBe('Frågor och behörighetsfrågor');
+    expect(all[at + 1]).toBe('Ljud vid notis');
+    expect(['dialog-notify', 'line', 'off'].map((id) => screen.getByTestId(`app-settings-replies-${id}`).checked)).toEqual([false, true, false]);
+    expect(screen.getByText('Bara raden')).toBeTruthy();
+  });
+
+  it('shows the default for a missing or unknown value', () => {
+    stubBridge({ tools: TOOLS });
+    renderView({ replyAlerts: 'loud' });
+    expect(screen.getByTestId('app-settings-replies-dialog-notify').checked).toBe(true);
+    cleanup();
+    renderView();
+    expect(screen.getByTestId('app-settings-replies-dialog-notify').checked).toBe(true);
+  });
+
+  it('saves "Bara raden" as replyAlerts line', async () => {
+    stubBridge({ tools: TOOLS });
+    const { onAlertSettings } = renderView({ replyAlerts: 'dialog-notify' });
+    fireEvent.click(screen.getByTestId('app-settings-replies-line'));
+    await waitFor(() => expect(onAlertSettings).toHaveBeenCalledWith({ replyAlerts: 'line' }));
+  });
+
+  it('shows the alert line on a rejected save and keeps the radio on the saved value', async () => {
+    stubBridge({ tools: TOOLS });
+    renderView({ replyAlerts: 'dialog-notify', onAlertSettings: vi.fn(async () => Promise.reject(new Error('disk full'))) });
+    fireEvent.click(screen.getByTestId('app-settings-replies-off'));
+    await waitFor(() => expect(screen.getByRole('alert').textContent).toMatch(/disk full/));
+    expect(screen.getByTestId('app-settings-replies-dialog-notify').checked).toBe(true);
+  });
+
+  it('names the alerts row "Frågor och behörighetsfrågor" and the reply help in English too', async () => {
+    stubBridge({ tools: TOOLS });
+    await i18n.changeLanguage('en');
+    renderView();
+    expect(legends()).toEqual(expect.arrayContaining(['Questions and permission prompts', 'Messages from the agent']));
+    expect(screen.getByText(/When the agent finishes its turn/)).toBeTruthy();
+  });
+});

@@ -796,4 +796,20 @@ describe('AgentDialog: permission pages', () => {
     expect(agentEvents.answer).toHaveBeenCalledWith('p-permission-bash', { permission: { choice: 2 } });
     expect(agentEvents.stamp.mock.invocationCallOrder[0]).toBeLessThan(agentEvents.answer.mock.invocationCallOrder[0]);
   });
+
+  // US-0506 u5 D7, AC5.1.1: every kind turns red after 20 s.
+  it('a permission page turns is-overdue after OVERDUE_MS with the still-waiting title, and paging restarts the count', () => {
+    vi.useRealTimers();
+    vi.useFakeTimers();
+    show(<AgentDialog {...base()} events={[permissionEvent(), permissionEvent('permission-edit')]} />);
+    act(() => vi.advanceTimersByTime(OVERDUE_MS - 1));
+    expect(dialog().classList.contains('is-overdue')).toBe(false);
+    act(() => vi.advanceTimersByTime(1));
+    expect(dialog().classList.contains('is-overdue')).toBe(true);
+    expect(screen.getByTestId('agent-dialog-title').textContent).toMatch(/väntar fortfarande/);
+    fireEvent.click(screen.getByTestId('agent-dialog-next'));
+    expect(dialog().classList.contains('is-overdue')).toBe(false);
+    act(() => vi.advanceTimersByTime(OVERDUE_MS));
+    expect(dialog().classList.contains('is-overdue')).toBe(true);
+  });
 });

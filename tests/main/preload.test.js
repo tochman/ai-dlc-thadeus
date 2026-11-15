@@ -62,13 +62,17 @@ describe('preload bridge (US-0506 u1)', () => {
     expect(m.ipcRenderer.invoke).not.toHaveBeenCalled();
   });
 
-  it('keeps listQuestions, onQuestions and onQuestionFocus (K15)', async () => {
+  it('keeps listQuestions and onQuestions (K15); agentEvents.onFocus replaces onQuestionFocus (US-0506 u5 SD53)', async () => {
     const bridge = await load(false);
     await bridge.listQuestions();
     expect(m.ipcRenderer.invoke).toHaveBeenCalledWith('questions:list');
     bridge.onQuestions(() => {});
-    bridge.onQuestionFocus(() => {});
-    expect(m.ipcRenderer.on.mock.calls.map((c) => c[0])).toEqual(['questions:changed', 'questions:focus']);
+    const cb = vi.fn();
+    bridge.agentEvents.onFocus(cb);
+    expect(m.ipcRenderer.on.mock.calls.map((c) => c[0])).toEqual(['questions:changed', 'agent-events:focus']);
+    m.ipcRenderer.on.mock.calls[1][1]({}, { eventId: 'h1-x' });
+    expect(cb).toHaveBeenCalledWith({ eventId: 'h1-x' });
+    expect(bridge.onQuestionFocus).toBeUndefined();
   });
 
   it('has agentHooks status, preview, apply, cancel and onChanged, passing exactly their arguments (US-0506 u4 SD32)', async () => {

@@ -20,6 +20,7 @@ export default defineConfig({
         'src/main/agent*.js': { lines: 80 },
         'src/shared/agentText.js': { lines: 80 },
         'src/shared/agentOrder.js': { lines: 80 }, // US-0506 u2
+        'src/shared/alertPlan.js': { lines: 80 }, // US-0506 u5
 
         'src/renderer/AgentDialog.jsx': { lines: 80 },
         'src/renderer/ReplyPage.jsx': { lines: 80 }, // US-0506 u3

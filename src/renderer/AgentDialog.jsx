@@ -549,14 +549,23 @@ export default function AgentDialog({
     requestAnimationFrame(() => stamp(shownId, 'dialogShown')); // after paint
   }, [shownId, queued]); // eslint-disable-line react-hooks/exhaustive-deps -- once per shown event
 
-  // Escalation per shown page; it starts over when another page is shown (BR4.6).
+  // US-0506 u5 D7: a dismissed reply shown again with the same id is a reopen, which starts the count over.
+  const lastState = useRef({ id: null, state: null, reopens: 0 });
+  if (ev) {
+    const l = lastState.current;
+    if (l.id === ev.eventId && l.state === 'dismissed' && ev.state === 'shown') l.reopens += 1;
+    Object.assign(l, { id: ev.eventId, state: ev.state });
+  }
+  const reopens = lastState.current.reopens;
+  // Escalation per shown page, every kind (BR4.6, u5 D7); it starts over when another page is shown or a reply reopens.
   useEffect(() => {
     setOverdue(false);
     if (!shownId) return undefined;
     const timer = setTimeout(() => setOverdue(true), OVERDUE_MS);
     return () => clearTimeout(timer);
-  }, [shownId]);
-  const settled = ev?.source === 'hook' && !OPEN.has(ev.state);
+  }, [shownId, reopens]);
+  // A page keeps its colour while sending and after a failed send (u5 D7); sent, stale, ended and dismissed are calm.
+  const settled = ev?.source === 'hook' && !OPEN.has(ev.state) && ev.state !== 'sending';
   const red = overdue && !settled;
 
   function closeDialog() {

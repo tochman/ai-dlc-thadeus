@@ -10,6 +10,7 @@
 // u1 deviation, by design: an accepted question goes straight to "shown". The pager in the dialog is the queue, and
 // every open event is answerable from it, so "queued" is used only by u3's replies (K4).
 // US-0506 u3: replies live in agentReplies.js (K3); this file only dispatches to it.
+// US-0506 u5 D2, D5: `settings` (main's copy, settingsNow) decides a reply's state at arrival; onAdded feeds notify.js.
 import crypto from 'node:crypto';
 import { t } from '../shared/i18n.js';
 import { byPager } from '../shared/agentOrder.js';
@@ -89,7 +90,8 @@ const view = (ev) => Object.fromEntries(PUBLIC.map((k) => [k, ev[k]]));
 
 /**
  * @param {{channel, adapters, pty: {write: Function, tapOutput: Function}, timing: {stamp: Function},
- *   contextOf?: (projectId) => object|null, auditEventsOf?: (projectId) => object[], log?: (line: string) => void}} deps
+ *   contextOf?: (projectId) => object|null, auditEventsOf?: (projectId) => object[], log?: (line: string) => void,
+ *   settings?: () => object}} deps
  */
 export function createAgentEventStore({
   channel,
@@ -98,7 +100,8 @@ export function createAgentEventStore({
   timing,
   contextOf = () => null,
   auditEventsOf = () => [],
-  log = (line) => console.warn(line)
+  log = (line) => console.warn(line),
+  settings = () => ({})
 }) {
   const sessions = new Map(); // sessionId -> { projectId, tabId, harness, waitSeconds }
   const events = new Map(); // eventId -> event
@@ -151,6 +154,7 @@ export function createAgentEventStore({
     refuse,
     newId,
     contextOf,
+    settings,
     notifyAdded: (ev) => {
       for (const fn of added) fn(view(ev));
     }

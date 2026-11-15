@@ -216,6 +216,44 @@ describe('overdue and timing (BR6.17, PD8)', () => {
     expect(screen.getByTestId('agent-dialog').className).not.toContain('is-overdue');
   });
 
+  // US-0506 u5 D7, AC5.1.1.
+  const red = () => screen.getByTestId('agent-dialog').className.includes('is-overdue');
+
+  it('a reopened reply (same id, dismissed to shown) starts calm and restarts its count', () => {
+    const { update } = show([replyEvent()]);
+    act(() => vi.advanceTimersByTime(OVERDUE_MS));
+    expect(red()).toBe(true);
+    update([replyEvent({ state: 'dismissed' })]);
+    expect(red()).toBe(false); // a dismissed page never turns red
+    act(() => vi.advanceTimersByTime(OVERDUE_MS));
+    expect(red()).toBe(false);
+    update([replyEvent()]);
+    expect(red()).toBe(false);
+    act(() => vi.advanceTimersByTime(OVERDUE_MS - 100));
+    expect(red()).toBe(false);
+    act(() => vi.advanceTimersByTime(100));
+    expect(red()).toBe(true);
+  });
+
+  it('a failed send keeps the red', () => {
+    const { update } = show([replyEvent()]);
+    act(() => vi.advanceTimersByTime(OVERDUE_MS));
+    update([replyEvent({ state: 'sending' })]);
+    expect(red()).toBe(true);
+    update([replyEvent({ state: 'shown', lastError: 'Det gick inte att skicka.' })]);
+    expect(red()).toBe(true);
+  });
+
+  it('paging from a question to a reply restarts the count', () => {
+    show([questionEvent(), replyEvent()]);
+    act(() => vi.advanceTimersByTime(OVERDUE_MS - 100));
+    fireEvent.click(screen.getByTestId('agent-dialog-next'));
+    act(() => vi.advanceTimersByTime(OVERDUE_MS - 100));
+    expect(red()).toBe(false);
+    act(() => vi.advanceTimersByTime(100));
+    expect(red()).toBe(true);
+  });
+
   it('stamps dialogShown once per first paint, not while the reply is queued', () => {
     const { update } = show([replyEvent({ state: 'queued' })]);
     act(() => vi.advanceTimersByTime(50));

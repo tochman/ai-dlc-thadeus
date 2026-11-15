@@ -13,6 +13,7 @@ import { Bar, Frame } from './Lcars.jsx';
 import { APP_NAME } from '../shared/appName.js';
 import { selectableHarness } from '../shared/harnesses.js';
 import { byPager } from '../shared/agentOrder.js';
+import { alertPlan } from '../shared/alertPlan.js';
 
 const NOTICE_MS = 5000; // US-0506 u2 K11: how long the hand-back notice stays
 import { dirtyFiles } from './editor/EditorContext.jsx';
@@ -65,7 +66,7 @@ export default function App() {
   const [terminalCommand, setTerminalCommand] = useState(null); // {seq, action, projectId} from the Terminal menu
   const [docs, setDocs] = useState(null); // {name, content} of the docs/README.md shown from Hjälp
   const [editRequest, setEditRequest] = useState(null); // {seq, projectId, rel}: "Redigera" in the docs dialog (US-1001)
-  const [alertSettings, setAlertSettings] = useState({}); // {questionAlerts, notificationSound} as saved (US-0505 FR4.1)
+  const [alertSettings, setAlertSettings] = useState({}); // {questionAlerts, replyAlerts, notificationSound} as saved (US-0505, US-0506 u5)
   const [questions, setQuestions] = useState([]); // waiting questions of every open project, from main (FR1.4)
   const [agentEvents, setAgentEvents] = useState({}); // projectId -> AgentEvent[] from main, hook and audit (US-0506 C4)
   const [popupOpen, setPopupOpen] = useState(false);
@@ -83,8 +84,8 @@ export default function App() {
   const [updateCheck, setUpdateCheck] = useState(0); // "Sök efter uppdatering…" bumps it (US-0407)
   const [aboutOpen, setAboutOpen] = useState(false); // "Om T.H.A.D.E.U.S." from the menu (US-0408)
   const seenQuestionsRef = useRef(new Set());
-  const questionAlertsRef = useRef('popup-notify');
-  questionAlertsRef.current = alertSettings.questionAlerts ?? 'popup-notify';
+  const alertSettingsRef = useRef(alertSettings);
+  alertSettingsRef.current = alertSettings;
   const motion = motionMode(animations);
 
   // Before paint, so the first frame already runs in the chosen mode (FR4.2).
@@ -111,7 +112,7 @@ export default function App() {
         setAnimations(s.animations ?? null);
         setStartFullscreen(s.fullscreen === true); // "Helskärm vid start" is the mode main saved at exit (US-0404)
         setLanguage(s.language ?? 'auto');
-        setAlertSettings({ questionAlerts: s.questionAlerts, notificationSound: s.notificationSound });
+        setAlertSettings({ questionAlerts: s.questionAlerts, replyAlerts: s.replyAlerts, notificationSound: s.notificationSound });
         const failed = [];
         let activeInfo = null;
         for (const dir of s.openProjects) {
@@ -187,27 +188,19 @@ export default function App() {
       .listQuestions?.()
       .then(receive)
       .catch((err) => console.warn('Väntande frågor kunde inte läsas:', errorText(err)));
-    const offQuestions = bridge.onQuestions?.(receive);
-    const offFocus = bridge.onQuestionFocus?.((id) => {
-      if (typeof id !== 'string') return;
-      setPopupFocus({ id });
-      setPopupOpen(true);
-    });
-    return () => {
-      offQuestions?.();
-      offFocus?.();
-    };
+    return bridge.onQuestions?.(receive);
   }, []);
 
   // Agent events (US-0506 u1 C4): the list per open project, then main's pushes. Only an event not seen before and
-  // not waiting since the start opens the dialog (US-0505 FR1.4); with "Av" it never opens by itself (FR4.2).
+  // not waiting since the start opens the dialog (US-0505 FR1.4), and only when alertPlan says so for its kind
+  // (US-0506 u5 D2): questions and permissions follow questionAlerts, replies replyAlerts.
   const receiveAgentEvents = useCallback((projectId, events) => {
     if (typeof projectId !== 'string' || !Array.isArray(events)) return;
     const seen = seenQuestionsRef.current;
-    const fresh = events.some((e) => !e.early && (e.state === 'shown' || e.state === 'timedOut') && !seen.has(e.eventId));
+    const fresh = events.filter((e) => !e.early && (e.state === 'shown' || e.state === 'timedOut') && !seen.has(e.eventId));
     for (const e of events) seen.add(e.eventId);
     setAgentEvents((m) => ({ ...m, [projectId]: events }));
-    if (fresh && questionAlertsRef.current !== 'off') setPopupOpen(true);
+    if (fresh.some((e) => alertPlan(e.kind, alertSettingsRef.current, true).open)) setPopupOpen(true);
   }, []);
   useEffect(() => bridge.agentEvents?.onChanged(({ projectId, events }) => receiveAgentEvents(projectId, events)), [receiveAgentEvents]);
   const listedRef = useRef(new Set());
@@ -257,6 +250,27 @@ export default function App() {
       })
       .catch((err) => console.warn('Meddelandet kunde inte öppnas igen:', errorText(err)));
   }
+  // US-0506 u5 D6, SD53: a clicked notification names an event. Its project is shown; an open event opens the dialog
+  // on its page, a dismissed reply is reopened, anything else (gone, or a bad payload) opens nothing.
+  const agentEventsRef = useRef(agentEvents);
+  agentEventsRef.current = agentEvents;
+  const onEventFocus = useRef(null);
+  onEventFocus.current = (payload) => {
+    const id = payload?.eventId;
+    if (typeof id !== 'string' || !id || id.length > 64) return;
+    const ev = Object.values(agentEventsRef.current)
+      .flat()
+      .find((e) => e.eventId === id);
+    if (!ev) return;
+    setSettingsView(false);
+    setActiveId(ev.projectId);
+    if (ev.kind === 'reply' && ev.state === 'dismissed') openReply(id);
+    else if (ev.state !== 'ended' && ev.state !== 'stale') {
+      setPopupFocus({ id });
+      setPopupOpen(true);
+    }
+  };
+  useEffect(() => bridge.agentEvents?.onFocus?.((payload) => onEventFocus.current(payload)), []);
   /** "Svara i terminalen": that project, its agent tab open and focused (FR2.3). Sets projectId directly, since
    *  runTerminal reads the active project from this render (developer scan, finding 6). */
   function answerInAgent(q) {
@@ -586,6 +600,7 @@ export default function App() {
             language={language}
             onLanguage={changeLanguage}
             questionAlerts={alertSettings.questionAlerts ?? 'popup-notify'}
+            replyAlerts={alertSettings.replyAlerts ?? 'dialog-notify'}
             notificationSound={alertSettings.notificationSound !== false}
             onAlertSettings={saveAlertSettings}
             recentProjects={recent}

@@ -39,6 +39,8 @@ const m = vi.hoisted(() => {
       loadPendingQuestions: vi.fn(async () => []),
       loadWorkingAgents: vi.fn(async () => []),
       notifyQuestions: vi.fn(),
+      notifyEvent: vi.fn(),
+      settingsNow: vi.fn(() => ({ replyAlerts: 'line' })),
       agentName: vi.fn((n) => n),
       summarizeLedger: vi.fn(() => ({ project: { total: { usd: 3 }, byAgent: [{ name: 'dev', usd: 2 }], agentModels: {}, byModel: [] }, perIntent: [] })),
       getConfiguredModels: vi.fn(async () => ({ models: [] })),
@@ -118,7 +120,7 @@ vi.mock('../../src/main/projectService.js', () => ({
   loadPendingQuestions: m.svc.loadPendingQuestions,
   loadWorkingAgents: m.svc.loadWorkingAgents
 }));
-vi.mock('../../src/main/notify.js', () => ({ notifyQuestions: m.svc.notifyQuestions }));
+vi.mock('../../src/main/notify.js', () => ({ notifyQuestions: m.svc.notifyQuestions, notifyEvent: m.svc.notifyEvent }));
 vi.mock('../../src/main/parsers/ledger.js', () => ({ agentName: m.svc.agentName, summarizeLedger: m.svc.summarizeLedger }));
 vi.mock('../../src/main/models.js', () => ({ getConfiguredModels: m.svc.getConfiguredModels }));
 vi.mock('../../src/main/aidlcConfig.js', () => ({
@@ -169,8 +171,25 @@ vi.mock('../../src/main/settings.js', () => ({
   getProjectSettings: m.svc.getProjectSettings,
   getSettings: m.svc.getSettings,
   setProjectSettings: m.svc.setProjectSettings,
-  setSettings: m.svc.setSettings
+  setSettings: m.svc.setSettings,
+  settingsNow: m.svc.settingsNow
 }));
+// US-0506 u5: the real store, with its deps and its onAdded subscribers captured.
+vi.mock('../../src/main/agentEvents.js', async (importOriginal) => {
+  const real = await importOriginal();
+  return {
+    createAgentEventStore: (deps) => {
+      m.storeDeps = deps;
+      const store = real.createAgentEventStore(deps);
+      const onAdded = store.onAdded;
+      store.onAdded = (fn) => {
+        m.onAdded = fn;
+        return onAdded(fn);
+      };
+      return store;
+    }
+  };
+});
 vi.mock('../../src/main/watcher.js', () => ({
   watchFiles: m.svc.watchFiles,
   watchForAidlc: m.svc.watchForAidlc,
@@ -355,6 +374,7 @@ describe('questions', () => {
       { id: 'q-old', timeMs: 1 },
       { id: 'q-new', timeMs: 5 }
     ]);
+    svc.getSettings.mockClear();
     const { onChange } = svc.watchIntents.mock.calls.at(-1)[0];
     onChange({ dirNames: [], indexChanged: true });
     await flush();
@@ -365,6 +385,9 @@ describe('questions', () => {
       ['q-old', true]
     ]);
     expect(svc.notifyQuestions).toHaveBeenCalledWith([{ id: 'q-new', timeMs: 5 }], expect.objectContaining({ activeProjectId: null }));
+    // US-0506 u5 PD51: the settings copy, not an awaited read
+    expect(svc.notifyQuestions.mock.calls.at(-1)[1].settings).toEqual({ replyAlerts: 'line' });
+    expect(svc.getSettings).not.toHaveBeenCalled();
     await call('project:close', {}, projectId);
   });
 
@@ -726,6 +749,23 @@ describe('agent dialogs wiring (US-0506 u1 LC6)', () => {
     expect(svc.writeSession).toHaveBeenCalledWith('pty-9', 'a'); // already written, before any await
     expect(m.agentWiring.terminalInput.mock.invocationCallOrder.at(-1)).toBeLessThan(svc.writeSession.mock.invocationCallOrder.at(-1));
     await write;
+  });
+
+  it('passes settingsNow to the store and notifies each added event with its window, the active project and its name (US-0506 u5)', async () => {
+    expect(m.storeDeps.settings).toBe(svc.settingsNow);
+    const { projectId } = await openProject('/work/notified');
+    await call('questions:activeProject', {}, projectId);
+    const ev = { eventId: 'h1-x', projectId, kind: 'reply' };
+    m.onAdded(ev);
+    expect(svc.notifyEvent).toHaveBeenCalledWith(ev, {
+      settings: { replyAlerts: 'line' },
+      win: m.win,
+      activeProjectId: projectId,
+      projectName: 'notified',
+      timing: expect.objectContaining({ stamp: expect.any(Function) })
+    });
+    m.onAdded({ eventId: 'h2-x', projectId: 'gone', kind: 'question' });
+    expect(svc.notifyEvent.mock.calls.at(-1)[1]).toMatchObject({ win: null, projectName: '' });
   });
 
   it('an agent tab spawns without channel variables while its hooks are not current (US-0506 u4 C5)', async () => {

@@ -6,6 +6,7 @@
 // - typed delivery (BR6.10–BR6.12, RD13, RD14, K1): the cleaned line, then one Enter to the same pty.
 import { t } from '../shared/i18n.js';
 import { cleanLine, utf8Bytes } from '../shared/agentText.js';
+import { alertPlan } from '../shared/alertPlan.js';
 import { formatLog } from './agentChannel.js';
 
 // --- Classifier ------------------------------------------------------------------------------------------------------
@@ -40,8 +41,8 @@ const STATUS_OF = { movedOn: 'answered', sessionEnded: 'sessionEnded', notShown:
 const LATEST_KEYS = ['tabId', 'harness', 'text', 'arrivedAt', 'status', 'eventId', 'truncated', 'empty']; // C4, SD12
 
 /** @param {{events: Map, sessions: Map, move: Function, emit: Function, channel, pty, timing, log: Function,
- *   refuse: Function, newId: () => string, contextOf: Function, notifyAdded: Function}} deps */
-export function createReplies({ events, sessions, move, emit, channel, pty, timing, log, refuse, newId, contextOf, notifyAdded }) {
+ *   refuse: Function, newId: () => string, contextOf: Function, settings: () => object, notifyAdded: Function}} deps */
+export function createReplies({ events, sessions, move, emit, channel, pty, timing, log, refuse, newId, contextOf, settings, notifyAdded }) {
   const latest = new Map(); // projectId -> LatestMessage, with sessionId for main's own use only
   const isReply = (e) => e.kind === 'reply';
   const of = (sessionId, states) => [...events.values()].filter((e) => isReply(e) && e.sessionId === sessionId && states.has(e.state));
@@ -97,7 +98,9 @@ export function createReplies({ events, sessions, move, emit, channel, pty, timi
       harness: session.harness,
       source: 'hook',
       kind: 'reply',
-      state: 'queued', // emit's promote shows it unless a question or permission event is open (K4, BR6.8)
+      // emit's promote shows a queued reply unless a question or permission event is open (K4, BR6.8). With "Line only"
+      // or "Off" it is dismissed at once: the strip shows it and Answer reopens it (US-0506 u5 D2, BR8.2).
+      state: alertPlan('reply', settings(), false).open ? 'queued' : 'dismissed',
       arrivedAt: new Date(raw.arrivedAtMs).toISOString(),
       arrivedAtMs: raw.arrivedAtMs,
       seq: raw.seq,

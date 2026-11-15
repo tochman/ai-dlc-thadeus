@@ -344,3 +344,52 @@ describe('quiet paths (OD8)', () => {
     for (const s of spies) expect(s).not.toHaveBeenCalled();
   });
 });
+
+// US-0506 u5 D2, D5, BR8.2: the reply setting decides the state at arrival; onAdded once per accepted event.
+describe('reply alerts at arrival (US-0506 u5)', () => {
+  it.each(['line', 'off'])('with replyAlerts %s accepts a new reply straight as dismissed, shown in latest, reopenable', (mode) => {
+    store.dispose();
+    make({ settings: () => ({ replyAlerts: mode }) });
+    start();
+    reply();
+    const ev = only();
+    expect(ev.state).toBe('dismissed'); // the App leaves a dismissed reply out of the pager (BR6.14)
+    expect(store.latest('p1')).toMatchObject({ eventId: ev.eventId, status: 'waiting', text: TEXT });
+    expect(store.reopen(ev.eventId)).toEqual({ state: 'shown' });
+    expect(only().state).toBe('shown');
+  });
+
+  it('with dialog-notify keeps u3 queued then shown', () => {
+    store.dispose();
+    make({ settings: () => ({ replyAlerts: 'dialog-notify' }) });
+    start('s1');
+    start('s2', { tabId: 'agent:opencode' });
+    question('s2');
+    reply('s1');
+    expect(only().state).toBe('queued');
+    answered('s2');
+    expect(only().state).toBe('shown');
+  });
+
+  it('reads the setting for each new reply, so a change applies to the next one only', () => {
+    let mode = 'dialog-notify';
+    store.dispose();
+    make({ settings: () => ({ replyAlerts: mode }) });
+    start();
+    reply('s1', 'first');
+    expect(only().state).toBe('shown');
+    mode = 'line';
+    expect(only().state).toBe('shown'); // the open page stays open (D1)
+    reply('s1', 'second');
+    expect(replies().map((e) => e.state)).toEqual(['stale', 'dismissed']); // the shown one goes stale (RD12); the new one is dismissed
+  });
+
+  it('fires onAdded once per accepted question, permission and reply, never for a duplicate', () => {
+    start();
+    question('s1');
+    send('s1', 'permission', readFileSync(path.join(FIX, 'claude/permission-bash.json')));
+    reply('s1');
+    reply('s1'); // the same text again is one reply (u3 BR6.4)
+    expect(added.map((e) => e.kind)).toEqual(['question', 'permission', 'reply']);
+  });
+});

@@ -86,7 +86,10 @@
       "batch": "AI-DLC asks {n} questions at once, which the popup cannot answer. Answer in the terminal."
     },
     "notification": {
-      "title": "{project}: AI-DLC is waiting for your answer"
+      "question": "{harness} is waiting for you",
+      "permission": "{harness} asks for permission",
+      "reply": "Message from {harness}",
+      "body": "{project} · {text}"
     }
   },
   "intents": {
@@ -439,13 +442,20 @@
       "reduced": "Reduced",
       "off": "Off"
     },
-    "alertsLegend": "Questions from AI-DLC",
-    "alertsHelp": "A popup when AI-DLC is waiting for your answer, and a system notification when the app is in the background or the question is about another project.",
+    "alertsLegend": "Questions and permission prompts",
+    "alertsHelp": "A dialog when an agent or AI-DLC waits for your answer, and a system notification when the app is in the background or showing another project.",
     "alerts": {
       "popup-notify": "Popup and notification",
       "popup": "Popup only",
       "off": "Off"
     },
+    "repliesLegend": "Messages from the agent",
+    "replies": {
+      "dialog-notify": "Dialog and notification",
+      "line": "Line only",
+      "off": "Off"
+    },
+    "repliesHelp": "When the agent finishes its turn. Questions and permission prompts follow the setting above.",
     "soundLegend": "Notification sound",
     "sound": {
       "on": "On",
