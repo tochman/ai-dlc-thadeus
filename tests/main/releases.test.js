@@ -145,6 +145,16 @@ describe('ruleStatus', () => {
     expect(ruleStatus('', 'releases')).toBe('missing');
     expect(ruleStatus(null, 'continuous')).toBe('missing');
   });
+
+  it('counts an untagged rule that leaves out 📋 as older, not missing (US-0016)', () => {
+    // main's project.md held an untagged rule with 🚧 and ✅ but no 📋.
+    const swedish = '- ALWAYS hålla storyn aktuell: 🚧 In progress, ✅ Done, "for vX.Y.Z".';
+    expect(ruleStatus(swedish, 'releases')).toBe('older');
+    expect(ruleStatus(swedish, 'continuous')).toBe('older');
+    expect(ruleStatus('- ALWAYS: ✅ Done follows 🚧 In progress.', 'releases')).toBe('older');
+    // A memory file with no lifecycle markers at all stays missing.
+    expect(ruleStatus('- ALWAYS keep lines short.\n\n- ✅ one test per story.', 'releases')).toBe('missing');
+  });
 });
 
 describe('setStoryRelease and readRuleStatus in a project (US-0603 FR2.3, FR2.4, FR5.2)', () => {
