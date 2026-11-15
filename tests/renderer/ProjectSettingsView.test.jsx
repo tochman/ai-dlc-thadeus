@@ -4,7 +4,7 @@ import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/re
 // The agent tab's state, as the TerminalProvider gives it; null outside a provider.
 let terminal = null;
 vi.mock('../../src/renderer/TerminalContext.jsx', () => ({ useTerminal: () => terminal }));
-const { default: ProjectSettingsDialog } = await import('../../src/renderer/ProjectSettingsDialog.jsx');
+const { default: ProjectSettingsView } = await import('../../src/renderer/ProjectSettingsView.jsx');
 
 const settings = { featureDocs: 'auto', featuresPath: 'docs/FEATURES.md' };
 // Same shape as harness:detect returns (detectHarnesses).
@@ -29,10 +29,9 @@ afterEach(() => {
   terminal = null;
 });
 
-describe('ProjectSettingsDialog', () => {
-  it('saves the chosen mode and path for this project and closes (FR3.1–FR3.4)', async () => {
-    const onClose = vi.fn();
-    render(<ProjectSettingsDialog open onClose={onClose} projectId="p1" name="app" settings={settings} />);
+describe('ProjectSettingsView (Configuration › Feature docs and Agent, US-0012)', () => {
+  it('saves the chosen mode and path for this project and says so (FR3.1–FR3.4)', async () => {
+    render(<ProjectSettingsView projectId="p1" name="app" settings={settings} />);
     expect(screen.getByTestId('project-settings-mode-auto').checked).toBe(true);
     expect(screen.getByTestId('project-settings-path').value).toBe('docs/FEATURES.md');
     expect(screen.queryByTestId('project-settings-setup')).toBeNull();
@@ -40,14 +39,27 @@ describe('ProjectSettingsDialog', () => {
     fireEvent.click(screen.getByTestId('project-settings-mode-hide'));
     fireEvent.change(screen.getByTestId('project-settings-path'), { target: { value: 'FEATURES.md' } });
     fireEvent.click(screen.getByTestId('project-settings-save'));
-    await waitFor(() => expect(onClose).toHaveBeenCalledTimes(1));
+    await screen.findByTestId('project-settings-saved');
     expect(window.bridge.setProjectSettings).toHaveBeenCalledWith('p1', { featureDocs: 'hide', featuresPath: 'FEATURES.md' });
+  });
+
+  it('offers Releases or Continuous deployment, Releases when unset, and saves only a changed choice (US-0603 FR1.1)', async () => {
+    render(<ProjectSettingsView projectId="p1" settings={settings} />);
+    expect(screen.getByTestId('project-settings-delivery-releases').checked).toBe(true);
+    expect(screen.getByTestId('project-settings-delivery-continuous').closest('label').textContent).toMatch(/Kontinuerlig driftsättning/);
+    fireEvent.click(screen.getByTestId('project-settings-delivery-continuous'));
+    fireEvent.click(screen.getByTestId('project-settings-save'));
+    await screen.findByTestId('project-settings-saved');
+    expect(window.bridge.setProjectSettings).toHaveBeenCalledWith('p1', { featureDocs: 'auto', featuresPath: 'docs/FEATURES.md', delivery: 'continuous' });
+    cleanup();
+
+    render(<ProjectSettingsView projectId="p1" settings={{ ...settings, delivery: 'continuous' }} />);
+    expect(screen.getByTestId('project-settings-delivery-continuous').checked).toBe(true);
   });
 
   it('disables Spara for an invalid path, shows the main-process error, and offers setup without docs (FR3.3, FR3.6)', async () => {
     const onSetup = vi.fn();
-    const onClose = vi.fn();
-    render(<ProjectSettingsDialog open onClose={onClose} projectId="p1" settings={settings} onSetup={onSetup} />);
+    render(<ProjectSettingsView projectId="p1" settings={settings} onSetup={onSetup} />);
     for (const bad of ['../FEATURES.md', '/etc/FEATURES.md', 'docs/FEATURES.txt', '']) {
       fireEvent.change(screen.getByTestId('project-settings-path'), { target: { value: bad } });
       expect(screen.getByTestId('project-settings-save').disabled).toBe(true);
@@ -60,16 +72,14 @@ describe('ProjectSettingsDialog', () => {
     fireEvent.change(screen.getByTestId('project-settings-path'), { target: { value: 'FEATURES.md' } });
     fireEvent.click(screen.getByTestId('project-settings-save'));
     expect((await screen.findByRole('alert')).textContent).toBe('Skrivfel');
-    expect(onClose).not.toHaveBeenCalled();
+    expect(screen.queryByTestId('project-settings-saved')).toBeNull();
 
     fireEvent.click(screen.getByTestId('project-settings-setup'));
     expect(onSetup).toHaveBeenCalledTimes(1);
-    expect(onClose).toHaveBeenCalledTimes(1);
   });
 
   it('lists the harnesses, disables the unsupported ones, and saves opencode for this project (US-0801 FR2.1, FR2.3)', async () => {
-    const onClose = vi.fn();
-    render(<ProjectSettingsDialog open onClose={onClose} projectId="p1" settings={settings} harness="claude" harnesses={detected} />);
+    render(<ProjectSettingsView section="agent" projectId="p1" settings={settings} harness="claude" harnesses={detected} />);
     const select = screen.getByTestId('project-settings-harness');
     expect(select.value).toBe('claude');
     expect([...select.options].map((o) => [o.textContent, o.disabled])).toEqual([
@@ -80,15 +90,14 @@ describe('ProjectSettingsDialog', () => {
 
     fireEvent.change(select, { target: { value: 'opencode' } });
     fireEvent.click(screen.getByTestId('project-settings-save'));
-    await waitFor(() => expect(onClose).toHaveBeenCalledTimes(1));
-    expect(window.bridge.setProjectSettings).toHaveBeenCalledWith('p1', { ...settings, harness: 'opencode' });
+    await screen.findByTestId('project-settings-saved');
+    expect(window.bridge.setProjectSettings).toHaveBeenCalledWith('p1', { harness: 'opencode' });
   });
 
   it('asks before switching while the agent tab works, and switches at once when it is idle (FR6.1)', async () => {
     terminal = { state: vi.fn(() => 'busy') };
     const confirm = vi.spyOn(window, 'confirm').mockReturnValue(false);
-    const onClose = vi.fn();
-    render(<ProjectSettingsDialog open onClose={onClose} projectId="p1" settings={settings} harness="claude" harnesses={detected} />);
+    render(<ProjectSettingsView section="agent" projectId="p1" settings={settings} harness="claude" harnesses={detected} />);
     fireEvent.change(screen.getByTestId('project-settings-harness'), { target: { value: 'opencode' } });
     fireEvent.click(screen.getByTestId('project-settings-save'));
     expect(confirm).toHaveBeenCalledWith('Claude Code arbetar. Byter du till opencode stängs sessionen. Byta ändå?');
@@ -96,7 +105,7 @@ describe('ProjectSettingsDialog', () => {
 
     confirm.mockReturnValue(true);
     fireEvent.click(screen.getByTestId('project-settings-save'));
-    await waitFor(() => expect(window.bridge.setProjectSettings).toHaveBeenCalledWith('p1', { ...settings, harness: 'opencode' }));
+    await waitFor(() => expect(window.bridge.setProjectSettings).toHaveBeenCalledWith('p1', { harness: 'opencode' }));
 
     terminal.state.mockReturnValue('idle');
     confirm.mockClear();
@@ -106,38 +115,33 @@ describe('ProjectSettingsDialog', () => {
   });
 
   it('saves both harnesses as side-by-side agent tabs when both are installed, and offers no choice with one (US-0803)', async () => {
-    const onClose = vi.fn();
-    render(<ProjectSettingsDialog open onClose={onClose} projectId="p1" settings={settings} harness="claude" harnesses={detected} />);
+    render(<ProjectSettingsView section="agent" projectId="p1" settings={settings} harness="claude" harnesses={detected} />);
     const claude = screen.getByTestId('project-settings-tab-claude');
     const opencode = screen.getByTestId('project-settings-tab-opencode');
     expect([claude.checked, opencode.checked]).toEqual([true, false]); // US-0801's single choice is the default
     expect(claude.disabled).toBe(true); // the last open tab cannot be unticked
     fireEvent.click(opencode);
     fireEvent.click(screen.getByTestId('project-settings-save'));
-    await waitFor(() => expect(onClose).toHaveBeenCalledTimes(1));
-    expect(window.bridge.setProjectSettings).toHaveBeenCalledWith('p1', { ...settings, harnessTabs: ['claude', 'opencode'] });
+    await screen.findByTestId('project-settings-saved');
+    expect(window.bridge.setProjectSettings).toHaveBeenCalledWith('p1', { harnessTabs: ['claude', 'opencode'] });
     cleanup();
 
     const onlyClaude = detected.map((d) => (d.id === 'opencode' ? { ...d, installed: false } : d));
-    render(<ProjectSettingsDialog open onClose={onClose} projectId="p1" settings={settings} harness="claude" harnesses={onlyClaude} />);
+    render(<ProjectSettingsView section="agent" projectId="p1" settings={settings} harness="claude" harnesses={onlyClaude} />);
     expect(screen.queryByTestId('project-settings-tabs')).toBeNull();
   });
 
   it('"Lägg till harness…" names the installed harnesses and opens setup in add mode (US-0802 FR3.1)', () => {
     const onAddHarness = vi.fn();
-    const onClose = vi.fn();
-    render(
-      <ProjectSettingsDialog open onClose={onClose} projectId="p1" settings={settings} harness="claude" harnesses={detected} onAddHarness={onAddHarness} />
-    );
+    render(<ProjectSettingsView section="agent" projectId="p1" settings={settings} harness="claude" harnesses={detected} onAddHarness={onAddHarness} />);
     expect(screen.getByTestId('project-settings-installed-harnesses').textContent).toBe('Installerade: Claude Code, opencode, Codex');
     const add = screen.getByTestId('project-settings-add-harness');
     expect(add.textContent).toBe('Lägg till harness…');
     fireEvent.click(add);
     expect(onAddHarness).toHaveBeenCalledTimes(1);
-    expect(onClose).toHaveBeenCalledTimes(1);
     cleanup();
 
-    render(<ProjectSettingsDialog open onClose={onClose} projectId="p1" settings={settings} />);
+    render(<ProjectSettingsView section="agent" projectId="p1" settings={settings} />);
     expect(screen.queryByTestId('project-settings-add-harness')).toBeNull(); // not an AI-DLC project: setup is the main view
   });
 });

@@ -6,9 +6,9 @@
 
 > The console should not only show AI-DLC work but make it easy to steer: pick up an intent that stopped, switch between pieces of work and answer what the workflow is waiting for, without remembering slash commands. The app still never writes AI-DLC files itself. Every action goes through Claude in the embedded terminal, so AI-DLC's own checks and records stay in charge.
 
-**Stories:** US-0501, US-0502, US-0503, US-0504, US-0505, US-0506, US-0507
+**Stories:** US-0501, US-0502, US-0503, US-0504, US-0505, US-0506, US-0507, US-0508, US-0509
 
-**Status (2026-11-15):** ✅ US-0501–US-0503 released in v0.2.0. ✅ US-0505 released in v0.2.1 (answering from the popup added in v0.2.2). US-0504 📋 Planned for v0.2.6. ✅ US-0506 done, for v0.2.5 (intent `261114-agent-dialogs`: a full plan for how the dialogs show and talk to Claude Code and other agents). 📋 US-0507 Planned for v0.2.6 (agent progress). The popup double-answer fix is US-0004 in [EPIC-00](epic-00-fixes.md).
+**Status (2026-11-15):** ✅ US-0501–US-0503 released in v0.2.0. ✅ US-0505 released in v0.2.1 (answering from the popup added in v0.2.2). US-0504 📋 Planned for v0.2.6. ✅ US-0506 done, for v0.2.5 (intent `261114-agent-dialogs`: a full plan for how the dialogs show and talk to Claude Code and other agents). 📋 US-0507 Planned for v0.2.6 (agent progress). 📋 US-0508 Planned (rename an intent). 📋 US-0509 Planned (change the plan of a started intent). The popup double-answer fix is US-0004 in [EPIC-00](epic-00-fixes.md).
 
 ---
 
@@ -154,3 +154,33 @@
   - [ ] Every text goes through `t()` in Swedish and English; numbers are computed from the records, never typed in.
 - **Notes:** Added 2026-11-14 at the person's request.
 - **Dependencies:** US-0104, US-0506
+
+**US-0508: Rename an intent** 📋 Planned
+- As a **developer with many intents**, in order to **find the right one by a name that says what it is**, I would like to **rename an intent from the app**.
+- **Epic:** EPIC-05
+- **Priority:** Medium
+- **Complexity:** Medium
+- **Background:** Asked for 2026-11-15: "I wonder if we can add a story about renaming intents? I think this could be a good addition."
+- **Acceptance Criteria:**
+  - [ ] An intent in the list or its detail can be given a new name, checked like a slug (no spaces, no path characters, unique in the space).
+  - [ ] The rename goes through AI-DLC's own command when it has one; the app never edits engine-owned files itself.
+  - [ ] Story links, the cost history and an open intent's view follow the new name; nothing points at the old one.
+  - [ ] An intent whose work is running cannot be renamed, and the app says why.
+  - [ ] Every text goes through `t()` in Swedish and English.
+- **Notes:** `aidlc engine orchestrate help` (aidlc 2.11.3) lists `intent switch`, `archive` and `unarchive`, but no rename. Find out whether AI-DLC offers one, or whether a display name kept beside the slug is enough.
+- **Dependencies:** US-0501
+
+**US-0509: Change the plan of an intent that has started** 📋 Planned
+- As a **developer whose work turned out bigger or smaller than planned**, in order to **keep the right amount of process without starting over**, I would like to **change the plan AI-DLC follows for a running intent**.
+- **Epic:** EPIC-05
+- **Priority:** Medium
+- **Complexity:** Medium
+- **Background:** Asked for 2026-11-15: "is it possible to change what plan AI-DLC is using on a intent even though it has started. that might also prove useful."
+- **Acceptance Criteria:**
+  - [ ] An intent's detail offers "Change plan". It shows the current plan and the stages already done, which stay done.
+  - [ ] The choice is a ready-made plan, or a plan tailored to a description. Both go through AI-DLC (`/aidlc compose "<task>"` mid-workflow, or the scope switch), typed into the agent tab for the person to send, as with Resume.
+  - [ ] AI-DLC's own approval of the new plan stays with the person in the agent tab; the app only shows the result.
+  - [ ] The pipeline shows the new stages once AI-DLC has recorded them.
+  - [ ] Every text goes through `t()` in Swedish and English.
+- **Notes:** AI-DLC 2.11.3 has `compose "<task>"`, which suggests a plan for the stages not yet run and stops at an approve/edit/reject gate.
+- **Dependencies:** US-0501, US-0901

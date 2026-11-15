@@ -41,6 +41,17 @@ describe('project settings', () => {
     expect((await getSettings()).projectSettings['/p/a']).toEqual({ featureDocs: 'auto', featuresPath: 'docs/FEATURES.md' });
   });
 
+  it('keeps the delivery setting per project, left out until chosen so Releases applies, and refuses an unknown one (US-0603 FR1.1)', async () => {
+    expect((await getProjectSettings('/p/d')).delivery).toBeUndefined();
+    expect(await setProjectSettings('/p/d', { delivery: 'continuous' })).toMatchObject({ delivery: 'continuous' });
+    expect((await getProjectSettings('/p/d')).delivery).toBe('continuous');
+    await expect(setProjectSettings('/p/d', { delivery: 'weekly' })).rejects.toThrow(/weekly/);
+    await fs.writeFile(FILE, JSON.stringify({ projectSettings: { '/p/d': { delivery: 'weekly' }, '/p/e': { delivery: 'releases' } } }));
+    const { projectSettings } = await getSettings();
+    expect(projectSettings['/p/d'].delivery).toBeUndefined();
+    expect(projectSettings['/p/e'].delivery).toBe('releases');
+  });
+
   it('keeps the harness per project and drops an invalid one, so the default applies (EPIC-08 US-0801 FR2.3, FR2.4)', async () => {
     expect(await setProjectSettings('/p/a', { harness: 'opencode' })).toMatchObject({ harness: 'opencode' });
     expect(await getProjectSettings('/p/b')).not.toHaveProperty('harness'); // project B keeps the default

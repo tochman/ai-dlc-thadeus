@@ -11,7 +11,7 @@
     ".claude/agents/aidlc-aws-platform-agent.md": "sha256:b91de3f3898706a92b8d74b1f7ea9ba50261095e7a7acf0424bbeb846e7d172c",
     ".claude/agents/aidlc-compliance-agent.md": "sha256:51f9db8d0081bb5b91a229b15dc0860a5149b3461158bd47307a6d488cc76417",
     ".claude/agents/aidlc-composer-agent.md": "sha256:825eba87cf1aaa0aa08942aa2efd2bf042acc80165b84e7fe802509a2b94ec54",
-    ".claude/agents/aidlc-delivery-agent.md": "sha256:98b67b23542ad3752130b931185507f8003f7d1042a4d6b66b7c8e84a9a5d548",
+    ".claude/agents/aidlc-delivery-agent.md": "sha256:401c5c5fe7d483e75d91aeb09654ae7bf6fcf12c65a5665848460f5f22e26877",
     ".claude/agents/aidlc-design-agent.md": "sha256:bba98c90b82615f42bd74d437c6cf654dde3197f37e055c96ed1d0061be2dca6",
     ".claude/agents/aidlc-developer-agent.md": "sha256:edb8fd48e4ac78a31c70d6dbf84cee8a57fbd7a7c560fd42e19267a76628e96b",
     ".claude/agents/aidlc-devsecops-agent.md": "sha256:d5225bd6acd02d04ec46c6c9c2353e997df4bb499bcb9fbf1abb0d32967eac49",

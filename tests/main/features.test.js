@@ -67,6 +67,15 @@ describe('feature docs parser', () => {
     expect(parseOverview(table).epics[0].statusKind).toBe('progress');
   });
 
+  it('reads 🚀 Deployed as the last status, after ✅ Done (US-0603 FR4.2, FR6)', () => {
+    expect(statusOf('🚀 Deployed 2026-11-15')).toBe('deployed');
+    expect(epicStatusOf('🚀 US-0101 deployed. 🚀 US-0102 deployed.')).toBe('deployed');
+    expect(epicStatusOf('✅ US-0101 done. 🚀 US-0102 deployed.')).toBe('done');
+    expect(epicStatusOf('🚀 US-0101 deployed. 🚧 US-0102 in progress.')).toBe('progress');
+    const [story] = parseEpic('# EPIC-01: A\n\n**US-0101: Ship it** 🚀 Deployed\n- [x] x\n').stories;
+    expect(story).toMatchObject({ status: 'deployed', statusText: 'Deployed' });
+  });
+
   it('gives warnings instead of throwing for files that do not follow the format (FR1.4)', async () => {
     const odd = parseEpic(await read('features/epic-02-odd.md'));
     expect(odd.stories).toEqual([]);

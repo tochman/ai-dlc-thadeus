@@ -69,7 +69,10 @@ const m = vi.hoisted(() => {
       getGitStatus: vi.fn(async () => 'status'),
       getRemoteChanges: vi.fn(async () => 'changes'),
       listConflicts: vi.fn(async () => []),
+      listReleaseTags: vi.fn(async () => []),
       showRemoteFile: vi.fn(async () => 'remote'),
+      setStoryRelease: vi.fn(async () => ({ ok: true })),
+      readRuleStatus: vi.fn(async () => 'current'),
       getSetupInfo: vi.fn(async () => ({ info: 1 })),
       runSetup: vi.fn(async () => ({ ok: true })),
       detectHarnesses: vi.fn(async () => [{ id: 'claude', installed: true }]),
@@ -157,6 +160,7 @@ vi.mock('../../src/main/git.js', () => ({
   getGitStatus: m.svc.getGitStatus,
   getRemoteChanges: m.svc.getRemoteChanges,
   listConflicts: m.svc.listConflicts,
+  listReleaseTags: m.svc.listReleaseTags,
   showRemoteFile: m.svc.showRemoteFile
 }));
 vi.mock('../../src/main/setup.js', () => ({ getSetupInfo: m.svc.getSetupInfo, runSetup: m.svc.runSetup }));
@@ -202,6 +206,7 @@ vi.mock('../../src/main/features.js', () => ({
   loadFeatures: m.svc.loadFeatures,
   loadStoryLinks: m.svc.loadStoryLinks
 }));
+vi.mock('../../src/main/releases.js', () => ({ setStoryRelease: m.svc.setStoryRelease, readRuleStatus: m.svc.readRuleStatus }));
 // US-0506 u3: the real agent wiring, with a spy on terminalInput so pty:write's order can be checked.
 vi.mock('../../src/main/agentIpc.js', async (importOriginal) => {
   const real = await importOriginal();
@@ -617,7 +622,9 @@ describe('setup, settings and tools', () => {
 describe('feature docs and project settings', () => {
   it('loads features and story links', async () => {
     const { projectId } = await openProject('/work/feat');
-    expect(await call('features:load', {}, projectId)).toEqual({ epics: [] });
+    svc.listReleaseTags.mockResolvedValueOnce([{ name: 'v0.2.4', date: '2026-11-14' }]);
+    expect(await call('features:load', {}, projectId)).toEqual({ epics: [], tags: [{ name: 'v0.2.4', date: '2026-11-14' }] });
+    expect(svc.listReleaseTags).toHaveBeenLastCalledWith('/work/feat');
     expect(await call('features:storyLinks', {}, projectId, null)).toEqual({});
     svc.loadIntentList.mockResolvedValueOnce({ intents: [{ dirName: 'a' }, { dirName: 'b', missingOnDisk: true }] });
     await call('features:storyLinks', {}, projectId, 'default');
@@ -628,9 +635,29 @@ describe('feature docs and project settings', () => {
     const { projectId, sender } = await openProject('/work/ps');
     expect(await call('projectSettings:get', {}, projectId)).toMatchObject({ featureDocs: 'show' });
     svc.getProjectSettings.mockResolvedValueOnce({ featureDocs: 'hide' });
-    const next = await call('projectSettings:set', {}, projectId, { featureDocs: 'hide', evil: 1 });
-    expect(next).toEqual({ featureDocs: 'hide', featuresPath: undefined, harness: undefined, harnessTabs: undefined });
+    const next = await call('projectSettings:set', {}, projectId, { featureDocs: 'hide', delivery: 'continuous', evil: 1 });
+    expect(next).toEqual({ featureDocs: 'hide', featuresPath: undefined, harness: undefined, harnessTabs: undefined, delivery: 'continuous' });
     expect(sender.send).toHaveBeenCalledWith('features:changed', { projectId });
+  });
+
+  it('marks a story for a release with named fields only, and reads the rule status for the saved delivery (US-0603 FR2.3, FR5.2)', async () => {
+    const { projectId, sender } = await openProject('/work/rel');
+    sender.send.mockClear();
+    const req = { storyId: 'US-0603', version: 'v0.2.6', epicHash: 'e', overviewHash: 'o' };
+    expect(await call('features:setRelease', {}, projectId, { ...req, file: '/etc/passwd' })).toEqual({ ok: true });
+    expect(svc.setStoryRelease).toHaveBeenLastCalledWith('/work/rel', 'docs/FEATURES.md', req);
+    expect(sender.send).toHaveBeenCalledWith('features:changed', { projectId });
+
+    sender.send.mockClear();
+    svc.setStoryRelease.mockResolvedValueOnce({ conflict: 'docs/FEATURES.md' });
+    expect(await call('features:setRelease', {}, projectId, req)).toEqual({ conflict: 'docs/FEATURES.md' });
+    expect(sender.send).not.toHaveBeenCalled();
+
+    expect(await call('features:ruleStatus', {}, projectId, 'default')).toBe('current');
+    expect(svc.readRuleStatus).toHaveBeenLastCalledWith('/work/rel', 'default', 'releases'); // unset means Releases
+    svc.getProjectSettings.mockResolvedValueOnce({ featuresPath: 'docs/FEATURES.md', delivery: 'continuous' });
+    await call('features:ruleStatus', {}, projectId, 'default');
+    expect(svc.readRuleStatus).toHaveBeenLastCalledWith('/work/rel', 'default', 'continuous');
   });
 
   it('a feature doc change sends features:changed', async () => {
