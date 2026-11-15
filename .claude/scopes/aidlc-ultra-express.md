@@ -1,6 +1,6 @@
 ---
 name: ultra-express
-depth: Minimal
+depth: Standard
 keywords: []
 description: Plan saved from 261113-i18n-foundation, based on bugfix
 skeleton: off
