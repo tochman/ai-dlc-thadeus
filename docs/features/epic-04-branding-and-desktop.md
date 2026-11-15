@@ -6,9 +6,9 @@
 
 > Auctum AIDLC Control should look and behave like a proper Auctum desktop app wherever it shows up: in the Dock, the application menu, the window switcher, the installer and the Linux launcher. Inside the app it should feel like a living bridge console. EPIC-01 added the name, splash screen, in-app logo and the restrained LCARS theme. This epic covers the parts of the operating system that still show Electron defaults, and the motion and light that make the theme come alive without hurting readability.
 
-**Stories:** US-0401, US-0402, US-0403, US-0404, US-0405, US-0406, US-0407, US-0408, US-0409, US-0410, US-0411, US-0412
+**Stories:** US-0401, US-0402, US-0403, US-0404, US-0405, US-0406, US-0407, US-0408, US-0409, US-0410, US-0411, US-0412, US-0413
 
-**Status (2026-11-15):** ✅ US-0401–US-0411 released (v0.1.1–v0.2.5). 📋 US-0412 planned. Each story names its release.
+**Status (2026-11-15):** ✅ US-0401–US-0411 released (v0.1.1–v0.2.5). 📋 US-0412 planned, US-0413 planned for v0.2.6. Each story names its release.
 
 ---
 
@@ -270,3 +270,23 @@
 - **Notes:**
   - **Where.** `src/renderer/Pipeline.jsx`, the `stage-card` rules in `src/renderer/theme.css`.
 - **Dependencies:** US-0411
+
+**US-0413: Update the app from a public release without the GitHub CLI** 📋 Planned, for v0.2.6
+- As a **user of the open-source app**, in order to **get updates without installing and signing in to `gh`**, I would like to **have the app check and download its updates straight from the public GitHub release**.
+- **Epic:** EPIC-04
+- **Priority:** High
+- **Complexity:** Medium
+- **Background:** Reported 2026-11-15: an update to v0.2.5 failed to download on a second machine. The repository is to be made public and the app open source ("we will make it an open repo and open source the app"), so the release can be read without `gh`.
+- **Acceptance Criteria:**
+  - [ ] The check reads the latest release from GitHub's public API over HTTPS (`api.github.com/repos/tochman/aidlc-dash/releases/latest`), with no token and no `gh`. Drafts and prereleases are still ignored.
+  - [ ] The download fetches this machine's asset and `SHA256SUMS.txt` from the release's own download URLs, follows GitHub's redirect, and shows progress against the asset's size.
+  - [ ] The checksum is verified as today; a mismatch deletes the file and says so. Only `tochman/aidlc-dash` release assets with a known name are fetched (US-0407 NFR3).
+  - [ ] A download that fails says why: no connection, a timeout, a full disk, an HTTP status or a checksum mismatch. A partial file is removed.
+  - [ ] GitHub's rate limit for unauthenticated calls is respected: at most one automatic check a day, as today, and a 403/429 says "try again later" instead of failing silently.
+  - [ ] `gh` is no longer needed for updates; Settings › Tools says it is only used for the GitHub features.
+  - [ ] Every text goes through `t()` in Swedish and English.
+- **Notes:**
+  - **Where.** `src/main/updater.js`; Node's own `fetch` (Electron 45), no new dependency.
+  - Depends on the repository being public (US-1101); until then the current `gh` path stays.
+- **Dependencies:** US-0407, US-1101
+
