@@ -121,7 +121,7 @@ describe('project settings', () => {
   });
 
   it('keeps the chosen tool paths and the default project folder, and drops anything that is not an absolute path (US-0405 FR7.1)', async () => {
-    expect(TOOL_IDS).toEqual(['aidlc', 'claude', 'shell']);
+    expect(TOOL_IDS).toEqual(['aidlc', 'claude', 'opencode', 'gh', 'shell']); // US-0410 FR4.1
     const empty = await getSettings();
     expect('toolPaths' in empty).toBe(false); // nothing saved: every tool is found automatically
     expect('defaultProjectFolder' in empty).toBe(false);
@@ -189,6 +189,29 @@ describe('project settings', () => {
       '/p/a': { featureDocs: 'hide', featuresPath: 'docs/FEATURES.md' },
       '/p/b': { featureDocs: 'auto', featuresPath: 'FEATURES.md' }
     });
+  });
+});
+
+// US-0410 FR5.1, FR4.2: the last Settings tab, and the chosen paths for opencode and gh.
+describe('settingsTab and the new tool paths (US-0410)', () => {
+  it.each(['tools', 'appearance', 'notifications', 'project', 'about'])('keeps settingsTab %s on write and on read', async (tab) => {
+    expect((await setSettings({ settingsTab: tab })).settingsTab).toBe(tab);
+    expect((await getSettings()).settingsTab).toBe(tab);
+  });
+
+  it('drops an unknown or wrong-typed settingsTab, so Settings opens on Tools', async () => {
+    for (const bad of ['pipeline', 'Tools', 42, null, '', {}]) {
+      await fs.writeFile(FILE, JSON.stringify({ settingsTab: bad }));
+      expect(await getSettings()).not.toHaveProperty('settingsTab');
+      expect(await setSettings({ settingsTab: bad })).not.toHaveProperty('settingsTab');
+    }
+  });
+
+  it('keeps chosen paths for opencode and gh like the other tools (FR4.2)', async () => {
+    const chosen = { opencode: '/opt/homebrew/bin/opencode', gh: '/opt/homebrew/bin/gh' };
+    expect((await setSettings({ toolPaths: chosen })).toolPaths).toEqual(chosen);
+    expect((await getSettings()).toolPaths).toEqual(chosen);
+    expect((await setSettings({ toolPaths: { gh: 'bin/gh' } })).toolPaths).toBeUndefined(); // relative: dropped
   });
 });
 

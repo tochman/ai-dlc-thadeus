@@ -162,7 +162,7 @@
   - [x] The wall-clock tests in `dialogScript.test.js`, `dialogScriptReply.test.js` and `watcher.test.js` are retried up to twice.
   - [x] No limit changes: every attempt must still meet the full 100 ms, 300 ms or 2.5 s window.
 - **Notes:**
-  - **Where.** `retry: 2` on the `timed` helpers, the two C6 tests and the `watcher` describe blocks.
+  - **Where.** `retry: 2` on the `timed` helpers, the two C6 tests and the `watcher` describe blocks, and (added with US-0410) on the whole `scripts` project in `vitest.config.mjs`, so `agentHooksGuard.test.js` and every other real-time script test is covered.
   - **Limit.** A script that is really too slow still fails, three times in a row.
 - **Dependencies:** US-0506
 

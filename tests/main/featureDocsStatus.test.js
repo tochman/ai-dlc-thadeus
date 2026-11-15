@@ -22,6 +22,15 @@ export function storyIdsWithRanges(text) {
   return ids;
 }
 
+/**
+ * The stories a workflow builds, from its description (US-0410): one that opens with "US-XXXX:" builds that story
+ * only, so a story it merely mentions is not counted; any other description counts every id it names.
+ */
+export function intentStoryIds(description) {
+  const lead = String(description ?? '').match(/^\s*(US-\d{4}):/);
+  return lead ? new Set([lead[1]]) : storyIdsWithRanges(description);
+}
+
 /** True when some segment of `text` (split on "·" or ". ") names `id` and carries `status`'s marker. */
 export function mentionsWithStatus(text, id, status) {
   return String(text ?? '')
@@ -78,7 +87,7 @@ function intentStories() {
     if (!existsSync(stateFile) || !existsSync(descFile)) continue;
     const state = parseState(readFileSync(stateFile, 'utf8'));
     const codeGen = state.phases.flatMap((p) => p.stages).find((st) => st.slug === 'code-generation');
-    const ids = storyIdsWithRanges(JSON.parse(readFileSync(descFile, 'utf8')));
+    const ids = intentStoryIds(JSON.parse(readFileSync(descFile, 'utf8')));
     if (codeGen?.status === 'done') ids.forEach((id) => built.add(id));
     if (complete.has(dir.name)) ids.forEach((id) => delivered.add(id));
   }
@@ -98,6 +107,11 @@ describe('feature docs status', () => {
 
   const overview = '| Epic | Topic | Status |\n|---|---|---|\n| [EPIC-09](e.md) | T | 📋 Planned (US-0901) |\n';
   const epic = (marker, status) => `# EPIC-09: T\n\n**Status (2026-11-14):** ${status}\n\n**US-0901: Thing** ${marker}\n- [ ] x\n`;
+
+  it('a description that opens with "US-XXXX:" names only that story; others keep every id they mention (US-0410)', () => {
+    expect([...intentStoryIds('US-0410: Settings tabs; builds the card style US-0411 reuses.')]).toEqual(['US-0410']);
+    expect([...intentStoryIds('Bygg EPIC-01 (US-0101 till US-0103) och US-0110')]).toEqual(['US-0101', 'US-0102', 'US-0103', 'US-0110']);
+  });
 
   it('fails when a built story still says Planned', () => {
     const problems = checkFeatureDocs({ overview, epics: { 'e.md': epic('📋 Planned', '📋 Planned.') }, built: new Set(['US-0901']) });

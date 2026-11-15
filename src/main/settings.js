@@ -18,6 +18,8 @@ const ANIMATIONS = new Set(['full', 'reduced', 'off']); // "Animationer: Full / 
 export const QUESTION_ALERTS = new Set(['popup-notify', 'popup', 'off']);
 // "Meddelanden från agenten: Dialog och notis / Bara raden / Av" (US-0506 u5 D1, SD55); unset means dialog-notify.
 export const REPLY_ALERTS = new Set(['dialog-notify', 'line', 'off']);
+// The Settings tabs, in rail order (US-0410 FR1.1, FR5.1); unset means Tools.
+export const SETTINGS_TABS = ['tools', 'appearance', 'notifications', 'project', 'about'];
 const file = () => path.join(app.getPath('userData'), 'settings.json');
 
 const stringList = (v) => (Array.isArray(v) ? v.filter((s) => typeof s === 'string').slice(0, 50) : []);
@@ -82,6 +84,8 @@ function sanitize(raw) {
     ...(typeof raw?.notificationSound === 'boolean' ? { notificationSound: raw.notificationSound } : {}),
     // "Språk / Language" (EPIC-07 US-0701 FR4.3); left out when invalid, so auto applies.
     ...(LANGUAGE_SETTINGS.includes(raw?.language) ? { language: raw.language } : {}),
+    // The last Settings tab (US-0410 FR5.1); left out when invalid, so Settings opens on Tools.
+    ...(SETTINGS_TABS.includes(raw?.settingsTab) ? { settingsTab: raw.settingsTab } : {}),
     // The chosen tool paths and the default project folder (EPIC-04 US-0405 FR2.4, FR4.1, FR7.1, FR7.3):
     // absolute paths only, and each key is left out when it holds nothing usable.
     ...(Object.keys(toolPaths).length ? { toolPaths } : {}),

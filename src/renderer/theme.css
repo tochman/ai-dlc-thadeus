@@ -1067,28 +1067,61 @@ a.md-link:hover { color: var(--steel-light); }
 .question-popup.is-overdue .question-popup-choice { border-left-color: var(--alert); }
 .lcars-radio-group .lcars-block:has(input:focus-visible) { outline: 2px solid var(--amber); outline-offset: 2px; }
 
-/* ---------- Settings view (EPIC-04 US-0405 FR1.1–FR5.1): one scrolling page of sections in the content frame ---------- */
+/* ---------- LCARS card (US-0410 FR6.1): one shared style, for the tool cards here and the pipeline (US-0411).
+   A thin outline with one rounded top-right corner, a lighter bar on the top edge, a header strip with the title
+   aligned right, a dark body and a footer strip. ---------- */
+.lcars-card { position: relative; display: flex; flex-direction: column; min-width: 0; border: 1px solid var(--slate-3); border-radius: 0 18px 0 0; background: var(--slate-1); overflow: hidden; }
+.lcars-card::before { content: ''; position: absolute; inset: 0 18px auto 0; height: 3px; background: var(--slate-5); }
+.lcars-card-head { display: flex; align-items: center; justify-content: flex-end; gap: var(--gap); min-height: 28px; padding: 5px 14px 3px; background: var(--steel-deep); }
+.lcars-card-head > h2, .lcars-card-head > h3 { margin: 0; color: var(--steel-light); font-size: 15px; letter-spacing: 0.05em; text-align: right; }
+.lcars-card-body { display: flex; flex-direction: column; gap: 8px; padding: 10px 14px; background: var(--bg); }
+.lcars-card-foot { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px 10px; padding: 4px 14px; background: var(--slate-2); }
+
+/* ---------- Settings view (EPIC-04 US-0405, US-0410): one tab at a time in an LCARS frame ---------- */
 .settings-view { grid-area: main; min-height: 0; display: flex; flex-direction: column; gap: 12px; overflow: auto; outline: none; }
 .settings-view:focus-visible { outline: 2px solid var(--amber); outline-offset: -2px; }
 .settings-view-head { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between; }
 .settings-view-title { margin: 0; color: var(--steel); font-size: 20px; letter-spacing: 0.04em; text-transform: uppercase; }
-.settings-section { display: flex; flex-direction: column; gap: 8px; }
-.settings-section > h2 { margin-bottom: 0; }
+/* The panel's frame (FR3.1): the card with a larger corner and a steel elbow at the left of its header bar. */
+.settings-frame { border-radius: 0 28px 0 0; }
+.settings-frame::before { inset-inline-end: 28px; }
+.settings-frame > .lcars-card-head { min-height: 34px; padding-left: 0; }
+.settings-frame > .lcars-card-head > h2 { font-size: 18px; }
+.settings-frame-elbow { align-self: stretch; width: 72px; margin: -5px auto -3px 0; background: var(--steel); border-radius: 0 0 0 16px; }
 .settings-subhead { margin: 6px 0 0; color: var(--muted); font-size: 12px; letter-spacing: 0.05em; text-transform: uppercase; }
-/* A tool row: name, path and version, then where the path came from and its buttons; wraps instead of overflowing. */
-.settings-tool { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: baseline; padding: 6px 0; border-bottom: 1px solid var(--slate-2); }
-.settings-tool:last-of-type { border-bottom: 0; }
-.settings-tool-name { flex: 0 0 150px; color: var(--steel-text); font-size: 14px; }
-.settings-tool-field { flex: 1 1 220px; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
-.settings-tool-field code { overflow-wrap: anywhere; }
-.settings-tool-source { flex: 0 0 auto; color: var(--muted); font-size: 12px; letter-spacing: 0.04em; text-transform: uppercase; }
-.settings-tool-actions { flex: 0 0 auto; display: flex; gap: 5px; }
-.settings-tool-error { flex: 1 1 100%; margin: 0; }
+/* Tool cards (FR4.1): name in the header, path and version in the body, source and buttons in the footer. */
+.settings-tool-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 10px; }
+.settings-tool-name { color: var(--steel-light); }
+.settings-tool-field { min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.settings-tool-source { color: var(--text-2); font-size: 12px; letter-spacing: 0.04em; text-transform: uppercase; }
+.settings-tool-actions { display: flex; gap: 5px; }
+.settings-tool-needed { margin: 0; color: var(--coral-soft); font-size: 13px; }
+.settings-tool-error { margin: 0; }
+/* A path wraps only at the <wbr> after each `/`, never mid-word (FR4.4). */
+.settings-tool-field code, .settings-folder code, .settings-list code { overflow-wrap: normal; word-break: normal; hyphens: none; }
 .settings-folder { display: flex; flex-wrap: wrap; gap: 8px; align-items: baseline; }
-.settings-folder code { overflow-wrap: anywhere; }
 .settings-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
 .settings-list li { display: flex; flex-wrap: wrap; gap: 8px; align-items: baseline; justify-content: space-between; padding: 3px 6px; border-bottom: 1px solid var(--slate-2); }
-.settings-list code { overflow-wrap: anywhere; }
+/* The tab sub-buttons under SETTINGS in the arm (FR1.1): indented and a size smaller than the arm's blocks. */
+.arm-subtabs { display: flex; flex-direction: column; gap: 5px; padding-left: 18px; flex-shrink: 0; }
+.arm-subtabs .lcars-block { height: 32px; padding-bottom: 5px; font-size: 14px; }
+/* Motion (FR3.2, FR3.3, NFR2). Full: the chosen sub-button lights, a sweep runs along the frame's bar, the rows
+   cascade in. Dämpad: a static glow on the chosen sub-button, nothing moves. Av: nothing. */
+:root[data-motion='full'] .arm-subtabs [aria-current='page'] { animation: lcars-glow-steel 600ms ease-out 1; }
+:root[data-motion='reduced'] .arm-subtabs [aria-current='page'] { box-shadow: 0 0 10px var(--steel-a60); }
+:root[data-motion='full'] .settings-frame--sweep > .lcars-card-head {
+  background-image: linear-gradient(90deg, var(--steel-a0), var(--steel-a55), var(--steel-a0));
+  background-size: 240px 100%;
+  background-repeat: no-repeat;
+  animation: lcars-sweep 700ms ease-out 1 both;
+}
+:root[data-motion='full'] .settings-cascade > .lcars-card-body > * { animation: lcars-rise 260ms ease-out both; }
+:root[data-motion='full'] .settings-cascade > .lcars-card-body > :nth-child(2) { animation-delay: 50ms; }
+:root[data-motion='full'] .settings-cascade > .lcars-card-body > :nth-child(3) { animation-delay: 100ms; }
+:root[data-motion='full'] .settings-cascade > .lcars-card-body > :nth-child(4) { animation-delay: 150ms; }
+:root[data-motion='full'] .settings-cascade > .lcars-card-body > :nth-child(5) { animation-delay: 200ms; }
+/* ponytail: delays stop at the 6th row (the longest panel has 6); add rules if a panel grows. */
+:root[data-motion='full'] .settings-cascade > .lcars-card-body > :nth-child(n + 6) { animation-delay: 250ms; }
 .settings-about { display: flex; flex-wrap: wrap; gap: 14px; align-items: center; }
 .settings-about-mark { color: var(--amber); }
 .settings-about-text { display: flex; flex-direction: column; gap: 4px; min-width: 0; }

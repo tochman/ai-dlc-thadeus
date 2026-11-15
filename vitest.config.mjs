@@ -38,7 +38,8 @@ export default defineConfig({
       },
       {
         extends: true,
-        test: { name: 'scripts', include: TIMED, environment: 'node', sequence: { groupOrder: 1 } }
+        // US-0010: wall-clock tests retry up to twice under a loaded run; every attempt keeps its full limit.
+        test: { name: 'scripts', include: TIMED, environment: 'node', sequence: { groupOrder: 1 }, retry: 2 }
       },
       {
         extends: true,

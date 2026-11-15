@@ -40,6 +40,7 @@ const TOOLS = [
   { id: 'shell', path: '/bin/zsh', source: 'auto', found: true, version: 'zsh 5.9' }
 ];
 
+const renderSettings = (props) => renderView(props);
 function renderView(props = {}) {
   const handlers = {
     onClose: vi.fn(),
@@ -72,22 +73,27 @@ afterEach(async () => {
 describe('Inställningar as a view in the content frame (EPIC-04 US-0405)', () => {
   it('shows the four sections and the five appearance settings, and moves focus into the view (FR1.2, FR1.3, FR3.1)', async () => {
     stubBridge({ tools: TOOLS });
-    const { onAnimations, onFullscreen, onAlertSettings, onLanguage } = renderView();
+    renderView();
 
     const view = screen.getByRole('region', { name: 'Inställningar' });
     expect(within(view).getByRole('heading', { level: 2, name: 'Inställningar' })).toBeTruthy();
     await waitFor(() => expect(document.activeElement).toBe(view)); // keyboard works without a click (NFR1)
 
+    // US-0410: one tab at a time, so each section is rendered on its own tab.
     for (const [id, name] of [
       ['tools', 'Verktyg'],
       ['appearance', 'Utseende'],
       ['project', 'Projekt'],
       ['about', 'Om']
     ]) {
+      cleanup();
+      renderView({ tab: id });
       expect(within(screen.getByTestId(`settings-view-${id}`)).getByRole('heading', { level: 2 }).textContent).toBe(name);
     }
 
-    // The five, each with exactly the choices it has today.
+    // The five, each with exactly the choices it has today (Appearance, then Notifications since US-0410).
+    cleanup();
+    const { onAnimations, onFullscreen, onLanguage } = renderView({ tab: 'appearance' });
     expect(screen.getByTestId('app-settings-animations-full').checked).toBe(true);
     fireEvent.click(screen.getByTestId('app-settings-animations-reduced'));
     await waitFor(() => expect(onAnimations).toHaveBeenCalledWith('reduced'));
@@ -104,6 +110,8 @@ describe('Inställningar as a view in the content frame (EPIC-04 US-0405)', () =
     fireEvent.change(select, { target: { value: 'en' } });
     await waitFor(() => expect(onLanguage).toHaveBeenCalledWith('en'));
 
+    cleanup();
+    const { onAlertSettings } = renderView({ tab: 'notifications' });
     expect(screen.getByTestId('app-settings-alerts-popup-notify').checked).toBe(true);
     fireEvent.click(screen.getByTestId('app-settings-alerts-off'));
     await waitFor(() => expect(onAlertSettings).toHaveBeenCalledWith({ questionAlerts: 'off' }));
@@ -180,14 +188,18 @@ describe('Inställningar as a view in the content frame (EPIC-04 US-0405)', () =
 
     expect(screen.getByRole('button', { name: 'Välj sökväg till AI-DLC CLI' }).textContent).toBe('Välj…');
     expect(screen.getByRole('button', { name: 'Välj sökväg till Skal' })).toBeTruthy();
+    cleanup();
+    renderView({ tab: 'appearance' });
     expect(screen.getByRole('combobox', { name: 'Språk / Language' })).toBe(screen.getByTestId('settings-language'));
+    cleanup();
+    renderView({ tab: 'project' });
     expect(screen.getByRole('button', { name: 'Ta bort /p/aidlc-dash-a' })).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Projektinställningar: aidlc-dash-a' })).toBeTruthy();
   });
 
   it("picks and clears the default folder, removes a recent project and opens a project's settings (FR4.1–FR4.3)", async () => {
     const { bridge, state } = stubBridge({ tools: TOOLS });
-    const { onRemoveRecent, onProjectSettings } = renderView();
+    const { onRemoveRecent, onProjectSettings } = renderView({ tab: 'project' });
 
     expect(screen.getByTestId('settings-default-folder').textContent).toBe('Ingen mapp vald');
     expect(screen.queryByTestId('settings-default-folder-reset')).toBeNull();
@@ -211,7 +223,7 @@ describe('Inställningar as a view in the content frame (EPIC-04 US-0405)', () =
 
   it('shows the app version, the AI-DLC version or its reason, and opens the two fixed links (FR5.1)', async () => {
     const { bridge } = stubBridge({ appInfo: { version: '0.2.3', aidlc: { found: false, error: 'hittades inte i PATH' } } });
-    renderView();
+    renderView({ tab: 'about' });
     await waitFor(() => expect(screen.getByTestId('settings-app-version').textContent).toBe('App-version 0.2.3'));
     expect(screen.getByTestId('settings-aidlc-version').textContent).toBe('AI-DLC hittades inte: hittades inte i PATH');
 
@@ -222,7 +234,7 @@ describe('Inställningar as a view in the content frame (EPIC-04 US-0405)', () =
 
     cleanup();
     stubBridge({ appInfo: { version: '0.2.3', aidlc: { found: true, version: '0.9.1' } } });
-    renderView();
+    renderView({ tab: 'about' });
     await waitFor(() => expect(screen.getByTestId('settings-aidlc-version').textContent).toBe('AI-DLC 0.9.1'));
   });
 
@@ -236,9 +248,83 @@ describe('Inställningar as a view in the content frame (EPIC-04 US-0405)', () =
   });
 });
 
+// US-0410: one tab at a time in an LCARS frame, and a card per tool.
+const TOOLS5 = [
+  ...TOOLS.slice(0, 2),
+  { id: 'opencode', path: '/opt/homebrew/bin/opencode', source: 'auto', found: true, version: '0.15.2' },
+  { id: 'gh', path: null, source: 'auto', found: false, version: null, error: 'gh hittades inte i PATH' },
+  TOOLS[2]
+];
+
+describe('Settings in LCARS tabs (US-0410)', () => {
+  it('shows only the chosen tab: Notifications holds the alerts, replies and sound, and Appearance is gone (FR2.1–FR2.3)', () => {
+    stubBridge({ tools: TOOLS5 });
+    renderView({ tab: 'notifications' });
+    expect(screen.getByTestId('settings-view-notifications')).toBeTruthy();
+    for (const id of ['tools', 'appearance', 'project', 'about']) expect(screen.queryByTestId(`settings-view-${id}`)).toBeNull();
+    expect(screen.getByTestId('app-settings-alerts-popup-notify')).toBeTruthy();
+    expect(screen.getByTestId('app-settings-replies-dialog-notify')).toBeTruthy();
+    expect(screen.getByTestId('app-settings-sound-on')).toBeTruthy();
+    expect(screen.queryByTestId('app-settings-animations-full')).toBeNull();
+    expect(screen.queryByTestId('settings-language')).toBeNull();
+  });
+
+  it('opens on Tools when no tab is given, and puts each panel in the shared frame with its name in the header (FR3.1, FR6.1)', () => {
+    stubBridge({ tools: TOOLS5 });
+    renderView();
+    const tools = screen.getByTestId('settings-view-tools');
+    expect(tools.classList.contains('lcars-card')).toBe(true);
+    expect(tools.classList.contains('settings-frame')).toBe(true);
+    expect(within(tools.querySelector('.lcars-card-head')).getByRole('heading', { level: 2 }).textContent).toBe('Verktyg');
+    cleanup();
+    renderView({ tab: 'notifications' });
+    expect(within(screen.getByTestId('settings-view-notifications')).getByRole('heading', { level: 2 }).textContent).toBe('Notiser');
+  });
+
+  it('shows a card for each of the five tools, and a missing one says not found and what it is needed for (FR4.1, FR4.3)', async () => {
+    stubBridge({ tools: TOOLS5 });
+    renderView();
+    for (const id of ['aidlc', 'claude', 'opencode', 'gh', 'shell']) {
+      expect(screen.getByTestId(`settings-tool-${id}`).classList.contains('lcars-card')).toBe(true);
+    }
+    const gh = screen.getByTestId('settings-tool-gh');
+    await waitFor(() => expect(within(gh).getByText('hittades inte')).toBeTruthy());
+    expect(within(gh).getByText('GitHub CLI (gh)')).toBeTruthy();
+    expect(within(gh).getByText(/Behövs för att söka efter och hämta uppdateringar/)).toBeTruthy();
+    expect(within(gh).getByTestId('settings-tool-pick-gh')).toBeTruthy();
+    // A found tool does not carry the needed-for line.
+    await waitFor(() => expect(within(screen.getByTestId('settings-tool-opencode')).getByText('0.15.2')).toBeTruthy());
+    expect(within(screen.getByTestId('settings-tool-opencode')).queryByText(/Behövs för/)).toBeNull();
+  });
+
+  it('lets a path break after each / and nowhere else (FR4.4)', async () => {
+    stubBridge({ tools: TOOLS5 });
+    renderView();
+    const code = screen.getByTestId('settings-tool-opencode').querySelector('code');
+    await waitFor(() => expect(code.textContent).toBe('/opt/homebrew/bin/opencode'));
+    const breaks = [...code.querySelectorAll('wbr')];
+    expect(breaks).toHaveLength(4);
+    for (const wbr of breaks) expect(wbr.previousSibling.textContent.endsWith('/')).toBe(true);
+  });
+
+  it('carries the sweep and cascade on Full, and no motion classes on Reduced or Off (FR3.2, FR3.3, NFR2)', () => {
+    stubBridge({ tools: TOOLS5 });
+    renderView({ tab: 'appearance', animations: 'full' });
+    const full = screen.getByTestId('settings-view-appearance').classList;
+    expect(full.contains('settings-frame--sweep') && full.contains('settings-cascade')).toBe(true);
+    for (const mode of ['reduced', 'off']) {
+      cleanup();
+      renderView({ tab: 'appearance', animations: mode });
+      const cl = screen.getByTestId('settings-view-appearance').classList;
+      expect(cl.contains('settings-frame--sweep') || cl.contains('settings-cascade')).toBe(false);
+    }
+  });
+});
+
 // US-0506 u5 D1, D9, M9: the reply alerts row.
 describe('Meddelanden från agenten (US-0506 u5)', () => {
   const legends = () => [...document.querySelectorAll('legend')].map((l) => l.textContent);
+  const renderView = (props = {}) => renderSettings({ tab: 'notifications', ...props }); // on its tab since US-0410
 
   it('sits between the alerts and sound fieldsets with three radios and the saved value checked', () => {
     stubBridge({ tools: TOOLS });

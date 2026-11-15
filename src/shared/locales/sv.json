@@ -434,6 +434,7 @@
   },
   "settings": {
     "title": "Inställningar",
+    "tabsLabel": "Inställningsflikar",
     "saveFailed": "Inställningen kunde inte sparas: {error}",
     "animationsLegend": "Animationer",
     "animationsHelp": "Dämpad: statisk glöd, inga loopar och inget svep. Av: inga animationer. Utan eget val blir det Dämpad när datorn ber om mindre rörelse, annars Full.",
@@ -470,13 +471,23 @@
     "sections": {
       "tools": "Verktyg",
       "appearance": "Utseende",
+      "notifications": "Notiser",
       "project": "Projekt",
       "about": "Om"
     },
     "tools": {
       "aidlc": "AI-DLC CLI",
       "claude": "Claude Code CLI",
+      "opencode": "opencode CLI",
+      "gh": "GitHub CLI (gh)",
       "shell": "Skal",
+      "neededFor": {
+        "aidlc": "Behövs för AI-DLC-vyerna och för att köra AI-DLC-kommandon.",
+        "claude": "Behövs för agentflikarna med Claude Code.",
+        "opencode": "Behövs för agentflikarna med opencode.",
+        "gh": "Behövs för att söka efter och hämta uppdateringar av appen.",
+        "shell": "Behövs för terminalflikarna."
+      },
       "pathLabel": "Sökväg",
       "versionLabel": "Version",
       "notFound": "hittades inte",

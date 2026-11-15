@@ -6,9 +6,9 @@
 
 > Many projects describe their product in a feature document: an overview (`docs/FEATURES.md`) listing epics, and one file per epic (`docs/features/epic-XX-*.md`) with user stories, acceptance criteria and status. The format is not part of AI-DLC, but it works well together with it: the feature docs say *what* and *why*, and AI-DLC's records say *how* and *when*. The console should offer this format when a project is set up, and let people read and follow it next to the AI-DLC work.
 
-**Stories:** US-0601, US-0602
+**Stories:** US-0601, US-0602, US-0603, US-0604
 
-**Status (2026-11-13):** ✅ Released in v0.2.0. Both stories are built with AI-DLC in `express` scope (intent `261113-feature-docs`) and the unit tests are green. The manual checks in Electron (live updates, settings, setup offer, timing) are done in Build and Test.
+**Status (2026-11-15):** ✅ US-0601 and US-0602 released in v0.2.0. 📋 US-0603 Planned for v0.2.5 (releases or continuous deployment). 📋 US-0604 Planned for v0.2.6 (filter epics and stories). Both stories are built with AI-DLC in `express` scope (intent `261113-feature-docs`) and the unit tests are green. The manual checks in Electron (live updates, settings, setup offer, timing) are done in Build and Test.
 
 **Decisions:**
 - **Q1 (where the view lives):** a switch "Intents | Features" at the top of the project view. Features replaces the sidebar and content area; the terminal stays.
@@ -64,3 +64,35 @@
   - [x] **Given** a project without feature docs and the setting **Visa**, **then** the view explains the format and offers setup (US-0601). With **Automatiskt**, a project without docs shows no view, only a discreet "Sätt upp feature-beskrivningar" in the project menu. (The project menu is the "Projektinställningar" dialog behind the gear on the tab.)
   - [x] Read-only: the view never changes the files. Links "Öppna i editor" and "Visa i Finder" as in the artifact reader.
 - **Dependencies:** US-0107, US-0109, US-0601
+
+**US-0603: Releases or continuous deployment, and stories marked for a release** 📋 Planned, for v0.2.5
+- As a **developer planning what ships when**, in order to **see and shape each release**, I would like to **choose per project whether it ships in releases or continuously, and mark stories for a release in the app**.
+- **Epic:** EPIC-06
+- **Priority:** High
+- **Complexity:** Medium
+- **Background:** Asked for 2026-11-15: "in some project (like this one) we work with releases. In others we do continuous deployment. I would like to add release handling to this app and to be able to mark user stories to a release. that would help in planning."
+- **Acceptance Criteria:**
+  - [ ] Each project has a setting: **Releases** or **Continuous deployment**.
+  - [ ] With Releases, a story can be marked for a release (`for vX.Y.Z`) or have it removed, from the story in the app. The app writes the same marker the epic file and `FEATURES.md` already use, and nothing else in the files changes.
+  - [ ] A release list shows each release with its stories and their status: planned releases from the story markers, released ones from the project's git tags (`vX.Y.Z`), with the date.
+  - [ ] With Continuous deployment, release fields and the release list are hidden, and a story has its own last status, **🚀 Deployed**, set when its change is deployed (after ✅ Done).
+  - [ ] The story lifecycle rule follows the project's choice and keeps every story's status current at all times: 📋 Planned → 🚧 In progress when work starts → ✅ Done when built and approved → "for vX.Y.Z" and "Released in vX.Y.Z" at the tag (Releases), or 🚀 Deployed at deploy (Continuous deployment).
+  - [ ] The rule applies to every project opened in the app, not only at feature-docs setup: when a project's AI-DLC memory lacks the rule, or holds an older one, the app offers to add or update it through AI-DLC's own rule mechanism (as US-0003), and changing the project's setting updates the rule.
+  - [ ] The epic and story views and the docs status check understand 🚀 Deployed (counts, colours, filter).
+  - [ ] A story whose release is tagged but still says "for vX.Y.Z" is flagged, as `featureDocsStatus.test.js` would flag it.
+  - [ ] Every text goes through `t()` in Swedish and English.
+- **Notes:** The release markers are already the docs' own format (project rule: "for vX.Y.Z", then "Released in vX.Y.Z"), so no new data store is needed.
+- **Dependencies:** US-0602, US-0003
+
+**US-0604: Filter epics and user stories** 📋 Planned, for v0.2.6
+- As a **developer looking for the next thing to work on**, in order to **find stories quickly in a long backlog**, I would like to **filter epics and stories by status and other data**.
+- **Epic:** EPIC-06
+- **Priority:** Medium
+- **Complexity:** Low
+- **Background:** Asked for 2026-11-15 together with US-0603: "I would also like to add some filtering to epics and user stories based on status and other data."
+- **Acceptance Criteria:**
+  - [ ] Filters for status (Planned, In progress, Done, Released, Deployed), release, epic, priority, complexity, and free text over the title and the story text.
+  - [ ] Filters combine; the count of matching stories shows, and one action clears them all.
+  - [ ] The filter is remembered per project.
+  - [ ] Every text goes through `t()` in Swedish and English.
+- **Dependencies:** US-0602 (release filter: US-0603)

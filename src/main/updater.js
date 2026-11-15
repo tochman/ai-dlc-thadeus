@@ -7,6 +7,7 @@ import { constants, createReadStream, promises as fsp } from 'node:fs';
 import path from 'node:path';
 import { defaultExec, runFixed } from './exec.js';
 import { UPDATE_DEFAULTS } from './settings.js';
+import { toolPath } from './tools.js';
 import { t } from '../shared/i18n.js';
 
 export const REPO = 'tochman/aidlc-dash';
@@ -131,7 +132,8 @@ export function createUpdater({
 }) {
   const state = { last: null, release: null, file: null, dir: null };
   let inflight = null;
-  const gh = (args, timeout) => runFixed('gh', args, { timeout, exec });
+  // The gh path chosen in Settings wins over the bare name on PATH (US-0410 FR4.2).
+  const gh = (args, timeout) => runFixed(toolPath('gh'), args, { timeout, exec });
 
   async function runCheck(force) {
     const settings = await getSettings();

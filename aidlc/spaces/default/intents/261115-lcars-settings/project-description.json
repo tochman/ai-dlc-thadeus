@@ -1,0 +1,1 @@
+"US-0410: Settings in LCARS tabs, with every tool the app needs checked (docs/features/epic-04-branding-and-desktop.md). Tabs Tools, Appearance, Notifications, Project, About as LCARS pill tabs with animation following the animations setting; Tools checks aidlc, claude, opencode, gh and shell; builds the shared LCARS card style that US-0411 reuses."

@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import ProjectView from './ProjectView.jsx';
 import AuctumMark from './AuctumMark.jsx';
 import Splash from './Splash.jsx';
-import SettingsView, { saveLanguage } from './SettingsView.jsx';
+import SettingsView, { SETTINGS_TABS, saveLanguage } from './SettingsView.jsx';
 import { withSlots } from './format.js';
 import DocsDialog from './DocsDialog.jsx';
 import AboutDialog from './AboutDialog.jsx';
@@ -55,6 +55,7 @@ export default function App() {
   const [restored, setRestored] = useState(false);
   const [settingsFor, setSettingsFor] = useState(null); // projectId whose "Projektinställningar" is open (EPIC-06 FR3.1)
   const [settingsView, setSettingsView] = useState(false); // "Inställningar" shows in the content frame, not a dialog (US-0405 FR1.1)
+  const [settingsTab, setSettingsTab] = useState('tools'); // the tab shown in it, saved as settingsTab (US-0410 FR5.1)
   const [startFullscreen, setStartFullscreen] = useState(false); // the saved "Helskärm vid start", apart from the live mode below
   const [recent, setRecent] = useState([]); // the "Senaste projekt" list, also kept in recentRef for saving
   const [animations, setAnimations] = useState(null); // saved choice; null means the default applies
@@ -112,6 +113,7 @@ export default function App() {
         setAnimations(s.animations ?? null);
         setStartFullscreen(s.fullscreen === true); // "Helskärm vid start" is the mode main saved at exit (US-0404)
         setLanguage(s.language ?? 'auto');
+        setSettingsTab(SETTINGS_TABS.includes(s.settingsTab) ? s.settingsTab : 'tools'); // the first time: Tools (US-0410 FR5.1)
         setAlertSettings({ questionAlerts: s.questionAlerts, replyAlerts: s.replyAlerts, notificationSound: s.notificationSound });
         const failed = [];
         let activeInfo = null;
@@ -376,6 +378,11 @@ export default function App() {
     if (active) setUiOf(active.projectId, { view: next });
   }
   const openAppSettings = () => setSettingsView(true);
+  /** A Settings tab from the rail: shown at once and remembered for the next start (US-0410 FR1.2, FR5.1). */
+  function chooseSettingsTab(id) {
+    setSettingsTab(id);
+    bridge.setSettings({ settingsTab: id }).catch((err) => setError(t('app.settingsSaveFailed', { error: errorText(err) })));
+  }
   function openProjectSettings(projectId) {
     if (!projectId) return;
     setActiveId(projectId);
@@ -561,6 +568,16 @@ export default function App() {
         <ArmBlock tone="dark" current={settingsView} onClick={openAppSettings} data-testid="app-settings-open">
           {t('app.settings')}
         </ArmBlock>
+        {/* The Settings tabs, only while Settings is open (US-0410 FR1.1–FR1.3). */}
+        {settingsView && (
+          <div className="arm-subtabs" role="group" aria-label={t('settings.tabsLabel')}>
+            {SETTINGS_TABS.map((id) => (
+              <ArmBlock key={id} current={settingsTab === id} onClick={() => chooseSettingsTab(id)} data-testid={`app-settings-tab-${id}`}>
+                {t(`settings.sections.${id}`)}
+              </ArmBlock>
+            ))}
+          </div>
+        )}
         <div className="arm-foot">
           <AuctumMark size={128} className="arm-foot-mark" decorative />
           <span className="arm-foot-label">{isAidlc ? t('app.intentCount', { n: activeMeta.intentCount ?? 0 }) : 'Auctum'}</span>
@@ -593,6 +610,7 @@ export default function App() {
         {settingsView && (
           <SettingsView
             onClose={() => setSettingsView(false)}
+            tab={settingsTab}
             animations={motion}
             onAnimations={saveAnimations}
             fullscreen={startFullscreen}
