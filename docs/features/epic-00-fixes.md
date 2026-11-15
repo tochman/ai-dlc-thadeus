@@ -8,7 +8,7 @@
 
 **Stories:** US-0001, US-0002, US-0003, US-0004, US-0005, US-0006, US-0007, US-0008, US-0009, US-0010, US-0011, US-0012, US-0013, US-0014, US-0015, US-0016
 
-**Status (2026-11-15):** ✅ US-0001–US-0012 released (v0.2.3–v0.2.5). ✅ US-0013–US-0014 done. 📋 US-0015–US-0016 planned for v0.2.6. Each story names its release.
+**Status (2026-11-15):** ✅ US-0001–US-0012 released (v0.2.3–v0.2.5). ✅ US-0013–US-0014 done, for v0.2.6. 📋 US-0015–US-0016 planned for v0.2.6. Each story names its release.
 
 ---
 
@@ -200,7 +200,7 @@
   - **Checked** in the built app with screenshots of every view and settings section.
 - **Dependencies:** US-0410, US-0603
 
-**US-0013: The intent list and the detail count the same stages** ✅ Done
+**US-0013: The intent list and the detail count the same stages** ✅ Done, for v0.2.6
 - As a **developer reading an intent's progress**, in order to **trust the numbers**, I would like to **see the same count in the intent list and in the intent's detail**.
 - **Epic:** EPIC-00
 - **Priority:** Medium
@@ -215,7 +215,7 @@
   - **Tests.** `tests/main/parsers.test.js` (1 new). The fixture's `[S]` observability-setup now leaves the totals one lower in two tests.
 - **Dependencies:** US-0102, US-0103
 
-**US-0014: The lifecycle rule prompt says how to replace an older rule** ✅ Done
+**US-0014: The lifecycle rule prompt says how to replace an older rule** ✅ Done, for v0.2.6
 - As a **developer setting up or updating a project's feature docs**, in order to **have one story lifecycle rule, not two that drift apart**, I would like to **have the agent take out the older lifecycle rule when it saves the new one**.
 - **Epic:** EPIC-00
 - **Priority:** Medium
