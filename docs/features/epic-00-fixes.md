@@ -6,9 +6,9 @@
 
 > Small fixes the person reports while using the app: something looks off, behaves wrongly or is missing a detail. Each fix becomes a story here, so nothing reported in passing gets lost. A fix that grows into a feature moves to its topic's epic.
 
-**Stories:** US-0001, US-0002, US-0003, US-0004, US-0005, US-0006, US-0007, US-0008, US-0009, US-0010, US-0011, US-0012, US-0013
+**Stories:** US-0001, US-0002, US-0003, US-0004, US-0005, US-0006, US-0007, US-0008, US-0009, US-0010, US-0011, US-0012, US-0013, US-0014
 
-**Status (2026-11-15):** ✅ US-0001–US-0012 released (v0.2.3–v0.2.5). ✅ US-0013 done. Each story names its release.
+**Status (2026-11-15):** ✅ US-0001–US-0012 released (v0.2.3–v0.2.5). ✅ US-0013–US-0014 done. Each story names its release.
 
 ---
 
@@ -214,3 +214,19 @@
   - **Where.** `mergePipeline()` in `src/main/parsers/pipeline.js`.
   - **Tests.** `tests/main/parsers.test.js` (1 new). The fixture's `[S]` observability-setup now leaves the totals one lower in two tests.
 - **Dependencies:** US-0102, US-0103
+
+**US-0014: The lifecycle rule prompt says how to replace an older rule** ✅ Done
+- As a **developer setting up or updating a project's feature docs**, in order to **have one story lifecycle rule, not two that drift apart**, I would like to **have the agent take out the older lifecycle rule when it saves the new one**.
+- **Epic:** EPIC-00
+- **Priority:** Medium
+- **Complexity:** Low
+- **Background:** Reported 2026-11-15. The prompt the app types asks the agent to save the rule through AI-DLC and to replace an older one, but AI-DLC's save command only adds rules. The agent saved the new rule and left the old one in place.
+- **Acceptance Criteria:**
+  - [x] Given a project whose memory files already hold a story lifecycle rule, when the person sends the app's rule prompt, then the prompt tells the agent to save the new rule through AI-DLC and delete the older line by hand, as the one direct edit allowed, and say which line it took out.
+  - [x] The prompt says how to recognise the older rule: a `(story-lifecycle: …)` tag, or an older rule about the status markers.
+  - [x] It holds for both delivery settings and both languages, and the prompt stays one line.
+- **Notes:**
+  - **Where.** `features.prompt.rule` and `features.prompt.ruleContinuous` in `src/shared/locales/en.json` and `sv.json`.
+  - **Tests.** `tests/renderer/featureDocsPrompt.test.jsx` (2 new).
+  - **This project.** The older Swedish lifecycle rule under `## Mandated` in `aidlc/spaces/default/memory/project.md` was taken out by hand. The new rule is saved under `## Corrections`.
+- **Dependencies:** US-0603

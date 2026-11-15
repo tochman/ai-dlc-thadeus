@@ -67,7 +67,6 @@ None. (affirmed 2026-11-14)
 <!-- Example: ALWAYS use Result<T,E> for fallible operations in service layer (affirmed 2026-05-17) -->
 
 - ALWAYS hålla feature-dokumenten aktuella när projektet har `docs/FEATURES.md` och epic-filer under `docs/features/`. I Deployment Execution för varje intent, och före PR:en, uppdateras fyra saker: storyns statusmarkör, uppfyllda acceptanskriterier (`- [x]`), epicens rad `**Status (…)**` och raden i `FEATURES.md`. När en release taggas märks varje story som ingår med "Released in vX.Y.Z". En ny story som användaren beskriver läggs in direkt. En levererad story får aldrig stå som pågående. (affirmed 2026-11-13)
-- ALWAYS följa storyns livscykel i feature- och epic-filerna medan arbetet pågår, inte bara i slutet: när arbetet på en story startar sätts den till 🚧 Pågående (storyns markör, epicens rad `**Status (…)**` och raden i `FEATURES.md`); när den är färdigbyggd och godkänd sätts den till ✅ Klar; när det är känt vilken release den ska ingå i skrivs releasen ut ("for vX.Y.Z", och "Released in vX.Y.Z" när taggen sätts). (affirmed 2026-11-14)
 
 ALWAYS write a failing test before the code for new behaviour (TDD). (affirmed 2026-11-14)
 
@@ -82,3 +81,4 @@ ALWAYS merge each story through its own squash-merged pull request; only docs an
 <!-- Project-specific corrections from human feedback. -->
 <!-- Format: NEVER/ALWAYS [behavior] (learned [date]) -->
 - ALWAYS keep every stage document short, about a page or two, with detail only where a later stage needs it; later stages reread it many times, so length multiplies the cost. (learned 2026-11-14) <!-- cid:261114-agent-dialogs:code-generation:ef58fefd3c434e0b7b8aab3ad38ffbf544ad8c53fe32f732c33929c7981ac673 -->
+- ALWAYS follow the story lifecycle in the feature docs: a new story the person describes goes into the right epic file right away; when work on a story starts, set it to 🚧 In progress in its status marker, the epic's **Status (…)** line and its FEATURES.md row; when it is built and approved, set it to ✅ Done and tick its met acceptance criteria; as soon as the release it goes into is known, write it out ("for vX.Y.Z", and "Released in vX.Y.Z" when the tag is cut); a delivered story never stays in progress. (story-lifecycle: releases v1) (learned 2026-11-15) <!-- cid:261115-release-handling:build-and-test:3190acfcd2bc0730aee3349a9294a92a9146937d811a80b23d293253455254b4 -->
