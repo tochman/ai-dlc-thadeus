@@ -133,6 +133,7 @@ export function ruleStatus(memoryText, delivery) {
   if (own.some((x) => x.v >= LIFECYCLE_RULE_VERSION)) return 'current';
   if (own.length) return 'older';
   if (tags.length) return 'other';
-  // ponytail: the untagged rule (v0.2.3) is recognised by its three markers; a rule in other words counts as missing.
-  return ['📋', '🚧', '✅'].every((m) => text.includes(m)) ? 'older' : 'missing';
+  // ponytail: an untagged rule is recognised by its progress markers (US-0016): 🚧 and ✅ are enough, because an
+  // older rule in other words may never name 📋. A memory file that names both for another reason reads as 'older'.
+  return text.includes('🚧') && text.includes('✅') ? 'older' : 'missing';
 }

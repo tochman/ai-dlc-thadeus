@@ -28,6 +28,11 @@ async function load({ env = true, reply = vi.fn(async () => {}), wait = '595', p
     process.env.THADEUS_SESSION_DIR = dir;
     process.env.THADEUS_SESSION_SECRET = SECRET;
     process.env.THADEUS_WAIT_SECONDS = wait;
+  } else {
+    // US-0018: run inside the app's own terminal, these are set already; the case needs them unset.
+    delete process.env.THADEUS_SESSION_DIR;
+    delete process.env.THADEUS_SESSION_SECRET;
+    delete process.env.THADEUS_WAIT_SECONDS;
   }
   handlers = {};
   ctx = {

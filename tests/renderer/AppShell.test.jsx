@@ -511,7 +511,8 @@ describe('App shell: agent replies (US-0506 u3)', () => {
   it('leaves queued and dismissed replies out of the pager and closes when only a dismissed one is left', async () => {
     await withReplies();
     send([reply('queued'), question]);
-    expect(await screen.findByText('1 av 1')).toBeTruthy();
+    expect((await screen.findByTestId('agent-dialog-title')).textContent).toMatch(/^Fråga/);
+    expect(screen.queryByTestId('agent-dialog-next')).toBeNull(); // one item: no pager (US-0018)
     send([reply('shown')]);
     await waitFor(() => expect(screen.getByTestId('agent-dialog').hasAttribute('open')).toBe(true));
     send([reply('dismissed')]);

@@ -1124,7 +1124,6 @@
   },
   "latestMessage": {
     "label": "Latest message from the agent",
-    "none": "No message from the agent yet",
     "answer": "Answer",
     "show": "Show",
     "answered": "(answered)",

@@ -123,3 +123,14 @@ describe('busy glow keeps block edges aligned', () => {
     }
   });
 });
+
+describe('the latest-message line in the frame (US-0018)', () => {
+  it('has its own full-width row above the terminal, on one line', () => {
+    const app = css.match(/\.app\s*\{[^}]*\}/)?.[0] ?? '';
+    expect(app).toMatch(/grid-template-areas:\s*'head head'\s*'arm main'\s*'msg msg'\s*'term term'/);
+    const line = css.match(/\.latest-message\s*\{[^}]*\}/)?.[0] ?? '';
+    expect(line).toMatch(/grid-area:\s*msg/);
+    expect(line).toMatch(/white-space:\s*nowrap/);
+    expect(line).toMatch(/text-overflow:\s*ellipsis/);
+  });
+});
