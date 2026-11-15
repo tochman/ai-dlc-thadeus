@@ -335,7 +335,6 @@
     "notInstalled": "AI-DLC är inte installerat för {harness} i det här projektet, så inget startades.",
     "pending": "Väntar på din Enter",
     "pendingHint": "{tab}: skrivet av appen. Inget körs förrän du trycker Enter.",
-    "twoAgents": "Två agenter arbetar samtidigt med projektets pågående arbete, så de ändrar samma underlag.",
     "noTab": "Terminalfliken {tab} finns inte.",
     "cannotStart": "{name} kunde inte startas.",
     "cannotRestart": "{name} kunde inte startas om.",
