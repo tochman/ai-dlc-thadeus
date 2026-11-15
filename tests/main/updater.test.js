@@ -3,6 +3,48 @@ import { describe, expect, it, vi } from 'vitest';
 vi.mock('electron', () => ({ app: { getPath: () => '/unused' } }));
 const { assertOwnAsset, checksumFor, createUpdater, pickAsset, releaseStatus } = await import('../../src/main/updater.js');
 const { setToolPaths } = await import('../../src/main/tools.js');
+const { t } = await import('../../src/shared/i18n.js');
+
+const API = 'https://api.github.com/repos/tochman/aidlc-dash/releases/latest';
+const apiAsset = (tag, name, size = 100) => ({ name, size, browser_download_url: `https://github.com/tochman/aidlc-dash/releases/download/${tag}/${name}` });
+// Shaped like GET https://api.github.com/repos/tochman/aidlc-dash/releases/latest (US-0413, 2026-11-15).
+const apiRelease = (tag, extra = {}) => ({
+  tag_name: tag,
+  body: '## What changed\n- **Updates** from GitHub',
+  draft: false,
+  prerelease: false,
+  assets: [apiAsset(tag, `THADEUS-${tag.slice(1)}-universal.dmg`), apiAsset(tag, `thadeus_${tag.slice(1)}_amd64.deb`)],
+  ...extra
+});
+const offline = () => Object.assign(new TypeError('fetch failed'), { cause: { code: 'ENOTFOUND' } });
+const json = (data, status = 200) => ({ ok: status < 300, status, json: async () => data });
+/** A 200 answer whose body streams `chunks`; an Error among them makes the stream fail there. */
+const bytes = (...chunks) => ({
+  ok: true,
+  status: 200,
+  body: new ReadableStream({
+    start(c) {
+      for (const x of chunks) {
+        if (x instanceof Error) return c.error(x);
+        c.enqueue(new TextEncoder().encode(x));
+      }
+      c.close();
+    }
+  })
+});
+
+/** A fake fetch that records calls; `routes[url]` is an answer, an Error or a function; any other URL fails as offline. */
+function fakeFetch(routes = {}) {
+  const calls = [];
+  const fetch = vi.fn(async (url, opts) => {
+    calls.push([url, opts]);
+    const r = typeof routes[url] === 'function' ? routes[url]() : routes[url];
+    if (r === undefined) throw offline();
+    if (r instanceof Error) throw r;
+    return r;
+  });
+  return { fetch, calls };
+}
 
 const asset = (tag, name, size = 100) => ({ name, size, url: `https://github.com/tochman/aidlc-dash/releases/download/${tag}/${name}` });
 // Shaped like `gh release view --repo tochman/aidlc-dash --json tagName,body,isDraft,isPrerelease,assets` (2026-11-14).
@@ -30,9 +72,19 @@ function fakeExec(answers = {}) {
 }
 
 /** An in-memory fs with just what the updater uses. */
-function fakeFs(files = {}) {
+function fakeFs(files = {}, writeError = null) {
   return {
     files,
+    open: vi.fn(async (p) => {
+      files[p] = '';
+      return {
+        write: async (chunk) => {
+          if (writeError) throw writeError;
+          files[p] += Buffer.from(chunk).toString();
+        },
+        close: async () => {}
+      };
+    }),
     mkdir: vi.fn(async () => {}),
     stat: vi.fn(async (p) => ({ size: files[p]?.length ?? 0 })),
     readFile: vi.fn(async (p) => {
@@ -46,9 +98,12 @@ function fakeFs(files = {}) {
   };
 }
 
-function setup({ answers, files, settings = {}, platform = 'darwin', arch = 'arm64', hash = SHA, packaged = true } = {}) {
+// Without `routes` every fetch fails as offline, so the older tests run the gh fallback (US-0413 FR5).
+function setup({ answers, files, routes, writeError, settings = {}, platform = 'darwin', arch = 'arm64', hash = SHA, packaged = true } = {}) {
   const { exec, calls } = fakeExec(answers);
-  const fs = fakeFs(files);
+  const { fetch, calls: fetches } = fakeFetch(routes);
+  const fs = fakeFs(files, writeError);
+  const sent = [];
   let saved = { ...settings };
   const app = {
     getVersion: () => '0.2.3',
@@ -59,7 +114,9 @@ function setup({ answers, files, settings = {}, platform = 'darwin', arch = 'arm
   };
   const updater = createUpdater({
     exec,
+    fetch,
     fs,
+    send: (s) => sent.push(s),
     hashFile: async () => hash,
     app,
     getSettings: async () => saved,
@@ -69,7 +126,7 @@ function setup({ answers, files, settings = {}, platform = 'darwin', arch = 'arm
     now: () => 1_000_000_000_000,
     pollMs: 5
   });
-  return { updater, calls, fs, app, saved: () => saved };
+  return { updater, calls, fetches, fs, app, sent, saved: () => saved };
 }
 
 describe('update check (EPIC-04 US-0407)', () => {
@@ -115,7 +172,7 @@ describe('update check (EPIC-04 US-0407)', () => {
 
   it('a missing, logged-out or offline gh gives unavailable in one sentence and never throws (NFR5)', async () => {
     const cases = [
-      [Object.assign(new Error('spawn gh ENOENT'), { code: 'ENOENT' }), /gh/],
+      [Object.assign(new Error('spawn gh ENOENT'), { code: 'ENOENT' }), /.+/], // the public reason, see US-0413 FR5
       [new Error('To get started with GitHub CLI, please run:  gh auth login'), /gh auth login/],
       [new Error('error connecting to api.github.com'), /.+/],
       [new Error('API rate limit exceeded'), /.+/]
@@ -237,5 +294,110 @@ describe('download and install', () => {
     expect((await updater.check({ force: true })).status).toBe('none');
     await expect(updater.skip('0.2.4; rm -rf /')).rejects.toThrow();
     expect(checksumFor(`${SHA} *dist/${DMG}\n`, DMG)).toBe(SHA);
+  });
+});
+
+describe('update from the public release without gh (EPIC-04 US-0413)', () => {
+  const TAG = 'v0.2.4';
+  const DMG = 'THADEUS-0.2.4-universal.dmg';
+  const DIR = `/ud/updates/${TAG}`;
+  const DMG_URL = `https://github.com/tochman/aidlc-dash/releases/download/${TAG}/${DMG}`;
+  const SUMS_URL = `https://github.com/tochman/aidlc-dash/releases/download/${TAG}/SHA256SUMS.txt`;
+  const withSums = apiRelease(TAG, { assets: [apiAsset(TAG, DMG, 9), apiAsset(TAG, 'SHA256SUMS.txt', 92)] });
+  const ghMissing = () => Object.assign(new Error('spawn gh ENOENT'), { code: 'ENOENT' });
+
+  it('checks releases/latest on api.github.com with no token and no gh; a draft or prerelease offers nothing (FR1, FR1.1)', async () => {
+    const { updater, calls, fetches } = setup({ routes: { [API]: json(apiRelease(TAG)) } });
+    expect(await updater.check()).toMatchObject({ status: 'available', version: '0.2.4', tag: TAG, asset: { name: DMG, size: 100 } });
+    expect(fetches[0][0]).toBe(API);
+    expect(fetches[0][1].headers).toEqual({ Accept: 'application/vnd.github+json' }); // no Authorization header
+    expect(fetches[0][1].signal).toBeInstanceOf(AbortSignal); // NFR3
+    expect(calls).toHaveLength(0);
+    for (const extra of [{ draft: true }, { prerelease: true }]) {
+      const s = setup({ routes: { [API]: json(apiRelease(TAG, extra)) } });
+      expect((await s.updater.check({ force: true })).status).toBe('none');
+    }
+  });
+
+  it('asks the API at most once a day unless forced (FR1.2)', async () => {
+    const { updater, fetches, saved } = setup({ routes: { [API]: () => json(apiRelease(TAG)) } });
+    await updater.check();
+    await updater.check();
+    expect(fetches).toHaveLength(1);
+    expect(saved().updates.lastCheckMs).toBe(1_000_000_000_000);
+    await updater.check({ force: true });
+    expect(fetches).toHaveLength(2);
+  });
+
+  it('streams the asset and SHA256SUMS.txt from browser_download_url, reports progress and verifies (FR2, FR2.1, FR3)', async () => {
+    const { updater, calls, fetches, fs, sent } = setup({
+      routes: { [API]: json(withSums), [DMG_URL]: bytes('dmg-', 'bytes'), [SUMS_URL]: bytes(`${SHA}  ${DMG}\n`) }
+    });
+    await updater.check({ force: true });
+    expect(await updater.download()).toEqual({ status: 'downloaded', file: `${DIR}/${DMG}`, verified: true });
+    expect(fetches.map((f) => f[0])).toEqual([API, DMG_URL, SUMS_URL]);
+    expect(fs.files[`${DIR}/${DMG}`]).toBe('dmg-bytes');
+    expect(sent.at(-1)).toEqual({ status: 'downloading', received: 9, total: 9 });
+    expect(calls).toHaveLength(0);
+  });
+
+  it('refuses an asset from another repository without any fetch or gh call (FR2.2, FR5.1)', async () => {
+    const evil = apiRelease(TAG, { assets: [{ ...apiAsset(TAG, DMG), browser_download_url: DMG_URL.replace('tochman/', 'evil/') }] });
+    const { updater, calls, fetches } = setup({ routes: { [API]: json(evil) }, answers: { gh: '' } });
+    await updater.check({ force: true });
+    const res = await updater.download();
+    expect(res.status).toBe('error');
+    expect(res.error).toMatch(/tochman\/aidlc-dash/);
+    expect(fetches).toHaveLength(1);
+    expect(calls).toHaveLength(0);
+  });
+
+  it('a checksum mismatch deletes the file and does not fall back to gh (FR3, FR5.1)', async () => {
+    const { updater, calls, fs } = setup({
+      routes: { [API]: json(withSums), [DMG_URL]: bytes('dmg-bytes'), [SUMS_URL]: bytes(`${'b'.repeat(64)}  ${DMG}\n`) },
+      answers: { gh: '' }
+    });
+    await updater.check({ force: true });
+    const res = await updater.download();
+    expect(res.error).toContain(t('update.checksumMismatch', { name: DMG }));
+    expect(fs.files[`${DIR}/${DMG}`]).toBeUndefined();
+    expect(calls).toHaveLength(0);
+  });
+
+  it('a failing download says why and removes the partial file (FR4)', async () => {
+    const cases = [
+      [{ [DMG_URL]: json({}, 500) }, null, t('update.httpStatus', { status: 500 })],
+      [{ [DMG_URL]: bytes('dmg-') }, Object.assign(new Error('ENOSPC: no space left on device'), { code: 'ENOSPC' }), t('update.diskFull')],
+      [{ [DMG_URL]: bytes('dmg-', new DOMException('The operation timed out.', 'TimeoutError')) }, null, t('update.timedOut')]
+    ];
+    for (const [routes, writeError, reason] of cases) {
+      const { updater, fs } = setup({ routes: { [API]: json(withSums), ...routes }, writeError, answers: { gh: ghMissing() } });
+      await updater.check({ force: true });
+      const res = await updater.download();
+      expect(res.status).toBe('error');
+      expect(res.error).toContain(reason);
+      expect(fs.files[`${DIR}/${DMG}`]).toBeUndefined();
+    }
+  });
+
+  it('a 403 or 429 check says try again later and is not recorded as the day’s check (FR4.1)', async () => {
+    for (const status of [403, 429]) {
+      const { updater, saved } = setup({ routes: { [API]: json({ message: 'API rate limit exceeded' }, status) }, answers: { gh: ghMissing() } });
+      expect(await updater.check()).toEqual({ status: 'unavailable', reason: t('update.tryLater') });
+      expect(saved().updates?.lastCheckMs).toBeUndefined();
+    }
+  });
+
+  it('falls back to gh once when the public step fails, and shows the public reason when gh is missing too (FR5)', async () => {
+    const files = { [`${DIR}/${DMG}`]: 'dmg-bytes' };
+    const { updater, calls, fetches } = setup({ answers: { gh: JSON.stringify(release(TAG)) }, files });
+    expect((await updater.check({ force: true })).status).toBe('available');
+    expect(calls[0].slice(0, 3)).toEqual(['gh', 'release', 'view']);
+    expect(await updater.download()).toEqual({ status: 'downloaded', file: `${DIR}/${DMG}`, verified: false });
+    expect(fetches.map((f) => f[0])).toEqual([API, DMG_URL]);
+    expect(calls.filter((c) => c[0] === 'gh').map((c) => c[2])).toEqual(['view', 'download']);
+
+    const none = setup({ answers: { gh: ghMissing() } });
+    expect(await none.updater.check({ force: true })).toEqual({ status: 'unavailable', reason: t('update.offline') });
   });
 });

@@ -182,5 +182,13 @@
     "scope": "express",
     "status": "complete",
     "request": "2fb4c661"
+  },
+  {
+    "uuid": "01a1e111-81a1-7b34-af31-c78c42aa7853",
+    "slug": "public-updater",
+    "dirName": "261115-public-updater",
+    "scope": "ultra-express",
+    "status": "complete",
+    "request": "e0a30ee2"
   }
 ]

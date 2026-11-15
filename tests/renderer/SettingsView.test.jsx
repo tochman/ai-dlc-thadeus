@@ -289,7 +289,7 @@ describe('Settings in LCARS tabs (US-0410)', () => {
     const gh = screen.getByTestId('settings-tool-gh');
     await waitFor(() => expect(within(gh).getByText('hittades inte')).toBeTruthy());
     expect(within(gh).getByText('GitHub CLI (gh)')).toBeTruthy();
-    expect(within(gh).getByText(/Behövs för att söka efter och hämta uppdateringar/)).toBeTruthy();
+    expect(within(gh).getByText(/som reserv när appens uppdateringar/)).toBeTruthy();
     expect(within(gh).getByTestId('settings-tool-pick-gh')).toBeTruthy();
     // A found tool does not carry the needed-for line.
     await waitFor(() => expect(within(screen.getByTestId('settings-tool-opencode')).getByText('0.15.2')).toBeTruthy());

@@ -1,0 +1,1 @@
+"US-0413: Update the app from a public release without the GitHub CLI (docs/features/epic-04-branding-and-desktop.md). Check and download updates from the public GitHub release API with Node fetch, no gh."

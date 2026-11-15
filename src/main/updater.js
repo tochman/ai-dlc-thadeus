@@ -1,7 +1,9 @@
-// Updating the app from a GitHub release (EPIC-04 US-0407). The repository is private, so the release is read
-// and downloaded through the person's own `gh` CLI (fixed arguments, execFile without a shell); no token is
-// handled here. Only `tochman/aidlc-dash` release assets are fetched, checked before download (NFR3). Nothing
-// downloaded runs except through the platform's installer step. A check never blocks the app (NFR5).
+// Updating the app from a GitHub release (EPIC-04 US-0407, US-0413). The repository is public, so the release is
+// read from GitHub's REST API and downloaded from its own URLs with Node's fetch, no token (US-0413 FR1, FR2).
+// When that fails, the person's own `gh` CLI is tried once (fixed arguments, execFile without a shell; FR5).
+// Only `tochman/aidlc-dash` release assets are fetched, checked before download (NFR3). Nothing downloaded runs
+// except through the platform's installer step. A check never blocks the app (NFR5).
+// ponytail: Node's fetch ignores the system proxy; behind one the gh fallback carries the update (Electron net.fetch if it matters).
 import { createHash } from 'node:crypto';
 import { constants, createReadStream, promises as fsp } from 'node:fs';
 import path from 'node:path';
@@ -25,6 +27,7 @@ const ASSETS = {
   'linux-x64': /^thadeus_\d+\.\d+\.\d+_amd64\.deb$/
 };
 const VIEW_ARGS = ['release', 'view', '--repo', REPO, '--json', 'tagName,body,isDraft,isPrerelease,assets'];
+const API_LATEST = `https://api.github.com/repos/${REPO}/releases/latest`;
 const APP_NAME = 'THADEUS.app';
 
 /** -1, 0 or 1 for two x.y.z versions. */
@@ -69,8 +72,33 @@ export function releaseStatus(release, current, skipVersion, { platform, arch } 
   };
 }
 
+/** US-0413 FR1.1: the REST answer of `releases/latest` in the shape `gh release view --json` gives; null when it is not one. */
+export function fromApi(json) {
+  if (!json || typeof json.tag_name !== 'string') return null;
+  return {
+    tagName: json.tag_name,
+    body: json.body,
+    isDraft: json.draft === true,
+    isPrerelease: json.prerelease === true,
+    assets: (Array.isArray(json.assets) ? json.assets : []).map((a) => ({ name: a?.name, size: a?.size, url: a?.browser_download_url }))
+  };
+}
+
+/** US-0413 FR4, FR4.1: the reason for a failed fetch or file write, or null when the error is not one of those. */
+function netReason(err) {
+  const status = err?.status;
+  if (status === 403 || status === 429) return t('update.tryLater');
+  if (Number.isInteger(status)) return t('update.httpStatus', { status });
+  if (err?.name === 'TimeoutError' || err?.name === 'AbortError') return t('update.timedOut');
+  if (err?.code === 'ENOSPC') return t('update.diskFull');
+  if (err?.message === 'fetch failed') return t('update.offline'); // DNS (ENOTFOUND), refused or reset (ECONN*)
+  return null;
+}
+
 /** One sentence for why the check could not run (NFR5). */
 export function unavailableReason(err) {
+  const net = netReason(err);
+  if (net) return net;
   const msg = String(err?.message ?? err);
   if (err?.code === 'ENOENT') return t('update.ghMissing');
   if (/auth login|not logged|authenticat/i.test(msg)) return t('update.ghLoggedOut');
@@ -119,6 +147,7 @@ const firstLine = (err) =>
  */
 export function createUpdater({
   exec = defaultExec,
+  fetch = globalThis.fetch,
   fs = fsp,
   hashFile = defaultHashFile,
   app,
@@ -135,13 +164,41 @@ export function createUpdater({
   // The gh path chosen in Settings wins over the bare name on PATH (US-0410 FR4.2).
   const gh = (args, timeout) => runFixed(toolPath('gh'), args, { timeout, exec });
 
+  /** US-0413 FR1, NFR3: a 2xx answer for `url` within `timeout`, else an error carrying the HTTP status. No token is sent. */
+  async function fetchOk(url, timeout, headers) {
+    const res = await fetch(url, { headers, signal: AbortSignal.timeout(timeout) });
+    if (!res.ok) throw Object.assign(new Error(`HTTP ${res.status}`), { status: res.status });
+    return res;
+  }
+
+  /** US-0413 FR5: the public step first, then the gh step once. When gh is missing too, the public reason is kept. */
+  async function withFallback(what, publicStep, ghStep) {
+    try {
+      return await publicStep();
+    } catch (err) {
+      console.warn(`${what} via GitHubs API misslyckades, försöker med gh:`, firstLine(err));
+      try {
+        return await ghStep();
+      } catch (ghErr) {
+        throw ghErr?.code === 'ENOENT' ? err : ghErr;
+      }
+    }
+  }
+
+  async function publicRelease() {
+    const res = await fetchOk(API_LATEST, VIEW_TIMEOUT_MS, { Accept: 'application/vnd.github+json' });
+    const release = fromApi(await res.json());
+    if (!release) throw new Error(t('update.badAnswer'));
+    return release;
+  }
+
   async function runCheck(force) {
     const settings = await getSettings();
     const updates = settings.updates ?? {};
     if (!force && Number.isFinite(updates.lastCheckMs) && now() - updates.lastCheckMs < DAY_MS) return state.last ?? { status: 'none' };
     let release;
     try {
-      release = JSON.parse(await gh(VIEW_ARGS, VIEW_TIMEOUT_MS));
+      release = await withFallback('Uppdateringskontrollen', publicRelease, async () => JSON.parse(await gh(VIEW_ARGS, VIEW_TIMEOUT_MS)));
     } catch (err) {
       console.warn('Uppdateringskontrollen misslyckades:', firstLine(err));
       return { status: 'unavailable', reason: unavailableReason(err) }; // not recorded, so it is tried again later
@@ -177,27 +234,61 @@ export function createUpdater({
     if ((await hashFile(file)) !== expected) throw new Error(t('update.checksumMismatch', { name }));
   }
 
+  /** US-0413 FR2, FR2.1, FR4: streams `url` into `file`, reporting bytes against `total`; a failure removes the partial file. */
+  async function fetchTo(url, file, total) {
+    const res = await fetchOk(url, DOWNLOAD_TIMEOUT_MS);
+    const handle = await fs.open(file, 'w');
+    let received = 0;
+    try {
+      for await (const chunk of res.body) {
+        await handle.write(chunk);
+        received += chunk.length;
+        if (total) send({ status: 'downloading', received, total });
+      }
+      await handle.close();
+    } catch (err) {
+      await handle.close().catch(() => {});
+      await fs.rm(file, { force: true }).catch((e) => console.error('Kunde inte ta bort den halvhämtade filen:', e));
+      throw err;
+    }
+  }
+
+  async function ghDownload(tag, asset, sums, dir, file) {
+    const timer = setInterval(() => {
+      fs.stat(file).then(
+        (s) => send({ status: 'downloading', received: s.size, total: asset.size }),
+        () => send({ status: 'downloading', received: 0, total: asset.size })
+      );
+    }, pollMs);
+    try {
+      const patterns = [asset.name, ...(sums ? [SUMS] : [])].flatMap((p) => ['--pattern', p]);
+      await gh(['release', 'download', tag, '--repo', REPO, ...patterns, '--dir', dir, '--clobber'], DOWNLOAD_TIMEOUT_MS);
+    } finally {
+      clearInterval(timer);
+    }
+  }
+
   /** Downloads this machine's asset of the offered release; a failure comes back as {status: 'error'}. */
   async function download() {
     const release = state.release;
     const asset = release && pickAsset(platform, arch, release.assets);
     if (!asset) return { status: 'error', error: t('update.noPackage') };
-    let timer = null;
     try {
+      // Refusals come first and never fall back (US-0413 FR5.1).
       assertOwnAsset(asset, release.tagName);
       const sums = (release.assets ?? []).find((a) => a?.name === SUMS) ?? null;
       if (sums) assertOwnAsset(sums, release.tagName);
       const dir = path.join(app.getPath('userData'), 'updates', release.tagName);
       await fs.mkdir(dir, { recursive: true });
       const file = path.join(dir, asset.name);
-      timer = setInterval(() => {
-        fs.stat(file).then(
-          (s) => send({ status: 'downloading', received: s.size, total: asset.size }),
-          () => send({ status: 'downloading', received: 0, total: asset.size })
-        );
-      }, pollMs);
-      const patterns = [asset.name, ...(sums ? [SUMS] : [])].flatMap((p) => ['--pattern', p]);
-      await gh(['release', 'download', release.tagName, '--repo', REPO, ...patterns, '--dir', dir, '--clobber'], DOWNLOAD_TIMEOUT_MS);
+      await withFallback(
+        'Hämtningen',
+        async () => {
+          await fetchTo(asset.url, file, asset.size);
+          if (sums) await fetchTo(sums.url, path.join(dir, SUMS));
+        },
+        () => ghDownload(release.tagName, asset, sums, dir, file)
+      );
       if (sums) {
         try {
           await verify(file, path.join(dir, SUMS), asset.name);
@@ -210,9 +301,7 @@ export function createUpdater({
       return { status: 'downloaded', file, verified: !!sums };
     } catch (err) {
       console.error('Nedladdningen av uppdateringen misslyckades:', firstLine(err));
-      return { status: 'error', error: t('update.downloadFailed', { error: firstLine(err) }) };
-    } finally {
-      if (timer) clearInterval(timer);
+      return { status: 'error', error: t('update.downloadFailed', { error: netReason(err) ?? firstLine(err) }) };
     }
   }
 
