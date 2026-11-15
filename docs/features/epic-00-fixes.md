@@ -6,9 +6,9 @@
 
 > Small fixes the person reports while using the app: something looks off, behaves wrongly or is missing a detail. Each fix becomes a story here, so nothing reported in passing gets lost. A fix that grows into a feature moves to its topic's epic.
 
-**Stories:** US-0001, US-0002, US-0003, US-0004, US-0005, US-0006, US-0007, US-0008, US-0009, US-0010, US-0011, US-0012, US-0013, US-0014, US-0015, US-0016
+**Stories:** US-0001, US-0002, US-0003, US-0004, US-0005, US-0006, US-0007, US-0008, US-0009, US-0010, US-0011, US-0012, US-0013, US-0014, US-0015, US-0016, US-0017
 
-**Status (2026-11-15):** ✅ US-0001–US-0012 released (v0.2.3–v0.2.5). ✅ US-0013–US-0014 done, for v0.2.6. 🚧 US-0015 in progress, for v0.2.6. 📋 US-0016 planned for v0.2.6. Each story names its release.
+**Status (2026-11-15):** ✅ US-0001–US-0012 released (v0.2.3–v0.2.5). ✅ US-0013–US-0014 done, for v0.2.6. 🚧 US-0015 in progress, for v0.2.6. 📋 US-0016 planned for v0.2.6, US-0017 planned. Each story names its release.
 
 ---
 
@@ -255,3 +255,17 @@
   - [ ] **Given** no lifecycle rule at all, **then** the status stays 'missing'.
 - **Notes:** The fallback in `ruleStatus()` in `src/main/parsers/releases.js` requires 📋, 🚧 and ✅.
 - **Dependencies:** US-0603, US-0014
+
+**US-0017: The terminal tabs look right after turning on opencode** 📋 Planned
+- As a **developer who turns on a second agent tool in a project**, in order to **tell at a glance which terminal tab is open**, I would like to **see only the open tab drawn as the open one**.
+- **Epic:** EPIC-00
+- **Priority:** Medium
+- **Complexity:** Low
+- **Background:** Reported 2026-11-15 with a screenshot, right after switching opencode on in the agent bar. The arm beside the terminal showed CLAUDE (open, blue, with the rounded LCARS corner), then OPENCODE drawn with the same rounded corner and a blue outline although it was not the open tab, then SHELL as a plain block. OPENCODE also said "Working" straight away.
+- **Acceptance Criteria:**
+  - [ ] **Given** opencode is turned on while the Claude tab is open, **then** only the open tab has the rounded corner and the open colour; OPENCODE and SHELL are plain blocks of the same shape.
+  - [ ] **Given** a tab has keyboard focus or was just added, **then** any highlight it gets follows the LCARS style (no stray outline) and is gone once focus moves.
+  - [ ] **Given** an agent tab was just started and has not received any work, **then** it says "Idle", not "Working".
+  - [ ] The same holds with Codex or Kiro as the second tool, and after turning the tool off again.
+- **Notes:** The arm is in `src/renderer/TerminalPanel.jsx` and `src/renderer/theme.css`. Confirm with the person which of the three symptoms they meant before fixing.
+- **Dependencies:** US-0801, US-0403
