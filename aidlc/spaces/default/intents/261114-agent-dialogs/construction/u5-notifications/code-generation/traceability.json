@@ -1,0 +1,23 @@
+{
+  "stage": "code-generation",
+  "unit": "u5-notifications",
+  "upstream_ids": ["US5.1", "AC5.1.1", "AC5.1.2", "AC5.1.3", "AC5.1.4", "BR8.1", "BR8.2", "BR8.3", "BR8.4", "BR8.5", "BR8.6", "FR6.1", "C4"],
+  "coverage": [
+    { "id": "US5.1", "status": "OK", "target": "src/main/notify.js" },
+    { "id": "AC5.1.1", "status": "OK", "target": "src/renderer/AgentDialog.jsx" },
+    { "id": "AC5.1.2", "status": "OK", "target": "src/shared/alertPlan.js" },
+    { "id": "AC5.1.3", "status": "OK", "target": "src/main/notify.js" },
+    { "id": "AC5.1.4", "status": "OK", "target": "src/shared/locales/sv.json" },
+    { "id": "BR8.1", "status": "OK", "target": "src/main/settings.js" },
+    { "id": "BR8.2", "status": "OK", "target": "src/shared/alertPlan.js" },
+    { "id": "BR8.3", "status": "OK", "target": "src/main/notify.js" },
+    { "id": "BR8.4", "status": "OK", "target": "src/renderer/App.jsx" },
+    { "id": "BR8.5", "status": "OK", "target": "src/renderer/AgentDialog.jsx" },
+    { "id": "BR8.6", "status": "OK", "target": "src/renderer/SettingsView.jsx" },
+    { "id": "FR6.1", "status": "OK", "target": "src/main/notify.js" },
+    { "id": "C4", "status": "OK", "target": "src/preload/index.js" }
+  ],
+  "reverse": [
+    { "id": "docs/features/epic-05-workflow-control.md", "status": "N/A", "target": "status line rejoined onto one line so featureDocsStatus.test.js passes again; no words changed" }
+  ]
+}

@@ -118,6 +118,7 @@ As W2 with one file: `.opencode/plugins/thadeus-dialog.ts`, created together wit
 | `hooks` or an event value has an unexpected type | "Nothing was written: .claude/settings.json has hooks in a shape the app does not change." (BR7.12) | nothing |
 | Cannot read or write (permission, read-only, disk full) | "Nothing was written: <file> cannot be written (<cause>)." (BR7.12) | nothing |
 | A path resolves outside the project root (symlink) | "Nothing was written: <file> points outside the project." (BR7.13) | nothing |
+| A link at any part of the three paths, also inside the root (U4 amendment, SD30) | "Nothing was written: <file> cannot be written (is a link)." No action offered | nothing |
 | The script was written, then the settings file failed | "<file> was not written (<cause>). Update to finish." Status outOfDate (BR7.16) | the script only |
 | Stale or reused previewId (double click, old dialog) | Refused; the open dialog refreshes its preview (BR7.9) | nothing |
 
@@ -169,14 +170,18 @@ Every transition is computed from disk (BR7.17); the app never sets a status dir
 
 ## State machine: InstallPreview
 
-<!-- Text fallback: open when built. open to applied when apply wrote every file. open to refused when apply found a file changed since the preview, or a file could not be read or written. open to superseded when a newer preview for the same project and harness is built, or the dialog is cancelled. applied, refused and superseded are final; a refused or superseded preview can never be applied. -->
+U4 amendment (RD40, SD31): `applying` sits between `open` and the final states, and Cancel calls `agentHooks.cancel`, which ends the preview in main.
+
+<!-- Text fallback: open when built. open to applying when apply is accepted. applying to applied when every file was written or nothing needed changing. applying to superseded when a file changed since the preview; a new open preview is built. applying to refused for any other refusal or a partial write. open to superseded when a newer preview for the same project and harness is built, or Cancel calls agentHooks.cancel. applied, refused and superseded are final; a refused or superseded preview can never be applied. -->
 
 ```mermaid
 stateDiagram-v2
   [*] --> open: preview built
-  open --> applied: apply wrote every file
-  open --> refused: changed since preview or cannot read or write
-  open --> superseded: newer preview or Cancel
+  open --> applying: apply accepted
+  applying --> applied: written or nothingToChange
+  applying --> superseded: changedSincePreview
+  applying --> refused: other refusal or partiallyWritten
+  open --> superseded: newer preview or agentHooks.cancel
   applied --> [*]
   refused --> [*]
   superseded --> [*]
@@ -213,7 +218,7 @@ erDiagram
 
 | Rule | In short |
 |---|---|
-| BR7.1 | App entry = command runs a script in `.thadeus/hooks/` |
+| BR7.1 | App entry = command runs `.thadeus/hooks/dialog.sh` with a known kind (U4 amendment) |
 | BR7.2 | Claude Code: four guarded entries and the script |
 | BR7.3 | opencode: one plugin file, idle outside app sessions |
 | BR7.4 | current / outOfDate / editedByHand / missing per entry and file |
@@ -246,3 +251,6 @@ erDiagram
 - **Teammates on different app releases.** A file written by a newer app release is unknown to an older one and shows as edited by hand; the older app's Update preview shows the newer lines being replaced, so the downgrade is visible before anyone says yes.
 - **Two files are not written as one transaction.** The write order (BR7.16) keeps the partial state harmless and visible as out of date; a true two-file transaction is not built.
 - **Hook settings are read when a session starts** in both harnesses, so an install reaches running tabs only after they restart (BR7.18).
+- **Three cases do not round-trip exactly after Install then Remove** (U4 amendment, RD37): an empty `"hooks": {}` or empty event array is gone with its separator; a settings file the app created stays as `{}` and a line end; an empty `.thadeus/` or `.thadeus/hooks/` that existed before is gone.
+- **Duplicate hooks from other settings files:** the deduplication result is recorded by the RD44 manual run, with the Claude Code version, in the release pull request.
+- **The plugin path** `.opencode/plugins/thadeus-dialog.ts` in this file reads `.opencode/plugins/thadeus-dialog.js` (tech-stack D4).

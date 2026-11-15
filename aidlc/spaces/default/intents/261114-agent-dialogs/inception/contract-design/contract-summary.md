@@ -209,11 +209,19 @@ agentEvents.latest:   { in: { projectId: string }, out: "{ tabId, harness, text,
                         note: 'U3 amendment: status is "waiting" | "answered" | "sessionEnded" | "notShown"' }
 agentEvents.reopen:   { in: { eventId: string }, out: { state: "shown" }, errors: ["unknown event", "event not open"], unit: U3 }   # U3 amendment
 # U3 amendment: agentEvents.close returns { state: "dismissed" } for a reply (BR6.14)
-agentHooks.status:    { in: { projectId: string }, out: "[{ harness, files: [{ path, status }], status }]", unit: U4 }
-agentHooks.preview:   { in: { projectId: string, harness: string, action: "install" | "update" | "remove" }, out: "{ previewId, files: [{ path, summary, diff }] }", unit: U4 }
-agentHooks.apply:     { in: { projectId: string, previewId: string }, out: "{ status }", unit: U4,
-                        errors: ["changed since preview", "not valid JSON: <file>", "cannot write: <file>"] }
+agentHooks.status:    { in: { projectId: string }, out: "[{ harness, used, files: [{ path, status, reason? }], status }]", unit: U4,
+                        note: "U4 amendment: a file the app cannot use carries reason (invalidJson | unexpectedShape | cannotRead | cannotWrite | outsideRoot) and offers no action" }
+agentHooks.changed:   { push: "agent-hooks:changed", payload: { projectId: string, harnesses: "the agentHooks.status result" }, unit: U4 }   # U4 amendment
+agentHooks.preview:   { in: { projectId: string, harness: "claude" | "opencode", action: "install" | "update" | "remove" },
+                        out: "{ previewId, harness, action, files: [{ path, change, summary, diff, replacesHandEdit }] } | { refusal, file, cause }", unit: U4 }
+agentHooks.apply:     { in: { projectId: string, previewId: string }, out: "{ result, status, file?, cause?, preview? }", unit: U4,
+                        errors: ["changed since preview", "is not plain JSON", "cannot write: <file>",
+                                 "unknown preview", "points outside the project", "is a link", "has hooks in a shape the app does not change",
+                                 "partially written: <file> was not written (<cause>)"] }   # U4 amendment: errors after "cannot write"
+agentHooks.cancel:    { in: { projectId: string, previewId: string }, out: "void", unit: U4 }   # U4 amendment
 ```
+
+**U4 amendment:** `preview` takes exactly `projectId`, `harness`, `action`; `apply` and `cancel` take exactly `projectId`, `previewId`, and never a harness or an action (they use the preview's own). `result` is `written`, `nothingToChange`, `refused` or `partiallyWritten`; a refusal names `refusal` (`previewUnknown`, `changedSincePreview`, `invalidJson`, `unexpectedShape`, `cannotRead`, `cannotWrite`, `outsideRoot`), and `changedSincePreview` returns the new `preview`.
 
 `status` is one of `current`, `outOfDate`, `missing`, `editedByHand`. A refused answer never reaches a pty or a hook (FR3.1).
 
@@ -245,10 +253,11 @@ hooks:
         - type: command
           timeout: 10
           command: '[ -n "$THADEUS_SESSION_DIR" ] && [ -f "$CLAUDE_PROJECT_DIR/.thadeus/hooks/dialog.sh" ] && sh "$CLAUDE_PROJECT_DIR/.thadeus/hooks/dialog.sh" reply; exit 0'
-recognised_as_the_apps: "the command runs a script in .thadeus/hooks/ (ADR-004)"
-committed_files:
-  - .thadeus/hooks/dialog.sh       # name final in Functional Design
-  - "<opencode plugin folder>/thadeus-dialog.js"   # path fixed in Functional Design
+# U4 amendment (SD34): the appKind rule
+recognised_as_the_apps: "the command runs exactly .thadeus/hooks/dialog.sh with one of the kinds question, answered, permission, reply (one fixed rule, NFR5.30); any other command, also another script in .thadeus/hooks/, is not the app's"
+committed_files:                   # U4 amendment
+  - .thadeus/hooks/dialog.sh
+  - .opencode/plugins/thadeus-dialog.js
 ```
 
 - The command exits 0 with no output when the session variable or the script is missing, before the script is looked for (FR4.6).

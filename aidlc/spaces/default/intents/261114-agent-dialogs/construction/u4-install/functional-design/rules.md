@@ -17,15 +17,16 @@
 ```yaml
 rules:
   - id: BR7.1
-    statement: An entry in .claude/settings.json is the app's exactly when its command runs a script in .thadeus/hooks/.
+    statement: An entry in .claude/settings.json is the app's exactly when its command runs .thadeus/hooks/dialog.sh with one of the kinds question, answered, permission, reply (U4 amendment, SD34).
     category: constraint
     applies_to: HookEntry, HookInstaller
     trigger: every read of .claude/settings.json
     logic: >
-      For every inner hook object under hooks.<event>[].hooks[], IF its command contains the text
-      ".thadeus/hooks/" THEN it is an app HookEntry (kind = the word after "dialog.sh", else unknown)
-      ELSE it is someone else's and the app never changes, moves or reformats it. No marker key is
-      read or written (ADR-004).
+      For every inner hook object under hooks.<event>[].hooks[], IF appKind(command) gives a kind
+      (the command runs exactly .thadeus/hooks/dialog.sh followed by one of the four kinds) THEN it is an
+      app HookEntry of that kind ELSE it is someone else's (also another script in .thadeus/hooks/ or an
+      unknown kind) and the app never changes, moves or reformats it. No marker key is read or written
+      (ADR-004). The plugin path .opencode/plugins/thadeus-dialog.ts in these rules reads .js (tech-stack D4).
     violation: none; a command edited so it no longer names the folder is not the app's, and that kind shows as missing
     source: FR4.3
 
@@ -307,7 +308,7 @@ rules:
 
 | Rule | Category | In short | Source |
 |---|---|---|---|
-| BR7.1 | constraint | App entry = command runs a script in `.thadeus/hooks/` | FR4.3 |
+| BR7.1 | constraint | App entry = command runs `.thadeus/hooks/dialog.sh` with a known kind (U4 amendment) | FR4.3 |
 | BR7.2 | constraint | Claude Code: four guarded entries and the script | FR4.1, FR4.4, FR4.6, NFR4 |
 | BR7.3 | constraint | opencode: one plugin file, idle outside app sessions | FR4.1, FR4.4, FR4.7, NFR4 |
 | BR7.4 | calculation | current / outOfDate / editedByHand / missing per entry and file | FR4.3, FR4.5 |
