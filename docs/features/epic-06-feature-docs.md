@@ -6,9 +6,9 @@
 
 > Many projects describe their product in a feature document: an overview (`docs/FEATURES.md`) listing epics, and one file per epic (`docs/features/epic-XX-*.md`) with user stories, acceptance criteria and status. The format is not part of AI-DLC, but it works well together with it: the feature docs say *what* and *why*, and AI-DLC's records say *how* and *when*. The console should offer this format when a project is set up, and let people read and follow it next to the AI-DLC work.
 
-**Stories:** US-0601, US-0602, US-0603, US-0604
+**Stories:** US-0601, US-0602, US-0603, US-0604, US-0605
 
-**Status (2026-11-15):** ✅ US-0601–US-0603 released (v0.2.0–v0.2.5). 📋 US-0604 planned for v0.2.6. Each story names its release.
+**Status (2026-11-15):** ✅ US-0601–US-0603 released (v0.2.0–v0.2.5). 📋 US-0604 planned for v0.2.6, US-0605 planned. Each story names its release.
 
 **Decisions:**
 - **Q1 (where the view lives):** a switch "Intents | Features" at the top of the project view. Features replaces the sidebar and content area; the terminal stays.
@@ -96,3 +96,21 @@
   - [ ] The filter is remembered per project.
   - [ ] Every text goes through `t()` in Swedish and English.
 - **Dependencies:** US-0602 (release filter: US-0603)
+
+**US-0605: Create a release by hand in the release list** 📋 Planned
+- As a **developer planning what ships when**, in order to **plan a release before any story is marked for it**, I would like to **create a release myself in the release list and add stories to it there**.
+- **Epic:** EPIC-06
+- **Priority:** High
+- **Complexity:** Medium
+- **Background:** Asked for 2026-11-15: "we need to manually create Releases in that view. Right now there is no mechanism for that." Today a release exists only when a story carries "for vX.Y.Z" or a git tag `vX.Y.Z` exists. A story's release picker offers just the planned versions and the next patch and minor after the latest tag.
+- **Acceptance Criteria:**
+  - [ ] **Given** the Releases delivery setting, **when** I choose "New release" in the release list, **then** I can enter a version `vX.Y.Z`. The next patch, minor and major after the latest tag are suggested, and a version that is not `vX.Y.Z` or already exists is refused with a message.
+  - [ ] **Given** I created a release, **then** it shows in the release list as planned with 0 stories, and it is offered in every story's release picker, also after the app restarts.
+  - [ ] **Given** a planned release, **when** I add stories to it from the release list, **then** each gets its "for vX.Y.Z" marker the same way as from the story (US-0603 FR2.2), and I can remove a story from it there too.
+  - [ ] **Given** a planned release with no stories and no tag, **then** I can delete it. A release with stories or a tag cannot be deleted.
+  - [ ] With Continuous deployment the action is hidden, as the rest of the release list is.
+  - [ ] Every text goes through `t()` in Swedish and English.
+- **Notes:**
+  - **Open question: where an empty release is kept.** The story markers can't hold a release that has no stories yet. Suggested: a short `docs/RELEASES.md` beside `FEATURES.md` (one line per planned release, with room for a goal and a target date later), so it is committed and every tool sees it. The alternative is app-only settings, which another clone or tool would not see.
+  - **Where.** `releaseOptions()` and `buildReleases()` in `src/main/parsers/releases.js`; the release list and picker in `src/renderer/FeaturesView.jsx`.
+- **Dependencies:** US-0603
