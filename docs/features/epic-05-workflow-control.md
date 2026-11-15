@@ -8,7 +8,7 @@
 
 **Stories:** US-0501, US-0502, US-0503, US-0504, US-0505, US-0506, US-0507, US-0508, US-0509
 
-**Status (2026-11-15):** ✅ US-0501–US-0503, US-0505 and US-0506 released (v0.2.0–v0.2.5). 📋 US-0507 planned for v0.2.6, US-0504 planned for v0.2.7, US-0508 and US-0509 planned. Each story names its release.
+**Status (2026-11-15):** ✅ US-0501–US-0503, US-0505 and US-0506 released (v0.2.0–v0.2.5). 📋 US-0504 and US-0507 planned for v0.2.7, US-0508 and US-0509 planned. Each story names its release.
 
 ---
 
@@ -140,7 +140,7 @@
 - **Notes:** Added 2026-11-14 at the person's request ("answer questions from Claude or opencode in dialogs, not only from AI-DLC, and see messages from them").
 - **Dependencies:** US-0505, US-0801, US-0803
 
-**US-0507: See what the agents are doing and how far they have come** 📋 Planned, for v0.2.6
+**US-0507: See what the agents are doing and how far they have come** 📋 Planned, for v0.2.7
 - As a **developer running AI-DLC**, in order to **know what is actually going on while subagents work in the background**, I would like to **plain progress lines per running agent, such as "u2-permissions has 6 of 27 steps done and u3-replies has 16 of 42"**.
 - **Epic:** EPIC-05
 - **Priority:** Medium
