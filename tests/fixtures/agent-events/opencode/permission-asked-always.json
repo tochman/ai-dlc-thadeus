@@ -1,0 +1,11 @@
+{
+  "type": "permission.asked",
+  "properties": {
+    "requestID": "per_9a1f20b3c4",
+    "sessionID": "ses_7d1c0b2a9e",
+    "permission": "bash",
+    "patterns": ["git push origin feat/US-0506"],
+    "always": ["git push *"],
+    "metadata": { "command": "git push origin feat/US-0506" }
+  }
+}

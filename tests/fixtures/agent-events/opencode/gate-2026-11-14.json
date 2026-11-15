@@ -1,0 +1,18 @@
+{
+  "type": "form.created",
+  "properties": {
+    "sessionID": "ses_7d1c0b2a9e",
+    "formID": "frm_gate20261114",
+    "questions": [
+      {
+        "question": "**Code Generation** is complete for `u1-questions`. How would you like to proceed?",
+        "header": "Stage gate",
+        "options": [
+          { "label": "Complete workflow", "description": "Approve this stage and continue to Build and Test." },
+          { "label": "Request Changes", "description": "Keep the stage open and say what to change." }
+        ],
+        "multiple": false
+      }
+    ]
+  }
+}

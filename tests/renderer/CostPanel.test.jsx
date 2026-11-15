@@ -6,7 +6,13 @@ import ledger from '../fixtures/ledger/usage-ledger.json';
 
 // Same shape the project:cost channel returns: {available, ...summarizeLedger(ledger, intents)}.
 const intents = [
-  { dirName: '261112-epic29-small-k2-fixes', uuid: '01a1d000-0000-7000-8000-000000000003', slug: 'epic29-small-k2-fixes', scope: 'express', date: '2026-11-12' },
+  {
+    dirName: '261112-epic29-small-k2-fixes',
+    uuid: '01a1d000-0000-7000-8000-000000000003',
+    slug: 'epic29-small-k2-fixes',
+    scope: 'express',
+    date: '2026-11-12'
+  },
   { dirName: '261110-epic02-finish', uuid: '01a1c625-50f3-7f83-9755-b096bf4025e6', slug: 'epic02-finish', scope: 'feature', date: '2026-11-10' }
 ];
 const cost = { available: true, ...summarizeLedger(ledger, intents) };

@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { isValidFeaturesPath } from '../main/parsers/features.js';
 import { HARNESSES, selectableHarness } from '../shared/harnesses.js';
 import { useTerminal } from './TerminalContext.jsx';
+import AgentHooksSection from './AgentHooksSection.jsx'; // US-0506 u4
 
 const errorText = (err) => String(err?.message ?? err).replace(/^Error invoking remote method '[^']+': (Error: )?/, '');
 const MODES = ['auto', 'show', 'hide'];
@@ -28,9 +29,7 @@ function harnessOptions(detected, t) {
  */
 export function confirmHarnessSwitch(terminal, from, to, t) {
   if (terminal?.state('agent') !== 'busy') return true;
-  return window.confirm(
-    t('settings.project.harnessSwitchConfirm', { from: selectableHarness(from)?.label ?? from, to: selectableHarness(to)?.label ?? to })
-  );
+  return window.confirm(t('settings.project.harnessSwitchConfirm', { from: selectableHarness(from)?.label ?? from, to: selectableHarness(to)?.label ?? to }));
 }
 
 /**
@@ -41,6 +40,7 @@ export function confirmHarnessSwitch(terminal, from, to, t) {
  *   harness: the harness the agent tab runs now; harnesses: the detection, null while it runs (US-0801)
  *   onAddHarness: given in an AI-DLC project; opens setup in add mode (US-0802 FR3.1)
  *   onOpenConfig: given in an AI-DLC project; shows the Configuration view (US-0901 FR1.1)
+ *   agentHooksFocus: opened from the agent hooks strip's Details; the Agent dialogs section takes focus (US-0506 u4 BR7.15)
  */
 export default function ProjectSettingsDialog({
   open,
@@ -52,7 +52,8 @@ export default function ProjectSettingsDialog({
   harness = null,
   harnesses = null,
   onAddHarness,
-  onOpenConfig
+  onOpenConfig,
+  agentHooksFocus = false
 }) {
   const { t } = useTranslation();
   const terminal = useTerminal();
@@ -124,9 +125,7 @@ export default function ProjectSettingsDialog({
     >
       {open && (
         <form onSubmit={save}>
-          <h2 id={`project-settings-title-${projectId}`}>
-            {name ? t('settings.project.titleFor', { name }) : t('settings.project.title')}
-          </h2>
+          <h2 id={`project-settings-title-${projectId}`}>{name ? t('settings.project.titleFor', { name }) : t('settings.project.title')}</h2>
           <fieldset className="settings-group">
             <legend>{t('settings.project.featureDocsLegend')}</legend>
             {MODES.map((id) => (
@@ -160,7 +159,8 @@ export default function ProjectSettingsDialog({
           )}
           <label className="field">
             <span className="field-label">{t('settings.project.harnessLabel')}</span>
-            <select className="lcars-select"
+            <select
+              className="lcars-select"
               value={chosen ?? ''}
               onChange={(e) => setChosen(e.target.value)}
               disabled={!harness}
@@ -184,9 +184,7 @@ export default function ProjectSettingsDialog({
                     checked={tabs.includes(id)}
                     // At least one tab stays open; the order follows the harness table.
                     disabled={tabs.length === 1 && tabs.includes(id)}
-                    onChange={(e) =>
-                      setTabs((cur) => runnable.filter((h) => (h === id ? e.target.checked : cur.includes(h))))
-                    }
+                    onChange={(e) => setTabs((cur) => runnable.filter((h) => (h === id ? e.target.checked : cur.includes(h))))}
                     data-testid={`project-settings-tab-${id}`}
                   />
                   {selectableHarness(id).label}
@@ -199,7 +197,11 @@ export default function ProjectSettingsDialog({
             <p className="settings-setup">
               <span className="muted" data-testid="project-settings-installed-harnesses">
                 {t('settings.project.installedHarnesses', {
-                  list: (harnesses ?? []).filter((d) => d.installed).map((d) => d.label).join(', ') || '–'
+                  list:
+                    (harnesses ?? [])
+                      .filter((d) => d.installed)
+                      .map((d) => d.label)
+                      .join(', ') || '–'
                 })}
               </span>
               <button
@@ -230,6 +232,7 @@ export default function ProjectSettingsDialog({
               </button>
             </p>
           )}
+          <AgentHooksSection projectId={projectId} focus={agentHooksFocus} />
           {error && (
             <p className="refresh-error" role="alert">
               {error}

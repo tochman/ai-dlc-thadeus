@@ -8,7 +8,7 @@
 
 **Stories:** US-0701, US-0702
 
-**Status (2026-11-14):** ✅ US-0701 released in v0.2.1. US-0702 📋 Planned.
+**Status (2026-11-14):** ✅ US-0701 released in v0.2.1. US-0702 📋 Planned for v0.2.6.
 
 ---
 
@@ -30,7 +30,7 @@
   - [x] LCARS labels keep working in both languages: long English or Swedish words do not break blocks. Labels shrink or wrap instead of overflowing.
 - **Dependencies:** US-0403 (the new UI), US-0404 (menus)
 
-**US-0702: Add your own language with a translation file** 📋 Planned
+**US-0702: Add your own language with a translation file** 📋 Planned, for v0.2.6
 - As a **user who speaks another language**, in order to **use the console in my language without waiting for a new release**, I would like to **put a translation file in a folder and have the app find it and offer the language**.
 - **Epic:** EPIC-07
 - **Priority:** Low

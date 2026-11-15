@@ -1,0 +1,19 @@
+{
+  "type": "form.created",
+  "properties": {
+    "sessionID": "ses_7d1c0b2a9e",
+    "formID": "frm_reordered",
+    "questions": [
+      {
+        "question": "Which database should the service use?",
+        "header": "Database",
+        "options": [
+          { "label": "SQLite", "description": "A file next to the app; no server." },
+          { "label": "PostgreSQL", "description": "A server; the team already runs one." },
+          { "label": "DynamoDB", "description": "Managed; pay per request." }
+        ],
+        "multiple": false
+      }
+    ]
+  }
+}

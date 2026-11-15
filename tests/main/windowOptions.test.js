@@ -8,16 +8,18 @@ vi.mock('electron', () => ({
     getAppPath: () => '/app',
     isPackaged: false,
     whenReady: () => new Promise(() => {}),
-    on: () => {}
+    on: () => {},
+    requestSingleInstanceLock: () => true,
+    quit: () => {}
   },
-  BrowserWindow: {},
+  BrowserWindow: { getAllWindows: () => [] },
   shell: {}
 }));
 vi.mock('../../src/main/ipc.js', () => ({ registerIpc: () => {}, shutdown: async () => {}, guardClose: () => {}, noteQuitting: () => {} }));
 vi.mock('../../src/main/menu.js', () => ({ applyMenu: () => {} }));
 vi.mock('../../src/main/settings.js', () => ({ getSettings: async () => ({}), setSettings: async () => {} }));
 
-const { windowOptions } = await import('../../src/main/index.js');
+const { claimSingleInstance, windowOptions } = await import('../../src/main/index.js');
 const { APP_NAME } = await import('../../src/shared/appName.js');
 
 describe('windowOptions (US-0404 F-01)', () => {
@@ -48,5 +50,34 @@ describe('windowOptions (US-0404 F-01)', () => {
   it('adds the window icon only on Linux', () => {
     expect(windowOptions({}, 'linux').icon).toBeTruthy();
     expect('icon' in windowOptions({}, 'darwin')).toBe(false);
+  });
+
+  it('passes --thadeus-timing to the renderer only when timing is on (US-0506 OD1)', () => {
+    expect(windowOptions({}, 'darwin', { timing: true }).webPreferences.additionalArguments).toEqual(['--thadeus-timing']);
+    expect('additionalArguments' in windowOptions({}, 'darwin').webPreferences).toBe(false);
+    expect('additionalArguments' in windowOptions({}, 'darwin', { timing: false }).webPreferences).toBe(false);
+  });
+});
+
+describe('claimSingleInstance (US-0506 K5, review R-02)', () => {
+  const fakeApp = (lock) => {
+    const on = {};
+    return { requestSingleInstanceLock: vi.fn(() => lock), quit: vi.fn(), on: vi.fn((e, f) => (on[e] = f)), fire: (e) => on[e]() };
+  };
+
+  it('a second start is refused the lock and quits before anything else runs', () => {
+    const app = fakeApp(false);
+    expect(claimSingleInstance(app, vi.fn())).toBe(false);
+    expect(app.quit).toHaveBeenCalled();
+    expect(app.on).not.toHaveBeenCalled();
+  });
+
+  it('the first instance keeps the lock and brings its window forward on second-instance', () => {
+    const app = fakeApp(true);
+    const focus = vi.fn();
+    expect(claimSingleInstance(app, focus)).toBe(true);
+    expect(app.quit).not.toHaveBeenCalled();
+    app.fire('second-instance');
+    expect(focus).toHaveBeenCalledTimes(1);
   });
 });

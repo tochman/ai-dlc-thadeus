@@ -6,9 +6,9 @@
 
 > Make the price and the "brains" of AI-DLC work visible. For every intent, stage and agent the console shows what the run cost (tokens and USD) and which model did the work, next to which model each agent is *configured* to use. The goal is that the user can answer "what did this feature cost?", "where does the money go?" and "is the reviewer really running on the cheaper model?" without leaving the app. Read-only, like everything else.
 
-**Stories:** US-0201, US-0202, US-0203, US-0204, US-0205, US-0206, US-0207
+**Stories:** US-0201, US-0202, US-0203, US-0204, US-0205, US-0206, US-0207, US-0208
 
-**Status (2026-11-14):** ✅ US-0201–US-0205 released in v0.2.0. CSV export (US-0203) is deferred. US-0206 moved to US-0904 in EPIC-09. ✅ US-0207 released in v0.2.4 (live token view).
+**Status (2026-11-14):** ✅ US-0201–US-0205 released in v0.2.0. CSV export (US-0203) is deferred. US-0206 moved to US-0904 in EPIC-09. ✅ US-0207 released in v0.2.4 (live token view). 📋 US-0208 Planned for v0.2.6 (detailed token view from the side diagram).
 
 ---
 
@@ -133,3 +133,18 @@ The key format of `workflows` was confirmed during requirements analysis (see ab
   - **Limit.** The readout column is hidden in windows narrower than 1280 px, and the view with it.
   - **Tests.** `tests/renderer/tokenFlow.test.jsx`, `tests/renderer/TokenView.test.jsx`.
 - **Dependencies:** US-0201, US-0205
+
+**US-0208: Detailed token view from the side diagram** 📋 Planned, for v0.2.6
+- As a **developer watching agents work**, in order to **understand in depth where and how the tokens go**, I would like to **click the small token diagram in the side column and get a large view with several detailed diagrams, showing as much of the data as is available**.
+- **Epic:** EPIC-02
+- **Priority:** Medium
+- **Complexity:** Medium
+- **Background:** Asked for on 2026-11-14. Builds on the live token view (US-0207).
+- **Acceptance Criteria:**
+  - [ ] Clicking the small token view (`TokenView.jsx`), or pressing Enter or Space on it, opens a large view; Esc or a close button returns to where the person was.
+  - [ ] The large view shows several diagrams, each from the ledger's own data: tokens over time per kind (input, output, cache write 5 m and 1 h, cache read), the token rate over time, and the split by stage, by agent and by model.
+  - [ ] Each diagram shows the figures behind it on hover or focus, and a table view of the same numbers is one click away.
+  - [ ] It updates live while the work runs, like US-0207, and it works for a finished intent too, from the recorded totals.
+  - [ ] A diagram whose data is missing says so in one sentence instead of showing zero.
+  - [ ] Each series has a text label, not colour alone. Swedish and English texts, and motion follows the animations setting.
+- **Dependencies:** US-0207, US-0202

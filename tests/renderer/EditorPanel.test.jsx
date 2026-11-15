@@ -63,7 +63,9 @@ describe('EditorPanel (EPIC-10 US-1001)', () => {
     expect(dirtyFiles('p1')).toEqual(['docs/notes.md']);
     expect(screen.getByTestId('editor-preview').textContent).toContain('More.'); // Markdown preview beside it
     fireEvent.keyDown(screen.getByTestId('editor-panel'), { key: 's', metaKey: true });
-    await waitFor(() => expect(window.bridge.writeFile).toHaveBeenCalledWith('p1', 'docs/notes.md', '# Notes\n\nMore.\n', { mtimeMs: 1000, hash: 'hash-# Notes\n' }));
+    await waitFor(() =>
+      expect(window.bridge.writeFile).toHaveBeenCalledWith('p1', 'docs/notes.md', '# Notes\n\nMore.\n', { mtimeMs: 1000, hash: 'hash-# Notes\n' })
+    );
     await waitFor(() => expect(screen.queryByTestId('editor-tab-dirty')).toBeNull());
     expect(dirtyFiles('p1')).toEqual([]);
   });

@@ -3,12 +3,20 @@ import { useEffect } from 'react';
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 
 // The project view has its own tests; here it only reports what the left arm needs, as the real one does.
-vi.mock('../../src/renderer/ProjectView.jsx', () => ({
-  default: function ProjectViewStub({ project, view, onMeta }) {
-    useEffect(() => onMeta(project.projectId, { showFeatures: true, intentCount: 7 }), [project.projectId, onMeta]);
-    return <div data-testid={`project-view-${project.projectId}`} data-view={view} />;
-  }
-}));
+// It renders the real latest-message strip (US-0506 u3), as the real one does above its terminal.
+vi.mock('../../src/renderer/ProjectView.jsx', async () => {
+  const { default: LatestMessageStrip } = await import('../../src/renderer/LatestMessageStrip.jsx');
+  return {
+    default: function ProjectViewStub({ project, view, onMeta, onOpenReply }) {
+      useEffect(() => onMeta(project.projectId, { showFeatures: true, intentCount: 7 }), [project.projectId, onMeta]);
+      return (
+        <div data-testid={`project-view-${project.projectId}`} data-view={view}>
+          <LatestMessageStrip projectId={project.projectId} onOpenReply={onOpenReply} />
+        </div>
+      );
+    }
+  };
+});
 
 // Same shapes as settings:get and project:open.
 const projectInfo = (root, projectId) => ({
@@ -85,10 +93,11 @@ describe('App shell', () => {
     await waitFor(() => expect(first.getAttribute('aria-current')).toBe('true'));
     expect(second.hasAttribute('aria-current')).toBe(false);
     expect(within(arm).getAllByTestId('project-settings-open')).toHaveLength(2);
-    expect(within(arm).getAllByTestId('project-tabs-close').map((b) => b.getAttribute('aria-label'))).toEqual([
-      'Stäng aidlc-dash-a',
-      'Stäng visinv'
-    ]);
+    expect(
+      within(arm)
+        .getAllByTestId('project-tabs-close')
+        .map((b) => b.getAttribute('aria-label'))
+    ).toEqual(['Stäng aidlc-dash-a', 'Stäng visinv']);
 
     // Views: Intents is the current page; Features shows because the project offers it (EPIC-06 rule).
     const intents = await screen.findByTestId('project-view-switch-intents');
@@ -129,7 +138,11 @@ describe('App shell', () => {
   it('makes Kostnad and Github views of their own, one at a time, from the arm and the menu; disabled without AI-DLC', async () => {
     await renderApp({ openProjects: ['/p/aidlc-dash-a'], activeProject: '/p/aidlc-dash-a' });
     await screen.findByTestId('project-view-switch-features');
-    const current = () => screen.getAllByRole('button').filter((b) => b.getAttribute('aria-current') === 'page').map((b) => b.dataset.testid);
+    const current = () =>
+      screen
+        .getAllByRole('button')
+        .filter((b) => b.getAttribute('aria-current') === 'page')
+        .map((b) => b.dataset.testid);
     const shownView = () => screen.getByTestId('project-view-p1').dataset.view;
 
     fireEvent.click(screen.getByTestId('arm-github'));
@@ -169,7 +182,8 @@ describe('App shell', () => {
     expect(screen.getByTestId('arm-github').hasAttribute('aria-current')).toBe(false);
   });
 
-  it('sets data-motion from the setting, Dämpad under prefers-reduced-motion without one, and saves a new choice (FR4.2)', async () => {    mockReducedMotion(true);
+  it('sets data-motion from the setting, Dämpad under prefers-reduced-motion without one, and saves a new choice (FR4.2)', async () => {
+    mockReducedMotion(true);
     await renderApp({});
     await waitFor(() => expect(window.bridge.getSettings).toHaveBeenCalled());
     expect(document.documentElement.dataset.motion).toBe('reduced');
@@ -221,7 +235,7 @@ describe('App shell', () => {
     expect(within(screen.getByTestId('project-tabs')).queryByRole('img')).toBeNull();
   });
 
-  it('labels the fullscreen block from the window\'s real mode, with aria-pressed, and toggles it on click (US-0404 FR1.2, NFR3)', async () => {
+  it("labels the fullscreen block from the window's real mode, with aria-pressed, and toggles it on click (US-0404 FR1.2, NFR3)", async () => {
     await renderApp({});
     const button = await screen.findByTestId('fullscreen-toggle');
     expect(button.tagName).toBe('BUTTON'); // reachable with the keyboard
@@ -270,5 +284,193 @@ describe('App shell', () => {
     await waitFor(() => expect(window.bridge.sendMenuState).toHaveBeenLastCalledWith({ hasProject: false, isAidlc: false, showFeatures: false }));
     act(() => push.menuCommand({ command: 'closeProject' }));
     expect(window.bridge.closeProject).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('App shell: agent dialogs (US-0506 u1)', () => {
+  const hookEvent = {
+    eventId: 'h1',
+    sessionId: 's1',
+    projectId: 'p1',
+    tabId: 'agent:claude',
+    harness: 'claude',
+    source: 'hook',
+    kind: 'question',
+    state: 'shown',
+    arrivedAtMs: 1,
+    seq: 1,
+    context: null,
+    questions: [{ header: 'Val', text: 'Vilken?', truncated: false, options: [{ label: 'A', description: null }], multiSelect: false, allowOwn: true }],
+    lastError: null
+  };
+  async function withAgentEvents(settings) {
+    mockBridge({ openProjects: ['/p/aidlc-dash-a'], activeProject: '/p/aidlc-dash-a', ...settings });
+    window.bridge.agentEvents = {
+      list: vi.fn(async () => []),
+      onChanged: vi.fn((cb) => ((push.agentEvents = cb), () => delete push.agentEvents)),
+      answer: vi.fn(async () => ({ state: 'sent', via: 'hook' })),
+      close: vi.fn(async () => ({ state: 'handedBack' }))
+    };
+    render(<App />);
+    await waitFor(() => expect(window.bridge.agentEvents.list).toHaveBeenCalledWith('p1'));
+  }
+  afterEach(() => delete window.bridge.agentEvents);
+
+  it('a pushed hook event opens the dialog', async () => {
+    await withAgentEvents({});
+    act(() => push.agentEvents({ projectId: 'p1', events: [hookEvent] }));
+    expect(await screen.findByTestId('agent-dialog-title')).toBeTruthy();
+    expect(screen.getByTestId('agent-dialog').hasAttribute('open')).toBe(true);
+    act(() => push.agentEvents({ projectId: 'p1', events: [] }));
+    await waitFor(() => expect(screen.getByTestId('agent-dialog').hasAttribute('open')).toBe(false));
+  });
+
+  it('with question alerts off the dialog does not open by itself', async () => {
+    await withAgentEvents({ questionAlerts: 'off' });
+    await waitFor(() => expect(window.bridge.getSettings).toHaveBeenCalled());
+    act(() => push.agentEvents({ projectId: 'p1', events: [hookEvent] }));
+    expect(screen.getByTestId('agent-dialog').hasAttribute('open')).toBe(false);
+  });
+
+  // US-0506 u2 K11, K13: permissions before replies across projects, and the 5 s hand-back notice.
+  const permissionEvent = {
+    ...hookEvent,
+    eventId: 'perm-b',
+    projectId: 'p2',
+    tabId: 'agent:b',
+    kind: 'permission',
+    arrivedAtMs: 5,
+    seq: 2,
+    questions: undefined,
+    permission: {
+      what: 'Bash',
+      detail: 'git push',
+      cwd: null,
+      truncated: false,
+      choices: [
+        { label: 'Tillåt en gång', effect: 'allowOnce', refuses: false, enabled: true },
+        { label: 'Neka', effect: 'deny', refuses: true, enabled: true }
+      ]
+    }
+  };
+  const replyStandIn = { ...hookEvent, eventId: 'reply-a', tabId: 'agent:a', kind: 'reply', arrivedAtMs: 1, seq: 1 };
+
+  it('a permission from tab B reaches the dialog before a reply from tab A that arrived first (AC2.1.4)', async () => {
+    await withAgentEvents({ openProjects: ['/p/aidlc-dash-a', '/p/other-b'] });
+    await waitFor(() => expect(window.bridge.agentEvents.list).toHaveBeenCalledWith('p2'));
+    act(() => {
+      // both waiting when the dialog opens; an open page itself never jumps (BR2.1)
+      push.agentEvents({ projectId: 'p1', events: [replyStandIn] });
+      push.agentEvents({ projectId: 'p2', events: [permissionEvent] });
+    });
+    expect((await screen.findByTestId('agent-dialog-title')).textContent).toBe('BEHÖRIGHET: Claude Code ber om behörighet');
+    expect(screen.getByText('1 av 2')).toBeTruthy();
+  });
+
+  it('a handed-back permission shows the notice for 5 s, then it goes (K11)', { timeout: 15_000 }, async () => {
+    await withAgentEvents({});
+    act(() => push.agentEvents({ projectId: 'p1', events: [{ ...permissionEvent, projectId: 'p1' }] }));
+    await screen.findByTestId('agent-dialog-what');
+    await new Promise((r) => setTimeout(r, 450)); // past the input guard
+    fireEvent.click(screen.getByTestId('agent-dialog-close'));
+    const notice = await screen.findByTestId('app-notice');
+    expect(notice.textContent).toBe('Lämnad tillbaka till terminalen. Svara där som vanligt.');
+    expect(notice.getAttribute('role')).toBe('status');
+    await new Promise((r) => setTimeout(r, 4500));
+    expect(screen.getByTestId('app-notice')).toBeTruthy();
+    await waitFor(() => expect(screen.queryByTestId('app-notice')).toBeNull(), { timeout: 2000 });
+  });
+});
+
+describe('App shell: agent replies (US-0506 u3)', () => {
+  const question = {
+    eventId: 'h1',
+    sessionId: 's1',
+    projectId: 'p1',
+    tabId: 'agent:claude',
+    harness: 'claude',
+    source: 'hook',
+    kind: 'question',
+    state: 'shown',
+    arrivedAtMs: 5,
+    seq: 2,
+    context: null,
+    questions: [{ header: 'Val', text: 'Vilken?', truncated: false, options: [{ label: 'A', description: null }], multiSelect: false, allowOwn: true }],
+    lastError: null
+  };
+  const reply = (state, over = {}) => ({
+    ...question,
+    eventId: 'r1',
+    sessionId: 's2',
+    tabId: 'agent:opencode',
+    harness: 'opencode',
+    kind: 'reply',
+    state,
+    arrivedAt: '2026-11-14T10:00:00.000Z',
+    arrivedAtMs: 1,
+    seq: 1,
+    questions: undefined,
+    message: { text: 'Vilket namn ska filen få?', truncated: false, empty: false },
+    staleReason: null,
+    ...over
+  });
+  const subs = new Set();
+  const send = (events) => act(() => subs.forEach((cb) => cb({ projectId: 'p1', events })));
+  async function withReplies(latest = null) {
+    mockBridge({ openProjects: ['/p/aidlc-dash-a'], activeProject: '/p/aidlc-dash-a' });
+    window.bridge.agentEvents = {
+      list: vi.fn(async () => []),
+      onChanged: vi.fn((cb) => (subs.add(cb), () => subs.delete(cb))),
+      answer: vi.fn(),
+      close: vi.fn(async () => ({ state: 'dismissed' })),
+      latest: vi.fn(async () => latest),
+      reopen: vi.fn(async () => {
+        send([reply('shown')]);
+        return { state: 'shown' };
+      })
+    };
+    render(<App />);
+    await waitFor(() => expect(window.bridge.agentEvents.list).toHaveBeenCalledWith('p1'));
+  }
+  afterEach(() => {
+    subs.clear();
+    delete window.bridge.agentEvents;
+  });
+
+  it('pages questions before replies, whatever their arrival (BR6.8)', async () => {
+    await withReplies();
+    send([reply('shown'), question]);
+    expect((await screen.findByTestId('agent-dialog-title')).textContent).toMatch(/^Fråga/);
+    fireEvent.click(screen.getByTestId('agent-dialog-next'));
+    expect(screen.getByTestId('agent-dialog-title').textContent).toBe('Meddelande från opencode');
+  });
+
+  it('leaves queued and dismissed replies out of the pager and closes when only a dismissed one is left', async () => {
+    await withReplies();
+    send([reply('queued'), question]);
+    expect(await screen.findByText('1 av 1')).toBeTruthy();
+    send([reply('shown')]);
+    await waitFor(() => expect(screen.getByTestId('agent-dialog').hasAttribute('open')).toBe(true));
+    send([reply('dismissed')]);
+    await waitFor(() => expect(screen.getByTestId('agent-dialog').hasAttribute('open')).toBe(false));
+  });
+
+  it("the strip's Answer calls reopen once, then the dialog opens on that reply (AC3.1.3)", async () => {
+    await withReplies({
+      tabId: 'agent:opencode',
+      harness: 'opencode',
+      text: 'Vilket namn?',
+      arrivedAt: '2026-11-14T10:00:00.000Z',
+      status: 'waiting',
+      eventId: 'r1',
+      truncated: false,
+      empty: false
+    });
+    send([reply('dismissed')]);
+    fireEvent.click(await screen.findByTestId('latest-message-answer'));
+    await waitFor(() => expect(screen.getByTestId('agent-dialog').hasAttribute('open')).toBe(true));
+    expect(window.bridge.agentEvents.reopen).toHaveBeenCalledTimes(1);
+    expect(window.bridge.agentEvents.reopen).toHaveBeenCalledWith('r1');
+    expect(screen.getByTestId('agent-dialog-title').textContent).toBe('Meddelande från opencode');
   });
 });

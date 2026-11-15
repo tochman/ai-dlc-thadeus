@@ -1,0 +1,16 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "AskUserQuestion",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "sh .thadeus/hooks/other.sh question",
+            "timeout": 30
+          }
+        ]
+      }
+    ]
+  }
+}

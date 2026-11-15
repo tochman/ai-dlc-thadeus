@@ -52,7 +52,9 @@ export async function modelOptions(root, harness, { exec = defaultExec } = {}) {
   if (!TABLES.has(harness)) return { ...base, editable: false, reason: t('configEdit.models.noTable', { harness: entry.label }) };
   let configured;
   try {
-    const out = JSON.parse(await runFixed(toolPath('aidlc'), ['config', 'models', '--show', '--json', '--harness', harness], { cwd: root, timeout: TIMEOUT_MS, exec }));
+    const out = JSON.parse(
+      await runFixed(toolPath('aidlc'), ['config', 'models', '--show', '--json', '--harness', harness], { cwd: root, timeout: TIMEOUT_MS, exec })
+    );
     if (out?.ok !== true || !Array.isArray(out.data?.effective)) throw new Error(out?.message ?? t('errors.missingField', { field: 'data.effective' }));
     configured = out.data.effective.filter((e) => e && typeof e.agent === 'string').map((e) => ({ ...e, agent: agentName(e.agent) }));
   } catch (err) {
@@ -135,7 +137,11 @@ export async function checkDrift(root, harness, { exec = defaultExec } = {}) {
 // The cost estimate. Prices come from this project's own ledger (usd per token per model), so nothing is
 // hardcoded; a model the ledger has never used has no price and gives no estimate.
 
-const bare = (m) => String(m).toLowerCase().replace(/^[^/]+\//, '').replace(/^claude-/, '');
+const bare = (m) =>
+  String(m)
+    .toLowerCase()
+    .replace(/^[^/]+\//, '')
+    .replace(/^claude-/, '');
 
 /** usd per token for each model in the ledger's byModel rows ({name, usd, totalTokens}). */
 export function pricesFromLedger(byModel) {

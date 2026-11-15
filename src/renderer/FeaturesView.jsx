@@ -222,7 +222,12 @@ export default function FeaturesView({ projectId, features, links = {}, focusSto
     setStoryId(focusStory.id);
   }, [focusStory, features]);
 
-  if (!features) return <p className="muted" data-testid="features-view">{t('features.reading')}</p>;
+  if (!features)
+    return (
+      <p className="muted" data-testid="features-view">
+        {t('features.reading')}
+      </p>
+    );
 
   let body;
   if (!features.available) {

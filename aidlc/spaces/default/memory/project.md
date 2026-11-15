@@ -58,6 +58,8 @@
 <!-- Format: NEVER [behavior] (affirmed [date]) -->
 <!-- Example: NEVER throw exceptions across service layer boundaries (affirmed 2026-05-17) -->
 
+None. (affirmed 2026-11-14)
+
 ## Mandated
 
 <!-- Populated by practices-discovery affirmation gate. -->
@@ -67,7 +69,16 @@
 - ALWAYS hålla feature-dokumenten aktuella när projektet har `docs/FEATURES.md` och epic-filer under `docs/features/`. I Deployment Execution för varje intent, och före PR:en, uppdateras fyra saker: storyns statusmarkör, uppfyllda acceptanskriterier (`- [x]`), epicens rad `**Status (…)**` och raden i `FEATURES.md`. När en release taggas märks varje story som ingår med "Released in vX.Y.Z". En ny story som användaren beskriver läggs in direkt. En levererad story får aldrig stå som pågående. (affirmed 2026-11-13)
 - ALWAYS följa storyns livscykel i feature- och epic-filerna medan arbetet pågår, inte bara i slutet: när arbetet på en story startar sätts den till 🚧 Pågående (storyns markör, epicens rad `**Status (…)**` och raden i `FEATURES.md`); när den är färdigbyggd och godkänd sätts den till ✅ Klar; när det är känt vilken release den ska ingå i skrivs releasen ut ("for vX.Y.Z", och "Released in vX.Y.Z" när taggen sätts). (affirmed 2026-11-14)
 
+ALWAYS write a failing test before the code for new behaviour (TDD). (affirmed 2026-11-14)
+
+ALWAYS keep line coverage at or above 80%, checked in CI. (affirmed 2026-11-14)
+
+ALWAYS run ESLint and Prettier in CI; a failure blocks the merge. (affirmed 2026-11-14)
+
+ALWAYS merge each story through its own squash-merged pull request; only docs and small chores may go straight to `main`. (affirmed 2026-11-14)
+
 ## Corrections
 
 <!-- Project-specific corrections from human feedback. -->
 <!-- Format: NEVER/ALWAYS [behavior] (learned [date]) -->
+- ALWAYS keep every stage document short, about a page or two, with detail only where a later stage needs it; later stages reread it many times, so length multiplies the cost. (learned 2026-11-14) <!-- cid:261114-agent-dialogs:code-generation:ef58fefd3c434e0b7b8aab3ad38ffbf544ad8c53fe32f732c33929c7981ac673 -->

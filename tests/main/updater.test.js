@@ -21,7 +21,7 @@ function fakeExec(answers = {}) {
   const exec = vi.fn(async (file, args) => {
     if (args[0] === '-l') return '__AIDLC_DASH_PATH__/usr/bin';
     calls.push([file, ...args]);
-    const a = typeof answers[file] === 'function' ? answers[file](args) : answers[file] ?? '';
+    const a = typeof answers[file] === 'function' ? answers[file](args) : (answers[file] ?? '');
     if (a instanceof Error) throw a;
     return a;
   });
@@ -149,7 +149,19 @@ describe('download and install', () => {
     expect(res.status).toBe('error');
     expect(res.error).toMatch(/SHA256|kontrollsumma|checksum/i);
     expect(calls.find((c) => c[0] === 'gh' && c[1] === 'release' && c[2] === 'download')).toEqual([
-      'gh', 'release', 'download', TAG, '--repo', 'tochman/aidlc-dash', '--pattern', DMG, '--pattern', 'SHA256SUMS.txt', '--dir', DIR, '--clobber'
+      'gh',
+      'release',
+      'download',
+      TAG,
+      '--repo',
+      'tochman/aidlc-dash',
+      '--pattern',
+      DMG,
+      '--pattern',
+      'SHA256SUMS.txt',
+      '--dir',
+      DIR,
+      '--clobber'
     ]);
     expect(fs.files[`${DIR}/${DMG}`]).toBeUndefined();
     expect((await updater.install()).status).toBe('error'); // nothing downloaded: nothing installed

@@ -22,6 +22,7 @@ Source of truth: one file per scope under `.claude/scopes/aidlc-<name>.md` (iden
 | poc            | Minimal       | (default)    | 8 / 33          |
 | refactor       | Minimal       | (default)    | 10 / 33         |
 | security-patch | Minimal       | (default)    | 10 / 33         |
+| ultra-express  | Minimal       | (default)    | 8 / 33          |
 | workshop       | Standard      | Minimal      | 26 / 33         |
 
 <!-- END: compiled scope grid -->

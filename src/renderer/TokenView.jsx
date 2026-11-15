@@ -44,7 +44,7 @@ export default function TokenView({ cost, dirName, live }) {
   const shown = now ?? history.at(-1)?.tokens ?? null;
   if (!live || !shown) return null;
   // The ledger could not be read this time: main kept its last good summary (stale), or there is none now.
-  const stale = cost?.stale ? cost.warning ?? '' : !now ? cost?.reason ?? '' : null;
+  const stale = cost?.stale ? (cost.warning ?? '') : !now ? (cost?.reason ?? '') : null;
   const max = Math.max(...METERS.map((m) => shown[m]));
   const rate = history.at(-1)?.rate ?? 0;
 

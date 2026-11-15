@@ -1,0 +1,18 @@
+{
+  "schemaVersion": 1,
+  "models": {
+    "schemaVersion": 1,
+    "agents": {
+      "architect": {
+        "model": {
+          "claude": "opus"
+        }
+      },
+      "pipeline-deploy": {
+        "model": {
+          "claude": "haiku"
+        }
+      }
+    }
+  }
+}

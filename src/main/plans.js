@@ -21,7 +21,10 @@ const KEYWORD = /^[\p{L}\p{N}][\p{L}\p{N} _-]{0,39}$/u;
 const TIMEOUT_MS = 120000; // compile and save may take a while; never hang forever
 
 const ownFile = (name) => `${OWN_PLANS_DIR}/${name}.md`;
-const harnessCopies = (name) => HARNESSES.map(scopesDir).filter(Boolean).map((dir) => `${dir}/aidlc-${name}.md`);
+const harnessCopies = (name) =>
+  HARNESSES.map(scopesDir)
+    .filter(Boolean)
+    .map((dir) => `${dir}/aidlc-${name}.md`);
 const errorText = (err) => (err.killed ? t('errors.timeout') : String(err.message ?? err).trim());
 
 export { validPlanName };
@@ -152,7 +155,8 @@ function yamlText(value) {
 
 const FORMAT = {
   description: (v) => {
-    if (typeof v !== 'string' || !v.trim() || v.length > 200 || /[\r\n]/.test(v)) throw new Error(t('errors.invalidValue', { what: 'description', value: String(v) }));
+    if (typeof v !== 'string' || !v.trim() || v.length > 200 || /[\r\n]/.test(v))
+      throw new Error(t('errors.invalidValue', { what: 'description', value: String(v) }));
     return yamlText(v.trim());
   },
   depth: (v) => {

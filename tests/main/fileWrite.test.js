@@ -1,10 +1,10 @@
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createHash } from 'node:crypto';
-import { promises as fs } from 'node:fs';
+import { promises as fs, readFileSync, readdirSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { openRoot } from '../../src/main/projectAccess.js';
-import { isEngineOwned, listTree, readForEdit, writeFileSafe } from '../../src/main/fileWrite.js';
+import { isEngineOwned, listTree, readForEdit, writeAtomic, writeFileSafe } from '../../src/main/fileWrite.js';
 
 let tmp;
 let outside;
@@ -39,7 +39,12 @@ describe('safe writes (EPIC-10 US-1001, NFR6)', () => {
     await expect(writeFileSafe(root, path.join(outside, 'secret.txt'), 'x', expect_)).rejects.toThrow();
     await expect(writeFileSafe(root, '../x.txt', 'x', expect_)).rejects.toThrow();
     await expect(writeFileSafe(root, 'link-out.txt', 'x', expect_)).rejects.toThrow();
-    for (const rel of ['aidlc/spaces/default/intents/261114-x/aidlc-state.md', 'aidlc/spaces/default/intents/261114-x/audit/host-1.md', 'aidlc/spaces/default/intents/intents.json', '.claude/agents/aidlc-developer-agent.md']) {
+    for (const rel of [
+      'aidlc/spaces/default/intents/261114-x/aidlc-state.md',
+      'aidlc/spaces/default/intents/261114-x/audit/host-1.md',
+      'aidlc/spaces/default/intents/intents.json',
+      '.claude/agents/aidlc-developer-agent.md'
+    ]) {
       await expect(writeFileSafe(root, rel, 'x', expect_), rel).rejects.toThrow(/AI-DLC/);
     }
     expect(await fs.readFile(path.join(outside, 'secret.txt'), 'utf8')).toBe('secret');
@@ -90,5 +95,77 @@ describe('safe writes (EPIC-10 US-1001, NFR6)', () => {
     const { files } = await listTree(root, { exec: noGit });
     expect(files).toContain('src/a.js');
     expect(files.some((f) => /^(node_modules|out|dist|\.git)\//.test(f))).toBe(false);
+  });
+});
+
+// US-0506 u4 LC32, RD33, SD36: the shared atomic write.
+describe('writeAtomic (US-0506 u4 RD33)', () => {
+  const target = () => path.join(tmp, 'docs/notes.md');
+  const tmpLeft = async () => (await fs.readdir(path.join(tmp, 'docs'))).filter((f) => f.endsWith('.tmp'));
+  const modeOf = async (abs) => (await fs.stat(abs)).mode & 0o7777;
+  afterEach(() => vi.restoreAllMocks());
+
+  it('writes the bytes to the target', async () => {
+    await writeAtomic(target(), Buffer.from('new\n'));
+    expect(await fs.readFile(target(), 'utf8')).toBe('new\n');
+    expect(await tmpLeft()).toEqual([]);
+  });
+
+  it('on ENOSPC at the temp write and EACCES at the rename keeps the old bytes and leaves no temp file', async () => {
+    const before = hashOf(await fs.readFile(target()));
+    vi.spyOn(fs, 'writeFile').mockRejectedValueOnce(Object.assign(new Error('full'), { code: 'ENOSPC' }));
+    await expect(writeAtomic(target(), Buffer.from('x'))).rejects.toMatchObject({ code: 'ENOSPC' });
+    vi.spyOn(fs, 'rename').mockRejectedValueOnce(Object.assign(new Error('denied'), { code: 'EACCES' }));
+    await expect(writeAtomic(target(), Buffer.from('y'))).rejects.toMatchObject({ code: 'EACCES' });
+    expect(hashOf(await fs.readFile(target()))).toBe(before);
+    expect(await tmpLeft()).toEqual([]);
+  });
+
+  it('leaves the target untouched when expect throws (the final compare)', async () => {
+    const before = await fs.readFile(target(), 'utf8');
+    const expectFn = vi.fn(async () => {
+      throw Object.assign(new Error('changed'), { code: 'changedSincePreview' });
+    });
+    await expect(writeAtomic(target(), Buffer.from('z'), { expect: expectFn })).rejects.toMatchObject({ code: 'changedSincePreview' });
+    expect(expectFn).toHaveBeenCalledTimes(1);
+    expect(await fs.readFile(target(), 'utf8')).toBe(before);
+    expect(await tmpLeft()).toEqual([]);
+  });
+
+  it('sets the mode exactly, also bits the umask would take off', async () => {
+    for (const mode of [0o600, 0o664, 0o755]) {
+      await writeAtomic(target(), Buffer.from(String(mode)), { mode });
+      expect(await modeOf(target())).toBe(mode);
+    }
+  });
+
+  it('gives a new file 0o666 & ~umask without a mode', async () => {
+    const umask = process.umask();
+    const abs = path.join(tmp, 'docs/new.txt');
+    await writeAtomic(abs, Buffer.from('n'));
+    expect(await modeOf(abs)).toBe(0o666 & ~umask);
+  });
+
+  it('writeFileSafe keeps the file mode exactly', async () => {
+    await fs.chmod(target(), 0o664);
+    const opened = await readForEdit(root, 'docs/notes.md');
+    await writeFileSafe(root, 'docs/notes.md', '# Edited\n', { expectMtime: opened.mtimeMs, expectHash: opened.hash });
+    expect(await modeOf(target())).toBe(0o664);
+  });
+
+  it('keeps the installer paths engine-owned for the editor, and dialog.sh editable (SD36)', async () => {
+    expect(isEngineOwned('.claude/settings.json')).toBe(true);
+    expect(isEngineOwned('.opencode/plugins/thadeus-dialog.js')).toBe(true);
+    expect(isEngineOwned('.thadeus/hooks/dialog.sh')).toBe(false);
+  });
+
+  it('is imported only by fileWrite.js and agentHooks.js (SD36)', () => {
+    const src = path.resolve(__dirname, '../../src');
+    const users = readdirSync(src, { recursive: true })
+      .filter((f) => /\.jsx?$/.test(f))
+      .filter((f) => /\bwriteAtomic\b/.test(readFileSync(path.join(src, f), 'utf8')))
+      .map((f) => f.split(path.sep).join('/'))
+      .sort();
+    expect(users).toEqual(['main/agentHooks.js', 'main/fileWrite.js']);
   });
 });

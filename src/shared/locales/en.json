@@ -58,7 +58,7 @@
     "config": "Configuration",
     "plans": "Plans",
     "editor": "Editor",
-    "intentCount":"{n, plural, one {# intent} other {# intents}}",
+    "intentCount": "{n, plural, one {# intent} other {# intents}}",
     "emptyTitle": "No project open",
     "emptyText": "Open a project folder that contains {path}.",
     "openProject": "Open project",
@@ -69,9 +69,6 @@
       "early": "Was already waiting when the app started",
       "gate": "Approval: {stage}",
       "gateNext": "Approval: {stage} → {next}",
-      "previous": "Previous",
-      "next": "Next",
-      "position": "{i} of {n}",
       "approve": "Approve",
       "requestChanges": "Request changes",
       "ownAnswer": "Own answer…",
@@ -83,14 +80,16 @@
       "mismatch": "{harness} shows other choices than the ones AI-DLC logged. Answer in the terminal.",
       "maybeLost": "Sent to {harness}, but the question is still waiting. The answer may not have arrived – check the terminal.",
       "noAgent": "The agent tab is not running yet. Answer in the terminal.",
-      "openTerminal": "Open the terminal",
       "askPlan": "Approve the plan for {stage}",
       "askScope": "Confirm the plan for the work",
       "askOther": "AI-DLC asks ({type})",
       "batch": "AI-DLC asks {n} questions at once, which the popup cannot answer. Answer in the terminal."
     },
     "notification": {
-      "title": "{project}: AI-DLC is waiting for your answer"
+      "question": "{harness} is waiting for you",
+      "permission": "{harness} asks for permission",
+      "reply": "Message from {harness}",
+      "body": "{project} · {text}"
     }
   },
   "intents": {
@@ -443,13 +442,20 @@
       "reduced": "Reduced",
       "off": "Off"
     },
-    "alertsLegend": "Questions from AI-DLC",
-    "alertsHelp": "A popup when AI-DLC is waiting for your answer, and a system notification when the app is in the background or the question is about another project.",
+    "alertsLegend": "Questions and permission prompts",
+    "alertsHelp": "A dialog when an agent or AI-DLC waits for your answer, and a system notification when the app is in the background or showing another project.",
     "alerts": {
       "popup-notify": "Popup and notification",
       "popup": "Popup only",
       "off": "Off"
     },
+    "repliesLegend": "Messages from the agent",
+    "replies": {
+      "dialog-notify": "Dialog and notification",
+      "line": "Line only",
+      "off": "Off"
+    },
+    "repliesHelp": "When the agent finishes its turn. Questions and permission prompts follow the setting above.",
     "soundLegend": "Notification sound",
     "sound": {
       "on": "On",
@@ -681,11 +687,20 @@
       "turnOn": "Turn on",
       "confirmOff": "Turn off the check \"{name}\"? AI-DLC then stops checking this until you turn it back on.",
       "confirmYes": "Yes, turn it off",
-      "AIDLC_DISABLE_PLAN_APPROVAL_GUARD": { "name": "Plan approval", "protects": "Code Generation waits for your approval of its plan before it writes code." },
+      "AIDLC_DISABLE_PLAN_APPROVAL_GUARD": {
+        "name": "Plan approval",
+        "protects": "Code Generation waits for your approval of its plan before it writes code."
+      },
       "AIDLC_DISABLE_REVIEW_FREEZE_HOOK": { "name": "Review freeze", "protects": "Files under review can't be changed until the review is done." },
       "AIDLC_DISABLE_REVIEWER_SCOPE_HOOK": { "name": "Reviewer read scope", "protects": "A reviewer reads only what it was asked to review." },
-      "AIDLC_DISABLE_SUMMARY_CONFIRMATION": { "name": "Summary confirmation", "protects": "AI-DLC asks you to confirm its summary of a stage before it moves on." },
-      "AIDLC_SKIP_SUMMARY_CONFIRMATION_GUARD": { "name": "Summary confirmation check", "protects": "A stage can't close until its summary was really confirmed." },
+      "AIDLC_DISABLE_SUMMARY_CONFIRMATION": {
+        "name": "Summary confirmation",
+        "protects": "AI-DLC asks you to confirm its summary of a stage before it moves on."
+      },
+      "AIDLC_SKIP_SUMMARY_CONFIRMATION_GUARD": {
+        "name": "Summary confirmation check",
+        "protects": "A stage can't close until its summary was really confirmed."
+      },
       "AIDLC_SKIP_HUMAN_PRESENCE_GUARD": { "name": "Human presence", "protects": "An approval counts only when a person gave it." },
       "AIDLC_SKIP_ARTIFACT_GUARD": { "name": "Stage output", "protects": "A stage can't be completed without the files it must produce." },
       "AIDLC_SKIP_REVISION_BACKSTOP": { "name": "Revision backstop", "protects": "A stage can't be revised again and again without a person deciding." },
@@ -861,5 +876,177 @@
     "planNotFound": "No plan named {name} was found.",
     "notAFile": "{rel} is not a file.",
     "engineOwned": "{rel} belongs to AI-DLC's engine and is not saved from the app."
+  },
+  "agentDialog": {
+    "title": {
+      "waiting": "The agent is waiting for your answer",
+      "stillWaiting": "The agent is still waiting for your answer",
+      "permission": "{harness} asks for permission",
+      "permissionStillWaiting": "{harness} is still waiting for permission"
+    },
+    "kind": {
+      "question": "Question",
+      "permission": "PERMISSION",
+      "message": "Message"
+    },
+    "permission": {
+      "allowOnce": "Allow once",
+      "allowAlways": "Allow always:\n{rules}",
+      "allowAlwaysBare": "Allow always",
+      "deny": "Deny",
+      "reject": "Reject",
+      "cwd": "Folder: {cwd}",
+      "truncated": "Shortened at 64 KB. The full text is in the terminal.",
+      "alwaysTooLong": "Too long to show here. Use the terminal for Allow always.",
+      "timedOut": "{harness} stopped waiting for the dialog. Answer in the terminal.",
+      "handedBack": "Handed back to the terminal. Answer there as usual.",
+      "answeredInTerminal": "Answered in the terminal.",
+      "alsoInTerminal": "The permission prompt is also open in the terminal."
+    },
+    "reply": {
+      "title": "Message from {harness}",
+      "titleOverdue": "Message from {harness}: still waiting for your answer",
+      "where": "{project} · {tab} · {time}",
+      "empty": "{harness} finished its turn without a message.",
+      "truncated": "Shortened at 64 KB. The full text is in the terminal.",
+      "answer": "Your answer",
+      "sent": "Sent to {harness} as typed, followed by Enter.",
+      "copy": "Copy",
+      "stale": {
+        "movedOn": "{harness} is no longer waiting for this message. Your text is kept.",
+        "sessionEnded": "The {harness} session ended. Nothing was sent.",
+        "notShown": "{harness} sent a newer message that could not be shown. It is in the terminal. Your text is kept."
+      }
+    },
+    "context": "{project} · {intent} · {stage}",
+    "state": {
+      "sending": "Sending…",
+      "sent": "Sent to {harness}.",
+      "handedBack": "Handed back to the terminal.",
+      "timedOut": "The question waited too long and is now shown in the terminal. You can still answer here.",
+      "failed": "Could not send: {error}",
+      "sessionEnded": "The {harness} session ended. Nothing was sent."
+    },
+    "alsoInTerminal": "Also open in the terminal.",
+    "truncated": "The text is cut. The full text is in the terminal.",
+    "answered": "{answered} of {total} answered",
+    "send": "Send",
+    "sendAll": "Send all answers",
+    "done": "Done",
+    "ownAnswer": "Own answer…",
+    "newCount": "+{n} new",
+    "openTerminal": "Open the terminal",
+    "position": "{i} of {n}",
+    "previous": "Previous",
+    "next": "Next",
+    "errors": {
+      "unknownEvent": "The question no longer exists.",
+      "eventNotOpen": "The question is no longer open.",
+      "sessionEnded": "The session has ended.",
+      "doesNotFit": "The answer does not fit the question.",
+      "fallback": "This question is answered through the terminal.",
+      "pickerNotShowing": "The agent's picker is not showing.",
+      "sendFailed": "Sending failed: {cause}",
+      "notTaken": "The agent did not take the answer.",
+      "answerInTerminal": "This answer can only be given in the terminal.",
+      "enterSkipped": "The text was typed but Enter was not sent: the tab moved on. Press Enter in the terminal to send it."
+    }
+  },
+  "agentHooks": {
+    "status": {
+      "current": "present and current",
+      "outOfDate": "out of date",
+      "missing": "missing",
+      "editedByHand": "edited by hand"
+    },
+    "reason": {
+      "invalidJson": "{file} is not plain JSON, so the app does not change it.",
+      "unexpectedShape": "{file} has hooks in a shape the app does not change.",
+      "cannotRead": "{file} cannot be read ({cause}).",
+      "cannotWrite": "{file} cannot be written ({cause}).",
+      "outsideRoot": "{file} points outside the project."
+    },
+    "refusal": {
+      "previewUnknown": "This preview is no longer open. Look at the new preview.",
+      "changedSincePreview": "{file} changed since this preview. Look at the new preview.",
+      "invalidJson": "Nothing was written: {file} is not plain JSON, so the app does not change it.",
+      "unexpectedShape": "Nothing was written: {file} has hooks in a shape the app does not change.",
+      "cannotRead": "Nothing was written: {file} cannot be read ({cause}).",
+      "cannotWrite": "Nothing was written: {file} cannot be written ({cause}).",
+      "outsideRoot": "Nothing was written: {file} points outside the project.",
+      "partiallyWritten": "{file} was not written ({cause}). Update to finish."
+    },
+    "cause": {
+      "EACCES": "permission denied",
+      "EPERM": "not permitted",
+      "EROFS": "read-only disk",
+      "ENOSPC": "disk full",
+      "ENOTDIR": "a folder on the path is a file",
+      "notAFile": "not a regular file",
+      "link": "is a link",
+      "changedSincePreview": "changed since the preview",
+      "unknown": "unknown cause"
+    },
+    "summary": {
+      "create": "New file.",
+      "modify": "Replaced with the app's version.",
+      "delete": "Deleted.",
+      "none": "Already current, not changed.",
+      "settingsModify": "Only the app's entries change; every other entry stays as it is.",
+      "replacesHandEdit": "Edited by hand, will be replaced by the app's version."
+    },
+    "action": {
+      "install": "Install",
+      "update": "Update",
+      "remove": "Remove"
+    },
+    "preview": {
+      "title": {
+        "install": "Add agent dialogs to this project",
+        "update": "Update the agent dialogs in this project",
+        "remove": "Remove agent dialogs from this project"
+      },
+      "committed": "These files are committed and shared with your team.",
+      "teammates": "Teammates without the app are not affected.",
+      "loading": "Reading the files…",
+      "nothing": "Every file is already current. There is nothing to change.",
+      "change": {
+        "create": "create",
+        "modify": "change",
+        "delete": "delete",
+        "none": "no change"
+      },
+      "fileLabel": "{path}, {change}"
+    },
+    "strip": {
+      "missing": "{harness}: the app's hooks are missing ({files}). Agent dialogs use the terminal path.",
+      "outOfDate": "{harness}: the app's hooks are out of date ({files}). Agent dialogs use the terminal path.",
+      "fileStatus": "{path} {status}",
+      "details": "Details",
+      "dismiss": "Hide for now"
+    },
+    "section": {
+      "title": "Agent dialogs",
+      "help": "The app's hooks let agent tabs ask their questions in the app's own dialog.",
+      "pending": "Checking the hooks…",
+      "harness": "{harness}: {status}"
+    },
+    "busy": "Writing…",
+    "done": {
+      "install": "Agent dialogs installed. Restart running {harness} tabs to use them.",
+      "update": "Agent dialogs updated. Restart running {harness} tabs to use them.",
+      "remove": "Agent dialogs removed. {harness} tabs use the terminal path from their next question."
+    }
+  },
+  "latestMessage": {
+    "label": "Latest message from the agent",
+    "none": "No message from the agent yet",
+    "answer": "Answer",
+    "show": "Show",
+    "answered": "(answered)",
+    "sessionEnded": "(session ended)",
+    "notShown": "(newer message not shown)",
+    "shortened": "(shortened)",
+    "view": "Message from {harness}"
   }
 }

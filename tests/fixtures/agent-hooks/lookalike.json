@@ -1,0 +1,41 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "AskUserQuestion",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "sh \"$CLAUDE_PROJECT_DIR/vendor/.thadeus/hooks/dialog.sh\" question",
+            "timeout": 600
+          }
+        ]
+      }
+    ],
+    "PermissionRequest": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "../other/.thadeus/hooks/dialog.sh permission --verbose"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "notify-team.sh && sh .thadeus/hooks/dialog.sh reply"
+          },
+          {
+            "type": "command",
+            "command": "echo see .thadeus/hooks/dialog.sh reply"
+          }
+        ]
+      }
+    ]
+  }
+}

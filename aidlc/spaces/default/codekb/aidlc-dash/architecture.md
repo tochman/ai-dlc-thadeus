@@ -1,270 +1,212 @@
-# Architecture: aidlc-dash
+# Architecture
 
 ## Architecture Analysis
 
 ### System Overview
 
-An Electron app with three process parts, built by electron-vite into `out/` and packaged by electron-builder into `dist/`:
+T.H.A.D.E.U.S. is a single Electron 45 application with the usual three processes:
 
-- **Main process** (`src/main/`): pins userData to the folder `aidlc-dash`, sets the language from the settings before the first menu and window (`i18n.js`, `index.js:70`), creates the window, sets its own app menu, reads AI-DLC files inside opened project roots, watches them with chokidar, derives waiting questions and shows system notifications, runs `git` and `aidlc` with fixed arguments (`exec.js`), owns the pseudo-terminals (`pty.js`, node-pty) and writes the app's `settings.json`.
-- **Preload** (`src/preload/index.js`): exposes a narrow, named `window.bridge` API through `contextBridge`. No generic `invoke` or `send`.
-- **Renderer** (`src/renderer/`): a React 19 SPA in a sandboxed window (`contextIsolation`, no `nodeIntegration`, `sandbox`, CSP in `index.html`). `main.jsx` asks main for the language in effect, switches i18n to it, and only then renders `App` inside `I18nextProvider`.
-- **Shared modules** (`src/shared/`, new with US-0406 and US-0701): `appName.js` (the name in every form) and `i18n.js` with `locales/sv.json` and `locales/en.json`. Each process bundles its own copy, so each has its own i18next instance. Both read the same files.
-- **Packaging** (`package.json`, `electron-builder.yml`, `.github/workflows/release.yml`): not re-read in this scan. `package.json` now has `name: thadeus` and `productName: THADEUS`.
+- **Main process** (`src/main/`, Node ESM): owns every file read and write, the pty sessions, file watchers, external CLI runs (`aidlc`, `git`, `gh`, harness CLIs), system notifications, the app menu and the updater. It keeps a per-project record in a `projects` map in `src/main/ipc.js`.
+- **Preload** (`src/preload/index.js`): exposes `window.bridge`, 87 named members, each bound to one IPC channel. No generic `invoke`/`send`.
+- **Renderer** (`src/renderer/`, React 19): the LCARS UI, xterm terminals, the question popup and Monaco. Sandboxed (`sandbox: true`, `contextIsolation: true`, `nodeIntegration: false`), CSP `default-src 'self'`, `connect-src 'self' ws:`.
+- **Shared** (`src/shared/`): pure modules bundled into both sides (harness table, i18n and locales, config tables, names).
+
+The app talks to the agents only through their pty: bytes out of the pty are rendered by xterm and drive an activity signal; bytes into the pty are what the person types or what the app types for them. It learns AI-DLC's state only from files on disk (`aidlc/spaces/<space>/intents/...`, the usage ledger, the inflight file) and from the `aidlc` CLI.
 
 ### Architectural Style
 
-A monolithic desktop app with a strict process boundary. The renderer makes no file or process calls itself. Everything goes through IPC (`ipcMain.handle` / `ipcRenderer.invoke`) and push events (`webContents.send` / `ipcRenderer.on`). State lives in React (App-shell state per project, hooks, one terminal context per project) and in per-project caches in main (`ipc.js` `projects` Map, `projectService` caches). No external services or network APIs. Shell access for the person is the only way the app changes a project, through a visible pty.
+Desktop monolith with a thin IPC boundary (layered: renderer UI → preload bridge → main services → filesystem/CLIs). Evidence: one `package.json`, one IPC router (`registerIpc()` over a `handlers` object, `ipc.js:692`), no server, no database. State is files (AI-DLC records, the app's `settings.json`) plus in-memory caches in main.
 
 ### Component Relationships
 
-App-shell layout (from `App.jsx`, read in full in this scan):
-
-```mermaid
-flowchart TB
-  subgraph Window["BrowserWindow 1440x900 (min 960x600)"]
-    Splash["Splash (overlay)"]
-    subgraph AppShell[".app"]
-      Header["header.app-header: .app-brand (AuctumMark 46 + APP_NAME), Bar, branch, h1.app-title, fullscreen"]
-      Arm["nav.app-arm: project blocks (settings, close), + Open, views, Cost, Github, Settings, arm-foot"]
-      Banner[".banner.banner-error.app-error (optional)"]
-      subgraph Main["main.app-main > .project-pane (one per project, hidden when inactive)"]
-        PV["ProjectView > TerminalProvider > ProjectContent (views, TerminalPanel, ProjectSettingsDialog)"]
-      end
-    end
-    AppDlg["AppSettingsDialog (animations, question alerts, sound, language)"]
-    DocsDlg["DocsDialog"]
-    QPop["QuestionPopup"]
-  end
-  Arm -- "setActiveId / showView / togglePanel / openProjectSettings" --> PV
-  Arm -- "openAppSettings" --> AppDlg
-  MenuCmd["menu:command"] -- "menuCommands (whitelisted)" --> AppShell
-  QPop -- "answerInClaude: setActiveId + terminalCommand action claude" --> PV
-  AppShell -- "terminalCommand {seq, action, projectId}" --> PV
-```
-
-Text: the window holds the splash overlay, the app shell and three modal dialogs. The shell has a header (brand block with the Auctum mark and `APP_NAME`, decorative bar, branch, title, fullscreen button), a left arm of LCARS blocks, and the main area with one mounted `ProjectView` per project. Each `ProjectView` wraps its content in its own `TerminalProvider`. App reaches a project's terminal only through the `terminalCommand` prop.
-
-Processes and modules:
-
 ```mermaid
 flowchart LR
-  subgraph Renderer
-    Boot["main.jsx: getLanguage, I18nextProvider"] --> App
-    App --> ProjectView
-    ProjectView --> TerminalContext
-    TerminalPanel --> TerminalContext
-    TerminalContext --> TerminalControl["terminalControl.js"]
-    ResumeButton --> TerminalContext
-    SetupAidlc --> TerminalContext
-    ProjectView --> useProject
-    ProjectView --> useFeatures
+  subgraph Renderer["Renderer (React)"]
+    App["App Shell"]
+    QP["QuestionPopup"]
+    PV["ProjectView"]
+    TC["TerminalContext"]
+    TP["TerminalPanel + xterm"]
+    PK["Picker Reader"]
+    Views["Intent, Cost, Config, Plans, Features, Editor views"]
   end
-  Shared["src/shared: i18n.js, locales, appName.js"]
-  Boot --> Shared
-  Preload["preload: window.bridge"]
-  subgraph MainProc["Main"]
-    Entry["index.js"] --> IPC["ipc.js"]
-    Entry --> I18N["i18n.js"]
-    Entry --> Menu["menu.js"]
-    IPC --> PS["projectService"]
-    IPC --> W["watcher"]
-    IPC --> Q["notify (questions)"]
-    IPC --> PTY["pty"]
-    IPC --> G["git"]
-    IPC --> S["setup"]
-    IPC --> M["models"]
-    IPC --> F["features"]
-    IPC --> ST["settings"]
-    IPC --> I18N
-    S --> X["exec.runFixed"]
-    M --> X
-    G --> X
-    PS --> PA["projectAccess"]
-    PS --> P["parsers/*"]
+  subgraph Preload
+    BR["window.bridge"]
   end
-  MainProc --> Shared
-  App --> Preload
-  TerminalPanel --> Preload
-  Preload --> IPC
-  W -- "project:changed" --> Preload
-  Q -- "questions:changed / questions:focus" --> Preload
-  PTY -- "pty:data / pty:exit" --> Preload
-  Menu -- "menu:command" --> Preload
+  subgraph Main["Main process"]
+    IPC["IPC Router"]
+    PS["Project Service + parsers"]
+    QS["Questions Parser"]
+    NT["Notifications"]
+    PTY["PTY Manager"]
+    WA["Watcher"]
+    CLI["Exec Runner + CLI services"]
+    ST["Settings Store"]
+  end
+  FS[("Project files: aidlc/, docs/, harness dirs")]
+  AG["Agent CLI in pty: claude / opencode"]
+  App --> QP
+  App --> PV
+  PV --> TC
+  TC --> TP
+  TC --> PK
+  PV --> Views
+  App --> BR
+  Views --> BR
+  TP --> BR
+  BR --> IPC
+  IPC --> PS
+  PS --> QS
+  IPC --> NT
+  IPC --> PTY
+  IPC --> WA
+  IPC --> CLI
+  IPC --> ST
+  PS --> FS
+  WA --> FS
+  CLI --> FS
+  PTY --> AG
+  AG --> FS
 ```
 
-Text: the renderer bootstraps i18n from main, then App, hooks and the terminal panel call `window.bridge`, which goes to `ipc.js`. `ipc.js` delegates to projectService (through projectAccess and the parsers), watcher, notifications, pty, git, setup, models, features, settings and the main-process i18n. `setup`, `models` and `git` run external tools only through `exec.runFixed`. Both processes import `src/shared/`. Watcher, questions, pty and menu push events back.
-
-Agent-terminal chain (the area US-0801 changes):
-
-```mermaid
-flowchart LR
-  Callers["ResumeButton, quick commands, SetupDone, feature-docs prompt, RefreshPanel busy check, menu Terminal > Claude, Answer in Claude"] -- "tab id 'claude'" --> TC["TerminalContext: sessions, states, pending keyed by 'claude' / 'shell'"]
-  TC --> TS["TermSession kind='claude' (TerminalPanel KINDS)"]
-  TS -- "ptySpawn {projectId, kind}" --> IPCs["ipc pty:spawn"]
-  IPCs --> SA["pty.shellArgs(kind): 'claude' -> -l -i -c claude"]
-  SA --> PTYP["$SHELL in project root (node-pty)"]
-```
-
-Text: every caller names the tab `'claude'`. The context keys its sessions, states and pending flags by that id. `TerminalPanel` mounts one `TermSession` per kind in `KINDS = ['claude', 'shell']`, and the session asks main to spawn that kind. Main maps the kind to fixed shell arguments, so the tab id is also the CLI command.
+Text fallback: the App Shell holds the QuestionPopup and one ProjectView per open project. Each ProjectView has its own TerminalContext, which owns the agent and shell TerminalPanels (xterm) and uses the Picker Reader to read Claude Code's picker off the screen. Every view and terminal calls main through `window.bridge`. Main's IPC Router uses the Project Service (and its parsers, including the Questions Parser), Notifications, the PTY Manager, the Watcher, the CLI services and the Settings Store. The agent CLI runs inside a pty started by main and writes AI-DLC's files, which the Watcher and Project Service read.
 
 ### Data Flow
 
-1. At module load main pins userData to `<appData>/aidlc-dash` (`index.js:10`). On `whenReady` it sets the language from the saved settings (`setLanguageFromSettings`, auto follows `app.getLocale()`), registers IPC, sets the menu and opens the window. The renderer reads `i18n:language`, switches its own i18next instance, and renders. App then reads the settings, sets the motion mode, the language choice and the alert choices, and reopens the saved projects. The splash shows until that finishes.
-2. The person opens a folder (`project:pick`, `project:open`). Main validates the root (`openRoot`, realpath), detects AI-DLC (`detectProject`: `aidlc/spaces/` with at least one space) and starts watching the active space (`watchSpace`). A folder without AI-DLC is watched until a space appears (`watchForSetup`), then `project:detected` switches the tab.
-3. `useProject` loads the intent list, the selected intent's detail, cost and models. Cost: `project:cost` reads `aidlc/.aidlc-sessions/usage-ledger.json` (`loadCost`, never throws, keeps the last good value) and summarises it per intent, scope, model and agent (`summarizeLedger`). Models: `aidlc config models --show --json --harness claude`, with the `.claude/agents/*.md` frontmatter as fallback, cached per opened project.
-4. chokidar changes under `intents/` are debounced (300 ms, max 800 ms) and sent as `project:changed` to the `webContents` that opened the project. Main also recomputes waiting questions and pushes `questions:changed`, with a system notification for new ones.
-5. Terminal input and output go through `pty:write` and `pty:data`. The activity signal (`idle | busy | exited`) is computed in the renderer from output alone (`terminalControl.createActivity`, 1.5 s quiet = idle).
-6. Settings writes run one at a time through `settings.js` (`update`, a serial queue, `sanitize()` on every read and write). A changed `language` switches main's i18n and rebuilds the menu (`ipc.js:252-257`).
+1. **Project open**: `project:open` resolves the real root (`projectAccess.openRoot`), detects AI-DLC (`aidlc/spaces/` present), starts harness detection in the background, starts `watchIntents` for the active space, the feature-docs watcher and the config watcher.
+2. **Live updates**: chokidar events under `intents/` are debounced (300 ms, max 800 ms) into `{dirNames, indexChanged, costChanged}` and pushed as `project:changed`; the renderer (`useProject`) reloads only the named intents. The same event recomputes waiting questions for those intents.
+3. **Questions**: `loadPendingQuestions` reads the audit shards of in-progress intents, merges them in time order (`mergeAudits`) and runs `pendingQuestions`. `ipc.js` marks ids seen in a project's first computation as `early`, pushes the whole list as `questions:changed` to every window, and hands fresh ones to `notifyQuestions`.
+4. **Terminal**: `pty:spawn` starts `$SHELL -l -i -c <cli>` (agent, CLI from the fixed harness table) or `$SHELL -l` (shell). Output streams as `pty:data`; the renderer's `createActivity` turns output timing into `busy`/`idle`/`exited`.
+5. **Steering**: Resume, quick commands, Plans requests and the feature-docs prompt type text into the agent tab (usually without Enter); Refresh types git commands into the shell tab; Setup, Configuration and Models run `aidlc` in main after a preview.
+6. **Cost**: `project:cost` reads `aidlc/.aidlc-sessions/usage-ledger.json` and summarises it per intent, stage, agent, model and scope (`summarizeLedger`).
 
 ### Key Design Decisions
 
-- **Read-only towards AI-DLC**: the only file the app writes is `settings.json` in userData.
-- **userData pinned to `aidlc-dash`** (`index.js:10`), so settings survive renames (US-0406 FR4.1).
-- **Root-confined file access**: `resolveInRoot` rejects absolute paths, `..` and symlinks out of the root. The renderer never names a root, only a `projectId`.
-- **Fixed external commands**: `runFixed` uses `execFile` without a shell, string-only arguments, a timeout (10 s) and the login shell's PATH, probed once per process with a marker (`exec.js:7-35`). Rejected alternative: `exec` with a shell string, which could be injected.
-- **The pty runs a fixed command per kind**: `shellArgs(kind)` (`pty.js:22-27`) is a whitelist, and the renderer sends only the kind. Rejected alternative: letting the renderer send a command line. Consequence for US-0801: a new harness means a new fixed entry in main, chosen from a validated id.
-- **node-pty loads lazily** on the first spawn (`pty.js:10-20`), so a native module that cannot load breaks the terminal tab, not the app (v0.1.0 Linux regression).
-- **One terminal context per project**: `TerminalProvider` lives in each `ProjectView`. App reaches it through the prop `terminalCommand {seq, action, projectId}`. "Answer in Claude" sets `projectId` directly.
-- **Everything mounted**: hidden projects and terminals stay mounted (`hidden`), so sessions survive tab and view switches (FR8.4).
-- **Translation through one shared module**: `src/shared/i18n.js` with ICU MessageFormat, bundled resources (`initAsync: false`, so `t()` works at import), fallback to English then to the key, missing keys logged once in development. Main and renderer each switch their own instance; main tells the renderer the resolved language (`i18n:language`). Rejected alternative: a single instance through IPC, which would make every `t()` asynchronous.
-- **Per-project settings in the app, keyed by root**: `projectSettings[root]` in `settings.json` (`settings.js:80-102`), never in the project. Rejected alternative: a file in the project, which would break the read-only rule.
-- **Narrow preload API**: every channel is a named function (`call(channel)` or `subscribe(channel)`).
-- **Commands are typed, not run**: setup chains, Resume and quick commands are written into a pty without Enter unless the step is a safe intent switch (`ResumeButton.jsx:32-37`, `SAFE_DIR_NAME`).
-
-Security: CSP allows `style-src 'self' 'unsafe-inline'` and `font-src 'self' data:`. The window blocks navigation and new windows, and `http(s)` links open in the OS browser. `shell:openInEditor` is limited to document types. The pty inherits `process.env`, and the CLI it starts runs with the person's rights in the project root. That is intended: it is the person's own terminal. The app is unsigned (`identity: null`), so Gatekeeper needs right-click and Open the first time.
+| Decision | Where | Implication |
+|---|---|---|
+| Read-only towards AI-DLC; changes go through the visible terminal or the `aidlc` CLI | `projectAccess.js` (no writes), `aidlcWrite.js`, `plans.js`, `setup.js` | AI-DLC's checks and audit trail stay in charge; the app needs no knowledge of AI-DLC's internal write rules |
+| Fixed tables for every value that reaches a command | `shared/harnesses.js`, `shared/configTables.js`, `modelChoice.js` | The renderer only names ids/keys; main refuses anything else (NFR4 pattern) |
+| Agent questions derived from the audit log | `questions.js` | Only AI-DLC's questions are seen; closing depends on later audit events |
+| Answers sent as the picker's own key after reading the screen | `picker.js`, `TerminalContext.answer()` | Works only with Claude Code's picker layout and exact label match |
+| Activity from output timing | `terminalControl.js` | No structured "waiting for input" state |
+| node-pty loaded lazily | `pty.js` | A broken native binary breaks the terminal tab, not the app |
+| Every project tab stays mounted | `App.jsx` | Terminals and watchers survive tab switches; memory grows with open projects |
+| Harness folders and engine files read-only in the editor | `fileWrite.js` `isEngineOwned` | Writing harness settings (hooks, plugins) would be a new, deliberate exception |
 
 ### Improvement Opportunities
 
-- Introduce one harness table in main (id → CLI, `--version` arguments, folder markers, tab label key, command forms). `pty.shellArgs`, setup, models and the renderer's command callers would all read it, through IPC for the renderer. This is the change US-0801 needs; see `code-quality-assessment.md`.
-- Decouple the tab id from the CLI name: a neutral id such as `agent` beside `shell`, with the harness as data. Otherwise keep `'claude'` as the internal id and change only label and command (smaller diff, misleading name).
-- Share `errorText()` instead of 10+ copies in the renderer.
-- Merge the two debounce implementations in `watcher.js` (from an earlier scan, not re-read).
+- A structured event source per harness (Claude Code hooks, opencode events/plugin) would replace both the audit-only question source and the screen-scraped answer path; the picker reader could remain the fallback.
+- A main-side "answer" IPC that names a question id and an option index, checked against the session that asked, would close the gap that `pty:write` accepts any string for any session.
+- `ipc.js` could split per area (questions, projects, config, updater) without changing the bridge.
+- Coverage measurement and a linter would let the `classic` scope's floor be enforced.
 
 ## Interaction Diagrams
 
-Start the app and restore saved projects:
+### Question popup: from the audit log to an answer in the terminal (current flow)
 
 ```mermaid
 sequenceDiagram
-  participant Main as index.js
-  participant I18M as main i18n.js
-  participant IPC as ipc.js
-  participant Boot as main.jsx
-  participant App as App.jsx
-  participant ST as settings.js
-  Main->>Main: app.setPath('userData', appData/aidlc-dash)
-  Main->>ST: getSettings()
-  Main->>I18M: setLanguageFromSettings(settings) (auto: app.getLocale())
-  Main->>IPC: registerIpc()
-  Main->>Main: applyMenu, createWindow(windowOptions)
-  Boot->>IPC: i18n:language
-  IPC-->>Boot: 'sv' | 'en'
-  Boot->>Boot: i18n.changeLanguage, render App
-  App->>IPC: settings:get
-  IPC->>ST: getSettings() (sanitize)
-  ST-->>App: {openProjects, recentProjects, activeProject, animations?, fullscreen?, questionAlerts?, notificationSound?, language?, projectSettings}
-  loop each saved project
-    App->>IPC: project:open(dir)
-  end
-  App->>IPC: settings:set({openProjects, recentProjects, activeProject})
-```
-
-Text: main pins userData, resolves the language before the first menu and window, and registers IPC. The renderer asks for the resolved language before its first render, so it never flashes in the other language. App then reads the sanitised settings, reopens the projects and saves the tab state.
-
-Spawn the agent tab when a project opens:
-
-```mermaid
-sequenceDiagram
+  participant AG as Agent in pty (Claude Code)
+  participant FS as Audit shard (audit/*.md)
+  participant WA as Watcher (main)
+  participant IPC as IPC Router (main)
+  participant QS as projectService + questions.js
+  participant NT as notify.js
+  participant APP as App.jsx
+  participant QP as QuestionPopup
   participant PV as ProjectView
-  participant TS as TermSession (kind 'claude')
   participant TC as TerminalContext
-  participant Bridge as window.bridge
-  participant IPC as ipc.js
-  participant PTY as pty.js
-  PV->>TS: mount (TerminalPanel KINDS)
-  TS->>TC: register('claude', {activity, spawn, write, focus, restart})
-  TS->>Bridge: ptySpawn({projectId, kind:'claude', cols, rows})
-  Bridge->>IPC: pty:spawn
-  IPC->>PTY: spawnSession({root: project root, kind})
-  PTY->>PTY: shellArgs('claude') = ['-l','-i','-c','claude']; loadPty()
-  PTY-->>TS: session id
-  PTY-->>TS: pty:data -> term.write, activity.onData (busy, idle after 1.5 s)
-  PTY-->>TS: pty:exit -> activity.onExit(code) (exited, Restart button)
+  participant PK as picker.js
+  participant TP as TermSession (xterm)
+  AG->>FS: AI-DLC appends DECISION_RECORDED or QUESTION_ASKED or STAGE_AWAITING_APPROVAL
+  AG->>TP: draws its question picker (pty:data)
+  FS-->>WA: chokidar change, debounced
+  WA->>IPC: onChange with dirNames
+  IPC->>QS: loadPendingQuestions(project, dirNames)
+  QS-->>IPC: pending questions with options and batch
+  IPC->>APP: questions:changed (full list, early flag)
+  IPC->>NT: notifyQuestions(fresh) when window unfocused or other project
+  APP->>QP: open popup with newest question first
+  QP->>APP: onSend(question, index or own text)
+  APP->>PV: terminalCommand action answer with reply callback
+  PV->>TC: answer(question, answer)
+  loop every 150 ms up to 3 s while no picker
+    TC->>TP: screen() rows
+    TC->>PK: resolveAnswer(screens, question, answer)
+  end
+  alt picker shows every logged option
+    PK-->>TC: tab and keys
+    TC->>TP: write key (or Type something key, text and Enter)
+    TP->>IPC: pty:write
+    IPC->>AG: keys into the pty
+    TC-->>QP: ok, shows Sent
+  else mismatch, several or noPicker
+    PK-->>TC: error
+    TC-->>QP: error text, offers Open the terminal
+  end
+  AG->>FS: AI-DLC appends QUESTION_ANSWERED or a gate closer
+  FS-->>WA: change
+  IPC->>APP: questions:changed without the question
+  APP->>QP: next question, or closes when none new is left
 ```
 
-Text: each project mounts two sessions. The agent session registers with the context, then asks main to spawn its kind in the project root. Main validates the kind first, then loads node-pty and starts `$SHELL -l -i -c claude`. Output drives the busy and idle state. An exit shows the code and a Restart button.
+Text fallback: AI-DLC writes the question to its audit shard and Claude Code draws its picker. The watcher sees the shard change; main recomputes the intent's waiting questions and pushes the list to the renderer, notifying the OS when the window is not in front. The popup shows the newest question. When the person picks an option, App passes it through ProjectView to TerminalContext, which reads each agent tab's screen for up to 3 s. Only if the picker on screen lists every logged option does it write the picker's key into that tab's pty; otherwise the popup says why and offers the terminal. The question leaves the popup only when AI-DLC later logs `QUESTION_ANSWERED` (or a closer) and the watcher pushes the shorter list.
 
-Resume an intent from the console:
+### Resume an in-flight intent
 
 ```mermaid
 sequenceDiagram
-  actor Person
+  participant P as Person
   participant RB as ResumeButton
   participant TC as TerminalContext
-  participant TS as TermSession
-  participant PTY as pty.js
-  Person->>RB: "Resume at ..."
-  RB->>TC: state('claude')
-  alt claude is busy
-    RB-->>Person: intents.resume.busy (role=status)
-  else active intent
-    RB->>TC: type('claude', '/aidlc', {submit:false})
-  else other intent
-    RB->>TC: sequence('claude', [/aidlc intent X + Enter, /aidlc without Enter])
+  participant TP as TermSession (agent)
+  participant IPC as IPC Router
+  participant AG as Agent CLI
+  P->>RB: click Resume at stage
+  RB->>RB: workingReason checks busy, asking, running, elsewhere
+  alt a reason applies
+    RB-->>P: disabled, shows the reason
+  else intent is the active one
+    RB->>TC: type agent, command, no Enter
+  else another intent
+    RB->>TC: sequence agent, intent switch with Enter, then command without Enter
   end
-  TC->>TC: run: show tab, spawn if exited, wait for idle (20 s)
-  TC->>TS: write(text)
-  TS->>PTY: pty:write
-  TC->>TC: pending('claude') = true until the person types
+  TC->>TP: show tab, spawn if exited, wait for idle (max 20 s)
+  TP->>IPC: pty:spawn when needed
+  IPC->>AG: start shell -l -i -c cli from the harness table
+  TC->>TP: write text
+  TP->>IPC: pty:write
+  IPC->>AG: text into the prompt
+  TC-->>P: Waiting for your Enter
+  P->>AG: presses Enter in the terminal
 ```
 
-Text: Resume refuses while the agent tab is busy. For the active intent it types `/aidlc` without Enter. For another intent it submits the switch first, waits for the output to settle, then types `/aidlc` without Enter. The footer shows "Waiting for your Enter" until the person types in that tab.
+Text fallback: Resume first checks why it must wait (an agent tab busy, a question waiting, a live agent session on the in-flight active intent, or an audit write in the last 10 minutes from an agent outside the app). If none applies, it types the harness's AI-DLC command into the agent tab without Enter; for a non-active intent it first submits `<command> intent <dirName>` and waits for that command to finish before typing the command. TerminalContext starts the agent tab if it has exited and waits for its first quiet period. The person presses Enter.
 
-Set up AI-DLC in a plain folder (US-0503):
+### Project open and live refresh
 
 ```mermaid
 sequenceDiagram
-  actor Person
-  participant SA as SetupAidlc
-  participant IPC as ipc.js
-  participant Setup as setup.js
-  participant Exec as exec.runFixed
-  participant TC as TerminalContext
-  participant W as watcher.watchForAidlc
-  Person->>SA: Set up AI-DLC
-  SA->>IPC: setup:info
-  IPC->>Setup: getSetupInfo(root)
-  Setup->>Setup: listDir root: .kiro .codex .cursor .aidlc
-  Setup->>Exec: git rev-parse, aidlc --version, aidlc --project-dir root config --harness claude --dry-run, aidlc config project --show --json
-  Setup-->>SA: {aidlc, git, harnesses, preview, plugins, presets}
-  Person->>SA: Set up
-  SA->>IPC: setup:command {needsGit, plugins, preset}
-  IPC-->>SA: "git init -b main && aidlc --project-dir . config --harness claude --yes && ..."
-  SA->>TC: type('shell', cmd, {submit:false})
-  Person->>TC: Enter
-  W-->>IPC: aidlc/spaces/ appeared -> project:detected
-  IPC-->>SA: tab switches; SetupDone restarts 'claude'
+  participant APP as App.jsx
+  participant IPC as IPC Router
+  participant PA as projectAccess
+  participant PS as projectService
+  participant HD as harness.js
+  participant WA as watcher.js
+  APP->>IPC: project:open(dir)
+  IPC->>PA: openRoot(dir)
+  IPC->>PS: detectProject(root)
+  IPC->>HD: detectHarnesses(root) in background
+  alt AI-DLC project
+    IPC->>WA: watchIntents(intents dir, ledger)
+    IPC->>PS: refreshQuestions baseline
+  else plain folder
+    IPC->>WA: watchForAidlc(root)
+  end
+  IPC-->>APP: projectId, root, name, detection
+  WA-->>IPC: change with dirNames
+  IPC-->>APP: project:changed
+  APP->>IPC: project:intents with only those dirs
 ```
 
-Text: the setup view reads the prerequisites through fixed commands, shows the dry-run preview, and types the command chain into the shell tab for the person to confirm. Once `aidlc/spaces/` appears, the tab switches to the project view and the agent tab restarts so the harness loads AI-DLC.
-
-New audit event in an open project (from an earlier scan, flow unchanged by US-0701):
-
-```mermaid
-sequenceDiagram
-  participant AIDLC as AI-DLC (writes audit/*.md)
-  participant Watch as watcher.watchIntents
-  participant IPC as ipc.js (watchSpace)
-  participant Hook as useProject
-  participant App as App.jsx
-  AIDLC->>Watch: changed <intent>/audit/<shard>.md
-  Watch->>Watch: debounce 300 ms (max 800 ms)
-  Watch->>IPC: onChange {dirNames, indexChanged, costChanged}
-  IPC-->>Hook: project:changed
-  IPC->>IPC: refreshQuestions(projectId, dirNames)
-  IPC-->>App: questions:changed
-  Hook->>IPC: project:intents (onlyDirs), project:intent if selected
-```
-
-Text: when AI-DLC writes an audit shard, the watcher sends `project:changed`, main recomputes that project's waiting questions and pushes them to App, and the hook re-reads only the changed intents. The flow reads only the shared `aidlc/` records, so it does not depend on the harness that wrote them.
+Text fallback: opening a project validates the root, detects AI-DLC and starts harness detection without waiting. An AI-DLC project gets an intents/ledger watcher and a question baseline; a plain folder gets a small watcher that re-detects once `aidlc/spaces/<space>` appears. Later changes reach the renderer as `project:changed`, which reloads only the changed intents.

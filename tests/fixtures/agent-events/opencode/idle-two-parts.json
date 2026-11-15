@@ -1,0 +1,18 @@
+{
+  "event": { "type": "session.status", "properties": { "sessionID": "ses_03TwoParts", "status": { "type": "idle" } } },
+  "context": {
+    "session": { "id": "ses_03TwoParts" },
+    "messages": [
+      { "info": { "role": "assistant" }, "parts": [{ "type": "text", "text": "An older answer." }] },
+      { "info": { "role": "user" }, "parts": [{ "type": "text", "text": "Go on." }] },
+      {
+        "info": { "role": "assistant" },
+        "parts": [
+          { "type": "text", "text": "The first part." },
+          { "type": "tool", "tool": "read" },
+          { "type": "text", "text": "Which name should the file have?" }
+        ]
+      }
+    ]
+  }
+}

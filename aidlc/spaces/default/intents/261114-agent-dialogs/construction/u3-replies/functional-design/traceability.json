@@ -1,0 +1,32 @@
+{
+  "stage": "functional-design",
+  "unit": "u3-replies",
+  "upstream_ids": ["AC3.1.1", "AC3.1.2", "AC3.1.3", "AC3.1.4", "AC3.1.5"],
+  "coverage": [
+    { "id": "AC3.1.1", "status": "OK", "target": "BR6.1, BR6.3, BR6.9, BR6.10, BR6.11, BR6.12" },
+    { "id": "AC3.1.2", "status": "OK", "target": "BR6.14, BR6.15" },
+    { "id": "AC3.1.3", "status": "OK", "target": "BR6.14, BR6.15, BR6.16" },
+    { "id": "AC3.1.4", "status": "OK", "target": "BR6.2, BR6.3" },
+    { "id": "AC3.1.5", "status": "OK", "target": "BR6.3, BR6.9, BR6.16" }
+  ],
+  "reverse": [
+    { "id": "BR6.4", "status": "N/A", "target": "duplicate reply guard from FR6.1 (one notification per event); no US3.1 criterion names it" },
+    { "id": "BR6.5", "status": "N/A", "target": "stale reply on a newer event, from FR2.7 (typed only while the tab waits) and mockup M4; no US3.1 criterion names it" },
+    { "id": "BR6.6", "status": "N/A", "target": "stale reply on terminal input, from FR2.7 and mockup M4 (answered in the terminal); no US3.1 criterion names it" },
+    { "id": "BR6.7", "status": "N/A", "target": "reply on tab exit, from FR6.4 and mockups M4 and M5; no US3.1 criterion names it" },
+    { "id": "BR6.8", "status": "N/A", "target": "pager order from FR6.1; its criterion AC2.1.4 belongs to US2.1 (u2-permissions)" },
+    { "id": "BR6.13", "status": "N/A", "target": "stale reply display from mockup M4 and FR3.5; no US3.1 criterion names it" },
+    { "id": "BR6.17", "status": "N/A", "target": "reply escalation chosen in functional-design-questions.md Q1 (B) from FR5.1; the US5.1 criterion AC5.1.1 belongs to u5-notifications" },
+    { "id": "BR6.18", "status": "N/A", "target": "fallback without hooks, from FR4.5; its criterion AC4.1.6 belongs to US4.1 (u4-install)" },
+    { "id": "BR1.1", "status": "N/A", "target": "u1-questions rule, referenced here and traced in u1's traceability.json" },
+    { "id": "BR2.1", "status": "N/A", "target": "u1-questions rule, referenced here and traced in u1's traceability.json" },
+    { "id": "BR2.3", "status": "N/A", "target": "u1-questions rule, referenced here (its exit clause is narrowed for replies by BR6.7) and traced in u1's traceability.json" },
+    { "id": "BR2.4", "status": "N/A", "target": "u1-questions rule, referenced here and traced in u1's traceability.json" },
+    { "id": "BR2.6", "status": "N/A", "target": "u1-questions rule, referenced here and traced in u1's traceability.json" },
+    { "id": "BR2.7", "status": "N/A", "target": "u1-questions rule, referenced here and traced in u1's traceability.json" },
+    { "id": "BR3.4", "status": "N/A", "target": "u1-questions rule, referenced here and traced in u1's traceability.json" },
+    { "id": "BR4.1", "status": "N/A", "target": "u1-questions rule, referenced here and traced in u1's traceability.json" },
+    { "id": "BR4.5", "status": "N/A", "target": "u1-questions rule, referenced here and traced in u1's traceability.json" },
+    { "id": "BR4.6", "status": "N/A", "target": "u1-questions rule, referenced here and traced in u1's traceability.json" }
+  ]
+}

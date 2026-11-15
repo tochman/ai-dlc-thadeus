@@ -1,0 +1,23 @@
+{
+  "stage": "functional-design",
+  "unit": "u1-questions",
+  "upstream_ids": ["AC1.1.1","AC1.1.2","AC1.1.3","AC1.1.4","AC1.1.5","AC1.1.6","AC1.1.7","AC1.1.8","AC1.1.9","AC1.1.10","AC1.1.11"],
+  "coverage": [
+    { "id": "AC1.1.1", "status": "OK", "target": "BR1.4, BR3.2, BR3.3, BR4.2" },
+    { "id": "AC1.1.2", "status": "OK", "target": "BR3.1, BR3.3, BR4.3, BR4.4" },
+    { "id": "AC1.1.3", "status": "OK", "target": "BR4.1" },
+    { "id": "AC1.1.4", "status": "OK", "target": "BR2.5" },
+    { "id": "AC1.1.5", "status": "OK", "target": "BR1.1, BR3.1" },
+    { "id": "AC1.1.6", "status": "OK", "target": "BR1.3, BR3.2, BR3.5" },
+    { "id": "AC1.1.7", "status": "OK", "target": "BR2.2, BR2.3" },
+    { "id": "AC1.1.8", "status": "OK", "target": "BR3.4" },
+    { "id": "AC1.1.9", "status": "OK", "target": "BR1.2, BR2.4" },
+    { "id": "AC1.1.10", "status": "OK", "target": "BR2.1, BR2.6" },
+    { "id": "AC1.1.11", "status": "OK", "target": "BR4.5" }
+  ],
+  "reverse": [
+    { "id": "BR2.7", "status": "N/A", "target": "FR4.5 fallback source choice; its acceptance criterion AC4.1.6 is delivered by u4-install" },
+    { "id": "BR3.6", "status": "N/A", "target": "FR4.5 fallback answers unchanged; its acceptance criterion AC4.1.6 is delivered by u4-install" },
+    { "id": "BR4.6", "status": "N/A", "target": "FR5.1 escalation carried over from US-0505 so nothing regresses before u5-notifications (AC5.1.1)" }
+  ]
+}

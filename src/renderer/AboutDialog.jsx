@@ -13,9 +13,14 @@ const OS = { darwin: 'macOS', linux: 'Linux', win32: 'Windows' };
 
 /** The frame's code labels, from the app's own version and platform ("00-02", "04", "DAR", "000204"). */
 export function codeLabels(version, platform) {
-  const [a = 0, b = 0, c = 0] = String(version ?? '').split('.').map((n) => Number.parseInt(n, 10) || 0);
+  const [a = 0, b = 0, c = 0] = String(version ?? '')
+    .split('.')
+    .map((n) => Number.parseInt(n, 10) || 0);
   const pad = (n) => String(n).padStart(2, '0');
-  const os = String(platform ?? '').slice(0, 3).toUpperCase() || '–';
+  const os =
+    String(platform ?? '')
+      .slice(0, 3)
+      .toUpperCase() || '–';
   return [`${pad(a)}-${pad(b)}`, pad(c), os, `${pad(a)}${pad(b)}${pad(c)}`];
 }
 

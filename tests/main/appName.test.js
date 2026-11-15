@@ -6,7 +6,11 @@ import * as names from '../../src/shared/appName.js';
 const SRC = path.resolve(__dirname, '../../src');
 const OLD_NAME = /aidlc[ -]control/i; // "Auctum AIDLC Control", "Aidlc control", the old appId
 // Comments may tell the history of the name; only code and markup count.
-const withoutComments = (text) => text.replace(/\/\*[\s\S]*?\*\//g, '').replace(/<!--[\s\S]*?-->/g, '').replace(/\/\/.*$/gm, '');
+const withoutComments = (text) =>
+  text
+    .replace(/\/\*[\s\S]*?\*\//g, '')
+    .replace(/<!--[\s\S]*?-->/g, '')
+    .replace(/\/\/.*$/gm, '');
 
 function sourceFiles(dir) {
   return readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {

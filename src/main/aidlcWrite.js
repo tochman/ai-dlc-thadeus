@@ -6,14 +6,7 @@ import { promises as fs } from 'node:fs';
 import { defaultExec, runFixed } from './exec.js';
 import { resolveInRoot } from './projectAccess.js';
 import { toolPath } from './tools.js';
-import {
-  ACTIVE_SETTINGS,
-  GUARD_LOCK_LAYERS,
-  GUARD_LOCK_MODES,
-  GUARD_OFF_WHERE,
-  GUARD_SWITCHES,
-  PROJECT_SETTINGS
-} from '../shared/configTables.js';
+import { ACTIVE_SETTINGS, GUARD_LOCK_LAYERS, GUARD_LOCK_MODES, GUARD_OFF_WHERE, GUARD_SWITCHES, PROJECT_SETTINGS } from '../shared/configTables.js';
 import { t } from '../shared/i18n.js';
 
 const PREVIEW_TIMEOUT_MS = 20000;

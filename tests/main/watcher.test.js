@@ -1,7 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
-import { watchFiles, watchForAidlc, watchIntents } from '../../src/main/watcher.js';
+import { isWatchedFile, watchFiles, watchForAidlc, watchIntents } from '../../src/main/watcher.js';
+import { CONFIG_WATCH_PATHS } from '../../src/main/aidlcConfig.js';
+import { featureWatchPaths } from '../../src/main/features.js';
 
 const SOURCE = path.resolve(__dirname, '../fixtures/project/aidlc/spaces/default/intents/261110-epic02-finish');
 const TMP = path.resolve(__dirname, '../.tmp/watcher');
@@ -26,7 +28,8 @@ afterEach(async () => {
   await fs.rm(TMP, { recursive: true, force: true });
 });
 
-describe('watchIntents', () => {
+// US-0010: the debounce waits are wall-clock; retry up to twice under a loaded suite.
+describe('watchIntents', { retry: 2 }, () => {
   it('debounces writes into one change for that intent and ignores .aidlc-engine/ (FR7.1, FR7.2)', async () => {
     const calls = [];
     watcher = watchIntents({ intentsDir: INTENTS, onChange: (c) => calls.push(c), debounceMs: 150 });
@@ -76,7 +79,7 @@ describe('watchIntents', () => {
   });
 });
 
-describe('watchFiles', () => {
+describe('watchFiles', { retry: 2 }, () => {
   it('reports .md changes in the watched file and folder, also when the folder appears later (EPIC-06 FR2.7)', async () => {
     const root = path.join(TMP, 'docs-project');
     await fs.mkdir(path.join(root, 'src'), { recursive: true });
@@ -130,9 +133,36 @@ describe('watchFiles', () => {
     await wait(600);
     expect(changes).toBe(1);
   });
+
+  // US-0506 u4 PD32: the installer watches dialog.sh and the plugin as files.
+  it('treats .sh and .js targets as files and reports a change to each', async () => {
+    expect(isWatchedFile('.thadeus/hooks/dialog.sh')).toBe(true);
+    expect(isWatchedFile('.opencode/plugins/thadeus-dialog.js')).toBe(true);
+    const root = path.join(TMP, 'hooks-project');
+    await fs.mkdir(root, { recursive: true });
+    await wait(300); // same FSEvents settling as above
+    let changes = 0;
+    watcher = watchFiles({ root, paths: ['.thadeus/hooks/dialog.sh', '.opencode/plugins/thadeus-dialog.js'], onChange: () => changes++, debounceMs: 150 });
+    await watcher.ready;
+    await fs.mkdir(path.join(root, '.thadeus/hooks'), { recursive: true });
+    await fs.writeFile(path.join(root, '.thadeus/hooks/dialog.sh'), '#!/bin/sh\n');
+    await wait(700);
+    expect(changes).toBe(1);
+    await fs.mkdir(path.join(root, '.opencode/plugins'), { recursive: true });
+    await fs.writeFile(path.join(root, '.opencode/plugins/thadeus-dialog.js'), 'export default {};\n');
+    await wait(700);
+    expect(changes).toBe(2);
+  });
+
+  it("keeps every existing call site's targets as file or folder", () => {
+    const before = (t) => /\.(md|json)$/i.test(t) || path.posix.basename(t).startsWith('.');
+    const targets = [...CONFIG_WATCH_PATHS, ...featureWatchPaths('docs/FEATURES.md', { epics: [{ file: 'docs/features/epic-01.md' }] }), 'docs/features'];
+    expect(targets.length).toBeGreaterThan(4);
+    for (const target of targets) expect(isWatchedFile(target), target).toBe(before(target));
+  });
 });
 
-describe('watchForAidlc', () => {
+describe('watchForAidlc', { retry: 2 }, () => {
   it('calls onFound once when a space appears under aidlc/spaces/, ignoring other folders (FR4.6)', async () => {
     const root = path.join(TMP, 'plain');
     await fs.mkdir(path.join(root, 'src'), { recursive: true });

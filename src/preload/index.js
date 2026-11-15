@@ -1,7 +1,10 @@
 // Narrow, named API for the sandboxed renderer. No generic invoke/send is exposed.
 import { contextBridge, ipcRenderer, webUtils } from 'electron';
 
-const call = (channel) => (...args) => ipcRenderer.invoke(channel, ...args);
+const call =
+  (channel) =>
+  (...args) =>
+    ipcRenderer.invoke(channel, ...args);
 
 function subscribe(channel) {
   return (callback) => {
@@ -105,6 +108,26 @@ contextBridge.exposeInMainWorld('bridge', {
   // Questions AI-DLC waits on (EPIC-05 US-0505). Read-only: nothing here writes or answers.
   listQuestions: call('questions:list'),
   onQuestions: subscribe('questions:changed'),
-  onQuestionFocus: subscribe('questions:focus'),
-  setActiveProject: call('questions:activeProject')
+  setActiveProject: call('questions:activeProject'),
+  // Agent dialogs (US-0506 u1, contract C4): an event id and option indexes cross the bridge, never a path or a pty.
+  // `stamp` exists only in a timing run (OD1, --thadeus-timing) and is fire-and-forget, so Send never waits on it.
+  agentEvents: {
+    list: call('agentEvents:list'),
+    answer: call('agentEvents:answer'),
+    close: call('agentEvents:close'),
+    latest: call('agentEvents:latest'), // US-0506 u3
+    reopen: call('agentEvents:reopen'), // US-0506 u3
+    onChanged: subscribe('agent-events:changed'),
+    onFocus: subscribe('agent-events:focus'), // US-0506 u5 D6, SD53: a clicked notification names an event
+    ...(process.argv.includes('--thadeus-timing') ? { stamp: (eventId, stamp) => ipcRenderer.send('agent-timing:stamp', eventId, stamp) } : {})
+  },
+  // The agent dialog hooks in a project (US-0506 u4, C4): a project, a harness, an action and a preview id cross the
+  // bridge, never a path or file content (SD32, SD33).
+  agentHooks: {
+    status: call('agentHooks:status'),
+    preview: call('agentHooks:preview'),
+    apply: call('agentHooks:apply'),
+    cancel: call('agentHooks:cancel'),
+    onChanged: subscribe('agent-hooks:changed')
+  }
 });

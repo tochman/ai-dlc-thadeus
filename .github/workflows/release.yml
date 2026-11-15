@@ -30,7 +30,15 @@ jobs:
             exit 1
           fi
       - run: npm ci
-      - run: npx vitest run tests/
+      # Each gate is its own step, so a failure names it (US-0506 NFR8.2-NFR8.4).
+      - name: Tests with the 80% line coverage floor
+        run: npx vitest run tests/ --coverage
+        env:
+          THADEUS_REQUIRE_DASH: '1' # the hook script tests must run under dash too, not be skipped
+      - name: ESLint
+        run: npx eslint .
+      - name: Prettier
+        run: npx prettier --check .
 
   build-mac:
     needs: verify

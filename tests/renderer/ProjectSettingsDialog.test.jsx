@@ -126,7 +126,9 @@ describe('ProjectSettingsDialog', () => {
   it('"Lägg till harness…" names the installed harnesses and opens setup in add mode (US-0802 FR3.1)', () => {
     const onAddHarness = vi.fn();
     const onClose = vi.fn();
-    render(<ProjectSettingsDialog open onClose={onClose} projectId="p1" settings={settings} harness="claude" harnesses={detected} onAddHarness={onAddHarness} />);
+    render(
+      <ProjectSettingsDialog open onClose={onClose} projectId="p1" settings={settings} harness="claude" harnesses={detected} onAddHarness={onAddHarness} />
+    );
     expect(screen.getByTestId('project-settings-installed-harnesses').textContent).toBe('Installerade: Claude Code, opencode, Codex');
     const add = screen.getByTestId('project-settings-add-harness');
     expect(add.textContent).toBe('Lägg till harness…');

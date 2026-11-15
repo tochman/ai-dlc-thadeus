@@ -30,7 +30,16 @@ describe('getGitStatus', () => {
     });
     const status = await getGitStatus('/repo', { exec });
 
-    expect(status).toEqual({ isRepo: true, branch: 'feature/x', upstream: 'origin/feature/x', tracking: true, ahead: 2, behind: 5, dirtyAidlc: 2, dirtyOther: 2 });
+    expect(status).toEqual({
+      isRepo: true,
+      branch: 'feature/x',
+      upstream: 'origin/feature/x',
+      tracking: true,
+      ahead: 2,
+      behind: 5,
+      dirtyAidlc: 2,
+      dirtyOther: 2
+    });
     const gitCalls = calls.filter((c) => c.file === 'git');
     expect(gitCalls.every((c) => c.opts.cwd === '/repo' && c.opts.timeout === 10000 && c.opts.shell === undefined)).toBe(true);
     expect(gitCalls[0].opts.env.PATH).toBe('/usr/bin');

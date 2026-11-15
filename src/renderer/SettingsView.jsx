@@ -9,6 +9,7 @@ import AuctumMark from './AuctumMark.jsx';
 const ANIMATION_IDS = ['full', 'reduced', 'off'];
 // Waiting questions from AI-DLC (EPIC-05 US-0505 FR4.1): the same three choices as before.
 const ALERT_IDS = ['popup-notify', 'popup', 'off'];
+const REPLY_IDS = ['dialog-notify', 'line', 'off']; // US-0506 u5 D1, M9
 const SOUND_IDS = ['on', 'off'];
 const TOOL_IDS = ['aidlc', 'claude', 'shell'];
 const errorText = (err) => String(err?.message ?? err).replace(/^Error invoking remote method '[^']+': (Error: )?/, '');
@@ -159,7 +160,18 @@ function Tools({ settings, onReload }) {
 }
 
 /** Utseende: the five settings the app already had, each with exactly the choices it has today (FR3.1). */
-function Appearance({ animations, onAnimations, fullscreen, onFullscreen, language, onLanguage, questionAlerts, notificationSound, onAlertSettings }) {
+function Appearance({
+  animations,
+  onAnimations,
+  fullscreen,
+  onFullscreen,
+  language,
+  onLanguage,
+  questionAlerts,
+  replyAlerts,
+  notificationSound,
+  onAlertSettings
+}) {
   const { t } = useTranslation();
   const [error, setError] = useState(null);
   async function save(run) {
@@ -207,6 +219,18 @@ function Appearance({ animations, onAnimations, fullscreen, onFullscreen, langua
           onPick={(id) => save(() => onAlertSettings({ questionAlerts: id }))}
         />
         <p className="muted settings-help">{t('settings.alertsHelp')}</p>
+      </fieldset>
+      {/* US-0506 u5 D1, PD59: when the agent finishes its turn; questions keep the row above. */}
+      <fieldset className="settings-group">
+        <legend>{t('settings.repliesLegend')}</legend>
+        <RadioBlocks
+          name="replies"
+          ids={REPLY_IDS}
+          labelKey="settings.replies"
+          value={REPLY_IDS.includes(replyAlerts) ? replyAlerts : 'dialog-notify'}
+          onPick={(id) => save(() => onAlertSettings({ replyAlerts: id }))}
+        />
+        <p className="muted settings-help">{t('settings.repliesHelp')}</p>
       </fieldset>
       <fieldset className="settings-group">
         <legend>{t('settings.soundLegend')}</legend>
@@ -260,7 +284,13 @@ function Project({ settings, onReload, recentProjects = [], onRemoveRecent, proj
           {t('settings.defaultFolder.pick')}
         </button>
         {folder && (
-          <button type="button" className="btn btn-quiet" aria-label={t('settings.defaultFolder.resetFor')} onClick={clearFolder} data-testid="settings-default-folder-reset">
+          <button
+            type="button"
+            className="btn btn-quiet"
+            aria-label={t('settings.defaultFolder.resetFor')}
+            onClick={clearFolder}
+            data-testid="settings-default-folder-reset"
+          >
             {t('settings.defaultFolder.reset')}
           </button>
         )}
@@ -392,8 +422,8 @@ function About({ settings, onReload }) {
  * @param {{onClose: () => void, animations?: 'full'|'reduced'|'off', onAnimations: (value: string) => Promise<unknown>,
  *          fullscreen?: boolean, onFullscreen: (on: boolean) => Promise<unknown>,
  *          language?: 'auto'|'sv'|'en', onLanguage: (value: string) => Promise<unknown>,
- *          questionAlerts?: 'popup-notify'|'popup'|'off', notificationSound?: boolean,
- *          onAlertSettings: (partial: {questionAlerts?: string, notificationSound?: boolean}) => Promise<unknown>,
+ *          questionAlerts?: 'popup-notify'|'popup'|'off', replyAlerts?: 'dialog-notify'|'line'|'off', notificationSound?: boolean,
+ *          onAlertSettings: (partial: {questionAlerts?: string, replyAlerts?: string, notificationSound?: boolean}) => Promise<unknown>,
  *          recentProjects?: string[], onRemoveRecent?: (dir: string) => Promise<unknown>,
  *          projects?: Array<{projectId: string, name: string}>, onProjectSettings?: (projectId: string) => void}} props
  *   animations: the mode in effect; fullscreen: the saved "Helskärm vid start" state; projects: the open tabs
@@ -407,6 +437,7 @@ export default function SettingsView({
   language = 'auto',
   onLanguage,
   questionAlerts = 'popup-notify',
+  replyAlerts = 'dialog-notify', // US-0506 u5 D1
   notificationSound = true,
   onAlertSettings,
   recentProjects = [],
@@ -464,6 +495,7 @@ export default function SettingsView({
         language={language}
         onLanguage={onLanguage}
         questionAlerts={questionAlerts}
+        replyAlerts={replyAlerts}
         notificationSound={notificationSound}
         onAlertSettings={onAlertSettings}
       />

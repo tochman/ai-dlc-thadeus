@@ -4,13 +4,19 @@
 // EPIC-00 US-0006: options are read the way AI-DLC really logs them (JSON, comma, pipe or semicolon lists, batch
 // summaries), and the engine's own asks (QUESTION_ASKED: plan approval, scope confirmation) are shown too.
 
+import { createHash } from 'node:crypto';
+
 const CLOSERS = new Set(['GATE_APPROVED', 'GATE_REJECTED', 'STAGE_COMPLETED', 'STAGE_SKIPPED', 'STAGE_STARTED']);
 /** Events that settle an engine ask of their stage (or any stage, without one). */
 const ASK_CLOSERS = new Set(['PLAN_APPROVAL_RECORDED', 'PLAN_APPROVAL_SKIPPED', 'REQUEST_ROUTED']);
 
 const QN = /^\s*Q(\d+):\s*/i;
 /** "Guide me (walk through each question here)": the label is the part before the description. */
-const label = (s) => String(s).replace(QN, '').replace(/\s+\([^()]*\)\s*$/, '').trim();
+const label = (s) =>
+  String(s)
+    .replace(QN, '')
+    .replace(/\s+\([^()]*\)\s*$/, '')
+    .trim();
 
 /** `text` split on `ch`, but not inside parentheses (a description may hold a comma or a semicolon). */
 function splitTop(text, ch) {
@@ -40,7 +46,9 @@ export function parseOptions(raw) {
     // not JSON: a list in one of AI-DLC's text forms
   }
   const sep = ['|', ';'].find((ch) => splitTop(text, ch).length > 1) ?? ',';
-  const items = splitTop(text, sep).map((s) => s.trim()).filter(Boolean);
+  const items = splitTop(text, sep)
+    .map((s) => s.trim())
+    .filter(Boolean);
   if (!items.length) return { options: [text], batch: null };
   const groups = [];
   for (const item of items) {
@@ -66,10 +74,17 @@ const byTime = (a, b) => (a.timeMs ?? 0) - (b.timeMs ?? 0) || (a.seq ?? 0) - (b.
 /** An answer without a Unit matches every unit of its stage; one with a Unit only that unit. */
 const answers = (ev, q) => q.stage === (ev.fields?.Stage ?? null) && (!ev.fields?.Unit || q.unit === ev.fields.Unit);
 
-const norm = (s) => label(s).replace(/^[A-Z]\.\s+/, '').replace(/\s+/g, ' ').toLowerCase();
+const norm = (s) =>
+  label(s)
+    .replace(/^[A-Z]\.\s+/, '')
+    .replace(/\s+/g, ' ')
+    .toLowerCase();
 /** The reply names one of the question's options (or, for a batch, one of each question's). */
 const repliedTo = (q, reply) => {
-  const said = String(reply ?? '').split(/\\n|\n|;/).map(norm).filter(Boolean);
+  const said = String(reply ?? '')
+    .split(/\\n|\n|;/)
+    .map(norm)
+    .filter(Boolean);
   return said.length > 0 && said.every((r) => q.options.some((o) => norm(o) === r));
 };
 const sameSet = (a, b) => a.length === b.length && a.every((x) => b.some((y) => norm(x) === norm(y)));
@@ -109,7 +124,7 @@ export function pendingQuestions(events, { project, intent }) {
       open.push({
         ...base(ev, f),
         kind: gate ? 'gate' : 'question',
-        text: gate ? '' : f.Decision ?? '',
+        text: gate ? '' : (f.Decision ?? ''),
         options,
         batch,
         ask: null,
@@ -138,4 +153,47 @@ export function pendingQuestions(events, { project, intent }) {
     }
   }
   return open;
+}
+
+/**
+ * US-0506 u1 BR2.7, BR3.6 (FallbackQuestionSource): one waiting audit question as an AgentEvent with source "audit",
+ * for the dialog of a project without live hook sessions. `audit` keeps the original question for today's terminal
+ * path (TerminalContext.answer()); the id is a stable hash of the question id, at most 64 characters (u5 amendment 6).
+ */
+export function auditEvent(q) {
+  return {
+    eventId: `audit-${createHash('sha256').update(String(q.id)).digest('hex').slice(0, 40)}`,
+    sessionId: null,
+    projectId: q.projectId,
+    projectName: q.projectName,
+    tabId: null,
+    harness: null, // the dialog uses the project's running harness, as the popup did
+    source: 'audit',
+    kind: 'question',
+    state: 'shown',
+    arrivedAt: new Date(q.timeMs ?? 0).toISOString(),
+    arrivedAtMs: q.timeMs ?? 0,
+    seq: 0,
+    early: q.early === true,
+    context: { intent: q.intent, stage: q.stage ?? null },
+    questions: [
+      {
+        header: null,
+        text: q.text ?? '',
+        truncated: false,
+        options: (q.options ?? []).map((label) => ({ label, description: null })),
+        multiSelect: false,
+        allowOwn: true
+      }
+    ],
+    lastError: null,
+    via: null,
+    audit: q
+  };
+}
+
+/** US-0506 u1 BR2.5: the newest waiting question or gate of `intent` (any intent when null) as { intent, stage }. */
+export function auditContext(questions, intent = null) {
+  const newest = (questions ?? []).filter((q) => !intent || q.intent === intent).sort((a, b) => (b.timeMs ?? 0) - (a.timeMs ?? 0))[0];
+  return newest ? { intent: newest.intent, stage: newest.stage ?? null } : null;
 }

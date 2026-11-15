@@ -1,0 +1,17 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo \"bash ran\" >> /tmp/log",
+            "timeout": 5
+          }
+        ]
+      }
+    ]
+  },
+  "includeCoAuthoredBy": false
+}

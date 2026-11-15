@@ -75,7 +75,14 @@ export async function newestMtime(root, rel) {
     throw err;
   }
   const names = await fs.readdir(abs);
-  const times = await Promise.all(names.map((n) => fs.stat(path.join(abs, n)).then((s) => (s.isFile() ? s.mtimeMs : 0), () => 0)));
+  const times = await Promise.all(
+    names.map((n) =>
+      fs.stat(path.join(abs, n)).then(
+        (s) => (s.isFile() ? s.mtimeMs : 0),
+        () => 0
+      )
+    )
+  );
   return Math.max(0, ...times);
 }
 

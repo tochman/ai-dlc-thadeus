@@ -47,7 +47,16 @@ describe('models and effort per agent (EPIC-09 US-0904)', () => {
       dryRunArgs: ['config', 'models', '--agent', 'developer', '--effort', 'high', '--model', 'opus', '--harness', 'claude', '--project', '--dry-run']
     });
     expect(buildModelCommand({ harness: 'claude', agent: 'developer', effort: 'default', where: 'local' }, CLAUDE_LIST).args).toEqual([
-      'config', 'models', '--agent', 'developer', '--effort', 'default', '--harness', 'claude', '--local', '--yes'
+      'config',
+      'models',
+      '--agent',
+      'developer',
+      '--effort',
+      'default',
+      '--harness',
+      'claude',
+      '--local',
+      '--yes'
     ]);
     expect(() => buildModelCommand({ harness: 'claude', agent: 'developer', model: 'opus' }, CLAUDE_LIST)).toThrow(); // no target
     expect(() => buildModelCommand({ harness: 'claude', agent: 'developer', model: 'opus', where: 'global' }, CLAUDE_LIST)).toThrow();
@@ -68,10 +77,24 @@ describe('models and effort per agent (EPIC-09 US-0904)', () => {
 
   it('builds one command for all agents from a preset, and a group effort', () => {
     expect(buildModelCommand({ harness: 'opencode', preset: 'balanced', where: 'project' }).args).toEqual([
-      'config', 'models', '--preset', 'balanced', '--harness', 'opencode', '--project', '--yes'
+      'config',
+      'models',
+      '--preset',
+      'balanced',
+      '--harness',
+      'opencode',
+      '--project',
+      '--yes'
     ]);
     expect(buildModelCommand({ harness: 'claude', group: 'writing-up', effort: 'low', where: 'local' }).args).toEqual([
-      'config', 'models', '--writing-up-effort', 'low', '--harness', 'claude', '--local', '--yes'
+      'config',
+      'models',
+      '--writing-up-effort',
+      'low',
+      '--harness',
+      'claude',
+      '--local',
+      '--yes'
     ]);
     expect(() => buildModelCommand({ harness: 'claude', preset: 'balanced', agent: 'developer', where: 'project' })).toThrow();
     expect(() => buildModelCommand({ harness: 'claude', preset: 'cheap', where: 'project' })).toThrow();
@@ -110,7 +133,14 @@ describe('model options and running the CLI', () => {
 
     const opencode = await modelOptions('/p', 'opencode', fakeExec());
     expect(opencode.editable).toBe(true);
-    expect(opencode.models).toEqual(['default', 'inherit', 'anthropic/claude-opus-5-5', 'anthropic/claude-sonnet-5-5', 'openai/gpt-5.5', 'opencode/big-pickle']);
+    expect(opencode.models).toEqual([
+      'default',
+      'inherit',
+      'anthropic/claude-opus-5-5',
+      'anthropic/claude-sonnet-5-5',
+      'openai/gpt-5.5',
+      'opencode/big-pickle'
+    ]);
     expect(opencode.applied).toEqual({ xhigh: 'high' });
   });
 

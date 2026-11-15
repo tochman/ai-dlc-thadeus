@@ -47,7 +47,11 @@ function splitPaths(files) {
   return { aidlc: underAidlc, other: files.filter((f) => !f.startsWith(AIDLC_PREFIX)) };
 }
 
-const lines = (stdout) => String(stdout).split('\n').map((l) => l.trim()).filter(Boolean);
+const lines = (stdout) =>
+  String(stdout)
+    .split('\n')
+    .map((l) => l.trim())
+    .filter(Boolean);
 
 /** Remote intents.json entries whose dirName is not in the local index. */
 export function diffIntents(local, remote) {

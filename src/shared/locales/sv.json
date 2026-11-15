@@ -69,9 +69,6 @@
       "early": "Väntade redan när appen startade",
       "gate": "Godkännande: {stage}",
       "gateNext": "Godkännande: {stage} → {next}",
-      "previous": "Föregående",
-      "next": "Nästa",
-      "position": "{i} av {n}",
       "approve": "Godkänn",
       "requestChanges": "Begär ändringar",
       "ownAnswer": "Eget svar…",
@@ -83,14 +80,16 @@
       "mismatch": "{harness} visar andra val än de AI-DLC loggade. Svara i terminalen.",
       "maybeLost": "Skickat till {harness}, men frågan väntar fortfarande. Svaret kanske inte kom fram – titta i terminalen.",
       "noAgent": "Agentfliken kör inte än. Svara i terminalen.",
-      "openTerminal": "Öppna terminalen",
       "askPlan": "Godkänn planen för {stage}",
       "askScope": "Bekräfta planen för arbetet",
       "askOther": "AI-DLC frågar ({type})",
       "batch": "AI-DLC ställer {n} frågor på en gång, och dem kan popupen inte svara på. Svara i terminalen."
     },
     "notification": {
-      "title": "{project}: AI-DLC väntar på ditt svar"
+      "question": "{harness} väntar på dig",
+      "permission": "{harness} ber om lov",
+      "reply": "Meddelande från {harness}",
+      "body": "{project} · {text}"
     }
   },
   "intents": {
@@ -158,7 +157,7 @@
     "resume": {
       "label": "Fortsätt",
       "atStage": "Fortsätt vid {stage}",
-    "inHarness": "{label} i {harness}",
+      "inHarness": "{label} i {harness}",
       "step": "(steg {step} av {total})",
       "busy": "{harness} arbetar — vänta eller avbryt först",
       "asking": "{harness} väntar på ditt svar — svara i terminalen först",
@@ -443,13 +442,20 @@
       "reduced": "Dämpad",
       "off": "Av"
     },
-    "alertsLegend": "Frågor från AI-DLC",
-    "alertsHelp": "En popup när AI-DLC väntar på ditt svar, och en systemnotis när appen ligger i bakgrunden eller frågan gäller ett annat projekt.",
+    "alertsLegend": "Frågor och behörighetsfrågor",
+    "alertsHelp": "En dialog när en agent eller AI-DLC väntar på ditt svar, och en systemnotis när appen ligger i bakgrunden eller visar ett annat projekt.",
     "alerts": {
       "popup-notify": "Popup och notis",
       "popup": "Bara popup",
       "off": "Av"
     },
+    "repliesLegend": "Meddelanden från agenten",
+    "replies": {
+      "dialog-notify": "Dialog och notis",
+      "line": "Bara raden",
+      "off": "Av"
+    },
+    "repliesHelp": "När agenten är klar med sin tur. Frågor och behörighetsfrågor följer inställningen ovan.",
     "soundLegend": "Ljud vid notis",
     "sound": {
       "on": "På",
@@ -681,15 +687,30 @@
       "turnOn": "Slå på",
       "confirmOff": "Stänga av kontrollen \"{name}\"? AI-DLC slutar då kontrollera det tills du slår på den igen.",
       "confirmYes": "Ja, stäng av",
-      "AIDLC_DISABLE_PLAN_APPROVAL_GUARD": { "name": "Godkännande av plan", "protects": "Kodgenereringen väntar på att du godkänner planen innan den skriver kod." },
-      "AIDLC_DISABLE_REVIEW_FREEZE_HOOK": { "name": "Frysning under granskning", "protects": "Filer som granskas kan inte ändras förrän granskningen är klar." },
+      "AIDLC_DISABLE_PLAN_APPROVAL_GUARD": {
+        "name": "Godkännande av plan",
+        "protects": "Kodgenereringen väntar på att du godkänner planen innan den skriver kod."
+      },
+      "AIDLC_DISABLE_REVIEW_FREEZE_HOOK": {
+        "name": "Frysning under granskning",
+        "protects": "Filer som granskas kan inte ändras förrän granskningen är klar."
+      },
       "AIDLC_DISABLE_REVIEWER_SCOPE_HOOK": { "name": "Granskarens läsområde", "protects": "En granskare läser bara det den ombads granska." },
-      "AIDLC_DISABLE_SUMMARY_CONFIRMATION": { "name": "Bekräftelse av sammanfattning", "protects": "AI-DLC ber dig bekräfta sin sammanfattning av ett steg innan det går vidare." },
-      "AIDLC_SKIP_SUMMARY_CONFIRMATION_GUARD": { "name": "Kontroll av bekräftelsen", "protects": "Ett steg kan inte stängas förrän sammanfattningen verkligen bekräftats." },
+      "AIDLC_DISABLE_SUMMARY_CONFIRMATION": {
+        "name": "Bekräftelse av sammanfattning",
+        "protects": "AI-DLC ber dig bekräfta sin sammanfattning av ett steg innan det går vidare."
+      },
+      "AIDLC_SKIP_SUMMARY_CONFIRMATION_GUARD": {
+        "name": "Kontroll av bekräftelsen",
+        "protects": "Ett steg kan inte stängas förrän sammanfattningen verkligen bekräftats."
+      },
       "AIDLC_SKIP_HUMAN_PRESENCE_GUARD": { "name": "Mänsklig närvaro", "protects": "Ett godkännande räknas bara när en person gav det." },
       "AIDLC_SKIP_ARTIFACT_GUARD": { "name": "Stegets resultat", "protects": "Ett steg kan inte slutföras utan filerna det ska ta fram." },
       "AIDLC_SKIP_REVISION_BACKSTOP": { "name": "Spärr mot omtag", "protects": "Ett steg kan inte göras om gång på gång utan att en person beslutar." },
-      "AIDLC_DISABLE_ENSEMBLE_EVIDENCE": { "name": "Överlämning i kedjan", "protects": "Arbete som lämnas från en agent till nästa måste ha med sitt underlag." }
+      "AIDLC_DISABLE_ENSEMBLE_EVIDENCE": {
+        "name": "Överlämning i kedjan",
+        "protects": "Arbete som lämnas från en agent till nästa måste ha med sitt underlag."
+      }
     },
     "lock": {
       "title": "Låsning av Guard Policy",
@@ -861,5 +882,177 @@
     "planNotFound": "Ingen plan med namnet {name} hittades.",
     "notAFile": "{rel} är ingen fil.",
     "engineOwned": "{rel} tillhör AI-DLC:s motor och sparas inte från appen."
+  },
+  "agentDialog": {
+    "title": {
+      "waiting": "Agenten väntar på ditt svar",
+      "stillWaiting": "Agenten väntar fortfarande på ditt svar",
+      "permission": "{harness} ber om behörighet",
+      "permissionStillWaiting": "{harness} väntar fortfarande på behörighet"
+    },
+    "kind": {
+      "question": "Fråga",
+      "permission": "BEHÖRIGHET",
+      "message": "Meddelande"
+    },
+    "permission": {
+      "allowOnce": "Tillåt en gång",
+      "allowAlways": "Tillåt alltid:\n{rules}",
+      "allowAlwaysBare": "Tillåt alltid",
+      "deny": "Neka",
+      "reject": "Avvisa",
+      "cwd": "Mapp: {cwd}",
+      "truncated": "Förkortad vid 64 KB. Hela texten finns i terminalen.",
+      "alwaysTooLong": "För långt för att visas här. Använd terminalen för Tillåt alltid.",
+      "timedOut": "{harness} slutade vänta på dialogen. Svara i terminalen.",
+      "handedBack": "Lämnad tillbaka till terminalen. Svara där som vanligt.",
+      "answeredInTerminal": "Besvarad i terminalen.",
+      "alsoInTerminal": "Frågan om behörighet visas också i terminalen."
+    },
+    "reply": {
+      "title": "Meddelande från {harness}",
+      "titleOverdue": "Meddelande från {harness}: väntar fortfarande på ditt svar",
+      "where": "{project} · {tab} · {time}",
+      "empty": "{harness} avslutade sin tur utan meddelande.",
+      "truncated": "Förkortat vid 64 KB. Hela texten finns i terminalen.",
+      "answer": "Ditt svar",
+      "sent": "Skickat till {harness} som text, följt av Enter.",
+      "copy": "Kopiera",
+      "stale": {
+        "movedOn": "{harness} väntar inte längre på det här meddelandet. Din text finns kvar.",
+        "sessionEnded": "{harness}-sessionen avslutades. Inget skickades.",
+        "notShown": "{harness} skickade ett nyare meddelande som inte kunde visas. Det finns i terminalen. Din text finns kvar."
+      }
+    },
+    "context": "{project} · {intent} · {stage}",
+    "state": {
+      "sending": "Skickar…",
+      "sent": "Skickat till {harness}.",
+      "handedBack": "Lämnad tillbaka till terminalen.",
+      "timedOut": "Frågan väntade för länge och visas nu i terminalen. Du kan fortfarande svara här.",
+      "failed": "Kunde inte skicka: {error}",
+      "sessionEnded": "Sessionen i {harness} avslutades. Inget skickades."
+    },
+    "alsoInTerminal": "Frågan visas också i terminalen.",
+    "truncated": "Texten är förkortad. Hela texten finns i terminalen.",
+    "answered": "{answered} av {total} besvarade",
+    "send": "Skicka",
+    "sendAll": "Skicka alla svar",
+    "done": "Klar",
+    "ownAnswer": "Eget svar…",
+    "newCount": "{n, plural, one {+# ny} other {+# nya}}",
+    "openTerminal": "Öppna terminalen",
+    "position": "{i} av {n}",
+    "previous": "Föregående",
+    "next": "Nästa",
+    "errors": {
+      "unknownEvent": "Frågan finns inte längre.",
+      "eventNotOpen": "Frågan är inte öppen längre.",
+      "sessionEnded": "Sessionen har avslutats.",
+      "doesNotFit": "Svaret passar inte frågan.",
+      "fallback": "Den här frågan besvaras genom terminalen.",
+      "pickerNotShowing": "Agentens val visas inte i terminalen.",
+      "sendFailed": "Det gick inte att skicka: {cause}",
+      "notTaken": "Agenten tog inte emot svaret.",
+      "answerInTerminal": "Det här svaret kan bara ges i terminalen.",
+      "enterSkipped": "Texten skrevs men Enter skickades inte: fliken gick vidare. Tryck Enter i terminalen om du vill skicka den."
+    }
+  },
+  "agentHooks": {
+    "status": {
+      "current": "finns och är aktuella",
+      "outOfDate": "inaktuella",
+      "missing": "saknas",
+      "editedByHand": "ändrade för hand"
+    },
+    "reason": {
+      "invalidJson": "{file} är inte ren JSON, så appen ändrar den inte.",
+      "unexpectedShape": "{file} har hooks i en form som appen inte ändrar.",
+      "cannotRead": "{file} kan inte läsas ({cause}).",
+      "cannotWrite": "{file} kan inte skrivas ({cause}).",
+      "outsideRoot": "{file} pekar utanför projektet."
+    },
+    "refusal": {
+      "previewUnknown": "Förhandsvisningen är inte längre öppen. Titta på den nya förhandsvisningen.",
+      "changedSincePreview": "{file} har ändrats sedan förhandsvisningen. Titta på den nya förhandsvisningen.",
+      "invalidJson": "Inget skrevs: {file} är inte ren JSON, så appen ändrar den inte.",
+      "unexpectedShape": "Inget skrevs: {file} har hooks i en form som appen inte ändrar.",
+      "cannotRead": "Inget skrevs: {file} kan inte läsas ({cause}).",
+      "cannotWrite": "Inget skrevs: {file} kan inte skrivas ({cause}).",
+      "outsideRoot": "Inget skrevs: {file} pekar utanför projektet.",
+      "partiallyWritten": "{file} skrevs inte ({cause}). Uppdatera för att bli klar."
+    },
+    "cause": {
+      "EACCES": "åtkomst nekad",
+      "EPERM": "inte tillåtet",
+      "EROFS": "skrivskyddad disk",
+      "ENOSPC": "disken är full",
+      "ENOTDIR": "en mapp på vägen är en fil",
+      "notAFile": "inte en vanlig fil",
+      "link": "är en länk",
+      "changedSincePreview": "ändrad sedan förhandsvisningen",
+      "unknown": "okänd orsak"
+    },
+    "summary": {
+      "create": "Ny fil.",
+      "modify": "Ersätts med appens version.",
+      "delete": "Tas bort.",
+      "none": "Redan aktuell, ändras inte.",
+      "settingsModify": "Bara appens poster ändras; alla andra poster står kvar som de är.",
+      "replacesHandEdit": "Ändrad för hand, ersätts med appens version."
+    },
+    "action": {
+      "install": "Installera",
+      "update": "Uppdatera",
+      "remove": "Ta bort"
+    },
+    "preview": {
+      "title": {
+        "install": "Lägg till agentdialoger i projektet",
+        "update": "Uppdatera agentdialogerna i projektet",
+        "remove": "Ta bort agentdialoger från projektet"
+      },
+      "committed": "Filerna checkas in och delas med ditt team.",
+      "teammates": "Kollegor utan appen påverkas inte.",
+      "loading": "Läser filerna…",
+      "nothing": "Alla filer är redan aktuella. Det finns inget att ändra.",
+      "change": {
+        "create": "skapas",
+        "modify": "ändras",
+        "delete": "tas bort",
+        "none": "ändras inte"
+      },
+      "fileLabel": "{path}, {change}"
+    },
+    "strip": {
+      "missing": "{harness}: appens hooks saknas ({files}). Agentdialogerna går via terminalen.",
+      "outOfDate": "{harness}: appens hooks är inaktuella ({files}). Agentdialogerna går via terminalen.",
+      "fileStatus": "{path} {status}",
+      "details": "Detaljer",
+      "dismiss": "Dölj nu"
+    },
+    "section": {
+      "title": "Agentdialoger",
+      "help": "Appens hooks låter agentflikarna ställa sina frågor i appens egen dialog.",
+      "pending": "Kontrollerar hooks…",
+      "harness": "{harness}: {status}"
+    },
+    "busy": "Skriver…",
+    "done": {
+      "install": "Agentdialogerna är installerade. Starta om körande {harness}-flikar för att använda dem.",
+      "update": "Agentdialogerna är uppdaterade. Starta om körande {harness}-flikar för att använda dem.",
+      "remove": "Agentdialogerna är borttagna. {harness}-flikar går via terminalen från nästa fråga."
+    }
+  },
+  "latestMessage": {
+    "label": "Senaste meddelandet från agenten",
+    "none": "Inget meddelande från agenten än",
+    "answer": "Svara",
+    "show": "Visa",
+    "answered": "(besvarat)",
+    "sessionEnded": "(sessionen avslutad)",
+    "notShown": "(nyare meddelande visas inte)",
+    "shortened": "(förkortat)",
+    "view": "Meddelande från {harness}"
   }
 }

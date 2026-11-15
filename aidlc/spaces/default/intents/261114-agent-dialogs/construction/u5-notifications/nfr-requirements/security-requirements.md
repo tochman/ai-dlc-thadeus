@@ -1,0 +1,42 @@
+# Security Requirements: u5-notifications
+
+## Sources
+
+- `aidlc/spaces/default/intents/261114-agent-dialogs/inception/requirements-analysis/requirements.md` (NFR3; FR3.4, FR5.2, FR5.3; Assumptions: single-user local tool)
+- `aidlc/spaces/default/intents/261114-agent-dialogs/construction/u5-notifications/functional-design/functional-spec.md` (D1 sanitising, D3 notification text, D4, D6 click, D9; corner "agent text visible on a locked screen")
+- `aidlc/spaces/default/intents/261114-agent-dialogs/construction/u5-notifications/functional-design/rules.md` (BR8.1, BR8.3, BR8.4)
+- `aidlc/spaces/default/intents/261114-agent-dialogs/construction/u5-notifications/functional-design/frontend-components.md` (opening from a notification, `onAgentEventFocus`)
+- `aidlc/spaces/default/intents/261114-agent-dialogs/construction/u5-notifications/functional-design/reviews/review-01.md` (R-05)
+- `aidlc/spaces/default/intents/261114-agent-dialogs/inception/contract-design/contract-summary.md` (C1 secret and folder, C3 secret never included, C4 bridge pattern and ownership rules)
+- `aidlc/spaces/default/codekb/aidlc-dash/technology-stack.md` (Electron 45.3.1, sandboxed preload, macOS and Linux targets)
+- `aidlc/spaces/default/intents/261114-agent-dialogs/construction/u3-replies/functional-design/rules.md` (u3 BR6.16 Markdown markers dropped for the strip)
+- Existing code checked: `src/main/notify.js` (body cut with `slice`, which can split a surrogate pair; no Markdown or control-character handling; click sends `questions:focus` with the id), `src/main/settings.js` (`QUESTION_ALERTS` sanitising leaves an invalid value out), `src/preload/index.js` (`onQuestionFocus: subscribe('questions:focus')`), `src/renderer/App.jsx` (the only `onQuestionFocus` subscriber, which checks `typeof id === 'string'`)
+
+## Threat model: what notifications add
+
+u1's threat model holds unchanged (u1 Threat model, including the accepted risk that an agent's own command can forge events for its own session). Notifications add one new place where agent text leaves the app window, the operating system's notification centre, and one new way into the app, the click.
+
+| Asset | Threat | Where it is stopped |
+|---|---|---|
+| The person's screen and lock screen | agent text shown in a notification carries markup, control or direction characters that change what the person reads, or a very long text | NFR3.50, NFR3.51, NFR3.52, NFR3.57 |
+| Secrets | the session secret, the session folder, the person's own answer, or a command line with a token appears in the notification centre, which other apps and the lock screen can show | NFR3.53 |
+| The agent session | a notification sends an answer, allows or denies something without a click in the dialog | NFR3.55 |
+| The renderer | the click push carries data the renderer acts on blindly | NFR3.54 |
+| The settings file | a hand-edited or wrong-typed `replyAlerts` value breaks reading or changes behaviour | NFR3.56 |
+
+## Requirements
+
+| ID | Requirement | Target | How it is checked |
+|---|---|---|---|
+| NFR3.50 | Notification text is plain text without Markdown (D3). The `{text}` part is the first non-empty line with Markdown markers dropped by the same function the strip uses (u3 BR6.16): heading `#`, emphasis `*` and `_`, strike `~~`, inline code backticks, quote `>`, list markers, and a link `[label](url)` becomes `label` (the URL is never shown). | for a table of at least 12 inputs (one per marker, a link, nested emphasis, a code fence as first line), the output holds none of the markers and no URL | Unit tests of the one shared function, called from both the strip and Notifications |
+| NFR3.51 | Notification text holds no control or direction characters. Every `\p{Cc}` character is removed (newline and tab become one space first), and the bidirectional controls U+202A–U+202E and U+2066–U+2069 are removed, so the text cannot be reordered on screen. Whitespace runs become one space. This applies to `{text}` and `{project}`. | 0 characters in `\p{Cc}` or the bidi ranges in any title or body | Unit tests with ESC sequences, NUL, CR, U+202E, U+2067 and an emoji next to each |
+| NFR3.52 | Notification text has a capped length that never splits a character (D3). `{text}` is cut at 120 grapheme clusters, counted with `Intl.Segmenter` (granularity `grapheme`), and then gets "…". `{harness}` is the display name from `src/shared/harnesses.js` (`label`), never text from the event. | `{text}` ≤ 121 grapheme clusters; a family emoji (ZWJ sequence), a flag and a combining accent at position 120 stay whole; `{harness}` is always one of the table's labels | Unit tests at lengths 119, 120, 121 and 64 KB, with the three characters at the cut |
+| NFR3.53 | A notification never holds a secret or a full answer. Title and body are built only from `harness`, `projectId` (as the project's name), `kind`, the first question's `text`, `permission.what` and `message.text` (C3). For a permission prompt the body shows `what` only, never `detail`: `detail` is the command or path, the field most likely to hold a token, and the dialog shows it in full anyway. This narrows D3's permission row. The person's own answer, `THADEUS_SESSION_SECRET`, the session folder path and `sessionId` never appear. | for an event whose fields hold a marker string in `detail`, `cwd`, `sessionId`, the answer and every other non-listed field, no title or body contains the marker | Unit test with marker strings in every C3 field; the gate is asked to accept the narrowed permission body |
+| NFR3.54 | The click push carries only an event id, and both ends check it (R-05). Main sends `agent-events:focus` with `{ eventId }` only, only for an id it notified, only to the window it holds (`!win.isDestroyed()`). The preload exposes it as `agentEvents.focus` (`onAgentEventFocus`) through the existing `subscribe` helper. The renderer ignores a payload whose `eventId` is not a non-empty string of at most 64 characters, and acts only on an event it holds (D6 step 6 otherwise). The push is recorded as a C4 member added by U5 under C4's additive rule. `questions:focus` and `onQuestionFocus` are removed in the same change, after a search shows `src/renderer/App.jsx` is their only subscriber. | payload keys are exactly `eventId`; an unknown, empty or non-string id opens nothing and throws nothing; a search for `questions:focus` and `onQuestionFocus` under `src/` finds 0 hits after the change | Main test of the sent payload; renderer tests with bad payloads; one test that greps `src/` for the two old names |
+| NFR3.55 | A notification never answers anything (FR3.4). Notifications are built with no `actions` and no `hasReply`, so the notification centre offers no button or reply field; the click handler only restores the window and sends the focus push. | the `Notification` options object has exactly `title`, `body` and `silent`; the click handler calls no answer, allow, deny or close path | Unit test on the options passed to a fake `Notification`; unit test that the click handler touches only the window and `webContents.send` |
+| NFR3.56 | The `replyAlerts` setting is sanitised on read and on write, like `questionAlerts` (D1, BR8.1). A value outside `REPLY_ALERTS` is left out, so `dialog-notify` applies; reading never throws. | for `undefined`, `null`, `''`, `'Off'`, `'line '`, `1`, `true`, `{}`, `[]` and `'__proto__'`, the stored and returned settings have no `replyAlerts` key and no error is raised; the three valid values round-trip | Main tests on `sanitize` through `getSettings` and `setSettings` |
+| NFR3.57 | Linux notification daemons that read markup in the body show the text literally. | on the Linux `.deb` under Ubuntu 22.04 GNOME, a reply whose first line is `<b>bold</b> & <i>x</i>` shows those characters as written, not as bold or italic | Manual check once on Ubuntu 22.04 before the release that ships this Unit; NFR Design picks the method (escaping or removing `<`, `>` and `&` on Linux) and covers it with a unit test |
+
+## Accepted risk
+
+Agent text (the first line, cut to 120 characters) is visible in the notification centre and, depending on the operating system's preview setting, on the lock screen. The app adds no extra hiding. Reason: single-user local tool (requirements Assumptions), and the person controls previews in the system settings. NFR3.53 keeps the command line of a permission prompt out of it. The gate is asked to confirm both.

@@ -1,0 +1,19 @@
+out/
+dist/
+build/
+coverage/
+node_modules/
+aidlc/
+.claude/
+.aidlc/
+.opencode/*
+!.opencode/plugins/
+docs/
+*.md
+# tests/main/theme.test.js pins the stylesheet's source text; reformatting it would break those checks.
+*.css
+package-lock.json
+tests/fixtures/
+tests/.tmp/
+aidlc.settings.json
+opencode.json

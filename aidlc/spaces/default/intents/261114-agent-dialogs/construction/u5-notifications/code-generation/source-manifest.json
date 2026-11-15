@@ -1,0 +1,32 @@
+{
+  "stage": "code-generation",
+  "unit": "u5-notifications",
+  "version": 1,
+  "writes": [
+    { "path": "docs/features/epic-05-workflow-control.md" },
+    { "path": "src/main/agentEvents.js" },
+    { "path": "src/main/agentReplies.js" },
+    { "path": "src/main/ipc.js" },
+    { "path": "src/main/notify.js" },
+    { "path": "src/main/settings.js" },
+    { "path": "src/preload/index.js" },
+    { "path": "src/renderer/AgentDialog.jsx" },
+    { "path": "src/renderer/App.jsx" },
+    { "path": "src/renderer/SettingsView.jsx" },
+    { "path": "src/shared/alertPlan.js" },
+    { "path": "src/shared/locales/en.json" },
+    { "path": "src/shared/locales/sv.json" },
+    { "path": "vitest.config.mjs" },
+    { "path": "tests/main/agentAlertsFlow.test.js" },
+    { "path": "tests/main/agentEventsReply.test.js" },
+    { "path": "tests/main/alertPlan.test.js" },
+    { "path": "tests/main/ipc.test.js" },
+    { "path": "tests/main/notify.test.js" },
+    { "path": "tests/main/preload.test.js" },
+    { "path": "tests/main/settings.test.js" },
+    { "path": "tests/renderer/AgentDialog.test.jsx" },
+    { "path": "tests/renderer/AgentDialogReply.test.jsx" },
+    { "path": "tests/renderer/AppAlerts.test.jsx" },
+    { "path": "tests/renderer/SettingsView.test.jsx" }
+  ]
+}

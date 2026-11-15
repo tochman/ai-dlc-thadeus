@@ -1,0 +1,28 @@
+{
+  "stage": "functional-design",
+  "unit": "u2-permissions",
+  "upstream_ids": ["AC2.1.1", "AC2.1.2", "AC2.1.3", "AC2.1.4"],
+  "coverage": [
+    { "id": "AC2.1.1", "status": "OK", "target": "BR5.1, BR5.2, BR5.3, BR5.5, BR5.13" },
+    { "id": "AC2.1.2", "status": "OK", "target": "BR5.3, BR5.7, BR5.8, BR5.11" },
+    { "id": "AC2.1.3", "status": "OK", "target": "BR5.4, BR5.6, BR5.9, BR5.10" },
+    { "id": "AC2.1.4", "status": "OK", "target": "BR5.12" }
+  ],
+  "reverse": [
+    { "id": "BR1.1", "status": "N/A", "target": "defined and traced by u1-questions; referenced here as it applies to permission events" },
+    { "id": "BR1.2", "status": "N/A", "target": "defined and traced by u1-questions; referenced here as it applies to permission events" },
+    { "id": "BR1.3", "status": "N/A", "target": "defined and traced by u1-questions; referenced here as it applies to permission events" },
+    { "id": "BR2.1", "status": "N/A", "target": "defined and traced by u1-questions; referenced here as it applies to permission events" },
+    { "id": "BR2.2", "status": "N/A", "target": "u1-questions question rule; named here only to say it does not apply to permissions (BR5.11)" },
+    { "id": "BR2.4", "status": "N/A", "target": "defined and traced by u1-questions; referenced here as it applies to permission events" },
+    { "id": "BR2.5", "status": "N/A", "target": "defined and traced by u1-questions; referenced here as it applies to permission events" },
+    { "id": "BR2.7", "status": "N/A", "target": "defined by u1-questions; its acceptance criterion AC4.1.6 is delivered by u4-install" },
+    { "id": "BR3.1", "status": "N/A", "target": "u1-questions question rule; its permission counterpart is BR5.7" },
+    { "id": "BR3.2", "status": "N/A", "target": "u1-questions question rule; its permission counterpart is BR5.8" },
+    { "id": "BR3.3", "status": "N/A", "target": "u1-questions question rule; its permission counterpart is BR5.8" },
+    { "id": "BR3.4", "status": "N/A", "target": "defined and traced by u1-questions; referenced by BR5.8 for a failed send" },
+    { "id": "BR3.5", "status": "N/A", "target": "u1-questions question rule; its permission counterpart is BR5.10" },
+    { "id": "BR4.5", "status": "N/A", "target": "defined and traced by u1-questions; BR5.6 narrows its focus rule for permissions" },
+    { "id": "BR4.6", "status": "N/A", "target": "defined by u1-questions; escalation is delivered by u5-notifications (AC5.1.1)" }
+  ]
+}

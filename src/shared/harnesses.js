@@ -37,7 +37,17 @@ export const HARNESSES = [
   { id: 'codex', setupId: 'codex', label: 'Codex', name: 'Codex', cli: 'codex', selectable: false, markers: { dirs: ['.codex'] }, commands: {} },
   { id: 'kiro', setupId: 'kiro', label: 'Kiro', name: 'Kiro', cli: 'kiro-cli', selectable: false, markers: { dirs: ['.kiro'] }, commands: {} },
   // perAgentModels: false — the session or IDE picker chooses the model (US-0901 FR4.4).
-  { id: 'cursor', setupId: 'cursor', label: 'Cursor', name: 'Cursor', cli: null, selectable: false, perAgentModels: false, markers: { dirs: ['.cursor'] }, commands: {} },
+  {
+    id: 'cursor',
+    setupId: 'cursor',
+    label: 'Cursor',
+    name: 'Cursor',
+    cli: null,
+    selectable: false,
+    perAgentModels: false,
+    markers: { dirs: ['.cursor'] },
+    commands: {}
+  },
   {
     id: 'copilot',
     setupId: 'copilot',
@@ -75,7 +85,7 @@ export function defaultSetupHarness(detected, { add = false } = {}) {
   const byId = Object.fromEntries((detected ?? []).map((d) => [d.id, d]));
   const open = HARNESSES.filter((h) => h.setupId && !(add && byId[h.id]?.installed));
   const found = open.filter((h) => byId[h.id]?.cli?.found);
-  const pick = found.length === 1 ? found[0] : open.find((h) => h.id === DEFAULT_HARNESS) ?? found[0] ?? open[0];
+  const pick = found.length === 1 ? found[0] : (open.find((h) => h.id === DEFAULT_HARNESS) ?? found[0] ?? open[0]);
   return pick?.id ?? null;
 }
 

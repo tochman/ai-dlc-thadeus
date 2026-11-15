@@ -10,7 +10,12 @@ export default function ConflictDialog({ rel, mine, disk, language, onKeepMine, 
   const { t } = useTranslation();
   const [compare, setCompare] = useState(false);
   return (
-    <div className="panel config-change editor-conflict" role="alertdialog" aria-label={t('editor.conflict.title', { file: rel })} data-testid="editor-conflict">
+    <div
+      className="panel config-change editor-conflict"
+      role="alertdialog"
+      aria-label={t('editor.conflict.title', { file: rel })}
+      data-testid="editor-conflict"
+    >
       <p>{t('editor.conflict.text', { file: rel })}</p>
       <div className="config-change-actions">
         <button className="btn btn-accent" onClick={onKeepMine} data-testid="editor-conflict-keep">

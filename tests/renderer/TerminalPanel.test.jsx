@@ -11,7 +11,9 @@ vi.mock('@xterm/xterm', () => ({
     constructor() {
       const rows = [];
       screens.push(rows);
-      this.buffer = { active: { viewportY: 0, baseY: 0, getLine: (y) => (y < rows.length ? { isWrapped: false, translateToString: () => rows[y] } : undefined) } };
+      this.buffer = {
+        active: { viewportY: 0, baseY: 0, getLine: (y) => (y < rows.length ? { isWrapped: false, translateToString: () => rows[y] } : undefined) }
+      };
     }
     loadAddon() {}
     open() {}
@@ -27,9 +29,16 @@ vi.mock('@xterm/xterm', () => ({
     }
   }
 }));
-vi.mock('@xterm/addon-fit', () => ({ FitAddon: class { fit() {} } }));
+vi.mock('@xterm/addon-fit', () => ({
+  FitAddon: class {
+    fit() {}
+  }
+}));
 vi.mock('@xterm/xterm/css/xterm.css', () => ({}));
-globalThis.ResizeObserver ??= class { observe() {} disconnect() {} };
+globalThis.ResizeObserver ??= class {
+  observe() {}
+  disconnect() {}
+};
 // Every harness has all quick commands or none; this lets a test take one away to see the disabled option.
 let missingSuffix = null;
 vi.mock('../../src/shared/harnesses.js', async (importOriginal) => {
@@ -195,7 +204,7 @@ describe('TerminalPanel', () => {
     expect(window.bridge.ptyWrite).toHaveBeenLastCalledWith('pty-shell', '/x.png ');
   });
 
-  it('answer() sends the picker\'s own key to the agent tab without switching tabs, and refuses with no picker (US-0004)', async () => {
+  it("answer() sends the picker's own key to the agent tab without switching tabs, and refuses with no picker (US-0004)", async () => {
     await renderPanel();
     act(() => terminal.setView({ open: true, active: 'shell' }));
     const gate = { kind: 'gate' };
@@ -237,7 +246,11 @@ describe('Claude Code and opencode side by side (EPIC-08 US-0803)', () => {
   it('with harnessTabs [claude, opencode] renders two agent tabs and the shell tab, each spawning its own harness', async () => {
     ownIds();
     await renderPanel(both);
-    expect(screen.getAllByRole('tab').map((b) => b.textContent)).toEqual(['ArbetarClaude', expect.stringMatching(/opencode$/), expect.stringMatching(/Shell$/)]);
+    expect(screen.getAllByRole('tab').map((b) => b.textContent)).toEqual([
+      'ArbetarClaude',
+      expect.stringMatching(/opencode$/),
+      expect.stringMatching(/Shell$/)
+    ]);
     expect(screen.getByTestId('terminal-panel-name-agent-opencode').textContent).toBe('opencode');
     const spawned = window.bridge.ptySpawn.mock.calls.map(([a]) => `${a.kind}:${a.harness ?? ''}`).sort();
     expect(spawned).toEqual(['agent:claude', 'agent:opencode', 'shell:']);

@@ -62,7 +62,11 @@ const write = async (rel, text) => {
   await fs.mkdir(path.dirname(path.join(tmp, rel)), { recursive: true });
   await fs.writeFile(path.join(tmp, rel), text);
 };
-const there = (rel) => fs.stat(path.join(root, rel)).then(() => true, () => false);
+const there = (rel) =>
+  fs.stat(path.join(root, rel)).then(
+    () => true,
+    () => false
+  );
 
 beforeEach(async () => {
   tmp = await fs.mkdtemp(path.join(os.tmpdir(), 'plans-'));

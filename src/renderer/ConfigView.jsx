@@ -283,9 +283,7 @@ export default function ConfigView({ projectId, visible, harnesses, defaultHarne
       ) : (
         <>
           <Section id="models" error={errors.models} className={setupHarness(harness)?.perAgentModels === false ? 'is-greyed' : ''}>
-            {d.models && (
-              <ModelPicker projectId={projectId} harness={harness} rows={d.models} fallback={<Models rows={d.models} harness={harness} />} />
-            )}
+            {d.models && <ModelPicker projectId={projectId} harness={harness} rows={d.models} fallback={<Models rows={d.models} harness={harness} />} />}
           </Section>
           <Section id="defaults" error={errors.flags}>
             {d.flags && <ValueTable rows={d.flags} nameKey="name" nameLabel={t('config.switch')} />}

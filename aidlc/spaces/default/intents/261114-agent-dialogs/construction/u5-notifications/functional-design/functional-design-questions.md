@@ -1,0 +1,3 @@
+# Functional Design questions: u5-notifications
+
+No questions for this Unit. Everything it needs is settled upstream: the reply setting's three values and default (FR5.2, mockup M9), one notification per event when the app is in the background or on another project (FR5.3), `questionAlerts` and `notificationSound` for questions and permission prompts (FR5.1), and escalation for every kind, replies included, as decided in u3-replies' Functional Design (Q1: a reply turns red after 20 seconds like a question). AC5.1.1 in `stories.md` limits red to questions and permission prompts; that later decision supersedes it for replies, and the u5 design records the difference.

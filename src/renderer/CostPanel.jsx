@@ -100,7 +100,9 @@ export default function CostPanel({ cost, models, open: openProp, onToggle }) {
         </span>
       </button>
       {/* The ledger is filled by the Claude hooks and the model table reads --harness claude (US-0801 FR7.2). */}
-      <p className="muted" data-testid="cost-panel-harness">{t('cost.coversClaude')}</p>
+      <p className="muted" data-testid="cost-panel-harness">
+        {t('cost.coversClaude')}
+      </p>
       {!project && <p className="muted">{cost.reason}</p>}
       {project && (
         <>
@@ -116,7 +118,11 @@ export default function CostPanel({ cost, models, open: openProp, onToggle }) {
       )}
       {open && project && (
         <div className="cost-panel-body">
-          {cost.stale && <p className="banner banner-warn" role="status">{t('cost.stale', { warning: cost.warning })}</p>}
+          {cost.stale && (
+            <p className="banner banner-warn" role="status">
+              {t('cost.stale', { warning: cost.warning })}
+            </p>
+          )}
           <p className="cost-total">
             <CostLabel complete={project.complete} />
             <span className="cost-total-usd">{project.total.missingPrice ? t('cost.missingPrice') : formatUsd(project.total.usd)}</span>

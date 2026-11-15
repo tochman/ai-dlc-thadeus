@@ -1,0 +1,16 @@
+{
+  "event": { "type": "session.status", "properties": { "sessionID": "ses_01WhichName", "status": { "type": "idle" } } },
+  "context": {
+    "session": { "id": "ses_01WhichName" },
+    "messages": [
+      { "info": { "role": "user" }, "parts": [{ "type": "text", "text": "Create a notes file." }] },
+      {
+        "info": { "role": "assistant" },
+        "parts": [
+          { "type": "step-start" },
+          { "type": "text", "text": "Which name should the file have?" }
+        ]
+      }
+    ]
+  }
+}

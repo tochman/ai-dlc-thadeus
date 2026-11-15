@@ -89,7 +89,7 @@ export async function loadIntentList(root, space, onlyDirs) {
 
   const indexRes = await readJsonSafe(root, `${dir}/intents.json`);
   // Half-written intents.json: keep the previous index instead of dropping every intent.
-  const index = indexRes.ok ? indexRes.value : indexRes.missing ? [] : prev?.index ?? [];
+  const index = indexRes.ok ? indexRes.value : indexRes.missing ? [] : (prev?.index ?? []);
   const diskDirs = (await listDir(root, dir)).filter((e) => e.isDir && !e.name.startsWith('.')).map((e) => e.name);
   const active = (await readTextOrNull(root, `${dir}/active-intent`))?.trim() ?? null;
 
@@ -138,9 +138,7 @@ async function listArtifacts(root, base) {
 
 async function loadAuditEvents(root, base) {
   const files = (await listDir(root, `${base}/audit`)).filter((e) => !e.isDir && e.name.endsWith('.md'));
-  const texts = await Promise.all(
-    files.map(async (f) => ({ source: f.name, text: await readText(root, `${base}/audit/${f.name}`) }))
-  );
+  const texts = await Promise.all(files.map(async (f) => ({ source: f.name, text: await readText(root, `${base}/audit/${f.name}`) })));
   return mergeAudits(texts).map((e) => ({ ...e, category: categoryOf(e.event) }));
 }
 
@@ -244,7 +242,7 @@ async function buildDetail(root, space, dirName, prev) {
     pipeline: mergePipeline(state, graph),
     events,
     units: graph?.boltDag ? unitStatuses(graph.boltDag, events) : null,
-    directive: directiveRes.ok ? directiveRes.value : prev?.directive ?? null,
+    directive: directiveRes.ok ? directiveRes.value : (prev?.directive ?? null),
     files: await listArtifacts(root, base),
     warnings
   };

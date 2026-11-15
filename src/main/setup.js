@@ -26,9 +26,7 @@ export function parsePreview(raw) {
     })
   );
   const lines = raw.split('\n');
-  const conflicts = lines
-    .map((l) => /^\s*(?:conflict|CONFLICT)\b[:\s]+(\S.*)$/.exec(l)?.[1]?.trim())
-    .filter((f) => f && !/^\d+$/.test(f) && !f.includes('='));
+  const conflicts = lines.map((l) => /^\s*(?:conflict|CONFLICT)\b[:\s]+(\S.*)$/.exec(l)?.[1]?.trim()).filter((f) => f && !/^\d+$/.test(f) && !f.includes('='));
   const notes = lines.map((l) => /^\s*Note:\s*(.*)$/.exec(l)?.[1]?.trim()).filter(Boolean);
   return { raw, ...counts, conflicts, notes };
 }

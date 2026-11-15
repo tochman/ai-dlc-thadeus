@@ -1,0 +1,11 @@
+{
+  "session_id": "4b6f6a2e-3f0d-4d55-9a57-2b1f0c3e9d11",
+  "hook_event_name": "PreToolUse",
+  "tool_name": "AskUserQuestion",
+  "tool_input": {
+    "questions": [
+      { "question": "Pick one?", "header": "Pick", "options": [{ "label": "A", "description": "First." }, { "label": "", "description": "No label." }], "multiSelect": false }
+    ]
+  },
+  "tool_use_id": "toolu_01EmptyLabel"
+}

@@ -63,7 +63,13 @@ export default function IntentList({ intents, selected, onSelect, cost }) {
       <div className="lcars-heading">
         <h2 className="section-title">{t('intents.title')}</h2>
         <span className="lcars-heading-line" aria-hidden="true" />
-        <select className="lcars-select" aria-label={t('intents.sortLabel')} value={sort} onChange={(e) => setSort(e.target.value)} data-testid="intent-list-sort">
+        <select
+          className="lcars-select"
+          aria-label={t('intents.sortLabel')}
+          value={sort}
+          onChange={(e) => setSort(e.target.value)}
+          data-testid="intent-list-sort"
+        >
           {SORTS.map((id) => (
             <option key={id} value={id}>
               {t('intents.sortBy', { label: t(`intents.sort.${id}`) })}
@@ -80,7 +86,13 @@ export default function IntentList({ intents, selected, onSelect, cost }) {
           onChange={(e) => setQuery(e.target.value)}
           data-testid="intent-list-search"
         />
-        <select className="lcars-select" aria-label={t('intents.statusLabel')} value={status} onChange={(e) => setStatus(e.target.value)} data-testid="intent-list-status-filter">
+        <select
+          className="lcars-select"
+          aria-label={t('intents.statusLabel')}
+          value={status}
+          onChange={(e) => setStatus(e.target.value)}
+          data-testid="intent-list-status-filter"
+        >
           <option value={ALL}>{t('intents.allStatuses')}</option>
           {statuses.map((s) => (
             <option key={s} value={s}>
@@ -88,7 +100,13 @@ export default function IntentList({ intents, selected, onSelect, cost }) {
             </option>
           ))}
         </select>
-        <select className="lcars-select" aria-label={t('intents.scopeLabel')} value={scope} onChange={(e) => setScope(e.target.value)} data-testid="intent-list-scope-filter">
+        <select
+          className="lcars-select"
+          aria-label={t('intents.scopeLabel')}
+          value={scope}
+          onChange={(e) => setScope(e.target.value)}
+          data-testid="intent-list-scope-filter"
+        >
           <option value={ALL}>{t('intents.allScopes')}</option>
           {scopes.map((s) => (
             <option key={s} value={s}>

@@ -19,7 +19,10 @@ afterEach(async () => {
 describe('project settings', () => {
   it('are kept per project root in the app settings and invalid values fall back to the defaults (FR3.4)', async () => {
     expect(await getProjectSettings('/p/a')).toEqual({ featureDocs: 'auto', featuresPath: 'docs/FEATURES.md' });
-    expect(await setProjectSettings('/p/a', { featureDocs: 'show', featuresPath: 'FEATURES.md' })).toEqual({ featureDocs: 'show', featuresPath: 'FEATURES.md' });
+    expect(await setProjectSettings('/p/a', { featureDocs: 'show', featuresPath: 'FEATURES.md' })).toEqual({
+      featureDocs: 'show',
+      featuresPath: 'FEATURES.md'
+    });
     expect(await setProjectSettings('/p/a', { featureDocs: 'hide' })).toEqual({ featureDocs: 'hide', featuresPath: 'FEATURES.md' });
     await expect(setProjectSettings('/p/a', { featuresPath: '../outside.md' })).rejects.toThrow(/Ogiltig sökväg/);
     await expect(setProjectSettings('/p/a', { featureDocs: 'always' })).rejects.toThrow(/Okänt värde/);
@@ -186,5 +189,48 @@ describe('project settings', () => {
       '/p/a': { featureDocs: 'hide', featuresPath: 'docs/FEATURES.md' },
       '/p/b': { featureDocs: 'auto', featuresPath: 'FEATURES.md' }
     });
+  });
+});
+
+// US-0506 u5 D1, SD55, PD51: the reply alerts setting and the synchronous settings copy.
+describe('replyAlerts and settingsNow (US-0506 u5)', () => {
+  it.each(['dialog-notify', 'line', 'off'])('keeps %s on write and on read', async (value) => {
+    expect((await setSettings({ replyAlerts: value })).replyAlerts).toBe(value);
+    expect((await getSettings()).replyAlerts).toBe(value);
+  });
+
+  it('leaves out a missing, unknown or wrong-typed value without throwing, so the default applies', async () => {
+    for (const bad of ['loud', 42, null, '', 'Off', 'line ', true, {}, [], '__proto__']) {
+      await fs.writeFile(FILE, JSON.stringify({ replyAlerts: bad }));
+      expect(await getSettings()).not.toHaveProperty('replyAlerts');
+      expect(await setSettings({ replyAlerts: bad })).not.toHaveProperty('replyAlerts');
+    }
+    await fs.writeFile(FILE, JSON.stringify({}));
+    expect(await getSettings()).not.toHaveProperty('replyAlerts');
+  });
+
+  it('keeps questionAlerts and notificationSound sanitising unchanged beside it', async () => {
+    const s = await setSettings({ replyAlerts: 'line', questionAlerts: 'popup', notificationSound: false });
+    expect(s).toMatchObject({ replyAlerts: 'line', questionAlerts: 'popup', notificationSound: false });
+    const bad = await setSettings({ questionAlerts: 'line', notificationSound: 'no' }); // a reply value is no question value
+    expect(bad.replyAlerts).toBe('line');
+    expect(bad).not.toHaveProperty('questionAlerts');
+    expect(bad).not.toHaveProperty('notificationSound');
+  });
+
+  it('settingsNow gives the defaults-only copy before the first read', async () => {
+    vi.resetModules();
+    const fresh = await import('../../src/main/settings.js');
+    await fs.writeFile(FILE, JSON.stringify({ replyAlerts: 'off' }));
+    expect(fresh.settingsNow()).toEqual({ openProjects: [], recentProjects: [], activeProject: null, projectSettings: {} });
+  });
+
+  it('settingsNow gives what getSettings last read and what setSettings last resolved', async () => {
+    const m = await import('../../src/main/settings.js'); // the same instance as settingsNow, after any reset
+    await fs.writeFile(FILE, JSON.stringify({ replyAlerts: 'off', questionAlerts: 'popup' }));
+    await m.getSettings();
+    expect(m.settingsNow()).toMatchObject({ replyAlerts: 'off', questionAlerts: 'popup' });
+    await m.setSettings({ replyAlerts: 'line' });
+    expect(m.settingsNow().replyAlerts).toBe('line');
   });
 });

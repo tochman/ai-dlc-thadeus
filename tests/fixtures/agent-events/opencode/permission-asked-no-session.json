@@ -1,0 +1,9 @@
+{
+  "type": "permission.asked",
+  "properties": {
+    "requestID": "per_9a1f20b3c8",
+    "permission": "bash",
+    "patterns": ["git push"],
+    "metadata": { "command": "git push" }
+  }
+}

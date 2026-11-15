@@ -49,16 +49,19 @@ function swedishLines(text) {
 describe('translation keys (EPIC-07 US-0701 FR7)', () => {
   it('has exactly the same keys in sv.json and en.json, and no empty text (FR7.1, FR5.1)', () => {
     expect(Object.keys(SV).sort()).toEqual(Object.keys(EN).sort());
-    for (const [file, texts] of [['sv', SV], ['en', EN]]) {
-      const empty = Object.entries(texts).filter(([, v]) => typeof v !== 'string' || v.trim() === '').map(([k]) => k);
+    for (const [file, texts] of [
+      ['sv', SV],
+      ['en', EN]
+    ]) {
+      const empty = Object.entries(texts)
+        .filter(([, v]) => typeof v !== 'string' || v.trim() === '')
+        .map(([k]) => k);
       expect(empty, file).toEqual([]);
     }
   });
 
   it('has every literal t(…) key used in src/ in en.json (FR7.2)', () => {
-    const used = sources.flatMap(({ file, text }) =>
-      [...text.matchAll(/\b(?:t|translate)\(\s*(['"])([^'"`$]+)\1/g)].map((m) => ({ file, key: m[2] }))
-    );
+    const used = sources.flatMap(({ file, text }) => [...text.matchAll(/\b(?:t|translate)\(\s*(['"])([^'"`$]+)\1/g)].map((m) => ({ file, key: m[2] })));
     expect(used.length).toBeGreaterThan(300); // the scan really finds the calls
     expect(used.filter(({ key }) => !(key in EN))).toEqual([]);
   });

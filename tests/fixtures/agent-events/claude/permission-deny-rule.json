@@ -1,0 +1,8 @@
+{
+  "session_id": "4b6f6a2e-3f0d-4d55-9a57-2b1f0c3e9d11",
+  "cwd": "/Users/dev/Projects/aidlc-dash",
+  "hook_event_name": "PermissionRequest",
+  "tool_name": "Bash",
+  "tool_input": { "command": "rm -rf build" },
+  "permission_suggestions": [{ "type": "addRules", "rules": [{ "toolName": "Bash", "ruleContent": "rm:*" }], "behavior": "deny", "destination": "localSettings" }]
+}

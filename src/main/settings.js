@@ -16,6 +16,8 @@ const FEATURE_DOCS = new Set(['auto', 'show', 'hide']);
 const ANIMATIONS = new Set(['full', 'reduced', 'off']); // "Animationer: Full / Dämpad / Av" (EPIC-04 FR4.2)
 // "Frågor från Claude: Popup och notis / Bara popup / Av" (EPIC-05 US-0505 FR4.1); unset means popup-notify.
 export const QUESTION_ALERTS = new Set(['popup-notify', 'popup', 'off']);
+// "Meddelanden från agenten: Dialog och notis / Bara raden / Av" (US-0506 u5 D1, SD55); unset means dialog-notify.
+export const REPLY_ALERTS = new Set(['dialog-notify', 'line', 'off']);
 const file = () => path.join(app.getPath('userData'), 'settings.json');
 
 const stringList = (v) => (Array.isArray(v) ? v.filter((s) => typeof s === 'string').slice(0, 50) : []);
@@ -76,6 +78,7 @@ function sanitize(raw) {
     // Waiting-question alerts and the notification sound (US-0505 FR4.1); left out when invalid, so the
     // defaults (popup-notify, sound on) apply where they are read.
     ...(QUESTION_ALERTS.has(raw?.questionAlerts) ? { questionAlerts: raw.questionAlerts } : {}),
+    ...(REPLY_ALERTS.has(raw?.replyAlerts) ? { replyAlerts: raw.replyAlerts } : {}),
     ...(typeof raw?.notificationSound === 'boolean' ? { notificationSound: raw.notificationSound } : {}),
     // "Språk / Language" (EPIC-07 US-0701 FR4.3); left out when invalid, so auto applies.
     ...(LANGUAGE_SETTINGS.includes(raw?.language) ? { language: raw.language } : {}),
@@ -94,13 +97,21 @@ function sanitize(raw) {
   };
 }
 
+// US-0506 u5 D1, PD51 (LC52): main's copy of the settings as last read or saved, so a notification decides without
+// awaiting a file read. Defaults only until the first read.
+let current = { ...DEFAULTS, projectSettings: {} };
+
+/** US-0506 u5 PD51: the settings as last read or saved, synchronously. */
+export const settingsNow = () => current;
+
 export async function getSettings() {
   try {
-    return sanitize(JSON.parse(await fs.readFile(file(), 'utf8')));
+    current = sanitize(JSON.parse(await fs.readFile(file(), 'utf8')));
   } catch (err) {
     if (err.code !== 'ENOENT') console.error('Kunde inte läsa inställningar, använder standard:', err.message);
-    return { ...DEFAULTS, projectSettings: {} };
+    current = { ...DEFAULTS, projectSettings: {} };
   }
+  return current;
 }
 
 // Writes run one at a time, each reading what the previous one wrote, so two concurrent changes both survive (FR3.5).
@@ -111,6 +122,7 @@ function update(change) {
     const next = sanitize(change(await getSettings()));
     await fs.mkdir(path.dirname(file()), { recursive: true });
     await fs.writeFile(file(), JSON.stringify(next, null, 2));
+    current = next;
     return next;
   });
   queue = run.catch(() => {}); // a failed write is reported to its caller and does not block the next one

@@ -16,31 +16,30 @@ import {
   loadPendingQuestions,
   loadWorkingAgents
 } from './projectService.js';
-import { notifyQuestions } from './notify.js';
+import { notifyEvent, notifyQuestions } from './notify.js';
 import { agentName, summarizeLedger } from './parsers/ledger.js';
 import { getConfiguredModels } from './models.js';
 import { CONFIG_WATCH_PATHS, checkHarness, getAidlcConfig } from './aidlcConfig.js';
 import { applyPlanEdit, deletePlan, listPlans, planStages, previewPlanEdit, savePlan } from './plans.js';
 import { apply as applyConfigChange, applyGuardLock, preview as previewConfigChange, previewGuardLock } from './aidlcWrite.js';
-import {
-  applyModelChange,
-  checkDrift,
-  estimateCost,
-  ledgerRows,
-  modelOptions,
-  previewModelChange,
-  pricesFromLedger
-} from './modelChoice.js';
+import { applyModelChange, checkDrift, estimateCost, ledgerRows, modelOptions, previewModelChange, pricesFromLedger } from './modelChoice.js';
 import { createUpdater } from './updater.js';
 import { fetchRemote, getGitStatus, getRemoteChanges, listConflicts, showRemoteFile } from './git.js';
 import { getSetupInfo, runSetup } from './setup.js';
 import { detectHarnesses } from './harness.js';
 import { TOOL_IDS, getTools, setToolPaths, validateTool } from './tools.js';
-import { getProjectSettings, getSettings, setProjectSettings, setSettings } from './settings.js';
+import { getProjectSettings, getSettings, setProjectSettings, setSettings, settingsNow } from './settings.js';
 import { watchFiles, watchForAidlc, watchIntents, watchOpenFiles } from './watcher.js';
 import { listTree, readForEdit, writeFileSafe } from './fileWrite.js';
 import { featureWatchPaths, loadFeatures, loadStoryLinks } from './features.js';
-import { killAllSessions, killProjectSessions, killSession, resizeSession, spawnSession, writeSession } from './pty.js';
+import { killAllSessions, killProjectSessions, killSession, resizeSession, spawnSession, tapOutput, writeSession } from './pty.js';
+import { createAgentChannel } from './agentChannel.js';
+import { createHookInstaller, hooksHandlers, statusPusher } from './agentHooks.js';
+import { adapters } from './agentAdapters.js';
+import { createAgentEventStore } from './agentEvents.js';
+import { createAgentIpc } from './agentIpc.js';
+import { createTimingLog } from './agentTiming.js';
+import { auditContext, auditEvent } from './questions.js';
 import { AIDLC_DOCS_URL, applyMenu, parseMenuState, setMenuState } from './menu.js';
 import { currentLanguage, setLanguageFromSettings } from './i18n.js';
 import { t } from '../shared/i18n.js';
@@ -132,7 +131,8 @@ async function closeWatcher(p) {
   p.featuresKey = null;
   p.configWatcher = null;
   p.editorWatcher = null;
-  await Promise.all([w?.close(), s?.close(), f?.close(), c?.close(), e?.close()]);
+  // US-0506 u4 SCD31: the hooks watcher, previews and isCurrent keys go with the project.
+  await Promise.all([w?.close(), s?.close(), f?.close(), c?.close(), e?.close(), installer?.closeProject(p.id)]);
 }
 
 /** Watches exactly the files open in the editor; each change sends `file:changed` with its relative path (US-1001). */
@@ -141,7 +141,16 @@ async function watchEditorFiles(projectId, rels) {
   const old = p.editorWatcher;
   p.editorWatcher = null;
   await old?.close();
-  const files = (await Promise.all(rels.map((rel) => resolveInRoot(p.root, rel).then((abs) => [abs, rel], () => null)))).filter(Boolean);
+  const files = (
+    await Promise.all(
+      rels.map((rel) =>
+        resolveInRoot(p.root, rel).then(
+          (abs) => [abs, rel],
+          () => null
+        )
+      )
+    )
+  ).filter(Boolean);
   if (!files.length) return;
   const relOf = new Map(files);
   p.editorWatcher = watchOpenFiles({
@@ -288,14 +297,61 @@ async function refreshQuestions(projectId, dirNames) {
     if (!p.questions) for (const q of list) startedWith.add(q.id);
     p.questions = list;
     publishQuestions();
+    agent?.publish(projectId); // the dialog lists these as audit events while no hook session runs (US-0506 BR2.7)
     const fresh = list.filter((q) => !startedWith.has(q.id));
     if (fresh.length) {
       const win = p.sender.isDestroyed() ? null : BrowserWindow.fromWebContents(p.sender);
-      notifyQuestions(fresh, { settings: await getSettings(), win, activeProjectId });
+      notifyQuestions(fresh, { settings: settingsNow(), win, activeProjectId }); // US-0506 u5 PD51: no await
     }
   } catch (err) {
     console.error(`Väntande frågor kunde inte räknas om för ${p.root}:`, err);
   }
+}
+
+// Agent dialogs (US-0506 u1). Built once in registerIpc, where userData is known.
+// US-0506 u4 C5: an agent tab gets a channel session only when the installer finds its harness's hooks current for the
+// project (isCurrent, from memory); every other tab gets no THADEUS_* variable and the dialog shows today's audit questions.
+let agent = null;
+let installer = null;
+
+/** BR7.15: the harnesses a project uses: its folder markers, or an agent tab of it opened in this app run. */
+async function usedHarnesses(projectId) {
+  const p = projects.get(projectId);
+  if (!p) return [];
+  const detected = await Promise.resolve(p.harnesses).catch(() => []);
+  return [...new Set([...(detected ?? []).filter((d) => d.installed).map((d) => d.id), ...p.agentTabs])];
+}
+
+function agentWiring() {
+  if (agent) return agent;
+  installer = createHookInstaller({
+    log: (line) => console.warn(line),
+    usedOf: usedHarnesses,
+    // RD42: a harness that stops being current ends its running sessions; the push reaches every window (BR7.17).
+    onStatus: statusPusher({ senders: () => new Set([...projects.values()].map((p) => p.sender)), demote: (root, harness) => agent.demote(root, harness) })
+  });
+  const hooksCurrent = installer.isCurrent;
+  const userData = app.getPath('userData');
+  const timing = createTimingLog({ dir: path.join(userData, 'logs'), on: process.env.THADEUS_TIMING === '1' });
+  const channel = createAgentChannel({ root: path.join(userData, 'agent-channel') });
+  const questionsOf = (projectId) => projects.get(projectId)?.questions ?? [];
+  const store = createAgentEventStore({
+    channel,
+    adapters,
+    pty: { write: writeSession, tapOutput },
+    timing,
+    contextOf: (projectId) => auditContext(questionsOf(projectId)),
+    auditEventsOf: (projectId) => questionsOf(projectId).map((q) => auditEvent({ ...q, early: startedWith.has(q.id) })),
+    settings: settingsNow // US-0506 u5 D2: a reply's state at arrival
+  });
+  // US-0506 u5 D5, PD50: one notification decision per accepted event, in the store's own turn.
+  store.onAdded((ev) => {
+    const p = projects.get(ev.projectId);
+    const win = p && !p.sender.isDestroyed() ? BrowserWindow.fromWebContents(p.sender) : null;
+    notifyEvent(ev, { settings: settingsNow(), win, activeProjectId, projectName: p ? path.basename(p.root) : '', timing });
+  });
+  agent = createAgentIpc({ channel, store, timing, hooksCurrent, senders: () => new Set([...projects.values()].map((p) => p.sender)) });
+  return agent;
 }
 
 /** (Re)starts the watcher when the renderer looks at a different space. */
@@ -331,7 +387,7 @@ const handlers = {
       // The saved default folder is where the dialog opens (US-0405 FR4.1).
       ...(defaultProjectFolder ? { defaultPath: defaultProjectFolder } : {})
     });
-    return res.canceled ? null : res.filePaths[0] ?? null;
+    return res.canceled ? null : (res.filePaths[0] ?? null);
   },
   'project:open': async (event, dir) => {
     const root = await openRoot(dir);
@@ -339,11 +395,14 @@ const handlers = {
     const projectId = randomUUID();
     // Harness detection starts now, in the background; harness:detect returns the same promise (US-0801 NFR3).
     const harnesses = detectHarnesses(root);
-    projects.set(projectId, { root, space: null, watcher: null, setupWatcher: null, sender: event.sender, harnesses });
+    projects.set(projectId, { id: projectId, root, space: null, watcher: null, setupWatcher: null, sender: event.sender, harnesses, agentTabs: new Set() });
     if (detection.isAidlc) await watchSpace(projectId, detection.activeSpace);
     else watchForSetup(projectId);
     syncFeaturesWatch(projectId); // not awaited: opening a project never waits on the feature docs
     watchConfig(projectId);
+    // US-0506 u4 PD31: the hooks status is computed after the first render and pushed as agent-hooks:changed.
+    agentWiring();
+    installer.openProject(projectId, root).catch((err) => console.error(`[agent-hooks] status failed for ${root}:`, err.code ?? err.message));
     return { projectId, root, name: path.basename(root), detection };
   },
   'project:close': async (_event, projectId) => {
@@ -436,7 +495,7 @@ const handlers = {
     checkHarness(harness, await p.harnesses);
     const intents = await spaceIntents(p);
     const active = intents.find((i) => i.active) ?? null;
-    const plans = await listPlans(p.root, harness, active ? active.plan ?? active.scope : null, intents);
+    const plans = await listPlans(p.root, harness, active ? (active.plan ?? active.scope) : null, intents);
     return { plans, active: active && { dirName: active.dirName, slug: active.slug ?? null, plan: active.plan ?? null, scope: active.scope ?? null } };
   },
   'plans:stages': async (_event, projectId, harness, name) => {
@@ -553,8 +612,7 @@ const handlers = {
   // Read-only git (US-0502). The ref and path are checked in git.js against the branch's own upstream.
   'git:status': async (_event, projectId) => getGitStatus(project(projectId).root),
   'git:fetch': async (_event, projectId) => fetchRemote(project(projectId).root),
-  'git:remoteChanges': async (_event, projectId, ref, space) =>
-    getRemoteChanges(project(projectId).root, String(ref), { space: String(space ?? 'default') }),
+  'git:remoteChanges': async (_event, projectId, ref, space) => getRemoteChanges(project(projectId).root, String(ref), { space: String(space ?? 'default') }),
   'git:showRemote': async (_event, projectId, ref, rel) => showRemoteFile(project(projectId).root, String(ref), String(rel)),
   'git:conflicts': async (_event, projectId) => listConflicts(project(projectId).root),
   // Setup (US-0503, US-0802): setup:run only runs after a setup:info preview for the same harness, and only
@@ -592,7 +650,7 @@ const handlers = {
       title: t('settings.tools.pickTitle'),
       properties: ['openFile']
     });
-    return res.canceled ? null : res.filePaths[0] ?? null;
+    return res.canceled ? null : (res.filePaths[0] ?? null);
   },
   // Checked before anything is stored: a failed check throws, so the earlier path stays (FR2.3).
   'tools:save': async (_event, id, file) => {
@@ -649,7 +707,11 @@ const handlers = {
     const p = project(projectId);
     if (!space) return {};
     const { intents } = await loadIntentList(p.root, String(space), []); // cached list
-    return loadStoryLinks(p.root, String(space), intents.filter((i) => !i.missingOnDisk).map((i) => i.dirName));
+    return loadStoryLinks(
+      p.root,
+      String(space),
+      intents.filter((i) => !i.missingOnDisk).map((i) => i.dirName)
+    );
   },
   'projectSettings:get': async (_event, projectId) => getProjectSettings(project(projectId).root),
   'projectSettings:set': async (_event, projectId, partial) => {
@@ -666,11 +728,24 @@ const handlers = {
   },
   // `harness` is only an id; pty.js refuses any id outside the fixed table (US-0801 NFR4).
   // The saved tool paths come along, so both tabs start the chosen binary (US-0405 FR2.4).
+  // An agent tab with current hooks also gets its channel session (US-0506 u1 RD5); agentIpc decides.
   'pty:spawn': async (event, { projectId, kind, harness, cols, rows }) => {
     const { toolPaths } = await getSettings();
-    return spawnSession({ projectId, root: project(projectId).root, kind, harness, cols, rows, toolPaths, sender: event.sender });
+    const p = project(projectId);
+    const root = p.root;
+    if (kind === 'agent' && !p.agentTabs.has(harness)) {
+      p.agentTabs.add(harness); // BR7.15: a harness with an agent tab in this run is used
+      installer?.refresh(projectId).catch((err) => console.error('[agent-hooks] status failed:', err.code ?? err.message));
+    }
+    return agentWiring().spawn({ projectId, root, kind, harness }, (extra) =>
+      spawnSession({ projectId, root, kind, harness, cols, rows, toolPaths, sender: event.sender, ...extra })
+    );
   },
-  'pty:write': async (_event, id, data) => writeSession(id, data),
+  // US-0506 u3 BR6.6, SD10: the person's input moves the tab's open reply on, in the same call, before it is written.
+  'pty:write': async (_event, id, data) => {
+    agent?.terminalInput(id, data);
+    return writeSession(id, data);
+  },
   'pty:resize': async (_event, id, cols, rows) => resizeSession(id, cols, rows),
   'pty:kill': async (_event, id) => killSession(id),
   // Fullscreen and the app menu (EPIC-04 US-0404). The new mode reaches the renderer as `window:fullscreen`.
@@ -690,7 +765,9 @@ const handlers = {
 };
 
 export function registerIpc() {
-  for (const [channel, handler] of Object.entries(handlers)) {
+  const { handlers: agentHandlers, listeners } = agentWiring();
+  for (const [channel, listener] of Object.entries(listeners)) ipcMain.on(channel, listener); // timing only (OD1)
+  for (const [channel, handler] of Object.entries({ ...handlers, ...agentHandlers, ...hooksHandlers(installer) })) {
     ipcMain.handle(channel, async (...args) => {
       try {
         return await handler(...args);
@@ -703,6 +780,7 @@ export function registerIpc() {
 }
 
 export async function shutdown() {
+  await agent?.shutdown(); // every channel session closes before the ptys are killed (US-0506 RD5)
   killAllSessions();
   await Promise.all([...projects.values()].map(closeWatcher));
   projects.clear();

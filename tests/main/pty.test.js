@@ -78,7 +78,7 @@ describe('pty lazy loading (FR2)', () => {
     pty.killAllSessions();
   });
 
-  it('starts the chosen claude and shell paths, and today\'s ones when nothing is saved (US-0405 FR2.4)', async () => {
+  it("starts the chosen claude and shell paths, and today's ones when nothing is saved (US-0405 FR2.4)", async () => {
     const working = fakePty();
     vi.doMock('node-pty', () => working);
     const pty = await import('../../src/main/pty.js');
@@ -107,6 +107,78 @@ describe('pty lazy loading (FR2)', () => {
     // A path with a space stays one word for the login shell.
     await pty.spawnSession({ ...spawnArgs, kind: 'agent', harness: 'claude', toolPaths: { claude: '/Applications/Claude Code/claude' } });
     expect(working.spawn.mock.calls[4][1][3]).toBe("'/Applications/Claude Code/claude'");
+    pty.killAllSessions();
+  });
+});
+
+describe('agent channel variables, exit and output tap (US-0506 u1 LC5: SD2, RD5, PD2)', () => {
+  /** A node-pty fake whose processes let the test fire data and exit. */
+  function livePty() {
+    const procs = [];
+    return {
+      procs,
+      spawn: vi.fn((_file, _args, options) => {
+        const p = { options, data: null, exit: null, write: vi.fn(), resize: () => {}, kill: vi.fn() };
+        p.onData = (fn) => (p.data = fn);
+        p.onExit = (fn) => (p.exit = fn);
+        procs.push(p);
+        return p;
+      })
+    };
+  }
+  const CHANNEL = { THADEUS_SESSION_DIR: '/x/s1', THADEUS_SESSION_SECRET: 'b'.repeat(64), THADEUS_WAIT_SECONDS: '595' };
+  const thadeusKeys = (env) => Object.keys(env).filter((k) => k.startsWith('THADEUS_'));
+
+  afterEach(() => {
+    for (const k of Object.keys(process.env)) if (k.startsWith('THADEUS_')) delete process.env[k];
+  });
+
+  it('a shell tab gets no inherited THADEUS_* key; an agent tab gets exactly the three channel keys (NFR3.2, SD2)', async () => {
+    process.env.THADEUS_SESSION_SECRET = 'stale'.repeat(13);
+    process.env.THADEUS_SESSION_DIR = '/stale';
+    const working = livePty();
+    vi.doMock('node-pty', () => working);
+    const pty = await import('../../src/main/pty.js');
+
+    await pty.spawnSession({ ...spawnArgs, env: CHANNEL });
+    await pty.spawnSession({ ...spawnArgs, kind: 'agent', harness: 'claude', env: CHANNEL });
+    const [shell, agent] = working.procs.map((p) => p.options.env);
+    expect(thadeusKeys(shell)).toEqual([]);
+    expect(Object.fromEntries(thadeusKeys(agent).map((k) => [k, agent[k]]))).toEqual(CHANNEL);
+    expect(agent.TERM).toBe('xterm-256color');
+    pty.killAllSessions();
+  });
+
+  it('childEnv is pure: it drops THADEUS_* from the base and adds only the given keys', async () => {
+    const { childEnv } = await import('../../src/main/pty.js');
+    const base = { PATH: '/bin', THADEUS_TIMING: '1', THADEUS_X: 'y' };
+    expect(childEnv(base, { THADEUS_SESSION_DIR: '/d' })).toEqual({ PATH: '/bin', TERM: 'xterm-256color', COLORTERM: 'truecolor', THADEUS_SESSION_DIR: '/d' });
+    expect(base.THADEUS_X).toBe('y');
+  });
+
+  it('calls onExit when the process exits (RD5)', async () => {
+    const working = livePty();
+    vi.doMock('node-pty', () => working);
+    const pty = await import('../../src/main/pty.js');
+    const onExit = vi.fn();
+    const id = await pty.spawnSession({ ...spawnArgs, kind: 'agent', harness: 'claude', env: CHANNEL, onExit });
+    working.procs[0].exit({ exitCode: 0, signal: 0 });
+    expect(onExit).toHaveBeenCalledWith({ id, exitCode: 0, signal: 0 });
+    expect(() => pty.writeSession(id, 'x')).toThrow();
+  });
+
+  it('tapOutput sees the output and stops after its remover runs (PD2)', async () => {
+    const working = livePty();
+    vi.doMock('node-pty', () => working);
+    const pty = await import('../../src/main/pty.js');
+    const id = await pty.spawnSession(spawnArgs);
+    const seen = [];
+    const off = pty.tapOutput(id, (chunk) => seen.push(chunk));
+    working.procs[0].data('one');
+    off();
+    working.procs[0].data('two');
+    expect(seen).toEqual(['one']);
+    expect(pty.tapOutput('nope', () => {})()).toBeUndefined();
     pty.killAllSessions();
   });
 });

@@ -1031,6 +1031,15 @@ a.md-link:hover { color: var(--steel-light); }
 .question-popup.is-calm { border-left-color: var(--steel-deep); border-top-color: var(--steel-deep); border-bottom-color: var(--slate-2); }
 .question-popup-head { margin: 0 0 10px; padding: 6px 16px; background: var(--steel); color: var(--on-light); border-radius: 0 22px 22px 0; transition: background-color 1.2s ease-out, box-shadow 1.2s ease-out; }
 .question-popup .question-popup-head h2 { margin: 0; font-size: 24px; color: inherit; }
+/* US-0506 u2 BR5.13: a permission page (M3) has an amber header, the command in a monospaced block of its own, and the
+   refusing choice below a rule with a coral edge. Choice labels wrap whole: never an ellipsis (SD11). */
+.question-popup .question-popup-head.is-permission { background: var(--amber); }
+.agent-dialog-what { margin: 0 0 6px; font-weight: 600; }
+.agent-dialog-detail { margin: 0 0 8px; padding: 8px 10px; max-height: 40vh; overflow: auto; font-family: ui-monospace, Menlo, monospace; font-size: 13px; white-space: pre-wrap; overflow-wrap: anywhere; background: var(--slate-2); border-radius: 6px; }
+.agent-dialog-rule { width: 100%; margin: 4px 0; border: 0; border-top: 1px solid var(--slate-2); }
+.agent-dialog-permission-label { white-space: pre-wrap; text-overflow: clip; overflow-wrap: anywhere; text-align: left; }
+.question-popup-choice.is-refusing { border-left: 4px solid var(--coral); }
+.app-notice { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); z-index: 50; margin: 0; padding: 10px 18px; background: var(--steel-deep); color: var(--white); border-radius: 22px; }
 .question-popup-where { margin: 0 0 6px; color: var(--steel-meta); font-size: 14px; text-transform: uppercase; letter-spacing: 0.04em; overflow-wrap: anywhere; }
 .question-popup-early { margin: 0 0 6px; color: var(--muted); font-size: 13px; text-transform: uppercase; letter-spacing: 0.04em; }
 .question-popup-text { margin: 0 0 12px; font-family: var(--font-read); font-size: 16px; white-space: pre-wrap; overflow-wrap: anywhere; }

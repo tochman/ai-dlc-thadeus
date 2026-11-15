@@ -18,7 +18,7 @@ const MAX_TREE_FILES = 20000;
 export const TREE_SKIP = new Set(['node_modules', 'out', 'dist', '.git']);
 
 // The harness folders hold AI-DLC's installed engine (agents, hooks, tools, scopes): read-only as a whole, like .git/.
-const ENGINE_DIRS =[...new Set([...HARNESSES.flatMap((h) => h.markers.dirs ?? []), '.opencode', '.github/skills/aidlc', '.git'])];
+const ENGINE_DIRS = [...new Set([...HARNESSES.flatMap((h) => h.markers.dirs ?? []), '.opencode', '.github/skills/aidlc', '.git'])];
 const ENGINE_FILES = [
   /^aidlc\/(.+\/)?aidlc-state\.md$/,
   /^aidlc\/(.+\/)?audit(\/|$)/,
@@ -83,15 +83,28 @@ export async function writeFileSafe(root, rel, content, { expectMtime, expectHas
     const disk = await fs.readFile(abs);
     if (sha256(disk) !== expectHash) return { conflict: true, disk: { content: disk.toString('utf8'), mtimeMs: stat.mtimeMs, hash: sha256(disk) } };
   }
+  await writeAtomic(abs, next, { mode: stat.mode & 0o7777 });
+  return { ok: true, mtimeMs: (await fs.stat(abs)).mtimeMs, hash: sha256(next) };
+}
+
+/**
+ * US-0506 u4 BR7.16, RD33, D1: writes `bytes` to the already-checked absolute path `abs` through a temp file in the
+ * same folder and a rename, so a reader sees the old bytes or the new ones. `mode` is set with chmod (not masked by
+ * the umask); without it a new file gets `0o666 & ~umask`. `expect` is the caller's last read and compare, run just
+ * before the rename; when it throws, nothing is renamed. Not reachable from IPC: callers check the path first (SD36).
+ * ponytail: no fsync before rename (as the editor); add it if a real loss case appears.
+ */
+export async function writeAtomic(abs, bytes, { mode, expect } = {}) {
   const tmp = path.join(path.dirname(abs), `.${path.basename(abs)}.${randomUUID()}.tmp`);
   try {
-    await fs.writeFile(tmp, next, { mode: stat.mode });
+    await fs.writeFile(tmp, bytes, { flag: 'wx' });
+    if (mode !== undefined) await fs.chmod(tmp, mode);
+    if (expect) await expect();
     await fs.rename(tmp, abs);
   } catch (err) {
-    await fs.rm(tmp, { force: true }).catch((e) => console.error(`Kunde inte ta bort ${tmp}:`, e.message));
+    await fs.rm(tmp, { force: true }).catch((e) => console.error(`Kunde inte ta bort ${path.basename(tmp)}:`, e.code));
     throw err;
   }
-  return { ok: true, mtimeMs: (await fs.stat(abs)).mtimeMs, hash: sha256(next) };
 }
 
 async function walk(root, rel, out) {

@@ -10,9 +10,7 @@ function stubBridge({ settings = {}, tools = [], appInfo, saveError = null } = {
     getSettings: vi.fn(async () => ({ ...state, toolPaths: { ...state.toolPaths } })),
     setSettings: vi.fn(async (partial) => Object.assign(state, partial)),
     getLanguage: vi.fn(async () => 'sv'),
-    getTools: vi.fn(async () =>
-      tools.map((row) => (state.toolPaths[row.id] ? { ...row, path: state.toolPaths[row.id], source: 'saved' } : row))
-    ),
+    getTools: vi.fn(async () => tools.map((row) => (state.toolPaths[row.id] ? { ...row, path: state.toolPaths[row.id], source: 'saved' } : row))),
     pickTool: vi.fn(async () => '/opt/claude'),
     saveTool: vi.fn(async (id, file) => {
       if (saveError) throw new Error(`Error invoking remote method 'tools:save': Error: ${saveError}`);
@@ -187,7 +185,7 @@ describe('Inställningar as a view in the content frame (EPIC-04 US-0405)', () =
     expect(screen.getByRole('button', { name: 'Projektinställningar: aidlc-dash-a' })).toBeTruthy();
   });
 
-  it('picks and clears the default folder, removes a recent project and opens a project\'s settings (FR4.1–FR4.3)', async () => {
+  it("picks and clears the default folder, removes a recent project and opens a project's settings (FR4.1–FR4.3)", async () => {
     const { bridge, state } = stubBridge({ tools: TOOLS });
     const { onRemoveRecent, onProjectSettings } = renderView();
 
@@ -235,5 +233,53 @@ describe('Inställningar as a view in the content frame (EPIC-04 US-0405)', () =
     expect(onClose).toHaveBeenCalledTimes(1);
     fireEvent.keyDown(screen.getByTestId('settings-view'), { key: 'Escape' });
     expect(onClose).toHaveBeenCalledTimes(2);
+  });
+});
+
+// US-0506 u5 D1, D9, M9: the reply alerts row.
+describe('Meddelanden från agenten (US-0506 u5)', () => {
+  const legends = () => [...document.querySelectorAll('legend')].map((l) => l.textContent);
+
+  it('sits between the alerts and sound fieldsets with three radios and the saved value checked', () => {
+    stubBridge({ tools: TOOLS });
+    renderView({ replyAlerts: 'line' });
+    const all = legends();
+    const at = all.indexOf('Meddelanden från agenten');
+    expect(all[at - 1]).toBe('Frågor och behörighetsfrågor');
+    expect(all[at + 1]).toBe('Ljud vid notis');
+    expect(['dialog-notify', 'line', 'off'].map((id) => screen.getByTestId(`app-settings-replies-${id}`).checked)).toEqual([false, true, false]);
+    expect(screen.getByText('Bara raden')).toBeTruthy();
+  });
+
+  it('shows the default for a missing or unknown value', () => {
+    stubBridge({ tools: TOOLS });
+    renderView({ replyAlerts: 'loud' });
+    expect(screen.getByTestId('app-settings-replies-dialog-notify').checked).toBe(true);
+    cleanup();
+    renderView();
+    expect(screen.getByTestId('app-settings-replies-dialog-notify').checked).toBe(true);
+  });
+
+  it('saves "Bara raden" as replyAlerts line', async () => {
+    stubBridge({ tools: TOOLS });
+    const { onAlertSettings } = renderView({ replyAlerts: 'dialog-notify' });
+    fireEvent.click(screen.getByTestId('app-settings-replies-line'));
+    await waitFor(() => expect(onAlertSettings).toHaveBeenCalledWith({ replyAlerts: 'line' }));
+  });
+
+  it('shows the alert line on a rejected save and keeps the radio on the saved value', async () => {
+    stubBridge({ tools: TOOLS });
+    renderView({ replyAlerts: 'dialog-notify', onAlertSettings: vi.fn(async () => Promise.reject(new Error('disk full'))) });
+    fireEvent.click(screen.getByTestId('app-settings-replies-off'));
+    await waitFor(() => expect(screen.getByRole('alert').textContent).toMatch(/disk full/));
+    expect(screen.getByTestId('app-settings-replies-dialog-notify').checked).toBe(true);
+  });
+
+  it('names the alerts row "Frågor och behörighetsfrågor" and the reply help in English too', async () => {
+    stubBridge({ tools: TOOLS });
+    await i18n.changeLanguage('en');
+    renderView();
+    expect(legends()).toEqual(expect.arrayContaining(['Questions and permission prompts', 'Messages from the agent']));
+    expect(screen.getByText(/When the agent finishes its turn/)).toBeTruthy();
   });
 });

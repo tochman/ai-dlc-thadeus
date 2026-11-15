@@ -23,7 +23,7 @@ export function quoted(text) {
 function Ask({ label, check, button, onSend, onCancel, testid }) {
   const { t } = useTranslation();
   const [text, setText] = useState('');
-  const problem = text.trim() ? check?.(text.trim()) ?? null : null;
+  const problem = text.trim() ? (check?.(text.trim()) ?? null) : null;
   return (
     <form
       className="panel config-change plans-ask"
@@ -77,7 +77,13 @@ function EditForm({ plan, onPreview, onCancel }) {
       </label>
       <label className="field">
         <span className="field-label">{t('plans.keywords')}</span>
-        <input type="text" value={keywords} placeholder={t('plans.keywordsHint')} onChange={(e) => setKeywords(e.target.value)} data-testid="plans-edit-keywords" />
+        <input
+          type="text"
+          value={keywords}
+          placeholder={t('plans.keywordsHint')}
+          onChange={(e) => setKeywords(e.target.value)}
+          data-testid="plans-edit-keywords"
+        />
       </label>
       <div className="config-change-actions">
         <button
@@ -86,7 +92,14 @@ function EditForm({ plan, onPreview, onCancel }) {
             onPreview({
               description,
               depth,
-              ...(keywords.trim() ? { keywords: keywords.split(',').map((w) => w.trim()).filter(Boolean) } : {})
+              ...(keywords.trim()
+                ? {
+                    keywords: keywords
+                      .split(',')
+                      .map((w) => w.trim())
+                      .filter(Boolean)
+                  }
+                : {})
             })
           }
           data-testid="plans-edit-preview"
@@ -103,8 +116,18 @@ function EditForm({ plan, onPreview, onCancel }) {
 
 function Stages({ stages }) {
   const { t } = useTranslation();
-  if (stages.error) return <p className="refresh-error" role="alert">{stages.error}</p>;
-  if (!stages.execute) return <p className="muted" role="status">{t('plans.loading')}</p>;
+  if (stages.error)
+    return (
+      <p className="refresh-error" role="alert">
+        {stages.error}
+      </p>
+    );
+  if (!stages.execute)
+    return (
+      <p className="muted" role="status">
+        {t('plans.loading')}
+      </p>
+    );
   return (
     <div className="config-row" data-testid="plans-stages">
       {[

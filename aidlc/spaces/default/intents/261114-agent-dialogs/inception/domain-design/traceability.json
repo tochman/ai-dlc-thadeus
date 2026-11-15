@@ -1,0 +1,12 @@
+{
+  "stage": "domain-design",
+  "upstream_ids": ["US1.1", "US2.1", "US3.1", "US4.1", "US5.1"],
+  "coverage": [
+    { "id": "US1.1", "status": "OK", "target": "ClaudeCodeHook, OpencodePlugin, AgentChannel, HarnessEventAdapter, AgentEventStore, FallbackQuestionSource, PtyManager, IpcRouter, AgentDialog" },
+    { "id": "US2.1", "status": "OK", "target": "ClaudeCodeHook, OpencodePlugin, HarnessEventAdapter, AgentEventStore, AgentDialog" },
+    { "id": "US3.1", "status": "OK", "target": "ClaudeCodeHook, OpencodePlugin, HarnessEventAdapter, AgentEventStore, LatestMessageStrip, AgentDialog" },
+    { "id": "US4.1", "status": "OK", "target": "HookInstaller, AgentDialogsSetupUI, ClaudeCodeHook, OpencodePlugin" },
+    { "id": "US5.1", "status": "OK", "target": "Notifications, AgentEventStore, AgentDialog" }
+  ],
+  "reverse": []
+}

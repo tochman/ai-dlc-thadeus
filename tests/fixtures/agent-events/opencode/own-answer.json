@@ -1,0 +1,18 @@
+{
+  "type": "form.created",
+  "properties": {
+    "sessionID": "ses_7d1c0b2a9e",
+    "formID": "frm_ownanswer",
+    "questions": [
+      {
+        "question": "What should the new tab be called?",
+        "header": "Tab name",
+        "options": [
+          { "label": "Agent", "description": "The default name." },
+          { "label": "Claude", "description": "The harness name." }
+        ],
+        "multiple": false
+      }
+    ]
+  }
+}

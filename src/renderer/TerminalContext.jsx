@@ -32,17 +32,12 @@ export function TerminalProvider({ children, askingIntents = [] }) {
   const setAgent = useCallback(
     ({ harness = null, problem = null, extras = [] }) =>
       setAgentState((a) =>
-        a.harness === harness && a.problem === problem && a.extras.map((h) => h.id).join() === extras.map((h) => h.id).join()
-          ? a
-          : { harness, problem, extras }
+        a.harness === harness && a.problem === problem && a.extras.map((h) => h.id).join() === extras.map((h) => h.id).join() ? a : { harness, problem, extras }
       ),
     []
   );
   // The agent tabs in order; before detection (or without a harness) one placeholder tab under the alias.
-  const agentTabs = useMemo(
-    () => (agent.harness ? [agent.harness, ...agent.extras].map(agentTab) : [ALIAS]),
-    [agent]
-  );
+  const agentTabs = useMemo(() => (agent.harness ? [agent.harness, ...agent.extras].map(agentTab) : [ALIAS]), [agent]);
   const harnessOf = (tab) => [agentRef.current.harness, ...agentRef.current.extras].find((h) => h && agentTab(h) === tab) ?? null;
   const [lastAgent, setLastAgent] = useState(null);
   const lastRef = useRef(ALIAS);
@@ -56,24 +51,26 @@ export function TerminalProvider({ children, askingIntents = [] }) {
     isAgentTab(tab) ? (harnessOf(resolve(tab))?.name ?? agentRef.current.harness?.name ?? t('terminal.agent')) : t(`terminal.tabName.${tab}`);
   const markPending = useCallback((tab, on) => setPending((p) => (!!p[tab] === on ? p : { ...p, [tab]: on })), []);
 
-  const register = useCallback((tab, session) => {
-    sessions.current[tab] = session;
-    setStates((s) => ({ ...s, [tab]: session.activity.state }));
-    const off = session.activity.subscribe((next) => {
-      setStates((s) => ({ ...s, [tab]: next }));
-      if (next === 'exited') markPending(tab, false);
-    });
-    return () => {
-      off();
-      if (sessions.current[tab] !== session) return;
-      delete sessions.current[tab];
-      setStates((s) => ({ ...s, [tab]: 'exited' })); // e.g. the agent tab after a harness switch
-    };
-  }, [markPending]);
+  const register = useCallback(
+    (tab, session) => {
+      sessions.current[tab] = session;
+      setStates((s) => ({ ...s, [tab]: session.activity.state }));
+      const off = session.activity.subscribe((next) => {
+        setStates((s) => ({ ...s, [tab]: next }));
+        if (next === 'exited') markPending(tab, false);
+      });
+      return () => {
+        off();
+        if (sessions.current[tab] !== session) return;
+        delete sessions.current[tab];
+        setStates((s) => ({ ...s, [tab]: 'exited' })); // e.g. the agent tab after a harness switch
+      };
+    },
+    [markPending]
+  );
 
   // No agent session while detection runs or the harness cannot start: say why rather than "no such tab" (FR5.1).
-  const noTabText = (tab) =>
-    isAgentTab(tab) ? (agentRef.current.problem ?? t('terminal.checking')) : t('terminal.noTab', { tab });
+  const noTabText = (tab) => (isAgentTab(tab) ? (agentRef.current.problem ?? t('terminal.checking')) : t('terminal.noTab', { tab }));
 
   const show = useCallback((name) => {
     const tab = resolve(name);
@@ -165,10 +162,7 @@ export function TerminalProvider({ children, askingIntents = [] }) {
        * Rejects, with the reason, when nothing can be sent.
        */
       answer: async (q, answer, { waitMs } = {}) => {
-        const read = () =>
-          agentTabs
-            .filter((tab) => sessions.current[tab]?.screen)
-            .map((tab) => ({ tab, lines: sessions.current[tab].screen() }));
+        const read = () => agentTabs.filter((tab) => sessions.current[tab]?.screen).map((tab) => ({ tab, lines: sessions.current[tab].screen() }));
         const { found, screens } = await waitForAnswer(read, q, answer, { waitMs });
         // Development only (EPIC-00 US-0006): a refused send carries what the picker reader saw, for QuestionPopup to log.
         const fail = (message) => {

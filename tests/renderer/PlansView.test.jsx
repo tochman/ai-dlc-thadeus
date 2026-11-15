@@ -7,7 +7,15 @@ vi.mock('../../src/renderer/TerminalContext.jsx', () => ({ useTerminal: () => te
 const { default: PlansView, quoted } = await import('../../src/renderer/PlansView.jsx');
 
 // The shape plans:list returns (src/main/plans.js listPlans plus the active intent).
-const DEFAULTS = { review_cap: 'none', sensors: 'off', learnings: 'off', summary_confirmation: 'off', plan_approval: 'on', guard_policy: 'off', collaborators: 'off' };
+const DEFAULTS = {
+  review_cap: 'none',
+  sensors: 'off',
+  learnings: 'off',
+  summary_confirmation: 'off',
+  plan_approval: 'on',
+  guard_policy: 'off',
+  collaborators: 'off'
+};
 const list = (overrides = {}) => ({
   active: { dirName: '261114-custom-plans', slug: 'custom-plans', plan: null, scope: 'ultra-express' },
   plans: [

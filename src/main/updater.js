@@ -105,7 +105,12 @@ export function appBundle(exe) {
   return exe.slice(0, i + 4);
 }
 
-const firstLine = (err) => (err?.killed ? t('errors.timeout') : String(err?.message ?? err).trim().split('\n')[0]);
+const firstLine = (err) =>
+  err?.killed
+    ? t('errors.timeout')
+    : String(err?.message ?? err)
+        .trim()
+        .split('\n')[0];
 
 /**
  * The updater with its dependencies injected (tests pass fakes; index/ipc use the default instance below).
@@ -225,7 +230,10 @@ export function createUpdater({
     try {
       const src = path.join(mnt, APP_NAME);
       await fs.access(src);
-      const writable = await fs.access(path.dirname(bundle), constants.W_OK).then(() => true, () => false);
+      const writable = await fs.access(path.dirname(bundle), constants.W_OK).then(
+        () => true,
+        () => false
+      );
       if (writable) {
         await step('ditto', 'ditto', [src, bundle]);
         await step('xattr', 'xattr', ['-dr', 'com.apple.quarantine', bundle]);

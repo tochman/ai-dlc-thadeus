@@ -1,0 +1,22 @@
+{
+  "session_id": "4b6f6a2e-3f0d-4d55-9a57-2b1f0c3e9d11",
+  "transcript_path": "/Users/dev/.claude/projects/demo/4b6f6a2e.jsonl",
+  "cwd": "/Users/dev/Projects/demo",
+  "permission_mode": "default",
+  "hook_event_name": "PreToolUse",
+  "tool_name": "AskUserQuestion",
+  "tool_input": {
+    "questions": [
+      {
+        "question": "**Code Generation** is complete for `u1-questions`. How would you like to proceed?",
+        "header": "Stage gate",
+        "options": [
+          { "label": "Complete workflow", "description": "Approve this stage and continue to Build and Test." },
+          { "label": "Request Changes", "description": "Keep the stage open and say what to change." }
+        ],
+        "multiSelect": false
+      }
+    ]
+  },
+  "tool_use_id": "toolu_01GateQuestion20261114"
+}

@@ -36,7 +36,10 @@ describe('theme tokens', () => {
   });
 
   it('has no colour literal outside :root, in the components or as the window colour (FR1.2)', () => {
-    const outside = css.replace(ROOT, '').split('\n').filter((line) => COLOUR.test(line));
+    const outside = css
+      .replace(ROOT, '')
+      .split('\n')
+      .filter((line) => COLOUR.test(line));
     expect(outside).toEqual([]);
 
     const sources = readdirSync(RENDERER).filter((f) => /\.jsx?$/.test(f));

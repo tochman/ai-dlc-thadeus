@@ -62,9 +62,7 @@ export default function Timeline({ events, newKeys }) {
 
   const visible = useMemo(
     () =>
-      events
-        .filter((e) => (showNoise || !NOISY.has(e.event)) && (type === ALL || e.event === type) && (stage === ALL || e.fields.Stage === stage))
-        .reverse(), // newest first
+      events.filter((e) => (showNoise || !NOISY.has(e.event)) && (type === ALL || e.event === type) && (stage === ALL || e.fields.Stage === stage)).reverse(), // newest first
     [events, showNoise, type, stage]
   );
 
@@ -157,13 +155,25 @@ export default function Timeline({ events, newKeys }) {
           <input type="checkbox" checked={showNoise} onChange={(e) => setShowNoise(e.target.checked)} data-testid="timeline-noise-toggle" />
           {t('intents.timeline.showNoise')}
         </label>
-        <select className="lcars-select" aria-label={t('intents.timeline.typeLabel')} value={type} onChange={(e) => setType(e.target.value)} data-testid="timeline-type-filter">
+        <select
+          className="lcars-select"
+          aria-label={t('intents.timeline.typeLabel')}
+          value={type}
+          onChange={(e) => setType(e.target.value)}
+          data-testid="timeline-type-filter"
+        >
           <option value={ALL}>{t('intents.timeline.allTypes')}</option>
           {types.map((x) => (
             <option key={x}>{x}</option>
           ))}
         </select>
-        <select className="lcars-select" aria-label={t('intents.timeline.stageLabel')} value={stage} onChange={(e) => setStage(e.target.value)} data-testid="timeline-stage-filter">
+        <select
+          className="lcars-select"
+          aria-label={t('intents.timeline.stageLabel')}
+          value={stage}
+          onChange={(e) => setStage(e.target.value)}
+          data-testid="timeline-stage-filter"
+        >
           <option value={ALL}>{t('intents.timeline.allStages')}</option>
           {stages.map((s) => (
             <option key={s}>{s}</option>
@@ -175,7 +185,13 @@ export default function Timeline({ events, newKeys }) {
         <button className="btn btn-quiet" onClick={() => virtualizer.scrollToIndex(0)} data-testid="timeline-jump-newest">
           {t('intents.timeline.jumpNewest')}
         </button>
-        <select className="lcars-select" aria-label={t('intents.timeline.jumpStage')} value={ALL} onChange={(e) => jumpToStage(e.target.value)} data-testid="timeline-jump-stage">
+        <select
+          className="lcars-select"
+          aria-label={t('intents.timeline.jumpStage')}
+          value={ALL}
+          onChange={(e) => jumpToStage(e.target.value)}
+          data-testid="timeline-jump-stage"
+        >
           <option value={ALL}>{t('intents.timeline.jumpStageOption')}</option>
           {stages.map((s) => (
             <option key={s}>{s}</option>

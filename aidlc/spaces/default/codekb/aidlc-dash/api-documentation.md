@@ -1,127 +1,132 @@
-# API Documentation: aidlc-dash
+# API Documentation
 
-The app has no HTTP, GraphQL or network APIs. Its API surface is Electron IPC between the renderer and the main process, exposed as `window.bridge` in `src/preload/index.js` (read in full in this scan). Invoke functions are built with `call(channel)` and subscriptions with `subscribe(channel)`. Every project handler in `src/main/ipc.js` looks up `projectId` (an unknown id throws `errors.unknownProject`) and routes paths through `projectAccess`. Errors are logged as `[ipc] <channel> misslyckades` and returned as a rejected promise. The renderer strips Electron's prefix with a local `errorText()`. Error messages from main are translated in main's current language (`t('errors.…')`).
+The app has no network API. Its API surfaces are the Electron IPC boundary between renderer and main, the external CLIs main runs, and the file formats it reads. All IPC handlers live in `src/main/ipc.js` (`handlers` object, registered by `registerIpc()`); each is wrapped so an error is logged and rethrown to the renderer as a rejected promise.
 
-## Invoke calls (renderer → main), 35
+## 1. Preload bridge (`window.bridge`)
 
-| `window.bridge` | Channel | Arguments | Result |
-|-----------------|---------|-----------|--------|
-| `pickProject` | `project:pick` | – | folder path or `null` (dialog title `app.pickFolder`) |
-| `openProject` | `project:open` | `dir` | `{projectId, root, name, detection}`; `detection` = `{isAidlc: true, activeSpace, spaces}` or `{isAidlc: false, reason}`. Starts watching the space, or waits for AI-DLC |
-| `closeProject` | `project:close` | `projectId` | – (kills the project's ptys and watchers; pushes `questions:changed`) |
-| `getSpaces` | `project:spaces` | `projectId` | `string[]` |
-| `getIntents` | `project:intents` | `projectId, space, onlyDirs?` | `{intents, warning}`; switches the watched space if it differs |
-| `getIntent` | `project:intent` | `projectId, space, dirName` | `{dirName, base, request, state, graph, pipeline, events, units, directive, files, warnings, stale?}` |
-| `getCost` | `project:cost` | `projectId, space` | `{available: true, project, perIntent, byScope, timeline, stale?, warning?}` or `{available: false, reason}` |
-| `getModels` | `project:models` | `projectId` | `{source: 'aidlc-config'|'agent-files'|'none', agents: [{agent, model, effort}], error?}`; cached per opened project; Claude-only (see below) |
-| `readFile` | `project:file` | `projectId, rel` | text |
-| `revealInFinder` | `shell:reveal` | `projectId, rel` | – |
-| `openInEditor` | `shell:openInEditor` | `projectId, rel` | – (only `.md .json .txt .yaml .yml`) |
-| `getSettings` / `setSettings` | `settings:get` / `settings:set` | `partial` | sanitised settings (table below). `settings:set` switches main's language and rebuilds the menu when `language` changed |
-| `getLanguage` | `i18n:language` | – | `'sv' | 'en'` (auto already resolved); new with US-0701 |
-| `ptySpawn` | `pty:spawn` | `{projectId, kind: 'claude'|'shell', cols, rows}` | session id (UUID). An unknown kind throws `errors.unknownTerminal`; node-pty failing to load throws `errors.ptyLoadFailed` |
-| `ptyWrite` | `pty:write` | `id, data` | – (`data` must be a string; unknown id throws `errors.noSession`) |
-| `ptyResize` | `pty:resize` | `id, cols, rows` | – (clamped to 1-999; defaults 100x30) |
-| `ptyKill` | `pty:kill` | `id` | – (unknown id is ignored) |
-| `getGitStatus` | `git:status` | `projectId` | `{isRepo, branch, upstream, tracking, ahead, behind, dirtyAidlc, dirtyOther}` |
-| `gitFetch` | `git:fetch` | `projectId` | – |
-| `getRemoteChanges` | `git:remoteChanges` | `projectId, ref, space` | `{ref, aidlcCommits, aidlcFiles, otherFiles, auditLines, newIntents}` |
-| `showRemoteFile` | `git:showRemote` | `projectId, ref, rel` | text (only under `aidlc/`) |
-| `getConflicts` | `git:conflicts` | `projectId` | `string[]` |
-| `getSetupInfo` | `setup:info` | `projectId` | `{git: {isRepo}, harnesses: string[], preview, plugins, presets, aidlc: {installed, version?, error?}, warning?}`; stored on the project for `setup:command` |
-| `buildSetupCommand` | `setup:command` | `projectId, {needsGit, plugins, preset}` | command string (never run here) |
-| `loadFeatures` | `features:load` | `projectId` | overview and epics |
-| `getStoryLinks` | `features:storyLinks` | `projectId, space` | `{storyId: dirName[]}` |
-| `getProjectSettings` | `projectSettings:get` | `projectId` | `{featureDocs, featuresPath}` |
-| `setProjectSettings` | `projectSettings:set` | `projectId, partial` | `{featureDocs, featuresPath}`; the handler passes only these two fields on (`ipc.js:274`), then restarts the feature-docs watch and pushes `features:changed` |
-| `toggleFullscreen` | `window:toggleFullscreen` | – | – |
-| `isFullscreen` | `window:isFullscreen` | – | `boolean` |
-| `sendMenuState` | `menu:state` | `{hasProject, isAidlc, showFeatures}` | – (only three booleans accepted, `parseMenuState`) |
-| `openDocsUrl` | `app:openDocsUrl` | – | – (fixed `AIDLC_DOCS_URL`) |
-| `listQuestions` | `questions:list` | – | waiting questions of every open project, newest first, each with `early` |
-| `setActiveProject` | `questions:activeProject` | `projectId | null` | – (decides whether a notification shows) |
+`src/preload/index.js` exposes 87 members: 71 request/response calls (`ipcRenderer.invoke`), 14 subscriptions (`ipcRenderer.on`, each returns an unsubscribe function), plus `platform` (`process.platform`) and `pathForFile(file)` (`webUtils.getPathForFile`, for dropped files). There is no generic `invoke` or `send`.
 
-`platform` (`process.platform`) is exposed besides these.
+## 2. Invoke channels (renderer → main), 71
 
-## Push events (main → renderer), 10
+Every handler that takes a `projectId` looks it up in the `projects` map and throws `errors.unknownProject` for anything else; every root-relative path goes through `projectAccess.resolveInRoot` (absolute paths, `..` and symlinks out of the root are refused).
 
-| `window.bridge` | Channel | Payload |
-|-----------------|---------|---------|
-| `onProjectChanged` | `project:changed` | `{projectId, space, dirNames, indexChanged, costChanged}` |
-| `onProjectDetected` | `project:detected` | `{projectId, detection}` |
-| `onWatchError` | `project:watchError` | `{projectId, message}` |
-| `onFeaturesChanged` | `features:changed` | `{projectId}` |
-| `onPtyData` | `pty:data` | `{id, data}` |
-| `onPtyExit` | `pty:exit` | `{id, exitCode, signal}` |
-| `onFullscreen` | `window:fullscreen` | `boolean` |
-| `onMenuCommand` | `menu:command` | `{command, ...args}`; `terminal {action: 'claude'|'shell'|'restart'}` among them |
-| `onQuestions` | `questions:changed` | same list as `questions:list` |
-| `onQuestionFocus` | `questions:focus` | the question's `id` when a notification is clicked |
+| Area | Channel → bridge member | Arguments → result | Notes |
+|---|---|---|---|
+| Projects | `project:pick` → `pickProject` | () → path or null | native folder dialog at the saved default folder |
+| | `project:open` → `openProject` | (dir) → `{projectId, root, name, detection}` | starts watchers and harness detection |
+| | `project:close` → `closeProject` | (projectId) | kills the project's ptys, closes watchers, re-sends questions |
+| | `project:spaces` → `getSpaces` | (projectId) → string[] | |
+| | `project:intents` → `getIntents` | (projectId, space, onlyDirs?) → `{intents, warning}` | (re)starts the space watcher |
+| | `project:intent` → `getIntent` | (projectId, space, dirName) → intent detail | state, graph, pipeline, events, units, directive, files |
+| | `project:cost` → `getCost` | (projectId, space) → ledger summary or `{available:false, reason}` | |
+| | `project:models` → `getModels` | (projectId) → configured models | cached per opened project |
+| | `project:file` → `readFile` | (projectId, rel) → text | |
+| | `project:listTree` → `listTree` | (projectId) → `{files, truncated}` | `git ls-files`, else a walk, max 20000 |
+| Questions | `questions:list` → `listQuestions` | () → question[] | all open projects, newest first, `early` flag |
+| | `questions:activeProject` → `setActiveProject` | (projectId or null) | tells main which tab is shown (notification rule) |
+| Harness | `harness:detect` → `detectHarnesses` | (projectId) → `{id,label,selectable,installed,cli}`[] | promise started at project open |
+| Config (US-0901/0902) | `config:get` → `getAidlcConfig` | (projectId, harness) → sections + `activeDir` | harness must be installed |
+| | `agents:working` → `getWorkingAgents` | (projectId) → working agents | from inflight file + audit |
+| | `config:preview` / `config:apply` → `previewConfigChange` / `applyConfigChange` | (projectId, `{kind,key,value,where}`) | built from `configTables.js` only |
+| | `config:guardLockPreview` / `config:guardLockApply` → `previewGuardLock` / `applyGuardLock` | (projectId, `{layer,mode}`) / (projectId) | apply writes exactly the previewed diff |
+| Plans (US-0903) | `plans:list`, `plans:stages`, `plans:save`, `plans:previewEdit`, `plans:applyEdit`, `plans:delete` → `listPlans`, `getPlanStages`, `savePlan`, `previewPlanEdit`, `applyPlanEdit`, `deletePlan` | plan name + three editable fields only | |
+| Models (US-0904) | `models:options`, `models:preview`, `models:apply`, `models:check` → `getModelOptions`, `previewModelChange`, `applyModelChange`, `checkModels` | `{harness, agent|preset|group, model?, effort?, where}` | |
+| Updater (US-0407) | `update:check`, `update:download`, `update:install`, `update:relaunch`, `update:skip`, `update:reveal` → `checkUpdate`, `downloadUpdate`, `installUpdate`, `relaunchApp`, `skipUpdate`, `revealUpdate` | no URL or file crosses the bridge | |
+| Editor (US-1001) | `file:read` → `readFileForEdit` | (projectId, rel) → `{content, mtimeMs, hash, size, readOnly}` | |
+| | `file:write` → `writeFile` | (projectId, rel, content, `{mtimeMs, hash}`) → ok or `{conflict, disk}` | engine-owned paths refused |
+| | `file:watch` → `watchOpenFiles` | (projectId, rels) | sends `file:changed` |
+| | `app:closeConfirmed` → `confirmClose` | (ok) | answer to `app:confirmClose` |
+| Shell | `shell:reveal` → `revealInFinder`, `shell:openInEditor` → `openInEditor` | (projectId, rel) | openInEditor only `.md .json .txt .yaml .yml` |
+| Git (US-0502) | `git:status`, `git:fetch`, `git:remoteChanges`, `git:showRemote`, `git:conflicts` → `getGitStatus`, `gitFetch`, `getRemoteChanges`, `showRemoteFile`, `getConflicts` | ref must be the branch upstream or `origin/main` | read-only git |
+| Setup (US-0503/0802) | `setup:info` → `getSetupInfo`, `setup:run` → `runSetup` | (projectId, `{harness}`) / (projectId, `{harness, mode, plugins, preset}`) | run only after a preview for the same harness |
+| App settings | `settings:get`, `settings:set` → `getSettings`, `setSettings` | partial object, sanitised | `settings:set` may rebuild the menu on a language change |
+| | `settings:pickDefaultFolder`, `settings:clearDefaultFolder` | | |
+| Tools (US-0405) | `tools:info`, `tools:pick`, `tools:save`, `tools:reset` → `getTools`, `pickTool`, `saveTool`, `resetTool` | tool id from `aidlc|claude|shell` | a path is validated before it is stored |
+| App | `app:info` → `getAppInfo`, `app:openExternal` → `openExternal`, `app:openDocsUrl` → `openDocsUrl` | external links by fixed key (`repo`, `features`, `docs`) | |
+| i18n | `i18n:language` → `getLanguage` | () → `sv` or `en` | auto resolved |
+| Feature docs | `features:load` → `loadFeatures`, `features:storyLinks` → `getStoryLinks` | | |
+| Project settings | `projectSettings:get`, `projectSettings:set` → `getProjectSettings`, `setProjectSettings` | `{featureDocs, featuresPath, harness, harnessTabs}` | per project root, in the app's settings |
+| Terminal | `pty:spawn` → `ptySpawn` | `{projectId, kind:'agent'|'shell', harness, cols, rows}` → session id | the agent CLI comes from the harness table by id |
+| | `pty:write` → `ptyWrite` | (id, string) | any string to any live session id |
+| | `pty:resize` → `ptyResize`, `pty:kill` → `ptyKill` | | |
+| Window/menu | `window:toggleFullscreen`, `window:isFullscreen`, `menu:state` → `toggleFullscreen`, `isFullscreen`, `sendMenuState` | `menu:state` accepts exactly three booleans | |
 
-Every `on*` returns an unsubscribe function. Project pushes go to the `webContents` that opened the project, after an `isDestroyed()` check.
+## 3. Push channels (main → renderer), 14
 
-## External commands the main process runs
+| Channel → bridge subscription | Payload | Sent by |
+|---|---|---|
+| `pty:data` → `onPtyData` | `{id, data}` | `pty.js` on pty output |
+| `pty:exit` → `onPtyExit` | `{id, exitCode, signal}` | `pty.js` |
+| `project:changed` → `onProjectChanged` | `{projectId, space, dirNames, indexChanged, costChanged}` | intents/ledger watcher |
+| `project:detected` → `onProjectDetected` | `{projectId, detection}` | setup watcher once AI-DLC appears |
+| `project:watchError` → `onWatchError` | `{projectId, message}` | watcher error |
+| `questions:changed` → `onQuestions` | question[] (all open projects) | `ipc.js publishQuestions` |
+| `questions:focus` → `onQuestionFocus` | question id | notification click (`notify.js`) |
+| `config:changed` → `onConfigChanged` | `{projectId}` | config watcher, successful applies |
+| `features:changed` → `onFeaturesChanged` | `{projectId}` | feature-docs watcher, project settings save |
+| `file:changed` → `onFileChanged` | `{projectId, rel}` | open-file watcher (editor) |
+| `update:state` → `onUpdateState` | update state, download progress | updater |
+| `window:fullscreen` → `onFullscreen` | boolean | window events (`index.js`) |
+| `menu:command` → `onMenuCommand` | `{command, ...args}` | app menu |
+| `app:confirmClose` → `onConfirmClose` | none | window close guard |
 
-All through `runFixed(file, args, {cwd: project root, timeout})` (`src/main/exec.js`): `execFile`, no shell, string arguments only, default timeout 10 s, PATH from the login shell. Missing tools reject with ENOENT; callers turn that into a state, not a crash.
+## 4. The question contract (intent area)
 
-| Caller | Command | Use |
-|--------|---------|-----|
-| `setup.getSetupInfo` | `aidlc --version` | installed or not |
-| `setup.getSetupInfo` | `aidlc --project-dir <root> config --harness claude --dry-run` | preview counts, conflicts, notes |
-| `setup.readPlugins` | `aidlc config project --show --json` | `data.installedPlugins` |
-| `models.getConfiguredModels` | `aidlc config models --show --json --harness claude` | `data.effective[]` |
-| `git.js` (earlier scan) | `git rev-parse`, `rev-list`, `diff`, `status`, `show`, `fetch` | read-only git |
-| `exec.loginPath` | `$SHELL -l -i -c "printf <marker>$PATH"` | PATH once per process |
+`questions:changed` and `questions:list` carry objects built by `pendingQuestions()` (`src/main/questions.js`) and extended in `ipc.js`:
 
-The pty (`pty.js`) is the only place that runs a CLI through the shell: `$SHELL -l -i -c claude` for the agent tab, `$SHELL -l` for the shell tab, both with `cwd` = project root.
+```text
+{ id, projectId, projectName, intent, stage, unit,
+  kind: 'question' | 'gate',
+  text,                 // DECISION_RECORDED.Decision; '' for a gate or an engine ask
+  options: string[],    // labels; [] for a gate
+  batch: [{id:'Q1', options}] | null,
+  ask: 'plan-approval' | 'scope-confirm' | <Question Type> | null,
+  nextStage, timeMs,
+  early: boolean }      // waited already when the project was opened (no popup, no notification)
+```
 
-## Commands the app types into a terminal (never run without the person's Enter, except a safe intent switch)
+Opening and closing rules (from audit events, in time order):
 
-| Where | Tab | Text | Enter |
-|-------|-----|------|-------|
-| `ResumeButton` | `claude` | `/aidlc` (active intent) | no |
-| `ResumeButton` | `claude` | `/aidlc intent <dirName>` then `/aidlc` | first yes (only when `dirName` matches `SAFE_DIR_NAME`), second no |
-| `TerminalPanel` quick commands | `claude` | `/aidlc --status`, `/aidlc --doctor`, `/aidlc continue` | no |
-| `SetupDone` (`ProjectView`) | `claude` | `/aidlc --doctor`, `/aidlc ` | no |
-| feature docs (`ProjectView` via `featureDocsPrompt`) | `claude` | one-line request in the current language | no |
-| `SetupAidlc` | `shell` | `buildSetupCommand` chain | no |
-| `RefreshPanel` (earlier scan) | `shell` | git pull / from-main chains | no |
+| Event | Effect |
+|---|---|
+| `DECISION_RECORDED` | opens a `question`; `Options` parsed by `parseOptions` (JSON, comma, pipe or semicolon lists, `Q<n>:` batch summaries; descriptions in parentheses stripped) |
+| `STAGE_AWAITING_APPROVAL` | opens a `gate` with `Next Stage` |
+| `QUESTION_ASKED` (not type `gate`, JSON `Options`) | opens an engine ask (`ask` = `Question Type`) |
+| `QUESTION_REPLIED` | closes the engine ask whose option set equals the reply's `Options` |
+| `QUESTION_ANSWERED` | closes the oldest same-stage (and same-unit) question whose options the `Person Reply`/`Details` names, else the newest |
+| `PLAN_APPROVAL_RECORDED`, `PLAN_APPROVAL_SKIPPED`, `REQUEST_ROUTED` | close engine asks (of that stage, or all without a stage) |
+| `GATE_APPROVED`, `GATE_REJECTED`, `STAGE_COMPLETED`, `STAGE_SKIPPED`, `STAGE_STARTED` | close everything of that stage (and unit) |
 
-These are the strings US-0801 makes harness-dependent (Resume, quick commands, setup offers).
+The answer is not an IPC call: the popup's `onSend` resolves through `TerminalContext.answer()` in the renderer, which writes keys with `pty:write` (see `architecture.md`, "Question popup" sequence). `resolveAnswer()` returns `{tab, keys}` or `{error: 'noPicker' | 'several' | 'mismatch'}`; the three errors map to `app.question.noPicker`, `app.question.several`, `app.question.mismatch` in the locales.
 
-## Settings (`settings.json`)
+## 5. External commands main runs
 
-`settings.js` keeps `settings.json` in userData (folder `aidlc-dash`) and runs `sanitize()` on every read and write:
+All through `runFixed()` (`src/main/exec.js`): `execFile` without a shell, every argument a string, a timeout (default 10 s), `PATH` from the login shell (probed once with `$SHELL -l -i -c`).
 
-| Key | Type | Rule |
-|-----|------|------|
-| `openProjects`, `recentProjects` | `string[]` | strings only, at most 50 |
-| `activeProject` | `string | null` | else `null` |
-| `animations` | `'full' | 'reduced' | 'off'` | left out when missing or invalid |
-| `fullscreen` | `boolean` | saved by main |
-| `questionAlerts` | `'popup-notify' | 'popup' | 'off'` | whitelist `QUESTION_ALERTS` |
-| `notificationSound` | `boolean` | missing means on |
-| `language` | `'auto' | 'sv' | 'en'` | whitelist `LANGUAGE_SETTINGS`; missing means auto (US-0701) |
-| `projectSettings` | `{[realpath root]: {featureDocs: 'auto'|'show'|'hide', featuresPath}}` | at most 200 projects; invalid values fall back per field; unknown fields dropped |
+| Command | Used by | Timeout |
+|---|---|---|
+| `aidlc --version`, `aidlc --project-dir <root> config --harness <id> --dry-run|--yes`, `aidlc config project --show --json [--harness]`, `aidlc config project --plugins … --harness … --yes`, `aidlc config models --preset … --project --harness … --yes` | `setup.js` | 10 s / 120 s per step |
+| `aidlc config <models|flags|providers|project> --show --json --harness <h>`, `aidlc config list --json` | `aidlcConfig.js` | 10 s |
+| `aidlc config <section> <flag> <value> [--project|--local|--global] --yes|--dry-run`, `aidlc engine config set <key> <value>`, `aidlc config flags --bypass|--clear-bypass <switch> …` | `aidlcWrite.js` | 20 s / 120 s |
+| `aidlc engine scope save --name <n>`, `aidlc engine graph compile` | `plans.js` | 120 s |
+| `aidlc config models … --harness <claude|opencode> --project|--local`, `aidlc config models --check --harness …`, `opencode models` | `modelChoice.js`, `models.js` | 20 s / 10 s |
+| `git rev-parse`, `rev-list`, `diff`, `status --porcelain`, `show`, `fetch --quiet`, `ls-files` | `git.js`, `fileWrite.js` | 10 s, fetch 30 s |
+| `<harness cli> --version` | `harness.js`, `tools.js` | 10 s |
+| `gh release view|download --repo tochman/aidlc-dash …`, `hdiutil`, `ditto`, `xattr`, `osascript`, `pkexec dpkg -i` | `updater.js` | 20 s to 30 min |
 
-Every other key is dropped silently. `setSettings` never touches `projectSettings`; only `setProjectSettings(root, partial)` does, with validation that throws `errors.unknownFeatureDocs` or `errors.invalidFeaturesPath`. A new per-project key (such as the harness choice) needs `sanitizeProject`, `setProjectSettings`'s validation and the `projectSettings:set` field pick to change together.
+The agent and shell terminals are not `runFixed` calls: `pty.js` spawns `$SHELL -l -i -c <cli>` (agent, `cli` from `HARNESSES` or the saved tool path, single-quoted when it is not a bare word) or `$SHELL -l` (shell) with `TERM=xterm-256color`.
 
-## Translation API (`src/shared/i18n.js`)
+## 6. Files read (contracts with AI-DLC)
 
-- `t(key, values)`: ICU MessageFormat text; `{name}` placeholders and `{n, plural, …}`. Falls back to English, then to the key.
-- `resolveLanguage(setting, osLocale)`: `sv`/`en` as chosen, else Swedish when the locale starts with `sv`, else English.
-- `LANGUAGES`, `LANGUAGE_SETTINGS`, `locale()` (Intl locale for dates and numbers), default export: the process's i18next instance.
-- Main: `currentLanguage()`, `setLanguageFromSettings(settings)` (`src/main/i18n.js`).
-
-## Audit events the renderer receives (`detail.events`)
-
-From `projectService.loadAuditEvents` + `parsers/audit.js` (earlier scan, not re-read): one entry per block in each `<intent>/audit/*.md` with `timestamp`, `event`, `title`, `fields` (every `**Key**: value` verbatim), `source`, `index`, `key` (`<source>#<index>`), `timeMs`, `seq`, `category` (`categoryOf(event)`).
-
-## Internal APIs
-
-- `useTerminal()` (`TerminalContext.jsx`): `view`, `setView`, `error`, `register(tab, session)`, `show(tab)`, `state(tab)`, `exitCode(tab)`, `pending(tab)`, `input(tab)`, `type(tab, text, {submit})`, `sequence(tab, steps)`, `restart(tab)`. Tabs are `'claude'` and `'shell'`. Returns `null` outside a `TerminalProvider`.
-- `createActivity({quietMs})`, `waitFor(activity, target, ms)`, `runSequence(term, steps)`, `withEnter(text, submit)` (`terminalControl.js`).
-- `summarizeLedger(ledger, intents)` and `compareModels(configured, actualByAgent, {onlyParticipants})` (`parsers/ledger.js`): pure; the renderer imports `compareModels`.
-- `featureDocsPrompt({exists, path})` (`featureDocsPrompt.js`): one line, current language.
-- `APP_NAME`, `APP_FULL_NAME`, `APP_TAGLINE`, `APP_SHORT`, `APP_VENDOR` (`src/shared/appName.js`).
-- `motionMode(saved)` (`App.jsx`), `windowOptions(settings, platform)` (`src/main/index.js`), `buildMenuTemplate`, `parseMenuState` (`src/main/menu.js`).
+| File | Reader | Shape relied on |
+|---|---|---|
+| `aidlc/spaces/<space>/intents/intents.json` | `parsers/intents.js` | array of `{dirName, uuid, slug, scope, status}` |
+| `<record>/aidlc-state.md` | `parsers/state.js` | `## Section` of `- **Key**: value`; `### <NAME> PHASE` checkbox lists `- [x] slug — EXECUTE|SKIP` |
+| `<record>/audit/*.md` | `parsers/audit.js` | `## Title` blocks of `**Key**: value` separated by `---`; `Timestamp`, `Event`, `Stage`, `Unit`, `Options`, `Question Id`, `Question Type`, `Decision`, `Person Reply`, `Details`, `Next Stage`, `Agent Type` |
+| `<record>/runtime-graph.json` | `parsers/runtimeGraph.js` | `stages[].stage_slug/started_at/completed_at/outcome`, `bolt_dag.units/batches` |
+| `<record>/.aidlc-engine/active-directive.json` | `projectService.js` | `kind`, `stage`, `delivery` |
+| `aidlc/.aidlc-sessions/usage-ledger.json` | `parsers/ledger.js` | schemaVersion 3, `workflows["intent:<uuid>"]`, `byStage/byAgent/byModel`, `totals.tokens`, `usd` |
+| `aidlc/.aidlc-subagent-inflight` | `projectService.js` | `{entries: [...]}` |
+| `aidlc/active-space`, `<intents>/active-intent` | `projectService.js` | one line |
+| `docs/FEATURES.md`, `docs/features/epic-*.md` | `parsers/features.js` | epic table; `**US-XXYY: title** status`, `- [x]` criteria |
+| `<harness dir>/scopes/*.md`, `aidlc/scopes/*.md`, `<harness dir>/tools/data/scope-grid.json` | `plans.js` | frontmatter, composed-grid JSON block |

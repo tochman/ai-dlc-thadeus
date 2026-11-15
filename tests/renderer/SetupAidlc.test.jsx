@@ -7,7 +7,11 @@ const terminal = { state: vi.fn(() => 'idle'), exitCode: vi.fn(() => null), type
 vi.mock('../../src/renderer/TerminalContext.jsx', () => ({ useTerminal: () => terminal }));
 const { default: SetupAidlc } = await import('../../src/renderer/SetupAidlc.jsx');
 
-const project = { projectId: 'p1', root: '/Users/me/new-app', detection: { isAidlc: false, reason: 'Mappen saknar aidlc/spaces/ och är inget AI-DLC-projekt.' } };
+const project = {
+  projectId: 'p1',
+  root: '/Users/me/new-app',
+  detection: { isAidlc: false, reason: 'Mappen saknar aidlc/spaces/ och är inget AI-DLC-projekt.' }
+};
 // Same shape setup:info returns.
 const readyInfo = {
   harness: 'claude',
@@ -127,7 +131,9 @@ describe('SetupAidlc', () => {
     fireEvent.click(screen.getByTestId('setup-aidlc-start'));
     const choice = await screen.findByTestId('setup-aidlc-feature-docs');
     expect(choice.checked).toBe(false);
-    expect(choice.closest('.setup-feature-docs').textContent).toMatch(/separata feature-beskrivningar \(FEATURES\.md \+ en fil per epic\).*docs\/features\/epic-01/);
+    expect(choice.closest('.setup-feature-docs').textContent).toMatch(
+      /separata feature-beskrivningar \(FEATURES\.md \+ en fil per epic\).*docs\/features\/epic-01/
+    );
     fireEvent.click(choice);
     expect(onFeatureDocsChange).toHaveBeenCalledWith(true);
     cleanup();
