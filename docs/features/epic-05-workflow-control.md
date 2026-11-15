@@ -8,7 +8,7 @@
 
 **Stories:** US-0501, US-0502, US-0503, US-0504, US-0505, US-0506, US-0507
 
-**Status (2026-11-15):** ✅ US-0501–US-0503 released in v0.2.0. ✅ US-0505 released in v0.2.1 (answering from the popup added in v0.2.2). US-0504 📋 Planned. ✅ US-0506 done, for v0.2.5 (intent `261114-agent-dialogs`: a full plan for how the dialogs show and talk to Claude Code and other agents). 📋 US-0507 Planned (agent progress). The popup double-answer fix is US-0004 in [EPIC-00](epic-00-fixes.md).
+**Status (2026-11-15):** ✅ US-0501–US-0503 released in v0.2.0. ✅ US-0505 released in v0.2.1 (answering from the popup added in v0.2.2). US-0504 📋 Planned for v0.2.6. ✅ US-0506 done, for v0.2.5 (intent `261114-agent-dialogs`: a full plan for how the dialogs show and talk to Claude Code and other agents). 📋 US-0507 Planned for v0.2.6 (agent progress). The popup double-answer fix is US-0004 in [EPIC-00](epic-00-fixes.md).
 
 ---
 
@@ -90,7 +90,7 @@
     The section is collapsed by default, and **the defaults are AI-DLC's standard settings**: no extra plugins and no model preset (shipped defaults). If the person changes nothing, only `aidlc config --harness claude --yes` runs. Every chosen setting is added as its own command after setup, joined with `&&`, so the person sees the whole chain before pressing Enter.
 - **Dependencies:** US-0101, US-0107, US-0108
 
-**US-0504: Update the AI-DLC framework from the console** 📋 Planned
+**US-0504: Update the AI-DLC framework from the console** 📋 Planned, for v0.2.6
 - As a **developer using AI-DLC**, in order to **keep the framework in my project current without remembering the CLI commands**, I would like to **see when a newer `aidlc` release or changed `.claude/` files are available, and get the update command typed into the terminal**.
 - **Epic:** EPIC-05
 - **Priority:** Medium
@@ -140,7 +140,7 @@
 - **Notes:** Added 2026-11-14 at the person's request ("answer questions from Claude or opencode in dialogs, not only from AI-DLC, and see messages from them").
 - **Dependencies:** US-0505, US-0801, US-0803
 
-**US-0507: See what the agents are doing and how far they have come** 📋 Planned
+**US-0507: See what the agents are doing and how far they have come** 📋 Planned, for v0.2.6
 - As a **developer running AI-DLC**, in order to **know what is actually going on while subagents work in the background**, I would like to **plain progress lines per running agent, such as "u2-permissions has 6 of 27 steps done and u3-replies has 16 of 42"**.
 - **Epic:** EPIC-05
 - **Priority:** Medium

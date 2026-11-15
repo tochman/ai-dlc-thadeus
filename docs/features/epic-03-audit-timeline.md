@@ -8,7 +8,7 @@
 
 **Stories:** US-0301, US-0302, US-0303
 
-**Status (2026-11-14):** ✅ US-0301 and US-0302 released in v0.2.0 · 📋 US-0303 Planned (project velocity metrics). The basic timeline was built in EPIC-01 (US-0104). The 20 000-event timing in a real Electron renderer is checked in Build and Test.
+**Status (2026-11-14):** ✅ US-0301 and US-0302 released in v0.2.0 · 📋 US-0303 Planned for v0.2.6 (project velocity metrics). The basic timeline was built in EPIC-01 (US-0104). The 20 000-event timing in a real Electron renderer is checked in Build and Test.
 
 **Dependency choice (Q1):** `@tanstack/react-virtual` `3.14.24`, pinned exactly. Hand-rolled windowing with variable row heights, measurement after expand and scroll anchoring would be more code to keep correct than this small, well-maintained library.
 
@@ -41,7 +41,7 @@
   - [x] A counter "N nya händelser" is shown when new events arrive outside the visible area
 - **Dependencies:** US-0104, US-0107
 
-**US-0303: Project velocity: intent, story and project metrics** 📋 Planned
+**US-0303: Project velocity: intent, story and project metrics** 📋 Planned, for v0.2.6
 - As a **developer or team lead**, in order to **see how fast work moves and where it waits**, I would like to **metrics per intent, per story and per project, built from the AI-DLC records the app already reads**.
 - **Epic:** EPIC-03
 - **Priority:** Medium
