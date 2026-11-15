@@ -10,11 +10,11 @@ import { Frame } from './Lcars.jsx';
 import { withSlots } from './format.js';
 import { STATUS_MARKER } from '../main/parsers/features.js';
 import { DELIVERY_DEFAULT, buildReleases, canDelete, newReleaseError, nextVersions, releaseOf, releaseOptions } from '../main/parsers/releases.js';
+import { EMPTY_FILTERS, NO_RELEASE, filterOptions, isActive, matches, storyRows } from './storyFilter.js';
 
 const errorText = (err) => String(err?.message ?? err).replace(/^Error invoking remote method '[^']+': (Error: )?/, '');
 // Pågår is steel (active), Klar and Driftsatt a light slate block, Planerad an outline (FR1.3, US-0603 FR6).
 const STATUS_CLASS = { planned: 'tag', progress: 'tag tag-live', done: 'tag tag-done', deployed: 'tag tag-done' };
-const STATUSES = Object.keys(STATUS_MARKER);
 
 /** Status as marker and text, never colour alone (NFR3). */
 export function StatusBadge({ status, text }) {
@@ -358,14 +358,75 @@ function StoryDetail({ id, story, links, onOpenIntent, release }) {
   );
 }
 
-/** `features`: given with the Releases delivery setting, so each story gets its release picker (US-0603 FR2). */
-function EpicDetail({ projectId, epic, links, storyId, setStoryId, onOpenIntent, features }) {
+/**
+ * US-0604 FR3, NFR2: labelled filters for state, release (when `options.releases`), epic (when `options.epics`),
+ * priority, complexity and text, the polite count of matches, and Clear filters while any is set. Test ids are
+ * `<prefix>-<field>`, so the Epics tab and the epic page each keep their own.
+ */
+function StoryFilters({ prefix, filters, setFilters, options, count }) {
   const { t } = useTranslation();
-  const [status, setStatus] = useState('');
-  const [priority, setPriority] = useState('');
+  const epicTitle = (id) => `${id}: ${options.epics.find((e) => e.id === id).title}`;
+  const select = (key, testKey, label, values, name = (v) => v) => (
+    <label className="field">
+      <span className="field-label">{label}</span>
+      <select
+        className="lcars-select"
+        value={filters[key]}
+        onChange={(e) => setFilters({ ...filters, [key]: e.target.value })}
+        data-testid={`${prefix}-${testKey}`}
+      >
+        <option value="">{t('features.all')}</option>
+        {values.map((v) => (
+          <option key={v} value={v}>
+            {name(v)}
+          </option>
+        ))}
+      </select>
+    </label>
+  );
+  return (
+    <div className="filters" data-testid={`${prefix}s`}>
+      {select('state', 'status', t('features.statusLabel'), options.states, (k) => t(`features.status.${k}`))}
+      {options.releases &&
+        select('release', 'release', t('features.release.label'), options.releases, (v) => (v === NO_RELEASE ? t('features.filter.noRelease') : v))}
+      {options.epics &&
+        select(
+          'epic',
+          'epic',
+          t('features.filter.epic'),
+          options.epics.map((e) => e.id),
+          epicTitle
+        )}
+      {select('priority', 'priority', t('features.priority'), options.priorities)}
+      {select('complexity', 'complexity', t('features.filter.complexity'), options.complexities)}
+      <label className="field">
+        <span className="field-label">{t('features.filter.text')}</span>
+        <input type="search" value={filters.text} onChange={(e) => setFilters({ ...filters, text: e.target.value })} data-testid={`${prefix}-text`} />
+      </label>
+      <span className="muted" aria-live="polite" data-testid={`${prefix}-count`}>
+        {t('features.filter.count', { n: count })}
+      </span>
+      {isActive(filters) && (
+        <button className="btn btn-quiet" onClick={() => setFilters(EMPTY_FILTERS)} data-testid={`${prefix}-clear`}>
+          {t('features.filter.clear')}
+        </button>
+      )}
+    </div>
+  );
+}
+
+/**
+ * `features`: given with the Releases delivery setting, so each story gets its release picker (US-0603 FR2).
+ * `releases`: the release filter's values, or null to hide it (US-0604 FR2, FR4.2).
+ */
+function EpicDetail({ projectId, epic, links, storyId, setStoryId, onOpenIntent, features, releases }) {
+  const { t } = useTranslation();
+  const [filters, setFilters] = useState(EMPTY_FILTERS);
   const stories = epic.parsed?.stories ?? [];
-  const priorities = [...new Set(stories.map((s) => s.priority).filter(Boolean))];
-  const shown = stories.filter((s) => (!status || s.status === status) && (!priority || s.priority === priority));
+  const { states, priorities, complexities } = filterOptions([epic]);
+  const shown = storyRows([epic])
+    .filter((row) => matches(row, filters))
+    .map((row) => row.story);
   const openRef = useRef(null);
   // The opened story, from a click or an intent's story link, is scrolled into view (FR2.6).
   useEffect(() => {
@@ -398,30 +459,13 @@ function EpicDetail({ projectId, epic, links, storyId, setStoryId, onOpenIntent,
       )}
       {stories.length > 0 && (
         <>
-          <div className="filters">
-            <label className="field">
-              <span className="field-label">{t('features.statusLabel')}</span>
-              <select className="lcars-select" value={status} onChange={(e) => setStatus(e.target.value)} data-testid="features-view-filter-status">
-                <option value="">{t('features.all')}</option>
-                {STATUSES.map((k) => (
-                  <option key={k} value={k}>
-                    {t(`features.status.${k}`)}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label className="field">
-              <span className="field-label">{t('features.priority')}</span>
-              <select className="lcars-select" value={priority} onChange={(e) => setPriority(e.target.value)} data-testid="features-view-filter-priority">
-                <option value="">{t('features.all')}</option>
-                {priorities.map((p) => (
-                  <option key={p} value={p}>
-                    {p}
-                  </option>
-                ))}
-              </select>
-            </label>
-          </div>
+          <StoryFilters
+            prefix="features-view-filter"
+            filters={filters}
+            setFilters={setFilters}
+            options={{ states, priorities, complexities, releases }}
+            count={shown.length}
+          />
           <ul className="intent-rows">
             {shown.map((s) => {
               const open = s.id === storyId;
@@ -490,6 +534,7 @@ export default function FeaturesView({
   const epics = features?.available ? features.epics : [];
   const [epicId, setEpicId] = useState(null);
   const [storyId, setStoryId] = useState(null);
+  const [filters, setFilters] = useState(EMPTY_FILTERS); // never saved: empty each time the view opens (US-0604 FR5)
   const setTab = (id) => id !== tab && onTab?.(id); // Epics | Releases (US-0603 FR3.1)
   const releases = delivery === 'releases';
   const showReleases = releases && tab === 'releases';
@@ -529,6 +574,9 @@ export default function FeaturesView({
     );
   } else {
     const epic = epics.find((e) => e.id === epicId) ?? epics[0];
+    const options = filterOptions(epics, features.tags, features.plans);
+    if (!releases) options.releases = null; // hidden with Continuous deployment (US-0604 FR4.2)
+    const found = storyRows(epics).filter((row) => matches(row, filters));
     body = (
       <div className="project-body">
         <aside className="sidebar" aria-label={t('features.epics')}>
@@ -538,35 +586,56 @@ export default function FeaturesView({
             <span className="lcars-heading-meta">{t('features.count', { n: epics.length })}</span>
           </div>
           {features.intro && <p className="muted features-intro">{features.intro}</p>}
-          <ul className="intent-rows" aria-label={t('features.epics')}>
-            {epics.map((e) => {
-              const total = e.parsed?.stories.length ?? 0;
-              return (
-                <li key={e.id}>
-                  <button
-                    className={`intent-row ${e.id === epic.id ? 'is-selected' : ''}`}
-                    aria-current={e.id === epic.id}
-                    onClick={() => {
-                      setEpicId(e.id);
-                      setStoryId(null);
-                    }}
-                    data-testid="features-view-epic"
-                  >
+          <StoryFilters prefix="features-view-all-filter" filters={filters} setFilters={setFilters} options={options} count={found.length} />
+          {isActive(filters) ? (
+            // US-0604 FR1.1: the matches of every epic replace the epic list; a row opens the story on its epic's page.
+            <ul className="intent-rows" aria-label={t('features.filter.matches')} data-testid="features-view-matches">
+              {found.map(({ epicId: id, story }) => (
+                <li key={story.id}>
+                  <button className="intent-row" onClick={() => openStory(id, story.id)} data-testid="features-view-match">
                     <span className="intent-row-top">
                       <span className="intent-slug">
-                        {e.id}: {e.title}
+                        {story.id}: {story.title}
                       </span>
+                      <StatusBadge status={story.status} text={story.statusText} />
                     </span>
-                    <span className="muted">{e.topic}</span>
-                    <span className="intent-row-meta">
-                      <StatusBadge status={e.statusKind} text={e.status} />
-                      <span>{e.parsed ? t('features.storiesDone', { done: storiesDone(e), total }) : t('features.unreadable')}</span>
-                    </span>
+                    <span className="muted">{id}</span>
                   </button>
                 </li>
-              );
-            })}
-          </ul>
+              ))}
+              {found.length === 0 && <li className="muted">{t('features.noMatch')}</li>}
+            </ul>
+          ) : (
+            <ul className="intent-rows" aria-label={t('features.epics')}>
+              {epics.map((e) => {
+                const total = e.parsed?.stories.length ?? 0;
+                return (
+                  <li key={e.id}>
+                    <button
+                      className={`intent-row ${e.id === epic.id ? 'is-selected' : ''}`}
+                      aria-current={e.id === epic.id}
+                      onClick={() => {
+                        setEpicId(e.id);
+                        setStoryId(null);
+                      }}
+                      data-testid="features-view-epic"
+                    >
+                      <span className="intent-row-top">
+                        <span className="intent-slug">
+                          {e.id}: {e.title}
+                        </span>
+                      </span>
+                      <span className="muted">{e.topic}</span>
+                      <span className="intent-row-meta">
+                        <StatusBadge status={e.statusKind} text={e.status} />
+                        <span>{e.parsed ? t('features.storiesDone', { done: storiesDone(e), total }) : t('features.unreadable')}</span>
+                      </span>
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
         </aside>
         <section className="content">
           <Frame>
@@ -579,6 +648,7 @@ export default function FeaturesView({
               setStoryId={setStoryId}
               onOpenIntent={onOpenIntent}
               features={releases ? features : null}
+              releases={options.releases}
             />
           </Frame>
         </section>

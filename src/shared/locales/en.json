@@ -346,7 +346,17 @@
       "planned": "Planned",
       "progress": "In progress",
       "done": "Done",
+      "released": "Released",
       "deployed": "Deployed"
+    },
+    "filter": {
+      "epic": "Epic",
+      "complexity": "Complexity",
+      "text": "Search",
+      "noRelease": "No release",
+      "count": "{n, plural, one {# story} other {# stories}}",
+      "clear": "Clear filters",
+      "matches": "Stories that match the filter"
     },
     "delivery": {
       "releases": "Releases",

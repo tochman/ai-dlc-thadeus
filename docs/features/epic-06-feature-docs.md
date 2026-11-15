@@ -8,7 +8,7 @@
 
 **Stories:** US-0601, US-0602, US-0603, US-0604, US-0605
 
-**Status (2026-11-15):** ✅ US-0601–US-0603 released (v0.2.0–v0.2.5). 🚧 US-0604 in progress, for v0.2.7. ✅ US-0605 done, for v0.2.7. Each story names its release.
+**Status (2026-11-15):** ✅ US-0601–US-0603 released (v0.2.0–v0.2.5). ✅ US-0604 and US-0605 done, for v0.2.7. Each story names its release.
 
 **Decisions:**
 - **Q1 (where the view lives):** a switch "Intents | Features" at the top of the project view. Features replaces the sidebar and content area; the terminal stays.
@@ -84,17 +84,18 @@
 - **Notes:** The release markers are already the docs' own format (project rule: "for vX.Y.Z", then "Released in vX.Y.Z"), so no new data store is needed.
 - **Dependencies:** US-0602, US-0003
 
-**US-0604: Filter epics and user stories** 🚧 In progress, for v0.2.7
+**US-0604: Filter epics and user stories** ✅ Done, for v0.2.7
 - As a **developer looking for the next thing to work on**, in order to **find stories quickly in a long backlog**, I would like to **filter epics and stories by status and other data**.
 - **Epic:** EPIC-06
 - **Priority:** Medium
 - **Complexity:** Low
 - **Background:** Asked for 2026-11-15 together with US-0603: "I would also like to add some filtering to epics and user stories based on status and other data."
 - **Acceptance Criteria:**
-  - [ ] Filters for status (Planned, In progress, Done, Released, Deployed), release, epic, priority, complexity, and free text over the title and the story text.
-  - [ ] Filters combine; the count of matching stories shows, and one action clears them all.
-  - [ ] The filter is remembered per project.
-  - [ ] Every text goes through `t()` in Swedish and English.
+  - [x] Filters for status (Planned, In progress, Done, Released, Deployed), release, epic, priority, complexity, and free text over the title and the story text.
+  - [x] Filters combine; the count of matching stories shows, and one action clears them all.
+  - [x] The filters start empty each time; nothing is remembered (decided 2026-11-16, replacing "remembered per project").
+  - [x] Every text goes through `t()` in Swedish and English.
+- **Notes:** Filters sit both above the epic list (one list of matching stories from every epic) and on each epic's page (intent `261115-story-filters`).
 - **Dependencies:** US-0602 (release filter: US-0603)
 
 **US-0605: Create a release by hand in the release list** ✅ Done, for v0.2.7
