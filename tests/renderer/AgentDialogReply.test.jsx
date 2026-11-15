@@ -173,7 +173,7 @@ describe('stale, close and reopen (BR6.13, BR6.14, PD11)', () => {
     expect(field().value).toBe('notes.md');
     fireEvent.click(screen.getByTestId('agent-dialog-reply-copy'));
     expect(navigator.clipboard.writeText).toHaveBeenCalledWith('notes.md');
-    expect(screen.getByTestId('agent-dialog-terminal')).toBeTruthy();
+    expect(screen.queryByTestId('agent-dialog-terminal')).toBeNull(); // US-0020: not on a message
   });
 
   it('Esc and Close call close(eventId), also on a stale page', () => {
@@ -263,5 +263,53 @@ describe('overdue and timing (BR6.17, PD8)', () => {
     update([replyEvent()]);
     act(() => vi.advanceTimersByTime(50));
     expect(agentEvents.stamp.mock.calls).toEqual([['r1', 'dialogShown']]);
+  });
+});
+
+describe('a leaner message dialog (US-0020)', () => {
+  const withText = (text) => replyEvent({ message: { text, truncated: false, empty: false } });
+  const body = () => screen.getByTestId('agent-dialog-reply').textContent;
+
+  it('a message that asks nothing has no answer field and no Send, only Close', () => {
+    show([withText('Klart. Alla tester passerar.')]);
+    expect(screen.queryByTestId('agent-dialog-reply-text')).toBeNull();
+    expect(screen.queryByTestId('agent-dialog-reply-send')).toBeNull();
+    expect(screen.getByTestId('agent-dialog-close')).toBeTruthy();
+  });
+
+  it('a message that ends with a question has the field and Send', () => {
+    show([withText('Klart.\n\nSka jag tagga v0.2.6 nu?')]);
+    expect(screen.getByTestId('agent-dialog-reply-text')).toBeTruthy();
+    expect(screen.getByTestId('agent-dialog-reply-send')).toBeTruthy();
+  });
+
+  it('shows only the last paragraph; Show all reveals the rest', () => {
+    show([withText('Första stycket med detaljer.\n\nAndra stycket.\n\nSka jag tagga nu?')]);
+    expect(body()).toContain('Ska jag tagga nu?');
+    expect(body()).not.toContain('Första stycket');
+    fireEvent.click(screen.getByTestId('agent-dialog-reply-more'));
+    expect(body()).toContain('Första stycket med detaljer.');
+    expect(screen.queryByTestId('agent-dialog-reply-more')).toBeNull();
+  });
+
+  it('a one-paragraph message has no Show all', () => {
+    show([withText('Ska jag tagga nu?')]);
+    expect(screen.queryByTestId('agent-dialog-reply-more')).toBeNull();
+  });
+
+  it('Send closes the dialog once the answer is taken', async () => {
+    const p = props([withText('Ska jag tagga nu?')]);
+    render(<AgentDialog {...p} />);
+    settle();
+    fireEvent.change(screen.getByTestId('agent-dialog-reply-text'), { target: { value: 'Ja' } });
+    fireEvent.click(screen.getByTestId('agent-dialog-reply-send'));
+    await act(async () => {});
+    expect(agentEvents.answer).toHaveBeenCalledWith('r1', { reply: { text: 'Ja' } });
+    expect(p.onClose).toHaveBeenCalledTimes(1);
+  });
+
+  it('has no Open the terminal button', () => {
+    show([withText('Ska jag tagga nu?')]);
+    expect(screen.queryByTestId('agent-dialog-terminal')).toBeNull();
   });
 });

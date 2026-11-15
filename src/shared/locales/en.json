@@ -993,6 +993,7 @@
       "empty": "{harness} finished its turn without a message.",
       "truncated": "Shortened at 64 KB. The full text is in the terminal.",
       "answer": "Your answer",
+      "showAll": "Show all",
       "sent": "Sent to {harness} as typed, followed by Enter.",
       "copy": "Copy",
       "stale": {

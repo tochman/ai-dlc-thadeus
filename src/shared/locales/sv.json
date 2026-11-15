@@ -993,6 +993,7 @@
       "empty": "{harness} avslutade sin tur utan meddelande.",
       "truncated": "Förkortat vid 64 KB. Hela texten finns i terminalen.",
       "answer": "Ditt svar",
+      "showAll": "Visa allt",
       "sent": "Skickat till {harness} som text, följt av Enter.",
       "copy": "Kopiera",
       "stale": {

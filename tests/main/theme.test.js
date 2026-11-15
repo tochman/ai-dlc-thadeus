@@ -141,3 +141,16 @@ describe('the latest-message line in the frame (US-0018)', () => {
     expect(line).toMatch(/text-overflow:\s*ellipsis/);
   });
 });
+
+describe('the agent dialog (US-0020)', () => {
+  it('puts a choice description on its own line', () => {
+    expect(css).toMatch(/\.question-popup-choice small\s*\{[^}]*display:\s*block/);
+  });
+  it('draws no focus box around the title it focuses on open', () => {
+    expect(css).toMatch(/#agent-dialog-title:focus\s*\{[^}]*outline:\s*none/);
+  });
+  it('folds shut when it closes, with full motion only', () => {
+    expect(css).toMatch(/:root\[data-motion='full'\] \.agent-dialog\s*\{[^}]*transition:[^}]*allow-discrete/);
+    expect(css).toMatch(/:root\[data-motion='full'\] \.agent-dialog:not\(\[open\]\)\s*\{[^}]*transform:\s*scaleY\(0\)/);
+  });
+});

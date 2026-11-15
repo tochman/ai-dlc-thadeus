@@ -645,7 +645,7 @@ export default function AgentDialog({
           {permPage ? (
             <PermissionPage key={ev.eventId} ev={ev} keysRef={keysRef} guarded={guarded} />
           ) : reply ? (
-            <ReplyPage key={ev.eventId} ev={ev} harnessLabel={harnessLabel} keysRef={keysRef} guarded={guarded} />
+            <ReplyPage key={ev.eventId} ev={ev} harnessLabel={harnessLabel} keysRef={keysRef} guarded={guarded} onSent={onClose} />
           ) : hook ? (
             <HookPage key={ev.eventId} ev={ev} keysRef={keysRef} guarded={guarded} />
           ) : (
@@ -674,9 +674,12 @@ export default function AgentDialog({
               {newCount > 0 && <span data-testid="agent-dialog-new-count">{t('agentDialog.newCount', { n: newCount })}</span>}
             </div>
             <div className="question-popup-actions">
-              <button type="button" className="btn btn-quiet" onClick={openTerminal} data-testid="agent-dialog-terminal">
-                {t('agentDialog.openTerminal')}
-              </button>
+              {/* US-0020: a message has its terminal right behind the dialog; questions keep the way out. */}
+              {!reply && (
+                <button type="button" className="btn btn-quiet" onClick={openTerminal} data-testid="agent-dialog-terminal">
+                  {t('agentDialog.openTerminal')}
+                </button>
+              )}
               <button type="button" className="btn" onClick={closeDialog} data-testid="agent-dialog-close">
                 {t('common.close')}
               </button>
