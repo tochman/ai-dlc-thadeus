@@ -8,7 +8,7 @@
 
 **Stories:** US-0401, US-0402, US-0403, US-0404, US-0405, US-0406, US-0407, US-0408, US-0409, US-0410, US-0411
 
-**Status (2026-11-15):** ✅ US-0401 released in v0.1.1. ✅ US-0402, US-0403 and US-0404 released in v0.2.0. ✅ US-0406 released in v0.2.1 (intent `261113-thadeus-name`). ✅ US-0405 released in v0.2.3 (settings view, intent `261114-settings-view`) — marked "Released in v0.2.3" when the tag is cut. ✅ US-0407 released in v0.2.3 (update from a GitHub release). ✅ US-0408 released in v0.2.3 (Om T.H.A.D.E.U.S. window with the app version). ✅ US-0409 released in v0.2.4 (About window in a new design). 📋 US-0410 Planned for v0.2.5 (Settings in LCARS tabs, all tools checked). 📋 US-0411 Planned (pipeline stages as LCARS cards).
+**Status (2026-11-15):** ✅ US-0401 released in v0.1.1. ✅ US-0402, US-0403 and US-0404 released in v0.2.0. ✅ US-0406 released in v0.2.1 (intent `261113-thadeus-name`). ✅ US-0405 released in v0.2.3 (settings view, intent `261114-settings-view`) — marked "Released in v0.2.3" when the tag is cut. ✅ US-0407 released in v0.2.3 (update from a GitHub release). ✅ US-0408 released in v0.2.3 (Om T.H.A.D.E.U.S. window with the app version). ✅ US-0409 released in v0.2.4 (About window in a new design). 📋 US-0410 Planned for v0.2.5 (Settings in LCARS tabs, all tools checked). 📋 US-0411 Planned for v0.2.5 (pipeline stages as LCARS cards).
 
 ---
 
@@ -240,7 +240,7 @@
   - **Plan.** Ultra-express, own branch after PR #31 (US-0506) merges, since Settings carries US-0506's notification settings.
 - **Dependencies:** US-0405, US-0506
 
-**US-0411: Pipeline stages as LCARS cards** 📋 Planned
+**US-0411: Pipeline stages as LCARS cards** 📋 Planned, for v0.2.5
 - As a **developer following a workflow**, in order to **read where the work is at a glance**, I would like to **see each pipeline stage as an LCARS card, with the current one lit**.
 - **Epic:** EPIC-04
 - **Priority:** Medium
