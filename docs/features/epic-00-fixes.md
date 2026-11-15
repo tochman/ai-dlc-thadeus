@@ -8,7 +8,7 @@
 
 **Stories:** US-0001, US-0002, US-0003, US-0004, US-0005, US-0006, US-0007, US-0008, US-0009, US-0010, US-0011, US-0012
 
-**Status (2026-11-15):** ✅ US-0001 released in v0.2.3 (epic badge). ✅ US-0002 released in v0.2.3 (busy tab alignment). ✅ US-0003 released in v0.2.3 (lifecycle rule for every harness). ✅ US-0004 released in v0.2.3 (a popup answer reaches the agent once). ✅ US-0005 released in v0.2.3 (Resume waits while the work runs). ✅ US-0006 released in v0.2.4 (popup answers reach Claude Code's real picker). ✅ US-0007 released in v0.2.4 (Resume stays disabled while an agent session runs the work). ✅ US-0008 released in v0.2.4 (the token wave shows from the first reading). ✅ US-0009 released in v0.2.4 (Resume waits while an agent outside the app runs the work). ✅ US-0010 for v0.2.5 (timing tests stop failing under load). ✅ US-0011 for v0.2.5 (no false Mismatch on a stage built unit by unit). ✅ US-0012 for v0.2.5 (one way to move between panels, LCARS settings).
+**Status (2026-11-15):** ✅ US-0001–US-0012 released (v0.2.3–v0.2.5). Each story names its release.
 
 ---
 
@@ -152,7 +152,7 @@
   - **Tests.** `tests/renderer/ResumeButton.test.jsx` (2 new).
 - **Dependencies:** US-0007
 
-**US-0010: Timing tests stop failing under a loaded suite** ✅ Done, for v0.2.5 (intent `261114-agent-dialogs`)
+**US-0010: Timing tests stop failing under a loaded suite** ✅ Released in v0.2.5 (intent `261114-agent-dialogs`)
 - As a **developer running the whole suite**, in order to **trust a red run**, I would like to **have the wall-clock tests pass when the code meets its limits, even while the machine is busy**.
 - **Epic:** EPIC-00
 - **Priority:** Medium
@@ -166,7 +166,7 @@
   - **Limit.** A script that is really too slow still fails, three times in a row.
 - **Dependencies:** US-0506
 
-**US-0011: No false Mismatch on a stage built unit by unit** ✅ Done, for v0.2.5 (intent `261114-agent-dialogs`)
+**US-0011: No false Mismatch on a stage built unit by unit** ✅ Released in v0.2.5 (intent `261114-agent-dialogs`)
 - As a **developer reading the pipeline**, in order to **trust the Mismatch badge**, I would like to **see a stage whose Units were built in parallel shown as done, with its time, once every Unit is approved**.
 - **Epic:** EPIC-00
 - **Priority:** Medium
@@ -181,7 +181,7 @@
   - **Tests.** `tests/main/parsers.test.js` (1 new).
 - **Dependencies:** US-0506
 
-**US-0012: One way to move between panels, and settings that look like the rest of the app** ✅ Done, for v0.2.5
+**US-0012: One way to move between panels, and settings that look like the rest of the app** ✅ Released in v0.2.5
 - As a **developer using the console every day**, in order to **find every setting in one place and move between panels the same way everywhere**, I would like to **have one navigation pattern and LCARS-styled settings**.
 - **Epic:** EPIC-00
 - **Priority:** Medium

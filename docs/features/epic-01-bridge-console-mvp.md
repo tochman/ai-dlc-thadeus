@@ -8,7 +8,7 @@
 
 **Stories:** US-0101, US-0102, US-0103, US-0104, US-0105, US-0106, US-0107, US-0108, US-0109, US-0110
 
-**Status (2026-11-13):** ✅ Released in v0.1.0. All ten stories were built with AI-DLC in `express` scope; the release pipeline (US-0110) has since shipped v0.1.0, v0.1.1 and v0.2.0.
+**Status (2026-11-15):** ✅ US-0101–US-0110 released in v0.1.0. Each story names its release.
 
 **Beslut från kravanalysen:** React med vanlig JavaScript och electron-vite (Q1). Både en `claude`-flik och en skalflik i terminalen (Q2). Flera projekt som flikar i samma fönster (Q3). Osignerat lokalt macOS-bygge (Q4).
 

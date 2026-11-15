@@ -15,7 +15,7 @@
 
 **Stories:** US-1001
 
-**Status (2026-11-14):** ✅ US-1001 released in v0.2.4 (Monaco editing). Added at the person's request. The person checked the 1 MB open time and start time in the built `.dmg`.
+**Status (2026-11-15):** ✅ US-1001 released in v0.2.4. Each story names its release.
 
 ---
 

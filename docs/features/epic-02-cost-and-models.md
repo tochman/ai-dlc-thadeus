@@ -8,7 +8,7 @@
 
 **Stories:** US-0201, US-0202, US-0203, US-0204, US-0205, US-0206, US-0207, US-0208
 
-**Status (2026-11-14):** ✅ US-0201–US-0205 released in v0.2.0. CSV export (US-0203) is deferred. US-0206 moved to US-0904 in EPIC-09. ✅ US-0207 released in v0.2.4 (live token view). 📋 US-0208 Planned for v0.2.6 (detailed token view from the side diagram).
+**Status (2026-11-15):** ✅ US-0201–US-0205 and US-0207 released (v0.2.0–v0.2.4; CSV export in US-0203 deferred). ➡️ US-0206 moved to US-0904. 📋 US-0208 planned for v0.2.6. Each story names its release.
 
 ---
 

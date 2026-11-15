@@ -8,7 +8,7 @@
 
 **Stories:** US-0701, US-0702
 
-**Status (2026-11-14):** ✅ US-0701 released in v0.2.1. US-0702 📋 Planned for v0.2.6.
+**Status (2026-11-15):** ✅ US-0701 released in v0.2.1. 📋 US-0702 planned for v0.2.6. Each story names its release.
 
 ---
 
