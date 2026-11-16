@@ -46,11 +46,12 @@ plan_approval: on
 
 const SCOPE_GRID = { bugfix: { stages: { 'reverse-engineering': 'EXECUTE', 'market-research': 'SKIP' } } };
 
+/** Records each aidlc call's arguments; a compile also records the harness it was run for (US-0021). */
 function fakeExec() {
   const calls = [];
-  const exec = vi.fn(async (file, args) => {
+  const exec = vi.fn(async (file, args, opts) => {
     if (file !== 'aidlc') return '__AIDLC_DASH_PATH__/usr/bin';
-    calls.push(args);
+    calls.push(opts?.env?.AIDLC_HARNESS_DIR ? [...args, `@${opts.env.AIDLC_HARNESS_DIR}`] : args);
     return 'done\n';
   });
   return { exec, calls };
@@ -75,6 +76,7 @@ beforeEach(async () => {
   await write('.aidlc/scopes/aidlc-demo.md', DEMO.split('<!-- BEGIN')[0]);
   await write('.claude/scopes/aidlc-bugfix.md', BUGFIX);
   await write('.claude/tools/data/scope-grid.json', JSON.stringify(SCOPE_GRID));
+  await write('.aidlc/tools/data/scope-grid.json', JSON.stringify(SCOPE_GRID)); // opencode installed too (US-0021)
   root = await openRoot(tmp);
 });
 afterEach(() => fs.rm(tmp, { recursive: true, force: true }));
@@ -119,9 +121,31 @@ describe('plans (EPIC-09 US-0903)', () => {
   it('saves the running plan with fixed arguments, and refuses an invalid name before running', async () => {
     const { exec, calls } = fakeExec();
     expect(await savePlan(root, 'my-plan', { exec })).toEqual({ ok: true, command: 'aidlc engine scope save --name my-plan', output: 'done' });
-    expect(calls).toEqual([['engine', 'scope', 'save', '--name', 'my-plan']]);
+    // US-0021: the save writes only the running harness's copy, so every installed harness is recompiled.
+    expect(calls).toEqual([
+      ['engine', 'scope', 'save', '--name', 'my-plan'],
+      ['engine', 'graph', 'compile', '@.claude'],
+      ['engine', 'graph', 'compile', '@.aidlc']
+    ]);
     await expect(savePlan(root, 'Bad Name', { exec })).rejects.toThrow(/Bad Name/);
-    expect(calls).toHaveLength(1);
+    expect(calls).toHaveLength(3);
+  });
+
+  it('US-0021: a failed compile for one harness says which harness, and the plan file keeps the edit', async () => {
+    const calls = [];
+    const exec = vi.fn(async (file, args, opts) => {
+      if (file !== 'aidlc') return '__AIDLC_DASH_PATH__/usr/bin';
+      calls.push(opts?.env?.AIDLC_HARNESS_DIR);
+      if (opts?.env?.AIDLC_HARNESS_DIR === '.aidlc') throw new Error('compile broke');
+      return 'done\n';
+    });
+    const { before } = await previewPlanEdit(root, 'demo', { depth: 'Standard' });
+    const res = await applyPlanEdit(root, 'demo', { depth: 'Standard' }, before, { exec });
+    expect(res.ok).toBe(false);
+    expect(res.error).toMatch(/\.aidlc/);
+    expect(res.error).toMatch(/compile broke/);
+    expect(calls).toEqual(['.claude', '.aidlc']);
+    expect(await fs.readFile(path.join(root, 'aidlc/scopes/demo.md'), 'utf8')).toContain('depth: Standard');
   });
 
   it('edits only the frontmatter fields given, above the grid marker', () => {
@@ -146,13 +170,17 @@ describe('plans (EPIC-09 US-0903)', () => {
     expect(() => planEditDiff(DEMO, { keywords: ['ok', 'no]'] })).toThrow();
   });
 
-  it('applies an edit, removes the harness copies and recompiles; refuses a stock plan and a changed file', async () => {
+  it('applies an edit, removes the harness copies and recompiles for every installed harness; refuses a stock plan and a changed file', async () => {
     const { exec, calls } = fakeExec();
     const { before, diff } = await previewPlanEdit(root, 'demo', { description: 'Short work' });
     expect(diff).toBe('- description: Plan saved from 261113-demo, based on bugfix\n+ description: Short work');
     const res = await applyPlanEdit(root, 'demo', { description: 'Short work' }, before, { exec });
     expect(res).toMatchObject({ ok: true, file: 'aidlc/scopes/demo.md', command: 'aidlc engine graph compile' });
-    expect(calls).toEqual([['engine', 'graph', 'compile']]);
+    // US-0021: one compile per installed harness, so opencode gets its copy back as well as Claude Code.
+    expect(calls).toEqual([
+      ['engine', 'graph', 'compile', '@.claude'],
+      ['engine', 'graph', 'compile', '@.aidlc']
+    ]);
     expect(await fs.readFile(path.join(root, 'aidlc/scopes/demo.md'), 'utf8')).toBe(DEMO.replace(/^description: .*$/m, 'description: Short work'));
     expect(await there('.claude/scopes/aidlc-demo.md')).toBe(false);
     expect(await there('.aidlc/scopes/aidlc-demo.md')).toBe(false);
@@ -160,7 +188,7 @@ describe('plans (EPIC-09 US-0903)', () => {
     await expect(previewPlanEdit(root, 'bugfix', { depth: 'Standard' })).rejects.toThrow(/bugfix/);
     await expect(applyPlanEdit(root, 'bugfix', { depth: 'Standard' }, BUGFIX, { exec })).rejects.toThrow(/bugfix/);
     await expect(applyPlanEdit(root, 'demo', { depth: 'Standard' }, before, { exec })).rejects.toThrow(/aidlc\/scopes\/demo\.md/);
-    expect(calls).toHaveLength(1);
+    expect(calls).toHaveLength(2);
   });
 
   it('refuses to delete a plan an intent in progress uses; otherwise removes both files and recompiles', async () => {
@@ -174,6 +202,9 @@ describe('plans (EPIC-09 US-0903)', () => {
     expect(await there('aidlc/scopes/demo.md')).toBe(false);
     expect(await there('.claude/scopes/aidlc-demo.md')).toBe(false);
     expect(await there('.claude/scopes/aidlc-bugfix.md')).toBe(true);
-    expect(calls).toEqual([['engine', 'graph', 'compile']]);
+    expect(calls).toEqual([
+      ['engine', 'graph', 'compile', '@.claude'],
+      ['engine', 'graph', 'compile', '@.aidlc']
+    ]);
   });
 });

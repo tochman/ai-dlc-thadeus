@@ -8,7 +8,7 @@
 
 **Stories:** US-0001, US-0002, US-0003, US-0004, US-0005, US-0006, US-0007, US-0008, US-0009, US-0010, US-0011, US-0012, US-0013, US-0014, US-0015, US-0016, US-0017, US-0018, US-0019, US-0020, US-0021, US-0022, US-0023
 
-**Status (2026-11-15):** ✅ US-0001–US-0020 released (v0.2.3–v0.2.6). 📋 US-0021–US-0023 planned for v0.2.7. Each story names its release.
+**Status (2026-11-15):** ✅ US-0001–US-0020 released (v0.2.3–v0.2.6). ✅ US-0021 done, for v0.2.7. 📋 US-0022–US-0023 planned for v0.2.7. Each story names its release.
 
 ---
 
@@ -327,20 +327,21 @@
 - **Dependencies:** US-0506, US-0018
 ---
 
-**US-0021: Editing a plan keeps its copy for every harness** 📋 Planned, for v0.2.7
+**US-0021: Editing a plan keeps its copy for every harness** ✅ Done, for v0.2.7
 - As a **developer who uses both Claude Code and opencode in a project**, in order to **run my own plans from either harness**, I would like **an edit in the plan editor to keep the plan's copy for every harness, not only one**.
 - **Epic:** EPIC-00
 - **Priority:** High
 - **Complexity:** Low
 - **Background:** Reported 2026-11-15: after the person changed the ultra-express plan's depth to Standard in the plan editor, `.aidlc/scopes/aidlc-ultra-express.md` (opencode's copy) was gone, while `.claude/scopes/aidlc-ultra-express.md` came back with the new depth. "I worry that opencode plan was deleted… it is a bug in the plan editor." The copy was restored by hand.
 - **Acceptance Criteria:**
-  - [ ] **Given** a project with more than one harness, **when** I save an edit to my own plan, **then** every harness that had a copy of it still has one, with the edit in it.
-  - [ ] **Given** a project with more than one harness, **when** I delete my own plan, **then** every harness's copy is removed and the plan list is rebuilt for each harness.
-  - [ ] A rebuild that fails for one harness says which harness, and the plan file itself keeps the edit.
-  - [ ] Every new text goes through `t()` in Swedish and English.
+  - [x] **Given** a project with more than one harness, **when** I save an edit to my own plan, **then** every harness that had a copy of it still has one, with the edit in it.
+  - [x] **Given** a project with more than one harness, **when** I delete my own plan, **then** every harness's copy is removed and the plan list is rebuilt for each harness.
+  - [x] A rebuild that fails for one harness says which harness, and the plan file itself keeps the edit.
+  - [x] Every new text goes through `t()` in Swedish and English.
 - **Notes:**
   - **Cause, as read in the code.** `applyPlanEdit()` in `src/main/plans.js` removes every harness copy (`removeHarnessCopies`), then runs `aidlc engine graph compile` once, which writes the copy only for the harness it runs as (here Claude Code). The other harnesses' copies stay deleted. `deletePlan()` recompiles the same way.
-  - **Likely fix.** Recompile once per installed harness (`--harness <name>`, as `setup.js` passes since v0.2.2), or remove only the copies the compile writes back.
+  - **Fix.** Saving, editing and deleting a plan now compile once per installed harness (each folder with AI-DLC's `tools/`), run with `AIDLC_HARNESS_DIR` set to that folder, which is how the AI-DLC runtime picks the harness it writes for. Saving had the same gap: the `visual-express` plan never reached opencode until this fix.
+  - **Tests.** `tests/main/plans.test.js` (save, edit and delete compile for `.claude` and `.aidlc`; a failed compile names its harness).
 - **Dependencies:** US-0903, US-0803
 
 ---

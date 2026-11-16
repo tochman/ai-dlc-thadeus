@@ -1024,6 +1024,7 @@
     "toolNotOnPath": "{name} hittades inte i inloggningsskalets PATH.",
     "unknownExternal": "Okänd extern länk: {key}",
     "changedSincePreview": "{file} ändrades efter förhandsvisningen. Titta på ändringen igen innan du tillämpar den.",
+    "compileFailedFor": "Kunde inte bygga om planerna för {harness}: {error}",
     "invalidPlanName": "Ogiltigt plannamn: {name}. Använd små bokstäver och ord med bindestreck emellan, som min-plan.",
     "stockPlan": "{name} är en av AI-DLC:s egna planer och kan inte ändras.",
     "planInUse": "{name} används av en pågående intent ({intents}) och kan inte tas bort.",

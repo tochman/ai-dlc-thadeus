@@ -1024,6 +1024,7 @@
     "toolNotOnPath": "{name} was not found on the login shell's PATH.",
     "unknownExternal": "Unknown external link: {key}",
     "changedSincePreview": "{file} changed after the preview. Look at the change again before applying it.",
+    "compileFailedFor": "Rebuilding the plans for {harness} failed: {error}",
     "invalidPlanName": "Invalid plan name: {name}. Use lowercase words joined by hyphens, such as my-plan.",
     "stockPlan": "{name} is a stock plan and is read-only.",
     "planInUse": "{name} is used by an intent in progress ({intents}) and can't be deleted.",

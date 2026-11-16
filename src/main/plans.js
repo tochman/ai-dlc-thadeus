@@ -133,20 +133,57 @@ export async function planStages(root, harness, name) {
 }
 
 /** Runs `aidlc <args>`; the CLI's output, or its error as a value. */
-async function runAidlc(root, args, exec) {
+async function runAidlc(root, args, exec, env) {
   const command = ['aidlc', ...args].join(' ');
   try {
-    return { ok: true, command, output: (await runFixed(toolPath('aidlc'), args, { cwd: root, timeout: TIMEOUT_MS, exec })).trim() };
+    return { ok: true, command, output: (await runFixed(toolPath('aidlc'), args, { cwd: root, timeout: TIMEOUT_MS, exec, env })).trim() };
   } catch (err) {
     console.error(`${command} misslyckades:`, errorText(err));
     return { ok: false, command, error: errorText(err) };
   }
 }
 
-/** Tier 1: saves the active intent's plan as `aidlc/scopes/<name>.md`. An invalid name throws before anything runs. */
+/** The harness folders installed in the project (`.claude`, `.aidlc`, …): those that hold AI-DLC's `tools/` folder. */
+async function installedHarnessDirs(root) {
+  const dirs = [...new Set(HARNESSES.map((h) => h.markers?.dirs?.[0]).filter(Boolean))];
+  const found = await Promise.all(
+    dirs.map((dir) =>
+      fs.stat(path.join(root, dir, 'tools')).then(
+        (s) => s.isDirectory(),
+        () => false
+      )
+    )
+  );
+  return dirs.filter((_, i) => found[i]);
+}
+
+/**
+ * US-0021 FR1–FR3: `aidlc engine graph compile` rebuilds the plan list and the plan copies only for the harness it
+ * runs as, so it runs once per installed harness (`AIDLC_HARNESS_DIR`). The first failure stops and names its harness;
+ * the plan file itself is already written by then.
+ */
+async function compileEveryHarness(root, exec) {
+  const dirs = await installedHarnessDirs(root);
+  if (!dirs.length) return runAidlc(root, ['engine', 'graph', 'compile'], exec);
+  const outputs = [];
+  for (const dir of dirs) {
+    const res = await runAidlc(root, ['engine', 'graph', 'compile'], exec, { AIDLC_HARNESS_DIR: dir });
+    if (!res.ok) return { ...res, error: t('errors.compileFailedFor', { harness: dir, error: res.error }) };
+    if (res.output) outputs.push(res.output);
+  }
+  return { ok: true, command: 'aidlc engine graph compile', output: outputs.join('\n') };
+}
+
+/**
+ * Tier 1: saves the active intent's plan as `aidlc/scopes/<name>.md`, then recompiles every installed harness, since
+ * the save writes only the running harness's copy (US-0021). An invalid name throws before anything runs.
+ */
 export async function savePlan(root, name, { exec = defaultExec } = {}) {
   checkName(name);
-  return runAidlc(root, ['engine', 'scope', 'save', '--name', name], exec);
+  const saved = await runAidlc(root, ['engine', 'scope', 'save', '--name', name], exec);
+  if (!saved.ok) return saved;
+  const compiled = await compileEveryHarness(root, exec);
+  return compiled.ok ? saved : compiled;
 }
 
 function yamlText(value) {
@@ -230,14 +267,14 @@ async function removeHarnessCopies(root, name) {
 
 /**
  * Tier 2: writes the edit only when the plan file still reads `before` (the text the diff was shown of), removes the
- * stale harness copies, then runs `aidlc engine graph compile`. A failed compile comes back as `{ok: false}`.
+ * stale harness copies, then recompiles every installed harness (US-0021). A failed compile comes back as `{ok: false}`.
  */
 export async function applyPlanEdit(root, name, edit, before, { exec = defaultExec } = {}) {
   const now = await ownText(root, name);
   if (typeof before !== 'string' || now !== before) throw new Error(t('errors.changedSincePreview', { file: ownFile(name) }));
   await fs.writeFile(await resolveInRoot(root, ownFile(name)), planEditDiff(now, edit).next);
   await removeHarnessCopies(root, name);
-  return { file: ownFile(name), ...(await runAidlc(root, ['engine', 'graph', 'compile'], exec)) };
+  return { file: ownFile(name), ...(await compileEveryHarness(root, exec)) };
 }
 
 /**
@@ -250,5 +287,5 @@ export async function deletePlan(root, name, intents = [], { exec = defaultExec 
   if (users.length) throw new Error(t('errors.planInUse', { name, intents: users.map((i) => i.slug ?? i.dirName).join(', ') }));
   await fs.rm(path.join(root, ownFile(name)));
   await removeHarnessCopies(root, name);
-  return { file: ownFile(name), ...(await runAidlc(root, ['engine', 'graph', 'compile'], exec)) };
+  return { file: ownFile(name), ...(await compileEveryHarness(root, exec)) };
 }
