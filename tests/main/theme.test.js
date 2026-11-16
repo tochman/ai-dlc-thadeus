@@ -156,6 +156,11 @@ describe('the agent dialog (US-0020)', () => {
 });
 
 describe('the token detail view (US-0208 FR7)', () => {
+  it('US-0022: shows the header Tokens button only where the readout column is hidden', () => {
+    expect(css).toMatch(/\.intent-tokens-open\s*\{[^}]*display:\s*none/);
+    expect(css).toMatch(/@media \(max-width: 1280px\) \{[^}]*\.readout-col \{ display: none; \}[^}]*\.intent-tokens-open \{ display: inline-flex; \}/);
+  });
+
   it('adds the cache write 5 m steel to the palette', () => {
     expect(css.match(ROOT)?.[0]).toContain('--steel-mid: #2f6f9f;');
   });
