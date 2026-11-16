@@ -8,7 +8,7 @@
 
 **Stories:** US-0001, US-0002, US-0003, US-0004, US-0005, US-0006, US-0007, US-0008, US-0009, US-0010, US-0011, US-0012, US-0013, US-0014, US-0015, US-0016, US-0017, US-0018, US-0019, US-0020, US-0021, US-0022, US-0023, US-0024
 
-**Status (2026-11-16):** ✅ US-0001–US-0020 released (v0.2.3–v0.2.6). ✅ US-0021–US-0023 released in v0.2.7. 📋 US-0024 planned. Each story names its release.
+**Status (2026-11-16):** ✅ US-0001–US-0020 released (v0.2.3–v0.2.6). ✅ US-0021–US-0023 released in v0.2.7. 📋 US-0024 planned for v0.2.8. Each story names its release.
 
 ---
 
@@ -377,7 +377,7 @@
 
 ---
 
-**US-0024: The "Tokens over time" chart is drawn** 📋 Planned
+**US-0024: The "Tokens over time" chart is drawn** 📋 Planned, for v0.2.8
 - As a **developer watching agents work**, in order to **see how the tokens build up over time**, I would like **the token detail view to draw the "Tokens over time" chart, not only its legend**.
 - **Epic:** EPIC-00
 - **Priority:** High
