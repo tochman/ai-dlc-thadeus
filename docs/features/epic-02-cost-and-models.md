@@ -6,9 +6,9 @@
 
 > Make the price and the "brains" of AI-DLC work visible. For every intent, stage and agent the console shows what the run cost (tokens and USD) and which model did the work, next to which model each agent is *configured* to use. The goal is that the user can answer "what did this feature cost?", "where does the money go?" and "is the reviewer really running on the cheaper model?" without leaving the app. Read-only, like everything else.
 
-**Stories:** US-0201, US-0202, US-0203, US-0204, US-0205, US-0206, US-0207, US-0208
+**Stories:** US-0201, US-0202, US-0203, US-0204, US-0205, US-0206, US-0207, US-0208, US-0209
 
-**Status (2026-11-16):** ✅ US-0201–US-0205 and US-0207 released (v0.2.0–v0.2.4; CSV export in US-0203 deferred). ➡️ US-0206 moved to US-0904. ✅ US-0208 released in v0.2.7. Each story names its release.
+**Status (2026-11-16):** ✅ US-0201–US-0205 and US-0207 released (v0.2.0–v0.2.4; CSV export in US-0203 deferred). ➡️ US-0206 moved to US-0904. ✅ US-0208 released in v0.2.7. 📋 US-0209 planned for v0.2.8. Each story names its release.
 
 ---
 
@@ -149,3 +149,20 @@ The key format of `workflows` was confirmed during requirements analysis (see ab
   - [x] Each series has a text label, not colour alone. Swedish and English texts, and motion follows the animations setting.
 - **Notes:** Built on the plan `visual-express` (intent `261115-token-detail-view`). Visual mockups: https://claude.ai/artifact/WrphyHBekrup5wdVzwi8Yt (private). Charts with visx. Known gap: the way in sits in the right column, which is hidden below 1280 px window width.
 - **Dependencies:** US-0207, US-0202
+
+**US-0209: An intent's cost counts every machine that worked on it** 📋 Planned, for v0.2.8
+- As a **developer who works on a project from more than one machine**, in order to **see what an intent really cost**, I would like **the app to add up the cost recorded on every machine, not only this one**.
+- **Epic:** EPIC-02
+- **Priority:** High
+- **Complexity:** Medium
+- **Background:** [Issue #56](https://github.com/tochman/aidlc-dash/issues/56), 2026-11-16. Cost comes only from `aidlc/.aidlc-sessions/usage-ledger.json` (`LEDGER_PATH` in `src/main/projectService.js`, `src/main/parsers/ledger.js`), which is gitignored and built from this machine's Claude Code transcripts. On visinv the local ledger had 9 of 31 intents ($274.32). The committed audit shards (`<record>/audit/<host>-<clone-id>.md`) carry a cost rollup on every `STAGE_COMPLETED` (`Tokens In`, `Tokens Out`, `Tokens By Model`, `Tokens By Agent`, `Cost USD`), $1,231.08 for all 31. They travel with git, but the app does not read them.
+- **Acceptance Criteria:**
+  - [ ] On a fresh clone with no `usage-ledger.json`, an intent's cost equals the sum of its `STAGE_COMPLETED` rollups across all of its audit shards.
+  - [ ] With a local ledger, the total is the audit rollups plus the ledger cost not yet rolled up, counted once (test: one stage on machine A, one on machine B, both shards present).
+  - [ ] `WORKFLOW_COMPLETED` totals are never added to the stage rows (they are the sum of them).
+  - [ ] Cost outside stages from another machine shows after `git pull`, once that machine's snapshot file exists.
+  - [ ] The cost view says which machines contributed, and marks a total as partial when only the local ledger was there.
+  - [ ] The committed files hold only tokens, model, agent, USD and ids: no transcript text, personal data or secrets.
+  - [ ] Every text goes through `t()` in Swedish and English.
+- **Notes:** The issue's proposal, in order: (1) read the `STAGE_COMPLETED` rollups from every shard; (2) merge with the local ledger keyed by intent, stage, attempt and clone, so a rolled-up stage is not counted twice; (3) a per-clone totals snapshot, for example `<record>/usage/<host>-<clone-id>.json`, for cost outside stages (skipped stages, work after the workflow), written at stage completion, park and workflow end; (4) a one-time backfill of each machine's ledger into its snapshot; (5) show the sources. Who writes the snapshot (AI-DLC's usage tool or the app) is open: the app must not write engine-owned files. Example gap: `261116-epic29-k3-revenue-benefi`, ledger $40.70 against $32.58 in stage rows.
+- **Dependencies:** US-0201, US-0202
