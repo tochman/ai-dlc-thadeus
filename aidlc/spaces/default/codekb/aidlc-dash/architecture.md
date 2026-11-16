@@ -28,6 +28,8 @@ flowchart LR
     ID --> BD[BoltDag]
     ID --> PL[Pipeline]
     ID --> TL[Timeline]
+    ID --> TD[TokenDetail]
+    TD --> AP[AgentProgress]
     PV --> TP[TerminalPanel]
     PV --> UP[useProject]
     App --> AD[AgentDialog]
@@ -49,7 +51,7 @@ flowchart LR
   AG --> HK[[.thadeus/hooks/dialog.sh]]
 ```
 
-Text fallback: the renderer views call `window.bridge`. The bridge invokes the IPC Router. The router uses the Project Service (which reads through Project Access and the parsers), the Watcher, the PTY Manager, the Exec Runner (for the `aidlc`, `git` and `gh` CLIs) and the agent channel, which talks to the hook script.
+Text fallback: the renderer views call `window.bridge`. The token detail view (with the agent progress rows) opens from IntentDetail. The bridge invokes the IPC Router. The router uses the Project Service (which reads through Project Access and the parsers), the Watcher, the PTY Manager, the Exec Runner (for the `aidlc`, `git` and `gh` CLIs) and the agent channel, which talks to the hook script.
 
 ### Data Flow
 
@@ -71,6 +73,17 @@ Text fallback: the renderer views call `window.bridge`. The bridge invokes the I
 | Findings by severity | `<intent>/.aidlc-engine/reviews/<stage>/…/<n>.json` `findings[].severity` | No; the watcher ignores it |
 | Agent work with no Unit | `SUBAGENT_DISPATCHED` `Agent Type` plus the inflight count | Yes, `workingAgents()` |
 
+This table was written before US-0507 was built (main was not re-scanned in this run). US-0507 has since shipped the `agents:progress` channel and `AgentProgress.jsx`.
+
+### Tooltips in the renderer (US-0414)
+
+The renderer has no tooltip component. Tooltips come three ways:
+1. **Native `title=`** (31 sites). The OS draws them, on hover only, never on focus, and in the system style.
+2. **The CSS-only row tip** (`TokenDetail.jsx:272`, `theme.css:709-710`). A child span is positioned below its focusable row and shown on `:hover`/`:focus-visible` through opacity. It is never measured, so it can leave the window or be clipped by `.lcars-frame-body { overflow: auto }`.
+3. **The visx chart tooltip** (`TokenDetail.jsx:135-156`, `theme.css:679-684`). It is React state from `useTooltip`, opened on focus, pointer move and arrow keys, closed on blur, pointer leave and Esc, and linked by `aria-describedby`. It is clamped on the right only.
+
+No `createPortal` and no positioning library are used, so a shared tooltip that must stay inside the window has to measure itself or render into a portal at the body level.
+
 ### Key Design Decisions
 
 - **Read-only, root-confined access** (`projectAccess.js` holds no write calls). This keeps the app from corrupting AI-DLC state. The cost is that every new source needs a root-relative path.
@@ -78,12 +91,13 @@ Text fallback: the renderer views call `window.bridge`. The bridge invokes the I
 - **Debounced folder watching with a max-wait**. The UI stays live during continuous agent writes without reload storms.
 - **Workflow actions typed into the visible terminal**. AI-DLC's own guards and audit apply. The app never submits on the person's behalf, except the intent switch.
 - **Agent dialogs through a file channel and hooks** (US-0506), with every byte validated in main before the renderer sees it.
+- **Styling through classes only**: LCARS tokens on `:root` in `theme.css`, so a shared tooltip style is one class with `var(--coral)`, `var(--bg)` and `var(--text)`.
 
 ### Improvement Opportunities
 
 - Unit status should come from the runtime graph instances and the `BOLT_*` events, not only `UNIT_STARTED`, which AI-DLC does not log for builds.
-- A small read model of the running work per intent (Units, reviews, agents) in main would let `BoltDag` stay a view.
 - `ipc.js` (891 lines) and `agentHooks.js` (864) are the largest modules and are candidates for splitting.
+- One tooltip primitive beside the other LCARS primitives would replace three tooltip mechanisms (US-0414).
 
 ## Interaction Diagrams
 
@@ -124,3 +138,23 @@ sequenceDiagram
 ```
 
 Text fallback: Resume checks that the agent tab is idle, submits the intent switch, then types `/aidlc` for the person to confirm.
+
+### Chart tooltip (today, the most complete tooltip)
+
+```mermaid
+sequenceDiagram
+  participant P as Person
+  participant CH as OverTimeChart group
+  participant UT as visx useTooltip
+  participant TT as Tooltip
+  P->>CH: focus (Tab) or pointer move
+  CH->>UT: showTooltip(index, left)
+  UT-->>TT: render with role=tooltip, id
+  CH-->>P: aria-describedby = tooltip id
+  P->>CH: ArrowLeft / ArrowRight
+  CH->>UT: showTooltip(index +/- 1)
+  P->>CH: Esc, blur or pointer leave
+  CH->>UT: hideTooltip()
+```
+
+Text fallback: focus or the pointer on the chart group opens the tooltip at the nearest reading; the group points to it with `aria-describedby`; the arrow keys move it; Esc (stopped from closing the view), blur or leaving with the pointer close it. The row tip has none of this state; it is CSS hover and focus only.

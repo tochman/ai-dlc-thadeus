@@ -10,6 +10,7 @@ import AboutDialog from './AboutDialog.jsx';
 import AgentDialog from './AgentDialog.jsx';
 import UpdateNotice from './UpdateNotice.jsx';
 import { Bar, Frame } from './Lcars.jsx';
+import Tooltip from './Tooltip.jsx';
 import { APP_NAME } from '../shared/appName.js';
 import { selectableHarness } from '../shared/harnesses.js';
 import { byPager } from '../shared/agentOrder.js';
@@ -490,9 +491,9 @@ export default function App() {
             {branch && (
               <>
                 <span className="app-meta-label">{t('app.branch')}</span>
-                <span className="app-branch" title={branch}>
-                  {branch === 'HEAD' ? t('app.detached') : branch}
-                </span>
+                <Tooltip text={branch} focusable>
+                  <span className="app-branch">{branch === 'HEAD' ? t('app.detached') : branch}</span>
+                </Tooltip>
               </>
             )}
             <h1 className="app-title">
@@ -523,34 +524,37 @@ export default function App() {
           const on = tab.projectId === activeId;
           return (
             <div key={tab.projectId} className={`arm-project ${on ? 'is-active' : ''}`}>
-              <button
-                className={`lcars-block ${on ? 'lcars-block--active' : 'lcars-block--dark'}`}
-                aria-current={on ? 'true' : undefined}
-                title={tab.root}
-                onClick={() => setActiveId(tab.projectId)}
-                data-testid="project-tabs-tab"
-              >
-                <span className="lcars-label">{tab.name}</span>
-              </button>
+              <Tooltip text={tab.root}>
+                <button
+                  className={`lcars-block ${on ? 'lcars-block--active' : 'lcars-block--dark'}`}
+                  aria-current={on ? 'true' : undefined}
+                  onClick={() => setActiveId(tab.projectId)}
+                  data-testid="project-tabs-tab"
+                >
+                  <span className="lcars-label">{tab.name}</span>
+                </button>
+              </Tooltip>
               <span className="arm-tools">
-                <button
-                  className="arm-tool"
-                  aria-label={t('app.projectSettingsFor', { name: tab.name })}
-                  title={t('app.projectSettingsFor', { name: tab.name })}
-                  onClick={() => openProjectSettings(tab.projectId)}
-                  data-testid="project-settings-open"
-                >
-                  ⚙
-                </button>
-                <button
-                  className="arm-tool"
-                  aria-label={t('app.closeProject', { name: tab.name })}
-                  title={t('app.closeProject', { name: tab.name })}
-                  onClick={() => closeTab(tab.projectId)}
-                  data-testid="project-tabs-close"
-                >
-                  ×
-                </button>
+                <Tooltip text={t('app.projectSettingsFor', { name: tab.name })}>
+                  <button
+                    className="arm-tool"
+                    aria-label={t('app.projectSettingsFor', { name: tab.name })}
+                    onClick={() => openProjectSettings(tab.projectId)}
+                    data-testid="project-settings-open"
+                  >
+                    ⚙
+                  </button>
+                </Tooltip>
+                <Tooltip text={t('app.closeProject', { name: tab.name })}>
+                  <button
+                    className="arm-tool"
+                    aria-label={t('app.closeProject', { name: tab.name })}
+                    onClick={() => closeTab(tab.projectId)}
+                    data-testid="project-tabs-close"
+                  >
+                    ×
+                  </button>
+                </Tooltip>
               </span>
             </div>
           );

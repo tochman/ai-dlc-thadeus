@@ -3,6 +3,7 @@
 import { Fragment } from 'react';
 import { formatCost } from './format.js';
 import { t } from '../shared/i18n.js';
+import Tooltip from './Tooltip.jsx';
 
 /**
  * Segmented bar. `segs` is a list of [tone, size, content?]: a size up to 12 grows (flex), a larger one is a fixed px
@@ -95,9 +96,9 @@ export function Readout({ rows, totalUsd }) {
       {rows.map((r) => (
         <Fragment key={`${r.key}-${r.name}`}>
           <span className={`lcars-readout-key lcars-readout-key--${r.key}`} aria-hidden="true" />
-          <span className="lcars-readout-name" title={r.name}>
-            {r.label ?? r.name}
-          </span>
+          <Tooltip text={r.name} focusable>
+            <span className="lcars-readout-name">{r.label ?? r.name}</span>
+          </Tooltip>
           <span className="lcars-readout-usd">{formatCost(r)}</span>
           <span className="lcars-readout-share">{totalUsd > 0 && !r.missingPrice ? `${Math.round((r.usd / totalUsd) * 100)} %` : '–'}</span>
         </Fragment>

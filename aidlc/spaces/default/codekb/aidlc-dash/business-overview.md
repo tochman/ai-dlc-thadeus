@@ -10,8 +10,8 @@ T.H.A.D.E.U.S. (package `thadeus`, repository `aidlc-dash`) is a desktop "bridge
 |---|---|---|
 | Intents and pipeline | An intent list with filters, intent detail with phases and stages, an artifact reader, the Unit DAG | EPIC-01, US-0411 |
 | Audit timeline | A virtualised, filtered timeline of audit events with live highlighting | EPIC-03 |
-| Cost and tokens | Cost per stage, agent and model from the usage ledger; live token meters; a token detail view | EPIC-02 |
-| Branding and desktop | The LCARS look, menu, About, splash, settings, the in-app updater | EPIC-04 |
+| Cost and tokens | Cost per stage, agent and model from the usage ledger; live token meters; a token detail view with agent progress | EPIC-02, US-0507 |
+| Branding and desktop | The LCARS look, menu, About, splash, settings, the in-app updater, one shared tooltip (US-0414, in progress) | EPIC-04 |
 | Workflow control | Resume, Refresh from GitHub, AI-DLC setup, a questions popup, agent dialogs (questions, permissions, replies through hooks), the AI-DLC update check | EPIC-05 |
 | Feature docs | Epics and stories from `docs/FEATURES.md`, release markers, a Releases tab | EPIC-06 |
 | Languages | Swedish and English through `t()` with ICU | EPIC-07 |
@@ -26,12 +26,23 @@ T.H.A.D.E.U.S. (package `thadeus`, repository `aidlc-dash`) is a desktop "bridge
 - **Everything is confined to the root.** Every path the renderer names goes through `resolveInRoot`.
 - **Broken input stays local.** A half-written file keeps the last good value and affects only its own intent.
 - **Status is never colour alone, and every text is translated.**
+- **Keyboard parity.** What a pointer can reveal, focus must reveal too (US-0208 NFR3, US-0414).
 
-## Active Intent (US-0507)
+## Active Intent (US-0414)
 
-"See what the agents are doing and how far they have come": on the existing Unit diagram (`BoltDag.jsx`, the intent's Units tab), each running Unit shows:
+"One LCARS tooltip across the app": every tooltip should look and behave like the split-bar tooltip in the token detail view (`.token-detail-row-tip`, US-0208):
+- a coral 2 px border, the LCARS corner, the app background and tabular figures;
+- it opens on hover and on keyboard focus;
+- it stays inside the window;
+- its texts go through `t()`.
+
+Native `title=` tooltips on interactive elements are replaced, and their accessible names are kept. The "Tokens over time" chart tooltip moves to the same style. The full list of today's tooltips is in the intent's `inception/reverse-engineering/developer-scan.md`. The short version is in `component-inventory.md` ("Tooltip Sites"), and the risks are in `code-quality-assessment.md` ("Brownfield Notes for US-0414").
+
+## Previous Intent (US-0507, delivered in #55)
+
+"See what the agents are doing and how far they have come". Each running Unit shows:
 - its stage and how long it has run;
-- for a build, the plan steps done out of the total, from the ticked boxes in its worktree's `code-generation-plan.md`, plus its last commit subject;
-- for a review, "review requested", then the verdict and the findings by severity.
+- for a build, the plan steps done out of the total, plus its last commit subject;
+- for a review, the verdict and the findings by severity.
 
-A summary line in words sits above the diagram. It updates live; finished work drops off with its result, and a source it cannot read is named, not shown as 0. See `architecture.md` ("US-0507 data sources") and `code-quality-assessment.md` ("Brownfield notes for US-0507").
+It shipped as the agent progress rows in the token detail view (`AgentProgress.jsx`). See `architecture.md` ("US-0507 data sources").

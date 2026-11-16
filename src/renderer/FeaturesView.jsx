@@ -7,6 +7,7 @@ import { useTranslation } from 'react-i18next';
 import { FileContent } from './ArtifactReader.jsx';
 import { useEditor } from './editor/EditorContext.jsx';
 import { Frame } from './Lcars.jsx';
+import Tooltip from './Tooltip.jsx';
 import { withSlots } from './format.js';
 import { STATUS_MARKER } from '../main/parsers/features.js';
 import { DELIVERY_DEFAULT, buildReleases, canDelete, newReleaseError, nextVersions, releaseOf, releaseOptions } from '../main/parsers/releases.js';
@@ -16,13 +17,18 @@ const errorText = (err) => String(err?.message ?? err).replace(/^Error invoking 
 // Pågår is steel (active), Klar and Driftsatt a light slate block, Planerad an outline (FR1.3, US-0603 FR6).
 const STATUS_CLASS = { planned: 'tag', progress: 'tag tag-live', done: 'tag tag-done', deployed: 'tag tag-done' };
 
-/** Status as marker and text, never colour alone (NFR3). */
-export function StatusBadge({ status, text }) {
+/**
+ * Status as marker and text, never colour alone (NFR3), with the docs' own status text as its tooltip (US-0414 FR2.2).
+ * `focusable` only where the badge stands alone; inside a row button a tab stop of its own would nest one in the button.
+ */
+export function StatusBadge({ status, text, focusable = false }) {
   const { t } = useTranslation();
   return (
-    <span className={STATUS_CLASS[status] ?? 'tag'} title={text || undefined}>
-      {status ? `${STATUS_MARKER[status]} ${t(`features.status.${status}`)}` : text || t('features.unknownStatus')}
-    </span>
+    <Tooltip text={text || undefined} focusable={focusable}>
+      <span className={STATUS_CLASS[status] ?? 'tag'}>
+        {status ? `${STATUS_MARKER[status]} ${t(`features.status.${status}`)}` : text || t('features.unknownStatus')}
+      </span>
+    </Tooltip>
   );
 }
 
@@ -279,7 +285,7 @@ function ReleasesView({ projectId, features, onOpenStory }) {
                       <button className="btn btn-quiet" onClick={() => onOpenStory(epicId, story.id)}>
                         {story.id}: {story.title}
                       </button>{' '}
-                      <StatusBadge status={story.status} text={story.statusText} />
+                      <StatusBadge status={story.status} text={story.statusText} focusable />
                       {stale && <StaleFlag version={r.version} />}
                       {!r.released && (
                         <button

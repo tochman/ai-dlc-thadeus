@@ -1,0 +1,22 @@
+{
+  "stage": "code-generation",
+  "upstream_ids": ["FR1.1", "FR1.2", "FR1.3", "FR1.4", "FR1.5", "FR2.1", "FR2.2", "FR2.3", "FR2.4", "FR2.5", "FR3.1", "FR3.2", "FR4.1", "NFR1", "NFR2", "NFR3"],
+  "coverage": [
+    { "id": "FR1.1", "status": "OK", "target": "src/renderer/Tooltip.jsx" },
+    { "id": "FR1.2", "status": "OK", "target": "tests/renderer/Tooltip.test.jsx" },
+    { "id": "FR1.3", "status": "OK", "target": "src/renderer/Tooltip.jsx" },
+    { "id": "FR1.4", "status": "OK", "target": "src/renderer/tooltipPlacement.js" },
+    { "id": "FR1.5", "status": "OK", "target": "src/renderer/theme.css" },
+    { "id": "FR2.1", "status": "OK", "target": "tests/renderer/noNativeTitle.test.jsx" },
+    { "id": "FR2.2", "status": "OK", "target": "src/renderer/CostTab.jsx" },
+    { "id": "FR2.3", "status": "OK", "target": "src/renderer/IntentList.jsx" },
+    { "id": "FR2.4", "status": "OK", "target": "src/renderer/ResumeButton.jsx" },
+    { "id": "FR2.5", "status": "OK", "target": "src/renderer/TerminalPanel.jsx" },
+    { "id": "FR3.1", "status": "OK", "target": "src/renderer/TokenDetail.jsx" },
+    { "id": "FR3.2", "status": "OK", "target": "tests/renderer/TokenDetail.test.jsx" },
+    { "id": "FR4.1", "status": "OK", "target": "src/shared/locales/sv.json" },
+    { "id": "NFR1", "status": "OK", "target": "tests/renderer/tooltipPlacement.test.jsx" },
+    { "id": "NFR2", "status": "OK", "target": "tests/renderer/Tooltip.test.jsx" },
+    { "id": "NFR3", "status": "OK", "target": "tests/renderer/ResumeButton.test.jsx" }
+  ]
+}

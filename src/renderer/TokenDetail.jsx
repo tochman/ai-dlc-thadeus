@@ -9,13 +9,14 @@ import { scaleLinear } from '@visx/scale';
 import { Group } from '@visx/group';
 import { AxisBottom, AxisLeft } from '@visx/axis';
 import { GridColumns, GridRows } from '@visx/grid';
-import { Tooltip, useTooltip } from '@visx/tooltip';
+import { Tooltip as ChartTooltip, useTooltip } from '@visx/tooltip';
 import { ParentSize } from '@visx/responsive';
 import { Bar, Frame } from './Lcars.jsx';
 import { formatTokens, formatUsd, shortModel, stageTitle } from './format.js';
 import { agentName } from '../main/parsers/ledger.js';
 import { SPLIT_KINDS, STACK_KINDS, elapsedLabel, rateSeries, splitRows, stackSeries } from './tokenChart.js';
 import AgentProgress from './AgentProgress.jsx';
+import Tooltip from './Tooltip.jsx';
 
 // US-0507 FR5.2: a finished row drops off after FINISHED_KEEP_MS (src/main/parsers/agentProgress.js); ask again then.
 const FINISHED_RECHECK_MS = 60000;
@@ -24,6 +25,10 @@ const LEGEND = [...STACK_KINDS].reverse(); // top of the stack first
 const CHART_H = 260;
 const M = { top: 8, right: 12, bottom: 28, left: 52 };
 const totalOf = (r) => STACK_KINDS.reduce((s, k) => s + r[k], 0);
+const CHART_TIP_W = 220;
+
+/** The chart tooltip's left edge: right of the marker, inside the chart on both sides (US-0414 FR3.2). */
+export const chartTipLeft = (left, width) => Math.max(0, Math.min(left + 12, width - CHART_TIP_W));
 
 /** Two LCARS switch blocks; the pressed one is steel (design-system-mapping). A switch never moves focus. */
 function Switch({ id, options, value, onChange }) {
@@ -132,12 +137,12 @@ function OverTimeChart({ width, readings }) {
         </Group>
       </svg>
       {r && (
-        <Tooltip
+        <ChartTooltip
           unstyled
           applyPositionStyle
-          left={Math.min(tooltipLeft + 12, width - 220)}
+          left={chartTipLeft(tooltipLeft, width)}
           top={M.top}
-          className="token-detail-tooltip"
+          className="lcars-tip token-detail-tooltip"
           id={tipId}
           role="tooltip"
           data-testid="token-detail-tooltip"
@@ -153,7 +158,7 @@ function OverTimeChart({ width, readings }) {
             <span>{t('tokenDetail.cost')}</span>
             <span>{formatUsd(r.usd)}</span>
           </span>
-        </Tooltip>
+        </ChartTooltip>
       )}
     </div>
   );
@@ -251,31 +256,34 @@ function SplitCard({ id, rows, keepOrder = false, nameOf, hasEntry }) {
       ) : (
         <ul className="token-detail-rows">
           {shown.map((r) => (
-            <li key={r.name} className="token-detail-row" tabIndex={0}>
-              <span className="token-detail-row-name">{r.other ? t('tokenDetail.other') : nameOf(r.name)}</span>
-              <svg className="token-detail-row-bar" viewBox="0 0 1000 12" preserveAspectRatio="none" aria-hidden="true">
-                <g className="token-detail-bar-grow" style={{ transform: `scaleX(${max > 0 ? r.value / max : 0})` }}>
-                  {
-                    r.parts.reduce(
-                      (acc, p) => {
-                        const w = r.value > 0 ? (p.value / r.value) * 1000 : 0;
-                        acc.bars.push(<VisxBar key={p.kind} x={acc.x} y={0} width={Math.max(w - 3, 0)} height={12} className={`token-kind--${p.kind}`} />);
-                        acc.x += w;
-                        return acc;
-                      },
-                      { x: 0, bars: [] }
-                    ).bars
-                  }
-                </g>
-              </svg>
-              <span className="token-detail-row-value">{valueText(r)}</span>
-              <span className="token-detail-row-tip">
-                {[
-                  ...SPLIT_KINDS.map((k) => `${t(`tokens.${k}`)} ${formatTokens(r.tokens[k])}`),
-                  r.missingPrice ? t('cost.missingPrice') : formatUsd(r.usd)
-                ].join(' · ')}
-              </span>
-            </li>
+            // US-0414 FR3.1: the exact figures in the shared tooltip, on hover and on focus.
+            <Tooltip
+              key={r.name}
+              text={[
+                ...SPLIT_KINDS.map((k) => `${t(`tokens.${k}`)} ${formatTokens(r.tokens[k])}`),
+                r.missingPrice ? t('cost.missingPrice') : formatUsd(r.usd)
+              ].join(' · ')}
+            >
+              <li className="token-detail-row" tabIndex={0}>
+                <span className="token-detail-row-name">{r.other ? t('tokenDetail.other') : nameOf(r.name)}</span>
+                <svg className="token-detail-row-bar" viewBox="0 0 1000 12" preserveAspectRatio="none" aria-hidden="true">
+                  <g className="token-detail-bar-grow" style={{ transform: `scaleX(${max > 0 ? r.value / max : 0})` }}>
+                    {
+                      r.parts.reduce(
+                        (acc, p) => {
+                          const w = r.value > 0 ? (p.value / r.value) * 1000 : 0;
+                          acc.bars.push(<VisxBar key={p.kind} x={acc.x} y={0} width={Math.max(w - 3, 0)} height={12} className={`token-kind--${p.kind}`} />);
+                          acc.x += w;
+                          return acc;
+                        },
+                        { x: 0, bars: [] }
+                      ).bars
+                    }
+                  </g>
+                </svg>
+                <span className="token-detail-row-value">{valueText(r)}</span>
+              </li>
+            </Tooltip>
           ))}
         </ul>
       )}

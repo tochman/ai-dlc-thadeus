@@ -8,7 +8,7 @@
 
 **Stories:** US-0401, US-0402, US-0403, US-0404, US-0405, US-0406, US-0407, US-0408, US-0409, US-0410, US-0411, US-0412, US-0413, US-0414
 
-**Status (2026-11-16):** ✅ US-0401–US-0411 released (v0.1.1–v0.2.5). 📋 US-0412 planned. ✅ US-0413 released in v0.2.7. 📋 US-0414 planned for v0.2.8. Each story names its release.
+**Status (2026-11-16):** ✅ US-0401–US-0411 released (v0.1.1–v0.2.5). 📋 US-0412 planned. ✅ US-0413 released in v0.2.7. ✅ US-0414 done, for v0.2.8. Each story names its release.
 
 ---
 
@@ -292,18 +292,19 @@
 
 ---
 
-**US-0414: One LCARS tooltip across the app** 📋 Planned, for v0.2.8
+**US-0414: One LCARS tooltip across the app** ✅ Done, for v0.2.8
 - As a **developer using the app**, in order to **read the details behind a figure, a button or a label the same way everywhere**, I would like **every tooltip in the app to look and behave like the one on the token detail view's split bars**.
 - **Epic:** EPIC-04
 - **Priority:** Medium
 - **Complexity:** Medium
 - **Background:** Asked for 2026-11-16: "I love the tooltip on the agent progress page. we want to use the across the board in the application." The tooltip meant is `.token-detail-row-tip` in the token detail view (US-0208): a coral 2 px border, the LCARS corner (`border-radius: 2px 12px 2px 2px`), the app's background, tabular figures, shown on hover and on keyboard focus. Elsewhere the app shows tooltips in other ways: about 39 native `title=` attributes across `App.jsx`, `IntentList.jsx`, `IntentDetail.jsx`, `Pipeline.jsx`, `CostPanel.jsx`, `CostTab.jsx`, `FeaturesView.jsx`, `ConfigEdit.jsx`, `ProjectSettingsView.jsx`, `ArtifactReader.jsx`, `ResumeButton.jsx`, `TerminalPanel.jsx`, `Lcars.jsx` and `editor/EditorPanel.jsx`, and the visx chart tooltip (`.token-detail-tooltip`) in `TokenDetail.jsx`.
 - **Acceptance Criteria:**
-  - [ ] **Given** any element in the app that shows a tooltip, **when** I hover over it or reach it by keyboard, **then** the tooltip has the same look as the split-bar tooltip.
-  - [ ] There is one shared tooltip (a component or a CSS class, whichever is smaller) that every place uses; no place keeps its own tooltip style.
-  - [ ] Native `title=` tooltips on interactive elements are replaced; an element that needs a name for screen readers keeps one (`aria-label` or `aria-describedby`).
-  - [ ] A tooltip stays inside the window: near an edge it opens to the side that has room.
-  - [ ] Tooltip texts go through `t()` in Swedish and English.
-  - [ ] A test checks that the shared tooltip opens on focus as well as on hover.
+  - [x] **Given** any element in the app that shows a tooltip, **when** I hover over it or reach it by keyboard, **then** the tooltip has the same look as the split-bar tooltip.
+  - [x] There is one shared tooltip (a component or a CSS class, whichever is smaller) that every place uses; no place keeps its own tooltip style.
+  - [x] Native `title=` tooltips on interactive elements are replaced; an element that needs a name for screen readers keeps one (`aria-label` or `aria-describedby`).
+  - [x] A tooltip stays inside the window: near an edge it opens to the side that has room.
+  - [x] Tooltip texts go through `t()` in Swedish and English.
+  - [x] A test checks that the shared tooltip opens on focus as well as on hover.
 - **Notes:** Start with a list of every place that shows a tooltip today. The chart tooltip on "Tokens over time" (US-0024) should use the same style.
+- **Built (2026-11-16, express intent `261116-shared-tooltip`):** one `Tooltip` component (`src/renderer/Tooltip.jsx`) rendered through a portal with the `.lcars-tip` look, placed by `tooltipPlacement.js` (flips above, shifts to stay 4 px inside the window). All 31 native `title=` tooltips are gone (the scan found 31, not about 39: 8 hits were captions and headings), and `noNativeTitle.test.jsx` keeps them out. Plain-text tooltips are focusable; tooltips on parts of a button stay hover-only and the button shows their combined text on focus; Resume uses `aria-disabled` so its reason shows. The split-bar row tip uses the component and the chart tooltip takes the same look. Exceptions: `StatusBadge` inside a row button is hover-only, and intent rows missing on disk stay natively disabled. Placement near the window edges, hover feel and stacking over dialogs are checked by hand in the built app.
 - **Dependencies:** US-0208

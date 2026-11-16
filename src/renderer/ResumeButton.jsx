@@ -6,6 +6,7 @@ import { useTranslation } from 'react-i18next';
 import { useTerminal } from './TerminalContext.jsx';
 import { t as translate } from '../shared/i18n.js';
 import { harnessCommand } from '../shared/harnesses.js';
+import Tooltip from './Tooltip.jsx';
 
 const SAFE_DIR_NAME = /^[A-Za-z0-9][A-Za-z0-9._-]*$/;
 // ponytail: a quiet log for this long means the outside agent stopped; a long silent step can re-enable Resume early.
@@ -56,6 +57,7 @@ export default function ResumeButton({ intent, activeDirName, activeIntent = nul
 
   function resume(e) {
     e.stopPropagation();
+    if (unavailable) return undefined; // aria-disabled, not disabled, so it keeps focus and its tooltip (US-0414 FR2.4)
     const reason = workingReason();
     if (reason) return setMessage(reason); // FR2.4
     setMessage(null);
@@ -74,10 +76,12 @@ export default function ResumeButton({ intent, activeDirName, activeIntent = nul
   const main = terminal.agentTabs?.length > 1 ? t('intents.resume.inHarness', { label, harness: harnessName }) : label;
   return (
     <span className="resume">
-      <button className="resume-button" onClick={resume} disabled={!!unavailable} title={unavailable ?? undefined} data-testid="intent-resume">
-        <span className="resume-main">{main}</span>
-        <span className="resume-step">{step ? ` ${step}` : ''}</span>
-      </button>
+      <Tooltip text={unavailable}>
+        <button className="resume-button" onClick={resume} aria-disabled={!!unavailable} data-testid="intent-resume">
+          <span className="resume-main">{main}</span>
+          <span className="resume-step">{step ? ` ${step}` : ''}</span>
+        </button>
+      </Tooltip>
       {message && (
         <span className="resume-message" role="status">
           {message}

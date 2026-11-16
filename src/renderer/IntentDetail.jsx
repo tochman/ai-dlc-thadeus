@@ -9,6 +9,7 @@ import ResumeButton from './ResumeButton.jsx';
 import TokenView from './TokenView.jsx';
 import TokenDetail from './TokenDetail.jsx';
 import { Dots, Frame, Hairlines } from './Lcars.jsx';
+import Tooltip from './Tooltip.jsx';
 import { formatCost, isInFlight, shortModel, stagePosition, stageStatusLabel, stageTitle } from './format.js';
 
 const TABS = [
@@ -179,26 +180,19 @@ export default function IntentDetail({ projectId, detail, intent, activeDirName,
           <div className="intent-head-main">
             <h2 className="intent-title">{intent?.slug ?? detail.dirName}</h2>
             <div className="lcars-chips">
-              <span
-                className="lcars-chip"
-                title={state?.plan ? t('intents.basedOn', { scope: intent?.scope ?? state?.scope ?? '–' }) : t('intents.scopeLabel')}
-              >
-                {state?.plan ?? intent?.scope ?? state?.scope ?? '–'}
-              </span>
+              <Tooltip text={state?.plan ? t('intents.basedOn', { scope: intent?.scope ?? state?.scope ?? '–' }) : t('intents.scopeLabel')} focusable>
+                <span className="lcars-chip">{state?.plan ?? intent?.scope ?? state?.scope ?? '–'}</span>
+              </Tooltip>
               <span className="lcars-chip">{t('intents.depth', { depth: state?.depth ?? '–' })}</span>
               <span className="lcars-chip">{t('intents.test', { strategy: state?.testStrategy ?? '–' })}</span>
               {/* Stories in the feature docs that this intent mentions (EPIC-06 FR2.6). */}
               {onOpenStory &&
                 stories.map((id) => (
-                  <button
-                    key={id}
-                    className="lcars-chip lcars-chip--active"
-                    title={t('intents.openStory', { id })}
-                    onClick={() => onOpenStory(id)}
-                    data-testid="intent-detail-story-link"
-                  >
-                    {id}
-                  </button>
+                  <Tooltip key={id} text={t('intents.openStory', { id })}>
+                    <button className="lcars-chip lcars-chip--active" onClick={() => onOpenStory(id)} data-testid="intent-detail-story-link">
+                      {id}
+                    </button>
+                  </Tooltip>
                 ))}
               <span className="lcars-chip lcars-chip--quiet">{detail.dirName}</span>
               {detail.stale && <span className="lcars-chip lcars-chip--warn">{t('intents.stale')}</span>}
