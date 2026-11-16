@@ -8,7 +8,7 @@
 
 **Stories:** US-0001, US-0002, US-0003, US-0004, US-0005, US-0006, US-0007, US-0008, US-0009, US-0010, US-0011, US-0012, US-0013, US-0014, US-0015, US-0016, US-0017, US-0018, US-0019, US-0020, US-0021, US-0022, US-0023, US-0024, US-0025
 
-**Status (2026-11-16):** ✅ US-0001–US-0020 released (v0.2.3–v0.2.6). ✅ US-0021–US-0023 released in v0.2.7. ✅ US-0024 released in v0.2.8. ✅ US-0025 done, not yet released. Each story names its release.
+**Status (2026-11-16):** ✅ US-0001–US-0020 released (v0.2.3–v0.2.6). ✅ US-0021–US-0023 released in v0.2.7. ✅ US-0024 released in v0.2.8. ✅ US-0025 done, not yet released, for v0.2.9. Each story names its release.
 
 ---
 
@@ -392,7 +392,7 @@
 
 ---
 
-**US-0025: Agent progress shows a running build when the inflight file is empty** ✅ Done (not yet released)
+**US-0025: Agent progress shows a running build when the inflight file is empty** ✅ Done, for v0.2.9 (not yet released)
 - As a **developer watching agents work**, in order to **see that a build is running**, I would like **the "Agenternas framsteg" panel and "Arbetar nu" to show a running AI-DLC agent even when AI-DLC's inflight file is missing or empty**.
 - **Epic:** EPIC-00
 - **Priority:** High
