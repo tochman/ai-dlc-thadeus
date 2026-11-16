@@ -6,9 +6,9 @@
 
 > Auctum AIDLC Control should look and behave like a proper Auctum desktop app wherever it shows up: in the Dock, the application menu, the window switcher, the installer and the Linux launcher. Inside the app it should feel like a living bridge console. EPIC-01 added the name, splash screen, in-app logo and the restrained LCARS theme. This epic covers the parts of the operating system that still show Electron defaults, and the motion and light that make the theme come alive without hurting readability.
 
-**Stories:** US-0401, US-0402, US-0403, US-0404, US-0405, US-0406, US-0407, US-0408, US-0409, US-0410, US-0411, US-0412, US-0413
+**Stories:** US-0401, US-0402, US-0403, US-0404, US-0405, US-0406, US-0407, US-0408, US-0409, US-0410, US-0411, US-0412, US-0413, US-0414
 
-**Status (2026-11-16):** ✅ US-0401–US-0411 released (v0.1.1–v0.2.5). 📋 US-0412 planned. ✅ US-0413 released in v0.2.7. Each story names its release.
+**Status (2026-11-16):** ✅ US-0401–US-0411 released (v0.1.1–v0.2.5). 📋 US-0412 planned. ✅ US-0413 released in v0.2.7. 📋 US-0414 planned for v0.2.8. Each story names its release.
 
 ---
 
@@ -290,3 +290,20 @@
   - Depends on the repository being public (US-1101); until then the current `gh` path stays.
 - **Dependencies:** US-0407, US-1101
 
+---
+
+**US-0414: One LCARS tooltip across the app** 📋 Planned, for v0.2.8
+- As a **developer using the app**, in order to **read the details behind a figure, a button or a label the same way everywhere**, I would like **every tooltip in the app to look and behave like the one on the token detail view's split bars**.
+- **Epic:** EPIC-04
+- **Priority:** Medium
+- **Complexity:** Medium
+- **Background:** Asked for 2026-11-16: "I love the tooltip on the agent progress page. we want to use the across the board in the application." The tooltip meant is `.token-detail-row-tip` in the token detail view (US-0208): a coral 2 px border, the LCARS corner (`border-radius: 2px 12px 2px 2px`), the app's background, tabular figures, shown on hover and on keyboard focus. Elsewhere the app shows tooltips in other ways: about 39 native `title=` attributes across `App.jsx`, `IntentList.jsx`, `IntentDetail.jsx`, `Pipeline.jsx`, `CostPanel.jsx`, `CostTab.jsx`, `FeaturesView.jsx`, `ConfigEdit.jsx`, `ProjectSettingsView.jsx`, `ArtifactReader.jsx`, `ResumeButton.jsx`, `TerminalPanel.jsx`, `Lcars.jsx` and `editor/EditorPanel.jsx`, and the visx chart tooltip (`.token-detail-tooltip`) in `TokenDetail.jsx`.
+- **Acceptance Criteria:**
+  - [ ] **Given** any element in the app that shows a tooltip, **when** I hover over it or reach it by keyboard, **then** the tooltip has the same look as the split-bar tooltip.
+  - [ ] There is one shared tooltip (a component or a CSS class, whichever is smaller) that every place uses; no place keeps its own tooltip style.
+  - [ ] Native `title=` tooltips on interactive elements are replaced; an element that needs a name for screen readers keeps one (`aria-label` or `aria-describedby`).
+  - [ ] A tooltip stays inside the window: near an edge it opens to the side that has room.
+  - [ ] Tooltip texts go through `t()` in Swedish and English.
+  - [ ] A test checks that the shared tooltip opens on focus as well as on hover.
+- **Notes:** Start with a list of every place that shows a tooltip today. The chart tooltip on "Tokens over time" (US-0024) should use the same style.
+- **Dependencies:** US-0208
