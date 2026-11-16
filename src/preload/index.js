@@ -45,6 +45,9 @@ contextBridge.exposeInMainWorld('bridge', {
   pickTool: call('tools:pick'),
   saveTool: call('tools:save'),
   resetTool: call('tools:reset'),
+  // Is AI-DLC current (US-0504): a force flag and a project id cross the bridge, never a path or a command.
+  getAidlcUpdateStatus: call('aidlc:updateStatus'),
+  getAidlcProjectPlans: call('aidlc:projectPlans'),
   pickDefaultFolder: call('settings:pickDefaultFolder'),
   clearDefaultFolder: call('settings:clearDefaultFolder'),
   getAppInfo: call('app:info'),

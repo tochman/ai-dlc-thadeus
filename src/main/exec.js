@@ -12,7 +12,8 @@ let loginPathPromise = null;
 
 export function defaultExec(file, args, options) {
   return new Promise((resolve, reject) => {
-    execFile(file, args, options, (err, stdout) => (err ? reject(err) : resolve(String(stdout))));
+    // A non-zero exit keeps its stdout on the error: `aidlc update --check` answers with exit 5 (US-0504 FR1.2).
+    execFile(file, args, options, (err, stdout) => (err ? reject(Object.assign(err, { stdout: String(stdout ?? '') })) : resolve(String(stdout))));
   });
 }
 

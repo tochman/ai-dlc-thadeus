@@ -32,7 +32,7 @@ Status from `docs/FEATURES.md` at commit `bc1dd3d`, with the EPIC-06 and EPIC-11
 | EPIC-02 | Cost and models; live token view | Released up to v0.2.4 |
 | EPIC-03 | Virtualised audit timeline | Released v0.2.0; US-0303 for v0.3.0 |
 | EPIC-04 | LCARS design, desktop integration, self-update from GitHub releases, About | Released up to v0.2.5; US-0412, US-0413 planned |
-| EPIC-05 | Workflow control incl. agent dialogs (US-0506) | Released up to v0.2.5 |
+| EPIC-05 | Workflow control incl. agent dialogs (US-0506) | Released up to v0.2.5; **US-0504 (this intent)** in progress for v0.2.7 |
 | EPIC-06 | Feature docs view and setup offer; releases or continuous deployment per project (US-0603) | US-0601–0603 released (v0.2.0–v0.2.5); US-0604 planned and **US-0605 (this intent)** in progress, both for v0.2.7 |
 | EPIC-07 | Swedish and English UI | US-0702 for v0.3.0 |
 | EPIC-08 | Harness per project, set up six harnesses | Released up to v0.2.3 |
@@ -45,8 +45,8 @@ Status from `docs/FEATURES.md` at commit `bc1dd3d`, with the EPIC-06 and EPIC-11
 
 With the per-project delivery setting **Releases** (default; the other is **Continuous deployment**), the Features view lets a person mark a story for a release and lists releases with their stories (US-0603). A release is not stored anywhere: it exists only while a story carries "for vX.Y.Z" or "Released in vX.Y.Z" in the feature docs, or a git tag `vX.Y.Z` exists. The mechanics are in `architecture.md` ("Releases: derived, not stored").
 
-## The active intent: US-0605 (create a release by hand)
+## The active intent: US-0504 (update the AI-DLC framework)
 
-Intent `261115-manual-releases` (scope `express`) covers US-0605 (`docs/features/epic-06-feature-docs.md`): a "New release" action in the release list (with patch, minor and major suggestions after the latest tag, refusing a non-`vX.Y.Z` or existing version), the new release shown as planned with 0 stories and offered in every story's picker after a restart, adding and removing stories there with the same marker as US-0603, deleting a release with no stories and no tag, hidden with Continuous deployment, all texts through `t()`. Open question in the story: where an empty release is kept (suggested `docs/RELEASES.md`, or app settings). The facts that bear on it are in `code-quality-assessment.md` ("Brownfield notes for US-0605").
+Intent `261116-framework-update` (scope `express`) covers US-0504 (`docs/features/epic-05-workflow-control.md`): show the installed `aidlc` version and whether a newer release exists (fixed arguments, no shell), show which `.claude/` files an update would change from a dry run, and type `aidlc update` or `aidlc config` into the shell tab for the person's Enter; disabled while an AI-DLC workflow runs, as in US-0502. The app never writes `.claude/` itself. It builds on US-0502 (Refresh, typed commands, the running-workflow gate) and US-0503 (setup's version check and dry-run preview). The facts that bear on it are in `code-quality-assessment.md` ("Brownfield notes for US-0504").
 
-The previous intent, US-1101 (`261115-repo-public-ready`), is released; its findings stay in `code-quality-assessment.md` ("Public-readiness review") and `dependencies.md` ("Licences").
+The previous intents: US-0605 (`261115-manual-releases`; notes in `code-quality-assessment.md`, "Brownfield notes for US-0605") and US-1101 (`261115-repo-public-ready`, released; findings in "Public-readiness review" and `dependencies.md` "Licences").

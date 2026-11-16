@@ -495,6 +495,24 @@
     "firstWork": "Start the first work",
     "createFeatureDocs": "Create feature docs"
   },
+  "aidlcUpdate": {
+    "programTitle": "AI-DLC program",
+    "projectTitle": "AI-DLC in this project",
+    "newer": "Newer: v{version}",
+    "newerUnknown": "A newer version exists",
+    "upToDate": "Up to date",
+    "check": "Check for updates",
+    "updateProgram": "Update AI-DLC",
+    "updateProject": "Update the project files",
+    "counts": "{create} new, {update} changed, {merge} merged, {remove} removed",
+    "showFiles": "Show files ({n})",
+    "conflict": "Conflict: {path}",
+    "noHarness": "The project has no AI-DLC harness.",
+    "needsProject": "Open a project to type the command into its shell tab.",
+    "loadFailed": "Could not check the project: {error}",
+    "unreadable": "The answer from aidlc could not be read.",
+    "timeout": "timed out after 30 s"
+  },
   "settings": {
     "title": "Settings",
     "tabsLabel": "Settings tabs",

@@ -115,3 +115,26 @@ flowchart TD
 Text fallback: the features parser feeds the releases parser and the features loader; both feed the releases service, which writes through `fileWrite.js`. `ipc.js` combines the loader, the service, `listReleaseTags` and the saved `delivery` setting and hands them over the preload bridge to `FeaturesView.jsx`, which also imports the releases parser directly and gets `delivery` from `ProjectView.jsx`. Texts come from the locale files (`features.release.*`, `features.releases.*`).
 
 Tests touching this area: `tests/main/releases.test.js`, `tests/main/featureDocsStatus.test.js`, `tests/main/i18nKeys.test.js`, `tests/renderer/FeaturesView.test.jsx`; fixtures `tests/fixtures/features/`.
+
+## Dependencies of the framework-update area (US-0504 blast radius)
+
+```mermaid
+flowchart TD
+  EX["src/main/exec.js runFixed"] --> TO["src/main/tools.js toolPath, probeTool"]
+  EX --> SE["src/main/setup.js"]
+  TO --> SE
+  GI["src/main/git.js isGitRepo"] --> SE
+  SE --> IPC["src/main/ipc.js setup:*"]
+  IPC --> PRE["src/preload/index.js"]
+  PRE --> SA["src/renderer/SetupAidlc.jsx"]
+  PRE --> RP["src/renderer/RefreshPanel.jsx"]
+  TCX["src/renderer/TerminalContext.jsx type, anyBusy"] --> RP
+  TCX --> SA
+  TCX --> PTY["src/main/pty.js writeSession"]
+  LOC["src/shared/locales/*.json"] --> RP
+  LOC --> SA
+```
+
+Text fallback: `runFixed` and `toolPath` carry every `aidlc` call; `setup.js` (with `isGitRepo`) reads the version and the dry-run preview and is reached over `setup:*` IPC by `SetupAidlc.jsx`. `RefreshPanel.jsx` types into the shell tab through `TerminalContext`, which writes to the pty in main, and reads `anyBusy` for the running-workflow gate. Texts come from the locale files (`github.*`, `setup.*`).
+
+Tests touching this area: `tests/main/setup.test.js`, `tests/main/tools.test.js`, `tests/renderer/RefreshPanel.test.jsx`, `tests/main/i18nKeys.test.js`.

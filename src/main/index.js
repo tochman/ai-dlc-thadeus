@@ -1,6 +1,6 @@
 import { app, BrowserWindow, shell } from 'electron';
 import { join } from 'node:path';
-import { guardClose, noteQuitting, registerIpc, shutdown, startUpdateCheck } from './ipc.js';
+import { guardClose, noteQuitting, registerIpc, shutdown, startAidlcCheck, startUpdateCheck } from './ipc.js';
 import { applyMenu } from './menu.js';
 import { getSettings, setSettings } from './settings.js';
 import { setToolPaths } from './tools.js';
@@ -84,7 +84,11 @@ async function createWindow() {
   win.on('enter-full-screen', onFullscreen(true));
   win.on('leave-full-screen', onFullscreen(false));
   // At most once a day, in the background: the window never waits on it (EPIC-04 US-0407 NFR5).
-  win.webContents.once('did-finish-load', () => startUpdateCheck(win));
+  // The AI-DLC program check runs once per app run, after the first window has loaded (US-0504 FR3, NFR2).
+  win.webContents.once('did-finish-load', () => {
+    startUpdateCheck(win);
+    startAidlcCheck();
+  });
 
   if (process.env.ELECTRON_RENDERER_URL) {
     win.loadURL(process.env.ELECTRON_RENDERER_URL);
