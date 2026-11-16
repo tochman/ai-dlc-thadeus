@@ -8,7 +8,7 @@
 
 **Stories:** US-0501, US-0502, US-0503, US-0504, US-0505, US-0506, US-0507, US-0508, US-0509
 
-**Status (2026-11-16):** ✅ US-0501–US-0503, US-0505 and US-0506 released (v0.2.0–v0.2.5). ✅ US-0504 released in v0.2.7. 📋 US-0507 planned for v0.2.8, US-0508 and US-0509 planned. Each story names its release.
+**Status (2026-11-16):** ✅ US-0501–US-0503, US-0505 and US-0506 released (v0.2.0–v0.2.5). ✅ US-0504 released in v0.2.7. 🚧 US-0507 in progress, for v0.2.8. 📋 US-0508 and US-0509 planned. Each story names its release.
 
 ---
 
@@ -140,19 +140,20 @@
 - **Notes:** Added 2026-11-14 at the person's request ("answer questions from Claude or opencode in dialogs, not only from AI-DLC, and see messages from them").
 - **Dependencies:** US-0505, US-0801, US-0803
 
-**US-0507: See what the agents are doing and how far they have come** 📋 Planned, for v0.2.8
+**US-0507: See what the agents are doing and how far they have come** 🚧 In progress, for v0.2.8
 - As a **developer running AI-DLC**, in order to **know what is actually going on while subagents work in the background**, I would like to **plain progress lines per running agent, such as "u2-permissions has 6 of 27 steps done and u3-replies has 16 of 42"**.
 - **Epic:** EPIC-05
 - **Priority:** Medium
 - **Complexity:** Medium
 - **Acceptance Criteria:**
-  - [ ] For the running intent, the app lists each active piece of agent work (a Unit's build, a design builder, a reviewer) with its stage, its Unit and how long it has run.
-  - [ ] A build shows steps done out of the plan's steps, read from the ticked boxes in that Unit's `code-generation-plan.md` in its worktree, plus its last commit subject.
-  - [ ] A review shows "review requested", then the verdict and how many findings by severity, from the audit log.
-  - [ ] One summary line sums it up in words, for example "The builds are moving along: u2-permissions has 6 of 27 steps done and u3-replies has 16 of 42."
+  - [ ] It is shown in the existing Unit diagram (the intent's Units tab, `BoltDag.jsx`); no new view is added.
+  - [ ] Each Unit node with work running shows its stage and how long it has run.
+  - [ ] A build shows steps done out of the plan's steps on its node, read from the ticked boxes in that Unit's `code-generation-plan.md` in its worktree, plus its last commit subject.
+  - [ ] A review shows on its Unit's node: "review requested", then the verdict and how many findings by severity, from the audit log. Agent work with no Unit (a design builder, a stage-level reviewer) is named in the summary line.
+  - [ ] One summary line above the diagram sums it up in words, for example "The builds are moving along: u2-permissions has 6 of 27 steps done and u3-replies has 16 of 42."
   - [ ] It updates live as files and the audit log change; finished work drops off with its result; a worktree or plan that cannot be read is named, not shown as 0.
   - [ ] Every text goes through `t()` in Swedish and English; numbers are computed from the records, never typed in.
-- **Notes:** Added 2026-11-14 at the person's request.
+- **Notes:** Added 2026-11-14 at the person's request. Decided 2026-11-16: it uses the Unit diagram, not a view of its own.
 - **Dependencies:** US-0104, US-0506
 
 **US-0508: Rename an intent** 📋 Planned
