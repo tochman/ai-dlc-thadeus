@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { formatCost, isInFlight, stagePosition } from './format.js';
 import ResumeButton from './ResumeButton.jsx';
 import { Dots, progressStates } from './Lcars.jsx';
+import Tooltip from './Tooltip.jsx';
 
 const ALL = '';
 const SORTS = ['date', 'cost', 'name'];
@@ -30,16 +31,29 @@ export function filterIntents(intents, { status, scope, query }) {
   );
 }
 
+/** The explanation of a row's cost: "no entry", the label, or the label marked incomplete (FR1.4, FR5.2). */
+function costTip(t, c) {
+  const label = t('cost.label');
+  return !c ? t('cost.noEntry') : c.complete ? label : t('intents.costIncomplete', { label });
+}
+
 /** Running cost next to the live dot; "–" with an explanation when the ledger has no entry (FR1.2, FR1.4, FR5.2). */
 function RowCost({ c }) {
   const { t } = useTranslation();
-  const label = t('cost.label');
-  const title = !c ? t('cost.noEntry') : c.complete ? label : t('intents.costIncomplete', { label });
   return (
-    <span className="intent-cost" title={title} data-testid="intent-list-row-cost">
-      {c ? `${formatCost(c.total)}${c.complete ? '' : '*'}` : '–'}
-    </span>
+    <Tooltip text={costTip(t, c)}>
+      <span className="intent-cost" data-testid="intent-list-row-cost">
+        {c ? `${formatCost(c.total)}${c.complete ? '' : '*'}` : '–'}
+      </span>
+    </Tooltip>
   );
+}
+
+/** The row's tooltips joined, shown when the row button gets keyboard focus; its parts are not focusable (US-0414 FR2.3). */
+function rowTips(t, i, costs) {
+  return [i.date, costs && costTip(t, costs[i.dirName]), i.plan && t('intents.basedOn', { scope: i.scope ?? '–' }), t('intents.doneOfExecuted'), i.error]
+    .filter(Boolean)
+    .join('\n');
 }
 
 const unique = (values) => [...new Set(values.filter(Boolean))].sort();
@@ -119,47 +133,53 @@ export default function IntentList({ intents, selected, onSelect, cost }) {
       <ul className="intent-rows" role="listbox" aria-label={t('intents.title')}>
         {visible.map((i) => (
           <li key={i.dirName}>
-            <button
-              role="option"
-              aria-selected={i.dirName === selected}
-              className={`intent-row status-${i.status ?? 'unknown'} ${i.dirName === selected ? 'is-selected' : ''}`}
-              onClick={() => onSelect(i.dirName)}
-              disabled={i.missingOnDisk}
-              title={i.date ?? undefined}
-              data-testid="intent-list-row"
-            >
-              <span className="intent-row-top">
-                <span className="intent-slug">{i.slug}</span>
-                {/* active-intent is only the selection cursor; a finished intent stays selected but is not active */}
-                {i.active && i.status !== 'complete' && <span className="intent-badge">{t('intents.active')}</span>}
-                {costs && <RowCost c={costs[i.dirName]} />}
-              </span>
-              <span className="intent-row-meta">
-                <span>
-                  <span title={i.plan ? t('intents.basedOn', { scope: i.scope ?? '–' }) : undefined}>{planName(i) ?? '–'}</span> ·{' '}
-                  <span className="status-text" data-testid="intent-list-row-status">
-                    {i.status ?? t('intents.unknownStatus')}
-                  </span>
+            <Tooltip text={i.date} focusText={rowTips(t, i, costs)}>
+              <button
+                role="option"
+                aria-selected={i.dirName === selected}
+                className={`intent-row status-${i.status ?? 'unknown'} ${i.dirName === selected ? 'is-selected' : ''}`}
+                onClick={() => onSelect(i.dirName)}
+                disabled={i.missingOnDisk}
+                data-testid="intent-list-row"
+              >
+                <span className="intent-row-top">
+                  <span className="intent-slug">{i.slug}</span>
+                  {/* active-intent is only the selection cursor; a finished intent stays selected but is not active */}
+                  {i.active && i.status !== 'complete' && <span className="intent-badge">{t('intents.active')}</span>}
+                  {costs && <RowCost c={costs[i.dirName]} />}
                 </span>
-                <span className="intent-steps">
-                  <Dots states={progressStates(i.done ?? 0, i.executed ?? 0, isInFlight(i.status))} small />
-                  <span title={t('intents.doneOfExecuted')}>
-                    {i.done ?? 0}/{i.executed ?? 0}
-                  </span>
-                </span>
-              </span>
-              {(i.missingInIndex || i.missingOnDisk || i.error) && (
-                <span className="intent-row-flags">
-                  {i.missingInIndex && <span className="tag tag-warn">{t('intents.missingInIndex')}</span>}
-                  {i.missingOnDisk && <span className="tag tag-warn">{t('intents.missingOnDisk')}</span>}
-                  {i.error && (
-                    <span className="tag tag-error" title={i.error}>
-                      {t('intents.readError')}
+                <span className="intent-row-meta">
+                  <span>
+                    <Tooltip text={i.plan && t('intents.basedOn', { scope: i.scope ?? '–' })}>
+                      <span>{planName(i) ?? '–'}</span>
+                    </Tooltip>{' '}
+                    ·{' '}
+                    <span className="status-text" data-testid="intent-list-row-status">
+                      {i.status ?? t('intents.unknownStatus')}
                     </span>
-                  )}
+                  </span>
+                  <span className="intent-steps">
+                    <Dots states={progressStates(i.done ?? 0, i.executed ?? 0, isInFlight(i.status))} small />
+                    <Tooltip text={t('intents.doneOfExecuted')}>
+                      <span>
+                        {i.done ?? 0}/{i.executed ?? 0}
+                      </span>
+                    </Tooltip>
+                  </span>
                 </span>
-              )}
-            </button>
+                {(i.missingInIndex || i.missingOnDisk || i.error) && (
+                  <span className="intent-row-flags">
+                    {i.missingInIndex && <span className="tag tag-warn">{t('intents.missingInIndex')}</span>}
+                    {i.missingOnDisk && <span className="tag tag-warn">{t('intents.missingOnDisk')}</span>}
+                    {i.error && (
+                      <Tooltip text={i.error}>
+                        <span className="tag tag-error">{t('intents.readError')}</span>
+                      </Tooltip>
+                    )}
+                  </span>
+                )}
+              </button>
+            </Tooltip>
             {i.dirName === selected && (
               <ResumeButton intent={i} activeDirName={activeDirName} activeIntent={activeIntent} position={stagePosition(i.currentStage, i.done, i.executed)} />
             )}

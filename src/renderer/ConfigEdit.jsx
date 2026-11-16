@@ -16,6 +16,7 @@ import {
 } from '../shared/configTables.js';
 import { compareModels } from '../main/parsers/ledger.js';
 import { formatUsd } from './format.js';
+import Tooltip from './Tooltip.jsx';
 
 const DASH = '—';
 const errorText = (err) => String(err?.message ?? err).replace(/^Error invoking remote method '[^']+': (Error: )?/, '');
@@ -465,9 +466,11 @@ export function ModelPicker({ projectId, harness, rows, fallback }) {
                 <td>
                   {c?.actual?.length ? c.actual.join(', ') : DASH}
                   {c?.mismatch && (
-                    <span className="tag tag-warn" title={t('configEdit.models.alignHint')} data-testid="config-edit-models-mismatch">
-                      {t('configEdit.models.mismatch')}
-                    </span>
+                    <Tooltip text={t('configEdit.models.alignHint')} focusable>
+                      <span className="tag tag-warn" data-testid="config-edit-models-mismatch">
+                        {t('configEdit.models.mismatch')}
+                      </span>
+                    </Tooltip>
                   )}
                 </td>
                 <td>{share(r.agent)}</td>

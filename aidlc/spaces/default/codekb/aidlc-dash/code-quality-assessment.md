@@ -3,16 +3,15 @@
 ## Tests
 
 - **Runner**: vitest 5.1.0 with three projects. `main` runs in node (`tests/main/**/*.test.js`). `scripts` runs the timed hook-script tests in node after the others, with up to 2 retries. `renderer` runs in jsdom with Swedish i18n (`tests/renderer/**/*.test.jsx`).
-- **Size** (last full scan, `721e051`): 72 main and 39 renderer files, 3 helpers and 95 fixtures; 1071 `it`/`test` call sites by static count. No tests were run in either scan.
-- **Coverage**: v8, with an 80% line floor across `src/**` and `.opencode/plugins/*.js`, plus per-file floors for the agent-dialog modules (`vitest.config.mjs`). CI runs `npx vitest run tests/ --coverage`.
-- **Cost and token tests**: `tests/main/ledger.test.js` (5 cases on `summarizeLedger` and `compareModels`, fixture `tests/fixtures/ledger/usage-ledger.json`), `parsers.test.js` (audit merge of `tests/fixtures/audit/machine-a.md` and `machine-b.md`), `ipc.test.js` (`project:cost` with a mocked service), `watcher.test.js`, `tokenReadings.test.js`; renderer `CostPanel`, `TokenView`, `TokenDetail`, `TokenDetailChartSize`, `IntentList`, `tokenFlow`.
-- **Gaps relevant now**: no `CostTab` test file; the two-machine audit fixtures carry no cost fields; nothing tests cost without a ledger beyond `{available: false}`.
+- **Size**: 72 main and 39 renderer files, 3 helpers and 95 fixtures at `721e051`. There are 1071 `it`/`test` call sites by static count. At `f46cb71` `tests/renderer/` holds 40 files. No tests were run in either scan.
+- **Coverage**: v8, with an 80% line floor across `src/**` and `.opencode/plugins/*.js`, plus per-file 80% floors for the agent-dialog modules (`vitest.config.mjs`). CI runs `npx vitest run tests/ --coverage`.
+- **Tooltip tests today**: only the chart tooltip is tested (`TokenDetail.test.jsx` l.191-205: open on focus, arrows, Esc). The split-bar row tip has no test. Nothing tests hover anywhere.
 
 ## Lint, Format, CI
 
 | Check | State |
 |---|---|
-| ESLint 9 flat config | in CI (`npx eslint .`) |
+| ESLint 9 flat config | in CI (`npx eslint .`); a small rule set (recommended, react-hooks, react `jsx-uses-vars`) |
 | Prettier | in CI (`npx prettier --check .`) |
 | Secret scan | gitleaks on every PR commit |
 | Build | the mac universal dmg and the Linux deb on every PR; the glibc check on Linux |
@@ -24,32 +23,30 @@
 | Aspect | Rating | Evidence |
 |---|---|---|
 | Naming clarity | good | intent-revealing names; story ids in the headers |
-| Function size | fair | most are small and pure; `ipc.js`, `agentHooks.js` and `App.jsx` are large |
+| Function size | fair | most are small and pure; `ipc.js` (891 lines), `agentHooks.js` (864) and `App.jsx` (732) are large |
 | Error handling | good | never-throw readers, the last good value, root confinement, warnings shown |
-| Test presence | good | coverage floors; gaps above |
-| Duplication | fair | `debounce` is written twice in `watcher.js` (`debounce()` and inline in `watchIntents`) |
-| Dead code | good | few TODO/`eslint-disable` lines |
+| Test presence | good | 111 test files, coverage floors; the gaps are the DAG view and the tooltips |
+| Duplication | fair | `debounce` is written twice in `watcher.js`; three tooltip mechanisms in the renderer, with two near-identical coral tip styles (`theme.css:679` and `:709`) |
+| Accessibility | fair | names and `role="img"` labels are kept with care; native titles never show on focus, and the ⓘ info tip is not focusable |
+| Dead code | good | 0 TODO/FIXME, 4 `eslint-disable` lines |
 
 ## Technical Debt
 
-- `ponytail:` comments mark known ceilings, among them the unbounded caches in `projectService.js` and the unlocked read-modify-write in `tokenReadings.js` `recordReading`.
+- 37 `ponytail:` comments mark known ceilings (at `721e051`). Examples: the unbounded caches in `projectService.js`; the HEAD watch, which does not work in a worktree (`ipc.js` `watchGitHead`); the picker regexes tied to Claude Code's layout.
 - `.thadeus/tokens/<intent>.json` is written into the project but is neither ignored nor committed, so it shows as untracked.
-- `parsers/agentProgress.js` imports `projectService.js`; parsers were Node-free before.
-- `.opencode/plugins/thadeus-dialog.js` is app-owned code inside a harness folder.
+- `.opencode/plugins/thadeus-dialog.js` is app-owned code inside a harness folder. It is linted and covered, but sits beside AI-DLC's install.
 
-## Brownfield Notes for US-0209
+## Brownfield Notes for US-0414
 
-1. **Cost is ledger-only today.** `project:cost` returns `{available: false}` without a ledger, so a machine that never ran the work shows no cost at all. The audit rollups must make cost available on their own.
-2. **Repeated stage completions are cumulative.** Summing every `STAGE_COMPLETED` over-counts: 261113-cost-and-models gives 33.22 summed, 23.39 taking the last per stage, 23.86 on `WORKFLOW_COMPLETED` (261113-bridge-console-mvp: 36.99, 24.94, 25.56). `WORKFLOW_COMPLETED` is the intent total and is never added to the stages. Observed from the data; confirm in requirements.
-3. **Double counting with the ledger.** The local shard and the ledger cover the same work. `aidlc/.aidlc-clone-id` (gitignored) equals the local shard's suffix, so the local shard can be skipped where the ledger has the intent. The ledger has no host field.
-4. **Precision differs.** Audit `Tokens By Model/Agent` are rounded (`71k`, `13.4M`) and `Cache Write` is not split, while `IntentCost.tokens` carries `cacheCreate5m`/`cacheCreate1h`. Totals (`Tokens In/Out`, `Cache Read/Write`, `Cost USD`) are exact.
-5. **Liveness.** A pulled shard produces `project:changed` with its dir name but no `costChanged`; `useProject` reloads cost only on `costChanged || indexChanged`.
-6. **Token readings** (`.thadeus/tokens/`) are cumulative and local; adding another machine's total would show as a jump in "Tokens over time".
-7. **Real test data**: `261113-living-lcars/audit/` holds `thomas-comlabs-993a8cefd12a.md` (one `STAGE_COMPLETED` and one `WORKFLOW_COMPLETED` with cost) beside the local shard.
-8. **Parsing**: `parseAudit` keeps values as strings; a multi-line value continues on following lines, so the rollup reader should parse only the first line of each field.
+The site numbers refer to the table in the intent's `developer-scan.md`.
 
-## Brownfield Notes for US-0507 (delivered, kept for reference)
-
-- Unit status now also comes from `WORKTREE_CREATED`/`BOLT_*` by `Bolt slug` (`units.js`).
-- Worktree paths from `runtime-graph.json` are absolute and must pass `resolveInRoot` before a read; plan ticks live in the worktree's `code-generation-plan.md`; findings by severity only in the review record JSON.
-- `watchIntents` watches the worktree plans; `.aidlc-engine/` stays ignored except `active-directive.json`.
+1. **The reference has gaps.** `.token-detail-row-tip` is CSS-only. It has no `role="tooltip"` or `aria-describedby`, it is never measured, so it does not stay inside the window, and it can be clipped by `.lcars-frame-body { overflow: auto }`. The shared tooltip keeps its look (coral 2 px border, `2px 12px 2px 2px` corner, `var(--bg)`, tabular figures) but needs its own placement.
+2. **Disabled controls.** `ResumeButton` (site 27) sets `title` only while the button is `disabled`. A disabled button takes no focus and no pointer events in Chromium, so the reason never shows by keyboard. A wrapper or `aria-disabled` is needed.
+3. **Native lists.** The disabled `<option>` in the quick-command `<select>` (site 29) cannot host a DOM tooltip. Its text needs another place, or it stays native as a stated exception.
+4. **Children inside buttons** (sites 5, 7-9, 12, 14, 15) cannot be focused. To be reachable by keyboard, their text moves to the parent button's tooltip or description.
+5. **Accessible names.** Sites 3, 4, 12, 18 and 28 already have an `aria-label`, which must stay when `title` goes. Sites 2, 6, 11, 13 and 31 are named by their text, and their title adds detail that should become `aria-describedby`.
+6. **Raw data, not `t()`.** Sites 1, 2, 6, 9, 21, 25, 26, 30 and 31 show data (branch, path, date, error, docs status, href, name). Only the label texts need `t()`.
+7. **Tests that assert `.title`** must change with the code: `ResumeButton.test.jsx` (11 asserts), `IntentList.test.jsx` (3), `CostPanel.test.jsx` (1), `TerminalPanel.test.jsx` (1).
+8. **jsdom does no layout.** An edge-flip test must stub `getBoundingClientRect` and `innerWidth`/`innerHeight`, or the flip rule must be a pure function that is tested on its own.
+9. **Stacking.** The tips use `z-index: 2`. The notices (40, 50) and the dialog (100) sit above them; a tooltip shown inside the agent dialog would need a layer above 100.
+10. **Motion.** The row tip shows through opacity with no transition. Any fade must follow `data-motion` (Dämpad/Av draw at once).

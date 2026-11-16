@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { compareModels } from '../main/parsers/ledger.js';
 import { formatCost, formatTokens, formatUsd, shortModel, tokenBreakdown } from './format.js';
 import { Readout } from './Lcars.jsx';
+import Tooltip from './Tooltip.jsx';
 import i18n, { t as translate } from '../shared/i18n.js';
 
 /** The configuration source as text; an unknown one is shown as it is. */
@@ -14,13 +15,15 @@ export function CostLabel({ complete = true }) {
   return (
     <span className="cost-label">
       {t('cost.label')}
-      <span className="info-tip" title={explanation} aria-label={explanation} role="img">
-        ⓘ
-      </span>
-      {!complete && (
-        <span className="tag tag-warn" title={t('cost.incompleteTitle')}>
-          {t('cost.incomplete')}
+      <Tooltip text={explanation} focusable>
+        <span className="info-tip" aria-label={explanation} role="img">
+          ⓘ
         </span>
+      </Tooltip>
+      {!complete && (
+        <Tooltip text={t('cost.incompleteTitle')} focusable>
+          <span className="tag tag-warn">{t('cost.incomplete')}</span>
+        </Tooltip>
       )}
     </span>
   );
@@ -39,9 +42,11 @@ export function MachinesLine({ machines, partial }) {
     <p className="muted cost-machines" data-testid="cost-machines">
       {t('cost.machines', { list: names.join(', ') })}
       {partial && (
-        <span className="tag tag-warn" title={t('cost.partialHelp')} data-testid="cost-partial">
-          {t('cost.partial')}
-        </span>
+        <Tooltip text={t('cost.partialHelp')} focusable>
+          <span className="tag tag-warn" data-testid="cost-partial">
+            {t('cost.partial')}
+          </span>
+        </Tooltip>
       )}
     </p>
   );
@@ -69,7 +74,9 @@ export function CostTable({ title, rows, totalUsd, testId }) {
             <td>{r.name}</td>
             <td className={r.missingPrice ? 'missing-price' : ''}>{formatCost(r)}</td>
             <td>{totalUsd > 0 && !r.missingPrice ? `${Math.round((r.usd / totalUsd) * 100)} %` : '–'}</td>
-            <td title={tokenBreakdown(r.tokens)}>{formatTokens(r.totalTokens)}</td>
+            <Tooltip text={tokenBreakdown(r.tokens)} focusable>
+              <td>{formatTokens(r.totalTokens)}</td>
+            </Tooltip>
           </tr>
         ))}
       </tbody>
@@ -92,9 +99,9 @@ export function ModelTable({ models, agentModels, onlyParticipants = false }) {
       <p className="muted">
         {t('cost.configuredFrom')} <strong>{sourceText(models.source)}</strong>
         {models.error && (
-          <span className="tag tag-warn" title={models.error}>
-            {t('cost.configFailed')}
-          </span>
+          <Tooltip text={models.error} focusable>
+            <span className="tag tag-warn">{t('cost.configFailed')}</span>
+          </Tooltip>
         )}
       </p>
       {rows.length === 0 ? (
@@ -118,14 +125,16 @@ export function ModelTable({ models, agentModels, onlyParticipants = false }) {
                   {r.actual.length ? (
                     r.actual.join(', ')
                   ) : (
-                    <span className="muted" title={t('cost.unknownTitle')}>
-                      {t('cost.unknown')}
-                    </span>
+                    <Tooltip text={t('cost.unknownTitle')} focusable>
+                      <span className="muted">{t('cost.unknown')}</span>
+                    </Tooltip>
                   )}
                   {r.mismatch && (
-                    <span className="tag tag-warn" title={t('cost.configuredFor', { model: r.expected })} data-testid="model-mismatch">
-                      {t('cost.mismatch')}
-                    </span>
+                    <Tooltip text={t('cost.configuredFor', { model: r.expected })} focusable>
+                      <span className="tag tag-warn" data-testid="model-mismatch">
+                        {t('cost.mismatch')}
+                      </span>
+                    </Tooltip>
                   )}
                 </td>
                 <td>{r.effort ?? '–'}</td>

@@ -4,6 +4,7 @@ import remarkGfm from 'remark-gfm';
 import { useTranslation } from 'react-i18next';
 import { t } from '../shared/i18n.js';
 import { useEditor } from './editor/EditorContext.jsx';
+import Tooltip from './Tooltip.jsx';
 
 const bridge = window.bridge;
 const errorText = (err) => String(err?.message ?? err).replace(/^Error invoking remote method '[^']+': (Error: )?/, '');
@@ -26,9 +27,9 @@ const markdownComponents = {
         {children}
       </a>
     ) : (
-      <span className="md-link" title={href}>
-        {children}
-      </span>
+      <Tooltip text={href} focusable>
+        <span className="md-link">{children}</span>
+      </Tooltip>
     ),
   img: ({ alt }) => <span className="muted">{t('intents.files.image', { alt: alt ?? '' })}</span>
 };

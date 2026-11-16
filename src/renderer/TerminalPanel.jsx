@@ -7,6 +7,7 @@ import { createActivity, dropText } from './terminalControl.js';
 import { isAgentTab, useTerminal } from './TerminalContext.jsx';
 import AuctumMark from './AuctumMark.jsx';
 import { Bar } from './Lcars.jsx';
+import Tooltip from './Tooltip.jsx';
 import { xtermTheme } from './tokens.js';
 import { t as translate } from '../shared/i18n.js';
 import { harnessCommand } from '../shared/harnesses.js';
@@ -198,28 +199,27 @@ function QuickSelect({ harness, onPick }) {
   const name = harness?.name ?? t('terminal.agent');
   const items = QUICK_COMMANDS.map((suffix) => ({ suffix, cmd: harnessCommand(harness, suffix) }));
   if (!items.some(({ cmd }) => cmd)) return null;
+  // A disabled <option> cannot host a DOM tooltip, so its reason joins the list's own (US-0414 FR2.5).
+  const tip = [t('terminal.quickTitle', { harness: name }), items.some(({ cmd }) => !cmd) && t('terminal.noCommand', { harness: name })]
+    .filter(Boolean)
+    .join('\n');
   return (
-    <select
-      className="lcars-select lcars-select--bar"
-      value=""
-      aria-label={t('terminal.quickMenu')}
-      title={t('terminal.quickTitle', { harness: name })}
-      onChange={(e) => e.target.value && onPick(e.target.value)}
-      data-testid="terminal-panel-quick-select"
-    >
-      <option value="">{t('terminal.quickMenu')}</option>
-      {items.map(({ suffix, cmd }) => (
-        <option
-          key={suffix}
-          value={cmd ?? ''}
-          disabled={!cmd}
-          title={cmd ? undefined : t('terminal.noCommand', { harness: name })}
-          data-testid="terminal-panel-quick-command"
-        >
-          {cmd ?? suffix.trim()}
-        </option>
-      ))}
-    </select>
+    <Tooltip text={tip}>
+      <select
+        className="lcars-select lcars-select--bar"
+        value=""
+        aria-label={t('terminal.quickMenu')}
+        onChange={(e) => e.target.value && onPick(e.target.value)}
+        data-testid="terminal-panel-quick-select"
+      >
+        <option value="">{t('terminal.quickMenu')}</option>
+        {items.map(({ suffix, cmd }) => (
+          <option key={suffix} value={cmd ?? ''} disabled={!cmd} data-testid="terminal-panel-quick-command">
+            {cmd ?? suffix.trim()}
+          </option>
+        ))}
+      </select>
+    </Tooltip>
   );
 }
 

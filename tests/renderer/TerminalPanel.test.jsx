@@ -144,14 +144,18 @@ describe('TerminalPanel', () => {
     expect(screen.getByTestId('terminal-panel-pending-agent')).toBeTruthy(); // the foot row shows while it waits
   });
 
-  it('shows a quick command the harness lacks as a disabled option, with the reason', async () => {
+  it('shows a quick command the harness lacks as a disabled option, with the reason in the list tooltip (US-0414 FR2.5)', async () => {
     missingSuffix = ' continue';
     try {
       await renderPanel();
       const last = screen.getAllByTestId('terminal-panel-quick-command')[2];
       expect(last.disabled).toBe(true);
       expect(last.textContent).toBe('continue');
-      expect(last.title).toBe('Claude har inget AI-DLC-kommando i appens tabell, så inget skrivs in.');
+      expect(last.hasAttribute('title')).toBe(false);
+      fireEvent.focus(screen.getByTestId('terminal-panel-quick-select'));
+      expect(screen.getByRole('tooltip').textContent).toBe(
+        'Skriver in kommandot i Claude-fliken utan att skicka det\nClaude har inget AI-DLC-kommando i appens tabell, så inget skrivs in.'
+      );
     } finally {
       missingSuffix = null;
     }

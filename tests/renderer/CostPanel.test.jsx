@@ -20,6 +20,14 @@ const models = { source: 'agent-files', agents: [{ agent: 'developer', model: 'o
 
 afterEach(cleanup);
 
+/** The shared tooltip's text while `el` has focus (US-0414). */
+function focusTip(el) {
+  fireEvent.focus(el);
+  const text = screen.queryByRole('tooltip')?.textContent ?? '';
+  fireEvent.blur(el);
+  return text;
+}
+
 describe('CostPanel', () => {
   it('labels the total as an estimate, marks it incomplete and shows "pris saknas" for a model without price (FR6.1, FR6.2)', () => {
     render(<CostPanel cost={cost} models={models} />);
@@ -29,7 +37,18 @@ describe('CostPanel', () => {
     expect(screen.getByText('Ofullständig')).toBeTruthy();
     const haikuRow = within(screen.getByTestId('cost-panel-models')).getByText('claude-haiku-5-5').closest('tr');
     expect(within(haikuRow).getByText('pris saknas')).toBeTruthy();
-    expect(screen.getByTestId('model-mismatch').title).toBe('Konfigurerad för opus'); // developer ran on sonnet
+    expect(focusTip(screen.getByTestId('model-mismatch'))).toBe('Konfigurerad för opus'); // developer ran on sonnet
+  });
+
+  it('makes the plain-text tooltips focusable and shows them on focus (US-0414 FR2.2)', () => {
+    const { container } = render(<CostPanel cost={cost} models={models} />);
+    fireEvent.click(screen.getByTestId('cost-panel-toggle'));
+    const big = container.querySelector('.cost-big-usd');
+    expect(big.tabIndex).toBe(0);
+    expect(focusTip(big)).toBe('Uppskattad kostnad (API-pris)');
+    expect(screen.getByTestId('model-mismatch').tabIndex).toBe(0);
+    expect(focusTip(screen.getByTestId('cost-panel-legacy'))).toBe('Körningar under record:<space>/legacy, från före intent-id. Ingår i totalen.');
+    expect(container.querySelector('[title]')).toBeNull();
   });
 
   it('shows the legacy row and explains a missing ledger without breaking (FR3.4, FR1.5)', () => {
@@ -47,11 +66,11 @@ describe('CostPanel', () => {
       { host: 'hosta', local: true },
       { host: 'hostb', local: false }
     ];
-    const { rerender } = render(<CostPanel cost={{ ...cost, project: { ...cost.project, machines, partial: true } }} models={models} />);
+    const { rerender, container } = render(<CostPanel cost={{ ...cost, project: { ...cost.project, machines, partial: true } }} models={models} />);
     expect(screen.getByTestId('cost-machines').firstChild.textContent).toBe('Räknat från: hosta (den här datorn), hostb');
     expect(screen.getByTestId('cost-partial').textContent).toBe('Delvis');
-    expect(screen.getByTestId('cost-partial').title).toMatch(/stage-raderna i audit-loggen/);
-    expect(screen.getByTitle('Uppskattad kostnad (API-pris)')).toBeTruthy(); // still an estimate (FR4.3)
+    expect(focusTip(screen.getByTestId('cost-partial'))).toMatch(/stage-raderna i audit-loggen/); // shared tooltip (US-0414)
+    expect(focusTip(container.querySelector('.cost-big-usd'))).toBe('Uppskattad kostnad (API-pris)'); // still an estimate (FR4.3)
 
     rerender(<CostPanel cost={{ ...cost, project: { ...cost.project, machines, partial: false } }} models={models} />);
     expect(screen.queryByTestId('cost-partial')).toBeNull();

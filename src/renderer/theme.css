@@ -676,7 +676,8 @@ button.lcars-chip:hover { border-color: var(--steel-text); color: var(--steel-li
 .token-detail-legend li { display: inline-flex; align-items: center; gap: 6px; }
 .token-detail-key { width: 14px; height: 10px; }
 .token-detail-key.token-kind--cacheRead { outline: 1px solid var(--slate-3); }
-.token-detail-tooltip { z-index: 2; display: grid; grid-template-columns: auto auto; gap: 2px 18px; padding: 8px 12px; border: 2px solid var(--coral); border-radius: 2px 14px 2px 2px; background: var(--bg); font-variant-numeric: tabular-nums; pointer-events: none; }
+/* The look is .lcars-tip (US-0414 FR3.2); this keeps the label / value grid. visx positions it absolutely in the chart. */
+.token-detail-tooltip { display: grid; grid-template-columns: auto auto; gap: 2px 18px; }
 .token-detail-tooltip-head { grid-column: 1 / 3; color: var(--coral); font-size: 17px; }
 .token-detail-tooltip-row { display: contents; }
 .token-detail-tooltip-row > :first-child { color: var(--muted); font-size: 13px; letter-spacing: 0.06em; text-transform: uppercase; }
@@ -705,9 +706,9 @@ button.lcars-chip:hover { border-color: var(--steel-text); color: var(--steel-li
 .agent-progress-summary { margin: 0; color: var(--text); font: 15px/1.5 var(--font-read); }
 .agent-progress-detail { display: flex; flex-direction: column; min-width: 0; color: var(--text-2); font-size: 14px; overflow-wrap: anywhere; }
 .agent-progress-status { color: var(--steel-text); }
-/* The exact figures on hover and on focus (FR4, NFR3); opacity keeps them readable to a screen reader. */
-.token-detail-row-tip { position: absolute; z-index: 2; top: calc(100% + 4px); left: 0; padding: 6px 10px; border: 2px solid var(--coral); border-radius: 2px 12px 2px 2px; background: var(--bg); color: var(--text); font-size: 13px; font-variant-numeric: tabular-nums; white-space: nowrap; opacity: 0; pointer-events: none; }
-.token-detail-row:hover .token-detail-row-tip, .token-detail-row:focus-visible .token-detail-row-tip { opacity: 1; }
+/* US-0414 FR1.1, FR1.5: the one LCARS tooltip look, used by Tooltip.jsx and the chart tooltip. It sits above the notices
+   (40, 50) and below the dialogs (100). pre-line lets a button show the combined text of its parts, one per line (FR2.3). */
+.lcars-tip { position: fixed; z-index: 60; max-width: min(480px, calc(100vw - 8px)); padding: 6px 10px; border: 2px solid var(--coral); border-radius: 2px 12px 2px 2px; background: var(--bg); color: var(--text); font-size: 13px; font-variant-numeric: tabular-nums; white-space: pre-line; overflow-wrap: anywhere; pointer-events: none; }
 .token-detail-side { flex: 0 1 220px; min-width: 180px; align-self: flex-start; display: flex; flex-direction: column; gap: 12px; margin-top: 24px; padding-top: 14px; border-top: 3px solid var(--slate-2); }
 .token-detail-big { font-size: 44px; line-height: 1; }
 .token-detail-rate { width: 100%; height: 50px; background: var(--bg); }
@@ -746,9 +747,11 @@ button.lcars-chip:hover { border-color: var(--steel-text); color: var(--steel-li
 .resume-main, .resume-step { display: flex; align-items: flex-end; background: var(--amber); white-space: nowrap; transition: filter 150ms ease-out; }
 .resume-main { padding: 0 16px 8px 18px; font-size: 19px; font-weight: 600; border-radius: 28px 0 0 28px; }
 .resume-step { padding: 0 12px 8px; font-size: 15px; }
-.resume-button:hover:not(:disabled) .resume-main, .resume-button:hover:not(:disabled) .resume-step { filter: brightness(1.1); }
-/* Waiting while an agent runs the work (US-0007, US-0009): greyed like every other disabled block. */
-.resume-button:disabled .resume-main, .resume-button:disabled .resume-step { background: var(--slate-0); color: var(--slate-4); }
+.resume-button:hover:not([aria-disabled='true']) .resume-main, .resume-button:hover:not([aria-disabled='true']) .resume-step { filter: brightness(1.1); }
+/* Waiting while an agent runs the work (US-0007, US-0009): greyed like every other disabled block. aria-disabled keeps
+   it focusable so its tooltip gives the reason (US-0414 FR2.4). */
+.resume-button[aria-disabled='true'] { cursor: default; }
+.resume-button[aria-disabled='true'] .resume-main, .resume-button[aria-disabled='true'] .resume-step { background: var(--slate-0); color: var(--slate-4); }
 .resume-message { color: var(--coral-soft); font-size: 13px; }
 .intent-rows .resume { align-items: flex-start; margin: 4px 0 2px 11px; }
 .intent-rows .resume-button { height: 28px; }

@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { formatCost, formatDuration, formatTime, shortModel, stageStatusLabel, tokenBreakdown } from './format.js';
 import { t as translate } from '../shared/i18n.js';
+import Tooltip from './Tooltip.jsx';
 
 const filesForStage = (groups, slug) => groups.filter((g) => g.dir === slug || g.dir.endsWith(`/${slug}`));
 export const isSkipped = (s) => s.mode === 'SKIP' || s.status === 'skipped';
@@ -57,11 +58,13 @@ const agentShort = (agent) =>
 function LevelBar({ stage }) {
   const bar = levelBar(stage);
   return (
-    <span className="stage-level" role="img" aria-label={bar.label} title={bar.label}>
-      {bar.segments.map((on, i) => (
-        <span key={i} className={`stage-level-seg ${on ? 'is-lit' : ''}`} />
-      ))}
-    </span>
+    <Tooltip text={bar.label}>
+      <span className="stage-level" role="img" aria-label={bar.label}>
+        {bar.segments.map((on, i) => (
+          <span key={i} className={`stage-level-seg ${on ? 'is-lit' : ''}`} />
+        ))}
+      </span>
+    </Tooltip>
   );
 }
 
@@ -82,43 +85,45 @@ function StageBlock({ stage, index, open, onToggle, stageCost, stageModels, deta
     stage.mismatch && 'is-mismatch',
     stage.failed && 'is-failed'
   ];
+  const mismatchTip = stage.mismatch ? t('pipeline.mismatchTitle', { status: String(stage.graphStatus) }) : null;
+  const costTip = stageCost ? `${t('cost.label')} · ${tokenBreakdown(stageCost.tokens)}` : null;
+  // US-0414 FR2.3: the parts' tooltips are hover-only; keyboard focus on the card shows them all.
+  const focusText = [details, mismatchTip, costTip, levelBar(stage).label].filter(Boolean).join('\n');
   return (
     <li className={['stage', ...states].filter(Boolean).join(' ')}>
-      <button
-        className={`lcars-card stage-card ${EFFECT[stage.status] ?? (stage.current ? 'is-breathing' : '')}`}
-        onClick={onToggle}
-        aria-expanded={open}
-        title={details}
-        data-testid="pipeline-stage"
-      >
-        <span className="lcars-card-head">
-          <span className="stage-name">{stage.slug}</span>
-        </span>
-        <span className="lcars-card-body stage-top">
-          <span>
-            {index ?? '—'} · {statusText}
-            {extra}
-            {stage.mismatch && (
-              <span className="stage-flag" title={t('pipeline.mismatchTitle', { status: String(stage.graphStatus) })}>
-                {' '}
-                · {t('pipeline.mismatch')}
+      <Tooltip text={details} focusText={focusText}>
+        <button
+          className={`lcars-card stage-card ${EFFECT[stage.status] ?? (stage.current ? 'is-breathing' : '')}`}
+          onClick={onToggle}
+          aria-expanded={open}
+          data-testid="pipeline-stage"
+        >
+          <span className="lcars-card-head">
+            <span className="stage-name">{stage.slug}</span>
+          </span>
+          <span className="lcars-card-body stage-top">
+            <span>
+              {index ?? '—'} · {statusText}
+              {extra}
+              {stage.mismatch && (
+                <Tooltip text={mismatchTip}>
+                  <span className="stage-flag"> · {t('pipeline.mismatch')}</span>
+                </Tooltip>
+              )}
+              {stage.failed && <span className="stage-flag"> · {t('pipeline.failed', { outcome: String(stage.outcome) })}</span>}
+            </span>
+            <Tooltip text={costTip}>
+              <span className="stage-cost" data-testid="pipeline-stage-cost">
+                {stageCost ? `${models}${formatCost(stageCost)}` : ''}
               </span>
-            )}
-            {stage.failed && <span className="stage-flag"> · {t('pipeline.failed', { outcome: String(stage.outcome) })}</span>}
+            </Tooltip>
           </span>
-          <span
-            className="stage-cost"
-            title={stageCost ? `${t('cost.label')} · ${tokenBreakdown(stageCost.tokens)}` : undefined}
-            data-testid="pipeline-stage-cost"
-          >
-            {stageCost ? `${models}${formatCost(stageCost)}` : ''}
+          <span className="lcars-card-foot">
+            <span className="stage-code">{code}</span>
+            <LevelBar stage={stage} />
           </span>
-        </span>
-        <span className="lcars-card-foot">
-          <span className="stage-code">{code}</span>
-          <LevelBar stage={stage} />
-        </span>
-      </button>
+        </button>
+      </Tooltip>
     </li>
   );
 }

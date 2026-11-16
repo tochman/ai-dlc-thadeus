@@ -28,6 +28,8 @@ flowchart LR
     ID --> BD[BoltDag]
     ID --> PL[Pipeline]
     ID --> TL[Timeline]
+    ID --> TD[TokenDetail]
+    TD --> AP[AgentProgress]
     PV --> TP[TerminalPanel]
     PV --> UP[useProject]
     App --> AD[AgentDialog]
@@ -49,70 +51,57 @@ flowchart LR
   AG --> HK[[.thadeus/hooks/dialog.sh]]
 ```
 
-Text fallback: the renderer views call `window.bridge`. The bridge invokes the IPC Router. The router uses the Project Service (which reads through Project Access and the parsers), the Watcher, the PTY Manager, the Exec Runner (for the `aidlc`, `git` and `gh` CLIs) and the agent channel, which talks to the hook script.
+Text fallback: the renderer views call `window.bridge`. The token detail view (with the agent progress rows) opens from IntentDetail. The bridge invokes the IPC Router. The router uses the Project Service (which reads through Project Access and the parsers), the Watcher, the PTY Manager, the Exec Runner (for the `aidlc`, `git` and `gh` CLIs) and the agent channel, which talks to the hook script.
 
 ### Data Flow
 
 1. **Opening a project**: `project:open` resolves the root (`openRoot`), runs `detectProject`, then starts the space watcher (`watchIntents`), the config watcher (with the inflight file), the feature-docs watcher and the `.git/HEAD` watcher.
-2. **Intent list and detail**: `loadIntentList` merges `intents.json` with the folders on disk, plus summaries from each intent's state file. `loadIntentDetail` → `buildDetail` reads `aidlc-state.md`, `runtime-graph.json`, `.aidlc-engine/active-directive.json`, every audit shard and the artifact tree.
-3. **Live updates**: chokidar sends a change to `watchIntents`, which debounces it (300 ms, max 800 ms). The router then sends `project:changed {dirNames, indexChanged, costChanged}`. `useProject` reloads the list for those dirs, the detail when the selected intent changed, and the cost only on `costChanged || indexChanged`.
-4. **Cost** (today): `project:cost` → `loadCost` reads `aidlc/.aidlc-sessions/usage-ledger.json` → `summarizeLedger(ledger, intents)` matches `workflows["intent:<uuid>"]` to each intent's `uuid` → `{project, perIntent, byScope, timeline}`. The same call records a token reading for each in-flight intent (`.thadeus/tokens/`). With no ledger it returns `{available: false}` and every cost view hides.
-5. **Working agents**: the `aidlc/.aidlc-subagent-inflight` entry count limits `workingAgents()`, which pairs `SUBAGENT_DISPATCHED` with `SUBAGENT_COMPLETED` by `Agent Type`.
-6. **Agent dialogs**: the hooks write event files into the per-session channel folder; `agentChannel` validates them, `agentEvents` drives the state machine, and the answer goes back through the waiting hook or as picker keys.
-7. **Writes**: the app writes only its own settings, token readings (`.thadeus/tokens/`), editor saves (hash-checked) and feature-doc release markers. It writes AI-DLC config only through the `aidlc` CLI or the tier-2 Guard Policy edit.
+2. **Intent list and detail**: `loadIntentList` merges `intents.json` with the folders on disk, plus summaries from each intent's state file. `loadIntentDetail` → `buildDetail` reads `aidlc-state.md`, `runtime-graph.json`, `.aidlc-engine/active-directive.json`, the audit shards and the artifact tree. It returns `{state, graph, pipeline, events, units, directive, files, warnings}`.
+3. **Live updates**: chokidar sends a change to `watchIntents`, which debounces it (300 ms, max 800 ms). The router then sends `project:changed {dirNames, indexChanged, costChanged}`. `useProject` reloads the list for those dirs and the detail when the selected intent changed. Under `.aidlc-engine/`, only `active-directive.json` counts as a change.
+4. **Working agents**: the `aidlc/.aidlc-subagent-inflight` entry count limits `workingAgents()`. That function pairs `SUBAGENT_DISPATCHED` with `SUBAGENT_COMPLETED` by `Agent Type`. The Configuration view uses it ("Arbetar nu").
+5. **Agent dialogs**: the hooks write event files into the per-session channel folder. `agentChannel` validates them, `agentEvents` drives the state machine, and the answer goes back through the waiting hook or as picker keys.
+6. **Writes**: the app writes only its own settings, token readings (`.thadeus/tokens/`), editor saves (hash-checked) and feature-doc release markers. It writes AI-DLC config only through the `aidlc` CLI or the tier-2 Guard Policy edit.
 
-### US-0507 data sources (prior intent)
+### US-0507 data sources
 
-Unit progress comes from `runtime-graph.json` instances, the audit `WORKTREE_CREATED`/`BOLT_*`/`REVIEW_*` events, the worktree's `code-generation-plan.md` ticks, its last commit subject and the review record JSON (`findings[].severity`). US-0507 is delivered (#55); its brownfield notes are kept in `code-quality-assessment.md`.
+| Need | Where it is today | Read by the app now? |
+|---|---|---|
+| A Unit running and its stage | `runtime-graph.json` `stages[].instances[]` (`bolt`, `worktree`, `started_at`, `completed_at`, `outcome`); audit `BOLT_STARTED`, `WORKTREE_CREATED`, `SWARM_STARTED` (`Stage`) | Counts only (`runtimeGraph.js`); the audit events go to the timeline only |
+| Plan steps done and total | `<worktree>/…/construction/<unit>/code-generation/code-generation-plan.md`, `- [x]` and `- [ ]` lines | No; `.aidlc/worktrees/` is neither watched nor read |
+| Last commit subject | the worktree's git branch `bolt-<id8>_<unit>` | No; `git.js` has no log call |
+| Review requested and its verdict | audit `REVIEW_REQUESTED` and `REVIEW_COMPLETED` (`Stage`, `Reviewer`, `Unit`, `Verdict`, `Review Record`) | Timeline only |
+| Findings by severity | `<intent>/.aidlc-engine/reviews/<stage>/…/<n>.json` `findings[].severity` | No; the watcher ignores it |
+| Agent work with no Unit | `SUBAGENT_DISPATCHED` `Agent Type` plus the inflight count | Yes, `workingAgents()` |
 
-### US-0209 cost sources
+This table was written before US-0507 was built (main was not re-scanned in this run). US-0507 has since shipped the `agents:progress` channel and `AgentProgress.jsx`.
 
-| Source | Where | Per | Read for cost now? |
-|---|---|---|---|
-| Usage ledger | `aidlc/.aidlc-sessions/usage-ledger.json`, gitignored, this machine only | project, intent (`intent:<uuid>`), stage, agent, model; exact tokens with cache write 5 m / 1 h | Yes, the only source |
-| Audit rollups | `<intent>/audit/<host>-<clone-id>.md`, committed, one shard per clone | `STAGE_COMPLETED` (per stage) and `WORKFLOW_COMPLETED` (whole intent) | No; the blocks reach the timeline only |
-| Local clone id | `aidlc/.aidlc-clone-id`, gitignored | the suffix of this machine's shard name | No |
+### Tooltips in the renderer (US-0414)
 
-The local shard and the ledger describe the same work, so a merge takes the ledger for the local clone and the audit rollups for every other shard.
+The renderer has no tooltip component. Tooltips come three ways:
+1. **Native `title=`** (31 sites). The OS draws them, on hover only, never on focus, and in the system style.
+2. **The CSS-only row tip** (`TokenDetail.jsx:272`, `theme.css:709-710`). A child span is positioned below its focusable row and shown on `:hover`/`:focus-visible` through opacity. It is never measured, so it can leave the window or be clipped by `.lcars-frame-body { overflow: auto }`.
+3. **The visx chart tooltip** (`TokenDetail.jsx:135-156`, `theme.css:679-684`). It is React state from `useTooltip`, opened on focus, pointer move and arrow keys, closed on blur, pointer leave and Esc, and linked by `aria-describedby`. It is clamped on the right only.
+
+No `createPortal` and no positioning library are used, so a shared tooltip that must stay inside the window has to measure itself or render into a portal at the body level.
 
 ### Key Design Decisions
 
-- **Read-only, root-confined access** (`projectAccess.js` holds no write calls). The cost is that every new source needs a root-relative path.
+- **Read-only, root-confined access** (`projectAccess.js` holds no write calls). This keeps the app from corrupting AI-DLC state. The cost is that every new source needs a root-relative path.
 - **The last good value on broken input** (detail, graph, directive, ledger caches). Agents write files mid-stream, so the UI never blanks.
 - **Debounced folder watching with a max-wait**. The UI stays live during continuous agent writes without reload storms.
-- **Workflow actions typed into the visible terminal**. AI-DLC's own guards and audit apply.
-- **Agent dialogs through a file channel and hooks** (US-0506), with every byte validated in main.
-- **One cost summary shape** (`perIntent[dir]` = `{total, tokens, byStage, byAgent, byModel, stageModels, agentModels, complete}`) feeds every cost and token view, so a second source can be merged in main without view changes beyond the machine and partial marks.
+- **Workflow actions typed into the visible terminal**. AI-DLC's own guards and audit apply. The app never submits on the person's behalf, except the intent switch.
+- **Agent dialogs through a file channel and hooks** (US-0506), with every byte validated in main before the renderer sees it.
+- **Styling through classes only**: LCARS tokens on `:root` in `theme.css`, so a shared tooltip style is one class with `var(--coral)`, `var(--bg)` and `var(--text)`.
 
 ### Improvement Opportunities
 
-- A per-intent cost read model in main that combines ledger and audit rollups, so the views stay unchanged.
+- Unit status should come from the runtime graph instances and the `BOLT_*` events, not only `UNIT_STARTED`, which AI-DLC does not log for builds.
 - `ipc.js` (891 lines) and `agentHooks.js` (864) are the largest modules and are candidates for splitting.
+- One tooltip primitive beside the other LCARS primitives would replace three tooltip mechanisms (US-0414).
 
 ## Interaction Diagrams
 
-### Cost refresh (today)
-
-```mermaid
-sequenceDiagram
-  participant H as AI-DLC hooks
-  participant L as usage-ledger.json
-  participant W as watchIntents
-  participant UP as useProject
-  participant IPC as IPC Router
-  participant V as Cost and token views
-  H->>L: write totals
-  L-->>W: chokidar change
-  W->>UP: project:changed (costChanged)
-  UP->>IPC: getCost(projectId, space)
-  IPC->>IPC: loadCost, summarizeLedger, recordReading
-  IPC-->>UP: {project, perIntent, byScope, timeline}
-  UP->>V: cost, perIntent[dir]
-```
-
-Text fallback: the hooks write the ledger; the watcher sets `costChanged`; `useProject` calls `getCost`; main reads and summarises the ledger and stores token readings; the views re-render from `perIntent`. A shard pulled from another machine sends `project:changed` with its dir name but no `costChanged`, so the cost is not reloaded.
-
-### Live intent update
+### Live intent update (today)
 
 ```mermaid
 sequenceDiagram
@@ -121,17 +110,18 @@ sequenceDiagram
   participant W as watchIntents
   participant IPC as IPC Router
   participant UP as useProject
-  participant ID as IntentDetail
+  participant ID as IntentDetail/BoltDag
   AG->>FS: append audit, write runtime-graph.json
   FS-->>W: chokidar events
   W->>IPC: onChange({dirNames}) after 300-800 ms
   IPC->>UP: project:changed
   UP->>IPC: getIntent(projectId, space, dirName)
-  IPC-->>UP: detail (state, graph, events, units)
-  UP->>ID: re-render
+  IPC->>IPC: loadIntentDetail (state, graph, audit, units)
+  IPC-->>UP: detail
+  UP->>ID: detail.graph.boltDag, detail.units
 ```
 
-Text fallback: the agent writes the files; the watcher debounces and notifies the router; the router pushes `project:changed`; `useProject` calls `getIntent`; main rebuilds the detail; the intent view re-renders.
+Text fallback: the agent writes the files; the watcher debounces and notifies the router; the router pushes `project:changed`; `useProject` calls `getIntent`; main rebuilds the detail; the Units tab re-renders.
 
 ### Resume an intent
 
@@ -148,3 +138,23 @@ sequenceDiagram
 ```
 
 Text fallback: Resume checks that the agent tab is idle, submits the intent switch, then types `/aidlc` for the person to confirm.
+
+### Chart tooltip (today, the most complete tooltip)
+
+```mermaid
+sequenceDiagram
+  participant P as Person
+  participant CH as OverTimeChart group
+  participant UT as visx useTooltip
+  participant TT as Tooltip
+  P->>CH: focus (Tab) or pointer move
+  CH->>UT: showTooltip(index, left)
+  UT-->>TT: render with role=tooltip, id
+  CH-->>P: aria-describedby = tooltip id
+  P->>CH: ArrowLeft / ArrowRight
+  CH->>UT: showTooltip(index +/- 1)
+  P->>CH: Esc, blur or pointer leave
+  CH->>UT: hideTooltip()
+```
+
+Text fallback: focus or the pointer on the chart group opens the tooltip at the nearest reading; the group points to it with `aria-describedby`; the arrow keys move it; Esc (stopped from closing the view), blur or leaving with the pointer close it. The row tip has none of this state; it is CSS hover and focus only.

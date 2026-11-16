@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { CostLabel, CostTable, MachinesLine, ModelTable } from './CostTab.jsx';
 import { Readout } from './Lcars.jsx';
+import Tooltip from './Tooltip.jsx';
 import { formatCost, formatTokens, formatUsd, shortModel, tokenBreakdown } from './format.js';
 
 const BAR_W = 14;
@@ -107,10 +108,12 @@ export default function CostPanel({ cost, models, open: openProp, onToggle }) {
       {project && (
         <>
           <p className="cost-big">
-            <span className="cost-big-usd" title={t('cost.label')}>
-              {formatCost(project.total)}
-              {!project.complete && '*'}
-            </span>
+            <Tooltip text={t('cost.label')} focusable>
+              <span className="cost-big-usd">
+                {formatCost(project.total)}
+                {!project.complete && '*'}
+              </span>
+            </Tooltip>
             <span className="cost-big-tokens">{t('cost.tokens', { amount: formatTokens(project.total.totalTokens) })}</span>
           </p>
           <MachinesLine machines={project.machines} partial={project.partial} />
@@ -130,9 +133,11 @@ export default function CostPanel({ cost, models, open: openProp, onToggle }) {
             <span className="muted">{tokenBreakdown(project.total.tokens)}</span>
           </p>
           {project.legacy && (
-            <p className="cost-legacy" data-testid="cost-panel-legacy" title={t('cost.legacyTitle')}>
-              {t('cost.legacy', { cost: formatCost(project.legacy), tokens: formatTokens(project.legacy.totalTokens) })}
-            </p>
+            <Tooltip text={t('cost.legacyTitle')} focusable>
+              <p className="cost-legacy" data-testid="cost-panel-legacy">
+                {t('cost.legacy', { cost: formatCost(project.legacy), tokens: formatTokens(project.legacy.totalTokens) })}
+              </p>
+            </Tooltip>
           )}
           <CostChart timeline={cost.timeline} />
           <CostTable title={t('cost.perModel')} rows={project.byModel} totalUsd={project.total.usd} testId="cost-panel-models" />

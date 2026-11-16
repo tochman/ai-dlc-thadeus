@@ -9,7 +9,8 @@ import { summarizeLedger } from '../../src/main/parsers/ledger.js';
 vi.mock('../../src/renderer/TerminalContext.jsx', () => ({ useTerminal: () => ({ state: () => 'idle', type: () => {}, sequence: () => {} }) }));
 // jsdom has no layout: give the over-time chart a fixed width.
 vi.mock('@visx/responsive', () => ({ ParentSize: ({ children }) => children({ width: 800, height: 260 }) }));
-const { default: TokenDetail } = await import('../../src/renderer/TokenDetail.jsx');
+const { default: TokenDetail, chartTipLeft } = await import('../../src/renderer/TokenDetail.jsx');
+const { HOVER_DELAY_MS } = await import('../../src/renderer/Tooltip.jsx');
 const { default: IntentDetail } = await import('../../src/renderer/IntentDetail.jsx');
 
 const ledger = JSON.parse(readFileSync(join(process.cwd(), 'tests/fixtures/ledger/usage-ledger.json'), 'utf8'));
@@ -202,6 +203,38 @@ describe('tooltip (US-0208 FR4, NFR3)', () => {
     fireEvent.keyDown(chart, { key: 'Escape' });
     expect(screen.queryByTestId('token-detail-tooltip')).toBeNull();
     expect(screen.getByTestId('token-detail')).toBeTruthy(); // Esc on the chart hides the tooltip, not the view
+  });
+
+  it('the chart tooltip takes the shared LCARS look and stays inside the chart on both sides (US-0414 FR3.2)', async () => {
+    await renderDetail();
+    act(() => screen.getByTestId('token-detail-over-time').focus());
+    expect(screen.getByTestId('token-detail-tooltip').classList.contains('lcars-tip')).toBe(true);
+    expect(chartTipLeft(-40, 800)).toBe(0);
+    expect(chartTipLeft(100, 800)).toBe(112);
+    expect(chartTipLeft(700, 800)).toBe(580);
+    expect(chartTipLeft(100, 150)).toBe(0); // narrower than the tip: pinned to the left edge
+  });
+
+  it('a split-bar row shows the shared tooltip on focus and on hover (US-0414 FR3.1)', async () => {
+    await renderDetail();
+    const row = screen.getByTestId('token-detail-split-stage').querySelector('.token-detail-row');
+    expect(row.querySelector('.token-detail-row-tip')).toBeNull();
+    fireEvent.focus(row);
+    const tip = screen.getByRole('tooltip');
+    expect(tip.classList.contains('lcars-tip')).toBe(true);
+    expect(tip.textContent).toMatch(/^Input .* · \$2\.50$/);
+    expect(row.getAttribute('aria-describedby')).toBe(tip.id);
+    fireEvent.blur(row);
+    expect(screen.queryByRole('tooltip')).toBeNull();
+
+    vi.useFakeTimers();
+    try {
+      fireEvent.mouseOver(row);
+      act(() => vi.advanceTimersByTime(HOVER_DELAY_MS));
+      expect(screen.getByRole('tooltip').textContent).toContain('$2.50');
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });
 

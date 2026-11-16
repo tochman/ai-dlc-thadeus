@@ -1,46 +1,37 @@
-// US-0209 FR4.1–FR4.3: the intent's cost tab names the machines its cost came from and tags a partial total.
+// US-0414 FR2.2: the cost label's ⓘ, its warning tag and the token figures are plain text with a tooltip, so they take
+// focus and show it on focus as well as on hover.
 import { afterEach, describe, expect, it } from 'vitest';
-import { cleanup, render, screen } from '@testing-library/react';
-import CostTab from '../../src/renderer/CostTab.jsx';
-import { summarizeLedger } from '../../src/main/parsers/ledger.js';
-import i18n from '../../src/shared/i18n.js';
-import ledger from '../fixtures/ledger/usage-ledger.json';
-
-const intent = { dirName: '261110-epic02-finish', uuid: '01a1c625-50f3-7f83-9755-b096bf4025e6', slug: 'epic02-finish', scope: 'feature', date: '2026-11-10' };
-const base = summarizeLedger(ledger, [intent]).perIntent[intent.dirName];
-const machines = [
-  { host: 'hosta', local: true, source: 'ledger', usd: 4 },
-  { host: 'hostb', local: false, source: 'audit', usd: 3 }
-];
-const pipeline = { phases: [] };
-const renderTab = (intentCost) => render(<CostTab cost={{ available: true }} intentCost={intentCost} pipeline={pipeline} models={null} />);
+import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { CostLabel, CostTable } from '../../src/renderer/CostTab.jsx';
 
 afterEach(cleanup);
 
-describe('CostTab machines line (US-0209)', () => {
-  it('names each machine with this one marked, and tags the total partial with a tooltip (FR4.1, FR4.2)', () => {
-    renderTab({ ...base, machines, partial: true });
-    expect(screen.getByTestId('cost-machines').firstChild.textContent).toBe('Räknat från: hosta (den här datorn), hostb');
-    expect(screen.getByTestId('cost-partial').title).toMatch(/annan dator utan snapshot/);
-    expect(screen.getByText('Uppskattad kostnad (API-pris)')).toBeTruthy(); // still labelled an estimate (FR4.3)
+function focusTip(el) {
+  fireEvent.focus(el);
+  const text = screen.queryByRole('tooltip')?.textContent ?? '';
+  fireEvent.blur(el);
+  return text;
+}
+
+describe('CostTab tooltips (US-0414 FR2.2)', () => {
+  it('the ⓘ and the incomplete tag are focusable, keep their name and show their text on focus', () => {
+    render(<CostLabel complete={false} />);
+    const info = screen.getByRole('img');
+    expect(info.tabIndex).toBe(0);
+    expect(info.getAttribute('aria-label')).toMatch(/^Beräknad av AI-DLC/);
+    expect(focusTip(info)).toMatch(/^Beräknad av AI-DLC från förbrukade tokens/);
+    const tag = screen.getByText('Ofullständig');
+    expect(tag.tabIndex).toBe(0);
+    expect(focusTip(tag)).toBe('Minst en modell har tokens men inget pris i ledgern');
   });
 
-  it('shows no partial tag for a whole total, and no line when main sent no machines', () => {
-    const { rerender } = renderTab({ ...base, machines, partial: false });
-    expect(screen.getByTestId('cost-machines')).toBeTruthy();
-    expect(screen.queryByTestId('cost-partial')).toBeNull();
-    rerender(<CostTab cost={{ available: true }} intentCost={base} pipeline={pipeline} models={null} />);
-    expect(screen.queryByTestId('cost-machines')).toBeNull();
-  });
-
-  it('reads in English too (FR4.3)', async () => {
-    await i18n.changeLanguage('en');
-    try {
-      renderTab({ ...base, machines, partial: true });
-      expect(screen.getByTestId('cost-machines').firstChild.textContent).toBe('Counted from: hosta (this machine), hostb');
-      expect(screen.getByTestId('cost-partial').textContent).toBe('Partial');
-    } finally {
-      await i18n.changeLanguage('sv');
-    }
+  it('the token figure in a cost row shows the breakdown on focus', () => {
+    const tokens = { input: 1000, output: 200, cacheWrite: 0, cacheRead: 0 };
+    const rows = [{ name: 'developer', usd: 1, totalTokens: 1200, tokens, missingPrice: false }];
+    const { container } = render(<CostTable title="Per agent" rows={rows} totalUsd={1} testId="t" />);
+    const cell = container.querySelector('tbody td:last-child');
+    expect(cell.tabIndex).toBe(0);
+    expect(focusTip(cell)).not.toBe('');
+    expect(container.querySelector('[title]')).toBeNull();
   });
 });

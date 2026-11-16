@@ -1,6 +1,6 @@
 # Component Inventory
 
-One heading per component; the heading text is the component's name in the Scope of Analysis block. Paths are repo-relative. External packages are in `dependencies.md`.
+One heading per component; the heading text is the component's name in the Scope of Analysis block. Paths are repo-relative. External packages are in `dependencies.md`. The renderer section was re-read at `f46cb71` (US-0414); the other sections are from the full scan at `721e051`.
 
 ## Main process (`src/main/`)
 
@@ -14,7 +14,7 @@ One heading per component; the heading text is the component's name in the Scope
 
 ### Project Service
 - **Path**: `src/main/projectService.js`
-- **Responsibility**: `detectProject`, `loadIntentList` (cached summaries, `activityAt`), `loadIntentDetail`/`buildDetail`, `loadAuditEvents` (every `audit/*.md` shard, merged), `loadCost` (the ledger only; the last good value on a broken file), `workingAgents()`/`loadWorkingAgents`, `inProgress`, `loadPendingQuestions`. Defines `LEDGER_PATH` and `INFLIGHT_PATH`.
+- **Responsibility**: `detectProject`, `loadIntentList` (cached summaries, `activityAt`), `loadIntentDetail`/`buildDetail`, `loadCost`, `workingAgents()`/`loadWorkingAgents`, `inProgress`, `loadPendingQuestions`. Defines `LEDGER_PATH` and `INFLIGHT_PATH`.
 
 ### Project Access
 - **Path**: `src/main/projectAccess.js`
@@ -22,11 +22,11 @@ One heading per component; the heading text is the component's name in the Scope
 
 ### Watcher
 - **Path**: `src/main/watcher.js`
-- **Responsibility**: `watchIntents` (the intents folder, `.aidlc-engine/` ignored except `active-directive.json`; the ledger, which alone sets `costChanged`; the Unit plans in `.aidlc/worktrees/bolt-*`), `watchFiles`, `watchOpenFiles`, `watchForAidlc`. Debounce 300 ms, max wait 800 ms.
+- **Responsibility**: `watchIntents` (the intents folder, `.aidlc-engine/` ignored except `active-directive.json`, plus the ledger), `watchFiles`, `watchOpenFiles`, `watchForAidlc`. Debounce 300 ms, max wait 800 ms.
 
 ### Audit Parser
 - **Path**: `src/main/parsers/audit.js`
-- **Responsibility**: shards into events with stable keys (`<shard file>#<index>`, `source` = the shard file name), a merge by time, `categoryOf`, `NOISY_EVENTS`. Field values stay strings. Pure.
+- **Responsibility**: shards into events with stable keys, a merge by time, `categoryOf`, `NOISY_EVENTS`. Pure.
 
 ### State Parser
 - **Path**: `src/main/parsers/state.js`
@@ -42,19 +42,15 @@ One heading per component; the heading text is the component's name in the Scope
 
 ### Intents Merger
 - **Path**: `src/main/parsers/intents.js`
-- **Responsibility**: `intents.json` merged with the folders on disk; `uuid` (the ledger key), active, missing and date fields.
+- **Responsibility**: `intents.json` merged with the folders on disk; active, missing and date fields.
 
 ### Units Status
 - **Path**: `src/main/parsers/units.js`
-- **Responsibility**: `pending`/`running`/`done` per Unit from `UNIT_*` events by `Unit` and the build events (`WORKTREE_CREATED`, `BOLT_*`) by `Bolt slug` (skimmed this run).
-
-### Agent Progress Parser
-- **Path**: `src/main/parsers/agentProgress.js`, loader `src/main/agentProgress.js`
-- **Responsibility**: US-0507 progress rows from audit events, plan steps and review severities (skimmed this run). Imports `projectService.js`.
+- **Responsibility**: `pending`/`running`/`done` per Unit from `UNIT_STARTED`/`UNIT_COMPLETED` only.
 
 ### Ledger Parser
 - **Path**: `src/main/parsers/ledger.js`
-- **Responsibility**: `summarizeLedger` (project total, per-intent cost by `intent:<uuid>`, by scope, timeline, legacy record), `costOf`, `agentModels`, `compareModels`, `agentName`. Uses only the ledger's own `usd`. Pure; the renderer imports it.
+- **Responsibility**: `summarizeLedger`, `agentModels`, `compareModels`, `agentName`. Pure.
 
 ### Features Parser
 - **Path**: `src/main/parsers/features.js`
@@ -142,7 +138,7 @@ One heading per component; the heading text is the component's name in the Scope
 
 ### Token Readings
 - **Path**: `src/main/tokenReadings.js`
-- **Responsibility**: cumulative token readings per intent in `.thadeus/tokens/<dir>.json`, at most one per 30 s and 2000 per file (`readingOf`, `addReading`, `readReadings`, `recordReading`). Written by `project:cost` for in-flight intents from the ledger summary.
+- **Responsibility**: cumulative token readings per intent in `.thadeus/tokens/<dir>.json`, at most one per 30 s.
 
 ### App Menu
 - **Path**: `src/main/menu.js`
@@ -225,8 +221,8 @@ One heading per component; the heading text is the component's name in the Scope
 - **Responsibility**: one alert decision per kind and setting.
 
 ### Locale Files
-- **Path**: `src/shared/locales/sv.json`, `src/shared/locales/en.json`
-- **Responsibility**: every UI text, nested by view. `intents.units.*` holds the DAG texts.
+- **Path**: `src/shared/locales/sv.json`, `src/shared/locales/en.json` (1244 lines each)
+- **Responsibility**: every UI text, nested by view. The tooltip texts in use today are listed in `api-documentation.md` section 5.
 
 ## Renderer (`src/renderer/`)
 
@@ -236,7 +232,7 @@ One heading per component; the heading text is the component's name in the Scope
 
 ### App Shell
 - **Path**: `src/renderer/App.jsx` (732 lines)
-- **Responsibility**: project tabs, left arm, views, settings, menu commands, dialogs, questions and agent dialog state.
+- **Responsibility**: project tabs, left arm, views, settings, menu commands, dialogs, questions and agent dialog state. It sets `data-motion` on `<html>` (l.108). It has 4 native tooltips (branch, project tab path, the ⚙ and × arm tools).
 
 ### ProjectView
 - **Path**: `src/renderer/ProjectView.jsx`
@@ -248,7 +244,7 @@ One heading per component; the heading text is the component's name in the Scope
 
 ### TerminalPanel
 - **Path**: `src/renderer/TerminalPanel.jsx`
-- **Responsibility**: xterm sessions bound to ptys, the tab bar, quick commands, `screenLines()`.
+- **Responsibility**: xterm sessions bound to ptys, the tab bar, quick commands, `screenLines()`. The quick-command `<select>` and its disabled `<option>`s carry native titles.
 
 ### Terminal Control
 - **Path**: `src/renderer/terminalControl.js`
@@ -276,19 +272,19 @@ One heading per component; the heading text is the component's name in the Scope
 
 ### ResumeButton
 - **Path**: `src/renderer/ResumeButton.jsx`
-- **Responsibility**: resumes an in-flight intent through the agent tab when it is idle.
+- **Responsibility**: resumes an in-flight intent through the agent tab when it is idle. Its reason for being unavailable is a native `title` on a `disabled` button.
 
 ### IntentList
 - **Path**: `src/renderer/IntentList.jsx`
-- **Responsibility**: intents with search, filters, sort, cost and step dots.
+- **Responsibility**: intents with search, filters, sort, cost and step dots. The row is a `button role=option`; 4 of its 5 titles sit on child spans.
 
 ### IntentDetail
 - **Path**: `src/renderer/IntentDetail.jsx`
-- **Responsibility**: header, progress, request text, five tabs (the `units` tab renders BoltDag with `dag` and `statuses`), readout column.
+- **Responsibility**: header, progress, request text, five tabs (the `units` tab renders BoltDag with `dag` and `statuses`), readout column. Its scope chip and story chips carry titles.
 
 ### Pipeline
 - **Path**: `src/renderer/Pipeline.jsx`
-- **Responsibility**: phases and stage cards with the unit level bar.
+- **Responsibility**: phases and stage cards with the unit level bar. The card button carries `stageDetails()` as a title, and 3 child spans carry more.
 
 ### Timeline
 - **Path**: `src/renderer/Timeline.jsx`
@@ -296,27 +292,31 @@ One heading per component; the heading text is the component's name in the Scope
 
 ### BoltDag
 - **Path**: `src/renderer/BoltDag.jsx` (83 lines)
-- **Responsibility**: an SVG Unit DAG. Batches become columns, edges come from `dependsOn`, each node is a 200x64 block with `kind · status` and the name, and the status sets the class `unit-<status>`. It has no test of its own.
+- **Responsibility**: an SVG Unit DAG. Batches become columns, edges come from `dependsOn`, each node is a 200x64 block with `kind · status` and the name, and the status sets the class `unit-<status>`.
 
 ### ArtifactReader
 - **Path**: `src/renderer/ArtifactReader.jsx`
-- **Responsibility**: the artifact tree and `FileContent` (Markdown, JSON).
+- **Responsibility**: the artifact tree and `FileContent` (Markdown, JSON). A relative Markdown link becomes a span with its `href` as a title.
 
 ### CostPanel
 - **Path**: `src/renderer/CostPanel.jsx`
-- **Responsibility**: the project cost overview: total, readout, legacy row, cost-per-intent bars, per-model, per-agent and per-scope tables, models per agent. Reads `cost.project`, `cost.timeline`, `cost.byScope`.
+- **Responsibility**: the project cost overview.
 
 ### CostTab
 - **Path**: `src/renderer/CostTab.jsx`
-- **Responsibility**: the intent's cost tab (per stage, agent, model, participant models); also exports `CostLabel`, `CostTable`, `ModelTable`. Reads `perIntent[dir]`; "no entry" when it is null.
+- **Responsibility**: intent cost tables, `CostLabel` with the ⓘ `info-tip`, `CostTable`, `ModelTable`. It has 6 native titles, the most of any file.
 
 ### TokenView
 - **Path**: `src/renderer/TokenView.jsx`
-- **Responsibility**: live token meters and the waveform from `perIntent[dir]` through `tokensOf`; keeps the last values on a stale ledger.
+- **Responsibility**: live token meters and the waveform.
 
 ### TokenDetail
-- **Path**: `src/renderer/TokenDetail.jsx`
-- **Responsibility**: visx charts of tokens over time (the stored readings) and by stage, agent and model (`perIntent[dir]`), the cost readout, and the US-0507 agent progress.
+- **Path**: `src/renderer/TokenDetail.jsx` (464 lines)
+- **Responsibility**: visx charts of tokens over time and by stage, agent and model, plus the agent progress rows. It holds both custom tooltips: the visx chart `Tooltip` (l.135-156) and the CSS split-bar row tip (l.272), which is the US-0414 reference.
+
+### AgentProgress
+- **Path**: `src/renderer/AgentProgress.jsx` (70 lines)
+- **Responsibility**: US-0507 agent progress in the token detail view: one summary sentence and one focusable row per running piece of work. It reuses the `.token-detail-row` layout and has no tooltip.
 
 ### Token Charts
 - **Path**: `src/renderer/tokenFlow.js`, `src/renderer/tokenChart.js`
@@ -340,11 +340,11 @@ One heading per component; the heading text is the component's name in the Scope
 
 ### ProjectSettingsView
 - **Path**: `src/renderer/ProjectSettingsView.jsx`
-- **Responsibility**: project settings sections, including Agent dialogs.
+- **Responsibility**: project settings sections, including Agent dialogs. Its `title=` props are section headings, not tooltips.
 
 ### SettingsView
 - **Path**: `src/renderer/SettingsView.jsx`
-- **Responsibility**: the app settings tabs.
+- **Responsibility**: the app settings tabs; exports `Section` (the `title` prop renders as `<h2>`) and `RadioBlocks`.
 
 ### ConfigView
 - **Path**: `src/renderer/ConfigView.jsx`
@@ -352,7 +352,7 @@ One heading per component; the heading text is the component's name in the Scope
 
 ### ConfigEdit
 - **Path**: `src/renderer/ConfigEdit.jsx`
-- **Responsibility**: `ChangePanel` and the editors for settings, guards, the lock and models.
+- **Responsibility**: `ChangePanel` and the editors for settings, guards, the lock and models. The model mismatch tag carries a title.
 
 ### PlansView
 - **Path**: `src/renderer/PlansView.jsx`
@@ -360,7 +360,7 @@ One heading per component; the heading text is the component's name in the Scope
 
 ### FeaturesView
 - **Path**: `src/renderer/FeaturesView.jsx`
-- **Responsibility**: epics, stories, the release picker, the Releases tab.
+- **Responsibility**: epics, stories, the release picker, the Releases tab. `StatusBadge` shows the raw status text as a title.
 
 ### Story Filter
 - **Path**: `src/renderer/storyFilter.js`
@@ -368,7 +368,7 @@ One heading per component; the heading text is the component's name in the Scope
 
 ### Editor
 - **Path**: `src/renderer/editor/`
-- **Responsibility**: Monaco editor tabs, the conflict dialog, the file tree.
+- **Responsibility**: Monaco editor tabs, the conflict dialog, the file tree. Each editor tab button shows its full path as a title.
 
 ### UpdateNotice
 - **Path**: `src/renderer/UpdateNotice.jsx`
@@ -387,16 +387,16 @@ One heading per component; the heading text is the component's name in the Scope
 - **Responsibility**: the start-up splash.
 
 ### LCARS Primitives
-- **Path**: `src/renderer/Lcars.jsx`, `src/renderer/AuctumMark.jsx`
-- **Responsibility**: bars, frame, dots, readouts, hairlines; the mark.
+- **Path**: `src/renderer/Lcars.jsx` (107 lines), `src/renderer/AuctumMark.jsx`
+- **Responsibility**: `Bar`, `Frame`, `Hairlines`, `Dots`, `Readout`, `progressStates`, `dotsLabel`; the mark. It uses `t` from `src/shared/i18n.js`, not the hook. `Readout` puts the full name in a title on an ellipsised span. This is the natural home for a shared tooltip primitive.
 
 ### Format Helpers
 - **Path**: `src/renderer/format.js`
-- **Responsibility**: status labels (`unitStatusLabel` reads `common.unitStatus.*`), time, duration, cost and token formats.
+- **Responsibility**: status labels (`unitStatusLabel` reads `common.unitStatus.*`), time, duration, cost and token formats; `tokenBreakdown` (`t('cost.breakdown')`), used in two titles.
 
 ### Theme Tokens
 - **Path**: `src/renderer/tokens.js`
-- **Responsibility**: reads CSS tokens from `:root` at run time (`token`, `xtermTheme`). Not cost related despite the name.
+- **Responsibility**: CSS tokens for xterm.
 
 ### useProject
 - **Path**: `src/renderer/useProject.js`
@@ -411,8 +411,8 @@ One heading per component; the heading text is the component's name in the Scope
 - **Responsibility**: the request typed into the agent tab to create feature docs.
 
 ### Theme Stylesheet
-- **Path**: `src/renderer/theme.css` (1409 lines)
-- **Responsibility**: the LCARS tokens and component styles. The `.dag-*` rules (l.879-888) style `unit-done` and `unit-running`.
+- **Path**: `src/renderer/theme.css` (1413 lines)
+- **Responsibility**: the LCARS tokens and component styles. Tooltip rules: `.token-detail-tooltip*` (l.679-684), `.token-detail-row-tip` (l.709-710), `.info-tip` (l.533, cursor and colour only). The stacking layers are the token detail tips (2), `.update-notice` (40), `.app-error` and `.app-notice` (50) and the dialog (100, l.1339).
 
 ## Build, CI and tests
 
@@ -433,8 +433,8 @@ One heading per component; the heading text is the component's name in the Scope
 - **Responsibility**: the POSIX sh hook that writes event files and waits for answers. It is bundled into main with `?raw`.
 
 ### Test Suite
-- **Path**: `tests/main`, `tests/renderer`, `tests/helpers`
-- **Responsibility**: 111 test files, 1071 `it`/`test` call sites; see `code-quality-assessment.md`.
+- **Path**: `tests/main`, `tests/renderer` (40 files at `f46cb71`), `tests/helpers`
+- **Responsibility**: 111 test files and 1071 `it`/`test` call sites at `721e051`; see `code-quality-assessment.md`.
 
 ### Test Fixtures
 - **Path**: `tests/fixtures/` (95 files)
@@ -443,3 +443,15 @@ One heading per component; the heading text is the component's name in the Scope
 ### Project Docs
 - **Path**: `README.md`, `CONTRIBUTING.md`, `SECURITY.md`, `CODE_OF_CONDUCT.md`, `LICENSE`, `docs/`
 - **Responsibility**: the outside-facing description, the roadmap and story status (checked in CI), release notes, screenshots.
+
+## Tooltip Sites (US-0414, short version)
+
+The full table with file:line, element, accessible name and text source is in the intent's `inception/reverse-engineering/developer-scan.md`.
+
+| Kind | Count | Where |
+|---|---|---|
+| Native `title` on an interactive element | 10 | `App.jsx` (project tab, ⚙, ×), `IntentList.jsx` (row), `IntentDetail.jsx` (story chip), `Pipeline.jsx` (stage card), `ResumeButton.jsx` (disabled button), `TerminalPanel.jsx` (select, disabled option), `editor/EditorPanel.jsx` (tab) |
+| Native `title` on a child inside a button | 7 | `IntentList.jsx` (cost, plan, done/executed, error), `Pipeline.jsx` (level bar, mismatch flag, cost) |
+| Native `title` on plain text | 14 | `App.jsx` (branch), `IntentDetail.jsx` (scope chip), `CostPanel.jsx` (2), `CostTab.jsx` (6, including the ⓘ), `ConfigEdit.jsx`, `FeaturesView.jsx`, `ArtifactReader.jsx`, `Lcars.jsx` |
+| Custom | 2 | `TokenDetail.jsx`: the split-bar row tip (the reference) and the visx chart tooltip |
+| `title=` that is a prop, not a tooltip | 8 | `CostTable` captions (5), `Section` headings (3) |

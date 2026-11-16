@@ -1,10 +1,25 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { HARNESSES } from '../../src/shared/harnesses.js';
+import { HOVER_DELAY_MS } from '../../src/renderer/Tooltip.jsx';
 
 const terminal = { state: vi.fn(() => 'idle'), type: vi.fn(), sequence: vi.fn(), harness: HARNESSES.find((h) => h.id === 'claude') };
 vi.mock('../../src/renderer/TerminalContext.jsx', () => ({ useTerminal: () => terminal }));
 const { default: IntentList } = await import('../../src/renderer/IntentList.jsx');
+
+/** The shared tooltip's text after hovering `el` (US-0414). */
+function hoverTip(el) {
+  vi.useFakeTimers();
+  try {
+    fireEvent.mouseOver(el);
+    act(() => vi.advanceTimersByTime(HOVER_DELAY_MS));
+    const text = screen.queryAllByRole('tooltip').map((n) => n.textContent);
+    fireEvent.mouseLeave(el);
+    return text.join('|');
+  } finally {
+    vi.useRealTimers();
+  }
+}
 
 // Same shape loadIntentList returns (mergeIntents + per-intent summary).
 const base = { uuid: null, missingOnDisk: false, missingInIndex: false, active: false, done: 0, executed: 0, request: null };
@@ -62,8 +77,8 @@ describe('IntentList', () => {
     };
     render(<IntentList intents={[...intents, custom]} selected={null} onSelect={vi.fn()} />);
     const row = screen.getAllByTestId('intent-list-row').find((r) => r.textContent.includes('i18n-foundation'));
-    const label = [...row.querySelectorAll('span[title]')].find((s) => s.textContent === 'i18n-express');
-    expect(label.getAttribute('title')).toContain('bugfix');
+    const label = [...row.querySelectorAll('span')].find((s) => s.textContent === 'i18n-express');
+    expect(hoverTip(label)).toContain('bugfix');
     expect(row.textContent).not.toContain('bugfix');
 
     fireEvent.change(screen.getByTestId('intent-list-scope-filter'), { target: { value: 'i18n-express' } });
@@ -112,11 +127,26 @@ describe('IntentList', () => {
     const { rerender } = render(<IntentList intents={intents} selected={null} onSelect={vi.fn()} cost={cost} />);
     const cells = screen.getAllByTestId('intent-list-row-cost');
     expect(cells.map((c) => c.textContent)).toEqual(['$5.00', '–', '$4.00']);
-    expect(cells[1].title).toMatch(/Ingen post i usage-ledger.json/);
-    expect(cells[0].title).toBe('Uppskattad kostnad (API-pris)');
+    expect(hoverTip(cells[1])).toMatch(/Ingen post i usage-ledger.json/);
+    expect(hoverTip(cells[0])).toBe('Uppskattad kostnad (API-pris)');
 
     rerender(<IntentList intents={intents} selected={null} onSelect={vi.fn()} cost={{ available: false, reason: 'saknas' }} />);
     expect(screen.queryAllByTestId('intent-list-row-cost')).toEqual([]);
+  });
+
+  it('a row shows the combined text of its parts on focus, and each part its own on hover (US-0414 FR2.3)', () => {
+    const row = { ...intents[0], plan: 'min-plan', error: 'trasig state-fil' };
+    render(<IntentList intents={[row]} selected={null} onSelect={vi.fn()} cost={cost} />);
+    const button = screen.getByTestId('intent-list-row');
+    expect(button.hasAttribute('title')).toBe(false);
+    fireEvent.focus(button);
+    expect(screen.getByRole('tooltip').textContent).toBe(
+      ['2026-11-12', 'Uppskattad kostnad (API-pris)', 'Egen plan som bygger på express', 'Klara av körda stages', 'trasig state-fil'].join('\n')
+    );
+    fireEvent.blur(button);
+    expect(hoverTip(button)).toBe('2026-11-12');
+    expect(hoverTip(screen.getByTestId('intent-list-row-cost'))).toBe('Uppskattad kostnad (API-pris)');
+    expect(hoverTip(button.querySelector('.tag-error'))).toBe('trasig state-fil');
   });
 
   it('shows Fortsätt only under the selected, unfinished intent: not for the active one unless selected, never for complete', () => {

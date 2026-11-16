@@ -6,6 +6,7 @@ import { useTranslation } from 'react-i18next';
 import { FileContent } from '../ArtifactReader.jsx';
 import ConflictDialog from './ConflictDialog.jsx';
 import { markDirty } from './EditorContext.jsx';
+import Tooltip from '../Tooltip.jsx';
 
 const MonacoPane = lazy(() => import('./MonacoPane.jsx'));
 const errorText = (err) => String(err?.message ?? err).replace(/^Error invoking remote method '[^']+': (Error: )?/, '');
@@ -174,15 +175,17 @@ export default function EditorPanel({ projectId, editor, agentBusy = false, acti
       <div className="editor-tabs" role="tablist">
         {editor.tabs.map((x) => (
           <span key={x.rel} className={`editor-tab ${x.rel === editor.active ? 'is-active' : ''}`}>
-            <button role="tab" aria-selected={x.rel === editor.active} title={x.rel} onClick={() => editor.setActive(x.rel)} data-testid="editor-tab">
-              {x.rel.split('/').pop()}
-              {isDirty(x) && (
-                <span className="editor-dirty" aria-label={t('editor.unsaved')} data-testid="editor-tab-dirty">
-                  {' '}
-                  ●
-                </span>
-              )}
-            </button>
+            <Tooltip text={x.rel}>
+              <button role="tab" aria-selected={x.rel === editor.active} onClick={() => editor.setActive(x.rel)} data-testid="editor-tab">
+                {x.rel.split('/').pop()}
+                {isDirty(x) && (
+                  <span className="editor-dirty" aria-label={t('editor.unsaved')} data-testid="editor-tab-dirty">
+                    {' '}
+                    ●
+                  </span>
+                )}
+              </button>
+            </Tooltip>
             <button
               className="editor-tab-close"
               aria-label={t('editor.close', { file: x.rel })}
