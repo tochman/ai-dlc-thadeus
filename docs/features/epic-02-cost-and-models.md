@@ -8,7 +8,7 @@
 
 **Stories:** US-0201, US-0202, US-0203, US-0204, US-0205, US-0206, US-0207, US-0208
 
-**Status (2026-11-15):** ✅ US-0201–US-0205 and US-0207 released (v0.2.0–v0.2.4; CSV export in US-0203 deferred). ➡️ US-0206 moved to US-0904. 📋 US-0208 planned for v0.2.7. Each story names its release.
+**Status (2026-11-15):** ✅ US-0201–US-0205 and US-0207 released (v0.2.0–v0.2.4; CSV export in US-0203 deferred). ➡️ US-0206 moved to US-0904. ✅ US-0208 done, for v0.2.7. Each story names its release.
 
 ---
 
@@ -134,17 +134,18 @@ The key format of `workflows` was confirmed during requirements analysis (see ab
   - **Tests.** `tests/renderer/tokenFlow.test.jsx`, `tests/renderer/TokenView.test.jsx`.
 - **Dependencies:** US-0201, US-0205
 
-**US-0208: Detailed token view from the side diagram** 📋 Planned, for v0.2.7
+**US-0208: Detailed token view from the side diagram** ✅ Done, for v0.2.7
 - As a **developer watching agents work**, in order to **understand in depth where and how the tokens go**, I would like to **click the small token diagram in the side column and get a large view with several detailed diagrams, showing as much of the data as is available**.
 - **Epic:** EPIC-02
 - **Priority:** Medium
 - **Complexity:** Medium
 - **Background:** Asked for on 2026-11-14. Builds on the live token view (US-0207).
 - **Acceptance Criteria:**
-  - [ ] Clicking the small token view (`TokenView.jsx`), or pressing Enter or Space on it, opens a large view; Esc or a close button returns to where the person was.
-  - [ ] The large view shows several diagrams, each from the ledger's own data: tokens over time per kind (input, output, cache write 5 m and 1 h, cache read), the token rate over time, and the split by stage, by agent and by model.
-  - [ ] Each diagram shows the figures behind it on hover or focus, and a table view of the same numbers is one click away.
-  - [ ] It updates live while the work runs, like US-0207, and it works for a finished intent too, from the recorded totals.
-  - [ ] A diagram whose data is missing says so in one sentence instead of showing zero.
-  - [ ] Each series has a text label, not colour alone. Swedish and English texts, and motion follows the animations setting.
+  - [x] Clicking the small token view (`TokenView.jsx`), or pressing Enter or Space on it, opens a large view; Esc or a close button returns to where the person was. (It replaces the intent's main panel; a finished intent opens it from a "Tokens ›" button.)
+  - [x] The large view shows several diagrams: tokens over time per kind (input, output, cache write 5 m and 1 h, cache read), the token rate over time, and the split by stage, by agent and by model. (Time history comes from readings the app stores in `.thadeus/tokens/`, since the ledger has no timestamps; the splits come from the ledger.)
+  - [x] Each diagram shows the figures behind it on hover or focus, and a table view of the same numbers is one click away. (Decided at the mockup gate: the over-time chart has Diagram / Table; the splits have Tokens / $ with their figures beside each bar.)
+  - [x] It updates live while the work runs, like US-0207, and it works for a finished intent too, from the recorded totals.
+  - [x] A diagram whose data is missing says so in one sentence instead of showing zero.
+  - [x] Each series has a text label, not colour alone. Swedish and English texts, and motion follows the animations setting.
+- **Notes:** Built on the plan `visual-express` (intent `261115-token-detail-view`). Visual mockups: https://claude.ai/artifact/WrphyHBekrup5wdVzwi8Yt (private). Charts with visx. Known gap: the way in sits in the right column, which is hidden below 1280 px window width.
 - **Dependencies:** US-0207, US-0202

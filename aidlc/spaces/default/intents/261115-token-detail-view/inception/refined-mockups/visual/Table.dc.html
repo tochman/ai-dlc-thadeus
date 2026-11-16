@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Table and dollar modes</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Antonio:wght@300;400;600;700&display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#05060a}
+a{color:#7cc0ea}a:hover{color:#a9d6f2}
+.A{font-family:'Antonio','Arial Narrow',sans-serif;text-transform:uppercase;letter-spacing:.04em}
+.tab{font-family:'Antonio','Arial Narrow',sans-serif;text-transform:uppercase;letter-spacing:.04em;border:0;padding:0 10px 3px;display:inline-flex;align-items:flex-end;justify-content:flex-end;height:26px;min-width:64px;font-size:14px;cursor:pointer;color:#e6e9f2;background:#4a5370}
+.tab-on{background:#4fa3d9;color:#05060a}
+.lbl{font-family:'Antonio','Arial Narrow',sans-serif;text-transform:uppercase;letter-spacing:.06em;font-size:13px;color:#9aa3b8}
+.card{border:3px solid #4a5370;border-radius:4px 22px 4px 4px;padding:10px 14px 12px;background:#05060a;min-width:0}
+table{width:100%;border-collapse:collapse;font-family:'Antonio','Arial Narrow',sans-serif;font-size:17px;letter-spacing:.02em}
+caption{text-align:left;padding-bottom:8px}
+th{font-weight:400;text-transform:uppercase;letter-spacing:.06em;font-size:13px;color:#9aa3b8;text-align:right;padding:4px 10px;border-bottom:2px solid #2b3145}
+th:first-child,td:first-child{text-align:left}
+td{text-align:right;padding:5px 10px;color:#e6e9f2;border-bottom:1px solid #1a1f2d;font-variant-numeric:tabular-nums}
+td.c{color:#7cc0ea}
+tr.hl td{color:#7cc0ea}
+.rowx{display:grid;grid-template-columns:150px 1fr 70px;gap:12px;align-items:center}
+.nm{font-family:'Antonio','Arial Narrow',sans-serif;font-size:17px;color:#e6e9f2}
+.vl{font-family:'Antonio','Arial Narrow',sans-serif;font-size:17px;color:#7cc0ea;text-align:right}
+</style>
+</helmet>
+<div style="box-sizing:border-box;width:100%;max-width:1280px;margin:0 auto;padding:18px;display:flex;color:#e6e9f2;font-family:-apple-system,BlinkMacSystemFont,'Helvetica Neue',Arial,sans-serif">
+<div style="width:22px;border:14px solid #4a5370;border-right:0;border-radius:44px 0 0 44px;margin-right:16px"></div>
+<div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:18px;padding:14px 0">
+<div style="display:flex;gap:6px;height:10px"><i style="flex:5;background:#4a5370"></i><i style="flex:1;background:#4a5370"></i><i style="flex:4;background:#4a5370"></i><i style="flex:2;background:#2b3145"></i></div>
+
+<section>
+<div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
+<h3 class="A" style="margin:0;font-weight:400;font-size:22px;color:#7cc0ea">Tokens over time</h3>
+<i style="flex:1;height:2px;background:#2b3145"></i>
+<button class="tab" type="button" aria-pressed="false">Diagram</button>
+<button class="tab tab-on" type="button" aria-pressed="true" style="border-radius:0 13px 13px 0">Table</button>
+</div>
+<div style="border:2px solid #2b3145;padding:10px 14px;max-height:300px;overflow:auto">
+<table>
+<caption class="lbl">Cumulative tokens per stored reading</caption>
+<thead><tr><th scope="col">Elapsed</th><th scope="col">Input</th><th scope="col">Output</th><th scope="col">Cache write 5 m</th><th scope="col">Cache write 1 h</th><th scope="col">Cache read</th><th scope="col">Cost</th></tr></thead>
+<tbody>
+<tr><td>0:00</td><td>12 k</td><td>3 k</td><td>1 k</td><td>0</td><td>40 k</td><td class="c">$0.12</td></tr>
+<tr><td>0:10</td><td>180 k</td><td>34 k</td><td>44 k</td><td>11 k</td><td>390 k</td><td class="c">$0.84</td></tr>
+<tr><td>0:20</td><td>330 k</td><td>68 k</td><td>88 k</td><td>22 k</td><td>780 k</td><td class="c">$1.62</td></tr>
+<tr><td>0:31</td><td>480 k</td><td>102 k</td><td>110 k</td><td>33 k</td><td>1.17 M</td><td class="c">$2.40</td></tr>
+<tr><td>0:41</td><td>590 k</td><td>125 k</td><td>132 k</td><td>44 k</td><td>1.56 M</td><td class="c">$3.10</td></tr>
+<tr class="hl"><td>0:51</td><td>1.31 M</td><td>0.39 M</td><td>0.14 M</td><td>0.04 M</td><td>2.70 M</td><td>$4.82</td></tr>
+</tbody>
+</table>
+</div>
+</section>
+
+<section class="card" style="max-width:640px">
+<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px"><h3 class="A" style="margin:0;font-weight:400;font-size:20px;color:#7cc0ea;flex:1">By stage</h3><button class="tab" type="button" aria-pressed="false">Tokens</button><button class="tab tab-on" type="button" aria-pressed="true" style="border-radius:0 13px 13px 0">$</button></div>
+<p class="lbl" style="margin:0 0 8px">$ mode: one steel bar per stage; tokens stay in the tooltip</p>
+<div style="display:flex;flex-direction:column;gap:8px">
+<div class="rowx"><span class="nm">Requirements</span><div style="height:12px;width:29%;background:#4fa3d9"></div><span class="vl">$1.75</span></div>
+<div class="rowx"><span class="nm">Rough mockups</span><div style="height:12px;width:21%;background:#4fa3d9"></div><span class="vl">$1.30</span></div>
+<div class="rowx"><span class="nm">Code generation</span><div style="height:12px;width:100%;background:#4fa3d9;box-shadow:0 0 8px rgba(79,163,217,.5)"></div><span class="vl">$6.10</span></div>
+<div class="rowx"><span class="nm">Build and test</span><div style="height:12px;width:27%;background:#4fa3d9"></div><span class="vl">$1.65</span></div>
+</div>
+</section>
+
+<div style="display:flex;gap:6px;height:10px"><i style="flex:3;background:#4a5370"></i><i style="flex:1;background:#1f3b57"></i><i style="flex:5;background:#4a5370"></i></div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":760}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

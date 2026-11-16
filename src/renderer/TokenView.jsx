@@ -28,9 +28,10 @@ export function wavePoints(history) {
 }
 
 /**
- * @param {{cost: object|null, dirName: string, live: boolean}} props `cost` is what `project:cost` returns
+ * The whole view is one button that opens the token detail (US-0208 FR1): click, Enter or Space calls `onOpen`.
+ * @param {{cost: object|null, dirName: string, live: boolean, onOpen?: () => void, ref?: object}} props `cost` is what `project:cost` returns
  */
-export default function TokenView({ cost, dirName, live }) {
+export default function TokenView({ cost, dirName, live, onOpen, ref }) {
   const { t } = useTranslation();
   const [history, setHistory] = useState([]);
   const now = tokensOf(cost, dirName);
@@ -49,7 +50,20 @@ export default function TokenView({ cost, dirName, live }) {
   const rate = history.at(-1)?.rate ?? 0;
 
   return (
-    <section className="token-view" aria-label={t('tokens.title')} data-testid="token-view">
+    <section
+      ref={ref}
+      className="token-view"
+      role="button"
+      tabIndex={0}
+      aria-label={t('tokens.open')}
+      onClick={onOpen}
+      onKeyDown={(e) => {
+        if (e.key !== 'Enter' && e.key !== ' ') return;
+        e.preventDefault();
+        onOpen?.();
+      }}
+      data-testid="token-view"
+    >
       <h3 className="token-view-title">{t('tokens.title')}</h3>
       <div className="token-meters">
         {METERS.map((m) => {

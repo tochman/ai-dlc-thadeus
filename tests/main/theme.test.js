@@ -154,3 +154,17 @@ describe('the agent dialog (US-0020)', () => {
     expect(css).toMatch(/:root\[data-motion='full'\] \.agent-dialog:not\(\[open\]\)\s*\{[^}]*transform:\s*scaleY\(0\)/);
   });
 });
+
+describe('the token detail view (US-0208 FR7)', () => {
+  it('adds the cache write 5 m steel to the palette', () => {
+    expect(css.match(ROOT)?.[0]).toContain('--steel-mid: #2f6f9f;');
+  });
+  it('draws in, grows and eases only with full motion', () => {
+    expect(css).toMatch(/:root\[data-motion='full'\] \.token-detail-areas\s*\{[^}]*animation:\s*lcars-draw/);
+    expect(css).toMatch(/:root\[data-motion='full'\] \.token-detail-bar-grow\s*\{[^}]*animation:\s*token-detail-grow[^}]*transition:\s*transform 300ms/);
+    expect(css).toMatch(/:root\[data-motion='full'\] \.token-detail-rate-line\.is-live\s*\{[^}]*animation:\s*lcars-glow-steel/);
+    // No easing outside full motion: the transitions live only under the full-motion selector.
+    const unguarded = css.split('\n').filter((line) => /^\.token-detail[^{]*\{[^}]*(transition|animation):/.test(line));
+    expect(unguarded).toEqual([]);
+  });
+});

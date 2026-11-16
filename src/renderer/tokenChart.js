@@ -1,0 +1,73 @@
+// The token detail view's chart numbers (EPIC-02 US-0208 FR3): elapsed time labels, the five kinds stacked over the
+// stored readings, the rate between readings, and the by-stage/agent/model splits. Pure, so tested without visx.
+
+/** Bottom to top in the over-time stack (FR3.1); the legend lists them top first. */
+export const STACK_KINDS = ['cacheRead', 'cacheWrite5m', 'cacheWrite1h', 'output', 'input'];
+/** The ledger's per-stage/agent/model rows merge the two cache writes (costOf). */
+export const SPLIT_KINDS = ['input', 'output', 'cacheWrite', 'cacheRead'];
+export const SPLIT_MAX = 12;
+
+const totalOf = (r) => STACK_KINDS.reduce((sum, k) => sum + (r[k] ?? 0), 0);
+
+/** US-0208 FR3.1: elapsed milliseconds as h:mm; hours keep counting past 24. */
+export function elapsedLabel(ms) {
+  const minutes = Math.max(0, Math.floor(ms / 60_000));
+  return `${Math.floor(minutes / 60)}:${String(minutes % 60).padStart(2, '0')}`;
+}
+
+/**
+ * US-0208 FR3.1: the readings as stacked layers over elapsed time, `t` from the first reading.
+ * @returns {{kind: string, points: {t: number, y0: number, y1: number}[]}[]} bottom layer first
+ */
+export function stackSeries(readings) {
+  const start = readings[0]?.at ?? 0;
+  const base = readings.map(() => 0);
+  return STACK_KINDS.map((kind) => ({
+    kind,
+    points: readings.map((r, i) => {
+      const y0 = base[i];
+      base[i] += r[kind] ?? 0;
+      return { t: r.at - start, y0, y1: base[i] };
+    })
+  }));
+}
+
+/** US-0208 FR3.2: tokens per minute between consecutive readings; a lower total (a reset) counts as 0. */
+export function rateSeries(readings) {
+  const start = readings[0]?.at ?? 0;
+  return readings.slice(1).map((r, i) => {
+    const prev = readings[i];
+    const minutes = Math.max(r.at - prev.at, 1) / 60_000;
+    return { t: r.at - start, rate: Math.max(0, totalOf(r) - totalOf(prev)) / minutes };
+  });
+}
+
+function sumRows(rows) {
+  const tokens = Object.fromEntries(SPLIT_KINDS.map((k) => [k, rows.reduce((s, r) => s + r.tokens[k], 0)]));
+  return {
+    name: 'other',
+    other: true,
+    usd: rows.reduce((s, r) => s + r.usd, 0),
+    missingPrice: rows.some((r) => r.missingPrice),
+    totalTokens: rows.reduce((s, r) => s + r.totalTokens, 0),
+    tokens
+  };
+}
+
+/**
+ * US-0208 FR3.3: ledger rows ready for a split card, in tokens by kind or in dollars. Largest first unless
+ * `keepOrder` (stages in pipeline order); past SPLIT_MAX rows the rest are summed as one `other` row.
+ * @param {{name: string, usd: number, totalTokens: number, tokens: object, missingPrice?: boolean}[]} rows
+ * @param {'tokens'|'usd'} measure
+ */
+export function splitRows(rows, measure, { keepOrder = false } = {}) {
+  const valueOf = (r) => (measure === 'usd' ? r.usd : r.totalTokens);
+  const sorted = keepOrder ? rows : [...rows].sort((a, b) => valueOf(b) - valueOf(a));
+  const shown = sorted.length > SPLIT_MAX + 1 ? [...sorted.slice(0, SPLIT_MAX), sumRows(sorted.slice(SPLIT_MAX))] : sorted;
+  return shown.map((r) => ({
+    ...r,
+    other: r.other === true,
+    value: valueOf(r),
+    parts: measure === 'usd' ? [{ kind: 'usd', value: r.usd }] : SPLIT_KINDS.map((kind) => ({ kind, value: r.tokens[kind] }))
+  }));
+}

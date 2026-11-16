@@ -19,6 +19,7 @@ import {
 import { notifyEvent, notifyQuestions } from './notify.js';
 import { agentName, summarizeLedger } from './parsers/ledger.js';
 import { getConfiguredModels } from './models.js';
+import { readReadings, readingOf, recordReading } from './tokenReadings.js';
 import { CONFIG_WATCH_PATHS, checkHarness, getAidlcConfig } from './aidlcConfig.js';
 import { applyPlanEdit, deletePlan, listPlans, planStages, previewPlanEdit, savePlan } from './plans.js';
 import { apply as applyConfigChange, applyGuardLock, preview as previewConfigChange, previewGuardLock } from './aidlcWrite.js';
@@ -457,8 +458,17 @@ const handlers = {
     if (!cost.available) return cost;
     const { intents } = await loadIntentList(p.root, space, []); // cached list; only new folders are read
     const { ledger, ...rest } = cost;
-    return { ...rest, ...summarizeLedger(ledger, intents) };
+    const summary = summarizeLedger(ledger, intents);
+    // A reading per running intent for the token detail view; never awaited, so the cost answer never waits (US-0208 FR2, NFR2).
+    const now = Date.now();
+    for (const i of intents) {
+      const reading = i.status === 'in-flight' ? readingOf(summary.perIntent[i.dirName], now) : null;
+      if (reading) recordReading(p.root, i.dirName, reading).catch((err) => console.error(`Kunde inte spara tokenavläsning för ${i.dirName}:`, err.message));
+    }
+    return { ...rest, ...summary };
   },
+  // The stored readings of one intent (US-0208 FR2.1); readReadings checks the dir name before it becomes a path.
+  'tokens:readings': async (_event, projectId, dirName) => readReadings(project(projectId).root, dirName),
   // Cached per opened project (a reopen gets a new projectId); getConfiguredModels never rejects.
   'project:models': async (_event, projectId) => {
     const p = project(projectId);

@@ -1,4 +1,4 @@
-import { useLayoutEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import Pipeline, { pipelineSteps } from './Pipeline.jsx';
 import Timeline from './Timeline.jsx';
@@ -7,6 +7,7 @@ import ArtifactReader from './ArtifactReader.jsx';
 import CostTab from './CostTab.jsx';
 import ResumeButton from './ResumeButton.jsx';
 import TokenView from './TokenView.jsx';
+import TokenDetail from './TokenDetail.jsx';
 import { Dots, Frame, Hairlines } from './Lcars.jsx';
 import { formatCost, isInFlight, shortModel, stagePosition, stageStatusLabel, stageTitle } from './format.js';
 
@@ -59,7 +60,7 @@ export function RequestText({ text }) {
 }
 
 /** The readout column to the right of the frame: Stages, Kostnad, Modell, Läge (FR3.5). */
-function ReadoutColumn({ pipeline, intentCost, intent, directive, cost, dirName }) {
+function ReadoutColumn({ pipeline, intentCost, intent, directive, cost, dirName, onOpenTokens, tokensRef }) {
   const { t } = useTranslation();
   const live = isInFlight(intent?.status);
   const topModel = [...(intentCost?.byModel ?? [])].sort((a, b) => b.usd - a.usd)[0]?.name;
@@ -80,7 +81,13 @@ function ReadoutColumn({ pipeline, intentCost, intent, directive, cost, dirName 
         </div>
       )}
       {/* Live tokens beside the cost while the work runs (EPIC-02 US-0207). */}
-      <TokenView cost={cost} dirName={dirName} live={live} />
+      <TokenView cost={cost} dirName={dirName} live={live} onOpen={onOpenTokens} ref={tokensRef} />
+      {/* A finished intent has no live view; its token detail opens from here (US-0208 FR5). */}
+      {!live && intentCost && (
+        <button type="button" ref={tokensRef} className="lcars-block lcars-block--sm lcars-block--dark" onClick={onOpenTokens} data-testid="token-view-open">
+          {t('tokenDetail.openShort')}
+        </button>
+      )}
       {topModel && (
         <div className="readout">
           <span className="readout-label">{t('intents.readoutModel')}</span>
@@ -125,10 +132,38 @@ export default function IntentDetail({ projectId, detail, intent, activeDirName,
   const position = stagePosition(state?.currentStage, pipeline.done, pipeline.executed);
   const steps = pipelineSteps(pipeline);
   const now = state?.currentStage ? currentText(pipeline, state.currentStage) : null;
+  // The token detail replaces the main panel; closing it gives focus back to the small view (US-0208 FR1).
+  const [showTokens, setShowTokens] = useState(false);
+  const tokensRef = useRef(null);
+  const returnFocus = useRef(false);
+  useEffect(() => {
+    if (showTokens || !returnFocus.current) return;
+    returnFocus.current = false;
+    tokensRef.current?.focus();
+  }, [showTokens]);
 
   function showFile(rel) {
     setOpenFile(rel);
     setTab('files');
+  }
+
+  if (showTokens) {
+    return (
+      <article className="intent-detail" data-testid="intent-detail">
+        <TokenDetail
+          projectId={projectId}
+          dirName={detail.dirName}
+          intent={intent}
+          cost={cost}
+          live={isInFlight(intent?.status)}
+          stageOrder={pipeline.phases.flatMap((p) => p.stages.map((s) => s.slug))}
+          onBack={() => {
+            returnFocus.current = true;
+            setShowTokens(false);
+          }}
+        />
+      </article>
+    );
   }
 
   return (
@@ -204,7 +239,16 @@ export default function IntentDetail({ projectId, detail, intent, activeDirName,
           {tab === 'files' && <ArtifactReader projectId={projectId} groups={detail.files} selected={openFile} onSelect={setOpenFile} />}
         </div>
       </Frame>
-      <ReadoutColumn pipeline={pipeline} intentCost={intentCost} intent={intent} directive={detail.directive} cost={cost} dirName={detail.dirName} />
+      <ReadoutColumn
+        pipeline={pipeline}
+        intentCost={intentCost}
+        intent={intent}
+        directive={detail.directive}
+        cost={cost}
+        dirName={detail.dirName}
+        onOpenTokens={() => setShowTokens(true)}
+        tokensRef={tokensRef}
+      />
     </article>
   );
 }
