@@ -53,6 +53,19 @@ describe('progressRows (US-0507 FR1.2, FR1.3, FR3.1)', () => {
     expect(rows).toEqual([expect.objectContaining({ kind: 'build', unit: null, stage: 'code-generation', agent: 'developer', minutes: 3, status: 'running' })]);
   });
 
+  it("shows the running Code Generation build while no agent is in flight and Claude Code's helpers completed as unknown (US-0025)", () => {
+    const done = (m, agent) => ev(m, 'SUBAGENT_COMPLETED', { 'Agent Type': agent, 'Agent ID': 'a1' });
+    const events = [stage(0, 'code-generation'), dispatched(1, 'aidlc-developer-agent'), done(5, 'unknown'), done(6, 'unknown')];
+    expect(progressRows(events, { running: 0, nowMs: min(10) })).toEqual([
+      expect.objectContaining({ kind: 'build', unit: null, stage: 'code-generation', agent: 'developer', minutes: 9, status: 'running' })
+    ]);
+  });
+
+  it('drops a review whose stage has completed without its REVIEW_COMPLETED (US-0025)', () => {
+    const events = [stage(0, 'code-generation'), requested(1, 'review:1'), ev(5, 'STAGE_COMPLETED', { Stage: 'code-generation' })];
+    expect(progressRows(events, { running: 1, nowMs: min(10) })).toEqual([]);
+  });
+
   it('gives no rows when nothing runs (FR1.4), and drops open rows while no agent is in flight', () => {
     expect(progressRows([], { running: 0, nowMs: min(1) })).toEqual([]);
     expect(progressRows([worktree(0, 'u1-a'), requested(1, 'review:1')], { running: 0, nowMs: min(2) })).toEqual([]);
