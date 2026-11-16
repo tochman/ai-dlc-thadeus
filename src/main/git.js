@@ -1,5 +1,5 @@
 // Read-only git for "Uppdatera från GitHub" (US-0502). Only fetch, rev-parse, rev-list, diff, status,
-// show and tag --list (US-0603) run here, with fixed arguments and no shell (FR3.1, NFR1). Anything that changes the
+// show, tag --list (US-0603) and log -1 (US-0507) run here, with fixed arguments and no shell (FR3.1, NFR1). Anything that changes the
 // working tree is typed into the visible shell tab by the renderer instead.
 import { runFixed } from './exec.js';
 import { readJsonSafe } from './projectAccess.js';
@@ -156,6 +156,11 @@ export async function listReleaseTags(root, { exec } = {}) {
     console.info('git tag gick inte, releaser visas utan taggar:', err.message);
     return [];
   }
+}
+
+/** US-0507 FR2.2, NFR2: the subject of the last commit on the branch checked out in `cwd`; null when git cannot say. */
+export async function lastCommitSubject(cwd, { exec } = {}) {
+  return (await gitOrNull(cwd, ['log', '-1', '--format=%s'], exec)) || null;
 }
 
 /** Files with unresolved conflicts after a pull, rebase or merge (FR3.8). */

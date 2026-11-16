@@ -154,6 +154,7 @@ export default function IntentDetail({ projectId, detail, intent, activeDirName,
     setTab('files');
   }
 
+  // A re-read detail (a change on disk) is the token detail's refreshKey: it asks for the agent progress again (US-0507 FR5.1).
   if (showTokens) {
     return (
       <article className="intent-detail" data-testid="intent-detail">
@@ -164,6 +165,7 @@ export default function IntentDetail({ projectId, detail, intent, activeDirName,
           cost={cost}
           live={isInFlight(intent?.status)}
           stageOrder={pipeline.phases.flatMap((p) => p.stages.map((s) => s.slug))}
+          refreshKey={detail}
           onBack={() => setShowTokens(false)}
         />
       </article>

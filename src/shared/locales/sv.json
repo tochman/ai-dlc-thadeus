@@ -940,6 +940,25 @@
       "noReadingsLive": "Inga avläsningar än; den första sparas vid nästa ändring i kostnadsloggen.",
       "noReadingsDone": "Inga avläsningar finns sparade för den här intenten; den blev klar innan de sparades.",
       "oneReading": "Bara en avläsning än; diagrammet börjar med nästa."
+    },
+    "progress": {
+      "title": "Agenternas framsteg",
+      "empty": "Inga agenter arbetar i den här intenten just nu.",
+      "summaryBuilds": "Byggena går framåt: {list}.",
+      "summaryItem": "{name} har {done} av {total} steg klara",
+      "summaryCount": "{n, plural, one {# agent arbetar} other {# agenter arbetar}}.",
+      "minutes": "{n} min",
+      "steps": "{done} av {total} steg",
+      "stepsDone": "{done} av {total} steg, klart",
+      "done": "klart",
+      "failed": "misslyckades",
+      "running": "arbetar",
+      "reviewRequested": "granskning begärd",
+      "verdict": "{verdict}, {findings}",
+      "finding": "{n} {severity}",
+      "noFindings": "0 fynd",
+      "commit": "Senaste commit: {subject}",
+      "unreadable": "Kunde inte läsa {path}"
     }
   },
   "aboutDialog": {

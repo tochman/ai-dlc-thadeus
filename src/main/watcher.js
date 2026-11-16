@@ -78,12 +78,43 @@ export function watchOpenFiles({ files, onChange, onError = console.error }) {
 }
 
 /**
- * @param {{intentsDir: string, ledgerFile?: string,
+ * US-0507 FR5.1: a watcher on the project root that lets through only `.aidlc/worktrees/bolt-*` and, inside each, the
+ * intents' Unit plans (`<intents>/<dir>/construction/<unit>/code-generation/code-generation-plan.md`), and calls
+ * `onPlan(dir)` for a change of one. The root is watched so worktrees created later are seen (F-01).
+ */
+function watchWorktreePlans(worktreesDir, intentsDir, onPlan) {
+  const trees = path.resolve(worktreesDir);
+  const root = path.dirname(path.dirname(trees));
+  const any = (p) => !p.startsWith('.');
+  const steps = [
+    ...path.relative(root, trees).split(path.sep),
+    (p) => p.startsWith('bolt-'),
+    ...path.relative(root, path.resolve(intentsDir)).split(path.sep),
+    any,
+    'construction',
+    any,
+    'code-generation',
+    'code-generation-plan.md'
+  ];
+  const fits = (parts) => parts.length <= steps.length && parts.every((p, i) => (typeof steps[i] === 'string' ? p === steps[i] : steps[i](p)));
+  const partsOf = (p) => path.relative(root, path.resolve(p)).split(path.sep).filter(Boolean);
+  const dirAt = steps.length - 5;
+  const watcher = chokidar.watch(root, { ignoreInitial: true, depth: steps.length, ignored: (p) => !fits(partsOf(p)) });
+  watcher.on('all', (_event, p) => {
+    const parts = partsOf(p);
+    if (parts.length === steps.length && fits(parts)) onPlan(parts[dirAt]);
+  });
+  return watcher;
+}
+
+/**
+ * @param {{intentsDir: string, ledgerFile?: string, worktreesDir?: string,
  *          onChange: (c: {dirNames: string[], indexChanged: boolean, costChanged: boolean}) => void,
  *          onError?: (err: Error) => void, debounceMs?: number, maxWaitMs?: number}} opts
  *   ledgerFile: absolute path to usage-ledger.json; a change there sets costChanged (FR5.1)
+ *   worktreesDir: absolute path to `<root>/.aidlc/worktrees`; a Unit plan written there reports its intent (US-0507 FR5.1)
  */
-export function watchIntents({ intentsDir, ledgerFile, onChange, onError = console.error, debounceMs = 300, maxWaitMs = 800 }) {
+export function watchIntents({ intentsDir, ledgerFile, worktreesDir, onChange, onError = console.error, debounceMs = 300, maxWaitMs = 800 }) {
   const pending = new Set();
   let indexChanged = false;
   let costChanged = false;
@@ -124,6 +155,14 @@ export function watchIntents({ intentsDir, ledgerFile, onChange, onError = conso
       schedule();
     });
     watchers.push(ledgerWatcher);
+  }
+  if (worktreesDir) {
+    watchers.push(
+      watchWorktreePlans(worktreesDir, intentsDir, (dir) => {
+        pending.add(dir);
+        schedule();
+      })
+    );
   }
 
   const [watcher] = watchers;

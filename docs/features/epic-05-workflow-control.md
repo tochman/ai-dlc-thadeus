@@ -8,7 +8,7 @@
 
 **Stories:** US-0501, US-0502, US-0503, US-0504, US-0505, US-0506, US-0507, US-0508, US-0509
 
-**Status (2026-11-16):** ✅ US-0501–US-0503, US-0505 and US-0506 released (v0.2.0–v0.2.5). ✅ US-0504 released in v0.2.7. 🚧 US-0507 in progress, for v0.2.8. 📋 US-0508 and US-0509 planned. Each story names its release.
+**Status (2026-11-16):** ✅ US-0501–US-0503, US-0505 and US-0506 released (v0.2.0–v0.2.5). ✅ US-0504 released in v0.2.7. ✅ US-0507 done, for v0.2.8. 📋 US-0508 and US-0509 planned. Each story names its release.
 
 ---
 
@@ -140,19 +140,19 @@
 - **Notes:** Added 2026-11-14 at the person's request ("answer questions from Claude or opencode in dialogs, not only from AI-DLC, and see messages from them").
 - **Dependencies:** US-0505, US-0801, US-0803
 
-**US-0507: See what the agents are doing and how far they have come** 🚧 In progress, for v0.2.8
+**US-0507: See what the agents are doing and how far they have come** ✅ Done, for v0.2.8
 - As a **developer running AI-DLC**, in order to **know what is actually going on while subagents work in the background**, I would like to **plain progress lines per running agent, such as "u2-permissions has 6 of 27 steps done and u3-replies has 16 of 42"**.
 - **Epic:** EPIC-05
 - **Priority:** Medium
 - **Complexity:** Medium
 - **Acceptance Criteria:**
-  - [ ] It is shown as a section of the existing token detail view (`TokenDetail.jsx`, opened from the small token chart); no new view is added. The section is always there and says so in one sentence when nothing runs.
-  - [ ] Each running piece of agent work (a Unit's build, a build with no Unit, a reviewer, a design builder) gets a row with its Unit or stage and how long it has run.
-  - [ ] A build shows steps done out of the plan's steps, read from the ticked boxes in its `code-generation-plan.md` (in the Unit's worktree, or in the record when there is no Unit), plus its last commit subject.
-  - [ ] A review shows "review requested", then the verdict and how many findings by severity, from the review records.
-  - [ ] One summary line at the top of the section sums it up in words, for example "The builds are moving along: u2-permissions has 6 of 27 steps done and u3-replies has 16 of 42."
-  - [ ] It updates live as files and the audit log change; finished work shows its result for about a minute, then drops off; a worktree or plan that cannot be read is named, not shown as 0.
-  - [ ] Every text goes through `t()` in Swedish and English; numbers are computed from the records, never typed in.
+  - [x] It is shown as a section of the existing token detail view (`TokenDetail.jsx`, opened from the small token chart); no new view is added. The section is always there and says so in one sentence when nothing runs.
+  - [x] Each running piece of agent work (a Unit's build, a build with no Unit, a reviewer, a design builder) gets a row with its Unit or stage and how long it has run.
+  - [x] A build shows steps done out of the plan's steps, read from the ticked boxes in its `code-generation-plan.md` (in the Unit's worktree, or in the record when there is no Unit), plus its last commit subject.
+  - [x] A review shows "review requested", then the verdict and how many findings by severity, from the review records.
+  - [x] One summary line at the top of the section sums it up in words, for example "The builds are moving along: u2-permissions has 6 of 27 steps done and u3-replies has 16 of 42."
+  - [x] It updates live as files and the audit log change; finished work shows its result for about a minute, then drops off; a worktree or plan that cannot be read is named, not shown as 0.
+  - [x] Every text goes through `t()` in Swedish and English; numbers are computed from the records, never typed in.
 - **Notes:** Added 2026-11-14 at the person's request. Decided 2026-11-16: it goes into the token detail view, not a view of its own.
 - **Dependencies:** US-0104, US-0506
 

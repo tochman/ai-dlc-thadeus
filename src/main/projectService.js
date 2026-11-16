@@ -24,7 +24,7 @@ export const INFLIGHT_PATH = 'aidlc/.aidlc-subagent-inflight';
 const spacesDir = (space) => `aidlc/spaces/${space}`;
 export const intentsDir = (space) => `${spacesDir(space)}/intents`;
 
-function assertName(name, what) {
+export function assertName(name, what) {
   if (typeof name !== 'string' || !/^[^/\\]+$/.test(name) || name.startsWith('.')) {
     throw new Error(t('errors.invalidName', { what, name: String(name) }));
   }
@@ -136,7 +136,8 @@ async function listArtifacts(root, base) {
   return [...groups].map(([dir, files]) => ({ dir, files }));
 }
 
-async function loadAuditEvents(root, base) {
+/** An intent's audit events in time order with their category; a missing audit folder gives []. */
+export async function loadAuditEvents(root, base) {
   const files = (await listDir(root, `${base}/audit`)).filter((e) => !e.isDir && e.name.endsWith('.md'));
   const texts = await Promise.all(files.map(async (f) => ({ source: f.name, text: await readText(root, `${base}/audit/${f.name}`) })));
   return mergeAudits(texts).map((e) => ({ ...e, category: categoryOf(e.event) }));
@@ -167,7 +168,7 @@ export function workingAgents(events, running) {
 }
 
 /** How many agents run now: the entries of AI-DLC's inflight file, 0 when it is missing or broken. */
-async function inflightCount(root) {
+export async function inflightCount(root) {
   const res = await readJsonSafe(root, INFLIGHT_PATH);
   return res.ok && Array.isArray(res.value?.entries) ? res.value.entries.length : 0;
 }

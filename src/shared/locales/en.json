@@ -940,6 +940,25 @@
       "noReadingsLive": "No readings yet; the first is stored at the next cost ledger change.",
       "noReadingsDone": "No readings are stored for this intent; it finished before they were kept.",
       "oneReading": "Only one reading so far; the chart starts with the next one."
+    },
+    "progress": {
+      "title": "Agent progress",
+      "empty": "No agents are working in this intent right now.",
+      "summaryBuilds": "The builds are moving along: {list}.",
+      "summaryItem": "{name} has {done} of {total} steps done",
+      "summaryCount": "{n, plural, one {# agent is working} other {# agents are working}}.",
+      "minutes": "{n} min",
+      "steps": "{done} of {total} steps",
+      "stepsDone": "{done} of {total} steps, done",
+      "done": "done",
+      "failed": "failed",
+      "running": "working",
+      "reviewRequested": "review requested",
+      "verdict": "{verdict}, {findings}",
+      "finding": "{n} {severity}",
+      "noFindings": "0 findings",
+      "commit": "Last commit: {subject}",
+      "unreadable": "Could not read {path}"
     }
   },
   "aboutDialog": {

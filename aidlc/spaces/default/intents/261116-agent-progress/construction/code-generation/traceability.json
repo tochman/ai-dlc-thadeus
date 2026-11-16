@@ -1,0 +1,26 @@
+{
+  "stage": "code-generation",
+  "upstream_ids": ["FR1.1", "FR1.2", "FR1.3", "FR1.4", "FR2.1", "FR2.2", "FR3.1", "FR3.2", "FR4.1", "FR4.2", "FR5.1", "FR5.2", "FR5.3", "FR6.1", "NFR1", "NFR2", "NFR3", "NFR4", "NFR5"],
+  "coverage": [
+    { "id": "FR1.1", "status": "OK", "target": "src/renderer/AgentProgress.jsx" },
+    { "id": "FR1.2", "status": "OK", "target": "src/main/parsers/agentProgress.js" },
+    { "id": "FR1.3", "status": "OK", "target": "src/renderer/AgentProgress.jsx" },
+    { "id": "FR1.4", "status": "OK", "target": "src/renderer/AgentProgress.jsx" },
+    { "id": "FR2.1", "status": "OK", "target": "src/main/agentProgress.js" },
+    { "id": "FR2.2", "status": "OK", "target": "src/main/git.js" },
+    { "id": "FR3.1", "status": "OK", "target": "src/main/parsers/agentProgress.js" },
+    { "id": "FR3.2", "status": "OK", "target": "src/main/agentProgress.js" },
+    { "id": "FR4.1", "status": "OK", "target": "src/renderer/AgentProgress.jsx" },
+    { "id": "FR4.2", "status": "OK", "target": "tests/renderer/TokenDetail.test.jsx" },
+    { "id": "FR5.1", "status": "OK", "target": "src/main/watcher.js" },
+    { "id": "FR5.2", "status": "OK", "target": "src/main/parsers/agentProgress.js" },
+    { "id": "FR5.3", "status": "OK", "target": "src/main/agentProgress.js" },
+    { "id": "FR6.1", "status": "OK", "target": "src/main/parsers/units.js" },
+    { "id": "NFR1", "status": "OK", "target": "src/shared/locales/sv.json" },
+    { "id": "NFR2", "status": "OK", "target": "tests/main/agentProgressLoad.test.js" },
+    { "id": "NFR3", "status": "OK", "target": "tests/main/watcher.test.js" },
+    { "id": "NFR4", "status": "OK", "target": "src/renderer/AgentProgress.jsx" },
+    { "id": "NFR5", "status": "OK", "target": "tests/main/agentProgress.test.js" }
+  ],
+  "reverse": []
+}

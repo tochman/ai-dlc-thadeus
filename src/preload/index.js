@@ -77,6 +77,7 @@ contextBridge.exposeInMainWorld('bridge', {
   setProjectSettings: call('projectSettings:set'),
   getAidlcConfig: call('config:get'), // read-only AI-DLC configuration for one harness (EPIC-09 US-0901)
   getWorkingAgents: call('agents:working'), // the agents working now in the active intent (US-0901)
+  getAgentProgress: call('agents:progress'), // an intent's agent progress rows, by dir name (US-0507)
   // Changing AI-DLC settings (US-0902): a change is {kind, key, value, where}, never a command.
   previewConfigChange: call('config:preview'),
   applyConfigChange: call('config:apply'),
