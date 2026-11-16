@@ -23,28 +23,107 @@ describe('workingAgents', () => {
       events(
         [0, stage('requirements-analysis')],
         [1, dispatched('aidlc-developer-agent')],
-        [2, dispatched('aidlc-developer-agent')],
-        [3, completed('aidlc-developer-agent')],
+        [2, dispatched('aidlc-architect-agent')],
+        [3, completed('aidlc-architect-agent')],
         [4, stage('code-generation')],
         [5, dispatched('aidlc-quality-agent')],
         [6, completed('aidlc-quality-agent')],
         [7, dispatched('aidlc-quality-agent')]
-      ),
-      5
+      )
     );
     expect(list).toEqual([
       { agent: 'aidlc-quality-agent', name: 'quality', startedMs: Date.parse(at(7)), stage: 'code-generation' },
-      { agent: 'aidlc-developer-agent', name: 'developer', startedMs: Date.parse(at(2)), stage: 'requirements-analysis' }
+      { agent: 'aidlc-developer-agent', name: 'developer', startedMs: Date.parse(at(1)), stage: 'requirements-analysis' }
     ]);
   });
 
-  it("shows at most as many as are running, newest first, so a refused dispatch's ghost is hidden", () => {
+  it("lets a later dispatch of the same agent in the same stage replace an older open one, so a refused or interrupted dispatch's ghost is hidden (US-0025)", () => {
     // A hook refused the first dispatch, AI-DLC retried: two dispatches, one agent running.
     const log = events([0, stage('code-generation')], [1, dispatched('general-purpose')], [2, dispatched('general-purpose')]);
-    expect(workingAgents(log, 1).map((a) => a.startedMs)).toEqual([Date.parse(at(2))]);
-    expect(workingAgents(log, 0)).toEqual([]);
+    expect(workingAgents(log).map((a) => a.startedMs)).toEqual([Date.parse(at(2))]);
+    // The same agent type in another stage is another piece of work.
+    const two = events(
+      [0, stage('functional-design')],
+      [1, dispatched('aidlc-developer-agent')],
+      [2, stage('code-generation')],
+      [3, dispatched('aidlc-developer-agent')]
+    );
+    expect(workingAgents(two).map((a) => a.stage)).toEqual(['code-generation', 'functional-design']);
+  });
+
+  it('drops the open dispatches of a stage once that stage has completed (US-0025)', () => {
+    const log = events(
+      [0, stage('functional-design')],
+      [1, dispatched('aidlc-architect-agent')],
+      [2, { Event: 'STAGE_COMPLETED', Stage: 'functional-design' }]
+    );
+    expect(workingAgents(log)).toEqual([]);
+  });
+
+  it("ignores Claude Code's own helper agents (Agent Type unknown), which never close a known agent (US-0025)", () => {
+    const log = events([0, stage('code-generation')], [1, dispatched('aidlc-developer-agent')], [2, completed('unknown')], [3, completed('unknown')]);
+    expect(workingAgents(log)).toMatchObject([{ agent: 'aidlc-developer-agent', stage: 'code-generation' }]);
   });
 });
+
+// A trimmed excerpt of a real Code Generation audit shard (2026-11-16): an interrupted developer dispatch, its
+// retry, a completion, the running build's dispatch, then Claude Code's prompt-suggestion helpers completing as
+// `unknown` after each turn, which also emptied AI-DLC's inflight file.
+const REAL_SHARD = `# Audit log
+
+## Stage Started
+**Timestamp**: 2026-11-16T15:27:11Z
+**Event**: STAGE_STARTED
+**Stage**: code-generation
+
+---
+
+## Subagent Dispatched
+**Timestamp**: 2026-11-16T15:42:49Z
+**Event**: SUBAGENT_DISPATCHED
+**Agent Type**: aidlc-developer-agent
+
+---
+
+## Subagent Dispatched
+**Timestamp**: 2026-11-16T15:44:23Z
+**Event**: SUBAGENT_DISPATCHED
+**Agent Type**: aidlc-developer-agent
+
+---
+
+## Subagent Completed
+**Timestamp**: 2026-11-16T15:46:40Z
+**Event**: SUBAGENT_COMPLETED
+**Agent Type**: aidlc-developer-agent
+**Agent ID**: a03e8c764f9955186
+**Message**: Jag stoppade i början av Del 1.
+
+---
+
+## Subagent Dispatched
+**Timestamp**: 2026-11-16T15:51:41Z
+**Event**: SUBAGENT_DISPATCHED
+**Agent Type**: aidlc-developer-agent
+
+---
+
+## Subagent Completed
+**Timestamp**: 2026-11-16T16:47:07Z
+**Event**: SUBAGENT_COMPLETED
+**Agent Type**: unknown
+**Agent ID**: a1cb6a00a6082f094
+**Message**: kör vidare
+
+---
+
+## Subagent Completed
+**Timestamp**: 2026-11-16T16:56:37Z
+**Event**: SUBAGENT_COMPLETED
+**Agent Type**: unknown
+**Agent ID**: a1cb6a00a6082f095
+**Message**: nej, låt den vara av
+`;
 
 const TMP = path.resolve(__dirname, '../.tmp/working-agents');
 const INTENT = 'aidlc/spaces/default/intents/261114-x';
@@ -62,17 +141,15 @@ describe('loadWorkingAgents', () => {
   });
   afterEach(() => fs.rm(TMP, { recursive: true, force: true }));
 
-  it('lists nothing while the inflight file is missing, empty or broken, whatever the audit log says', async () => {
-    await write(`${INTENT}/audit/host-1.md`, shard([0, stage('code-generation')], [1, dispatched('aidlc-developer-agent')]));
+  it('lists the running build from the audit log while the inflight file is missing, empty or broken (US-0025)', async () => {
+    await write(`${INTENT}/audit/host-1.md`, REAL_SHARD);
     const root = await openRoot(TMP);
-    expect(await loadWorkingAgents(root, 'default', '261114-x')).toEqual([]);
+    const running = [{ agent: 'aidlc-developer-agent', name: 'developer', startedMs: Date.parse('2026-11-16T15:51:41Z'), stage: 'code-generation' }];
+    expect(await loadWorkingAgents(root, 'default', '261114-x')).toEqual(running);
     await write('aidlc/.aidlc-subagent-inflight', inflight(0));
-    expect(await loadWorkingAgents(root, 'default', '261114-x')).toEqual([]);
+    expect(await loadWorkingAgents(root, 'default', '261114-x')).toEqual(running);
     await write('aidlc/.aidlc-subagent-inflight', '{"entries": [');
-    expect(await loadWorkingAgents(root, 'default', '261114-x')).toEqual([]);
-
-    await write('aidlc/.aidlc-subagent-inflight', inflight(1));
-    expect(await loadWorkingAgents(root, 'default', '261114-x')).toMatchObject([{ name: 'developer', stage: 'code-generation' }]);
+    expect(await loadWorkingAgents(root, 'default', '261114-x')).toEqual(running);
   });
 
   it('does not throw for an intent without an audit folder', async () => {

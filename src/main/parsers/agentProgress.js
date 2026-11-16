@@ -16,6 +16,8 @@ function buildsAndReviews(events) {
   for (const e of events) {
     const f = e.fields ?? {};
     if (e.category === 'stage' && f.Stage) stage = f.Stage;
+    // US-0025: a completed stage has no review of its own still running.
+    if (e.event === 'STAGE_COMPLETED') for (const [id, r] of reviews) if (!r.endedMs && r.stage === f.Stage) reviews.delete(id);
     const slug = f['Bolt slug'];
     const id = f['Request Id'];
     if ((e.event === 'WORKTREE_CREATED' || e.event === 'BOLT_STARTED') && slug) {
@@ -58,7 +60,8 @@ function buildsAndReviews(events) {
 /**
  * US-0507 FR1.2, FR1.3, FR3.1, FR5.2: one row per running piece of agent work, Unit builds first, then reviews, then
  * the other agents (`workingAgents`, minus those a build or review row already shows). A dispatched Code Generation
- * agent is a build with no Unit. A finished row stays for FINISHED_KEEP_MS; an open one only while agents are in flight.
+ * agent is a build with no Unit. A finished row stays for FINISHED_KEEP_MS; an open build or review only while agents are
+ * in flight; an open dispatch whatever the inflight file says (US-0025).
  * @param {Array<{event: string, timeMs: number, fields: object, category: string}>} events in time order
  * @param {{running: number, nowMs: number}} opts running: the inflight entries now
  */
@@ -68,7 +71,7 @@ export function progressRows(events, { running = 0, nowMs = Date.now() } = {}) {
   const open = kept.filter((r) => !r.endedMs);
   const buildStages = new Set(open.filter((r) => r.kind === 'build').map((r) => r.stage));
   const reviewers = open.filter((r) => r.kind === 'review').map((r) => r.reviewer);
-  const others = workingAgents(events, running).filter((a) => {
+  const others = workingAgents(events).filter((a) => {
     const i = reviewers.indexOf(a.agent);
     if (i !== -1) reviewers.splice(i, 1);
     return i === -1 && !buildStages.has(a.stage);

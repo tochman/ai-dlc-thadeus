@@ -6,9 +6,9 @@
 
 > Small fixes the person reports while using the app: something looks off, behaves wrongly or is missing a detail. Each fix becomes a story here, so nothing reported in passing gets lost. A fix that grows into a feature moves to its topic's epic.
 
-**Stories:** US-0001, US-0002, US-0003, US-0004, US-0005, US-0006, US-0007, US-0008, US-0009, US-0010, US-0011, US-0012, US-0013, US-0014, US-0015, US-0016, US-0017, US-0018, US-0019, US-0020, US-0021, US-0022, US-0023, US-0024
+**Stories:** US-0001, US-0002, US-0003, US-0004, US-0005, US-0006, US-0007, US-0008, US-0009, US-0010, US-0011, US-0012, US-0013, US-0014, US-0015, US-0016, US-0017, US-0018, US-0019, US-0020, US-0021, US-0022, US-0023, US-0024, US-0025
 
-**Status (2026-11-16):** ✅ US-0001–US-0020 released (v0.2.3–v0.2.6). ✅ US-0021–US-0023 released in v0.2.7. ✅ US-0024 released in v0.2.8. Each story names its release.
+**Status (2026-11-16):** ✅ US-0001–US-0020 released (v0.2.3–v0.2.6). ✅ US-0021–US-0023 released in v0.2.7. ✅ US-0024 released in v0.2.8. ✅ US-0025 done, not yet released. Each story names its release.
 
 ---
 
@@ -389,3 +389,19 @@
   - [x] A test fails without the fix and passes with it; the full suite stays green.
 - **Notes:** Start from the root cause: the chart's data (readings in `.thadeus/tokens/`), its width (a zero-width container would draw nothing) or the Diagram branch in `src/renderer/TokenDetail.jsx` and `src/renderer/tokenChart.js`. Runs on the `quick-fix` plan.
 - **Dependencies:** US-0208
+
+---
+
+**US-0025: Agent progress shows a running build when the inflight file is empty** ✅ Done (not yet released)
+- As a **developer watching agents work**, in order to **see that a build is running**, I would like **the "Agenternas framsteg" panel and "Arbetar nu" to show a running AI-DLC agent even when AI-DLC's inflight file is missing or empty**.
+- **Epic:** EPIC-00
+- **Priority:** High
+- **Complexity:** Low
+- **Background:** Reported 2026-11-16: a Code Generation developer agent was running in another project, but the panel said "Inga agenter arbetar i den här intenten just nu." Claude Code runs a small helper agent after every main turn (prompt suggestion); its SubagentStop makes AI-DLC log `SUBAGENT_COMPLETED` with `Agent Type: unknown` and clear the inflight entry, so `aidlc/.aidlc-subagent-inflight` was gone or held only another session's entry, and `workingAgents` showed nothing (or only the newest dispatch).
+- **Acceptance Criteria:**
+  - [x] **Given** an open `aidlc-developer-agent` dispatch in Code Generation and no inflight file, **when** I open the agent progress, **then** the build row shows.
+  - [x] **Given** `SUBAGENT_COMPLETED` events with `Agent Type: unknown`, **then** they neither close nor hide a known agent's row.
+  - [x] **Given** an older open dispatch of the same agent type in the same stage (refused or interrupted), **then** the later dispatch replaces it, and a completed stage drops its open dispatches and reviews.
+  - [x] A test fails without the fix and passes with it; the full suite stays green.
+- **Notes:** **Fix.** `workingAgents` reads the audit log alone and skips `unknown`; one open dispatch per agent type and stage (a `ponytail:` comment names the limit for parallel same-type agents). Open Unit builds and reviews still show only while the inflight file has entries. **Tests.** `tests/main/workingAgents.test.js` (with a trimmed real audit excerpt), `tests/main/agentProgress.test.js`. **Where.** `src/main/projectService.js`, `src/main/parsers/agentProgress.js`. An upstream fix belongs in AI-DLC's SubagentStop hook: ignore completions with no known agent type instead of clearing the inflight entry.
+- **Dependencies:** US-0507, US-0901

@@ -146,27 +146,31 @@ export async function loadAuditEvents(root, base) {
 }
 
 /**
- * The agents working now (US-0901 "Arbetar nu"): per agent type, the dispatches no later completion closed,
- * oldest first. A dispatch a hook refused leaves a ghost, so only `running` (the inflight entries) are kept,
- * newest first. Pure; `events` come from loadAuditEvents in time order.
+ * The agents working now (US-0901 "Arbetar nu", US-0025): per agent type, the dispatches no later completion closed,
+ * newest first. Read from the audit log alone: AI-DLC's inflight file is emptied by Claude Code's own helper agents
+ * (their SUBAGENT_COMPLETED says `Agent Type: unknown`), so those are skipped and the file is not consulted.
+ * A refused or interrupted dispatch leaves a ghost: a later dispatch of the same agent type in the same stage
+ * replaces it, and a completed stage closes its own. Pure; `events` come from loadAuditEvents in time order.
  * @returns {Array<{agent: string, name: string, startedMs: number, stage: string|null}>}
  */
-export function workingAgents(events, running) {
-  if (!(running > 0)) return [];
-  const open = new Map(); // agent type -> dispatches not yet completed, oldest first
+export function workingAgents(events) {
+  // ponytail: one open dispatch per agent type and stage, so parallel same-type agents in one stage show as one; Unit builds have their own rows.
+  let open = []; // dispatches not yet completed, oldest first
   let stage = null;
   for (const e of events) {
     if (e.category === 'stage' && e.fields?.Stage) stage = e.fields.Stage;
+    if (e.event === 'STAGE_COMPLETED') open = open.filter((d) => d.stage !== e.fields?.Stage);
     const agent = e.fields?.['Agent Type'];
-    if (!agent) continue;
-    if (!open.has(agent)) open.set(agent, []);
-    if (e.event === 'SUBAGENT_DISPATCHED') open.get(agent).push({ agent, name: agentName(agent), startedMs: e.timeMs, stage });
-    else if (e.event === 'SUBAGENT_COMPLETED') open.get(agent).shift();
+    if (!agent || agent === 'unknown') continue;
+    if (e.event === 'SUBAGENT_DISPATCHED') {
+      open = open.filter((d) => d.agent !== agent || d.stage !== stage);
+      open.push({ agent, name: agentName(agent), startedMs: e.timeMs, stage });
+    } else if (e.event === 'SUBAGENT_COMPLETED') {
+      const i = open.findIndex((d) => d.agent === agent);
+      if (i !== -1) open.splice(i, 1);
+    }
   }
-  return [...open.values()]
-    .flat()
-    .sort((a, b) => b.startedMs - a.startedMs)
-    .slice(0, running);
+  return open.sort((a, b) => b.startedMs - a.startedMs);
 }
 
 /** How many agents run now: the entries of AI-DLC's inflight file, 0 when it is missing or broken. */
@@ -179,9 +183,7 @@ export async function inflightCount(root) {
 export async function loadWorkingAgents(root, space, dirName) {
   assertName(space, 'space');
   assertName(dirName, 'intent');
-  const running = await inflightCount(root);
-  if (running === 0) return [];
-  return workingAgents(await loadAuditEvents(root, `${intentsDir(space)}/${dirName}`), running);
+  return workingAgents(await loadAuditEvents(root, `${intentsDir(space)}/${dirName}`));
 }
 
 /** An intent is in progress unless intents.json or aidlc-state.md says it is finished (US-0505 FR1.1). */
