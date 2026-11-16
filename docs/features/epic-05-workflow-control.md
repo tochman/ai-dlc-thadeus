@@ -156,7 +156,7 @@
 - **Notes:** Added 2026-11-14 at the person's request. Decided 2026-11-16: it goes into the token detail view, not a view of its own.
 - **Dependencies:** US-0104, US-0506
 
-**US-0508: Rename an intent** 📋 Planned
+**US-0508: Rename an intent** 📋 Planned, for v0.2.9
 - As a **developer with many intents**, in order to **find the right one by a name that says what it is**, I would like to **rename an intent from the app**.
 - **Epic:** EPIC-05
 - **Priority:** Medium
