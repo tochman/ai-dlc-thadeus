@@ -36,6 +36,13 @@ const m = vi.hoisted(() => {
       loadCost: vi.fn(async () => ({ available: false })),
       loadIntentDetail: vi.fn(async () => ({ detail: true })),
       loadIntentList: vi.fn(async () => ({ intents: [] })),
+      // US-0209: the merged summary; null when there is no ledger and no cost row.
+      loadCrossMachineCost: vi.fn(async (_root, _space, _intents, ledger) => ({
+        summary: ledger ? { project: { total: { usd: 3 } }, perIntent: {} } : null,
+        local: { host: 'hosta', cloneId: 'aaaaaaaaaaaa' }
+      })),
+      snapshotOf: vi.fn((ledger, clone) => ({ schemaVersion: 1, ...clone, intents: {} })),
+      writeSnapshot: vi.fn(async () => true),
       loadPendingQuestions: vi.fn(async () => []),
       loadWorkingAgents: vi.fn(async () => []),
       notifyQuestions: vi.fn(),
@@ -120,9 +127,11 @@ vi.mock('../../src/main/projectService.js', () => ({
   loadCost: m.svc.loadCost,
   loadIntentDetail: m.svc.loadIntentDetail,
   loadIntentList: m.svc.loadIntentList,
+  loadCrossMachineCost: m.svc.loadCrossMachineCost,
   loadPendingQuestions: m.svc.loadPendingQuestions,
   loadWorkingAgents: m.svc.loadWorkingAgents
 }));
+vi.mock('../../src/main/usageSnapshot.js', () => ({ USAGE_DIR: '.thadeus/usage', snapshotOf: m.svc.snapshotOf, writeSnapshot: m.svc.writeSnapshot }));
 vi.mock('../../src/main/notify.js', () => ({ notifyQuestions: m.svc.notifyQuestions, notifyEvent: m.svc.notifyEvent }));
 vi.mock('../../src/main/parsers/ledger.js', () => ({ agentName: m.svc.agentName, summarizeLedger: m.svc.summarizeLedger }));
 vi.mock('../../src/main/models.js', () => ({ getConfiguredModels: m.svc.getConfiguredModels }));
@@ -360,6 +369,27 @@ describe('projects', () => {
     const cost = await call('project:cost', {}, projectId, 'default');
     expect(cost).toMatchObject({ available: true, extra: 'x', project: expect.any(Object) });
     expect(cost.ledger).toBeUndefined();
+  });
+
+  it('answers available from the audit rows alone when there is no ledger, and writes no snapshot (US-0209 FR1.4)', async () => {
+    const { projectId } = await openProject('/work/fresh');
+    svc.writeSnapshot.mockClear();
+    svc.loadCost.mockResolvedValueOnce({ available: false, reason: 'no ledger' });
+    svc.loadCrossMachineCost.mockResolvedValueOnce({ summary: { project: { total: { usd: 2 }, partial: true }, perIntent: {} }, local: null });
+    const cost = await call('project:cost', {}, projectId, 'default');
+    expect(cost).toEqual({ available: true, project: { total: { usd: 2 }, partial: true }, perIntent: {} });
+    expect(svc.writeSnapshot).not.toHaveBeenCalled();
+  });
+
+  it("writes this machine's snapshot from the ledger it read, and watches .thadeus/usage/ (US-0209 FR3.1, FR5.1)", async () => {
+    const { projectId } = await openProject('/work/snap');
+    expect(svc.watchIntents.mock.calls.at(-1)[0].usageDir).toBe('/work/snap/.thadeus/usage');
+    const ledger = { workflows: {} };
+    svc.loadCost.mockResolvedValueOnce({ available: true, ledger });
+    await call('project:cost', {}, projectId, 'default');
+    expect(svc.loadCrossMachineCost).toHaveBeenLastCalledWith('/work/snap', 'default', [], ledger);
+    expect(svc.snapshotOf).toHaveBeenLastCalledWith(ledger, { host: 'hosta', cloneId: 'aaaaaaaaaaaa' });
+    expect(svc.writeSnapshot).toHaveBeenLastCalledWith('/work/snap', expect.objectContaining({ cloneId: 'aaaaaaaaaaaa' }));
   });
 
   it('caches the configured models and the harness detection per project', async () => {

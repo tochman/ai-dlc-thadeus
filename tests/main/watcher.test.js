@@ -99,6 +99,30 @@ describe('watchIntents', { retry: 2 }, () => {
     await wait(900);
     expect(calls).toEqual([{ dirNames: [DIR], indexChanged: false, costChanged: false }]);
   });
+
+  it('reports an audit shard write as that intent and costChanged (US-0209 FR5.1)', async () => {
+    const calls = [];
+    watcher = watchIntents({ intentsDir: INTENTS, onChange: (c) => calls.push(c), debounceMs: 150 });
+    await watcher.ready;
+    await fs.mkdir(path.join(INTENTS, DIR, 'audit'), { recursive: true });
+    await fs.writeFile(path.join(INTENTS, DIR, 'audit', 'hostb-bbbbbbbbbbbb.md'), '## Stage Completion\n');
+    await wait(900);
+    expect(calls.at(-1)).toEqual({ dirNames: [DIR], indexChanged: false, costChanged: true });
+  });
+
+  it('reports a snapshot in .thadeus/usage/, the folder created after watching started, as costChanged (US-0209 FR5.1)', async () => {
+    const usageDir = path.join(TMP, '.thadeus', 'usage');
+    const calls = [];
+    watcher = watchIntents({ intentsDir: INTENTS, usageDir, onChange: (c) => calls.push(c), debounceMs: 150 });
+    await watcher.ready;
+    await fs.mkdir(usageDir, { recursive: true });
+    await fs.writeFile(path.join(usageDir, 'notes.txt'), 'ignored');
+    await wait(400);
+    expect(calls).toEqual([]);
+    await fs.writeFile(path.join(usageDir, 'hostb-bbbbbbbbbbbb.json'), '{}');
+    await wait(900);
+    expect(calls).toEqual([{ dirNames: [], indexChanged: false, costChanged: true }]);
+  });
 });
 
 describe('watchFiles', { retry: 2 }, () => {

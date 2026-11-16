@@ -8,7 +8,9 @@ import { mergeAudits, categoryOf } from './parsers/audit.js';
 import { mergePipeline } from './parsers/pipeline.js';
 import { unitStatuses } from './parsers/units.js';
 import { pendingQuestions } from './questions.js';
-import { agentName } from './parsers/ledger.js';
+import { agentName, summarizeLedger } from './parsers/ledger.js';
+import { addTree, mergeIntentCosts, shardCosts } from './parsers/auditCost.js';
+import { localClone, readSnapshots } from './usageSnapshot.js';
 import { t } from '../shared/i18n.js';
 
 const PHASE_DIRS = ['initialization', 'ideation', 'inception', 'construction', 'operation', 'verification'];
@@ -271,6 +273,68 @@ export async function loadCost(root) {
   if (prev) return { ...prev, stale: true, warning: error };
   console.warn(`Kunde inte läsa ${LEDGER_PATH}:`, error);
   return { available: false, reason: t('cost.loadFailed', { error }) };
+}
+
+/** An intent's audit events, or [] with a warning when a shard cannot be read (US-0209 NFR3: the cost view never blanks). */
+async function auditEventsOrEmpty(root, base) {
+  try {
+    return await loadAuditEvents(root, base);
+  } catch (err) {
+    console.warn(`Kunde inte läsa ${base}/audit:`, err.message);
+    return [];
+  }
+}
+
+/** The project's machines: this one first (when it has a ledger or a part), then the others by host (US-0209 FR4.1). */
+function projectMachines(parts, hasLedger, local) {
+  const seen = new Map();
+  if (hasLedger) seen.set('', { host: local?.host ?? null, local: true });
+  for (const x of parts) if (!seen.has(x.local ? '' : x.host)) seen.set(x.local ? '' : x.host, { host: x.host, local: x.local });
+  return [...seen.values()].sort((a, b) => b.local - a.local || String(a.host).localeCompare(String(b.host)));
+}
+
+/**
+ * US-0209 FR1.4, FR2, FR3.4, FR4.1, FR4.2: the cost summary (summarizeLedger's shape) counting every machine: this
+ * machine's ledger, every intent's audit shard rows and the committed snapshots in .thadeus/usage/. Each perIntent entry
+ * and the project get `machines` and `partial`. An intent without a uuid is matched by its folder (shard rows only).
+ * @param {object|null} ledger this machine's parsed usage-ledger.json, or null when it has none
+ * @returns {Promise<{summary: object|null, local: {host: string, cloneId: string}|null}>} summary null: no cost anywhere
+ */
+export async function loadCrossMachineCost(root, space, intents, ledger) {
+  assertName(space, 'space');
+  const shards = await Promise.all(intents.map(async (i) => shardCosts(await auditEventsOrEmpty(root, `${intentsDir(space)}/${i.dirName}`))));
+  const local = await localClone(
+    root,
+    shards.flat().map((s) => s.source)
+  );
+  const snaps = await readSnapshots(root);
+  const keyed = intents.map((i) => ({ ...i, uuid: i.uuid ?? `dir:${i.dirName}` }));
+  const workflows = { ...ledger?.workflows };
+  const merged = {};
+  let extra = null;
+  keyed.forEach((intent, n) => {
+    const key = `intent:${intent.uuid}`;
+    const snapshots = snaps.filter((s) => s.intents[intent.uuid]).map((s) => ({ host: s.host, cloneId: s.cloneId, node: s.intents[intent.uuid] }));
+    const m = mergeIntentCosts({ ledgerNode: ledger?.workflows?.[key] ?? null, local, shards: shards[n], snapshots });
+    if (!m) return;
+    workflows[key] = m.node;
+    extra = addTree(extra, m.extra);
+    merged[intent.dirName] = m;
+  });
+  if (!ledger && !extra) return { summary: null, local };
+
+  const all = { ...ledger, workflows };
+  for (const k of ['totals', 'byModel', 'byAgent']) all[k] = addTree(ledger?.[k], extra?.[k]);
+  const summary = summarizeLedger(all, keyed);
+  for (const [dir, m] of Object.entries(merged)) Object.assign(summary.perIntent[dir], { machines: m.machines, partial: m.partial });
+  const parts = Object.values(merged);
+  summary.project.machines = projectMachines(
+    parts.flatMap((m) => m.machines),
+    !!ledger,
+    local
+  );
+  summary.project.partial = parts.some((m) => m.partial);
+  return { summary, local };
 }
 
 export async function loadIntentDetail(root, space, dirName) {

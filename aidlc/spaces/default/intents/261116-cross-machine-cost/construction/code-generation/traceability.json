@@ -1,0 +1,26 @@
+{
+  "stage": "code-generation",
+  "upstream_ids": ["FR1.1", "FR1.2", "FR1.3", "FR1.4", "FR2.1", "FR2.2", "FR2.3", "FR3.1", "FR3.2", "FR3.3", "FR3.4", "FR3.5", "FR4.1", "FR4.2", "FR4.3", "FR5.1", "NFR1", "NFR2", "NFR3", "NFR4"],
+  "coverage": [
+    { "id": "FR1.1", "status": "OK", "target": "src/main/parsers/auditCost.js" },
+    { "id": "FR1.2", "status": "OK", "target": "src/main/parsers/auditCost.js" },
+    { "id": "FR1.3", "status": "OK", "target": "tests/main/auditCost.test.js" },
+    { "id": "FR1.4", "status": "OK", "target": "src/main/projectService.js" },
+    { "id": "FR2.1", "status": "OK", "target": "src/main/usageSnapshot.js" },
+    { "id": "FR2.2", "status": "OK", "target": "src/main/parsers/auditCost.js" },
+    { "id": "FR2.3", "status": "OK", "target": "tests/main/crossMachineCost.test.js" },
+    { "id": "FR3.1", "status": "OK", "target": "src/main/usageSnapshot.js" },
+    { "id": "FR3.2", "status": "OK", "target": "tests/main/usageSnapshot.test.js" },
+    { "id": "FR3.3", "status": "OK", "target": "src/main/usageSnapshot.js" },
+    { "id": "FR3.4", "status": "OK", "target": "src/main/parsers/auditCost.js" },
+    { "id": "FR3.5", "status": "OK", "target": "src/main/usageSnapshot.js" },
+    { "id": "FR4.1", "status": "OK", "target": "src/renderer/CostTab.jsx" },
+    { "id": "FR4.2", "status": "OK", "target": "src/renderer/CostTab.jsx" },
+    { "id": "FR4.3", "status": "OK", "target": "src/shared/locales/sv.json" },
+    { "id": "FR5.1", "status": "OK", "target": "src/main/watcher.js" },
+    { "id": "NFR1", "status": "OK", "target": "tests/main/auditCost.test.js" },
+    { "id": "NFR2", "status": "OK", "target": "tests/main/usageSnapshot.test.js" },
+    { "id": "NFR3", "status": "OK", "target": "tests/main/usageSnapshot.test.js" },
+    { "id": "NFR4", "status": "OK", "target": "tests/main/crossMachineCost.test.js" }
+  ]
+}

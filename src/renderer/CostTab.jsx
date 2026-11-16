@@ -29,6 +29,29 @@ export function CostLabel({ complete = true }) {
   );
 }
 
+/**
+ * US-0209 FR4.1, FR4.2: the machines a total came from, this one marked, and a "partial" tag when any part counts
+ * audit stage rows only. Nothing shows when main sent no machines. Lives here so CostPanel can import it, like CostLabel.
+ * @param {{machines?: {host: string|null, local: boolean}[], partial?: boolean}} props
+ */
+export function MachinesLine({ machines, partial }) {
+  const { t } = useTranslation();
+  if (!machines?.length) return null;
+  const names = machines.map((m) => (m.local ? t('cost.thisMachine', { host: m.host ?? '–' }) : m.host));
+  return (
+    <p className="muted cost-machines" data-testid="cost-machines">
+      {t('cost.machines', { list: names.join(', ') })}
+      {partial && (
+        <Tooltip text={t('cost.partialHelp')} focusable>
+          <span className="tag tag-warn" data-testid="cost-partial">
+            {t('cost.partial')}
+          </span>
+        </Tooltip>
+      )}
+    </p>
+  );
+}
+
 /** USD, share of the total and tokens per row; the largest row is highlighted (FR2.2, FR6.3). */
 export function CostTable({ title, rows, totalUsd, testId }) {
   const { t } = useTranslation();
@@ -158,6 +181,7 @@ export default function CostTab({ cost, intentCost, pipeline, models }) {
         <span className="cost-total-usd">{total.missingPrice ? t('cost.missingPrice') : formatUsd(total.usd)}</span>
         <span className="muted">{tokenBreakdown(total.tokens)}</span>
       </div>
+      <MachinesLine machines={intentCost.machines} partial={intentCost.partial} />
       <Readout
         rows={[...intentCost.byModel].sort((a, b) => b.usd - a.usd).map((r, i) => ({ ...r, label: shortModel(r.name), key: i === 0 ? 'steel' : 'light' }))}
         totalUsd={total.usd}
