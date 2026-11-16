@@ -8,13 +8,13 @@
 
 **Stories:** US-1201
 
-**Status (2026-11-15):** 📋 US-1201 planned for v0.3.0. Each story names its release.
+**Status (2026-11-15):** 📋 US-1201 planned for v0.2.8. Each story names its release.
 
 ---
 
 ## User Stories
 
-**US-1201: Review the GitHub panel and shape a team collaboration concept** 📋 Planned, for v0.3.0
+**US-1201: Review the GitHub panel and shape a team collaboration concept** 📋 Planned, for v0.2.8
 - As a **developer working on a project with a team**, in order to **see and coordinate what everyone is doing without leaving the app**, I would like to **have the GitHub panel reviewed and a concept for team collaboration worked out, built on git and AI-DLC**.
 - **Epic:** EPIC-12
 - **Priority:** High

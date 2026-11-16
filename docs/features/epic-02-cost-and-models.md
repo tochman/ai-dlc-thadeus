@@ -8,7 +8,7 @@
 
 **Stories:** US-0201, US-0202, US-0203, US-0204, US-0205, US-0206, US-0207, US-0208
 
-**Status (2026-11-15):** ✅ US-0201–US-0205 and US-0207 released (v0.2.0–v0.2.4; CSV export in US-0203 deferred). ➡️ US-0206 moved to US-0904. ✅ US-0208 done, for v0.2.7. Each story names its release.
+**Status (2026-11-16):** ✅ US-0201–US-0205 and US-0207 released (v0.2.0–v0.2.4; CSV export in US-0203 deferred). ➡️ US-0206 moved to US-0904. ✅ US-0208 released in v0.2.7. Each story names its release.
 
 ---
 
@@ -134,7 +134,7 @@ The key format of `workflows` was confirmed during requirements analysis (see ab
   - **Tests.** `tests/renderer/tokenFlow.test.jsx`, `tests/renderer/TokenView.test.jsx`.
 - **Dependencies:** US-0201, US-0205
 
-**US-0208: Detailed token view from the side diagram** ✅ Done, for v0.2.7
+**US-0208: Detailed token view from the side diagram** ✅ Released in v0.2.7
 - As a **developer watching agents work**, in order to **understand in depth where and how the tokens go**, I would like to **click the small token diagram in the side column and get a large view with several detailed diagrams, showing as much of the data as is available**.
 - **Epic:** EPIC-02
 - **Priority:** Medium

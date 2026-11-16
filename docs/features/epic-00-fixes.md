@@ -8,7 +8,7 @@
 
 **Stories:** US-0001, US-0002, US-0003, US-0004, US-0005, US-0006, US-0007, US-0008, US-0009, US-0010, US-0011, US-0012, US-0013, US-0014, US-0015, US-0016, US-0017, US-0018, US-0019, US-0020, US-0021, US-0022, US-0023
 
-**Status (2026-11-15):** ✅ US-0001–US-0020 released (v0.2.3–v0.2.6). ✅ US-0021–US-0023 done, for v0.2.7. Each story names its release.
+**Status (2026-11-16):** ✅ US-0001–US-0020 released (v0.2.3–v0.2.6). ✅ US-0021–US-0023 released in v0.2.7. Each story names its release.
 
 ---
 
@@ -327,7 +327,7 @@
 - **Dependencies:** US-0506, US-0018
 ---
 
-**US-0021: Editing a plan keeps its copy for every harness** ✅ Done, for v0.2.7
+**US-0021: Editing a plan keeps its copy for every harness** ✅ Released in v0.2.7
 - As a **developer who uses both Claude Code and opencode in a project**, in order to **run my own plans from either harness**, I would like **an edit in the plan editor to keep the plan's copy for every harness, not only one**.
 - **Epic:** EPIC-00
 - **Priority:** High
@@ -346,7 +346,7 @@
 
 ---
 
-**US-0022: The token detail view opens in a narrow window too** ✅ Done, for v0.2.7
+**US-0022: The token detail view opens in a narrow window too** ✅ Released in v0.2.7
 - As a **developer working in a smaller app window**, in order to **see where the tokens go without making the window wider**, I would like to **open the token detail view at any window width**.
 - **Epic:** EPIC-00
 - **Priority:** Medium
@@ -361,7 +361,7 @@
 
 ---
 
-**US-0023: Clear the npm audit warnings** ✅ Done, for v0.2.7
+**US-0023: Clear the npm audit warnings** ✅ Released in v0.2.7
 - As a **maintainer of a public repository**, in order to **ship without known vulnerable packages**, I would like **`npm audit` to report no critical or moderate issues**.
 - **Epic:** EPIC-00
 - **Priority:** High
