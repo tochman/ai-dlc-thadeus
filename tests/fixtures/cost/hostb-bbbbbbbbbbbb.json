@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "host": "hostb",
+  "cloneId": "bbbbbbbbbbbb",
+  "intents": {
+    "0000b209-0000-7000-8000-000000000001": {
+      "totals": { "usd": 4.5, "tokens": { "input": 40, "output": 4000, "cacheCreate5m": 8000, "cacheCreate1h": 0, "cacheRead": 1500000 } },
+      "byStage": {
+        "build-and-test": {
+          "totals": { "usd": 4.5, "tokens": { "input": 40, "output": 4000, "cacheCreate5m": 8000, "cacheCreate1h": 0, "cacheRead": 1500000 } },
+          "byModel": { "sonnet-5-5": { "usd": 4.5, "tokens": { "input": 40, "output": 4000, "cacheCreate5m": 8000, "cacheCreate1h": 0, "cacheRead": 1500000 } } },
+          "byAgent": { "main": { "usd": 4.5, "tokens": { "input": 40, "output": 4000, "cacheCreate5m": 8000, "cacheCreate1h": 0, "cacheRead": 1500000 } } }
+        }
+      },
+      "byModel": { "sonnet-5-5": { "usd": 4.5, "tokens": { "input": 40, "output": 4000, "cacheCreate5m": 8000, "cacheCreate1h": 0, "cacheRead": 1500000 } } },
+      "byAgent": { "main": { "usd": 4.5, "tokens": { "input": 40, "output": 4000, "cacheCreate5m": 8000, "cacheCreate1h": 0, "cacheRead": 1500000 } } }
+    }
+  }
+}

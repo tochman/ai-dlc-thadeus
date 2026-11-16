@@ -14,7 +14,7 @@ One heading per component; the heading text is the component's name in the Scope
 
 ### Project Service
 - **Path**: `src/main/projectService.js`
-- **Responsibility**: `detectProject`, `loadIntentList` (cached summaries, `activityAt`), `loadIntentDetail`/`buildDetail`, `loadCost`, `workingAgents()`/`loadWorkingAgents`, `inProgress`, `loadPendingQuestions`. Defines `LEDGER_PATH` and `INFLIGHT_PATH`.
+- **Responsibility**: `detectProject`, `loadIntentList` (cached summaries, `activityAt`), `loadIntentDetail`/`buildDetail`, `loadAuditEvents` (every `audit/*.md` shard, merged), `loadCost` (the ledger only; the last good value on a broken file), `workingAgents()`/`loadWorkingAgents`, `inProgress`, `loadPendingQuestions`. Defines `LEDGER_PATH` and `INFLIGHT_PATH`.
 
 ### Project Access
 - **Path**: `src/main/projectAccess.js`
@@ -22,11 +22,11 @@ One heading per component; the heading text is the component's name in the Scope
 
 ### Watcher
 - **Path**: `src/main/watcher.js`
-- **Responsibility**: `watchIntents` (the intents folder, `.aidlc-engine/` ignored except `active-directive.json`, plus the ledger), `watchFiles`, `watchOpenFiles`, `watchForAidlc`. Debounce 300 ms, max wait 800 ms.
+- **Responsibility**: `watchIntents` (the intents folder, `.aidlc-engine/` ignored except `active-directive.json`; the ledger, which alone sets `costChanged`; the Unit plans in `.aidlc/worktrees/bolt-*`), `watchFiles`, `watchOpenFiles`, `watchForAidlc`. Debounce 300 ms, max wait 800 ms.
 
 ### Audit Parser
 - **Path**: `src/main/parsers/audit.js`
-- **Responsibility**: shards into events with stable keys, a merge by time, `categoryOf`, `NOISY_EVENTS`. Pure.
+- **Responsibility**: shards into events with stable keys (`<shard file>#<index>`, `source` = the shard file name), a merge by time, `categoryOf`, `NOISY_EVENTS`. Field values stay strings. Pure.
 
 ### State Parser
 - **Path**: `src/main/parsers/state.js`
@@ -42,15 +42,19 @@ One heading per component; the heading text is the component's name in the Scope
 
 ### Intents Merger
 - **Path**: `src/main/parsers/intents.js`
-- **Responsibility**: `intents.json` merged with the folders on disk; active, missing and date fields.
+- **Responsibility**: `intents.json` merged with the folders on disk; `uuid` (the ledger key), active, missing and date fields.
 
 ### Units Status
 - **Path**: `src/main/parsers/units.js`
-- **Responsibility**: `pending`/`running`/`done` per Unit from `UNIT_STARTED`/`UNIT_COMPLETED` only.
+- **Responsibility**: `pending`/`running`/`done` per Unit from `UNIT_*` events by `Unit` and the build events (`WORKTREE_CREATED`, `BOLT_*`) by `Bolt slug` (skimmed this run).
+
+### Agent Progress Parser
+- **Path**: `src/main/parsers/agentProgress.js`, loader `src/main/agentProgress.js`
+- **Responsibility**: US-0507 progress rows from audit events, plan steps and review severities (skimmed this run). Imports `projectService.js`.
 
 ### Ledger Parser
 - **Path**: `src/main/parsers/ledger.js`
-- **Responsibility**: `summarizeLedger`, `agentModels`, `compareModels`, `agentName`. Pure.
+- **Responsibility**: `summarizeLedger` (project total, per-intent cost by `intent:<uuid>`, by scope, timeline, legacy record), `costOf`, `agentModels`, `compareModels`, `agentName`. Uses only the ledger's own `usd`. Pure; the renderer imports it.
 
 ### Features Parser
 - **Path**: `src/main/parsers/features.js`
@@ -138,7 +142,7 @@ One heading per component; the heading text is the component's name in the Scope
 
 ### Token Readings
 - **Path**: `src/main/tokenReadings.js`
-- **Responsibility**: cumulative token readings per intent in `.thadeus/tokens/<dir>.json`, at most one per 30 s.
+- **Responsibility**: cumulative token readings per intent in `.thadeus/tokens/<dir>.json`, at most one per 30 s and 2000 per file (`readingOf`, `addReading`, `readReadings`, `recordReading`). Written by `project:cost` for in-flight intents from the ledger summary.
 
 ### App Menu
 - **Path**: `src/main/menu.js`
@@ -300,19 +304,19 @@ One heading per component; the heading text is the component's name in the Scope
 
 ### CostPanel
 - **Path**: `src/renderer/CostPanel.jsx`
-- **Responsibility**: the project cost overview.
+- **Responsibility**: the project cost overview: total, readout, legacy row, cost-per-intent bars, per-model, per-agent and per-scope tables, models per agent. Reads `cost.project`, `cost.timeline`, `cost.byScope`.
 
 ### CostTab
 - **Path**: `src/renderer/CostTab.jsx`
-- **Responsibility**: intent cost tables.
+- **Responsibility**: the intent's cost tab (per stage, agent, model, participant models); also exports `CostLabel`, `CostTable`, `ModelTable`. Reads `perIntent[dir]`; "no entry" when it is null.
 
 ### TokenView
 - **Path**: `src/renderer/TokenView.jsx`
-- **Responsibility**: live token meters and the waveform.
+- **Responsibility**: live token meters and the waveform from `perIntent[dir]` through `tokensOf`; keeps the last values on a stale ledger.
 
 ### TokenDetail
 - **Path**: `src/renderer/TokenDetail.jsx`
-- **Responsibility**: visx charts of tokens over time and by stage, agent and model.
+- **Responsibility**: visx charts of tokens over time (the stored readings) and by stage, agent and model (`perIntent[dir]`), the cost readout, and the US-0507 agent progress.
 
 ### Token Charts
 - **Path**: `src/renderer/tokenFlow.js`, `src/renderer/tokenChart.js`
@@ -392,7 +396,7 @@ One heading per component; the heading text is the component's name in the Scope
 
 ### Theme Tokens
 - **Path**: `src/renderer/tokens.js`
-- **Responsibility**: CSS tokens for xterm.
+- **Responsibility**: reads CSS tokens from `:root` at run time (`token`, `xtermTheme`). Not cost related despite the name.
 
 ### useProject
 - **Path**: `src/renderer/useProject.js`

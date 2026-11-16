@@ -41,4 +41,21 @@ describe('CostPanel', () => {
     expect(screen.getByText(/usage-ledger.json finns inte/)).toBeTruthy();
     expect(screen.queryByTestId('cost-panel-legacy')).toBeNull();
   });
+
+  it('names the machines under the total, this one marked, and tags a partial total with its tooltip (US-0209 FR4.1, FR4.2)', () => {
+    const machines = [
+      { host: 'hosta', local: true },
+      { host: 'hostb', local: false }
+    ];
+    const { rerender } = render(<CostPanel cost={{ ...cost, project: { ...cost.project, machines, partial: true } }} models={models} />);
+    expect(screen.getByTestId('cost-machines').firstChild.textContent).toBe('Räknat från: hosta (den här datorn), hostb');
+    expect(screen.getByTestId('cost-partial').textContent).toBe('Delvis');
+    expect(screen.getByTestId('cost-partial').title).toMatch(/stage-raderna i audit-loggen/);
+    expect(screen.getByTitle('Uppskattad kostnad (API-pris)')).toBeTruthy(); // still an estimate (FR4.3)
+
+    rerender(<CostPanel cost={{ ...cost, project: { ...cost.project, machines, partial: false } }} models={models} />);
+    expect(screen.queryByTestId('cost-partial')).toBeNull();
+    rerender(<CostPanel cost={cost} models={models} />);
+    expect(screen.queryByTestId('cost-machines')).toBeNull(); // no machines from main: no line
+  });
 });

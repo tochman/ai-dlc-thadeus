@@ -1,7 +1,7 @@
 // Collapsible project cost overview at the top of the intent list (FR3, FR4.6, FR6).
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { CostLabel, CostTable, ModelTable } from './CostTab.jsx';
+import { CostLabel, CostTable, MachinesLine, ModelTable } from './CostTab.jsx';
 import { Readout } from './Lcars.jsx';
 import { formatCost, formatTokens, formatUsd, shortModel, tokenBreakdown } from './format.js';
 
@@ -113,6 +113,7 @@ export default function CostPanel({ cost, models, open: openProp, onToggle }) {
             </span>
             <span className="cost-big-tokens">{t('cost.tokens', { amount: formatTokens(project.total.totalTokens) })}</span>
           </p>
+          <MachinesLine machines={project.machines} partial={project.partial} />
           <Readout rows={readoutRows(project)} totalUsd={project.total.usd} />
         </>
       )}

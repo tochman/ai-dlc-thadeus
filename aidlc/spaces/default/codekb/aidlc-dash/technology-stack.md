@@ -1,6 +1,6 @@
 # Technology Stack
 
-Versions are the ones locked in `package-lock.json` at `721e051`.
+Versions are the ones locked in `package-lock.json` at `721e051` (the last full scan); this focused run at `f46cb71` re-checked only the libraries the cost and token views use.
 
 ## Languages and Runtime
 
@@ -19,10 +19,10 @@ Versions are the ones locked in `package-lock.json` at `721e051`.
 | react, react-dom | 19.3.1 | renderer UI |
 | @xterm/xterm, @xterm/addon-fit | 6.0.0, ^0.11 | terminal tabs |
 | node-pty | 1.1.0 | ptys (native, unpacked from asar) |
-| chokidar | 4.0.3 | file watching |
+| chokidar | 4.0.3 | file watching (intents, ledger, worktree plans) |
 | i18next, i18next-icu, react-i18next, intl-messageformat | 27.1.1, 2.7.0, 18.0.1, ^12.1 | translation with ICU |
 | react-markdown, remark-gfm | 10.1.0, ^4.0 | Markdown in the artifact reader and replies |
-| @visx/* (axis, grid, group, responsive, scale, shape, tooltip) | 4.0.0 | token charts |
+| @visx/* (axis, grid, group, responsive, scale, shape, tooltip) | 4.0.0 | token charts in `TokenDetail.jsx`; `CostPanel.jsx` draws plain SVG bars |
 | @tanstack/react-virtual | 3.14.24 | the virtualised timeline |
 | @fontsource/antonio | ^5.3 | LCARS font |
 
@@ -40,7 +40,7 @@ Versions are the ones locked in `package-lock.json` at `721e051`.
 
 ## External Programs Used at Run Time
 
-The app calls `aidlc` (AI-DLC CLI), `git`, `gh` (updater fallback), the agent CLIs `claude` and `opencode`, and the login shell (`$SHELL`). It calls them only through `runFixed` or the pty, with paths from Tools Registry.
+The app calls `aidlc` (AI-DLC CLI), `git`, `gh` (updater fallback), the agent CLIs `claude` and `opencode`, and the login shell (`$SHELL`). It calls them only through `runFixed` or the pty, with paths from Tools Registry. US-0209 needs no new program: the shards and the clone id are plain files.
 
 ## Platforms
 

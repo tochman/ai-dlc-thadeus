@@ -3,15 +3,16 @@
 ## Tests
 
 - **Runner**: vitest 5.1.0 with three projects. `main` runs in node (`tests/main/**/*.test.js`). `scripts` runs the timed hook-script tests in node after the others, with up to 2 retries. `renderer` runs in jsdom with Swedish i18n (`tests/renderer/**/*.test.jsx`).
-- **Size**: 72 main and 39 renderer files, 3 helpers and 95 fixtures. There are 1071 `it`/`test` call sites by static count. No tests were run in this scan.
-- **Coverage**: v8, with an 80% line floor across `src/**` and `.opencode/plugins/*.js`, plus per-file 80% floors for the agent-dialog modules (`vitest.config.mjs`). CI runs `npx vitest run tests/ --coverage`.
-- **Gaps relevant now**: `BoltDag.jsx` has no test file. Unit status is only tested through `unitStatuses` in `tests/main/parsers.test.js`, and the Units tab is not exercised with running Units.
+- **Size** (last full scan, `721e051`): 72 main and 39 renderer files, 3 helpers and 95 fixtures; 1071 `it`/`test` call sites by static count. No tests were run in either scan.
+- **Coverage**: v8, with an 80% line floor across `src/**` and `.opencode/plugins/*.js`, plus per-file floors for the agent-dialog modules (`vitest.config.mjs`). CI runs `npx vitest run tests/ --coverage`.
+- **Cost and token tests**: `tests/main/ledger.test.js` (5 cases on `summarizeLedger` and `compareModels`, fixture `tests/fixtures/ledger/usage-ledger.json`), `parsers.test.js` (audit merge of `tests/fixtures/audit/machine-a.md` and `machine-b.md`), `ipc.test.js` (`project:cost` with a mocked service), `watcher.test.js`, `tokenReadings.test.js`; renderer `CostPanel`, `TokenView`, `TokenDetail`, `TokenDetailChartSize`, `IntentList`, `tokenFlow`.
+- **Gaps relevant now**: no `CostTab` test file; the two-machine audit fixtures carry no cost fields; nothing tests cost without a ledger beyond `{available: false}`.
 
 ## Lint, Format, CI
 
 | Check | State |
 |---|---|
-| ESLint 9 flat config | in CI (`npx eslint .`); a small rule set (recommended, react-hooks, react `jsx-uses-vars`) |
+| ESLint 9 flat config | in CI (`npx eslint .`) |
 | Prettier | in CI (`npx prettier --check .`) |
 | Secret scan | gitleaks on every PR commit |
 | Build | the mac universal dmg and the Linux deb on every PR; the glibc check on Linux |
@@ -23,24 +24,32 @@
 | Aspect | Rating | Evidence |
 |---|---|---|
 | Naming clarity | good | intent-revealing names; story ids in the headers |
-| Function size | fair | most are small and pure; `ipc.js` (891 lines), `agentHooks.js` (864) and `App.jsx` (732) are large |
+| Function size | fair | most are small and pure; `ipc.js`, `agentHooks.js` and `App.jsx` are large |
 | Error handling | good | never-throw readers, the last good value, root confinement, warnings shown |
-| Test presence | good | 111 test files, coverage floors; the gap is the DAG view |
-| Duplication | fair | `debounce` is written twice in `watcher.js` (`watchFiles` and `watchIntents`) |
-| Dead code | good | 0 TODO/FIXME, 4 `eslint-disable` lines |
+| Test presence | good | coverage floors; gaps above |
+| Duplication | fair | `debounce` is written twice in `watcher.js` (`debounce()` and inline in `watchIntents`) |
+| Dead code | good | few TODO/`eslint-disable` lines |
 
 ## Technical Debt
 
-- 37 `ponytail:` comments mark known ceilings. Examples: the unbounded caches in `projectService.js`; the HEAD watch, which does not work in a worktree (`ipc.js` `watchGitHead`); the picker regexes tied to Claude Code's layout.
+- `ponytail:` comments mark known ceilings, among them the unbounded caches in `projectService.js` and the unlocked read-modify-write in `tokenReadings.js` `recordReading`.
 - `.thadeus/tokens/<intent>.json` is written into the project but is neither ignored nor committed, so it shows as untracked.
-- `.opencode/plugins/thadeus-dialog.js` is app-owned code inside a harness folder. It is linted and covered, but sits beside AI-DLC's install.
+- `parsers/agentProgress.js` imports `projectService.js`; parsers were Node-free before.
+- `.opencode/plugins/thadeus-dialog.js` is app-owned code inside a harness folder.
 
-## Brownfield Notes for US-0507
+## Brownfield Notes for US-0209
 
-1. **Unit status is wrong for builds today.** `units.js` needs `UNIT_STARTED`, but the code-generation swarm logs `WORKTREE_CREATED` → `BOLT_STARTED` → … → `BOLT_COMPLETED` → `WORKTREE_MERGED`, and design stages log only `UNIT_COMPLETED` (seen in `261114-agent-dialogs`). Running and stage should come from these events, or from the runtime graph `instances[]` (`started_at` without `completed_at`).
-2. **The worktree is known but dropped.** `runtime-graph.json` instances carry an absolute `worktree` path under `<root>/.aidlc/worktrees/bolt-<id8>_<unit>`. It must be turned into a root-relative path and checked with `resolveInRoot` before any read.
-3. **Plan ticks** are `- [x]` / `- [ ]` lines in `construction/<unit>/code-generation/code-generation-plan.md` (27 steps in u2 of the earlier intent). Inside the worktree the record path is expected under the same relative path. This should be confirmed in requirements.
-4. **Findings by severity** are only in the review record JSON named by `REVIEW_COMPLETED` `Review Record` (relative to the intent's `.aidlc-engine/`). The audit has the verdict only.
-5. **Liveness.** `watchIntents` ignores `.aidlc-engine/` except `active-directive.json` and never sees `.aidlc/worktrees/`. The audit and graph writes already trigger `project:changed`. Plan ticks in a worktree need their own watch, or a re-read on each intent change.
-6. **The last commit subject** needs a new read-only git call in the worktree, through `runFixed` with fixed arguments and `safeArg`.
-7. **Unreadable sources** (a worktree gone after merge, a missing plan) must be named, following the existing `warnings`/stale pattern in `buildDetail`.
+1. **Cost is ledger-only today.** `project:cost` returns `{available: false}` without a ledger, so a machine that never ran the work shows no cost at all. The audit rollups must make cost available on their own.
+2. **Repeated stage completions are cumulative.** Summing every `STAGE_COMPLETED` over-counts: 261113-cost-and-models gives 33.22 summed, 23.39 taking the last per stage, 23.86 on `WORKFLOW_COMPLETED` (261113-bridge-console-mvp: 36.99, 24.94, 25.56). `WORKFLOW_COMPLETED` is the intent total and is never added to the stages. Observed from the data; confirm in requirements.
+3. **Double counting with the ledger.** The local shard and the ledger cover the same work. `aidlc/.aidlc-clone-id` (gitignored) equals the local shard's suffix, so the local shard can be skipped where the ledger has the intent. The ledger has no host field.
+4. **Precision differs.** Audit `Tokens By Model/Agent` are rounded (`71k`, `13.4M`) and `Cache Write` is not split, while `IntentCost.tokens` carries `cacheCreate5m`/`cacheCreate1h`. Totals (`Tokens In/Out`, `Cache Read/Write`, `Cost USD`) are exact.
+5. **Liveness.** A pulled shard produces `project:changed` with its dir name but no `costChanged`; `useProject` reloads cost only on `costChanged || indexChanged`.
+6. **Token readings** (`.thadeus/tokens/`) are cumulative and local; adding another machine's total would show as a jump in "Tokens over time".
+7. **Real test data**: `261113-living-lcars/audit/` holds `thomas-comlabs-993a8cefd12a.md` (one `STAGE_COMPLETED` and one `WORKFLOW_COMPLETED` with cost) beside the local shard.
+8. **Parsing**: `parseAudit` keeps values as strings; a multi-line value continues on following lines, so the rollup reader should parse only the first line of each field.
+
+## Brownfield Notes for US-0507 (delivered, kept for reference)
+
+- Unit status now also comes from `WORKTREE_CREATED`/`BOLT_*` by `Bolt slug` (`units.js`).
+- Worktree paths from `runtime-graph.json` are absolute and must pass `resolveInRoot` before a read; plan ticks live in the worktree's `code-generation-plan.md`; findings by severity only in the review record JSON.
+- `watchIntents` watches the worktree plans; `.aidlc-engine/` stays ignored except `active-directive.json`.
