@@ -11,7 +11,7 @@
 
 ## Way of Working
 
-- Små fixar som personen rapporterar under arbetet läggs som storys i EPIC-00 (`docs/features/epic-00-fixes.md`) och görs direkt, utan ett AI-DLC-arbetsflöde: rätta, testa och uppdatera storyn (🚧 vid start, ✅ när den är klar, releasen när den är känd). En fix som växer till en feature flyttas till sitt ämnes epic och går genom AI-DLC. (affirmed 2026-11-14)
+- Små fixar som personen rapporterar under arbetet läggs som storys i EPIC-00 (`docs/features/epic-00-fixes.md`). En fix som ändrar kod körs som ett AI-DLC-arbetsflöde med planen `quick-fix` (bara Code Generation och Build and Test): testa först, rätta, och uppdatera storyn (🚧 vid start, ✅ när den är klar, releasen när den är känd). En fix som bara rör dokumentationen görs direkt, utan arbetsflöde. En fix som växer till en feature flyttas till sitt ämnes epic och går genom AI-DLC med en större plan. (affirmed 2026-11-14, ändrad 2026-11-16 på personens begäran)
 
 <!-- Project-specific specialisation. Example: -->
 <!-- This monorepo requires package-scoped branch names and a package owner -->
