@@ -8,13 +8,13 @@
 
 **Stories:** US-1201, US-1202
 
-**Status (2026-11-16):** ✅ US-1201 and US-1202 done, for v0.2.8 (US-1202 is built inside US-1201). Each story names its release.
+**Status (2026-11-16):** ✅ US-1201 and US-1202 released in v0.2.8 (US-1202 is built inside US-1201). Each story names its release.
 
 ---
 
 ## User Stories
 
-**US-1201: Review the GitHub panel and shape a team collaboration concept** ✅ Done, for v0.2.8
+**US-1201: Review the GitHub panel and shape a team collaboration concept** ✅ Released in v0.2.8
 - As a **developer working on a project with a team**, in order to **see and coordinate what everyone is doing without leaving the app**, I would like to **have the GitHub panel reviewed and a concept for team collaboration worked out, built on git and AI-DLC**.
 - **Epic:** EPIC-12
 - **Priority:** High
@@ -57,7 +57,7 @@
   - **Left for later.** One abort button for the operation in progress, and a badge that counts every new commit.
 - **Dependencies:** US-0502
 
-**US-1202: Warn when a story's branch is behind main or collides with another open pull request** ✅ Done, for v0.2.8 (merged into US-1201 and built with it)
+**US-1202: Warn when a story's branch is behind main or collides with another open pull request** ✅ Released in v0.2.8 (merged into US-1201 and built with it)
 - As a **developer who runs more than one story at a time**, in order to **find out before I approve and merge that a story that was "done" no longer fits with main**, I would like **the app to warn me when a story's branch is behind `main` or touches the same files as another open pull request, and to help me write down what the merge turned up**.
 - **Epic:** EPIC-12
 - **Priority:** Medium

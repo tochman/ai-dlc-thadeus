@@ -8,7 +8,7 @@
 
 **Stories:** US-0401, US-0402, US-0403, US-0404, US-0405, US-0406, US-0407, US-0408, US-0409, US-0410, US-0411, US-0412, US-0413, US-0414
 
-**Status (2026-11-16):** ✅ US-0401–US-0411 released (v0.1.1–v0.2.5). 📋 US-0412 planned. ✅ US-0413 released in v0.2.7. ✅ US-0414 done, for v0.2.8. Each story names its release.
+**Status (2026-11-16):** ✅ US-0401–US-0411 released (v0.1.1–v0.2.5). 📋 US-0412 planned. ✅ US-0413 released in v0.2.7. ✅ US-0414 released in v0.2.8. Each story names its release.
 
 ---
 
@@ -292,7 +292,7 @@
 
 ---
 
-**US-0414: One LCARS tooltip across the app** ✅ Done, for v0.2.8
+**US-0414: One LCARS tooltip across the app** ✅ Released in v0.2.8
 - As a **developer using the app**, in order to **read the details behind a figure, a button or a label the same way everywhere**, I would like **every tooltip in the app to look and behave like the one on the token detail view's split bars**.
 - **Epic:** EPIC-04
 - **Priority:** Medium
