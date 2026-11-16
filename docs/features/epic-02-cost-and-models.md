@@ -8,7 +8,7 @@
 
 **Stories:** US-0201, US-0202, US-0203, US-0204, US-0205, US-0206, US-0207, US-0208, US-0209
 
-**Status (2026-11-16):** ✅ US-0201–US-0205 and US-0207 released (v0.2.0–v0.2.4; CSV export in US-0203 deferred). ➡️ US-0206 moved to US-0904. ✅ US-0208 released in v0.2.7. ✅ US-0209 done, for v0.2.8. Each story names its release.
+**Status (2026-11-16):** ✅ US-0201–US-0205 and US-0207 released (v0.2.0–v0.2.4; CSV export in US-0203 deferred). ➡️ US-0206 moved to US-0904. ✅ US-0208 released in v0.2.7. ✅ US-0209 released in v0.2.8. Each story names its release.
 
 ---
 
@@ -150,7 +150,7 @@ The key format of `workflows` was confirmed during requirements analysis (see ab
 - **Notes:** Built on the plan `visual-express` (intent `261115-token-detail-view`). Visual mockups: https://claude.ai/artifact/WrphyHBekrup5wdVzwi8Yt (private). Charts with visx. Known gap: the way in sits in the right column, which is hidden below 1280 px window width.
 - **Dependencies:** US-0207, US-0202
 
-**US-0209: An intent's cost counts every machine that worked on it** ✅ Done, for v0.2.8
+**US-0209: An intent's cost counts every machine that worked on it** ✅ Released in v0.2.8
 - As a **developer who works on a project from more than one machine**, in order to **see what an intent really cost**, I would like **the app to add up the cost recorded on every machine, not only this one**.
 - **Epic:** EPIC-02
 - **Priority:** High
