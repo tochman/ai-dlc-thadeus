@@ -1,0 +1,109 @@
+# AI-DLC State Tracking
+
+## Project Information
+- **Project**: US-0024: The "Tokens over time" chart in the token detail view shows its switch and legend but draws no chart. Fix it so the chart is drawn with one series per token kind (figures on hover or focus), and with fewer readings than a chart needs the view says so in one sentence. Test first. See docs/features/epic-00-fixes.md US-0024.
+- **Project Description Source**: project-description.json
+- **Project Type**: Brownfield
+- **Project Type Source**: workspace scan
+- **Scope**: express
+- **Start Date**: 2026-11-16T08:41:24Z
+- **Question Id**: 8bed96c0
+- **State Version**: 8
+- **Active Agent**: aidlc-pipeline-deploy-agent
+- **Worktree Path**:
+- **Bolt Refs**:
+- **Practices Affirmed Timestamp**:
+
+## Scope Configuration
+- **Stages to Execute**: 0.1 (workspace-scaffold), 0.2 (workspace-detection), 0.3 (state-init), 2.1 (reverse-engineering), 3.5 (code-generation), 3.6 (build-and-test), 4.1 (deployment-pipeline)
+- **Stages to Skip**: 1.1 (intent-capture), 1.2 (market-research), 1.3 (feasibility), 1.4 (scope-definition), 1.5 (team-formation), 1.6 (rough-mockups), 1.7 (approval-handoff), 2.2 (practices-discovery), 2.4 (user-stories), 2.5 (refined-mockups), 2.6 (domain-design), 2.7 (units-generation), 2.8 (contract-design), 2.9 (delivery-planning), 3.1 (functional-design), 3.2 (nfr-requirements), 3.3 (nfr-design), 3.4 (infrastructure-design), 3.7 (ci-pipeline), 4.2 (environment-provisioning), 4.5 (incident-response), 4.6 (performance-validation), 4.7 (feedback-optimization), 2.3 (requirements-analysis), 4.4 (observability-setup), 4.3 (deployment-execution)
+- **Depth**: Minimal
+- **Test Strategy**: Minimal
+- **Review Override**: 
+- **Guard Policy**: off (from scope express)
+- **Sensors**: off (from scope express)
+- **Learnings**: off (from scope express)
+- **Summary Confirmation**: off (from scope express)
+- **Plan Approval**: off (from scope express)
+- **Collaborators**: off (from scope express)
+
+## Workspace State
+- **Project Root**: .
+- **Languages**: JavaScript
+- **Frameworks**: React
+- **Build System**: npm (package.json)
+
+## Execution Plan Summary
+- **Total Stages**: 7
+- **Completed**: 5
+- **In Progress**: none
+
+## Runtime State
+- **Revision Count**: 0
+
+## Phase Progress
+<!-- Status values: Pending, Active, Verified, Skipped -->
+
+- **Initialization**: Verified
+- **Ideation**: Skipped
+- **Inception**: Verified
+- **Construction**: Verified
+- **Operation**: Verified
+
+## Stage Progress
+<!-- Checkbox states: [ ] not started, [-] in progress, [?] awaiting approval (gate open), [R] revising (user rejected gate), [x] completed, [S] skipped via --stage/--phase jump -->
+
+### INITIALIZATION PHASE
+- [x] workspace-scaffold — EXECUTE
+- [x] workspace-detection — EXECUTE
+- [x] state-init — EXECUTE
+
+### IDEATION PHASE
+- [ ] intent-capture — SKIP
+- [ ] market-research — SKIP
+- [ ] feasibility — SKIP
+- [ ] scope-definition — SKIP
+- [ ] team-formation — SKIP
+- [ ] rough-mockups — SKIP
+- [ ] approval-handoff — SKIP
+
+### INCEPTION PHASE
+- [S] reverse-engineering — EXECUTE
+- [ ] practices-discovery — SKIP
+- [ ] requirements-analysis — SKIP
+- [ ] user-stories — SKIP
+- [ ] refined-mockups — SKIP
+- [ ] domain-design — SKIP
+- [ ] units-generation — SKIP
+- [ ] contract-design — SKIP
+- [ ] delivery-planning — SKIP
+
+### CONSTRUCTION PHASE
+- [ ] functional-design — SKIP
+- [ ] nfr-requirements — SKIP
+- [ ] nfr-design — SKIP
+- [ ] infrastructure-design — SKIP
+- [x] code-generation — EXECUTE
+- [x] build-and-test — EXECUTE
+- [ ] ci-pipeline — SKIP
+
+### OPERATION PHASE
+- [S] deployment-pipeline — EXECUTE
+- [ ] environment-provisioning — SKIP
+- [ ] deployment-execution — SKIP
+- [ ] observability-setup — SKIP
+- [ ] incident-response — SKIP
+- [ ] performance-validation — SKIP
+- [ ] feedback-optimization — SKIP
+
+## Current Status
+- **Lifecycle Phase**: OPERATION
+- **Current Stage**: deployment-pipeline
+- **Next Stage**: none
+- **Status**: Completed
+- **Last Updated**: 2026-11-16T08:56:36Z
+
+## Session Resume Point
+- **Last Completed Stage**: build-and-test
+- **Next Action**: Workflow complete
+- **Pending Artifacts**: none

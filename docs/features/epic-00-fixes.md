@@ -8,7 +8,7 @@
 
 **Stories:** US-0001, US-0002, US-0003, US-0004, US-0005, US-0006, US-0007, US-0008, US-0009, US-0010, US-0011, US-0012, US-0013, US-0014, US-0015, US-0016, US-0017, US-0018, US-0019, US-0020, US-0021, US-0022, US-0023, US-0024
 
-**Status (2026-11-16):** ✅ US-0001–US-0020 released (v0.2.3–v0.2.6). ✅ US-0021–US-0023 released in v0.2.7. 📋 US-0024 planned for v0.2.8. Each story names its release.
+**Status (2026-11-16):** ✅ US-0001–US-0020 released (v0.2.3–v0.2.6). ✅ US-0021–US-0023 released in v0.2.7. ✅ US-0024 done, for v0.2.8. Each story names its release.
 
 ---
 
@@ -377,15 +377,15 @@
 
 ---
 
-**US-0024: The "Tokens over time" chart is drawn** 📋 Planned, for v0.2.8
+**US-0024: The "Tokens over time" chart is drawn** ✅ Done, for v0.2.8
 - As a **developer watching agents work**, in order to **see how the tokens build up over time**, I would like **the token detail view to draw the "Tokens over time" chart, not only its legend**.
 - **Epic:** EPIC-00
 - **Priority:** High
 - **Complexity:** Low
 - **Background:** Found 2026-11-16 on intent `261116-agent-progress`, Reverse Engineering running, Live, 6.3 M tokens, "0:08 · 12 readings". In the token detail view, "Tokens over time" with Diagram selected shows the switch and the legend (input, output, cache write 1 h and 5 m, cache read) but no chart; the per-stage, per-agent and per-model splits and the "Rate now" sparkline in the right column are drawn.
 - **Acceptance Criteria:**
-  - [ ] **Given** an intent with two or more token readings, **when** I open the token detail view with Diagram selected, **then** the chart is drawn with one series per token kind and the figures behind it on hover or focus.
-  - [ ] **Given** fewer readings than a chart needs, **then** the view says so in one sentence instead of showing an empty area (US-0208's rule for missing data).
-  - [ ] A test fails without the fix and passes with it; the full suite stays green.
+  - [x] **Given** an intent with two or more token readings, **when** I open the token detail view with Diagram selected, **then** the chart is drawn with one series per token kind and the figures behind it on hover or focus.
+  - [x] **Given** fewer readings than a chart needs, **then** the view says so in one sentence instead of showing an empty area (US-0208's rule for missing data).
+  - [x] A test fails without the fix and passes with it; the full suite stays green.
 - **Notes:** Start from the root cause: the chart's data (readings in `.thadeus/tokens/`), its width (a zero-width container would draw nothing) or the Diagram branch in `src/renderer/TokenDetail.jsx` and `src/renderer/tokenChart.js`. Runs on the `quick-fix` plan.
 - **Dependencies:** US-0208

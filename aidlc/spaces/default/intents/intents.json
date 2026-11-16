@@ -230,5 +230,13 @@
     "scope": "express",
     "status": "complete",
     "request": "ed308d3e"
+  },
+  {
+    "uuid": "01a1e384-a984-7838-976f-0f00454635bb",
+    "slug": "token-chart-fix",
+    "dirName": "261116-token-chart-fix",
+    "scope": "express",
+    "status": "complete",
+    "request": "8bed96c0"
   }
 ]

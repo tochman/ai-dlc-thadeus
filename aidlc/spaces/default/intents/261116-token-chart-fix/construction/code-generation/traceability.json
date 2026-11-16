@@ -1,0 +1,9 @@
+{
+  "stage": "code-generation",
+  "upstream_ids": ["FR1", "FR2", "FR3"],
+  "coverage": [
+    { "id": "FR1", "status": "OK", "target": "src/renderer/TokenDetail.jsx" },
+    { "id": "FR2", "status": "OK", "target": "tests/renderer/TokenDetailChartSize.test.jsx" },
+    { "id": "FR3", "status": "OK", "target": "tests/renderer/TokenDetailChartSize.test.jsx" }
+  ]
+}
