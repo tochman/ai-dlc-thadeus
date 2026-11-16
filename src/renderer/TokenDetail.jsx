@@ -204,7 +204,10 @@ function OverTime({ readings, live }) {
   } else {
     body = (
       <>
-        <ParentSize className="token-detail-size">{({ width }) => (width > 0 ? <OverTimeChart width={width} readings={readings} /> : null)}</ParentSize>
+        {/* US-0024 FR1: ParentSize's default box is `height: 100%`, 0 px in this section; give it the chart's height. */}
+        <ParentSize className="token-detail-size" parentSizeStyles={{ width: '100%', height: CHART_H }}>
+          {({ width }) => (width > 0 ? <OverTimeChart width={width} readings={readings} /> : null)}
+        </ParentSize>
         <ul className="token-detail-legend" data-testid="token-detail-legend">
           {LEGEND.map((k) => (
             <li key={k}>

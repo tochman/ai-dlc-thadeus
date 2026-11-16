@@ -1,0 +1,1 @@
+"US-0024: The \"Tokens over time\" chart in the token detail view shows its switch and legend but draws no chart. Fix it so the chart is drawn with one series per token kind (figures on hover or focus), and with fewer readings than a chart needs the view says so in one sentence. Test first. See docs/features/epic-00-fixes.md US-0024."
