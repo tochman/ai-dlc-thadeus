@@ -1,78 +1,47 @@
 # Technology Stack
 
-Versions are those resolved in `package-lock.json` at commit `2d111d6`, re-checked for the tooling rows at `bc1dd3d` (package 0.2.5; 0.2.6 at `4867a36`, lockfile not re-read). The release area (US-0603, US-0605) adds no library; the ranges in `package.json` are caret ranges unless noted.
+Versions are the ones locked in `package-lock.json` at `721e051`.
 
-## Languages and runtime
+## Languages and Runtime
 
 | Item | Version | Notes |
 |---|---|---|
-| JavaScript (ES modules, JSX) | ES2022+ | no TypeScript; JSDoc comments for shapes |
-| Node.js | 22 (`.nvmrc`) | development and CI |
-| Electron | 45.3.1 | main, preload (sandboxed), renderer |
-| CSS | — | one stylesheet `src/renderer/theme.css`, tokens on `:root` |
+| JavaScript (ES modules) and JSX | ES latest | no TypeScript; JSDoc types in places |
+| Node.js | 22 (`.nvmrc`) | CI uses `node-version-file` |
+| Electron | 45.3.1 | main, preload, sandboxed renderer |
+| POSIX sh | n/a | `.thadeus/hooks/dialog.sh`, tested under dash in CI |
+| CSS | n/a | one stylesheet, `src/renderer/theme.css`, LCARS tokens |
 
-## Application frameworks and libraries
+## Frameworks and Libraries (runtime)
 
-| Library | Version | Used for | Where |
-|---|---|---|---|
-| React, react-dom | 19.3.1 | UI | renderer |
-| @xterm/xterm | 6.0.0 | terminal rendering, buffer read by the picker reader | `TerminalPanel.jsx`, `pickerSmoke.test.jsx` |
-| @xterm/addon-fit | 0.11.0 | terminal sizing | `TerminalPanel.jsx` |
-| node-pty | 1.1.0 | pseudo terminals for agent and shell tabs (native, lazy loaded, asar-unpacked) | `src/main/pty.js` |
-| chokidar | 4.0.3 | file watching | `src/main/watcher.js` |
-| i18next | 27.1.1 | translation | `src/shared/i18n.js` |
-| i18next-icu, intl-messageformat | 2.7.0, 12.1.5 | ICU plurals and placeholders | `src/shared/i18n.js` |
-| react-i18next | 18.0.1 | `useTranslation`, provider | renderer |
-| react-markdown, remark-gfm | 10.1.0, 4.0.1 | Markdown without raw HTML | `ArtifactReader.jsx` `FileContent` |
-| @tanstack/react-virtual | 3.14.24 (pinned) | virtualised timeline | `Timeline.jsx` |
-| monaco-editor, @monaco-editor/react | 0.57.0, 4.7.0 | in-app editor, diff editor (devDependencies, bundled by Vite, lazy) | `src/renderer/editor/` |
-| @fontsource/antonio | 5.3.0 | LCARS display font | `main.jsx` |
-
-## Build and packaging
-
-| Tool | Version | Role |
+| Library | Version | Purpose |
 |---|---|---|
-| electron-vite | 6.0.0 | dev server and build of main, preload, renderer into `out/` |
-| Vite | 8.3.8 | bundler under electron-vite and vitest |
-| @vitejs/plugin-react | 6.3.0 | JSX |
-| electron-builder | 26.18.0 | universal macOS .dmg (unsigned), Linux x64 .deb; `install-app-deps` on postinstall |
-| GitHub Actions | `actions/checkout@v4`, `setup-node@v4`, `upload-artifact@v4`, `download-artifact@v4` | CI and release (`.github/workflows/release.yml`) |
-| gh CLI | runner's / person's | release creation in CI; update check and download in the app |
+| react, react-dom | 19.3.1 | renderer UI |
+| @xterm/xterm, @xterm/addon-fit | 6.0.0, ^0.11 | terminal tabs |
+| node-pty | 1.1.0 | ptys (native, unpacked from asar) |
+| chokidar | 4.0.3 | file watching |
+| i18next, i18next-icu, react-i18next, intl-messageformat | 27.1.1, 2.7.0, 18.0.1, ^12.1 | translation with ICU |
+| react-markdown, remark-gfm | 10.1.0, ^4.0 | Markdown in the artifact reader and replies |
+| @visx/* (axis, grid, group, responsive, scale, shape, tooltip) | 4.0.0 | token charts |
+| @tanstack/react-virtual | 3.14.24 | the virtualised timeline |
+| @fontsource/antonio | ^5.3 | LCARS font |
 
-## Testing
+## Build and Tooling (dev)
 
-| Tool | Version | Role |
+| Tool | Version | Purpose |
 |---|---|---|
-| vitest | 5.1.0 | test runner, two projects: `main` (node) and `renderer` (jsdom) |
-| jsdom | 29.1.1 | DOM for renderer tests |
-| @testing-library/react | 16.3.3 | component tests |
+| electron-vite, vite, @vitejs/plugin-react | 6.0.0, 8.3.8, ^6.3 | bundling of the three processes |
+| electron-builder | 26.18.0 | dmg and deb packaging |
+| vitest, @vitest/coverage-v8 | 5.1.0 | tests (projects `main`, `scripts`, `renderer`) and coverage |
+| jsdom, @testing-library/react | 29.1.1, ^16.3 | renderer tests |
+| eslint (flat), eslint-plugin-react, eslint-plugin-react-hooks, eslint-config-prettier, globals | 9.39.5 | lint |
+| prettier | 3.10.1 | formatting (width 160, single quotes, semicolons) |
+| monaco-editor, @monaco-editor/react | 0.57.0, ^4.7 | editor, bundled and lazy-loaded |
 
-| @vitest/coverage-v8 | 5.1.0 | line coverage; CI enforces an 80% floor (`npx vitest run tests/ --coverage`) |
+## External Programs Used at Run Time
 
-## Linting and formatting (added since `2d111d6`)
-
-| Tool | Version | Config |
-|---|---|---|
-| eslint, @eslint/js, globals | 9.39.5, 9.39.5, 17.14.0 | `eslint.config.mjs` (flat config) |
-| eslint-plugin-react, eslint-plugin-react-hooks, eslint-config-prettier | 7.37.5, 7.1.1, 10.1.8 | same |
-| prettier | 3.10.1 | `.prettierrc.json` (width 160, single quotes, semicolons, no trailing commas); `.prettierignore` skips `docs/`, `*.md`, `*.css`, `tests/fixtures/`, AI-DLC folders |
-
-All three run as separate steps in the `verify` job of `.github/workflows/release.yml`.
-
-## External tools the app runs
-
-`aidlc` (AI-DLC CLI, 2.x flags assumed in `configTables.js`; 2.11.3 on the development machine at `60bf0d6`), `git`, `gh`, `claude` (Claude Code), `opencode`, the login shell (`$SHELL`, else `/bin/zsh` on macOS, `/bin/bash` elsewhere), and on update `hdiutil`, `ditto`, `xattr`, `osascript`, `pkexec`/`dpkg`. All but the shell and the agent CLIs run through `runFixed()` without a shell; see `api-documentation.md` section 5.
+The app calls `aidlc` (AI-DLC CLI), `git`, `gh` (updater fallback), the agent CLIs `claude` and `opencode`, and the login shell (`$SHELL`). It calls them only through `runFixed` or the pty, with paths from Tools Registry.
 
 ## Platforms
 
-- macOS: universal .dmg (`THADEUS-<v>-universal.dmg`), unsigned, userData `~/Library/Application Support/aidlc-dash`.
-- Linux: x64 .deb (`thadeus_<v>_amd64.deb`), built on Ubuntu 22.04 so it runs on glibc 2.35 and newer.
-- Windows: not targeted (menu and updater have no Windows path).
-
-## Harness integration points (intent area)
-
-| Harness | How the app talks to it today | What it does not use |
-|---|---|---|
-| Claude Code (`claude`) | pty only: spawn, keystrokes, screen reading of its picker (`picker.js`) | hooks (`Notification`, `Stop`, permission hooks), transcript files, any settings file |
-| opencode (`opencode`) | pty only; `opencode models` for the model picker | its event API, server mode, plugins |
-| AI-DLC | files (`aidlc/`), `aidlc` CLI, the ledger and inflight file AI-DLC's own hooks write | — |
+macOS universal (unsigned `.dmg`) and Linux x64 `.deb`, built on ubuntu-22.04 to keep the glibc floor at 2.35. Windows is not targeted.

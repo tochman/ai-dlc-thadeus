@@ -146,14 +146,14 @@
 - **Priority:** Medium
 - **Complexity:** Medium
 - **Acceptance Criteria:**
-  - [ ] It is shown in the existing Unit diagram (the intent's Units tab, `BoltDag.jsx`); no new view is added.
-  - [ ] Each Unit node with work running shows its stage and how long it has run.
-  - [ ] A build shows steps done out of the plan's steps on its node, read from the ticked boxes in that Unit's `code-generation-plan.md` in its worktree, plus its last commit subject.
-  - [ ] A review shows on its Unit's node: "review requested", then the verdict and how many findings by severity, from the audit log. Agent work with no Unit (a design builder, a stage-level reviewer) is named in the summary line.
-  - [ ] One summary line above the diagram sums it up in words, for example "The builds are moving along: u2-permissions has 6 of 27 steps done and u3-replies has 16 of 42."
-  - [ ] It updates live as files and the audit log change; finished work drops off with its result; a worktree or plan that cannot be read is named, not shown as 0.
+  - [ ] It is shown as a section of the existing token detail view (`TokenDetail.jsx`, opened from the small token chart); no new view is added. The section is always there and says so in one sentence when nothing runs.
+  - [ ] Each running piece of agent work (a Unit's build, a build with no Unit, a reviewer, a design builder) gets a row with its Unit or stage and how long it has run.
+  - [ ] A build shows steps done out of the plan's steps, read from the ticked boxes in its `code-generation-plan.md` (in the Unit's worktree, or in the record when there is no Unit), plus its last commit subject.
+  - [ ] A review shows "review requested", then the verdict and how many findings by severity, from the review records.
+  - [ ] One summary line at the top of the section sums it up in words, for example "The builds are moving along: u2-permissions has 6 of 27 steps done and u3-replies has 16 of 42."
+  - [ ] It updates live as files and the audit log change; finished work shows its result for about a minute, then drops off; a worktree or plan that cannot be read is named, not shown as 0.
   - [ ] Every text goes through `t()` in Swedish and English; numbers are computed from the records, never typed in.
-- **Notes:** Added 2026-11-14 at the person's request. Decided 2026-11-16: it uses the Unit diagram, not a view of its own.
+- **Notes:** Added 2026-11-14 at the person's request. Decided 2026-11-16: it goes into the token detail view, not a view of its own.
 - **Dependencies:** US-0104, US-0506
 
 **US-0508: Rename an intent** 📋 Planned
