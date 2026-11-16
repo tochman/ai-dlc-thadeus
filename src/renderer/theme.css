@@ -15,6 +15,7 @@
   --slate-mark: #5b6584; /* watermark on --slate-3 */
   --steel-deep: #1f3b57;
   --steel: #4fa3d9;
+  --steel-mid: #2f6f9f; /* cache write 5 m in the token detail (US-0208) */
   --steel-text: #7cc0ea;
   --steel-light: #a9d6f2;
   --steel-meta: #a9b9cf; /* meta text on --steel-deep */
@@ -632,6 +633,106 @@ button.lcars-chip:hover { border-color: var(--steel-text); color: var(--steel-li
 .token-wave figcaption { font-size: 10px; color: var(--text-2); font-variant-numeric: tabular-nums; }
 .token-view-stale { margin: 0; font-size: 10px; color: var(--coral-soft); }
 @keyframes token-wave-flow { to { stroke-dashoffset: -18; } }
+/* The small view is one button that opens the token detail (US-0208 FR1). */
+.token-view { cursor: pointer; transition: filter 150ms ease-out; }
+.token-view:hover { filter: brightness(1.15); }
+.token-view:focus-visible { outline: 2px solid var(--steel); outline-offset: 3px; }
+
+/* ---------- Token detail (EPIC-02 US-0208, the approved visual mockups): steel on slate, amber for output, coral only
+   for the marker and the tooltip. visx draws plain SVG; every fill comes from a token-kind class here (FR7). ---------- */
+.token-detail .lcars-frame-body { gap: 16px; }
+.token-detail-view { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+.token-detail-bar { height: 10px; }
+.token-detail-head { display: flex; align-items: flex-start; gap: 14px; flex-wrap: wrap; }
+.token-detail-back { min-width: 84px; height: 34px; justify-content: center; padding: 0 12px 5px; border-radius: 17px 0 0 17px; }
+.token-detail-titles { flex: 1; min-width: 260px; display: flex; flex-direction: column; gap: 10px; }
+.token-detail-title { margin: 0; font-size: 46px; font-weight: 400; line-height: 1; color: var(--steel-text); letter-spacing: 0.04em; overflow-wrap: anywhere; }
+.token-detail-title:focus { outline: none; }
+.token-detail-section { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.token-detail-section-head { display: flex; align-items: center; gap: 10px; }
+.token-detail-section-head h3 { margin: 0; font-size: 22px; font-weight: 400; color: var(--steel-text); letter-spacing: 0.04em; }
+.token-detail-rule { flex: 1; height: 2px; background: var(--slate-2); }
+.token-detail-switch { display: inline-flex; gap: 3px; flex-shrink: 0; }
+.token-detail-switch .lcars-block { height: 26px; min-width: 64px; padding: 0 10px 3px; font-size: 14px; }
+.token-detail-switch .lcars-block:last-child { border-radius: 0 13px 13px 0; }
+.token-detail-chart { position: relative; }
+.token-detail-chart:focus { outline: none; }
+.token-detail-chart:focus-visible { outline: 2px solid var(--steel); outline-offset: 2px; }
+.token-detail-chart svg { display: block; overflow: visible; }
+.token-detail-grid line { stroke: var(--steel-deep); stroke-width: 1; }
+.token-detail-baseline { stroke: var(--slate-3); stroke-width: 3; }
+.token-detail-marker { stroke: var(--coral); stroke-width: 2; }
+.token-detail-axis { fill: var(--muted); font-family: var(--font-head); font-size: 13px; letter-spacing: 0.04em; }
+.token-detail-areas { filter: drop-shadow(0 0 6px var(--steel-a55)); }
+.token-detail-area { stroke: var(--bg); stroke-width: 1; } /* a 1 px gap between the stacks, never an outline */
+.token-kind--input, .token-kind--usd { fill: var(--steel); background: var(--steel); }
+.token-kind--output { fill: var(--amber); background: var(--amber); }
+.token-kind--cacheWrite5m, .token-kind--cacheWrite { fill: var(--steel-mid); background: var(--steel-mid); }
+.token-kind--cacheWrite1h { fill: var(--steel-light); background: var(--steel-light); }
+.token-kind--cacheRead { fill: var(--steel-deep); background: var(--steel-deep); }
+.token-detail-legend { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px 18px; color: var(--text-2); font-size: 13px; letter-spacing: 0.06em; text-transform: uppercase; }
+.token-detail-legend li { display: inline-flex; align-items: center; gap: 6px; }
+.token-detail-key { width: 14px; height: 10px; }
+.token-detail-key.token-kind--cacheRead { outline: 1px solid var(--slate-3); }
+.token-detail-tooltip { z-index: 2; display: grid; grid-template-columns: auto auto; gap: 2px 18px; padding: 8px 12px; border: 2px solid var(--coral); border-radius: 2px 14px 2px 2px; background: var(--bg); font-variant-numeric: tabular-nums; pointer-events: none; }
+.token-detail-tooltip-head { grid-column: 1 / 3; color: var(--coral); font-size: 17px; }
+.token-detail-tooltip-row { display: contents; }
+.token-detail-tooltip-row > :first-child { color: var(--muted); font-size: 13px; letter-spacing: 0.06em; text-transform: uppercase; }
+.token-detail-tooltip-row > :last-child { text-align: right; font-size: 15px; }
+.token-detail-tooltip-cost > :last-child { color: var(--steel-text); }
+.token-detail-table-wrap { max-height: 300px; overflow: auto; padding: 10px 14px; border: 2px solid var(--slate-2); }
+.token-detail-table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+.token-detail-table caption { padding-bottom: 6px; color: var(--muted); font-size: 13px; letter-spacing: 0.06em; text-align: left; text-transform: uppercase; }
+.token-detail-table th { padding: 4px 8px; border-bottom: 2px solid var(--slate-2); color: var(--muted); font-size: 13px; font-weight: 400; text-align: right; text-transform: uppercase; }
+.token-detail-table td { padding: 3px 8px; color: var(--text); text-align: right; }
+.token-detail-table th:first-child, .token-detail-table td:first-child { text-align: left; }
+.token-detail-table td:last-child { color: var(--steel-text); }
+.token-detail-empty { margin: 0; padding: 14px 16px; border: 2px dashed var(--slate-3); color: var(--text-2); font: 14px/1.5 var(--font-read); }
+.token-detail-splits { display: flex; flex-wrap: wrap; gap: 16px; }
+.token-detail-card { flex: 1 1 300px; min-width: 0; display: flex; flex-direction: column; gap: 8px; padding: 10px 14px 12px; border: 3px solid var(--slate-3); border-radius: 4px 22px 4px 4px; background: var(--bg); }
+.token-detail-card--model { flex-basis: 100%; }
+.token-detail-card h3 { flex: 1; font-size: 20px; }
+.token-detail-rows { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.token-detail-row { position: relative; display: grid; grid-template-columns: minmax(0, 150px) 1fr 70px; gap: 12px; align-items: center; }
+.token-detail-row:focus { outline: none; }
+.token-detail-row:focus-visible { outline: 2px solid var(--steel); outline-offset: 2px; }
+.token-detail-row-name { overflow: hidden; color: var(--text); font-size: 17px; text-overflow: ellipsis; white-space: nowrap; }
+.token-detail-row-bar { display: block; width: 100%; height: 12px; }
+.token-detail-row-value { color: var(--steel-text); font-size: 17px; font-variant-numeric: tabular-nums; text-align: right; }
+/* The exact figures on hover and on focus (FR4, NFR3); opacity keeps them readable to a screen reader. */
+.token-detail-row-tip { position: absolute; z-index: 2; top: calc(100% + 4px); left: 0; padding: 6px 10px; border: 2px solid var(--coral); border-radius: 2px 12px 2px 2px; background: var(--bg); color: var(--text); font-size: 13px; font-variant-numeric: tabular-nums; white-space: nowrap; opacity: 0; pointer-events: none; }
+.token-detail-row:hover .token-detail-row-tip, .token-detail-row:focus-visible .token-detail-row-tip { opacity: 1; }
+.token-detail-side { flex: 0 1 220px; min-width: 180px; align-self: flex-start; display: flex; flex-direction: column; gap: 12px; margin-top: 24px; padding-top: 14px; border-top: 3px solid var(--slate-2); }
+.token-detail-big { font-size: 44px; line-height: 1; }
+.token-detail-rate { width: 100%; height: 50px; background: var(--bg); }
+.token-detail-rate-line { fill: none; stroke: var(--steel); stroke-width: 2.5; vector-effect: non-scaling-stroke; filter: drop-shadow(0 0 6px var(--steel-a55)); }
+.token-detail-rate-base { stroke: var(--slate-3); stroke-width: 2; stroke-dasharray: 6 4; vector-effect: non-scaling-stroke; }
+@media (max-width: 900px) {
+  .intent-detail:has(.token-detail) { flex-wrap: wrap; overflow: auto; }
+  .token-detail-side { flex-basis: 100%; margin-top: 0; }
+}
+/* Motion (FR7): full only, and only on open or a switch, never on a live refresh (the elements stay mounted). The view
+   sweeps in, its parts cascade, the areas draw in left to right, the split bars grow from zero, new figures ease in over
+   300 ms, and a live rate line glows. Dämpad and Av draw everything at once through the global data-motion rules. */
+:root[data-motion='full'] .token-detail-bar .lcars-seg {
+  background-image: linear-gradient(90deg, transparent, var(--steel-text-a95), transparent);
+  background-size: 240px 100%;
+  background-repeat: no-repeat;
+  animation: lcars-draw 360ms ease-out both, lcars-sweep 900ms 300ms ease-out 1 both;
+}
+:root[data-motion='full'] .token-detail-view > *, :root[data-motion='full'] .token-detail-side > * { animation: lcars-rise 260ms ease-out both; }
+:root[data-motion='full'] .token-detail-view > :nth-child(2), :root[data-motion='full'] .token-detail-side > :nth-child(2) { animation-delay: 60ms; }
+:root[data-motion='full'] .token-detail-view > :nth-child(3), :root[data-motion='full'] .token-detail-side > :nth-child(3) { animation-delay: 120ms; }
+:root[data-motion='full'] .token-detail-view > :nth-child(n + 4), :root[data-motion='full'] .token-detail-side > :nth-child(n + 4) { animation-delay: 180ms; }
+:root[data-motion='full'] .token-detail-splits > * { animation: lcars-rise 260ms 200ms ease-out both; }
+:root[data-motion='full'] .token-detail-splits > :nth-child(2) { animation-delay: 260ms; }
+:root[data-motion='full'] .token-detail-splits > :nth-child(3) { animation-delay: 320ms; }
+:root[data-motion='full'] .token-detail-areas { transform-box: fill-box; transform-origin: left; animation: lcars-draw 700ms 150ms ease-out both; }
+/* ponytail: a path eases only when its point count stays the same; a new reading adds a point and snaps. */
+:root[data-motion='full'] .token-detail-area { transition: d 300ms ease-out; }
+:root[data-motion='full'] .token-detail-bar-grow { animation: token-detail-grow 500ms 250ms ease-out both; transition: transform 300ms ease-out; }
+:root[data-motion='full'] .token-detail-rate-line.is-live { animation: lcars-glow-steel 2.4s ease-in-out infinite; }
+@keyframes token-detail-grow { from { transform: scaleX(0); } }
 
 /* Workflow control (EPIC-05): Fortsätt is the amber primary block in two parts. */
 .resume { display: inline-flex; flex-direction: column; align-items: flex-end; gap: 4px; }

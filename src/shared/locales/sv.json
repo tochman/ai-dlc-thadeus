@@ -885,7 +885,44 @@
     "cacheWrite": "Cache write",
     "cacheRead": "Cache read",
     "waveLabel": "Tokenflöde, {n} avläsningar",
-    "rate": "{rate} tokens/min"
+    "rate": "{rate} tokens/min",
+    "cacheWrite5m": "Cache write 5 m",
+    "cacheWrite1h": "Cache write 1 h",
+    "open": "Tokens live, öppna tokendetaljerna"
+  },
+  "tokenDetail": {
+    "title": "Tokens · {name}",
+    "back": "‹ Tillbaka",
+    "openShort": "Tokens ›",
+    "overTime": "Tokens över tid",
+    "overTimeLabel": "Tokens över tid, {elapsed}, {tokens} tokens, staplade per slag",
+    "chartKeys": "Tokens över tid. Piltangenterna väljer en avläsning, Esc döljer den.",
+    "diagram": "Diagram",
+    "table": "Tabell",
+    "tokens": "Tokens",
+    "usd": "$",
+    "tableCaption": "Kumulativa tokens per sparad avläsning",
+    "elapsed": "Tid",
+    "cost": "Kostnad",
+    "recorded": "Inspelad",
+    "recordedLabel": "Inspelat",
+    "readings": "{n, plural, one {# avläsning} other {# avläsningar}}",
+    "noReadings": "Inga avläsningar",
+    "rateNow": "Takt nu",
+    "rateLabel": "Tokentakt över {n, plural, one {# intervall} other {# intervall}}",
+    "other": "Övriga",
+    "by": {
+      "stage": "Per stage",
+      "agent": "Per agent",
+      "model": "Per modell"
+    },
+    "empty": {
+      "noEntry": "Det finns ingen post i kostnadsloggen för den här intenten än.",
+      "noRows": "Kostnadsloggen har inga rader här än.",
+      "noReadingsLive": "Inga avläsningar än; den första sparas vid nästa ändring i kostnadsloggen.",
+      "noReadingsDone": "Inga avläsningar finns sparade för den här intenten; den blev klar innan de sparades.",
+      "oneReading": "Bara en avläsning än; diagrammet börjar med nästa."
+    }
   },
   "aboutDialog": {
     "exit": "STÄNG",

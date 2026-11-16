@@ -91,8 +91,17 @@ function intentCost(wf) {
       .map((r) => r.name);
   }
   const byModel = rows(wf.byModel);
+  const raw = wf.totals?.tokens ?? {};
   return {
     total: costOf(wf.totals),
+    // The ledger's own split, cache writes 5 m and 1 h apart, for the stored readings (US-0208 FR2.3).
+    tokens: {
+      input: num(raw.input),
+      output: num(raw.output),
+      cacheCreate5m: num(raw.cacheCreate5m),
+      cacheCreate1h: num(raw.cacheCreate1h),
+      cacheRead: num(raw.cacheRead)
+    },
     byStage,
     byAgent: rows(wf.byAgent),
     byModel,

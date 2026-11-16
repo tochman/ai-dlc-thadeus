@@ -159,13 +159,14 @@ describe('writeAtomic (US-0506 u4 RD33)', () => {
     expect(isEngineOwned('.thadeus/hooks/dialog.sh')).toBe(false);
   });
 
-  it('is imported only by fileWrite.js and agentHooks.js (SD36)', () => {
+  // US-0208 FR2.1 adds tokenReadings.js: it validates the intent dir name and resolves its folder in the root first.
+  it('is imported only by fileWrite.js, agentHooks.js and tokenReadings.js (SD36)', () => {
     const src = path.resolve(__dirname, '../../src');
     const users = readdirSync(src, { recursive: true })
       .filter((f) => /\.jsx?$/.test(f))
       .filter((f) => /\bwriteAtomic\b/.test(readFileSync(path.join(src, f), 'utf8')))
       .map((f) => f.split(path.sep).join('/'))
       .sort();
-    expect(users).toEqual(['main/agentHooks.js', 'main/fileWrite.js']);
+    expect(users).toEqual(['main/agentHooks.js', 'main/fileWrite.js', 'main/tokenReadings.js']);
   });
 });

@@ -206,5 +206,13 @@
     "scope": "ultra-express",
     "status": "complete",
     "request": "fc669da8"
+  },
+  {
+    "uuid": "01a1e182-c5b5-7406-8e14-1c5159fc8f60",
+    "slug": "token-detail-view",
+    "dirName": "261115-token-detail-view",
+    "scope": "express",
+    "status": "complete",
+    "request": "b0c2a119"
   }
 ]

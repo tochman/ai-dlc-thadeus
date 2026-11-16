@@ -885,7 +885,44 @@
     "cacheWrite": "Cache write",
     "cacheRead": "Cache read",
     "waveLabel": "Token flow, {n} readings",
-    "rate": "{rate} tokens/min"
+    "rate": "{rate} tokens/min",
+    "cacheWrite5m": "Cache write 5 m",
+    "cacheWrite1h": "Cache write 1 h",
+    "open": "Live tokens, open the token detail"
+  },
+  "tokenDetail": {
+    "title": "Tokens · {name}",
+    "back": "‹ Back",
+    "openShort": "Tokens ›",
+    "overTime": "Tokens over time",
+    "overTimeLabel": "Tokens over time, {elapsed}, {tokens} tokens, stacked by kind",
+    "chartKeys": "Tokens over time. The arrow keys pick a reading, Esc hides it.",
+    "diagram": "Diagram",
+    "table": "Table",
+    "tokens": "Tokens",
+    "usd": "$",
+    "tableCaption": "Cumulative tokens per stored reading",
+    "elapsed": "Elapsed",
+    "cost": "Cost",
+    "recorded": "Recorded",
+    "recordedLabel": "Recorded",
+    "readings": "{n, plural, one {# reading} other {# readings}}",
+    "noReadings": "No readings",
+    "rateNow": "Rate now",
+    "rateLabel": "Token rate over {n, plural, one {# interval} other {# intervals}}",
+    "other": "Other",
+    "by": {
+      "stage": "By stage",
+      "agent": "By agent",
+      "model": "By model"
+    },
+    "empty": {
+      "noEntry": "There is no cost ledger entry for this intent yet.",
+      "noRows": "The cost ledger has no rows here yet.",
+      "noReadingsLive": "No readings yet; the first is stored at the next cost ledger change.",
+      "noReadingsDone": "No readings are stored for this intent; it finished before they were kept.",
+      "oneReading": "Only one reading so far; the chart starts with the next one."
+    }
   },
   "aboutDialog": {
     "exit": "EXIT",
