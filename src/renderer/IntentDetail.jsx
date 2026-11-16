@@ -133,14 +133,21 @@ export default function IntentDetail({ projectId, detail, intent, activeDirName,
   const steps = pipelineSteps(pipeline);
   const now = state?.currentStage ? currentText(pipeline, state.currentStage) : null;
   // The token detail replaces the main panel; closing it gives focus back to the small view (US-0208 FR1).
+  // US-0022: the header has its own Tokens button for windows where the readout column is hidden; focus goes back to
+  // whichever button opened the view.
   const [showTokens, setShowTokens] = useState(false);
   const tokensRef = useRef(null);
-  const returnFocus = useRef(false);
+  const headTokensRef = useRef(null);
+  const openedFrom = useRef(null);
   useEffect(() => {
-    if (showTokens || !returnFocus.current) return;
-    returnFocus.current = false;
-    tokensRef.current?.focus();
+    if (showTokens || !openedFrom.current) return;
+    (openedFrom.current === 'head' ? headTokensRef : tokensRef).current?.focus();
+    openedFrom.current = null;
   }, [showTokens]);
+  const openTokens = (from) => () => {
+    openedFrom.current = from;
+    setShowTokens(true);
+  };
 
   function showFile(rel) {
     setOpenFile(rel);
@@ -157,10 +164,7 @@ export default function IntentDetail({ projectId, detail, intent, activeDirName,
           cost={cost}
           live={isInFlight(intent?.status)}
           stageOrder={pipeline.phases.flatMap((p) => p.stages.map((s) => s.slug))}
-          onBack={() => {
-            returnFocus.current = true;
-            setShowTokens(false);
-          }}
+          onBack={() => setShowTokens(false)}
         />
       </article>
     );
@@ -199,6 +203,15 @@ export default function IntentDetail({ projectId, detail, intent, activeDirName,
             </div>
           </div>
           {intent && <ResumeButton intent={intent} activeDirName={activeDirName} activeIntent={activeIntent} position={position} />}
+          <button
+            type="button"
+            ref={headTokensRef}
+            className="lcars-block lcars-block--sm lcars-block--dark intent-tokens-open"
+            onClick={openTokens('head')}
+            data-testid="intent-detail-tokens"
+          >
+            {t('tokenDetail.tokens')}
+          </button>
         </header>
 
         {steps.length > 0 && (
@@ -246,7 +259,7 @@ export default function IntentDetail({ projectId, detail, intent, activeDirName,
         directive={detail.directive}
         cost={cost}
         dirName={detail.dirName}
-        onOpenTokens={() => setShowTokens(true)}
+        onOpenTokens={openTokens('side')}
         tokensRef={tokensRef}
       />
     </article>

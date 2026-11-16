@@ -612,7 +612,9 @@ button.lcars-chip:hover { border-color: var(--steel-text); color: var(--steel-li
 .readout-value--xs { font-size: 14px; color: var(--text-2); }
 .readout-live { display: inline-flex; align-items: center; gap: 6px; }
 .readout-spacer { flex: 1; }
-@media (max-width: 1280px) { .readout-col { display: none; } }
+/* US-0022: below 1280 px the readout column hides, so the header carries the way into the token detail instead. */
+.intent-tokens-open { display: none; align-self: flex-start; }
+@media (max-width: 1280px) { .readout-col { display: none; } .intent-tokens-open { display: inline-flex; } }
 /* Live tokens (EPIC-02 US-0207): segmented bar meters lit from the bottom, amber to soft coral, with a slow glow,
    and a steel line waveform that flows. The data-motion rules below stop both (NFR4). */
 .token-view { display: flex; flex-direction: column; gap: 6px; }

@@ -80,6 +80,18 @@ describe('opening and closing (US-0208 FR1)', () => {
     expect(await screen.findByTestId('token-detail')).toBeTruthy();
   });
 
+  it('US-0022: the intent header has its own Tokens button, which opens the detail and gets focus back', async () => {
+    window.bridge = { getTokenReadings: vi.fn(async () => READINGS) };
+    render(<IntentDetail projectId="p1" detail={detail} intent={intentOf('in-flight')} activeDirName={DIR} cost={cost()} models={null} />);
+    const head = () => screen.getByTestId('intent-detail-tokens');
+    expect(head().tagName).toBe('BUTTON');
+    expect(head().textContent).toBe('Tokens');
+    fireEvent.click(head());
+    expect(await screen.findByTestId('token-detail')).toBeTruthy();
+    fireEvent.click(screen.getByTestId('token-detail-back'));
+    await waitFor(() => expect(document.activeElement).toBe(head()));
+  });
+
   it('a finished intent opens it from its own small button', async () => {
     window.bridge = { getTokenReadings: vi.fn(async () => []) };
     render(<IntentDetail projectId="p1" detail={detail} intent={intentOf('complete')} activeDirName={null} cost={cost()} models={null} />);
