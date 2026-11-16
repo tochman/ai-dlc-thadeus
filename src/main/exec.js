@@ -36,12 +36,13 @@ export function loginPath(exec = defaultExec) {
 
 /**
  * Runs `file args` in `cwd` and resolves with stdout. `exec(file, args, options) => Promise<stdout>` is injectable for tests.
- * Rejects before running anything when an argument is not a string.
+ * Rejects before running anything when an argument is not a string. `env` adds fixed variables on top of the login
+ * shell's PATH (US-0021: `AIDLC_HARNESS_DIR` for a compile per harness).
  */
-export async function runFixed(file, args, { cwd, timeout = DEFAULT_TIMEOUT_MS, exec = defaultExec } = {}) {
+export async function runFixed(file, args, { cwd, timeout = DEFAULT_TIMEOUT_MS, exec = defaultExec, env: extraEnv = {} } = {}) {
   if (!Array.isArray(args) || args.some((a) => typeof a !== 'string')) {
     throw new Error(`Ogiltiga argument till ${file}`);
   }
-  const env = { ...process.env, PATH: await loginPath(exec) };
+  const env = { ...process.env, PATH: await loginPath(exec), ...extraEnv };
   return exec(file, args, { cwd, timeout, env });
 }
