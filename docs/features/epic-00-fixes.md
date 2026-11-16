@@ -8,7 +8,7 @@
 
 **Stories:** US-0001, US-0002, US-0003, US-0004, US-0005, US-0006, US-0007, US-0008, US-0009, US-0010, US-0011, US-0012, US-0013, US-0014, US-0015, US-0016, US-0017, US-0018, US-0019, US-0020, US-0021, US-0022, US-0023
 
-**Status (2026-11-15):** ✅ US-0001–US-0020 released (v0.2.3–v0.2.6). ✅ US-0021 and US-0022 done, for v0.2.7. 📋 US-0023 planned for v0.2.7. Each story names its release.
+**Status (2026-11-15):** ✅ US-0001–US-0020 released (v0.2.3–v0.2.6). ✅ US-0021–US-0023 done, for v0.2.7. Each story names its release.
 
 ---
 
@@ -361,15 +361,16 @@
 
 ---
 
-**US-0023: Clear the npm audit warnings** 📋 Planned, for v0.2.7
+**US-0023: Clear the npm audit warnings** ✅ Done, for v0.2.7
 - As a **maintainer of a public repository**, in order to **ship without known vulnerable packages**, I would like **`npm audit` to report no critical or moderate issues**.
 - **Epic:** EPIC-00
 - **Priority:** High
 - **Complexity:** Low
 - **Background:** Found 2026-11-16 while building US-0208: `npm audit` reports 8 issues, all with a fix available. Critical: `dompurify` (pulled in through `monaco-editor`). Moderate: `electron-builder` and its `app-builder-lib`, `dmg-builder`, `electron-builder-squirrel-windows`, `@electron/universal`, and `minimatch`. Low: `monaco-editor`.
 - **Acceptance Criteria:**
-  - [ ] `npm audit` reports no critical or moderate issues; any low one left is named here with why.
-  - [ ] The app still builds the macOS `.dmg` and the Linux `.deb` in CI, and the editor (US-1001) still opens and saves files.
-  - [ ] The full test suite stays green.
+  - [x] `npm audit` reports no critical or moderate issues; any low one left is named here with why.
+  - [x] The app still builds the macOS `.dmg` and the Linux `.deb` in CI, and the editor (US-1001) still opens and saves files.
+  - [x] The full test suite stays green.
 - **Notes:** Try `npm audit fix` first; a major bump of `electron-builder` or `monaco-editor` needs its release notes read. Consider an `npm audit --audit-level=moderate` step in the CI `verify` job so new issues show up on every pull request.
+- **Fix.** `npm audit fix` offered only downgrades (electron-builder 25.1.0, monaco-editor 0.56.0), so `package.json` pins the patched transitive versions with `overrides`: `dompurify` ^3.4.18 (five advisories up to 3.4.16, used by monaco-editor) and `minimatch` ^11.0.8 for the vulnerable 7–11.0.0 range (GHSA-g3hv-75wg-m249, used by electron-builder). `npm audit` now reports 0 vulnerabilities; the Mac app packages locally and CI builds both packages. An audit step in CI was not added.
 - **Dependencies:** none
