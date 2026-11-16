@@ -12,7 +12,9 @@ function statusText(t, row) {
   if (row.kind === 'review') {
     if (row.status !== 'done') return t('tokenDetail.progress.reviewRequested');
     const counts = Object.entries(row.severities ?? {});
-    const findings = counts.length ? counts.map(([severity, n]) => t('tokenDetail.progress.finding', { n, severity })).join(', ') : t('tokenDetail.progress.noFindings');
+    const findings = counts.length
+      ? counts.map(([severity, n]) => t('tokenDetail.progress.finding', { n, severity })).join(', ')
+      : t('tokenDetail.progress.noFindings');
     return t('tokenDetail.progress.verdict', { verdict: row.verdict ?? '–', findings });
   }
   if (row.status === 'failed') return t('tokenDetail.progress.failed');

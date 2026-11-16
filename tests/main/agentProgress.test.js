@@ -9,7 +9,8 @@ const worktree = (m, slug) =>
   ev(m, 'WORKTREE_CREATED', { 'Bolt slug': slug, 'Worktree path': `.aidlc/worktrees/bolt-2a09832c_${slug}`, 'Branch name': `bolt-2a09832c_${slug}` });
 const boltStarted = (m, slug) => ev(m, 'BOLT_STARTED', { 'Bolt slug': slug, 'Bolt names': slug });
 const boltCompleted = (m, slug) => ev(m, 'BOLT_COMPLETED', { 'Bolt slug': slug, 'Bolt names': slug });
-const requested = (m, id, extra = {}) => ev(m, 'REVIEW_REQUESTED', { Stage: 'code-generation', Reviewer: 'aidlc-architecture-reviewer-agent', Iteration: '1', 'Request Id': id, ...extra });
+const requested = (m, id, extra = {}) =>
+  ev(m, 'REVIEW_REQUESTED', { Stage: 'code-generation', Reviewer: 'aidlc-architecture-reviewer-agent', Iteration: '1', 'Request Id': id, ...extra });
 const reviewed = (m, id, verdict) =>
   ev(m, 'REVIEW_COMPLETED', {
     Stage: 'code-generation',
@@ -34,7 +35,14 @@ describe('progressRows (US-0507 FR1.2, FR1.3, FR3.1)', () => {
     ];
     const rows = progressRows(events, { running: 3, nowMs: min(15) });
     expect(rows).toEqual([
-      expect.objectContaining({ kind: 'build', unit: 'u2-permissions', stage: 'code-generation', minutes: 12, status: 'running', worktree: '.aidlc/worktrees/bolt-2a09832c_u2-permissions' }),
+      expect.objectContaining({
+        kind: 'build',
+        unit: 'u2-permissions',
+        stage: 'code-generation',
+        minutes: 12,
+        status: 'running',
+        worktree: '.aidlc/worktrees/bolt-2a09832c_u2-permissions'
+      }),
       expect.objectContaining({ kind: 'review', unit: null, stage: 'code-generation', agent: 'architecture-reviewer', minutes: 5, status: 'requested' }),
       expect.objectContaining({ kind: 'agent', unit: null, stage: 'functional-design', agent: 'architect', minutes: 14, status: 'running' })
     ]);
@@ -58,7 +66,13 @@ describe('finished work (US-0507 FR3.2, FR5.2)', () => {
     const rows = progressRows(events, { running: 0, nowMs: min(20) + FINISHED_KEEP_MS - 1 });
     expect(rows).toEqual([
       expect.objectContaining({ kind: 'build', unit: 'u1-a', status: 'done', minutes: 20 }),
-      expect.objectContaining({ kind: 'review', status: 'done', verdict: 'NOT-READY', record: '.aidlc-engine/reviews/code-generation/stage/2eaf/1.json', minutes: 2 })
+      expect.objectContaining({
+        kind: 'review',
+        status: 'done',
+        verdict: 'NOT-READY',
+        record: '.aidlc-engine/reviews/code-generation/stage/2eaf/1.json',
+        minutes: 2
+      })
     ]);
   });
 

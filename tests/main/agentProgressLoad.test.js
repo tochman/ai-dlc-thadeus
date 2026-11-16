@@ -43,7 +43,17 @@ function fakeExec(subjects) {
 
 const review = (m, id, record) => [
   [m, { Event: 'REVIEW_REQUESTED', Stage: 'code-generation', Reviewer: 'aidlc-architecture-reviewer-agent', 'Request Id': id }],
-  [m + 1, { Event: 'REVIEW_COMPLETED', Stage: 'code-generation', Reviewer: 'aidlc-architecture-reviewer-agent', 'Request Id': id, Verdict: 'NOT-READY', 'Review Record': record }]
+  [
+    m + 1,
+    {
+      Event: 'REVIEW_COMPLETED',
+      Stage: 'code-generation',
+      Reviewer: 'aidlc-architecture-reviewer-agent',
+      'Request Id': id,
+      Verdict: 'NOT-READY',
+      'Review Record': record
+    }
+  ]
 ];
 
 beforeEach(async () => {
@@ -66,7 +76,10 @@ describe('loadAgentProgress (US-0507 FR2, FR3.2, FR5.3, NFR2)', () => {
       )
     );
     await write(`${WT}/${BASE}/construction/u1-a/code-generation/code-generation-plan.md`, plan(6, 21));
-    await write(`${BASE}/.aidlc-engine/reviews/code-generation/stage/a1/1.json`, JSON.stringify({ findings: [{ severity: 'Major' }, { severity: 'Minor' }, { severity: 'Major' }] }));
+    await write(
+      `${BASE}/.aidlc-engine/reviews/code-generation/stage/a1/1.json`,
+      JSON.stringify({ findings: [{ severity: 'Major' }, { severity: 'Minor' }, { severity: 'Major' }] })
+    );
     const root = await openRoot(TMP);
     const { exec, calls } = fakeExec({ [path.join(root, WT)]: 'feat(u1-a): step 6' });
 
@@ -75,7 +88,12 @@ describe('loadAgentProgress (US-0507 FR2, FR3.2, FR5.3, NFR2)', () => {
       expect.objectContaining({ unit: 'u1-a', steps: { done: 6, total: 27 }, commit: 'feat(u1-a): step 6', unreadable: null }),
       expect.objectContaining({ unit: 'u2-b', steps: null, commit: null, unreadable: '.aidlc/worktrees/bolt-2a09832c_u2-b' }),
       expect.objectContaining({ kind: 'review', verdict: 'NOT-READY', severities: { Major: 2, Minor: 1 }, unreadable: null }),
-      expect.objectContaining({ kind: 'review', verdict: 'NOT-READY', severities: null, unreadable: `${BASE}/.aidlc-engine/reviews/code-generation/stage/a2/1.json` })
+      expect.objectContaining({
+        kind: 'review',
+        verdict: 'NOT-READY',
+        severities: null,
+        unreadable: `${BASE}/.aidlc-engine/reviews/code-generation/stage/a2/1.json`
+      })
     ]);
     expect(calls).toEqual([{ args: ['log', '-1', '--format=%s'], cwd: path.join(root, WT) }]);
   });

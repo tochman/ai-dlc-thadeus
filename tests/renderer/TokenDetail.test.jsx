@@ -220,7 +220,20 @@ describe('agent progress (US-0507)', () => {
     unreadable: null,
     ...extra
   });
-  const review = (key, agent, stage, extra) => ({ kind: 'review', key, unit: null, agent, stage, minutes: 2, status: 'requested', endedMs: null, verdict: null, severities: null, unreadable: null, ...extra });
+  const review = (key, agent, stage, extra) => ({
+    kind: 'review',
+    key,
+    unit: null,
+    agent,
+    stage,
+    minutes: 2,
+    status: 'requested',
+    endedMs: null,
+    verdict: null,
+    severities: null,
+    unreadable: null,
+    ...extra
+  });
   const PROGRESS = [
     build('u2-permissions', 12, { done: 6, total: 27 }, { commit: 'feat(u2-permissions): step 6' }),
     build('u3-replies', 3, { done: 16, total: 42 }),
@@ -252,7 +265,8 @@ describe('agent progress (US-0507)', () => {
     expect(rows).toHaveLength(6);
     for (const row of rows) expect(row.getAttribute('tabindex')).toBe('0');
     const text = rows.map((r) => r.textContent);
-    for (const part of ['u2-permissions', 'Code Generation', '12 min', '6 av 27 steg', 'Senaste commit: feat(u2-permissions): step 6']) expect(text[0]).toContain(part);
+    for (const part of ['u2-permissions', 'Code Generation', '12 min', '6 av 27 steg', 'Senaste commit: feat(u2-permissions): step 6'])
+      expect(text[0]).toContain(part);
     expect(text[2]).toContain('27 av 27 steg, klart');
     expect(text[3]).toContain('Kunde inte läsa .aidlc/worktrees/bolt-2a09832c_u4-gone');
     expect(text[3]).not.toMatch(/\d+ av \d+ steg/);

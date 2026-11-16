@@ -12,11 +12,7 @@ describe('unitStatuses (US-0507 FR6.1)', () => {
   });
 
   it('still reads UNIT_STARTED and UNIT_COMPLETED by their Unit field, and ignores unknown Units', () => {
-    const events = [
-      { event: 'UNIT_STARTED', fields: { Unit: 'u3-c' } },
-      { event: 'UNIT_COMPLETED', fields: { Unit: 'u2-b' } },
-      ev('BOLT_STARTED', 'u9-x')
-    ];
+    const events = [{ event: 'UNIT_STARTED', fields: { Unit: 'u3-c' } }, { event: 'UNIT_COMPLETED', fields: { Unit: 'u2-b' } }, ev('BOLT_STARTED', 'u9-x')];
     expect(unitStatuses(dag, events)).toEqual({ 'u1-a': 'pending', 'u2-b': 'done', 'u3-c': 'running' });
   });
 });
