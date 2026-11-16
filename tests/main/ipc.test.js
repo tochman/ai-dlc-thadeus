@@ -41,6 +41,8 @@ const m = vi.hoisted(() => {
         summary: ledger ? { project: { total: { usd: 3 } }, perIntent: {} } : null,
         local: { host: 'hosta', cloneId: 'aaaaaaaaaaaa' }
       })),
+      loadVelocity: vi.fn(async () => ({ velocity: true })), // US-0303
+      storyMarkerHistory: vi.fn(async () => null),
       snapshotOf: vi.fn((ledger, clone) => ({ schemaVersion: 1, ...clone, intents: {} })),
       writeSnapshot: vi.fn(async () => true),
       loadPendingQuestions: vi.fn(async () => []),
@@ -147,6 +149,7 @@ vi.mock('../../src/main/projectService.js', () => ({
   loadIntentDetail: m.svc.loadIntentDetail,
   loadIntentList: m.svc.loadIntentList,
   loadCrossMachineCost: m.svc.loadCrossMachineCost,
+  loadVelocity: m.svc.loadVelocity,
   loadPendingQuestions: m.svc.loadPendingQuestions,
   loadWorkingAgents: m.svc.loadWorkingAgents,
   assertName: (name, what) => {
@@ -210,7 +213,8 @@ vi.mock('../../src/main/git.js', () => ({
   behindCount: m.svc.behindCount,
   changedFiles: m.svc.changedFiles,
   predictConflicts: m.svc.predictConflicts,
-  remoteStoryBranches: m.svc.remoteStoryBranches
+  remoteStoryBranches: m.svc.remoteStoryBranches,
+  storyMarkerHistory: m.svc.storyMarkerHistory
 }));
 vi.mock('../../src/main/setup.js', () => ({ getSetupInfo: m.svc.getSetupInfo, runSetup: m.svc.runSetup }));
 vi.mock('../../src/main/harness.js', () => ({ detectHarnesses: m.svc.detectHarnesses }));
@@ -812,6 +816,35 @@ describe('setup, settings and tools', () => {
     await call('app:openDocsUrl', {});
     expect(electron.shell.openExternal).toHaveBeenLastCalledWith('https://docs.example/aidlc');
     expect(await call('i18n:language', {})).toBe('sv');
+  });
+});
+
+describe('velocity (US-0303 FR3.5)', () => {
+  it('project:velocity gives loadVelocity over the cached intents, the feature docs, the tags and the epic history', async () => {
+    const { projectId } = await openProject('/work/velocity');
+    const features = { available: true, overviewPath: 'docs/FEATURES.md', epics: [{ id: 'EPIC-03', file: 'docs/features/epic-03.md' }] };
+    const tags = [{ name: 'v0.2.0', date: '2026-11-10' }];
+    svc.loadIntentList.mockResolvedValueOnce({ intents: [{ dirName: 'a' }] });
+    svc.loadFeatures.mockResolvedValueOnce(features);
+    svc.listReleaseTags.mockResolvedValueOnce(tags);
+    svc.storyMarkerHistory.mockResolvedValueOnce('LOG');
+    expect(await call('project:velocity', {}, projectId, 'default')).toEqual({ velocity: true });
+    expect(svc.loadIntentList).toHaveBeenLastCalledWith('/work/velocity', 'default', []);
+    expect(svc.storyMarkerHistory).toHaveBeenLastCalledWith('/work/velocity', 'docs/features');
+    expect(svc.loadVelocity).toHaveBeenLastCalledWith('/work/velocity', 'default', [{ dirName: 'a' }], features, {
+      tags,
+      history: 'LOG',
+      featuresDir: 'docs/features'
+    });
+  });
+
+  it('reads no git history without epic files', async () => {
+    const { projectId } = await openProject('/work/velocity-nodocs');
+    svc.storyMarkerHistory.mockClear();
+    svc.loadFeatures.mockResolvedValueOnce({ available: false, overviewPath: 'docs/FEATURES.md' });
+    await call('project:velocity', {}, projectId, 'default');
+    expect(svc.storyMarkerHistory).not.toHaveBeenCalled();
+    expect(svc.loadVelocity.mock.lastCall[4]).toMatchObject({ history: null, featuresDir: null });
   });
 });
 

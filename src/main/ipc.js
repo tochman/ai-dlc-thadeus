@@ -14,6 +14,7 @@ import {
   listSpaces,
   loadCost,
   loadCrossMachineCost,
+  loadVelocity,
   loadIntentDetail,
   loadIntentList,
   loadPendingQuestions,
@@ -41,7 +42,8 @@ import {
   originUrl,
   predictConflicts,
   remoteStoryBranches,
-  showRemoteFile
+  showRemoteFile,
+  storyMarkerHistory
 } from './git.js';
 import { detectPlatform } from './platforms/detect.js';
 import { listComments, listPulls, listReviews } from './platforms/index.js';
@@ -569,6 +571,17 @@ const handlers = {
     return loadIntentList(p.root, space, Array.isArray(onlyDirs) ? onlyDirs.map(String) : undefined);
   },
   'project:intent': async (_event, projectId, space, dirName) => loadIntentDetail(project(projectId).root, space, dirName),
+  // US-0303 FR3.5: the project's velocity from the cached intent list, the feature docs, the release tags and the epic
+  // files' git history (the folder of the first epic file; none without epic files).
+  'project:velocity': async (_event, projectId, space) => {
+    const p = project(projectId);
+    const { intents } = await loadIntentList(p.root, space, []);
+    const features = await loadFeatures(p.root, (await getProjectSettings(p.root)).featuresPath);
+    const epicFile = features.available ? features.epics.find((e) => e.file)?.file : null;
+    const featuresDir = epicFile ? path.posix.dirname(epicFile) : null;
+    const [tags, history] = await Promise.all([listReleaseTags(p.root), featuresDir ? storyMarkerHistory(p.root, featuresDir) : null]);
+    return loadVelocity(p.root, space, intents, features, { tags, history, featuresDir });
+  },
   'project:cost': async (_event, projectId, space) => {
     const p = project(projectId);
     const cost = await loadCost(p.root);

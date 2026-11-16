@@ -380,7 +380,7 @@ export default function App() {
   const isAidlc = active?.detection.isAidlc === true;
   const showFeatures = activeMeta.showFeatures === true;
   // One view at a time. Features needs the feature docs, the rest AI-DLC (US-0901 FR1.1); else the intents view shows.
-  const offered = { features: showFeatures, config: true, plans: isAidlc, cost: isAidlc, github: isAidlc, editor: true };
+  const offered = { features: showFeatures, config: true, plans: isAidlc, cost: isAidlc, velocity: isAidlc, github: isAidlc, editor: true };
   const view = offered[activeUi.view] ? activeUi.view : 'intents';
   const firstLabel = isAidlc ? t('app.intents') : t('app.setup');
   const viewLabel =
@@ -390,6 +390,7 @@ export default function App() {
       plans: t('app.plans'),
       editor: t('app.editor'),
       cost: t('app.cost'),
+      velocity: t('app.velocity'),
       github: t('app.github')
     }[view] ?? firstLabel;
 
@@ -607,6 +608,10 @@ export default function App() {
             </ArmBlock>
             <ArmBlock current={!settingsView && view === 'cost'} disabled={!isAidlc} onClick={() => showView('cost')} data-testid="arm-cost">
               {t('app.cost')}
+            </ArmBlock>
+            {/* US-0303 FR3.5: the project's velocity, beside Cost. */}
+            <ArmBlock current={!settingsView && view === 'velocity'} disabled={!isAidlc} onClick={() => showView('velocity')} data-testid="arm-velocity">
+              {t('app.velocity')}
             </ArmBlock>
             <ArmBlock tone="dark" current={!settingsView && view === 'github'} disabled={!isAidlc} onClick={() => showView('github')} data-testid="arm-github">
               {t('app.github')}

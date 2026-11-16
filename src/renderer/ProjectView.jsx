@@ -8,6 +8,7 @@ import IntentDetail from './IntentDetail.jsx';
 import CostPanel from './CostPanel.jsx';
 import RefreshPanel from './RefreshPanel.jsx';
 import MachinesView from './MachinesView.jsx';
+import VelocityView from './VelocityView.jsx';
 import SetupAidlc from './SetupAidlc.jsx';
 import TerminalPanel from './TerminalPanel.jsx';
 import LatestMessageStrip from './LatestMessageStrip.jsx'; // US-0506 u3
@@ -94,6 +95,7 @@ function AidlcProject({ project, view, teamSection = 'refresh', onView, focusInt
   return (
     <>
       {view === 'cost' && <CostPanel cost={p.cost} models={p.models} open onToggle={back} />}
+      {view === 'velocity' && <VelocityView projectId={projectId} space={p.space} />}
       {/* Kept mounted, so the fetched status and changes survive a switch to another view. */}
       <div hidden={view !== 'github' || teamSection === 'machines'}>
         <RefreshPanel
@@ -342,7 +344,7 @@ function ProjectContent({
   const showFeatures = settings.featureDocs === 'show' || (settings.featureDocs === 'auto' && docsExist);
   // One view at a time: Features needs the feature docs, the rest AI-DLC; otherwise the intents view shows (US-0901 FR1.1).
   // Configuration holds the project's own settings for every project, and the AI-DLC configuration in an AI-DLC one (US-0012).
-  const offered = { features: showFeatures, config: true, plans: isAidlc, cost: isAidlc, github: isAidlc, editor: true };
+  const offered = { features: showFeatures, config: true, plans: isAidlc, cost: isAidlc, velocity: isAidlc, github: isAidlc, editor: true };
   const view = offered[chosenView] ? chosenView : 'intents';
   const configSection = section === 'aidlc' && !isAidlc ? 'docs' : section;
   const aidlcShown = view === 'config' && configSection === 'aidlc';

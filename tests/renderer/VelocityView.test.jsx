@@ -1,0 +1,175 @@
+// US-0303 FR1.5, FR3.3, FR3.5, FR4.1–FR4.3, NFR2: the Velocity project view and the Velocity tab in the intent detail.
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/react';
+import { t } from '../../src/shared/i18n.js';
+
+vi.mock('../../src/renderer/TerminalContext.jsx', () => ({ useTerminal: () => ({ state: () => 'idle', type: () => {}, sequence: () => {} }) }));
+const { default: VelocityView } = await import('../../src/renderer/VelocityView.jsx');
+const { default: IntentDetail } = await import('../../src/renderer/IntentDetail.jsx');
+
+const H = 3600e3;
+const T0 = new Date(2026, 10, 10, 9).getTime();
+const MISSING = 'aidlc/spaces/default/intents/261112-c/audit';
+const UNREADABLE = 'aidlc/spaces/default/intents/261113-d/audit';
+
+// The shape project:velocity returns (loadVelocity).
+const VELOCITY = {
+  intents: [
+    {
+      dirName: '261110-a',
+      slug: 'timeline',
+      finished: true,
+      archived: true,
+      empty: false,
+      totalMs: 5 * H,
+      activeMs: 4 * H,
+      parkedMs: H,
+      waitingMs: 2 * H,
+      reviews: 2,
+      rejections: 1,
+      endMs: T0 + 5 * H
+    },
+    {
+      dirName: '261116-b',
+      slug: 'velocity',
+      finished: false,
+      archived: false,
+      empty: false,
+      totalMs: 2 * H,
+      activeMs: 2 * H,
+      parkedMs: 0,
+      waitingMs: 0,
+      reviews: 0,
+      rejections: 0,
+      endMs: T0 + 7 * H
+    }
+  ],
+  stories: [
+    {
+      id: 'US-0301',
+      title: 'Timeline',
+      epic: 'EPIC-03',
+      status: 'done',
+      startMs: T0,
+      startSource: 'intent',
+      doneMs: T0 + 26 * H,
+      release: 'v0.2.0',
+      releasedMs: null,
+      toDoneMs: 26 * H,
+      toReleaseMs: null
+    }
+  ],
+  releases: [{ release: 'v0.2.0', dateMs: T0 + 48 * H, stories: ['US-0301'] }],
+  project: {
+    finished: 1,
+    running: 1,
+    storiesDone: 1,
+    avgActiveMs: 4 * H,
+    week: [{ key: '2026-W46', intents: 1, stories: 1, avgActiveMs: 4 * H }],
+    month: [
+      { key: '2026-10', intents: 2, stories: 0, avgActiveMs: 3 * H },
+      { key: '2026-11', intents: 1, stories: 1, avgActiveMs: 4 * H }
+    ]
+  },
+  sources: {
+    intents: 2,
+    shards: 3,
+    epicFiles: ['docs/features/epic-03.md'],
+    git: { commits: 12, fromMs: T0, toMs: T0 + 48 * H, dir: 'docs/features' },
+    missing: [
+      { kind: 'missing', path: MISSING },
+      { kind: 'unreadable', path: UNREADABLE, error: 'EACCES' }
+    ]
+  }
+};
+
+let changed;
+async function renderView(result = VELOCITY) {
+  window.bridge = {
+    getVelocity: vi.fn(async () => result),
+    onProjectChanged: vi.fn((cb) => ((changed = cb), () => {})),
+    onFeaturesChanged: vi.fn(() => () => {})
+  };
+  render(<VelocityView projectId="p1" space="default" />);
+  await screen.findByTestId('velocity-chart');
+}
+
+afterEach(() => {
+  cleanup();
+  delete window.bridge;
+});
+
+describe('VelocityView (US-0303 FR3.3, FR3.5)', () => {
+  it('shows the readouts and a week or month bar chart with the average as a line, and reloads on a project change', async () => {
+    await renderView();
+    expect(window.bridge.getVelocity).toHaveBeenCalledWith('p1', 'default');
+    expect(screen.getByTestId('velocity-readout-finished').textContent).toContain('1');
+    expect(screen.getByTestId('velocity-readout-average').textContent).toContain('4 h 0 min');
+    const bars = () => screen.getByTestId('velocity-chart').querySelectorAll('rect');
+    expect(screen.getByTestId('velocity-unit-week').getAttribute('aria-pressed')).toBe('true');
+    expect(bars()).toHaveLength(2); // one week: intents and stories
+    expect(screen.getByTestId('velocity-chart-average')).toBeTruthy();
+    fireEvent.click(screen.getByTestId('velocity-unit-month'));
+    expect(screen.getByTestId('velocity-unit-month').getAttribute('aria-pressed')).toBe('true');
+    expect(bars()).toHaveLength(4);
+    await act(async () => changed({ projectId: 'p1', space: 'default', dirNames: ['261116-b'] }));
+    expect(window.bridge.getVelocity).toHaveBeenCalledTimes(2);
+  });
+
+  it('marks an unfinished intent in text, shows an unknown span as unknown and names each missing record with its path (FR4.1, FR4.2, NFR2)', async () => {
+    await renderView();
+    const [a, b] = screen.getAllByTestId('velocity-intent-row');
+    expect(within(a).queryByTestId('velocity-intent-unfinished')).toBeNull();
+    expect(within(b).getByTestId('velocity-intent-unfinished').textContent).toBe(t('velocity.notFinished'));
+    const story = screen.getByTestId('velocity-story-row');
+    expect(within(story).getByTestId('velocity-story-release').textContent).toBe(t('velocity.unknown'));
+    const missing = screen.getAllByTestId('velocity-missing').map((li) => li.textContent);
+    expect(missing.some((x) => x.includes(MISSING))).toBe(true);
+    expect(missing.some((x) => x.includes(UNREADABLE) && x.includes('EACCES'))).toBe(true);
+  });
+
+  it('lists the records it used in the sources footer (FR4.3)', async () => {
+    await renderView();
+    const sources = screen.getByTestId('velocity-sources').textContent;
+    expect(sources).toContain('docs/features/epic-03.md');
+    expect(sources).toContain('docs/features');
+    expect(sources).toContain(t('velocity.sources.records', { intents: 2, shards: 3 }));
+  });
+});
+
+describe('the Velocity tab in the intent detail (US-0303 FR1.5)', () => {
+  const ev = (h, event, fields = {}) => ({ timeMs: T0 + h * H, event, fields, key: `s#${h}${event}`, category: 'stage' });
+  const detail = {
+    dirName: '261110-a',
+    state: { currentStage: null },
+    pipeline: { phases: [], done: 0, executed: 0 },
+    files: [],
+    warnings: [],
+    graph: null,
+    units: {},
+    events: [
+      ev(0, 'WORKFLOW_STARTED'),
+      ev(0, 'PHASE_STARTED', { Phase: 'inception' }),
+      ev(0, 'STAGE_STARTED', { Stage: 'requirements-analysis' }),
+      ev(0.5, 'REVIEW_COMPLETED', { Stage: 'requirements-analysis' }),
+      ev(1, 'STAGE_AWAITING_APPROVAL', { Stage: 'requirements-analysis' }),
+      ev(2, 'GATE_APPROVED', { Stage: 'requirements-analysis' }),
+      ev(3, 'STAGE_COMPLETED', { Stage: 'requirements-analysis' }),
+      ev(3, 'PHASE_COMPLETED', { 'From phase': 'inception' }),
+      ev(3, 'WORKFLOW_COMPLETED')
+    ]
+  };
+
+  it("shows the intent's phases, stages, waiting and review numbers", () => {
+    window.bridge = {};
+    render(<IntentDetail projectId="p1" detail={detail} intent={{ dirName: '261110-a', slug: 'a', status: 'complete' }} cost={null} models={null} />);
+    fireEvent.click(screen.getByTestId('intent-detail-tab-velocity'));
+    const view = screen.getByTestId('velocity-intent');
+    expect(within(view).getByTestId('velocity-readout-active').textContent).toContain('3 h 0 min');
+    expect(within(view).queryByTestId('velocity-intent-unfinished')).toBeNull();
+    expect(within(view).getAllByTestId('velocity-phase-row')[0].textContent).toContain('3 h 0 min');
+    const [stage] = within(view).getAllByTestId('velocity-stage-row');
+    expect(within(stage).getByTestId('velocity-stage-waiting').textContent).toBe('1 h 0 min');
+    expect(within(stage).getByTestId('velocity-stage-reviews').textContent).toBe('1');
+  });
+});

@@ -8,7 +8,7 @@
 
 **Stories:** US-0301, US-0302, US-0303
 
-**Status (2026-11-15):** ✅ US-0301–US-0302 released in v0.2.0. 📋 US-0303 planned for v0.2.9. Each story names its release.
+**Status (2026-11-16):** ✅ US-0301–US-0302 released in v0.2.0. ✅ US-0303 done, for v0.2.9. Each story names its release.
 
 **Dependency choice (Q1):** `@tanstack/react-virtual` `3.14.24`, pinned exactly. Hand-rolled windowing with variable row heights, measurement after expand and scroll anchoring would be more code to keep correct than this small, well-maintained library.
 
@@ -41,16 +41,16 @@
   - [x] A counter "N nya händelser" is shown when new events arrive outside the visible area
 - **Dependencies:** US-0104, US-0107
 
-**US-0303: Project velocity: intent, story and project metrics** 📋 Planned, for v0.2.9
+**US-0303: Project velocity: intent, story and project metrics** ✅ Done, for v0.2.9
 - As a **developer or team lead**, in order to **see how fast work moves and where it waits**, I would like to **metrics per intent, per story and per project, built from the AI-DLC records the app already reads**.
 - **Epic:** EPIC-03
 - **Priority:** Medium
 - **Complexity:** Large
 - **Acceptance Criteria:**
-  - [ ] **Intent:** total time from start to finish, time per phase and per stage, time spent waiting at the person's approvals, and review rounds per stage, all taken from the intent's audit log and state.
-  - [ ] **Story:** time from 🚧 In progress to ✅ Done to "Released in vX.Y.Z", and the stories delivered per release, taken from the feature docs and their git history.
-  - [ ] **Project:** intents and stories finished per week and per month, the average intent length, and the trend over time.
-  - [ ] An intent still running shows its numbers so far and is marked as not finished; a missing or unreadable record is named, not counted as zero.
-  - [ ] Numbers are computed from the records, never typed in, and the view says which records it used.
-  - [ ] Every text goes through `t()` in Swedish and English.
+  - [x] **Intent:** total time from start to finish, time per phase and per stage, time spent waiting at the person's approvals, and review rounds per stage, all taken from the intent's audit log and state.
+  - [x] **Story:** time from 🚧 In progress to ✅ Done to "Released in vX.Y.Z", and the stories delivered per release, taken from the feature docs and their git history.
+  - [x] **Project:** intents and stories finished per week and per month, the average intent length, and the trend over time.
+  - [x] An intent still running shows its numbers so far and is marked as not finished; a missing or unreadable record is named, not counted as zero.
+  - [x] Numbers are computed from the records, never typed in, and the view says which records it used.
+  - [x] Every text goes through `t()` in Swedish and English.
 - **Dependencies:** US-0104, US-0201 (cost per run, shown beside velocity)

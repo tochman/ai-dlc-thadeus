@@ -9,6 +9,7 @@ import ResumeButton from './ResumeButton.jsx';
 import TokenView from './TokenView.jsx';
 import TokenDetail from './TokenDetail.jsx';
 import StoryComments from './StoryComments.jsx';
+import { IntentVelocity } from './VelocityView.jsx';
 import { Dots, Frame, Hairlines } from './Lcars.jsx';
 import Tooltip from './Tooltip.jsx';
 import { formatCost, isInFlight, shortModel, stagePosition, stageStatusLabel, stageTitle } from './format.js';
@@ -18,6 +19,7 @@ const TABS = [
   { id: 'timeline', tone: 'mid' },
   { id: 'units', tone: 'mid' },
   { id: 'cost', tone: 'mid' },
+  { id: 'velocity', tone: 'mid' }, // US-0303 FR1.5
   { id: 'comments', tone: 'mid' }, // US-1201 AC-4
   { id: 'files', tone: 'dark' }
 ];
@@ -257,6 +259,9 @@ export default function IntentDetail({
         <div className="detail-body" role="tabpanel">
           {tab === 'pipeline' && <Pipeline pipeline={pipeline} files={detail.files} hasGraph={!!detail.graph} onOpenFile={showFile} cost={intentCost} />}
           {tab === 'cost' && <CostTab cost={cost} intentCost={intentCost} pipeline={pipeline} models={models} />}
+          {tab === 'velocity' && (
+            <IntentVelocity events={detail.events} finished={intent?.status === 'complete' || /^complete/i.test(state?.currentStatus ?? '')} />
+          )}
           {tab === 'timeline' && <Timeline events={detail.events} newKeys={newKeys} />}
           {tab === 'units' && <BoltDag dag={detail.graph?.boltDag ?? null} statuses={detail.units} />}
           {tab === 'comments' && <StoryComments projectId={projectId} space={space} dirName={detail.dirName} />}

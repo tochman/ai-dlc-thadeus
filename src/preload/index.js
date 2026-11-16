@@ -23,6 +23,7 @@ contextBridge.exposeInMainWorld('bridge', {
   getIntents: call('project:intents'),
   getIntent: call('project:intent'),
   getCost: call('project:cost'),
+  getVelocity: call('project:velocity'), // intent, story and project velocity (US-0303 FR3.5)
   getTokenReadings: call('tokens:readings'), // an intent's stored token readings, by dir name (EPIC-02 US-0208)
   getModels: call('project:models'),
   detectHarnesses: call('harness:detect'), // installed harnesses and CLI versions (EPIC-08 US-0801)

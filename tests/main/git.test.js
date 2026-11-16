@@ -12,7 +12,8 @@ import {
   originUrl,
   predictConflicts,
   remoteStoryBranches,
-  showRemoteFile
+  showRemoteFile,
+  storyMarkerHistory
 } from '../../src/main/git.js';
 
 const PROJECT = path.resolve(__dirname, '../fixtures/project');
@@ -134,6 +135,28 @@ describe('listReleaseTags (US-0603 NFR2)', () => {
     vi.spyOn(console, 'info').mockImplementation(() => {});
     expect(await listReleaseTags('/repo', { exec: fakeExec({}).exec })).toEqual([]);
     expect(await listReleaseTags('/repo', { exec: fakeExec({ [ARGS]: '' }).exec })).toEqual([]);
+  });
+});
+
+describe('storyMarkerHistory (US-0303 FR2.4, NFR4)', () => {
+  const ARGS = 'log --first-parent --reverse --format=%x00%H%x09%cI -p --unified=0 -- docs/features';
+  it("reads the epic files' history on the checked-out branch in one fixed git command, without a shell", async () => {
+    const { exec, calls } = fakeExec({ [ARGS]: '\0abc\t2026-11-13T07:20:57+01:00\n' });
+    expect(await storyMarkerHistory('/repo', 'docs/features', { exec })).toBe('\0abc\t2026-11-13T07:20:57+01:00\n');
+    const gitCalls = calls.filter((c) => c.file === 'git');
+    expect(gitCalls).toHaveLength(1);
+    expect(gitCalls[0].opts.shell).toBeUndefined();
+    expect(gitCalls[0].opts.cwd).toBe('/repo');
+  });
+
+  it('gives null when git fails, and refuses a folder that is an option or leaves the root', async () => {
+    vi.spyOn(console, 'info').mockImplementation(() => {});
+    expect(await storyMarkerHistory('/repo', 'docs/features', { exec: fakeExec({}).exec })).toBeNull();
+    const { exec, calls } = fakeExec({});
+    await expect(storyMarkerHistory('/repo', '--output=/tmp/x', { exec })).rejects.toThrow();
+    await expect(storyMarkerHistory('/repo', '../outside', { exec })).rejects.toThrow();
+    await expect(storyMarkerHistory('/repo', '/etc', { exec })).rejects.toThrow();
+    expect(calls.filter((c) => c.file === 'git')).toHaveLength(0);
   });
 });
 

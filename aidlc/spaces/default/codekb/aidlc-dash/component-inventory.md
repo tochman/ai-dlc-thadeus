@@ -1,457 +1,361 @@
 # Component Inventory
 
-One heading per component; the heading text is the component's name in the Scope of Analysis block. Paths are repo-relative. External packages are in `dependencies.md`. The renderer section was re-read at `f46cb71` (US-0414); the other sections are from the full scan at `721e051`.
+One heading per component; the heading text is the component's name in the Scope of Analysis block. Paths are repo-relative. External packages are in `dependencies.md`. Re-read at `bbfb4c0` (US-0303): the parsers, Project Service, Features Loader, Releases Service, Git Reader, IPC Router and the renderer. The other entries are from earlier scans (`721e051`, `f46cb71`) or were only listed in this run, which is marked.
 
 ## Main process (`src/main/`)
 
 ### Main Entry
-- **Path**: `src/main/index.js`
-- **Responsibility**: app lifecycle, single instance, `windowOptions()` (sandbox, contextIsolation), navigation block, close guard, update check, shutdown.
+- `src/main/index.js`: app lifecycle, single instance, `windowOptions()` (sandbox, contextIsolation), navigation block, close guard, update check, shutdown.
 
 ### IPC Router
-- **Path**: `src/main/ipc.js` (891 lines)
-- **Responsibility**: 76 invoke handlers. It holds per-project state (root, space, watchers, sender, caches), runs `watchSpace`, `watchConfig`, `watchGitHead` and the feature-docs watch, and wires in the agent dialogs. Depends on nearly every main module.
+- `src/main/ipc.js` (1038 lines): 87 invoke handlers in one table, wrapped by `registerIpc`. Per-project state (root, space, watchers, sender, caches); `watchSpace`, `watchConfig`, `watchGitHead`, `syncFeaturesWatch`; agent dialogs and team handlers. `project:cost` and `features:load` are the models for a velocity handler.
 
 ### Project Service
-- **Path**: `src/main/projectService.js`
-- **Responsibility**: `detectProject`, `loadIntentList` (cached summaries, `activityAt`), `loadIntentDetail`/`buildDetail`, `loadCost`, `workingAgents()`/`loadWorkingAgents`, `inProgress`, `loadPendingQuestions`. Defines `LEDGER_PATH` and `INFLIGHT_PATH`.
+- `src/main/projectService.js`: `detectProject`, `loadIntentList` (cached summaries from the state file, `activityAt`), `loadIntentDetail`/`buildDetail`, `loadAuditEvents` (a missing audit folder gives `[]`), `workingAgents`, `inflightCount`, `inProgress`, `loadPendingQuestions`, `loadCost`, `loadCrossMachineCost` (the only loop over every intent's audit). Defines `LEDGER_PATH`, `INFLIGHT_PATH`, `intentsDir`, `assertName`.
 
 ### Project Access
-- **Path**: `src/main/projectAccess.js`
-- **Responsibility**: root-confined reads (`openRoot`, `resolveInRoot` with realpath checks, `readText`, `readJsonSafe`, `listDir`, `newestMtime`, `exists`). No write calls.
+- `src/main/projectAccess.js`: root-confined reads (`openRoot`, `resolveInRoot`, `readText`, `readJsonSafe`, `listDir`, `newestMtime`, `exists`). No write calls.
 
 ### Watcher
-- **Path**: `src/main/watcher.js`
-- **Responsibility**: `watchIntents` (the intents folder, `.aidlc-engine/` ignored except `active-directive.json`, plus the ledger), `watchFiles`, `watchOpenFiles`, `watchForAidlc`. Debounce 300 ms, max wait 800 ms.
+- `src/main/watcher.js`: `watchIntents` (the intents folder and the ledger), `watchFiles`, `watchOpenFiles`, `watchForAidlc`. Debounce 300 ms, max wait 800 ms.
 
 ### Audit Parser
-- **Path**: `src/main/parsers/audit.js`
-- **Responsibility**: shards into events with stable keys, a merge by time, `categoryOf`, `NOISY_EVENTS`. Pure.
+- `src/main/parsers/audit.js`: shards into events (`## Title`, `**Key**: value`, `---`) with stable keys; `mergeAudits` sorts by `timeMs`, source, index and adds `seq`; a block without a valid timestamp inherits the previous one's time; `categoryOf`, `NOISY_EVENTS`. Pure.
 
 ### State Parser
-- **Path**: `src/main/parsers/state.js`
-- **Responsibility**: `aidlc-state.md` sections and stage checkboxes.
+- `src/main/parsers/state.js`: `aidlc-state.md` sections and stage checkboxes (`CHECKBOX_STATUS`), `startDate`, `currentStage`, `currentStatus`, `lastUpdated`. Pure.
 
 ### Runtime Graph Parser
-- **Path**: `src/main/parsers/runtimeGraph.js`
-- **Responsibility**: stages with times and unit counts, and the Bolt DAG. It drops the instance fields `bolt` and `worktree`.
+- `src/main/parsers/runtimeGraph.js`: stages with `startedAt`, `completedAt`, `durationMs`, unit counts (times from `instances` for unit-built stages), and the Bolt DAG. Pure. The source file is git-ignored.
 
 ### Pipeline Merger
-- **Path**: `src/main/parsers/pipeline.js`
-- **Responsibility**: state and graph merged per stage (mismatch, unit counts, failed), done/executed counts.
+- `src/main/parsers/pipeline.js`: state and graph merged per stage (mismatch, units, failed, current); `done`/`executed` counts skip `[S]` stages.
 
 ### Intents Merger
-- **Path**: `src/main/parsers/intents.js`
-- **Responsibility**: `intents.json` merged with the folders on disk; active, missing and date fields.
+- `src/main/parsers/intents.js`: `intents.json` merged with the folders on disk; `dateFromDirName` (`YYMMDD-` prefix), active, missing flags.
 
 ### Units Status
-- **Path**: `src/main/parsers/units.js`
-- **Responsibility**: `pending`/`running`/`done` per Unit from `UNIT_STARTED`/`UNIT_COMPLETED` only.
+- `src/main/parsers/units.js`: `pending`/`running`/`done` per Unit from `UNIT_*` and `WORKTREE_CREATED`/`BOLT_*` by `Bolt slug`.
 
 ### Ledger Parser
-- **Path**: `src/main/parsers/ledger.js`
-- **Responsibility**: `summarizeLedger`, `agentModels`, `compareModels`, `agentName`. Pure.
+- `src/main/parsers/ledger.js`: `summarizeLedger` (project, perIntent, byScope, timeline), `agentModels`, `compareModels`, `agentName`, `costOf`. Pure.
+
+### Audit Cost Parser
+- `src/main/parsers/auditCost.js` (US-0209): `stageRollups` (the last `STAGE_COMPLETED` cost row per shard, stage and Unit), `shardCosts`, `shardName` (host and clone from the shard name), `mergeIntentCosts`, `addTree`. Pure.
+
+### Agent Progress Parser
+- `src/main/parsers/agentProgress.js` (US-0507, US-0025): `progressRows` pairs `WORKTREE_CREATED`/`BOLT_STARTED` → `BOLT_COMPLETED`/`BOLT_FAILED` by `Bolt slug` and `REVIEW_REQUESTED` → `REVIEW_COMPLETED` by `Request Id`; `planSteps`, `severityCounts`. Imports `workingAgents` from `projectService.js`.
 
 ### Features Parser
-- **Path**: `src/main/parsers/features.js`
-- **Responsibility**: the overview and epic parsing, status markers, `storyIdsIn`. Pure.
+- `src/main/parsers/features.js`: `parseOverview`, `parseEpic`, story head lines and criteria, `statusOf`, `epicStatusOf`, `storyIdsIn`, `STATUS_MARKER`, `isValidFeaturesPath`. Pure; never throws.
 
 ### Releases Parser
-- **Path**: `src/main/parsers/releases.js`
-- **Responsibility**: release markers, options, `buildReleases`, `ruleStatus`. Pure.
+- `src/main/parsers/releases.js`: `releaseOf`, `setReleaseMarker`, `nextVersions`, `releaseOptions`, `buildReleases` (per version: released, tag date, plan, stories, stale), `newReleaseError`, `canDelete`, `ruleStatus`. Pure.
 
 ### Questions Parser
-- **Path**: `src/main/questions.js`
-- **Responsibility**: `parseOptions`, `pendingQuestions` from the audit events, `auditEvent`/`auditContext`.
+- `src/main/questions.js`: `parseOptions`, `pendingQuestions` from the audit events, `auditEvent`/`auditContext`.
 
 ### Notifications
-- **Path**: `src/main/notify.js`
-- **Responsibility**: system notifications for agent events and audit questions, decided once per event id through Alert Plan.
+- `src/main/notify.js`: system notifications for agent events and audit questions, decided once per event id through Alert Plan.
 
 ### PTY Manager
-- **Path**: `src/main/pty.js`
-- **Responsibility**: lazy `node-pty`; agent or shell sessions per project; data and exit; write, resize, kill.
+- `src/main/pty.js`: lazy `node-pty`; agent or shell sessions per project; data and exit; write, resize, kill.
 
 ### Exec Runner
-- **Path**: `src/main/exec.js`
-- **Responsibility**: `runFixed` (execFile, no shell, timeout, login PATH), `loginPath`.
+- `src/main/exec.js`: `runFixed` (execFile, no shell, timeout, login PATH), `loginPath`.
 
 ### Tools Registry
-- **Path**: `src/main/tools.js`
-- **Responsibility**: `TOOL_IDS` (aidlc, claude, opencode, gh, shell), saved paths, PATH lookup, `probeTool`.
+- `src/main/tools.js`: `TOOL_IDS` (aidlc, claude, opencode, gh, shell), saved paths, PATH lookup, `probeTool`.
 
 ### Harness Detection
-- **Path**: `src/main/harness.js`
-- **Responsibility**: `detectHarnesses()` from folder markers and `--version`.
+- `src/main/harness.js`: `detectHarnesses()` from folder markers and `--version`.
 
 ### Settings Store
-- **Path**: `src/main/settings.js`
-- **Responsibility**: the app's `settings.json` in userData, sanitised keys, per-root project settings.
+- `src/main/settings.js`: the app's `settings.json` in userData; per-root project settings (`featureDocs`, `featuresPath`, `delivery`).
 
 ### Setup Helper
-- **Path**: `src/main/setup.js`
-- **Responsibility**: `getSetupInfo` (a dry-run preview), `runSetup` (git init, `aidlc config --harness`, plugins, presets).
+- `src/main/setup.js`: `getSetupInfo` (a dry-run preview), `runSetup`.
 
 ### AI-DLC Config Reader
-- **Path**: `src/main/aidlcConfig.js`
-- **Responsibility**: read-only `aidlc config … --show --json`, `checkHarness`, `CONFIG_WATCH_PATHS`.
+- `src/main/aidlcConfig.js`: read-only `aidlc config … --show --json`, `checkHarness`, `CONFIG_WATCH_PATHS`.
 
 ### AI-DLC Config Writer
-- **Path**: `src/main/aidlcWrite.js`
-- **Responsibility**: tier-1 CLI changes from fixed tables; the tier-2 Guard Policy edit after a diff.
+- `src/main/aidlcWrite.js`: tier-1 CLI changes from fixed tables; the tier-2 Guard Policy edit after a diff.
 
 ### AI-DLC Update Check
-- **Path**: `src/main/aidlcUpdate.js`
-- **Responsibility**: `update --check` and the project `config --dry-run` plan; update commands typed into the shell (US-0504).
+- `src/main/aidlcUpdate.js`: `update --check` and the project `config --dry-run` plan.
 
 ### Plans Service
-- **Path**: `src/main/plans.js`
-- **Responsibility**: own and stock plans, stages, save, tier-2 edit and delete, recompile.
+- `src/main/plans.js`: own and stock plans, stages, save, edit, delete, recompile.
 
 ### Model Choice
-- **Path**: `src/main/modelChoice.js`
-- **Responsibility**: model and effort options per harness, preview/apply, drift, cost estimate.
+- `src/main/modelChoice.js`: model and effort options per harness, preview/apply, drift, cost estimate.
 
 ### Model Config Reader
-- **Path**: `src/main/models.js`
-- **Responsibility**: the configured model per agent from `aidlc config models`, else the agent frontmatter.
+- `src/main/models.js`: the configured model per agent.
 
 ### Git Reader
-- **Path**: `src/main/git.js`
-- **Responsibility**: read-only git (status, fetch, remote changes, `show`, conflicts, tags) with `safeArg`.
+- `src/main/git.js`: read-only fixed git with `safeArg`: status, fetch, remote changes, `show`, conflicts, `listReleaseTags` (`v*` with creator date), `lastCommitSubject`, `originUrl`, `behindCount`, `changedFiles`, `predictConflicts`, `remoteStoryBranches`. No history over a path.
 
 ### Updater
-- **Path**: `src/main/updater.js`
-- **Responsibility**: GitHub release check, asset pick and checksum, install, relaunch.
+- `src/main/updater.js`: GitHub release check, asset pick and checksum, install, relaunch.
 
 ### File Editor Service
-- **Path**: `src/main/fileWrite.js`
-- **Responsibility**: editor reads and atomic hash-checked writes; refuses engine-owned paths; `listTree`.
+- `src/main/fileWrite.js`: editor reads and atomic hash-checked writes (`writeFileSafe`); refuses engine-owned paths; `listTree`.
 
 ### Features Loader
-- **Path**: `src/main/features.js`
-- **Responsibility**: loads the feature docs with hashes, `featureWatchPaths`, story links.
+- `src/main/features.js`: `loadFeatures` (overview, epics with hashes, release plans, warnings), `plansDir`, `featureWatchPaths`, `loadStoryLinks` (story ids in each intent's description and requirements).
 
 ### Releases Service
-- **Path**: `src/main/releases.js`
-- **Responsibility**: the story release marker and release plan writes, hash-checked; the lifecycle rule status.
+- `src/main/releases.js`: `setStoryRelease`, `createRelease`, `deleteRelease` (hash-checked), `readRuleStatus`.
+
+### Team Activity
+- `src/main/teamActivity.js`, `src/main/platforms/` (listed only): machines per intent from the shard names, collisions, pull requests and comments (US-1201).
+
+### Usage Snapshot
+- `src/main/usageSnapshot.js` (listed only): this machine's cost snapshot in `.thadeus/usage/`, `localClone`, `readSnapshots` (US-0209).
 
 ### Token Readings
-- **Path**: `src/main/tokenReadings.js`
-- **Responsibility**: cumulative token readings per intent in `.thadeus/tokens/<dir>.json`, at most one per 30 s.
+- `src/main/tokenReadings.js`: token readings per intent in `.thadeus/tokens/<dir>.json`.
 
 ### App Menu
-- **Path**: `src/main/menu.js`
-- **Responsibility**: the menu template, `menu:command`, menu state.
+- `src/main/menu.js`: the menu template, `menu:command`, menu state.
 
 ### Main i18n
-- **Path**: `src/main/i18n.js`
-- **Responsibility**: the main process language from the settings and the OS locale.
+- `src/main/i18n.js`: the main process language.
 
 ### Agent Channel
-- **Path**: `src/main/agentChannel.js`
-- **Responsibility**: per-session folders under `<userData>/agent-channel/`; event files in, answer files out; validation; heartbeat.
+- `src/main/agentChannel.js`: per-session folders in userData; event files in, answer files out; validation.
 
 ### Agent Event Store
-- **Path**: `src/main/agentEvents.js`
-- **Responsibility**: open agent events per project, the state machine, answer checks and delivery.
+- `src/main/agentEvents.js`: open agent events per project, the state machine, answers.
 
 ### Agent Adapters
-- **Path**: `src/main/agentAdapters.js`
-- **Responsibility**: Claude Code and opencode hook payloads to events and back. Pure.
+- `src/main/agentAdapters.js`: Claude Code and opencode hook payloads to events and back. Pure.
 
 ### Agent Permissions
-- **Path**: `src/main/agentPermissions.js`
-- **Responsibility**: permission prompts: choices, delivery through the waiting hook, time-out, Allow-always rules kept in main.
+- `src/main/agentPermissions.js`: permission prompts and Allow-always rules.
 
 ### Agent Replies
-- **Path**: `src/main/agentReplies.js`
-- **Responsibility**: the agent reply lifecycle and the terminal input classifier.
+- `src/main/agentReplies.js`: the agent reply lifecycle.
 
 ### Agent IPC
-- **Path**: `src/main/agentIpc.js`
-- **Responsibility**: the renderer-facing agent handlers and listeners, and the spawn/exit wiring.
+- `src/main/agentIpc.js`: renderer-facing agent handlers and listeners.
 
 ### Agent Hooks Installer
-- **Path**: `src/main/agentHooks.js` (864 lines)
-- **Responsibility**: status, preview and apply for the app's hook files (`.claude/settings.json` spans, `.thadeus/hooks/dialog.sh`, `.opencode/plugins/thadeus-dialog.js`).
+- `src/main/agentHooks.js`: status, preview and apply for the app's hook files.
 
 ### Agent Timing Log
-- **Path**: `src/main/agentTiming.js`
-- **Responsibility**: the development timing log with `THADEUS_TIMING=1`; a no-op otherwise.
+- `src/main/agentTiming.js`: the development timing log.
 
 ## Preload
 
 ### Preload Bridge
-- **Path**: `src/preload/index.js`
-- **Responsibility**: `window.bridge` with named members only (see `api-documentation.md` section 1).
+- `src/preload/index.js`: `window.bridge` with named members only (see `api-documentation.md` section 1).
 
 ## Shared (`src/shared/`)
 
 ### Harness Table
-- **Path**: `src/shared/harnesses.js`
-- **Responsibility**: six harnesses (claude and opencode selectable) with markers, CLI, commands, `pickerKeys`.
+- `src/shared/harnesses.js`: six harnesses with markers, CLI, commands, `pickerKeys`.
 
 ### Shared i18n
-- **Path**: `src/shared/i18n.js`
-- **Responsibility**: one i18next instance per process with ICU, `sv`/`en`, `t`, `locale`.
+- `src/shared/i18n.js`: one i18next instance per process with ICU, `sv`/`en`, `t`, `locale`.
 
 ### Config Tables
-- **Path**: `src/shared/configTables.js`
-- **Responsibility**: the fixed tables for settings, guards, efforts, presets, models.
+- `src/shared/configTables.js`: fixed tables for settings, guards, efforts, presets, models.
 
 ### App Name Module
-- **Path**: `src/shared/appName.js`
-- **Responsibility**: the app name in every form.
+- `src/shared/appName.js`: the app name in every form.
 
 ### Plan Name Rule
-- **Path**: `src/shared/planName.js`
-- **Responsibility**: `validPlanName()`.
+- `src/shared/planName.js`: `validPlanName()`.
 
 ### Agent Text Sanitizer
-- **Path**: `src/shared/agentText.js`
-- **Responsibility**: the one sanitizer for agent text (control, bidi and zero-width characters), cuts, `firstLine`.
+- `src/shared/agentText.js`: the one sanitizer for agent text.
 
 ### Agent Order
-- **Path**: `src/shared/agentOrder.js`
-- **Responsibility**: `byPager`, the pager sort order.
+- `src/shared/agentOrder.js`: `byPager`.
 
 ### Alert Plan
-- **Path**: `src/shared/alertPlan.js`
-- **Responsibility**: one alert decision per kind and setting.
+- `src/shared/alertPlan.js`: one alert decision per kind and setting.
 
 ### Locale Files
-- **Path**: `src/shared/locales/sv.json`, `src/shared/locales/en.json` (1244 lines each)
-- **Responsibility**: every UI text, nested by view. The tooltip texts in use today are listed in `api-documentation.md` section 5.
+- `src/shared/locales/sv.json`, `en.json` (1334 lines each): every UI text, nested by view.
 
 ## Renderer (`src/renderer/`)
 
 ### Renderer Bootstrap
-- **Path**: `src/renderer/main.jsx`, `src/renderer/index.html`
-- **Responsibility**: fonts, theme, language before the first render, CSP.
+- `main.jsx`, `index.html`: fonts, theme, language before the first render, CSP.
 
 ### App Shell
-- **Path**: `src/renderer/App.jsx` (732 lines)
-- **Responsibility**: project tabs, left arm, views, settings, menu commands, dialogs, questions and agent dialog state. It sets `data-motion` on `<html>` (l.108). It has 4 native tooltips (branch, project tab path, the ⚙ and × arm tools).
+- `App.jsx` (748 lines): project tabs, the left arm (`ArmBlock` per view: intents, features, config, plans, editor, cost, github; `ArmSubtabs` for sections), settings, menu commands, dialogs. Sets `data-motion` on `<html>`.
 
 ### ProjectView
-- **Path**: `src/renderer/ProjectView.jsx`
-- **Responsibility**: one `TerminalProvider` per project, harness resolution, view switching, editor tabs, hooks strip.
+- `ProjectView.jsx` (497 lines): one `TerminalProvider` per project; `useProject` and `useFeatures`; the `view === '<id>'` branches (cost → `CostPanel`, github → `RefreshPanel`/`MachinesView`, intents, features, config, plans, editor).
 
 ### TerminalContext
-- **Path**: `src/renderer/TerminalContext.jsx`
-- **Responsibility**: the tab registry, `type`, `sequence`, `restart`, `anyBusy`, `answer` per project.
+- `TerminalContext.jsx`: the tab registry, `type`, `sequence`, `restart`, `anyBusy`, `answer`.
 
 ### TerminalPanel
-- **Path**: `src/renderer/TerminalPanel.jsx`
-- **Responsibility**: xterm sessions bound to ptys, the tab bar, quick commands, `screenLines()`. The quick-command `<select>` and its disabled `<option>`s carry native titles.
+- `TerminalPanel.jsx`: xterm sessions bound to ptys, the tab bar, quick commands.
 
 ### Terminal Control
-- **Path**: `src/renderer/terminalControl.js`
-- **Responsibility**: the activity signal, `waitFor`, `runSequence`, shell quoting. Pure.
+- `terminalControl.js`: activity signal, `waitFor`, `runSequence`, shell quoting. Pure.
 
 ### Picker Reader
-- **Path**: `src/renderer/picker.js`
-- **Responsibility**: reads Claude Code's picker from the screen rows; `resolveAnswer`. Pure.
+- `picker.js`: reads Claude Code's picker from the screen rows. Pure.
 
 ### AgentDialog
-- **Path**: `src/renderer/AgentDialog.jsx`
-- **Responsibility**: a modal pager for questions, permissions and replies (replaced the US-0505 popup).
+- `AgentDialog.jsx`: modal pager for questions, permissions and replies.
 
 ### ReplyPage
-- **Path**: `src/renderer/ReplyPage.jsx`
-- **Responsibility**: the reply page and the message body, sanitised and rendered as Markdown.
+- `ReplyPage.jsx`: the reply page, sanitised Markdown.
 
 ### LatestMessageStrip
-- **Path**: `src/renderer/LatestMessageStrip.jsx`
-- **Responsibility**: the newest agent reply line per project, with Answer and Show.
+- `LatestMessageStrip.jsx`: the newest agent reply line per project.
 
 ### AgentHooks UI
-- **Path**: `src/renderer/AgentHooksStrip.jsx`, `AgentHooksSection.jsx`, `AgentHooksPreview.jsx`
-- **Responsibility**: the hook status notice, the settings section, and the install/update/remove preview.
+- `AgentHooksStrip.jsx`, `AgentHooksSection.jsx`, `AgentHooksPreview.jsx`: hook status, settings section, preview.
 
 ### ResumeButton
-- **Path**: `src/renderer/ResumeButton.jsx`
-- **Responsibility**: resumes an in-flight intent through the agent tab when it is idle. Its reason for being unavailable is a native `title` on a `disabled` button.
+- `ResumeButton.jsx`: resumes an in-flight intent through the idle agent tab.
 
 ### IntentList
-- **Path**: `src/renderer/IntentList.jsx`
-- **Responsibility**: intents with search, filters, sort, cost and step dots. The row is a `button role=option`; 4 of its 5 titles sit on child spans.
+- `IntentList.jsx`: intents with search, filters, sort, cost and step dots.
 
 ### IntentDetail
-- **Path**: `src/renderer/IntentDetail.jsx`
-- **Responsibility**: header, progress, request text, five tabs (the `units` tab renders BoltDag with `dag` and `statuses`), readout column. Its scope chip and story chips carry titles.
+- `IntentDetail.jsx`: header, progress, request text, `TABS` (pipeline, timeline, units, cost, comments, files), readout column. The place for a per-intent velocity tab.
 
 ### Pipeline
-- **Path**: `src/renderer/Pipeline.jsx`
-- **Responsibility**: phases and stage cards with the unit level bar. The card button carries `stageDetails()` as a title, and 3 child spans carry more.
+- `Pipeline.jsx`: phases and stage cards with the unit level bar and stage durations from the graph.
 
 ### Timeline
-- **Path**: `src/renderer/Timeline.jsx`
-- **Responsibility**: a virtualised, filtered audit timeline.
+- `Timeline.jsx` (231 lines): the virtualised (`@tanstack/react-virtual`) audit timeline, filtered by type and stage, newest first.
 
 ### BoltDag
-- **Path**: `src/renderer/BoltDag.jsx` (83 lines)
-- **Responsibility**: an SVG Unit DAG. Batches become columns, edges come from `dependsOn`, each node is a 200x64 block with `kind · status` and the name, and the status sets the class `unit-<status>`.
+- `BoltDag.jsx`: the SVG Unit DAG.
+
+### StoryComments
+- `StoryComments.jsx` (US-1201): the intent's comments tab: pull request comments with AI-DLC questions, approvals and findings.
 
 ### ArtifactReader
-- **Path**: `src/renderer/ArtifactReader.jsx`
-- **Responsibility**: the artifact tree and `FileContent` (Markdown, JSON). A relative Markdown link becomes a span with its `href` as a title.
+- `ArtifactReader.jsx`: the artifact tree and `FileContent`.
 
 ### CostPanel
-- **Path**: `src/renderer/CostPanel.jsx`
-- **Responsibility**: the project cost overview.
+- `CostPanel.jsx` (152 lines): the project cost view: `CostChart` (plain SVG bars per intent by date), `ScopeTable` (per scope total and average), readouts, model table. The closest model for a project velocity view.
 
 ### CostTab
-- **Path**: `src/renderer/CostTab.jsx`
-- **Responsibility**: intent cost tables, `CostLabel` with the ⓘ `info-tip`, `CostTable`, `ModelTable`. It has 6 native titles, the most of any file.
+- `CostTab.jsx`: intent cost tables, `CostLabel`, `CostTable`, `ModelTable`, `MachinesLine`.
 
 ### TokenView
-- **Path**: `src/renderer/TokenView.jsx`
-- **Responsibility**: live token meters and the waveform.
+- `TokenView.jsx`: live token meters.
 
 ### TokenDetail
-- **Path**: `src/renderer/TokenDetail.jsx` (464 lines)
-- **Responsibility**: visx charts of tokens over time and by stage, agent and model, plus the agent progress rows. It holds both custom tooltips: the visx chart `Tooltip` (l.135-156) and the CSS split-bar row tip (l.272), which is the US-0414 reference.
+- `TokenDetail.jsx` (472 lines): `@visx` charts of tokens over time and by stage, agent and model, plus the agent progress rows.
 
 ### AgentProgress
-- **Path**: `src/renderer/AgentProgress.jsx` (70 lines)
-- **Responsibility**: US-0507 agent progress in the token detail view: one summary sentence and one focusable row per running piece of work. It reuses the `.token-detail-row` layout and has no tooltip.
+- `AgentProgress.jsx`: US-0507 progress rows in the token detail view.
 
 ### Token Charts
-- **Path**: `src/renderer/tokenFlow.js`, `src/renderer/tokenChart.js`
-- **Responsibility**: the token history, rate and chart series. Pure.
+- `tokenFlow.js`, `tokenChart.js`: token history and chart series. Pure.
 
 ### RefreshPanel
-- **Path**: `src/renderer/RefreshPanel.jsx`
-- **Responsibility**: Refresh from GitHub: status, fetch, remote changes, pull commands typed into the shell.
+- `RefreshPanel.jsx`: Refresh from GitHub, with `CollisionPanel`.
+
+### CollisionPanel
+- `CollisionPanel.jsx` (US-1201): behind-main count, overlapping pull requests, predicted conflicts, the merge note.
+
+### MachinesView
+- `MachinesView.jsx` (US-1201): machines per intent from the shard names, their last stage and time; remote story branches.
 
 ### Workflow Busy Rule
-- **Path**: `src/renderer/workflowBusy.js`
-- **Responsibility**: `isWorkflowRunning` (a busy terminal, or an intents write within 5 minutes).
+- `workflowBusy.js`: `isWorkflowRunning`.
 
 ### AidlcUpdate
-- **Path**: `src/renderer/AidlcUpdate.jsx`
-- **Responsibility**: the AI-DLC program and project update rows in Settings › Tools.
+- `AidlcUpdate.jsx`: AI-DLC update rows in Settings › Tools.
 
 ### SetupAidlc
-- **Path**: `src/renderer/SetupAidlc.jsx`
-- **Responsibility**: AI-DLC setup and add harness, with a preview before Apply.
+- `SetupAidlc.jsx`: AI-DLC setup and add harness.
 
 ### ProjectSettingsView
-- **Path**: `src/renderer/ProjectSettingsView.jsx`
-- **Responsibility**: project settings sections, including Agent dialogs. Its `title=` props are section headings, not tooltips.
+- `ProjectSettingsView.jsx`: project settings sections.
 
 ### SettingsView
-- **Path**: `src/renderer/SettingsView.jsx`
-- **Responsibility**: the app settings tabs; exports `Section` (the `title` prop renders as `<h2>`) and `RadioBlocks`.
+- `SettingsView.jsx`: app settings tabs; exports `Section` and `RadioBlocks`.
 
 ### ConfigView
-- **Path**: `src/renderer/ConfigView.jsx`
-- **Responsibility**: AI-DLC configuration per harness, "Arbetar nu" (working agents).
+- `ConfigView.jsx`: AI-DLC configuration per harness, working agents.
 
 ### ConfigEdit
-- **Path**: `src/renderer/ConfigEdit.jsx`
-- **Responsibility**: `ChangePanel` and the editors for settings, guards, the lock and models. The model mismatch tag carries a title.
+- `ConfigEdit.jsx`: `ChangePanel` and the editors for settings, guards, the lock and models.
 
 ### PlansView
-- **Path**: `src/renderer/PlansView.jsx`
-- **Responsibility**: plans, stages, save, edit, delete.
+- `PlansView.jsx`: plans, stages, save, edit, delete.
 
 ### FeaturesView
-- **Path**: `src/renderer/FeaturesView.jsx`
-- **Responsibility**: epics, stories, the release picker, the Releases tab. `StatusBadge` shows the raw status text as a title.
+- `FeaturesView.jsx` (682 lines): epics, stories, filters, the release picker, `ReleasesView` (per version: date, stories, stale flags), `StatusBadge`.
 
 ### Story Filter
-- **Path**: `src/renderer/storyFilter.js`
-- **Responsibility**: the shared story filter. Pure.
+- `storyFilter.js`: the shared story filter. Pure.
 
 ### Editor
-- **Path**: `src/renderer/editor/`
-- **Responsibility**: Monaco editor tabs, the conflict dialog, the file tree. Each editor tab button shows its full path as a title.
+- `editor/`: Monaco editor tabs, the conflict dialog, the file tree.
 
 ### UpdateNotice
-- **Path**: `src/renderer/UpdateNotice.jsx`
-- **Responsibility**: the app update offer and progress.
+- `UpdateNotice.jsx`: the app update offer and progress.
 
 ### AboutDialog
-- **Path**: `src/renderer/AboutDialog.jsx`
-- **Responsibility**: the About panel.
+- `AboutDialog.jsx`: the About panel.
 
 ### DocsDialog
-- **Path**: `src/renderer/DocsDialog.jsx`
-- **Responsibility**: the project's `docs/README.md`.
+- `DocsDialog.jsx`: the project's `docs/README.md`.
 
 ### Splash
-- **Path**: `src/renderer/Splash.jsx`
-- **Responsibility**: the start-up splash.
+- `Splash.jsx`: the start-up splash.
 
 ### LCARS Primitives
-- **Path**: `src/renderer/Lcars.jsx` (107 lines), `src/renderer/AuctumMark.jsx`
-- **Responsibility**: `Bar`, `Frame`, `Hairlines`, `Dots`, `Readout`, `progressStates`, `dotsLabel`; the mark. It uses `t` from `src/shared/i18n.js`, not the hook. `Readout` puts the full name in a title on an ellipsised span. This is the natural home for a shared tooltip primitive.
+- `Lcars.jsx`, `AuctumMark.jsx`: `Bar`, `Frame`, `Hairlines`, `Dots`, `Readout`, `progressStates`, `dotsLabel`; the mark. Uses `t` from `src/shared/i18n.js` and `Tooltip`.
+
+### Tooltip
+- `Tooltip.jsx`, `tooltipPlacement.js` (US-0414): the one LCARS tooltip, portalled to `document.body`, open on focus at once and on hover after 300 ms, closed on blur, leave, scroll and Esc; `placeTooltip` is pure. `tests/renderer/noNativeTitle.test.jsx` forbids native `title=`.
 
 ### Format Helpers
-- **Path**: `src/renderer/format.js`
-- **Responsibility**: status labels (`unitStatusLabel` reads `common.unitStatus.*`), time, duration, cost and token formats; `tokenBreakdown` (`t('cost.breakdown')`), used in two titles.
+- `format.js`: status labels, `formatTime`, `formatDuration`, `stageTitle`, `stagePosition`, cost and token formats, `withSlots`.
 
 ### Theme Tokens
-- **Path**: `src/renderer/tokens.js`
-- **Responsibility**: CSS tokens for xterm.
+- `tokens.js`: CSS tokens for xterm.
 
 ### useProject
-- **Path**: `src/renderer/useProject.js`
-- **Responsibility**: the intent list, detail, cost and models; partial reload on `project:changed`; new-event highlight.
+- `useProject.js`: the intent list, detail, cost and models per project tab; partial reload on `project:changed`; new-event highlight. Errors become translated banner texts; a cost failure stays in the cost view.
 
 ### useFeatures
-- **Path**: `src/renderer/useFeatures.js`
-- **Responsibility**: the feature docs and story links; reload on `features:changed`.
+- `useFeatures.js`: feature docs, project settings, story links and lifecycle rule; reload on `features:changed` and on index changes.
 
 ### Feature Docs Prompt
-- **Path**: `src/renderer/featureDocsPrompt.js`
-- **Responsibility**: the request typed into the agent tab to create feature docs.
+- `featureDocsPrompt.js`: the request typed into the agent tab to create feature docs.
 
 ### Theme Stylesheet
-- **Path**: `src/renderer/theme.css` (1413 lines)
-- **Responsibility**: the LCARS tokens and component styles. Tooltip rules: `.token-detail-tooltip*` (l.679-684), `.token-detail-row-tip` (l.709-710), `.info-tip` (l.533, cursor and colour only). The stacking layers are the token detail tips (2), `.update-notice` (40), `.app-error` and `.app-notice` (50) and the dialog (100, l.1339).
+- `theme.css` (1429 lines): LCARS tokens on `:root` and component styles, including `.lcars-tip`.
 
 ## Build, CI and tests
 
 ### Release Workflow
-- **Path**: `.github/workflows/release.yml`
-- **Responsibility**: on PRs and tags: gitleaks, the tag/version check, tests with coverage, ESLint, Prettier, the mac and Linux builds, a GitHub Release with `SHA256SUMS.txt`.
+- `.github/workflows/release.yml`: gitleaks, tag/version check, tests with coverage, ESLint, Prettier, mac and Linux builds, GitHub Release.
 
 ### Build Scripts
-- **Path**: `scripts/`, `electron.vite.config.mjs`, `vitest.config.mjs`, `eslint.config.mjs`
-- **Responsibility**: the glibc check, pty permissions, icon, third-party licences, screenshots, bundling, test projects, lint rules.
+- `scripts/`, `electron.vite.config.mjs`, `vitest.config.mjs`, `eslint.config.mjs`.
 
 ### Packaging Config
-- **Path**: `electron-builder.yml`, `package.json`, `build/`
-- **Responsibility**: app id `se.auctum.thadeus`, the unsigned universal dmg, the Linux deb, unpacked `node-pty`, `publish: null`.
+- `electron-builder.yml`, `package.json`, `build/`.
 
 ### Dialog Hook Script
-- **Path**: `.thadeus/hooks/dialog.sh`
-- **Responsibility**: the POSIX sh hook that writes event files and waits for answers. It is bundled into main with `?raw`.
+- `.thadeus/hooks/dialog.sh`: the POSIX sh hook bundled into main with `?raw`.
 
 ### Test Suite
-- **Path**: `tests/main`, `tests/renderer` (40 files at `f46cb71`), `tests/helpers`
-- **Responsibility**: 111 test files and 1071 `it`/`test` call sites at `721e051`; see `code-quality-assessment.md`.
+- `tests/main` (82 files), `tests/renderer` (48 files), `tests/helpers`; see `code-quality-assessment.md`.
 
 ### Test Fixtures
-- **Path**: `tests/fixtures/` (95 files)
-- **Responsibility**: agent events, agent hooks, audit, features, ledger, picker screens, a sample project.
+- `tests/fixtures/`: agent events, hooks, audit, features, ledger, picker screens, a sample project.
 
 ### Project Docs
-- **Path**: `README.md`, `CONTRIBUTING.md`, `SECURITY.md`, `CODE_OF_CONDUCT.md`, `LICENSE`, `docs/`
-- **Responsibility**: the outside-facing description, the roadmap and story status (checked in CI), release notes, screenshots.
-
-## Tooltip Sites (US-0414, short version)
-
-The full table with file:line, element, accessible name and text source is in the intent's `inception/reverse-engineering/developer-scan.md`.
-
-| Kind | Count | Where |
-|---|---|---|
-| Native `title` on an interactive element | 10 | `App.jsx` (project tab, ⚙, ×), `IntentList.jsx` (row), `IntentDetail.jsx` (story chip), `Pipeline.jsx` (stage card), `ResumeButton.jsx` (disabled button), `TerminalPanel.jsx` (select, disabled option), `editor/EditorPanel.jsx` (tab) |
-| Native `title` on a child inside a button | 7 | `IntentList.jsx` (cost, plan, done/executed, error), `Pipeline.jsx` (level bar, mismatch flag, cost) |
-| Native `title` on plain text | 14 | `App.jsx` (branch), `IntentDetail.jsx` (scope chip), `CostPanel.jsx` (2), `CostTab.jsx` (6, including the ⓘ), `ConfigEdit.jsx`, `FeaturesView.jsx`, `ArtifactReader.jsx`, `Lcars.jsx` |
-| Custom | 2 | `TokenDetail.jsx`: the split-bar row tip (the reference) and the visx chart tooltip |
-| `title=` that is a prop, not a tooltip | 8 | `CostTable` captions (5), `Section` headings (3) |
+- `README.md`, `CONTRIBUTING.md`, `SECURITY.md`, `CODE_OF_CONDUCT.md`, `LICENSE`, `docs/`.

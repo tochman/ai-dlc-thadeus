@@ -120,4 +120,10 @@ describe('preload bridge (US-0506 u1)', () => {
     listener({}, { projectId: 'p1', harnesses: [] });
     expect(cb).toHaveBeenCalledWith({ projectId: 'p1', harnesses: [] });
   });
+
+  it('has getVelocity on project:velocity (US-0303 FR3.5)', async () => {
+    const bridge = await load(false);
+    await bridge.getVelocity('p1', 'default');
+    expect(m.ipcRenderer.invoke).toHaveBeenCalledWith('project:velocity', 'p1', 'default');
+  });
 });

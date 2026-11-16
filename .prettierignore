@@ -19,3 +19,5 @@ aidlc.settings.json
 opencode.json
 # The gitleaks step in CI writes its report here (US-1101).
 results.sarif
+# Token logs the app writes per intent; machine output, not hand-formatted.
+.thadeus/tokens/

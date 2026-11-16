@@ -11,6 +11,7 @@ import { pendingQuestions } from './questions.js';
 import { agentName, summarizeLedger } from './parsers/ledger.js';
 import { addTree, mergeIntentCosts, shardCosts } from './parsers/auditCost.js';
 import { localClone, readSnapshots } from './usageSnapshot.js';
+import { intentMetrics, parseMarkerHistory, projectMetrics, storyMetrics } from './parsers/velocity.js';
 import { t } from '../shared/i18n.js';
 
 const PHASE_DIRS = ['initialization', 'ideation', 'inception', 'construction', 'operation', 'verification'];
@@ -337,6 +338,67 @@ export async function loadCrossMachineCost(root, space, intents, ledger) {
   );
   summary.project.partial = parts.some((m) => m.partial);
   return { summary, local };
+}
+
+/** US-0303 FR4.1: finished by its audit (WORKFLOW_COMPLETED, in intentMetrics) or by intents.json / aidlc-state.md; archived is not finished. */
+const stateFinished = (intent) => intent.status === 'complete' || /^complete/i.test(intent.stateStatus ?? '');
+
+/**
+ * US-0303 FR1–FR4, NFR4: the project's velocity. Every intent's audit is read, archived ones included (FR3.4), each on
+ * its own: no `audit/` folder is "missing", a read error is "unreadable", and an audit without events is a row marked
+ * `empty`, never a zero (FR4.2). `sources` names what was read and what was not, with paths (FR4.3).
+ * @param {object} features loadFeatures' result
+ * @param {{tags?: {name: string, date: string|null}[], history?: string|null, featuresDir?: string|null}} git
+ *   the release tags, storyMarkerHistory's text (null: git failed) and the folder it read
+ */
+export async function loadVelocity(root, space, intents, features, { tags = [], history = null, featuresDir = null } = {}) {
+  assertName(space, 'space');
+  const read = await Promise.all(
+    intents.map(async (intent) => {
+      const base = `${intentsDir(space)}/${intent.dirName}`;
+      const rel = `${base}/audit`;
+      if (intent.missingOnDisk || !(await exists(root, rel))) return { intent, missing: { kind: 'missing', path: rel } };
+      try {
+        return { intent, events: await loadAuditEvents(root, base) };
+      } catch (err) {
+        console.warn(`Kunde inte läsa ${rel}:`, err.message);
+        return { intent, missing: { kind: 'unreadable', path: rel, error: err.message } };
+      }
+    })
+  );
+  const missing = read.filter((r) => r.missing).map((r) => r.missing);
+  const ok = read.filter((r) => r.events);
+  const rows = ok.map(({ intent, events }) => ({
+    dirName: intent.dirName,
+    slug: intent.slug ?? intent.dirName,
+    scope: intent.scope ?? null,
+    status: intent.status ?? null,
+    archived: intent.status === 'archived',
+    empty: events.length === 0,
+    ...intentMetrics(events, { finished: stateFinished(intent) })
+  }));
+
+  const epics = features?.available ? features.epics : [];
+  if (features && !features.available) missing.push({ kind: 'features', path: features.overviewPath });
+  for (const e of epics) if (e.file && !e.parsed) missing.push({ kind: 'epic', path: e.file });
+  const parsed = history === null ? null : parseMarkerHistory(history);
+  if (!parsed && featuresDir) missing.push({ kind: 'git', path: featuresDir });
+
+  const named = ok.map(({ intent }, n) => ({ dirName: intent.dirName, request: intent.request ?? null, startMs: rows[n].startMs }));
+  const { stories, releases } = storyMetrics({ features, intents: named, history: parsed?.stories ?? {}, tags });
+  return {
+    intents: rows,
+    stories,
+    releases,
+    project: projectMetrics(rows, stories),
+    sources: {
+      intents: rows.length,
+      shards: ok.reduce((n, r) => n + new Set(r.events.map((e) => e.source)).size, 0),
+      epicFiles: epics.filter((e) => e.file && e.parsed).map((e) => e.file),
+      git: parsed && { commits: parsed.commits, fromMs: parsed.fromMs, toMs: parsed.toMs, dir: featuresDir },
+      missing
+    }
+  };
 }
 
 export async function loadIntentDetail(root, space, dirName) {

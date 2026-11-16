@@ -54,6 +54,7 @@
     "closeProject": "Stäng {name}",
     "open": "+ Öppna",
     "cost": "Kostnad",
+    "velocity": "Takt",
     "github": "Github",
     "settings": "Inställningar",
     "config": "Konfiguration",
@@ -129,6 +130,7 @@
       "timeline": "Tidslinje",
       "units": "Units",
       "cost": "Kostnad",
+      "velocity": "Takt",
       "comments": "Kommentarer",
       "files": "Filer"
     },
@@ -214,6 +216,81 @@
     "noStages": "aidlc-state.md saknas eller har inga stages ännu.",
     "noGraph": "runtime-graph.json saknas (den är git-ignorerad). Status kommer från aidlc-state.md.",
     "skipped": "{list} {n, plural, one {stage ingår} other {stages ingår}} inte"
+  },
+  "velocity": {
+    "title": "Takt",
+    "meta": "Ur registren",
+    "loading": "Läser registren…",
+    "loadFailed": "Takten kunde inte läsas: {error}",
+    "unknown": "okänt",
+    "notFinished": "inte klar",
+    "finished": "klar",
+    "archived": "arkiverad",
+    "empty": "inga händelser",
+    "open": "öppen",
+    "total": "Totalt",
+    "active": "Aktiv",
+    "parked": "Parkerad",
+    "waiting": "Väntar på dig",
+    "reviews": "Granskningar",
+    "rejections": "Avslag",
+    "reviewCount": "{reviews} · {rejections, plural, one {# avslag} other {# avslag}}",
+    "phases": "Faser",
+    "stages": "Stages",
+    "stage": "Stage",
+    "time": "Tid",
+    "releases": "Storys per release",
+    "releaseLine": "{release}: {n, plural, one {# story} other {# storys}} ({stories})",
+    "readout": {
+      "finished": "Klara intents",
+      "running": "Inte klara",
+      "average": "Snittlängd",
+      "stories": "Klara storys"
+    },
+    "unit": {
+      "label": "Period",
+      "week": "Vecka",
+      "month": "Månad"
+    },
+    "chart": {
+      "bucket": "{key}: {intents, plural, one {# intent} other {# intents}}, {stories, plural, one {# story} other {# storys}}, snitt {avg}",
+      "empty": "Inget klart ännu",
+      "intents": "Klara intents",
+      "stories": "Klara storys",
+      "average": "Snittlängd per intent"
+    },
+    "intents": {
+      "title": "Per intent",
+      "intent": "Intent",
+      "status": "Status"
+    },
+    "stories": {
+      "title": "Per story",
+      "story": "Story",
+      "started": "Pågår",
+      "done": "Klar",
+      "released": "Släppt",
+      "toDone": "Till klar",
+      "toRelease": "Till release",
+      "from": {
+        "intent": "intent",
+        "git": "git"
+      }
+    },
+    "sources": {
+      "title": "Källor",
+      "records": "{intents, plural, one {# intent} other {# intents}} med {shards, plural, one {# auditfil} other {# auditfiler}}",
+      "epics": "Epic-filer:",
+      "git": "Git-historiken för {dir}: {commits, plural, one {# commit} other {# commits}}, {from} till {to}",
+      "missingTitle": "Inte räknat"
+    },
+    "missing": {
+      "missing": "Ingen auditmapp",
+      "unreadable": "Oläslig",
+      "epic": "Epic-fil saknas",
+      "git": "Git-historiken saknas",
+      "features": "Feature-dokumenten saknas"
+    }
   },
   "cost": {
     "title": "Kostnad",
