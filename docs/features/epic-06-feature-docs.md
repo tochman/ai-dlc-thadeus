@@ -6,9 +6,9 @@
 
 > Many projects describe their product in a feature document: an overview (`docs/FEATURES.md`) listing epics, and one file per epic (`docs/features/epic-XX-*.md`) with user stories, acceptance criteria and status. The format is not part of AI-DLC, but it works well together with it: the feature docs say *what* and *why*, and AI-DLC's records say *how* and *when*. The console should offer this format when a project is set up, and let people read and follow it next to the AI-DLC work.
 
-**Stories:** US-0601, US-0602, US-0603, US-0604, US-0605
+**Stories:** US-0601, US-0602, US-0603, US-0604, US-0605, US-0606
 
-**Status (2026-11-16):** ✅ US-0601–US-0603 released (v0.2.0–v0.2.5). ✅ US-0604 and US-0605 released in v0.2.7. Each story names its release.
+**Status (2026-11-16):** ✅ US-0601–US-0603 released (v0.2.0–v0.2.5). ✅ US-0604 and US-0605 released in v0.2.7. 📋 US-0606 planned. Each story names its release.
 
 **Decisions:**
 - **Q1 (where the view lives):** a switch "Intents | Features" at the top of the project view. Features replaces the sidebar and content area; the terminal stays.
@@ -115,3 +115,20 @@
   - **Decided: where an empty release is kept.** One plan file per release in `docs/releases/X.Y.Z.md` (the folder the hand-written release plans already use); every plan file there counts as a release. "New release" creates a heading-only file, and only a heading-only file with no stories and no tag can be deleted. Stories are added one at a time (intent `261115-manual-releases`).
   - **Where.** `releaseOptions()` and `buildReleases()` in `src/main/parsers/releases.js`; the release list and picker in `src/renderer/FeaturesView.jsx`.
 - **Dependencies:** US-0603
+
+**US-0606: Release planning changes are committed on their own branch** 📋 Planned
+- As a **developer planning releases in the app**, in order to **never find release planning left uncommitted on whatever branch is checked out**, I would like **the app to commit the change to a branch of its own whenever I add stories to a release, remove them, or create a release**.
+- **Epic:** EPIC-06
+- **Priority:** High
+- **Complexity:** Medium
+- **Background:** Asked for 2026-11-16, after the v0.2.8 release. US-0412, US-0508 and US-0804 had been added to v0.2.9 from the release list. That wrote "for v0.2.9" into the epic files and `FEATURES.md` but committed nothing, and `docs/releases/0.2.9.md` did not list them. The changes sat uncommitted on `main` until they were noticed and committed by hand (`40d03b5`). The team's rule lets docs go straight to `main`, but changes nobody committed are easy to lose, or to sweep into an unrelated commit.
+- **Acceptance Criteria:**
+  - [ ] **Given** I add one or more stories to a release, remove a story from one, or create a release in the release list, **then** the app commits every file it changed (the story markers, the epic `**Status (…)**` lines, the `FEATURES.md` rows and `docs/releases/X.Y.Z.md`) in one commit on the branch `docs/release-vX.Y.Z`. Adding several stories in a row adds to that same branch.
+  - [ ] The commit is made in a temporary worktree from `origin/main`, so the checked-out branch and its uncommitted files are never touched or switched. If the checkout is already on `docs/release-vX.Y.Z`, the commit is made there.
+  - [ ] **Given** stories are added to a release, **then** `docs/releases/X.Y.Z.md` lists them in its slice table, with epic, title, priority, complexity and dependencies taken from the story, in the same commit.
+  - [ ] **Given** the branch has commits that are not on `main`, **then** the release list says so and offers to push it and open a pull request, typed into the shell tab without Enter, the way the GitHub panel does. The app pushes nothing by itself.
+  - [ ] **Given** the commit fails (no git, a conflict, a hook refusing), **then** the app names the reason and the files, and keeps the change in the working tree as today instead of losing it.
+  - [ ] A test proves that the current checkout's branch, index and working tree are unchanged after a release change.
+  - [ ] Every text goes through `t()` in Swedish and English, and the view follows the LCARS look.
+- **Notes:** The release markers are written in `src/main/releases.js` and `src/main/parsers/releases.js`, and the release list is in `src/renderer/FeaturesView.jsx` (US-0603, US-0605). The temporary-worktree pattern matches how planning docs are already committed by hand while a story branch is checked out. Commit subject: `docs: plan US-XXXX[, …] for vX.Y.Z`.
+- **Dependencies:** US-0603, US-0605
