@@ -1287,3 +1287,12 @@
 **Tokens By Agent**: main=124/61.1k/30.9M/131.5k; aidlc-developer-agent=170/107.1k/13.3M/428.7k
 
 ---
+
+## Recovery: merge conflicts with US-0209 after approval
+**Timestamp**: 2026-11-16T11:40:30Z
+**Issue**: PR #59 conflicted with main after PR #58 (US-0209) merged; US-0209 added a native title= that the US-0414 guard test rejects, and two US-0209 tests asserted .title.
+**Recovery steps**: merged origin/main into feat/US-0414; kept both intents in intents.json; kept the US-0414 codekb; moved the US-0209 CostTab test to CostTabMachines.test.jsx; switched the partial tag to the shared Tooltip, test first.
+**Outcome**: 122 files / 1484 tests green, eslint 0 errors, prettier clean (merge commit 54f8525).
+**Artifacts affected**: construction/build-and-test/test-results.md, src/renderer/CostTab.jsx, tests/renderer/CostPanel.test.jsx, tests/renderer/CostTabMachines.test.jsx, codekb
+
+---
