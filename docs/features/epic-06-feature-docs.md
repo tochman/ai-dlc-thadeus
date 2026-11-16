@@ -8,7 +8,7 @@
 
 **Stories:** US-0601, US-0602, US-0603, US-0604, US-0605
 
-**Status (2026-11-15):** ✅ US-0601–US-0603 released (v0.2.0–v0.2.5). ✅ US-0604 and US-0605 done, for v0.2.7. Each story names its release.
+**Status (2026-11-16):** ✅ US-0601–US-0603 released (v0.2.0–v0.2.5). ✅ US-0604 and US-0605 released in v0.2.7. Each story names its release.
 
 **Decisions:**
 - **Q1 (where the view lives):** a switch "Intents | Features" at the top of the project view. Features replaces the sidebar and content area; the terminal stays.
@@ -84,7 +84,7 @@
 - **Notes:** The release markers are already the docs' own format (project rule: "for vX.Y.Z", then "Released in vX.Y.Z"), so no new data store is needed.
 - **Dependencies:** US-0602, US-0003
 
-**US-0604: Filter epics and user stories** ✅ Done, for v0.2.7
+**US-0604: Filter epics and user stories** ✅ Released in v0.2.7
 - As a **developer looking for the next thing to work on**, in order to **find stories quickly in a long backlog**, I would like to **filter epics and stories by status and other data**.
 - **Epic:** EPIC-06
 - **Priority:** Medium
@@ -98,7 +98,7 @@
 - **Notes:** Filters sit both above the epic list (one list of matching stories from every epic) and on each epic's page (intent `261115-story-filters`).
 - **Dependencies:** US-0602 (release filter: US-0603)
 
-**US-0605: Create a release by hand in the release list** ✅ Done, for v0.2.7
+**US-0605: Create a release by hand in the release list** ✅ Released in v0.2.7
 - As a **developer planning what ships when**, in order to **plan a release before any story is marked for it**, I would like to **create a release myself in the release list and add stories to it there**.
 - **Epic:** EPIC-06
 - **Priority:** High
