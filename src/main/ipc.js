@@ -16,6 +16,7 @@ import {
   loadPendingQuestions,
   loadWorkingAgents
 } from './projectService.js';
+import { loadAgentProgress } from './agentProgress.js';
 import { notifyEvent, notifyQuestions } from './notify.js';
 import { agentName, summarizeLedger } from './parsers/ledger.js';
 import { getConfiguredModels } from './models.js';
@@ -402,6 +403,7 @@ async function watchSpace(projectId, space) {
   p.watcher = watchIntents({
     intentsDir: path.join(p.root, intentsDir(space)),
     ledgerFile: path.join(p.root, LEDGER_PATH),
+    worktreesDir: path.join(p.root, '.aidlc', 'worktrees'), // Unit plans written in a build's worktree (US-0507 FR5.1)
     onChange: (change) => {
       if (!p.sender.isDestroyed()) p.sender.send('project:changed', { projectId, space, ...change });
       if (change.dirNames.length || change.indexChanged) refreshQuestions(projectId, change.dirNames);
@@ -503,6 +505,11 @@ const handlers = {
     if (!active) return [];
     const agents = await loadWorkingAgents(p.root, p.space, active.dirName);
     return agents.map((a) => ({ ...a, intent: active.slug ?? active.dirName }));
+  },
+  // The agent progress of one intent for the token detail view (US-0507); read-only, the dir name is checked before use.
+  'agents:progress': async (_event, projectId, dirName) => {
+    const p = project(projectId);
+    return loadAgentProgress(p.root, p.space, dirName);
   },
   // Changing AI-DLC settings (EPIC-09 US-0902). The renderer sends only {kind, key, value, where}; aidlcWrite
   // checks it against the fixed tables before anything runs, and refuses any other field (NFR4).

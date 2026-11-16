@@ -1,178 +1,204 @@
 # Component Inventory
 
-One heading per component; the heading text is the component's name in the Scope of Analysis block. Paths are repo-relative. Dependencies list internal modules; external packages are in `dependencies.md`.
+One heading per component; the heading text is the component's name in the Scope of Analysis block. Paths are repo-relative. External packages are in `dependencies.md`.
 
 ## Main process (`src/main/`)
 
 ### Main Entry
 - **Path**: `src/main/index.js`
-- **Responsibility**: app lifecycle; userData kept at `aidlc-dash`; `windowOptions()` (sandboxed, contextIsolation, fullscreen from settings); blocks navigation and new windows; close guard; daily update check; shutdown kills ptys and watchers.
-- **Depends on**: IPC Router, App Menu, Settings Store, Tools Registry, Main i18n, App Name Module.
+- **Responsibility**: app lifecycle, single instance, `windowOptions()` (sandbox, contextIsolation), navigation block, close guard, update check, shutdown.
 
 ### IPC Router
-- **Path**: `src/main/ipc.js` (709 lines at `2d111d6`, 837 at `4867a36`)
-- **Responsibility**: the 71 invoke handlers; per-project state (`projects` map: root, space, watchers, sender, cached models/harnesses/setup info/previews); question baseline (`startedWith`), `allQuestions()`, `publishQuestions()`, `refreshQuestions()`; space, feature-docs, config and open-file watchers; window close confirmation; fixed external URL table.
-- **Depends on**: nearly every main module.
+- **Path**: `src/main/ipc.js` (891 lines)
+- **Responsibility**: 76 invoke handlers. It holds per-project state (root, space, watchers, sender, caches), runs `watchSpace`, `watchConfig`, `watchGitHead` and the feature-docs watch, and wires in the agent dialogs. Depends on nearly every main module.
 
 ### Project Service
 - **Path**: `src/main/projectService.js`
-- **Responsibility**: detect AI-DLC (`aidlc/spaces/`), list spaces, cached intent list with per-intent summaries (`activityAt` from the audit folder mtime), intent detail, cost from the ledger, `workingAgents()`, `inProgress()`, `loadPendingQuestions()` with a per-intent cache.
-- **Depends on**: Project Access, all parsers, Questions Parser.
+- **Responsibility**: `detectProject`, `loadIntentList` (cached summaries, `activityAt`), `loadIntentDetail`/`buildDetail`, `loadCost`, `workingAgents()`/`loadWorkingAgents`, `inProgress`, `loadPendingQuestions`. Defines `LEDGER_PATH` and `INFLIGHT_PATH`.
 
 ### Project Access
 - **Path**: `src/main/projectAccess.js`
-- **Responsibility**: root-confined, read-only file access (`openRoot`, `resolveInRoot` with realpath checks, `readText`, `readJsonSafe`, `listDir`, `newestMtime`, `exists`). Contains no write calls.
-
-### Questions Parser
-- **Path**: `src/main/questions.js`
-- **Responsibility**: `parseOptions()` (JSON, comma, pipe, semicolon lists; `Q<n>:` batch summaries; strips descriptions in parentheses) and `pendingQuestions()` (open/close rules from audit events; see `api-documentation.md` section 4). Pure.
-
-### Notifications
-- **Path**: `src/main/notify.js`
-- **Responsibility**: system notification per new question id, once per app run, unless the window is focused on that project; honours `questionAlerts` and `notificationSound`; a click restores the window and sends `questions:focus`. Holds `gateText`/`askText` (duplicated in QuestionPopup).
-- **Depends on**: Shared i18n, electron `Notification`.
-
-### PTY Manager
-- **Path**: `src/main/pty.js`
-- **Responsibility**: lazy `node-pty` load; spawn agent (`$SHELL -l -i -c <cli>`, CLI from Harness Table by validated id) or shell (`$SHELL -l`); stream `pty:data`/`pty:exit`; write (string only), resize (clamped), kill per session, per project, all.
-- **Depends on**: Harness Table, Tools Registry, Shared i18n.
-
-### Exec Runner
-- **Path**: `src/main/exec.js`
-- **Responsibility**: `runFixed()` (execFile, no shell, string args, timeout, login-shell PATH) and `loginPath()` (probed once with a marker).
-
-### Tools Registry
-- **Path**: `src/main/tools.js`
-- **Responsibility**: the five tools (`TOOL_IDS`: `aidlc`, `claude`, `opencode`, `gh`, `shell`): saved paths, `toolPath(name)` (saved path else the bare name), login-shell PATH lookup, `probeTool` (`--version`, first line, max 80 chars, never throws), validation before saving.
-- **Depends on**: Exec Runner.
-
-### Harness Detection
-- **Path**: `src/main/harness.js`
-- **Responsibility**: `detectHarnesses()` per project: folder/file markers (and `opencode.json(c)` mentioning aidlc) plus `<cli> --version`; never rejects. Re-exports the table helpers.
-- **Depends on**: Harness Table, Exec Runner, Tools Registry.
-
-### Settings Store
-- **Path**: `src/main/settings.js`
-- **Responsibility**: the app's `settings.json` in userData; sanitising of every key (`questionAlerts`, `notificationSound`, `language`, `animations`, `fullscreen`, `toolPaths`, `defaultProjectFolder`, `updates`, per-root `projectSettings` with `harness`/`harnessTabs`); serialised writes.
-- **Depends on**: Harness Table, Features Parser, Tools Registry.
+- **Responsibility**: root-confined reads (`openRoot`, `resolveInRoot` with realpath checks, `readText`, `readJsonSafe`, `listDir`, `newestMtime`, `exists`). No write calls.
 
 ### Watcher
 - **Path**: `src/main/watcher.js`
-- **Responsibility**: chokidar watchers: `watchIntents` (intents folder, ignoring `.aidlc-engine/` except `active-directive.json`, plus the ledger), `watchFiles` (named files/folders, appear-later safe), `watchOpenFiles` (editor), `watchForAidlc` (first space appears). Debounce 300 ms, max wait 800 ms.
-
-### Setup Helper
-- **Path**: `src/main/setup.js`
-- **Responsibility**: `getSetupInfo` (other harness folders, git, `aidlc --version`, `config --harness <id> --dry-run` preview via `parsePreview`, installed plugins); `runSetup` runs `git init`, `aidlc --project-dir <root> config --harness <id> --yes`, plugins and preset steps itself in main (US-0802) after a matching, conflict-free preview; one run per root at a time; 120 s per step.
-- **Depends on**: Exec Runner, Tools Registry, Git Reader, Project Access, Harness Table, Shared i18n.
-
-### AI-DLC Config Reader
-- **Path**: `src/main/aidlcConfig.js`
-- **Responsibility**: read-only configuration per harness (`aidlc config <section> --show --json --harness`, `config list --json`, plans); `checkHarness()`; `CONFIG_WATCH_PATHS`.
-
-### AI-DLC Config Writer
-- **Path**: `src/main/aidlcWrite.js`
-- **Responsibility**: tier 1 `aidlc config`/`engine config set`/`config flags` commands from fixed tables, with dry runs; tier 2 Guard Policy lock in a memory file after a diff, only if unchanged since preview.
-- **Depends on**: Config Tables, Exec Runner, Project Access.
-
-### Plans Service
-- **Path**: `src/main/plans.js`
-- **Responsibility**: own (`aidlc/scopes/`) and stock plans, stages from grid blocks or the compiled scope grid, save (`engine scope save`), tier-2 edit/delete of own plans then `engine graph compile`.
-
-### Model Choice
-- **Path**: `src/main/modelChoice.js`
-- **Responsibility**: model/effort options per harness (claude, opencode), command building and validation, preview/apply/check, cost estimate from the ledger's own prices.
-
-### Model Config Reader
-- **Path**: `src/main/models.js`
-- **Responsibility**: configured model per agent from `aidlc config models --show --json --harness claude`, else `.claude/agents/aidlc-*-agent.md` frontmatter; `frontmatterField()`.
-
-### Git Reader
-- **Path**: `src/main/git.js`
-- **Responsibility**: read-only git for Refresh: status split into `aidlc/` and other, fetch, remote changes under `aidlc/`, read a remote file from git objects, conflicts, `isGitRepo`, `listReleaseTags`; `safeArg` refuses values that look like options.
-- **Depends on**: Exec Runner, Project Access, Shared i18n.
-
-### Updater
-- **Path**: `src/main/updater.js`
-- **Responsibility**: once-a-day check of `tochman/aidlc-dash` releases via `gh`, asset pick per platform, own-asset check, SHA256SUMS verification, install (mac: hdiutil/ditto/xattr, admin via osascript; Linux: pkexec dpkg), relaunch.
-
-### File Editor Service
-- **Path**: `src/main/fileWrite.js`
-- **Responsibility**: editor reads with mtime/hash/readOnly reason; atomic write only if the hash still matches (else conflict); engine-owned paths (harness folders, `.opencode`, AI-DLC state, audit, intents.json, `.aidlc-*`) refused; file tree via `git ls-files`.
-
-### Features Loader
-- **Path**: `src/main/features.js`
-- **Responsibility**: loads `FEATURES.md` and linked epic files (root-confined, read-only), with a sha256 `hash` per epic and `overviewHash` for the release write's conflict check; `featureWatchPaths()` (the overview and the epic folders only); story ids mentioned by each intent.
-- **Depends on**: Project Access, Features Parser.
-
-### Releases Service
-- **Path**: `src/main/releases.js`
-- **Responsibility**: `setStoryRelease()` (US-0603 FR2.2–FR2.4): validates the story id, reloads the docs, refuses an unknown or released story, writes the marker into the epic file then the overview through `writeFileSafe` with `expectHash`; returns `{ok}` or `{conflict}`. `readRuleStatus()` reads the lifecycle rule from the space's `project.md`.
-- **Depends on**: Features Loader, Releases Parser, File Editor Service, Project Access, Shared i18n.
-
-### App Menu
-- **Path**: `src/main/menu.js`
-- **Responsibility**: menu template (pure `buildMenuTemplate`), commands sent as `menu:command`, `menu:state` parsing, docs and issues URLs.
-
-### Main i18n
-- **Path**: `src/main/i18n.js`
-- **Responsibility**: sets main's language from the setting and OS locale.
+- **Responsibility**: `watchIntents` (the intents folder, `.aidlc-engine/` ignored except `active-directive.json`, plus the ledger), `watchFiles`, `watchOpenFiles`, `watchForAidlc`. Debounce 300 ms, max wait 800 ms.
 
 ### Audit Parser
 - **Path**: `src/main/parsers/audit.js`
-- **Responsibility**: parses shards into events with stable keys, merges shards by time, `categoryOf()`, `NOISY_EVENTS`. Pure (also bundled into the renderer by `Timeline.jsx`).
+- **Responsibility**: shards into events with stable keys, a merge by time, `categoryOf`, `NOISY_EVENTS`. Pure.
 
 ### State Parser
 - **Path**: `src/main/parsers/state.js`
-- **Responsibility**: `aidlc-state.md` sections and stage checkboxes, plan/scope/depth/test strategy/current stage.
+- **Responsibility**: `aidlc-state.md` sections and stage checkboxes.
 
 ### Runtime Graph Parser
 - **Path**: `src/main/parsers/runtimeGraph.js`
-- **Responsibility**: normalises `runtime-graph.json` stages and Bolt DAG.
+- **Responsibility**: stages with times and unit counts, and the Bolt DAG. It drops the instance fields `bolt` and `worktree`.
 
 ### Pipeline Merger
 - **Path**: `src/main/parsers/pipeline.js`
-- **Responsibility**: merges state checkboxes with graph timings, flags mismatches, counts done/executed.
+- **Responsibility**: state and graph merged per stage (mismatch, unit counts, failed), done/executed counts.
 
 ### Intents Merger
 - **Path**: `src/main/parsers/intents.js`
-- **Responsibility**: merges `intents.json` with folders on disk, marks missing ones and the active intent.
+- **Responsibility**: `intents.json` merged with the folders on disk; active, missing and date fields.
 
 ### Units Status
 - **Path**: `src/main/parsers/units.js`
-- **Responsibility**: unit status from `UNIT_STARTED`/`UNIT_COMPLETED`.
+- **Responsibility**: `pending`/`running`/`done` per Unit from `UNIT_STARTED`/`UNIT_COMPLETED` only.
 
 ### Ledger Parser
 - **Path**: `src/main/parsers/ledger.js`
-- **Responsibility**: `summarizeLedger()` per project/intent/stage/agent/model/scope, `agentModels()` attribution, `compareModels()`, `agentName()`. Pure (also used by the renderer).
+- **Responsibility**: `summarizeLedger`, `agentModels`, `compareModels`, `agentName`. Pure.
 
 ### Features Parser
 - **Path**: `src/main/parsers/features.js`
-- **Responsibility**: `parseOverview`, `parseEpic` (stories with `status` and `statusText`, the head line's text without markers), status markers including 🚀 Deployed, `isValidFeaturesPath`, `storyIdsIn`. Pure (also used by the renderer).
+- **Responsibility**: the overview and epic parsing, status markers, `storyIdsIn`. Pure.
 
 ### Releases Parser
 - **Path**: `src/main/parsers/releases.js`
-- **Responsibility**: `DELIVERY` (`releases`, `continuous`), `releaseOf`, `setReleaseMarker`, `releaseOptions`, `buildReleases`, `lifecycleTag`, `ruleStatus` (see `architecture.md`, "Releases: derived, not stored"). The `vX.Y.Z` regex and the newest-first sort are module-private. Pure (also used by the renderer).
-- **Depends on**: Features Parser (`storyIdsIn`).
+- **Responsibility**: release markers, options, `buildReleases`, `ruleStatus`. Pure.
+
+### Questions Parser
+- **Path**: `src/main/questions.js`
+- **Responsibility**: `parseOptions`, `pendingQuestions` from the audit events, `auditEvent`/`auditContext`.
+
+### Notifications
+- **Path**: `src/main/notify.js`
+- **Responsibility**: system notifications for agent events and audit questions, decided once per event id through Alert Plan.
+
+### PTY Manager
+- **Path**: `src/main/pty.js`
+- **Responsibility**: lazy `node-pty`; agent or shell sessions per project; data and exit; write, resize, kill.
+
+### Exec Runner
+- **Path**: `src/main/exec.js`
+- **Responsibility**: `runFixed` (execFile, no shell, timeout, login PATH), `loginPath`.
+
+### Tools Registry
+- **Path**: `src/main/tools.js`
+- **Responsibility**: `TOOL_IDS` (aidlc, claude, opencode, gh, shell), saved paths, PATH lookup, `probeTool`.
+
+### Harness Detection
+- **Path**: `src/main/harness.js`
+- **Responsibility**: `detectHarnesses()` from folder markers and `--version`.
+
+### Settings Store
+- **Path**: `src/main/settings.js`
+- **Responsibility**: the app's `settings.json` in userData, sanitised keys, per-root project settings.
+
+### Setup Helper
+- **Path**: `src/main/setup.js`
+- **Responsibility**: `getSetupInfo` (a dry-run preview), `runSetup` (git init, `aidlc config --harness`, plugins, presets).
+
+### AI-DLC Config Reader
+- **Path**: `src/main/aidlcConfig.js`
+- **Responsibility**: read-only `aidlc config … --show --json`, `checkHarness`, `CONFIG_WATCH_PATHS`.
+
+### AI-DLC Config Writer
+- **Path**: `src/main/aidlcWrite.js`
+- **Responsibility**: tier-1 CLI changes from fixed tables; the tier-2 Guard Policy edit after a diff.
+
+### AI-DLC Update Check
+- **Path**: `src/main/aidlcUpdate.js`
+- **Responsibility**: `update --check` and the project `config --dry-run` plan; update commands typed into the shell (US-0504).
+
+### Plans Service
+- **Path**: `src/main/plans.js`
+- **Responsibility**: own and stock plans, stages, save, tier-2 edit and delete, recompile.
+
+### Model Choice
+- **Path**: `src/main/modelChoice.js`
+- **Responsibility**: model and effort options per harness, preview/apply, drift, cost estimate.
+
+### Model Config Reader
+- **Path**: `src/main/models.js`
+- **Responsibility**: the configured model per agent from `aidlc config models`, else the agent frontmatter.
+
+### Git Reader
+- **Path**: `src/main/git.js`
+- **Responsibility**: read-only git (status, fetch, remote changes, `show`, conflicts, tags) with `safeArg`.
+
+### Updater
+- **Path**: `src/main/updater.js`
+- **Responsibility**: GitHub release check, asset pick and checksum, install, relaunch.
+
+### File Editor Service
+- **Path**: `src/main/fileWrite.js`
+- **Responsibility**: editor reads and atomic hash-checked writes; refuses engine-owned paths; `listTree`.
+
+### Features Loader
+- **Path**: `src/main/features.js`
+- **Responsibility**: loads the feature docs with hashes, `featureWatchPaths`, story links.
+
+### Releases Service
+- **Path**: `src/main/releases.js`
+- **Responsibility**: the story release marker and release plan writes, hash-checked; the lifecycle rule status.
+
+### Token Readings
+- **Path**: `src/main/tokenReadings.js`
+- **Responsibility**: cumulative token readings per intent in `.thadeus/tokens/<dir>.json`, at most one per 30 s.
+
+### App Menu
+- **Path**: `src/main/menu.js`
+- **Responsibility**: the menu template, `menu:command`, menu state.
+
+### Main i18n
+- **Path**: `src/main/i18n.js`
+- **Responsibility**: the main process language from the settings and the OS locale.
+
+### Agent Channel
+- **Path**: `src/main/agentChannel.js`
+- **Responsibility**: per-session folders under `<userData>/agent-channel/`; event files in, answer files out; validation; heartbeat.
+
+### Agent Event Store
+- **Path**: `src/main/agentEvents.js`
+- **Responsibility**: open agent events per project, the state machine, answer checks and delivery.
+
+### Agent Adapters
+- **Path**: `src/main/agentAdapters.js`
+- **Responsibility**: Claude Code and opencode hook payloads to events and back. Pure.
+
+### Agent Permissions
+- **Path**: `src/main/agentPermissions.js`
+- **Responsibility**: permission prompts: choices, delivery through the waiting hook, time-out, Allow-always rules kept in main.
+
+### Agent Replies
+- **Path**: `src/main/agentReplies.js`
+- **Responsibility**: the agent reply lifecycle and the terminal input classifier.
+
+### Agent IPC
+- **Path**: `src/main/agentIpc.js`
+- **Responsibility**: the renderer-facing agent handlers and listeners, and the spawn/exit wiring.
+
+### Agent Hooks Installer
+- **Path**: `src/main/agentHooks.js` (864 lines)
+- **Responsibility**: status, preview and apply for the app's hook files (`.claude/settings.json` spans, `.thadeus/hooks/dialog.sh`, `.opencode/plugins/thadeus-dialog.js`).
+
+### Agent Timing Log
+- **Path**: `src/main/agentTiming.js`
+- **Responsibility**: the development timing log with `THADEUS_TIMING=1`; a no-op otherwise.
 
 ## Preload
 
 ### Preload Bridge
 - **Path**: `src/preload/index.js`
-- **Responsibility**: `window.bridge` with named members only (see `api-documentation.md` section 1). The question members are read-only: answering goes through `ptyWrite`. Release members: `loadFeatures`, `setStoryRelease` (story id, version and hashes, never a path), `getLifecycleRuleStatus`, `onFeaturesChanged`.
+- **Responsibility**: `window.bridge` with named members only (see `api-documentation.md` section 1).
 
 ## Shared (`src/shared/`)
 
 ### Harness Table
 - **Path**: `src/shared/harnesses.js`
-- **Responsibility**: the six harnesses (claude, opencode selectable; codex, kiro, cursor, copilot setup-only) with markers, CLI, `commands.aidlc`, `quietMs` (opencode 4000), `pickerKeys` (Claude Code only), `perAgentModels`; helpers `selectableHarness`, `setupHarness`, `defaultSetupHarness`, `resolveHarness`, `scopesDir`, `harnessCommand`. Adding a harness starts here.
+- **Responsibility**: six harnesses (claude and opencode selectable) with markers, CLI, commands, `pickerKeys`.
 
 ### Shared i18n
 - **Path**: `src/shared/i18n.js`
-- **Responsibility**: one i18next instance per process with ICU, `sv`/`en`, English fallback, `resolveLanguage`, `t`, `locale`.
+- **Responsibility**: one i18next instance per process with ICU, `sv`/`en`, `t`, `locale`.
 
 ### Config Tables
 - **Path**: `src/shared/configTables.js`
-- **Responsibility**: fixed tables for project settings, active-work settings, guard switches, guard lock layers/modes, efforts, presets, groups, Claude models, applied effort.
+- **Responsibility**: the fixed tables for settings, guards, efforts, presets, models.
 
 ### App Name Module
 - **Path**: `src/shared/appName.js`
@@ -180,200 +206,236 @@ One heading per component; the heading text is the component's name in the Scope
 
 ### Plan Name Rule
 - **Path**: `src/shared/planName.js`
-- **Responsibility**: `validPlanName()` shared by the Plans view and main.
+- **Responsibility**: `validPlanName()`.
+
+### Agent Text Sanitizer
+- **Path**: `src/shared/agentText.js`
+- **Responsibility**: the one sanitizer for agent text (control, bidi and zero-width characters), cuts, `firstLine`.
+
+### Agent Order
+- **Path**: `src/shared/agentOrder.js`
+- **Responsibility**: `byPager`, the pager sort order.
+
+### Alert Plan
+- **Path**: `src/shared/alertPlan.js`
+- **Responsibility**: one alert decision per kind and setting.
 
 ### Locale Files
-- **Path**: `src/shared/locales/sv.json`, `src/shared/locales/en.json` (749 texts each, same keys)
-- **Responsibility**: every UI text, grouped by view; `app.question.*` holds the popup texts.
+- **Path**: `src/shared/locales/sv.json`, `src/shared/locales/en.json`
+- **Responsibility**: every UI text, nested by view. `intents.units.*` holds the DAG texts.
 
 ## Renderer (`src/renderer/`)
 
 ### Renderer Bootstrap
 - **Path**: `src/renderer/main.jsx`, `src/renderer/index.html`
-- **Responsibility**: fonts and theme, language from main before the first render, `<html lang>`; CSP.
+- **Responsibility**: fonts, theme, language before the first render, CSP.
 
 ### App Shell
-- **Path**: `src/renderer/App.jsx` (603 lines)
-- **Responsibility**: project tabs and restore, left arm and header, view per project, settings view, menu commands, docs/about/update dialogs; question state (`questions`, `seenQuestionsRef`, popup open/focus), `sendAnswer()` and `answerInAgent()` as `terminalCommand`s; `askingIntents` per project.
-- **Depends on**: ProjectView, QuestionPopup, SettingsView, dialogs, Harness Table.
+- **Path**: `src/renderer/App.jsx` (732 lines)
+- **Responsibility**: project tabs, left arm, views, settings, menu commands, dialogs, questions and agent dialog state.
 
 ### ProjectView
 - **Path**: `src/renderer/ProjectView.jsx`
-- **Responsibility**: one `TerminalProvider` per project; harness resolution (saved choice, tabs, detection, `harnessProblem`); reports `harness`, `busy`, `showFeatures`, `intentCount` to App; runs `terminalCommand` (`answer`, `restart`, show tab); setup done offer; view switching; editor tabs.
+- **Responsibility**: one `TerminalProvider` per project, harness resolution, view switching, editor tabs, hooks strip.
 
 ### TerminalContext
 - **Path**: `src/renderer/TerminalContext.jsx`
-- **Responsibility**: shared terminal control per project: tab registry (`agent:<id>`, `shell`, alias `agent` = last agent tab used), states, `type`, `sequence`, `restart`, `anyBusy`, `asking`, `running`, `busyAgents`, pending-Enter marks, and `answer(q, answer)` (waits for the picker, writes the picker's keys, or own text into the last agent tab when no picker shows).
-- **Depends on**: Terminal Control, Picker Reader.
+- **Responsibility**: the tab registry, `type`, `sequence`, `restart`, `anyBusy`, `answer` per project.
 
 ### TerminalPanel
 - **Path**: `src/renderer/TerminalPanel.jsx`
-- **Responsibility**: `TermSession` (one xterm bound to one pty: spawn, data, exit, resize, drop files, `screen()` via `screenLines()` with 40 rows of scrollback and wrapped rows joined); tab bar with states; quick commands select; resize handle; two-busy warning; pending-Enter and error footer.
-- **Depends on**: TerminalContext, Terminal Control, Harness Table, Theme Tokens.
+- **Responsibility**: xterm sessions bound to ptys, the tab bar, quick commands, `screenLines()`.
 
 ### Terminal Control
 - **Path**: `src/renderer/terminalControl.js`
-- **Responsibility**: `createActivity` (`exited`/`busy`/`idle` from output timing, quiet 1.5 s), `waitFor`, `runSequence`, shell quoting for dropped paths. Pure.
+- **Responsibility**: the activity signal, `waitFor`, `runSequence`, shell quoting. Pure.
 
 ### Picker Reader
 - **Path**: `src/renderer/picker.js`
-- **Responsibility**: `readPicker()` reads Claude Code's numbered picker from screen rows (cursor `❯`, indented descriptions, rule, `□` header chips for batches); `resolveAnswer()` maps a logged option to the picker's key only when every logged option is shown; `waitForAnswer()` retries for 3 s. Pure.
+- **Responsibility**: reads Claude Code's picker from the screen rows; `resolveAnswer`. Pure.
 
-### QuestionPopup
-- **Path**: `src/renderer/QuestionPopup.jsx`
-- **Responsibility**: modal `<dialog>` with the question as plain text, numbered choices (gate: Approve / Request changes) when the harness has `pickerKeys`, an own-answer field, batch note, pager, Open the terminal, Close; calm then red after 20 s (`OVERDUE_MS`); "may not have arrived" after 10 s (`ARRIVAL_MS`).
+### AgentDialog
+- **Path**: `src/renderer/AgentDialog.jsx`
+- **Responsibility**: a modal pager for questions, permissions and replies (replaced the US-0505 popup).
+
+### ReplyPage
+- **Path**: `src/renderer/ReplyPage.jsx`
+- **Responsibility**: the reply page and the message body, sanitised and rendered as Markdown.
+
+### LatestMessageStrip
+- **Path**: `src/renderer/LatestMessageStrip.jsx`
+- **Responsibility**: the newest agent reply line per project, with Answer and Show.
+
+### AgentHooks UI
+- **Path**: `src/renderer/AgentHooksStrip.jsx`, `AgentHooksSection.jsx`, `AgentHooksPreview.jsx`
+- **Responsibility**: the hook status notice, the settings section, and the install/update/remove preview.
 
 ### ResumeButton
 - **Path**: `src/renderer/ResumeButton.jsx`
-- **Responsibility**: Resume an in-flight intent with the harness's AI-DLC command; waits while an agent works, asks, runs the work, or an outside agent wrote the audit log in the last 10 minutes.
+- **Responsibility**: resumes an in-flight intent through the agent tab when it is idle.
 
 ### IntentList
 - **Path**: `src/renderer/IntentList.jsx`
-- **Responsibility**: intents with search, status and plan filters, sort by date/cost/name, row cost and step dots, Resume on the selected row.
+- **Responsibility**: intents with search, filters, sort, cost and step dots.
 
 ### IntentDetail
 - **Path**: `src/renderer/IntentDetail.jsx`
-- **Responsibility**: intent header, progress dots, request text, tabs (pipeline, timeline, units, cost, files), readout column with live tokens.
+- **Responsibility**: header, progress, request text, five tabs (the `units` tab renders BoltDag with `dag` and `statuses`), readout column.
 
 ### Pipeline
 - **Path**: `src/renderer/Pipeline.jsx`
-- **Responsibility**: phases and stage blocks with status, cost, model and files; skipped stages behind Show.
+- **Responsibility**: phases and stage cards with the unit level bar.
 
 ### Timeline
 - **Path**: `src/renderer/Timeline.jsx`
-- **Responsibility**: virtualised audit events, filters, noise toggle, new-event counter, keyboard navigation.
+- **Responsibility**: a virtualised, filtered audit timeline.
 
 ### BoltDag
-- **Path**: `src/renderer/BoltDag.jsx`
-- **Responsibility**: SVG unit DAG by batches with status.
+- **Path**: `src/renderer/BoltDag.jsx` (83 lines)
+- **Responsibility**: an SVG Unit DAG. Batches become columns, edges come from `dependsOn`, each node is a 200x64 block with `kind · status` and the name, and the status sets the class `unit-<status>`. It has no test of its own.
 
 ### ArtifactReader
 - **Path**: `src/renderer/ArtifactReader.jsx`
-- **Responsibility**: artifact tree and `FileContent` (Markdown with `skipHtml`, links only http(s), pretty JSON); reused by Features, Refresh, Docs, Update and the editor preview.
+- **Responsibility**: the artifact tree and `FileContent` (Markdown, JSON).
 
 ### CostPanel
 - **Path**: `src/renderer/CostPanel.jsx`
-- **Responsibility**: project cost total, readout, chart, per-model/agent/scope tables, configured vs actual models.
+- **Responsibility**: the project cost overview.
 
 ### CostTab
 - **Path**: `src/renderer/CostTab.jsx`
-- **Responsibility**: one intent's cost by stage/agent/model and participant models; `CostTable`, `ModelTable`, `CostLabel`.
+- **Responsibility**: intent cost tables.
 
 ### TokenView
 - **Path**: `src/renderer/TokenView.jsx`
-- **Responsibility**: live token meters and rate waveform while an intent is in flight.
+- **Responsibility**: live token meters and the waveform.
 
-### Token Flow
-- **Path**: `src/renderer/tokenFlow.js`
-- **Responsibility**: token history, rate, meter levels. Pure.
+### TokenDetail
+- **Path**: `src/renderer/TokenDetail.jsx`
+- **Responsibility**: visx charts of tokens over time and by stage, agent and model.
+
+### Token Charts
+- **Path**: `src/renderer/tokenFlow.js`, `src/renderer/tokenChart.js`
+- **Responsibility**: the token history, rate and chart series. Pure.
 
 ### RefreshPanel
 - **Path**: `src/renderer/RefreshPanel.jsx`
-- **Responsibility**: the sidebar "Uppdatera från GitHub" panel (opened by the left arm's Github block via `open`/`onToggle`): git status, fetch, remote changes under `aidlc/`, pull/rebase choices typed into the shell tab without Enter (`typeInShell`), conflicts. Holds the running-workflow gate: `working` = `terminal.anyBusy()` or an intents write within `WORKING_MS` (5 min, `useRecent`), which disables the actions and shows `github.wait`.
-- **Depends on**: TerminalContext, ArtifactReader, Preload Bridge.
+- **Responsibility**: Refresh from GitHub: status, fetch, remote changes, pull commands typed into the shell.
+
+### Workflow Busy Rule
+- **Path**: `src/renderer/workflowBusy.js`
+- **Responsibility**: `isWorkflowRunning` (a busy terminal, or an intents write within 5 minutes).
+
+### AidlcUpdate
+- **Path**: `src/renderer/AidlcUpdate.jsx`
+- **Responsibility**: the AI-DLC program and project update rows in Settings › Tools.
 
 ### SetupAidlc
 - **Path**: `src/renderer/SetupAidlc.jsx`
-- **Responsibility**: set up AI-DLC (the "not an AI-DLC project" screen) or add a harness (Projektinställningar): prerequisites (aidlc version, git, other harnesses), harness choice, `Preview` of the dry-run counts and conflicts, advanced options, Apply through `runSetup`, switch offer. Apply is blocked by a missing preview, a conflict, or a harness changed since the preview.
-- **Depends on**: TerminalContext, Harness Table, Format Helpers, Preload Bridge.
+- **Responsibility**: AI-DLC setup and add harness, with a preview before Apply.
 
-### ProjectSettingsDialog
-- **Path**: `src/renderer/ProjectSettingsDialog.jsx`
-- **Responsibility**: feature-docs mode and path, agent-terminal harness, side-by-side tabs, add harness, open Configuration; `confirmHarnessSwitch()`.
+### ProjectSettingsView
+- **Path**: `src/renderer/ProjectSettingsView.jsx`
+- **Responsibility**: project settings sections, including Agent dialogs.
 
 ### SettingsView
 - **Path**: `src/renderer/SettingsView.jsx`
-- **Responsibility**: app settings: tools, appearance (animations, fullscreen, language, question alerts, notification sound), projects, about and update cleanup.
+- **Responsibility**: the app settings tabs.
 
 ### ConfigView
 - **Path**: `src/renderer/ConfigView.jsx`
-- **Responsibility**: AI-DLC configuration per installed harness, working agents, live reload on `config:changed`.
+- **Responsibility**: AI-DLC configuration per harness, "Arbetar nu" (working agents).
 
 ### ConfigEdit
 - **Path**: `src/renderer/ConfigEdit.jsx`
-- **Responsibility**: `ChangePanel` (command, dry run, apply), active-work editor, defaults editor, guard switches, guard lock, model picker.
+- **Responsibility**: `ChangePanel` and the editors for settings, guards, the lock and models.
 
 ### PlansView
 - **Path**: `src/renderer/PlansView.jsx`
-- **Responsibility**: own and stock plans with stages; compose/start/steps requests typed into the agent tab; save, edit, delete through main.
+- **Responsibility**: plans, stages, save, edit, delete.
 
 ### FeaturesView
 - **Path**: `src/renderer/FeaturesView.jsx`
-- **Responsibility**: epics and stories from the feature docs with filters, story detail and intent links. With `delivery` `releases`: `ReleasePicker` in the story detail (options from `releaseOptions`, plus a stale planned version; None removes; no picker for a released story) and `ReleasesView` (the Releases tab chosen in the left arm: `buildReleases` rows with version, planned/released date, story count, stories that open their detail, stale flags). `ReleasesView` receives no `projectId`. With `continuous` both are hidden.
-- **Depends on**: Features Parser, Releases Parser, ArtifactReader, Editor, LCARS Primitives, Format Helpers, Preload Bridge.
+- **Responsibility**: epics, stories, the release picker, the Releases tab.
+
+### Story Filter
+- **Path**: `src/renderer/storyFilter.js`
+- **Responsibility**: the shared story filter. Pure.
 
 ### Editor
-- **Path**: `src/renderer/editor/` (`EditorPanel.jsx`, `EditorContext.jsx`, `ConflictDialog.jsx`, `FileTree.jsx`, `MonacoPane.jsx`, `monacoSetup.js`)
-- **Responsibility**: editor tabs per project with dirty tracking, hash-checked saves and conflicts, open-file watching, Markdown preview, lazy Monaco with an LCARS theme, file tree.
+- **Path**: `src/renderer/editor/`
+- **Responsibility**: Monaco editor tabs, the conflict dialog, the file tree.
 
 ### UpdateNotice
 - **Path**: `src/renderer/UpdateNotice.jsx`
-- **Responsibility**: update offer, progress, install outcome; asks first while an agent is busy.
+- **Responsibility**: the app update offer and progress.
 
 ### AboutDialog
 - **Path**: `src/renderer/AboutDialog.jsx`
-- **Responsibility**: About window in the LCARS panel design with version and platform codes.
+- **Responsibility**: the About panel.
 
 ### DocsDialog
 - **Path**: `src/renderer/DocsDialog.jsx`
-- **Responsibility**: the project's `docs/README.md` as Markdown, with Edit.
+- **Responsibility**: the project's `docs/README.md`.
 
 ### Splash
 - **Path**: `src/renderer/Splash.jsx`
-- **Responsibility**: start-up splash between 0.9 and 4 s.
+- **Responsibility**: the start-up splash.
 
 ### LCARS Primitives
 - **Path**: `src/renderer/Lcars.jsx`, `src/renderer/AuctumMark.jsx`
-- **Responsibility**: bars, frame, hairlines, dots, readout; the Auctum mark SVG.
+- **Responsibility**: bars, frame, dots, readouts, hairlines; the mark.
 
 ### Format Helpers
 - **Path**: `src/renderer/format.js`
-- **Responsibility**: translated status labels, time/duration/cost/token formatting, `stagePosition`, `withSlots`.
+- **Responsibility**: status labels (`unitStatusLabel` reads `common.unitStatus.*`), time, duration, cost and token formats.
 
 ### Theme Tokens
 - **Path**: `src/renderer/tokens.js`
-- **Responsibility**: reads CSS tokens from `:root` for xterm's theme.
+- **Responsibility**: CSS tokens for xterm.
 
 ### useProject
 - **Path**: `src/renderer/useProject.js`
-- **Responsibility**: intent list, detail, cost and models for one project; partial reload on `project:changed`; new-event highlight.
+- **Responsibility**: the intent list, detail, cost and models; partial reload on `project:changed`; new-event highlight.
 
 ### useFeatures
 - **Path**: `src/renderer/useFeatures.js`
-- **Responsibility**: feature docs, project settings and story links; reload on `features:changed`.
+- **Responsibility**: the feature docs and story links; reload on `features:changed`.
 
 ### Feature Docs Prompt
 - **Path**: `src/renderer/featureDocsPrompt.js`
-- **Responsibility**: the one-line request typed into the agent tab to create feature docs.
+- **Responsibility**: the request typed into the agent tab to create feature docs.
 
 ### Theme Stylesheet
-- **Path**: `src/renderer/theme.css`
-- **Responsibility**: LCARS tokens on `:root`, component styles, question-popup calm/overdue styles, `data-motion` rules (skimmed in this run).
+- **Path**: `src/renderer/theme.css` (1409 lines)
+- **Responsibility**: the LCARS tokens and component styles. The `.dag-*` rules (l.879-888) style `unit-done` and `unit-running`.
 
 ## Build, CI and tests
 
 ### Release Workflow
 - **Path**: `.github/workflows/release.yml`
-- **Responsibility**: on PR to `main` and `v*.*.*` tags: tag/version check, `npm ci`, tests with coverage (80% floor), ESLint, Prettier (separate steps), mac universal .dmg, Linux .deb on ubuntu-22.04 with the glibc check; on tags a GitHub Release (`gh release create --generate-notes`) with `SHA256SUMS.txt`. Token scope `contents: read`, write only in the release job. The header comment still calls the repo private and the builds internal.
-- **Depends on**: Build Scripts, Packaging Config.
+- **Responsibility**: on PRs and tags: gitleaks, the tag/version check, tests with coverage, ESLint, Prettier, the mac and Linux builds, a GitHub Release with `SHA256SUMS.txt`.
 
 ### Build Scripts
-- **Path**: `scripts/check-glibc.mjs`, `scripts/fix-pty-perms.cjs`, `scripts/make-icon.cjs`, `electron.vite.config.mjs`, `vitest.config.mjs`
-- **Responsibility**: bundling, glibc and foreign-prebuild check (CI), spawn-helper permissions (postinstall), icon rendering from `build/icon.svg` (the Auctum mark), test projects. Script messages are in Swedish.
+- **Path**: `scripts/`, `electron.vite.config.mjs`, `vitest.config.mjs`, `eslint.config.mjs`
+- **Responsibility**: the glibc check, pty permissions, icon, third-party licences, screenshots, bundling, test projects, lint rules.
 
 ### Packaging Config
-- **Path**: `electron-builder.yml`, `package.json` (metadata), `build/`
-- **Responsibility**: app id `se.auctum.thadeus`; ships `out/**` and `package.json`, unpacks `node-pty`; unsigned mac dmg, Linux deb (maintainer `info@auctum.se`, replaces `aidlc-dash`); `publish: null`. Package metadata: `private: true`, `license: MIT`, author Auctum Solutions AB, homepage `github.com/tochman/aidlc-dash`. No third-party licence notice is packaged (see `dependencies.md` "Licences").
-- **Depends on**: Build Scripts (icon).
+- **Path**: `electron-builder.yml`, `package.json`, `build/`
+- **Responsibility**: app id `se.auctum.thadeus`, the unsigned universal dmg, the Linux deb, unpacked `node-pty`, `publish: null`.
 
-### Test Fixtures
-- **Path**: `tests/fixtures/` (95 tracked files)
-- **Responsibility**: sample inputs for the main and renderer tests; layout in `code-structure.md`, privacy findings in `code-quality-assessment.md` ("Public-readiness review").
-
-### Project Docs
-- **Path**: `README.md`, `LICENSE`, `docs/FEATURES.md`, `docs/features/epic-*.md` (13), `docs/releases/` (0.2.3, 0.2.4), `docs/screenshots/` (5 PNG)
-- **Responsibility**: outside-facing description, install and development guide, MIT licence, roadmap and story status (read by Features Parser and checked in CI), README images.
+### Dialog Hook Script
+- **Path**: `.thadeus/hooks/dialog.sh`
+- **Responsibility**: the POSIX sh hook that writes event files and waits for answers. It is bundled into main with `?raw`.
 
 ### Test Suite
-- **Path**: `tests/` (32 main and 27 renderer test files, fixtures)
-- **Responsibility**: unit and component tests; see `code-quality-assessment.md` for coverage of the intent area.
+- **Path**: `tests/main`, `tests/renderer`, `tests/helpers`
+- **Responsibility**: 111 test files, 1071 `it`/`test` call sites; see `code-quality-assessment.md`.
+
+### Test Fixtures
+- **Path**: `tests/fixtures/` (95 files)
+- **Responsibility**: agent events, agent hooks, audit, features, ledger, picker screens, a sample project.
+
+### Project Docs
+- **Path**: `README.md`, `CONTRIBUTING.md`, `SECURITY.md`, `CODE_OF_CONDUCT.md`, `LICENSE`, `docs/`
+- **Responsibility**: the outside-facing description, the roadmap and story status (checked in CI), release notes, screenshots.

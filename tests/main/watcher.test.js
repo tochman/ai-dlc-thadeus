@@ -77,6 +77,28 @@ describe('watchIntents', { retry: 2 }, () => {
     await wait(600);
     expect(calls).toEqual([{ dirNames: [], indexChanged: false, costChanged: true }]);
   });
+
+  it("reports a Unit plan written in a worktree created after watching started as that intent's change (US-0507 FR5.1, NFR3)", async () => {
+    // The project root is TMP: intents sit at TMP/aidlc/spaces/default/intents, worktrees at TMP/.aidlc/worktrees.
+    const intentsDir = path.join(TMP, 'aidlc', 'spaces', 'default', 'intents');
+    await fs.mkdir(path.join(intentsDir, DIR), { recursive: true });
+    await wait(300);
+    const calls = [];
+    watcher = watchIntents({ intentsDir, worktreesDir: path.join(TMP, '.aidlc', 'worktrees'), onChange: (c) => calls.push(c), debounceMs: 150 });
+    await watcher.ready;
+
+    const tree = path.join(TMP, '.aidlc', 'worktrees', 'bolt-2a09832c_u1-a');
+    await fs.mkdir(path.join(tree, 'src'), { recursive: true });
+    await fs.writeFile(path.join(tree, 'src', 'x.js'), 'ignored');
+    await wait(400);
+    expect(calls).toEqual([]);
+
+    const planDir = path.join(tree, 'aidlc', 'spaces', 'default', 'intents', DIR, 'construction', 'u1-a', 'code-generation');
+    await fs.mkdir(planDir, { recursive: true });
+    await fs.writeFile(path.join(planDir, 'code-generation-plan.md'), '- [x] Step 1\n- [ ] Step 2\n');
+    await wait(900);
+    expect(calls).toEqual([{ dirNames: [DIR], indexChanged: false, costChanged: false }]);
+  });
 });
 
 describe('watchFiles', { retry: 2 }, () => {

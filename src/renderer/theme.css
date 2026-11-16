@@ -701,6 +701,10 @@ button.lcars-chip:hover { border-color: var(--steel-text); color: var(--steel-li
 .token-detail-row-name { overflow: hidden; color: var(--text); font-size: 17px; text-overflow: ellipsis; white-space: nowrap; }
 .token-detail-row-bar { display: block; width: 100%; height: 12px; }
 .token-detail-row-value { color: var(--steel-text); font-size: 17px; font-variant-numeric: tabular-nums; text-align: right; }
+/* US-0507: the agent progress rows reuse the split rows; the middle column holds stage, status and last commit. */
+.agent-progress-summary { margin: 0; color: var(--text); font: 15px/1.5 var(--font-read); }
+.agent-progress-detail { display: flex; flex-direction: column; min-width: 0; color: var(--text-2); font-size: 14px; overflow-wrap: anywhere; }
+.agent-progress-status { color: var(--steel-text); }
 /* The exact figures on hover and on focus (FR4, NFR3); opacity keeps them readable to a screen reader. */
 .token-detail-row-tip { position: absolute; z-index: 2; top: calc(100% + 4px); left: 0; padding: 6px 10px; border: 2px solid var(--coral); border-radius: 2px 12px 2px 2px; background: var(--bg); color: var(--text); font-size: 13px; font-variant-numeric: tabular-nums; white-space: nowrap; opacity: 0; pointer-events: none; }
 .token-detail-row:hover .token-detail-row-tip, .token-detail-row:focus-visible .token-detail-row-tip { opacity: 1; }

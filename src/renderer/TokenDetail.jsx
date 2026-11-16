@@ -15,6 +15,10 @@ import { Bar, Frame } from './Lcars.jsx';
 import { formatTokens, formatUsd, shortModel, stageTitle } from './format.js';
 import { agentName } from '../main/parsers/ledger.js';
 import { SPLIT_KINDS, STACK_KINDS, elapsedLabel, rateSeries, splitRows, stackSeries } from './tokenChart.js';
+import AgentProgress from './AgentProgress.jsx';
+
+// US-0507 FR5.2: a finished row drops off after FINISHED_KEEP_MS (src/main/parsers/agentProgress.js); ask again then.
+const FINISHED_RECHECK_MS = 60000;
 
 const LEGEND = [...STACK_KINDS].reverse(); // top of the stack first
 const CHART_H = 260;
@@ -312,11 +316,15 @@ function RateLine({ readings, live }) {
 /**
  * US-0208 FR1–FR7: the detail. `readings` come from main with `tokens:readings` on open and again on each cost
  * refresh while live (FR5). Back and Esc call `onBack`; focus goes to the h2 on open (FR1, NFR3).
- * @param {{projectId: string, dirName: string, intent: object|null, cost: object|null, live: boolean, stageOrder: string[], onBack: () => void}} props
+ * US-0507: the agent progress rows come with `agents:progress` on open and whenever `refreshKey` changes (the intent
+ * detail was re-read after a change on disk, FR5.1).
+ * @param {{projectId: string, dirName: string, intent: object|null, cost: object|null, live: boolean, stageOrder: string[], refreshKey?: unknown, onBack: () => void}} props
  */
-export default function TokenDetail({ projectId, dirName, intent, cost, live, stageOrder = [], onBack }) {
+export default function TokenDetail({ projectId, dirName, intent, cost, live, stageOrder = [], refreshKey, onBack }) {
   const { t } = useTranslation();
   const [readings, setReadings] = useState([]);
+  const [progress, setProgress] = useState([]);
+  const [recheck, setRecheck] = useState(0);
   const headRef = useRef(null);
   const intentCost = cost?.available ? (cost.perIntent?.[dirName] ?? null) : null;
   const refresh = live ? cost : null; // a new cost summary while live asks again; a finished intent asks once
@@ -332,6 +340,22 @@ export default function TokenDetail({ projectId, dirName, intent, cost, live, st
       current = false;
     };
   }, [projectId, dirName, refresh]);
+  useEffect(() => {
+    let current = true;
+    window.bridge.getAgentProgress(projectId, dirName).then(
+      (rows) => current && setProgress(Array.isArray(rows) ? rows : []),
+      (err) => console.error('agents:progress', err?.message ?? err) // keeps the last rows; the next change tries again
+    );
+    return () => {
+      current = false;
+    };
+  }, [projectId, dirName, refreshKey, recheck]);
+  // ponytail: one timer while a finished row shows, not a poll; minutes only move on a change or this recheck.
+  useEffect(() => {
+    if (!progress.some((r) => r.endedMs)) return undefined;
+    const timer = setTimeout(() => setRecheck((n) => n + 1), FINISHED_RECHECK_MS);
+    return () => clearTimeout(timer);
+  }, [progress]);
 
   const order = (slug) => (stageOrder.includes(slug) ? stageOrder.indexOf(slug) : stageOrder.length);
   const byStage = [...(intentCost?.byStage ?? [])].sort((a, b) => order(a.name) - order(b.name));
@@ -373,6 +397,7 @@ export default function TokenDetail({ projectId, dirName, intent, cost, live, st
               </div>
             </div>
           </header>
+          <AgentProgress rows={progress} />
           <OverTime readings={readings} live={live} />
           <div className="token-detail-splits">
             <SplitCard id="stage" rows={byStage} keepOrder nameOf={stageTitle} hasEntry={!!intentCost} />

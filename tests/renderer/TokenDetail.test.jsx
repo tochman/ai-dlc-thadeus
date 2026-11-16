@@ -29,8 +29,11 @@ const reading = (s, n) => ({
 const READINGS = [reading(0, 1), reading(40, 4), reading(80, 7), reading(140, 10)]; // 30–60 s apart
 const STAGES = ['functional-design', 'code-generation'];
 
+// US-0507: the token detail also asks for the agent progress rows.
+const bridge = (readings, progress = []) => ({ getTokenReadings: vi.fn(async () => readings), getAgentProgress: vi.fn(async () => progress) });
+
 function detailProps(readings = READINGS, status = 'in-flight', extra = {}) {
-  window.bridge = { getTokenReadings: vi.fn(async () => readings) };
+  window.bridge = bridge(readings);
   return { projectId: 'p1', dirName: DIR, intent: intentOf(status), cost: cost(), live: status === 'in-flight', stageOrder: STAGES, onBack: vi.fn(), ...extra };
 }
 async function renderDetail(...args) {
@@ -60,7 +63,7 @@ describe('opening and closing (US-0208 FR1)', () => {
   };
 
   it('click or Enter on the small view opens the detail in place of the main panel; Back and Esc return focus to it', async () => {
-    window.bridge = { getTokenReadings: vi.fn(async () => READINGS) };
+    window.bridge = bridge(READINGS);
     render(<IntentDetail projectId="p1" detail={detail} intent={intentOf('in-flight')} activeDirName={DIR} cost={cost()} models={null} />);
     const small = () => screen.getByTestId('token-view');
     expect(small().getAttribute('role')).toBe('button');
@@ -81,7 +84,7 @@ describe('opening and closing (US-0208 FR1)', () => {
   });
 
   it('US-0022: the intent header has its own Tokens button, which opens the detail and gets focus back', async () => {
-    window.bridge = { getTokenReadings: vi.fn(async () => READINGS) };
+    window.bridge = bridge(READINGS);
     render(<IntentDetail projectId="p1" detail={detail} intent={intentOf('in-flight')} activeDirName={DIR} cost={cost()} models={null} />);
     const head = () => screen.getByTestId('intent-detail-tokens');
     expect(head().tagName).toBe('BUTTON');
@@ -93,7 +96,7 @@ describe('opening and closing (US-0208 FR1)', () => {
   });
 
   it('a finished intent opens it from its own small button', async () => {
-    window.bridge = { getTokenReadings: vi.fn(async () => []) };
+    window.bridge = bridge([]);
     render(<IntentDetail projectId="p1" detail={detail} intent={intentOf('complete')} activeDirName={null} cost={cost()} models={null} />);
     expect(screen.queryByTestId('token-view')).toBeNull();
     fireEvent.click(screen.getByTestId('token-view-open'));
@@ -155,7 +158,7 @@ describe('switches (US-0208 FR4)', () => {
     const many = structuredClone(ledger);
     const wf = many.workflows[`intent:${UUID}`];
     for (let i = 0; i < 13; i += 1) wf.byAgent[`agent-${i}`] = { tokens: { input: 10 + i }, usd: 0.01 };
-    window.bridge = { getTokenReadings: vi.fn(async () => READINGS) };
+    window.bridge = bridge(READINGS);
     render(<TokenDetail {...detailProps()} cost={{ available: true, ...summarizeLedger(many, [intentOf('in-flight')]) }} />);
     const rows = screen.getByTestId('token-detail-split-agent').querySelectorAll('.token-detail-row-name');
     expect(rows).toHaveLength(13);
@@ -176,7 +179,7 @@ describe('recorded and missing data (US-0208 FR5, FR6)', () => {
   });
 
   it('an intent without a ledger entry says so in every frame', async () => {
-    window.bridge = { getTokenReadings: vi.fn(async () => []) };
+    window.bridge = bridge([]);
     render(<TokenDetail {...detailProps([])} cost={{ available: true, ...summarizeLedger(ledger, []) }} />);
     await act(async () => {});
     for (const id of ['stage', 'agent', 'model']) {
@@ -199,5 +202,91 @@ describe('tooltip (US-0208 FR4, NFR3)', () => {
     fireEvent.keyDown(chart, { key: 'Escape' });
     expect(screen.queryByTestId('token-detail-tooltip')).toBeNull();
     expect(screen.getByTestId('token-detail')).toBeTruthy(); // Esc on the chart hides the tooltip, not the view
+  });
+});
+
+describe('agent progress (US-0507)', () => {
+  const build = (unit, minutes, steps, extra = {}) => ({
+    kind: 'build',
+    key: `build:${unit}`,
+    unit,
+    agent: null,
+    stage: 'code-generation',
+    minutes,
+    status: 'running',
+    endedMs: null,
+    steps,
+    commit: null,
+    unreadable: null,
+    ...extra
+  });
+  const review = (key, agent, stage, extra) => ({
+    kind: 'review',
+    key,
+    unit: null,
+    agent,
+    stage,
+    minutes: 2,
+    status: 'requested',
+    endedMs: null,
+    verdict: null,
+    severities: null,
+    unreadable: null,
+    ...extra
+  });
+  const PROGRESS = [
+    build('u2-permissions', 12, { done: 6, total: 27 }, { commit: 'feat(u2-permissions): step 6' }),
+    build('u3-replies', 3, { done: 16, total: 42 }),
+    build('u1-questions', 40, { done: 27, total: 27 }, { status: 'done', endedMs: 1 }),
+    build('u4-gone', 0, null, { unreadable: '.aidlc/worktrees/bolt-2a09832c_u4-gone' }),
+    review('review:1', 'architecture-reviewer', 'code-generation', { status: 'done', endedMs: 1, verdict: 'NOT-READY', severities: { Major: 2, Minor: 1 } }),
+    review('review:2', 'product-lead', 'functional-design')
+  ];
+  async function renderProgress(progress, extra) {
+    const props = { ...detailProps(), ...extra };
+    window.bridge = bridge(READINGS, progress);
+    const view = render(<TokenDetail {...props} />);
+    await waitFor(() => expect(window.bridge.getAgentProgress).toHaveBeenCalledWith('p1', DIR));
+    await act(async () => {});
+    return { ...view, props };
+  }
+
+  it('says in one sentence that nothing runs, in a section that is always there (FR1.1, FR1.4)', async () => {
+    await renderProgress([]);
+    const section = screen.getByTestId('agent-progress');
+    expect(within(section).getByRole('heading', { level: 3 }).textContent).toBe('Agenternas framsteg');
+    expect(within(section).getByTestId('agent-progress-empty').textContent).toBe('Inga agenter arbetar i den här intenten just nu.');
+    expect(within(section).queryAllByTestId('agent-progress-row')).toHaveLength(0);
+  });
+
+  it('shows one focusable row per piece of work with its name, stage, minutes and status in text (FR1.3, FR2, FR3, FR5.3, NFR4)', async () => {
+    await renderProgress(PROGRESS);
+    const rows = screen.getAllByTestId('agent-progress-row');
+    expect(rows).toHaveLength(6);
+    for (const row of rows) expect(row.getAttribute('tabindex')).toBe('0');
+    const text = rows.map((r) => r.textContent);
+    for (const part of ['u2-permissions', 'Code Generation', '12 min', '6 av 27 steg', 'Senaste commit: feat(u2-permissions): step 6'])
+      expect(text[0]).toContain(part);
+    expect(text[2]).toContain('27 av 27 steg, klart');
+    expect(text[3]).toContain('Kunde inte läsa .aidlc/worktrees/bolt-2a09832c_u4-gone');
+    expect(text[3]).not.toMatch(/\d+ av \d+ steg/);
+    expect(text[4]).toContain('architecture-reviewer');
+    expect(text[4]).toContain('NOT-READY, 2 Major, 1 Minor');
+    expect(text[5]).toContain('Functional Design');
+    expect(text[5]).toContain('granskning begärd');
+  });
+
+  it('sums the builds up in one sentence with the numbers from the rows (FR4.1, FR4.2)', async () => {
+    await renderProgress(PROGRESS);
+    expect(screen.getByTestId('agent-progress-summary').textContent).toBe(
+      'Byggena går framåt: u2-permissions har 6 av 27 steg klara, u3-replies har 16 av 42 steg klara och u1-questions har 27 av 27 steg klara.'
+    );
+  });
+
+  it('counts the work when no build has steps, and asks again when the intent detail changes (FR4.1, FR5.1)', async () => {
+    const { rerender, props } = await renderProgress([PROGRESS[5]], { refreshKey: 1 });
+    expect(screen.getByTestId('agent-progress-summary').textContent).toBe('1 agent arbetar.');
+    rerender(<TokenDetail {...props} refreshKey={2} />);
+    await waitFor(() => expect(window.bridge.getAgentProgress).toHaveBeenCalledTimes(2));
   });
 });
