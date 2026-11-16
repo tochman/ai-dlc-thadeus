@@ -495,6 +495,24 @@
     "firstWork": "Starta första arbetet",
     "createFeatureDocs": "Skapa feature-beskrivningar"
   },
+  "aidlcUpdate": {
+    "programTitle": "AI-DLC-programmet",
+    "projectTitle": "AI-DLC i det här projektet",
+    "newer": "Nyare finns: v{version}",
+    "newerUnknown": "En nyare version finns",
+    "upToDate": "Aktuell",
+    "check": "Sök efter uppdateringar",
+    "updateProgram": "Uppdatera AI-DLC",
+    "updateProject": "Uppdatera projektfilerna",
+    "counts": "{create} nya, {update} ändrade, {merge} sammanfogade, {remove} borttagna",
+    "showFiles": "Visa filer ({n})",
+    "conflict": "Konflikt: {path}",
+    "noHarness": "Projektet har ingen AI-DLC-harness.",
+    "needsProject": "Öppna ett projekt för att skriva kommandot i dess skalflik.",
+    "loadFailed": "Kunde inte kontrollera projektet: {error}",
+    "unreadable": "Svaret från aidlc gick inte att läsa.",
+    "timeout": "tog längre än 30 s"
+  },
   "settings": {
     "title": "Inställningar",
     "tabsLabel": "Inställningsflikar",

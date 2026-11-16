@@ -80,6 +80,7 @@ Text fallback: the App Shell holds the QuestionPopup and one ProjectView per ope
 5. **Steering**: Resume, quick commands, Plans requests and the feature-docs prompt type text into the agent tab (usually without Enter); Refresh types git commands into the shell tab; Setup, Configuration and Models run `aidlc` in main after a preview.
 6. **Cost**: `project:cost` reads `aidlc/.aidlc-sessions/usage-ledger.json` and summarises it per intent, stage, agent, model and scope (`summarizeLedger`).
 7. **Feature docs and releases**: `features:load` returns `loadFeatures()` (overview, epics, each file's sha256 `hash`) plus `tags` from `listReleaseTags()` (`git tag --list v*`). The renderer computes the release list and picker options itself from those two inputs (see below). The feature-docs watcher (`featureWatchPaths`: the overview file and the epic folders) sends `features:changed`, and the view reloads.
+8. **AI-DLC framework (US-0503, US-0504 area)**: main reads `aidlc --version` and a `config --harness <id> --dry-run` preview with `runFixed` (`setup.js`); nothing reads release availability yet. The "AI-DLC is working" gate lives in the renderer only: `terminal.anyBusy()` or an intents-folder change in the last 5 minutes (`RefreshPanel.jsx`).
 
 ### Releases: derived, not stored
 
@@ -260,3 +261,34 @@ sequenceDiagram
 ```
 
 Text fallback: the picker sends only the story id, the version (or null) and the two hashes it read. Main reloads the docs, refuses an unknown or released story, then writes the epic file and the overview, each only if its hash still matches; a mismatch returns `{conflict: file}` and stops. On success main sends `features:changed` and the view reloads with fresh hashes. Because each write changes `FEATURES.md`, a second write sent with the old hashes is refused.
+
+### Framework update (US-0504, proposed on the existing parts)
+
+```mermaid
+sequenceDiagram
+  participant P as Person
+  participant UI as Update panel (renderer)
+  participant TC as TerminalContext
+  participant BR as window.bridge
+  participant M as main (setup.js style reader)
+  participant CLI as aidlc CLI
+  P->>UI: opens the panel
+  UI->>BR: read version and preview
+  BR->>M: IPC
+  M->>CLI: aidlc --version
+  M->>CLI: aidlc --project-dir root config --harness id --dry-run
+  opt person presses Check
+    M->>CLI: aidlc update --check (exit 5 = newer)
+  end
+  M-->>UI: version, newer flag, parsed preview
+  UI->>TC: anyBusy() or intents write within 5 min
+  alt working
+    UI-->>P: button disabled, github.wait text
+  else idle
+    P->>UI: Uppdatera ramverket
+    UI->>TC: type shell, aidlc update or aidlc config, submit false
+    P->>TC: presses Enter in the shell tab
+  end
+```
+
+Text fallback: the panel asks main for the installed version and the config dry-run preview, both read-only `runFixed` calls as setup does today; a release check (`aidlc update --check`, network) runs only when the person asks, like `git fetch`. The button is disabled while an agent tab is busy or AI-DLC wrote under the intents folder in the last 5 minutes. Otherwise it types the command into the shell tab without Enter. Which command it types (`aidlc update` for the machine install, `aidlc config` for the project files) is open in the story.

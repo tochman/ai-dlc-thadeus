@@ -1294,6 +1294,9 @@ a.md-link:hover { color: var(--steel-light); }
 .settings-tool-actions { display: flex; gap: 5px; }
 .settings-tool-needed { margin: 0; color: var(--coral-soft); font-size: 13px; }
 .settings-tool-error { margin: 0; }
+/* The AI-DLC rows under the tool cards (US-0504): one line per harness, its files unfold under it. */
+.aidlc-update { margin-top: 10px; }
+.aidlc-update-plan { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; padding-bottom: 6px; }
 /* A path wraps only at the <wbr> after each `/`, never mid-word (FR4.4). */
 .settings-tool-field code, .settings-folder code, .settings-list code { overflow-wrap: normal; word-break: normal; hyphens: none; }
 .settings-folder { display: flex; flex-wrap: wrap; gap: 8px; align-items: baseline; }

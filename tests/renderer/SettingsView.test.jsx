@@ -28,7 +28,10 @@ function stubBridge({ settings = {}, tools = [], appInfo, saveError = null } = {
       state.defaultProjectFolder = null;
     }),
     getAppInfo: vi.fn(async () => appInfo ?? { version: '0.2.3', aidlc: { found: true, version: '0.9.1' } }),
-    openExternal: vi.fn(async () => {})
+    openExternal: vi.fn(async () => {}),
+    // US-0504: the AI-DLC rows under the tool cards.
+    getAidlcUpdateStatus: vi.fn(async () => ({ version: 'aidlc 2.11.3', status: 'current', latest: '2.11.3', reason: null, command: 'aidlc update' })),
+    getAidlcProjectPlans: vi.fn(async () => [])
   };
   window.bridge = bridge;
   return { bridge, state };

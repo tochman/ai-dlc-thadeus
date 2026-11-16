@@ -31,6 +31,8 @@ import { DELIVERY_DEFAULT } from './parsers/releases.js';
 import { getSetupInfo, runSetup } from './setup.js';
 import { detectHarnesses } from './harness.js';
 import { TOOL_IDS, getTools, setToolPaths, validateTool } from './tools.js';
+import { checkProgram, errorText as checkError, programCommand, projectCommand, projectPlan } from './aidlcUpdate.js';
+import { setupHarness } from '../shared/harnesses.js';
 import { getProjectSettings, getSettings, setProjectSettings, setSettings, settingsNow } from './settings.js';
 import { watchFiles, watchForAidlc, watchIntents, watchOpenFiles } from './watcher.js';
 import { listTree, readForEdit, writeFileSafe } from './fileWrite.js';
@@ -68,6 +70,14 @@ const updater = createUpdater({
     for (const w of BrowserWindow.getAllWindows()) if (!w.webContents.isDestroyed()) w.webContents.send('update:state', state);
   }
 });
+
+// The AI-DLC program check (US-0504 FR3): once after the first window has loaded, again on "Check for updates".
+let aidlcStatus = null;
+/** US-0504 FR3, NFR2: starts the program check (or returns the one running); checkProgram never rejects. */
+export function startAidlcCheck({ force = false } = {}) {
+  if (!aidlcStatus || force) aidlcStatus = checkProgram();
+  return aidlcStatus;
+}
 
 /** The daily check once the window has loaded (US-0407); an offered update reaches the notice as `update:state`. */
 export function startUpdateCheck(win) {
@@ -678,6 +688,22 @@ const handlers = {
   },
   // The three tools with their path, source and version (US-0405 FR2.1); getTools never rejects.
   'tools:info': async () => getTools(),
+  // US-0504 FR1, FR3: the program check from start-up, run again when `force` is set (the button).
+  'aidlc:updateStatus': async (_event, force) => ({ ...(await startAidlcCheck({ force: force === true })), command: programCommand() }),
+  // US-0504 FR2, FR5: a dry run per installed harness; one that fails comes back with its reason, never rejects the rest.
+  'aidlc:projectPlans': async (_event, projectId) => {
+    const p = project(projectId);
+    const installed = (await Promise.resolve(p.harnesses).catch(() => [])).filter((d) => d.installed && setupHarness(d.id));
+    return Promise.all(
+      installed.map(async ({ id, label }) => {
+        try {
+          return { harness: id, label, command: projectCommand(id), ...(await projectPlan(p.root, id)) };
+        } catch (err) {
+          return { harness: id, label, command: projectCommand(id), error: checkError(err) };
+        }
+      })
+    );
+  },
   // The native file dialog for one tool; the renderer names only a table id (FR2.2, C1).
   'tools:pick': async (event, id) => {
     if (!TOOL_IDS.includes(id)) throw new Error(t('errors.unknownTool', { id: String(id) }));

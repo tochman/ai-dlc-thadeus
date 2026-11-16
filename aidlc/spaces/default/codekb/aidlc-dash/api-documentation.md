@@ -41,7 +41,7 @@ Every handler that takes a `projectId` looks it up in the `projects` map and thr
 | Setup (US-0503/0802) | `setup:info` → `getSetupInfo`, `setup:run` → `runSetup` | (projectId, `{harness}`) / (projectId, `{harness, mode, plugins, preset}`) | run only after a preview for the same harness |
 | App settings | `settings:get`, `settings:set` → `getSettings`, `setSettings` | partial object, sanitised | `settings:set` may rebuild the menu on a language change |
 | | `settings:pickDefaultFolder`, `settings:clearDefaultFolder` | | |
-| Tools (US-0405) | `tools:info`, `tools:pick`, `tools:save`, `tools:reset` → `getTools`, `pickTool`, `saveTool`, `resetTool` | tool id from `aidlc|claude|shell` | a path is validated before it is stored |
+| Tools (US-0405) | `tools:info`, `tools:pick`, `tools:save`, `tools:reset` → `getTools`, `pickTool`, `saveTool`, `resetTool` | tool id from `aidlc|claude|opencode|gh|shell` (`TOOL_IDS`) | a path is validated before it is stored |
 | App | `app:info` → `getAppInfo`, `app:openExternal` → `openExternal`, `app:openDocsUrl` → `openDocsUrl` | external links by fixed key (`repo`, `features`, `docs`) | |
 | i18n | `i18n:language` → `getLanguage` | () → `sv` or `en` | auto resolved |
 | Feature docs | `features:load` → `loadFeatures` | (projectId) → `loadFeatures()` result + `tags: {name, date}[]` | epics carry `file`, `parsed`, `hash`; the overview `overviewHash` (US-0603 FR2.3) |
@@ -116,6 +116,8 @@ All through `runFixed()` (`src/main/exec.js`): `execFile` without a shell, every
 | `git rev-parse`, `rev-list`, `diff`, `status --porcelain`, `show`, `fetch --quiet`, `ls-files` | `git.js`, `fileWrite.js` | 10 s, fetch 30 s |
 | `<harness cli> --version` | `harness.js`, `tools.js` | 10 s |
 | `gh release view|download --repo tochman/aidlc-dash …`, `hdiutil`, `ditto`, `xattr`, `osascript`, `pkexec dpkg -i` | `updater.js` | 20 s to 30 min |
+
+`aidlc` commands not used by the app yet, relevant to US-0504 (from `aidlc --help`, 2.11.3): `aidlc update --check` (refreshes release metadata, exit 5 when a newer release exists, 0 when current; `--json`, `--offline`), `aidlc update --dry-run` (gets and checks the release, prints the plan), `aidlc update [--version <v>] [--channel stable|preview]` (installs on the machine), `aidlc version --json` (binary and selected runtime), `aidlc config --dry-run` / `--pin <version>` / `--download` (project). `aidlc --version` prints `aidlc <v> (runtime <v>)`.
 
 The release side of that contract (`.github/workflows/release.yml`): each `vX.Y.Z` tag publishes `THADEUS-<v>-universal.dmg`, `thadeus_<v>_amd64.deb` and `SHA256SUMS.txt`; asset names come from `electron-builder.yml` `artifactName`.
 

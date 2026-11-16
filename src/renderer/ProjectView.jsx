@@ -83,6 +83,11 @@ function AidlcProject({ project, view, onView, focusIntent, storiesByIntent, onO
     onMeta?.(projectId, { intentCount: p.intents.length });
   }, [projectId, p.intents.length, onMeta]);
 
+  // Settings › Tools disables the AI-DLC updates for 5 minutes after an AI-DLC write (US-0504 FR4).
+  useEffect(() => {
+    onMeta?.(projectId, { lastIntentChangeAt: p.lastIntentChangeAt });
+  }, [projectId, p.lastIntentChangeAt, onMeta]);
+
   // Folding a view's panel in goes back to the intents view.
   const back = () => onView?.('intents');
   return (
@@ -250,6 +255,12 @@ function ProjectContent({
         () => terminalCommand.reply?.({ ok: true }),
         (err) => terminalCommand.reply?.({ ok: false, error: err.message, debug: err.debug })
       );
+      return;
+    }
+    // An AI-DLC update from Settings › Tools: typed into the shell tab for the person's Enter (US-0504 FR1.3, FR2.3).
+    if (terminalCommand.action === 'type') {
+      terminal.show('shell');
+      terminal.type('shell', terminalCommand.text, { submit: false });
       return;
     }
     if (terminalCommand.action === 'restart') terminal.restart(terminal.view.active);

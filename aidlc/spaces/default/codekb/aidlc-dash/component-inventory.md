@@ -43,7 +43,7 @@ One heading per component; the heading text is the component's name in the Scope
 
 ### Tools Registry
 - **Path**: `src/main/tools.js`
-- **Responsibility**: the three tools (`aidlc`, `claude`, `shell`): saved paths, PATH lookup, `--version` probes, validation before saving.
+- **Responsibility**: the five tools (`TOOL_IDS`: `aidlc`, `claude`, `opencode`, `gh`, `shell`): saved paths, `toolPath(name)` (saved path else the bare name), login-shell PATH lookup, `probeTool` (`--version`, first line, max 80 chars, never throws), validation before saving.
 - **Depends on**: Exec Runner.
 
 ### Harness Detection
@@ -62,7 +62,8 @@ One heading per component; the heading text is the component's name in the Scope
 
 ### Setup Helper
 - **Path**: `src/main/setup.js`
-- **Responsibility**: prerequisites and `--dry-run` preview for a harness; runs `git init`, `aidlc config --harness`, plugins and preset steps after a matching preview; one run per root at a time.
+- **Responsibility**: `getSetupInfo` (other harness folders, git, `aidlc --version`, `config --harness <id> --dry-run` preview via `parsePreview`, installed plugins); `runSetup` runs `git init`, `aidlc --project-dir <root> config --harness <id> --yes`, plugins and preset steps itself in main (US-0802) after a matching, conflict-free preview; one run per root at a time; 120 s per step.
+- **Depends on**: Exec Runner, Tools Registry, Git Reader, Project Access, Harness Table, Shared i18n.
 
 ### AI-DLC Config Reader
 - **Path**: `src/main/aidlcConfig.js`
@@ -87,7 +88,8 @@ One heading per component; the heading text is the component's name in the Scope
 
 ### Git Reader
 - **Path**: `src/main/git.js`
-- **Responsibility**: read-only git for Refresh: status split into `aidlc/` and other, fetch, remote changes under `aidlc/`, read a remote file from git objects, conflicts.
+- **Responsibility**: read-only git for Refresh: status split into `aidlc/` and other, fetch, remote changes under `aidlc/`, read a remote file from git objects, conflicts, `isGitRepo`, `listReleaseTags`; `safeArg` refuses values that look like options.
+- **Depends on**: Exec Runner, Project Access, Shared i18n.
 
 ### Updater
 - **Path**: `src/main/updater.js`
@@ -267,11 +269,13 @@ One heading per component; the heading text is the component's name in the Scope
 
 ### RefreshPanel
 - **Path**: `src/renderer/RefreshPanel.jsx`
-- **Responsibility**: git status, fetch, remote changes under `aidlc/`, pull/rebase choices typed into the shell tab, conflicts.
+- **Responsibility**: the sidebar "Uppdatera från GitHub" panel (opened by the left arm's Github block via `open`/`onToggle`): git status, fetch, remote changes under `aidlc/`, pull/rebase choices typed into the shell tab without Enter (`typeInShell`), conflicts. Holds the running-workflow gate: `working` = `terminal.anyBusy()` or an intents write within `WORKING_MS` (5 min, `useRecent`), which disables the actions and shows `github.wait`.
+- **Depends on**: TerminalContext, ArtifactReader, Preload Bridge.
 
 ### SetupAidlc
 - **Path**: `src/renderer/SetupAidlc.jsx`
-- **Responsibility**: set up AI-DLC or add a harness: prerequisites, harness choice, preview, advanced options, apply, switch offer.
+- **Responsibility**: set up AI-DLC (the "not an AI-DLC project" screen) or add a harness (Projektinställningar): prerequisites (aidlc version, git, other harnesses), harness choice, `Preview` of the dry-run counts and conflicts, advanced options, Apply through `runSetup`, switch offer. Apply is blocked by a missing preview, a conflict, or a harness changed since the preview.
+- **Depends on**: TerminalContext, Harness Table, Format Helpers, Preload Bridge.
 
 ### ProjectSettingsDialog
 - **Path**: `src/renderer/ProjectSettingsDialog.jsx`

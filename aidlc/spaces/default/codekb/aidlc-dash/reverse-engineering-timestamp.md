@@ -2,20 +2,38 @@
 
 ## Run Record
 
-- Date: 2026-11-15
-- Commit: 4867a368fac7b31bf46937a83fffd0a60f3dd8cb
-- Intent: manual-releases (`261115-manual-releases`, EPIC-06 US-0605)
+- Date: 2026-11-16
+- Commit: 60bf0d6302b26e02b0e6c9c4b7f2e30bac031506
+- Intent: framework-update (`261116-framework-update`, EPIC-05 US-0504)
 
-A focused scan of the release area merged into the store from `bc1dd3d` (intent `repo-public-ready`), which was STALE for this run. Deeply analyzed: the release and feature-docs parsers, the features loader and releases service, the preload bridge, `FeaturesView.jsx`, their two test files, and in `ipc.js` the `features:*` and `projectSettings:*` handlers and the feature-docs watch (the rest of `ipc.js` skimmed). Skimmed: `git.js` `listReleaseTags`, `settings.js`, `fileWrite.js`, `ProjectView.jsx`, the locales, the EPIC-06 docs and `docs/releases/`. Updated sections: business overview (EPIC-06 row, releases, active intent), architecture (data flow 7, "Releases: derived, not stored", two decisions, a release interaction diagram), API documentation (feature-docs and project-settings channels, files read), component inventory (IPC Router, Features Loader, Releases Service, Features Parser, Releases Parser, Preload Bridge, FeaturesView), code structure (classification, dependency graph), dependencies (cross-process row, release-area graph), code quality ("Brownfield notes for US-0605"), technology stack (version note). Everything else is the earlier runs' prose, kept as is; the earlier analyzed paths are demoted to `shallow.paths` below. Code was read only: no tests, builds or app runs. Left unopened: `node_modules/`, `out/`, `dist/`, `coverage/`, and AI-DLC's install and workspace.
+A focused scan of the framework-update area merged into the store from `4867a36` (intent `manual-releases`), which was STALE for this run. Deeply analyzed: `setup.js`, `tools.js`, `git.js`, `pty.js`, `RefreshPanel.jsx`, `SetupAidlc.jsx` and their three test files; the `aidlc` CLI was asked only `--version` and `--help`. Skimmed: the EPIC-05 story text and the imports `exec.js`, `projectAccess.js`, `harnesses.js`, `TerminalContext.jsx`. Updated sections: business overview (EPIC-05 row, active intent), architecture (data flow 8, a framework-update interaction diagram), API documentation (tool ids, `aidlc` update commands), component inventory (Tools Registry, Setup Helper, Git Reader, RefreshPanel, SetupAidlc), code structure (typed-not-run exception), technology stack (aidlc version), dependencies (US-0504 blast radius), code quality ("Brownfield notes for US-0504"). Everything else is the earlier runs' prose, kept as is; the earlier analyzed paths are demoted to `shallow.paths` below. Code was read only: no tests, builds or app runs. Left unopened: `node_modules/`, `out/`, `dist/`, `coverage/`, `tests/.tmp/`, and AI-DLC's install and workspace.
 
 ## Scope of Analysis
 
 ```yaml
 scope_version: 1
 kind: partial
-intent: manual-releases
-fingerprint: c88ba904494a1ba6226dd3394795a797acd1ae04
+intent: framework-update
+fingerprint: b914a9396aa8e6ddb76d6d65bb67672ae9a857b8
 analyzed:
+  paths:
+    - src/main/setup.js
+    - src/main/tools.js
+    - src/main/git.js
+    - src/main/pty.js
+    - src/renderer/RefreshPanel.jsx
+    - src/renderer/SetupAidlc.jsx
+    - tests/main/setup.test.js
+    - tests/main/tools.test.js
+    - tests/renderer/RefreshPanel.test.jsx
+  components:
+    - Setup Helper
+    - Tools Registry
+    - Git Reader
+    - PTY Manager
+    - RefreshPanel
+    - SetupAidlc
+shallow:
   paths:
     - src/main/parsers/releases.js
     - src/main/releases.js
@@ -26,16 +44,8 @@ analyzed:
     - src/main/parsers/features.js
     - tests/main/releases.test.js
     - tests/renderer/FeaturesView.test.jsx
-  components:
-    - Releases Parser
-    - Releases Service
-    - Features Loader
-    - Features Parser
-    - IPC Router
-    - Preload Bridge
-    - FeaturesView
-shallow:
-  paths:
+    - src/main/exec.js
+    - src/renderer/TerminalContext.jsx
     - package.json
     - package-lock.json
     - electron-builder.yml

@@ -8,7 +8,7 @@
 
 **Stories:** US-0501, US-0502, US-0503, US-0504, US-0505, US-0506, US-0507, US-0508, US-0509
 
-**Status (2026-11-15):** ✅ US-0501–US-0503, US-0505 and US-0506 released (v0.2.0–v0.2.5). 📋 US-0504 planned for v0.2.7, US-0507 for v0.2.8, US-0508 and US-0509 planned. Each story names its release.
+**Status (2026-11-16):** ✅ US-0501–US-0503, US-0505 and US-0506 released (v0.2.0–v0.2.5). ✅ US-0504 done, for v0.2.7. 📋 US-0507 planned for v0.2.8, US-0508 and US-0509 planned. Each story names its release.
 
 ---
 
@@ -90,17 +90,17 @@
     The section is collapsed by default, and **the defaults are AI-DLC's standard settings**: no extra plugins and no model preset (shipped defaults). If the person changes nothing, only `aidlc config --harness claude --yes` runs. Every chosen setting is added as its own command after setup, joined with `&&`, so the person sees the whole chain before pressing Enter.
 - **Dependencies:** US-0101, US-0107, US-0108
 
-**US-0504: Update the AI-DLC framework from the console** 📋 Planned, for v0.2.7
+**US-0504: Update the AI-DLC framework from the console** ✅ Done, for v0.2.7
 - As a **developer using AI-DLC**, in order to **keep the framework in my project current without remembering the CLI commands**, I would like to **see when a newer `aidlc` release or changed `.claude/` files are available, and get the update command typed into the terminal**.
 - **Epic:** EPIC-05
 - **Priority:** Medium
 - **Complexity:** Medium
 - **Background:** Split out of US-0502 in requirements analysis (Q4: A). Refreshing the work under `aidlc/` and updating the installation under `.claude/` are different things: the second changes the framework itself.
 - **Acceptance Criteria:**
-  - [ ] The app shows the installed `aidlc` version and whether a newer release is available, read with fixed arguments and no shell.
-  - [ ] The app shows which `.claude/` files an update would change, from a dry run, before anything happens.
-  - [ ] "Uppdatera ramverket" types `aidlc update` or `aidlc config` into the shell tab for the person to confirm with Enter. The app never writes `.claude/` files itself.
-  - [ ] Disabled while an AI-DLC workflow is running, as in US-0502.
+  - [x] The app shows the installed `aidlc` version and whether a newer release is available, read with fixed arguments and no shell.
+  - [x] The app shows which `.claude/` files an update would change, from a dry run, before anything happens.
+  - [x] "Uppdatera ramverket" types `aidlc update` or `aidlc config` into the shell tab for the person to confirm with Enter. The app never writes `.claude/` files itself.
+  - [x] Disabled while an AI-DLC workflow is running, as in US-0502.
 - **Dependencies:** US-0502, US-0503
 
 **US-0505: Get Claude's questions as a popup** ✅ Released in v0.2.1

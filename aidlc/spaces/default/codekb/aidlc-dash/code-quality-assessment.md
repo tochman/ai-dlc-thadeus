@@ -126,6 +126,23 @@ Ratings for the area: naming good, function size good (all release functions are
 
 Tests in the area: `tests/main/releases.test.js` (pure functions on lines shaped like the real epic and overview, plus `setStoryRelease`/`readRuleStatus` in a temp project, conflict and refusal cases); `tests/renderer/FeaturesView.test.jsx` "releases (US-0603)" (picker options and bridge call, refused and failed writes, release list order and dates, stale flags, continuous deployment hiding). No test covers several writes in a row.
 
+## Brownfield notes for US-0504 (framework-update area, at `60bf0d6`)
+
+Ratings for the area: naming good, function size good (`getSetupInfo` and `runSetup` short; `RefreshPanel` 282 lines), error handling good (`probeTool` and `getSetupInfo` never throw for a missing tool; git refuses option-like values), tests fair (see below). Facts the design must keep:
+
+| Fact | Where | Consequence for US-0504 |
+|---|---|---|
+| `aidlc --version` already read with fixed args through `toolPath('aidlc')` | `setup.js:74`, `tools.js:78` | reuse; output is `aidlc <v> (runtime <v>)` |
+| Nothing reads release availability; the CLI offers `aidlc update --check` (exit 5 = newer, 0 = current) | CLI help | `runFixed` appears to reject a non-zero exit (`setup.js:83` reads `err.stdout`), so exit 5 must be mapped to "newer"; `exec.js` not re-read |
+| `update --check` uses the network and refreshes machine release metadata | CLI help | run it only on the person's press, like `git fetch` (US-0502 Q3) |
+| The config dry run is parsed only for counts, `conflict:` lines and `Note:` lines | `setup.js:21-32` `parsePreview` | listing which `.claude/` files change needs a per-file reader; a real dry-run sample for an installed project is needed first |
+| Typing for the person's Enter is `terminal.type('shell', cmd, {submit: false})` | `RefreshPanel.jsx:138` | the AC's typed path; unlike `runSetup`, which runs `--yes` itself |
+| Running-workflow gate is renderer-only: `anyBusy()` or an intents write within 5 min, message `github.wait` | `RefreshPanel.jsx:8,96-98,216-220` | reuse; it is not exported, so share it or repeat it |
+| With several harnesses, `aidlc config` needs `--harness` | `setup.js:35-40`, `:108` | the typed `aidlc config` command must name the harness |
+| `aidlc update` changes the machine install; `aidlc config` changes the project | CLI help | the story names both; which one the button types (or both) is a requirements question |
+
+Tests in the area: `tests/main/setup.test.js` (11 cases: missing tool, dry-run counts and conflicts, harness choice, plugins fallback, `parsePreview`, `runSetup` order, failure, refusals, single run), `tests/main/tools.test.js` (3), `tests/renderer/RefreshPanel.test.jsx` (2: typed commands without Enter; disabled while busy or after a recent write). The renderer test's terminal double has no `anyBusy`, so only the fallback branch of `working` is covered.
+
 ## Brownfield notes for the next stages
 
 - **Test baseline**: the suite was not run in this stage; Code Generation should record a baseline (`npm test`) before changes.

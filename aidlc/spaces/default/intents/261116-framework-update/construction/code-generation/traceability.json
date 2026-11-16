@@ -1,0 +1,19 @@
+{
+  "stage": "code-generation",
+  "upstream_ids": ["FR1.1", "FR1.2", "FR1.3", "FR2.1", "FR2.2", "FR2.3", "FR3", "FR4", "FR5", "FR6", "NFR1", "NFR2", "NFR3"],
+  "coverage": [
+    { "id": "FR1.1", "status": "OK", "target": "src/main/aidlcUpdate.js" },
+    { "id": "FR1.2", "status": "OK", "target": "src/main/aidlcUpdate.js" },
+    { "id": "FR1.3", "status": "OK", "target": "src/renderer/AidlcUpdate.jsx" },
+    { "id": "FR2.1", "status": "OK", "target": "src/main/aidlcUpdate.js" },
+    { "id": "FR2.2", "status": "OK", "target": "src/renderer/AidlcUpdate.jsx" },
+    { "id": "FR2.3", "status": "OK", "target": "src/renderer/ProjectView.jsx" },
+    { "id": "FR3", "status": "OK", "target": "src/main/index.js" },
+    { "id": "FR4", "status": "OK", "target": "src/renderer/workflowBusy.js" },
+    { "id": "FR5", "status": "OK", "target": "src/renderer/AidlcUpdate.jsx" },
+    { "id": "FR6", "status": "OK", "target": "src/shared/locales/en.json" },
+    { "id": "NFR1", "status": "OK", "target": "src/main/aidlcUpdate.js" },
+    { "id": "NFR2", "status": "OK", "target": "src/main/ipc.js" },
+    { "id": "NFR3", "status": "OK", "target": "package.json" }
+  ]
+}

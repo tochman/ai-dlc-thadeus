@@ -417,6 +417,12 @@ export default function App() {
   function runTerminal(action) {
     if (active) setTerminalCommand((c) => ({ seq: (c?.seq ?? 0) + 1, action, projectId: active.projectId }));
   }
+  /** US-0504 FR1.3, FR2.3: Settings closes so the person sees the command in the active project's shell tab and presses Enter. */
+  function typeInActiveShell(text) {
+    if (!active || !text) return;
+    setSettingsView(false);
+    setTerminalCommand((c) => ({ seq: (c?.seq ?? 0) + 1, action: 'type', text, projectId: active.projectId }));
+  }
   /** The project's docs/README.md when it has one, else AI-DLC's web page (FR2.1 Hjälp, Q2). */
   async function openDocs() {
     if (active) {
@@ -663,6 +669,9 @@ export default function App() {
             onRemoveRecent={removeRecent}
             projects={tabs.map((tab) => ({ projectId: tab.projectId, name: tab.name }))}
             onProjectSettings={openProjectSettings}
+            activeProjectId={active?.projectId ?? null}
+            terminal={active ? { type: (_tab, text) => typeInActiveShell(text), anyBusy: () => activeMeta.busy === true } : null}
+            lastIntentChangeAt={activeMeta.lastIntentChangeAt ?? null}
           />
         )}
         {/* Every tab stays mounted so its terminals and watchers survive tab switches (FR8.4). */}

@@ -4,26 +4,14 @@ import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useTerminal } from './TerminalContext.jsx';
 import { FileContent } from './ArtifactReader.jsx';
+import { useWorkflowRunning } from './workflowBusy.js';
 
-const WORKING_MS = 5 * 60 * 1000;
 export const PULL = { rebase: 'git pull --rebase --autostash', merge: 'git pull --no-rebase --autostash' };
 export const FROM_MAIN = { rebase: 'git fetch && git rebase origin/main', merge: 'git fetch && git merge origin/main' };
 const CONFLICT_HELP_KEY = { 'intents.json': 'github.conflictIntents', 'aidlc-state.md': 'github.conflictState' };
 
 const errorText = (err) => String(err?.message ?? err).replace(/^Error invoking remote method '[^']+': (Error: )?/, '');
 const baseName = (rel) => rel.slice(rel.lastIndexOf('/') + 1);
-
-/** Re-renders when the 5-minute "AI-DLC skrev nyss" window ends, so the buttons come back by themselves. */
-function useRecent(at, windowMs) {
-  const [, tick] = useState(0);
-  useEffect(() => {
-    const left = at ? at + windowMs - Date.now() : 0;
-    if (left <= 0) return undefined;
-    const timer = setTimeout(() => tick((n) => n + 1), left);
-    return () => clearTimeout(timer);
-  }, [at, windowMs]);
-  return !!at && Date.now() - at < windowMs;
-}
 
 function Choice({ commands, disabled, onPick, testId }) {
   const { t } = useTranslation();
@@ -93,9 +81,7 @@ export default function RefreshPanel({ projectId, space, lastIntentChangeAt, ope
   const [choose, setChoose] = useState(null); // 'pull' | 'main' | null
   const [conflicts, setConflicts] = useState(null);
   const [remoteFile, setRemoteFile] = useState(null); // {rel, content?, error?}
-  const recentWrite = useRecent(lastIntentChangeAt, WORKING_MS);
-  // Any agent tab "Arbetar" counts (EPIC-08 US-0803); a test double without anyBusy falls back to the one tab.
-  const working = (terminal?.anyBusy ? terminal.anyBusy() : terminal?.state('agent') === 'busy') || recentWrite; // FR3.5
+  const working = useWorkflowRunning(terminal, lastIntentChangeAt); // FR3.5, the rule shared with US-0504 FR4
   const bridge = window.bridge;
 
   async function act(fn) {

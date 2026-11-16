@@ -1,0 +1,1 @@
+"US-0504: Update the AI-DLC framework from the console (docs/features/epic-05-workflow-control.md). Show the installed aidlc version and whether a newer release exists, show which .claude/ files an update would change from a dry run, and type the update command into the shell tab for the person to confirm."

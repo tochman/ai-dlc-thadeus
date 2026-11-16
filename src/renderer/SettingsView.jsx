@@ -6,6 +6,7 @@ import { Fragment, useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import i18n, { LANGUAGE_SETTINGS } from '../shared/i18n.js';
 import AuctumMark from './AuctumMark.jsx';
+import AidlcUpdate from './AidlcUpdate.jsx';
 
 /** The tabs in rail order (US-0410 FR1.1); main keeps the same list as SETTINGS_TABS. */
 export const SETTINGS_TABS = ['tools', 'appearance', 'notifications', 'project', 'about'];
@@ -164,7 +165,7 @@ function ToolCard({ row: r, error, onChoose, onReset }) {
 }
 
 /** Verktyg: the five tools with their path, where that path came from, and the version each reports (FR2.1). */
-function Tools({ settings, onReload, motion }) {
+function Tools({ settings, onReload, motion, activeProjectId = null, terminal = null, lastIntentChangeAt = null }) {
   const { t } = useTranslation();
   const [rows, setRows] = useState(() => TOOL_IDS.map((id) => emptyRow(id, null)));
   const [error, setError] = useState(null);
@@ -213,6 +214,8 @@ function Tools({ settings, onReload, motion }) {
           <ToolCard key={r.id} row={r} error={rowError[r.id]} onChoose={choose} onReset={reset} />
         ))}
       </div>
+      {/* US-0504: the AI-DLC program and the active project's AI-DLC files, under the tool cards. */}
+      <AidlcUpdate projectId={activeProjectId} terminal={terminal} lastIntentChangeAt={lastIntentChangeAt} />
       {/* FR2.5: running sessions are left alone. */}
       <p className="muted settings-help">{t('settings.tools.nextStart')}</p>
       {error && (
@@ -466,9 +469,11 @@ const PANELS = { tools: Tools, appearance: Appearance, notifications: Notificati
  *          questionAlerts?: 'popup-notify'|'popup'|'off', replyAlerts?: 'dialog-notify'|'line'|'off', notificationSound?: boolean,
  *          onAlertSettings: (partial: {questionAlerts?: string, replyAlerts?: string, notificationSound?: boolean}) => Promise<unknown>,
  *          recentProjects?: string[], onRemoveRecent?: (dir: string) => Promise<unknown>,
- *          projects?: Array<{projectId: string, name: string}>, onProjectSettings?: (projectId: string) => void}} props
+ *          projects?: Array<{projectId: string, name: string}>, onProjectSettings?: (projectId: string) => void,
+ *          activeProjectId?: string|null, terminal?: {type: Function, anyBusy: Function}|null, lastIntentChangeAt?: number|null}} props
  *   tab: the one panel shown (US-0410 FR1.2, default Tools); animations: the mode in effect, which also picks the
- *   panel's motion (FR3.2, FR3.3); fullscreen: the saved "Helskärm vid start" state; projects: the open tabs
+ *   panel's motion (FR3.2, FR3.3); fullscreen: the saved "Helskärm vid start" state; projects: the open tabs;
+ *   terminal: the active project's shell for the AI-DLC update commands (US-0504 FR1.3, FR2.3)
  */
 export default function SettingsView({ onClose, tab = 'tools', animations = 'full', ...rest }) {
   const { t } = useTranslation();

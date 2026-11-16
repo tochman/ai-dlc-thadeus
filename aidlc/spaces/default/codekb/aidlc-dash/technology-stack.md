@@ -61,7 +61,7 @@ All three run as separate steps in the `verify` job of `.github/workflows/releas
 
 ## External tools the app runs
 
-`aidlc` (AI-DLC CLI, 2.x flags assumed in `configTables.js`), `git`, `gh`, `claude` (Claude Code), `opencode`, the login shell (`$SHELL`, else `/bin/zsh` on macOS, `/bin/bash` elsewhere), and on update `hdiutil`, `ditto`, `xattr`, `osascript`, `pkexec`/`dpkg`. All but the shell and the agent CLIs run through `runFixed()` without a shell; see `api-documentation.md` section 5.
+`aidlc` (AI-DLC CLI, 2.x flags assumed in `configTables.js`; 2.11.3 on the development machine at `60bf0d6`), `git`, `gh`, `claude` (Claude Code), `opencode`, the login shell (`$SHELL`, else `/bin/zsh` on macOS, `/bin/bash` elsewhere), and on update `hdiutil`, `ditto`, `xattr`, `osascript`, `pkexec`/`dpkg`. All but the shell and the agent CLIs run through `runFixed()` without a shell; see `api-documentation.md` section 5.
 
 ## Platforms
 

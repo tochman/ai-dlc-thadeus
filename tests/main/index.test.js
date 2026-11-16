@@ -47,7 +47,14 @@ const m = vi.hoisted(() => {
       BrowserWindow: FakeWindow,
       shell: { openExternal: vi.fn() }
     },
-    ipc: { registerIpc: vi.fn(), shutdown: vi.fn(async () => {}), guardClose: vi.fn(), noteQuitting: vi.fn(), startUpdateCheck: vi.fn() },
+    ipc: {
+      registerIpc: vi.fn(),
+      shutdown: vi.fn(async () => {}),
+      guardClose: vi.fn(),
+      noteQuitting: vi.fn(),
+      startUpdateCheck: vi.fn(),
+      startAidlcCheck: vi.fn()
+    },
     menu: { applyMenu: vi.fn() },
     settings: { getSettings: vi.fn(async () => ({ toolPaths: { aidlc: '/a' } })), setSettings: vi.fn(async () => {}) },
     tools: { setToolPaths: vi.fn() },
@@ -138,8 +145,10 @@ describe('start-up (src/main/index.js)', () => {
   });
 
   it('starts the update check when the page has loaded', () => {
+    expect(m.ipc.startAidlcCheck).not.toHaveBeenCalled(); // after the window has loaded, never before (US-0504 NFR2)
     m.wins[0].webContents.handlers['did-finish-load']();
     expect(m.ipc.startUpdateCheck).toHaveBeenCalledWith(m.wins[0]);
+    expect(m.ipc.startAidlcCheck).toHaveBeenCalled(); // US-0504 FR3
   });
 
   it('opens a new window on activate only when none is open', async () => {
