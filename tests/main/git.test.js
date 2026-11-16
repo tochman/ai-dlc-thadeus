@@ -1,7 +1,19 @@
-import { describe, expect, it, vi } from 'vitest';
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
+import { execFileSync } from 'node:child_process';
+import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { openRoot } from '../../src/main/projectAccess.js';
-import { getGitStatus, getRemoteChanges, listReleaseTags, showRemoteFile } from '../../src/main/git.js';
+import {
+  behindCount,
+  changedFiles,
+  getGitStatus,
+  getRemoteChanges,
+  listReleaseTags,
+  originUrl,
+  predictConflicts,
+  remoteStoryBranches,
+  showRemoteFile
+} from '../../src/main/git.js';
 
 const PROJECT = path.resolve(__dirname, '../fixtures/project');
 
@@ -122,5 +134,67 @@ describe('listReleaseTags (US-0603 NFR2)', () => {
     vi.spyOn(console, 'info').mockImplementation(() => {});
     expect(await listReleaseTags('/repo', { exec: fakeExec({}).exec })).toEqual([]);
     expect(await listReleaseTags('/repo', { exec: fakeExec({ [ARGS]: '' }).exec })).toEqual([]);
+  });
+});
+
+// US-1201 AC-2, AC-3: real repositories in tests/.tmp: a bare "origin" and two clones. Clone A works on the story branch
+// feat/US-0001; clone B moves main on, touching the same line, so the story branch is behind and would conflict.
+describe('collisions against real repositories (US-1201 AC-2, AC-3)', () => {
+  const TMP = path.resolve(__dirname, '../.tmp/git-collisions');
+  const ORIGIN = path.join(TMP, 'origin.git');
+  const A = path.join(TMP, 'a');
+  const B = path.join(TMP, 'b');
+  const env = { ...process.env, GIT_AUTHOR_NAME: 'T', GIT_AUTHOR_EMAIL: 't@example.com', GIT_COMMITTER_NAME: 'T', GIT_COMMITTER_EMAIL: 't@example.com' };
+  const run = (cwd, ...args) => execFileSync('git', ['-c', 'commit.gpgsign=false', '-c', 'init.defaultBranch=main', ...args], { cwd, env, encoding: 'utf8' });
+  const commit = (cwd, file, text, message) => {
+    writeFileSync(path.join(cwd, file), text);
+    run(cwd, 'add', file);
+    run(cwd, 'commit', '-q', '-m', message);
+  };
+
+  beforeAll(() => {
+    rmSync(TMP, { recursive: true, force: true });
+    mkdirSync(TMP, { recursive: true });
+    run(TMP, 'init', '-q', '--bare', ORIGIN);
+    run(TMP, 'clone', '-q', ORIGIN, A);
+    commit(A, 'shared.txt', 'one\n', 'start');
+    commit(A, 'other.txt', 'x\n', 'other');
+    run(A, 'push', '-q', 'origin', 'main');
+    run(A, 'checkout', '-q', '-b', 'feat/US-0001');
+    commit(A, 'shared.txt', 'one from the story\n', 'story');
+    commit(A, 'story.txt', 'new\n', 'story file');
+    run(A, 'push', '-q', 'origin', 'feat/US-0001');
+    run(TMP, 'clone', '-q', ORIGIN, B);
+    commit(B, 'shared.txt', 'one from main\n', 'main moves on');
+    run(B, 'push', '-q', 'origin', 'main');
+    run(A, 'fetch', '-q');
+    run(TMP, 'init', '-q', path.join(TMP, 'no-remote'));
+  });
+  afterAll(() => rmSync(TMP, { recursive: true, force: true }));
+
+  it('counts the commits the story branch is behind origin/main, and gives null without origin/main', async () => {
+    expect(await behindCount(A)).toBe(1);
+    expect(await behindCount(B)).toBe(0);
+    expect(await behindCount(A, 'origin/nope')).toBeNull();
+  });
+
+  it('lists the files a branch changes against origin/main', async () => {
+    expect(await changedFiles(A)).toEqual(['shared.txt', 'story.txt']);
+    expect(await changedFiles(A, 'origin/feat/US-0001')).toEqual(['shared.txt', 'story.txt']);
+    await expect(changedFiles(A, '--output=/tmp/x')).rejects.toThrow(/Ogiltigt/);
+  });
+
+  it('predicts the conflicting files with git merge-tree and leaves the working tree, index and HEAD as they were', async () => {
+    const before = [run(A, 'rev-parse', 'HEAD'), run(A, 'status', '--porcelain'), run(A, 'stash', 'list')];
+    expect(await predictConflicts(A, 'HEAD', 'origin/main')).toEqual(['shared.txt']);
+    expect(await predictConflicts(B, 'HEAD', 'origin/main')).toEqual([]);
+    expect([run(A, 'rev-parse', 'HEAD'), run(A, 'status', '--porcelain'), run(A, 'stash', 'list')]).toEqual(before);
+    await expect(predictConflicts(A, 'HEAD', 'origin/missing')).rejects.toThrow();
+  });
+
+  it("lists origin's story branches with commits that are not in main, and the origin address", async () => {
+    expect(await remoteStoryBranches(A)).toEqual([{ branch: 'origin/feat/US-0001', story: 'US-0001', ahead: 2 }]);
+    expect(await originUrl(A)).toBe(ORIGIN);
+    expect(await originUrl(path.join(TMP, 'no-remote'))).toBeNull();
   });
 });

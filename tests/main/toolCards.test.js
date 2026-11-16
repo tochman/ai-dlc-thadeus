@@ -41,11 +41,11 @@ afterEach(async () => {
 });
 
 describe('getTools with opencode and gh (US-0410 FR4.1–FR4.3)', () => {
-  it('returns five rows in rail order, finds opencode on PATH, and reports a missing gh as not found', async () => {
+  it('returns six rows in rail order (glab since US-1201 AC-1), finds opencode on PATH, and reports a missing gh as not found', async () => {
     const opencode = await makeTool('opencode');
     const rows = await tools.getTools({ exec: fakeExec({ [opencode]: '0.15.2\n' }) });
 
-    expect(rows.map((r) => r.id)).toEqual(['aidlc', 'claude', 'opencode', 'gh', 'shell']);
+    expect(rows.map((r) => r.id)).toEqual(['aidlc', 'claude', 'opencode', 'gh', 'glab', 'shell']);
     const byId = Object.fromEntries(rows.map((r) => [r.id, r]));
     expect(byId.opencode).toEqual({ id: 'opencode', path: opencode, source: 'auto', found: true, version: '0.15.2' });
     expect(byId.gh).toMatchObject({ path: null, source: 'auto', found: false, version: null });

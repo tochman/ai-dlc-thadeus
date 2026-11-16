@@ -15,7 +15,7 @@ const ANIMATION_IDS = ['full', 'reduced', 'off'];
 const ALERT_IDS = ['popup-notify', 'popup', 'off'];
 const REPLY_IDS = ['dialog-notify', 'line', 'off']; // US-0506 u5 D1, M9
 const SOUND_IDS = ['on', 'off'];
-const TOOL_IDS = ['aidlc', 'claude', 'opencode', 'gh', 'shell']; // US-0410 FR4.1, as main's TOOL_IDS
+const TOOL_IDS = ['aidlc', 'claude', 'opencode', 'gh', 'glab', 'shell']; // US-0410 FR4.1, as main's TOOL_IDS (glab: US-1201)
 const errorText = (err) => String(err?.message ?? err).replace(/^Error invoking remote method '[^']+': (Error: )?/, '');
 
 /** One tool row before any check has answered: the saved path, or nothing yet (NFR4). */
@@ -164,6 +164,86 @@ function ToolCard({ row: r, error, onChoose, onReset }) {
   );
 }
 
+/**
+ * US-1201 AC-1: the Bitbucket username and app password as an LCARS card. They go to main, which keeps them encrypted
+ * in the keychain; the view only learns whether they are set, and the password field is emptied after every save.
+ */
+function BitbucketCard() {
+  const { t } = useTranslation();
+  const [set, setSet] = useState(null);
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    let live = true;
+    window.bridge.bitbucket?.status().then(
+      (s) => live && setSet(s.set),
+      (err) => live && setError(errorText(err))
+    );
+    return () => {
+      live = false;
+    };
+  }, []);
+
+  async function run(action) {
+    setError(null);
+    try {
+      setSet((await action()).set);
+      setUsername('');
+    } catch (err) {
+      setError(errorText(err));
+    } finally {
+      setPassword(''); // never kept in the view, saved or not
+    }
+  }
+
+  return (
+    <div className="lcars-card settings-tool" data-testid="settings-bitbucket">
+      <div className="lcars-card-head">
+        <h3 className="settings-tool-name">{t('settings.tools.bitbucket.title')}</h3>
+      </div>
+      <div className="lcars-card-body">
+        <p className="muted settings-help">{t('settings.tools.bitbucket.help')}</p>
+        <label className="field">
+          <span className="field-label">{t('settings.tools.bitbucket.username')}</span>
+          <input type="text" autoComplete="off" value={username} onChange={(e) => setUsername(e.target.value)} data-testid="settings-bitbucket-username" />
+        </label>
+        <label className="field">
+          <span className="field-label">{t('settings.tools.bitbucket.appPassword')}</span>
+          <input type="password" autoComplete="off" value={password} onChange={(e) => setPassword(e.target.value)} data-testid="settings-bitbucket-password" />
+        </label>
+        {error && (
+          <p className="refresh-error settings-tool-error" role="alert">
+            {error}
+          </p>
+        )}
+      </div>
+      <div className="lcars-card-foot">
+        <span className="settings-tool-source" data-testid="settings-bitbucket-status">
+          {set === null ? t('settings.tools.checking') : set ? t('settings.tools.bitbucket.set') : t('settings.tools.bitbucket.notSet')}
+        </span>
+        <span className="settings-tool-actions">
+          <button
+            type="button"
+            className="btn"
+            disabled={!username || !password}
+            onClick={() => run(() => window.bridge.bitbucket.save(username, password))}
+            data-testid="settings-bitbucket-save"
+          >
+            {t('settings.tools.bitbucket.save')}
+          </button>
+          {set && (
+            <button type="button" className="btn btn-quiet" onClick={() => run(() => window.bridge.bitbucket.clear())} data-testid="settings-bitbucket-clear">
+              {t('settings.tools.bitbucket.clear')}
+            </button>
+          )}
+        </span>
+      </div>
+    </div>
+  );
+}
+
 /** Verktyg: the five tools with their path, where that path came from, and the version each reports (FR2.1). */
 function Tools({ settings, onReload, motion, activeProjectId = null, terminal = null, lastIntentChangeAt = null }) {
   const { t } = useTranslation();
@@ -213,6 +293,7 @@ function Tools({ settings, onReload, motion, activeProjectId = null, terminal = 
         {rows.map((r) => (
           <ToolCard key={r.id} row={r} error={rowError[r.id]} onChoose={choose} onReset={reset} />
         ))}
+        <BitbucketCard />
       </div>
       {/* US-0504: the AI-DLC program and the active project's AI-DLC files, under the tool cards. */}
       <AidlcUpdate projectId={activeProjectId} terminal={terminal} lastIntentChangeAt={lastIntentChangeAt} />

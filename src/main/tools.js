@@ -6,8 +6,8 @@ import path from 'node:path';
 import { loginPath, runFixed } from './exec.js';
 import { t } from '../shared/i18n.js';
 
-// opencode for its agent tabs, gh for the updater (US-0410 FR4.1, FR4.2).
-export const TOOL_IDS = ['aidlc', 'claude', 'opencode', 'gh', 'shell'];
+// opencode for its agent tabs, gh for the updater (US-0410 FR4.1, FR4.2), glab for GitLab merge requests (US-1201 AC-1).
+export const TOOL_IDS = ['aidlc', 'claude', 'opencode', 'gh', 'glab', 'shell'];
 const VERSION_MAX = 80;
 
 // The saved absolute paths per tool id, applied from settings on every read and write (FR2.4, FR7.1).

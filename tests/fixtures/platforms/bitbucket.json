@@ -1,0 +1,41 @@
+{
+  "repositories/team/dash/pullrequests?state=OPEN&pagelen=50": {
+    "pagelen": 50,
+    "values": [
+      {
+        "id": 7,
+        "title": "US-0209 cost on every machine",
+        "state": "OPEN",
+        "author": { "display_name": "Thomas Ochman" },
+        "source": { "branch": { "name": "feat/US-0209" } },
+        "destination": { "branch": { "name": "main" } },
+        "links": { "html": { "href": "https://bitbucket.org/team/dash/pull-requests/7" } }
+      }
+    ]
+  },
+  "repositories/team/dash/pullrequests/7/diffstat?pagelen=100": {
+    "values": [
+      { "status": "modified", "old": { "path": "src/main/git.js" }, "new": { "path": "src/main/git.js" } },
+      { "status": "modified", "old": { "path": "aidlc/spaces/default/intents/intents.json" }, "new": { "path": "aidlc/spaces/default/intents/intents.json" } }
+    ]
+  },
+  "repositories/team/dash/pullrequests/7/comments?pagelen=100": {
+    "values": [
+      {
+        "id": 1,
+        "user": { "display_name": "Anna" },
+        "content": { "raw": "Looks good, one question on the snapshot." },
+        "created_on": "2026-11-15T11:00:00+00:00",
+        "deleted": false,
+        "links": { "html": { "href": "https://bitbucket.org/team/dash/pull-requests/7/_/diff#comment-1" } }
+      }
+    ]
+  },
+  "repositories/team/dash/pullrequests/7": {
+    "id": 7,
+    "participants": [
+      { "user": { "display_name": "Anna" }, "role": "REVIEWER", "approved": true, "state": "approved", "participated_on": "2026-11-15T12:00:00+00:00" },
+      { "user": { "display_name": "Thomas Ochman" }, "role": "PARTICIPANT", "approved": false, "state": null, "participated_on": null }
+    ]
+  }
+}

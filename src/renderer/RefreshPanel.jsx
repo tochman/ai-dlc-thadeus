@@ -1,10 +1,12 @@
 // "Uppdatera från GitHub" in the sidebar (US-0502, FR3). The app only reads from git; every command that
 // changes the working tree is typed into the shell tab without Enter, for the person to run (NFR1).
+// US-1201 AC-5: named after the platform of origin ("Uppdatera från GitLab"), and it holds the collision warning (AC-2).
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useTerminal } from './TerminalContext.jsx';
 import { FileContent } from './ArtifactReader.jsx';
 import { useWorkflowRunning } from './workflowBusy.js';
+import CollisionPanel from './CollisionPanel.jsx';
 
 export const PULL = { rebase: 'git pull --rebase --autostash', merge: 'git pull --no-rebase --autostash' };
 export const FROM_MAIN = { rebase: 'git fetch && git rebase origin/main', merge: 'git fetch && git merge origin/main' };
@@ -63,11 +65,32 @@ function StatusLine({ status, working }) {
   );
 }
 
+/** US-1201 AC-1, AC-5: origin's platform ({name, …}), null for plain git, undefined while it is read. */
+function usePlatform(projectId) {
+  const [platform, setPlatform] = useState(undefined);
+  useEffect(() => {
+    let live = true;
+    Promise.resolve(window.bridge.getPlatform?.(projectId) ?? null).then(
+      (p) => live && setPlatform(p ?? null),
+      (err) => {
+        console.warn('The platform of origin could not be read:', errorText(err)); // the panel is named after git
+        if (live) setPlatform(null);
+      }
+    );
+    return () => {
+      live = false;
+    };
+  }, [projectId]);
+  return platform;
+}
+
 /**
- * @param {{projectId: string, space: string, lastIntentChangeAt: number|null, open?: boolean, onToggle?: () => void}} props
- *   open/onToggle let the left arm's "Github" block drive the panel (FR2.2); without them it keeps its own state
+ * @param {{projectId: string, space: string, lastIntentChangeAt: number|null, open?: boolean, onToggle?: () => void,
+ *   activeDirName?: string|null}} props
+ *   open/onToggle let the left arm's "Github" block drive the panel (FR2.2); without them it keeps its own state;
+ *   activeDirName is the intent the merge note goes into (US-1201 AC-2)
  */
-export default function RefreshPanel({ projectId, space, lastIntentChangeAt, open: openProp, onToggle }) {
+export default function RefreshPanel({ projectId, space, lastIntentChangeAt, open: openProp, onToggle, activeDirName = null }) {
   const { t } = useTranslation();
   const terminal = useTerminal();
   const [ownOpen, setOwnOpen] = useState(false);
@@ -82,6 +105,8 @@ export default function RefreshPanel({ projectId, space, lastIntentChangeAt, ope
   const [conflicts, setConflicts] = useState(null);
   const [remoteFile, setRemoteFile] = useState(null); // {rel, content?, error?}
   const working = useWorkflowRunning(terminal, lastIntentChangeAt); // FR3.5, the rule shared with US-0504 FR4
+  const platform = usePlatform(projectId);
+  const [refreshKey, setRefreshKey] = useState(0); // the collision warning reads again after each fetch (US-1201 AC-2)
   const bridge = window.bridge;
 
   async function act(fn) {
@@ -110,6 +135,7 @@ export default function RefreshPanel({ projectId, space, lastIntentChangeAt, ope
       const s = await bridge.getGitStatus(projectId);
       setStatus(s);
       setChanges(s.upstream ? await bridge.getRemoteChanges(projectId, s.upstream, space) : null);
+      setRefreshKey((k) => k + 1);
     });
 
   async function openRemote(rel) {
@@ -127,7 +153,7 @@ export default function RefreshPanel({ projectId, space, lastIntentChangeAt, ope
   return (
     <section className="refresh-panel" data-testid="refresh-panel">
       <button className="cost-panel-toggle lcars-heading" onClick={toggle} aria-expanded={open} data-testid="refresh-panel-toggle">
-        <span className="section-title">{t('github.title')}</span>
+        <span className="section-title">{platform ? t('github.titleOn', { platform: platform.name }) : t('github.titleGit')}</span>
         <span className="lcars-heading-line" aria-hidden="true" />
         {badge && <span className="tag tag-active">{t('github.newCount', { n: changes.aidlcCommits })}</span>}
         <span className="lcars-heading-meta">{t('github.meta')}</span>
@@ -168,7 +194,8 @@ export default function RefreshPanel({ projectId, space, lastIntentChangeAt, ope
                     <ul className="refresh-list">
                       {changes.newIntents.map((i) => (
                         <li key={i.dirName}>
-                          {i.slug ?? i.dirName} <span className="tag tag-live">{t('github.onGithub')}</span>
+                          {i.slug ?? i.dirName}{' '}
+                          <span className="tag tag-live">{platform ? t('github.onPlatform', { platform: platform.name }) : t('github.onRemote')}</span>
                         </li>
                       ))}
                     </ul>
@@ -197,6 +224,7 @@ export default function RefreshPanel({ projectId, space, lastIntentChangeAt, ope
                   )}
                 </div>
               )}
+              <CollisionPanel projectId={projectId} space={space} activeDirName={activeDirName} refreshKey={refreshKey} />
               {status.upstream && (
                 <div className="refresh-actions">
                   {working && (

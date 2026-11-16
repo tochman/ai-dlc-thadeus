@@ -1,0 +1,12 @@
+{
+  "stage": "code-generation",
+  "upstream_ids": ["AC-1", "AC-2", "AC-3", "AC-4", "AC-5", "AC-6"],
+  "coverage": [
+    { "id": "AC-1", "status": "OK", "target": "src/main/platforms/index.js" },
+    { "id": "AC-2", "status": "OK", "target": "src/renderer/CollisionPanel.jsx" },
+    { "id": "AC-3", "status": "OK", "target": "src/main/teamActivity.js" },
+    { "id": "AC-4", "status": "OK", "target": "src/renderer/StoryComments.jsx" },
+    { "id": "AC-5", "status": "OK", "target": "src/renderer/RefreshPanel.jsx" },
+    { "id": "AC-6", "status": "OK", "target": "tests/main/i18nKeys.test.js" }
+  ]
+}

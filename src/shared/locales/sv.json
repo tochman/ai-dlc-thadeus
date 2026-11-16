@@ -129,6 +129,7 @@
       "timeline": "Tidslinje",
       "units": "Units",
       "cost": "Kostnad",
+      "comments": "Kommentarer",
       "files": "Filer"
     },
     "tabsLabel": "Intent-vyer",
@@ -273,7 +274,6 @@
     }
   },
   "github": {
-    "title": "GitHub",
     "meta": "Gren · fjärr",
     "newCount": "{n} nya",
     "badge": "{n} nya ändringar i AI-DLC på {ref}",
@@ -301,14 +301,88 @@
     "noUpstream": "Ingen fjärr att jämföra med: grenen har ingen upstream och origin/main finns inte.",
     "nothingNew": "Inget nytt i AI-DLC på {ref}.",
     "otherFiles": "{n} ändrade filer utanför aidlc/ kommer också in.",
-    "onGithub": "på GitHub",
     "auditLines": "{n} nya rader i audit-loggarna.",
     "readOnlyFile": "{ref}:{rel} (skrivskyddad)",
     "pull": "Hämta in",
     "fromMain": "Uppdatera från main",
     "showConflicts": "Visa konflikter",
     "noConflicts": "Inga konflikter.",
-    "abortHelp": "Appen löser inga konflikter själv. Vill du avbryta, skriv kommandot i shell-fliken:"
+    "abortHelp": "Appen löser inga konflikter själv. Vill du avbryta, skriv kommandot i shell-fliken:",
+    "titleOn": "Uppdatera från {platform}",
+    "titleGit": "Uppdatera från git",
+    "onPlatform": "på {platform}",
+    "onRemote": "på fjärren"
+  },
+  "team": {
+    "sections": {
+      "refresh": "Uppdatera",
+      "machines": "Datorer"
+    },
+    "errors": {
+      "cli-missing": "{platform} kan inte läsas: {cli} finns inte. Installera {cli}, eller välj var den ligger i Inställningar › Verktyg.",
+      "not-logged-in": "{platform} kan inte läsas: du är inte inloggad. Kör {cli} auth login i shell-fliken.",
+      "bad-credentials": "Bitbucket nekade användarnamnet eller app-lösenordet. Ändra dem i Inställningar › Verktyg.",
+      "no-credentials": "Bitbucket kan inte läsas utan användarnamn och app-lösenord. Lägg in dem i Inställningar › Verktyg.",
+      "timeout": "{platform} svarade inte inom 15 sekunder. Försök igen om en stund.",
+      "failed": "{platform} kunde inte läsas: {error}",
+      "unknown-platform": "origin ligger inte på GitHub, GitLab eller Bitbucket, så det finns inga pull requests att läsa.",
+      "noKeychain": "Datorns nyckelring kan inte kryptera, så app-lösenordet sparas inte.",
+      "invalidCredential": "Användarnamn och app-lösenord måste vara ifyllda, på en rad och högst {max} tecken.",
+      "noTestResults": "Intenten har ingen {rel} ännu. Kör Build and Test först."
+    },
+    "collision": {
+      "title": "Krockvarning",
+      "behind": "Grenen ligger {n} commits efter {base}. Merga in main och kör testerna igen innan du godkänner.",
+      "upToDate": "Grenen är i fas med {base}.",
+      "noBase": "{base} finns inte här ännu. Tryck på Uppdatera för att hämta den.",
+      "shared": "Pull request #{number} {title} ändrar samma filer:",
+      "conflicts": "Skulle krocka vid en merge:",
+      "clean": "Inga krockar vid en merge.",
+      "unknownConflicts": "Krockarna går inte att räkna ut förrän grenen är hämtad. Tryck på Uppdatera.",
+      "noOverlap": "Ingen annan öppen pull request ändrar samma filer.",
+      "mergeNote": "Skriv ner vad mergen visade",
+      "mergeNoteHelp": "Öppnar intentens test-results.md i editorn med ett avsnitt \"Efter merge med main\" att fylla i. Inget sparas förrän du sparar.",
+      "mergeTemplate": "\n## Efter merge med main\n\n- **Vad var fel:** \n- **Orsak:** \n- **Åtgärd (commit):** \n- **Nya resultat:** \n- **Lärdom:** \n"
+    },
+    "machines": {
+      "title": "Datorer",
+      "meta": "Vem gör vad",
+      "intro": "Vilka datorer som arbetat på varje intent, från audit-shardarna, och storygrenar på origin med commits som inte finns i main.",
+      "intent": "Intent",
+      "host": "Dator",
+      "clone": "Klon",
+      "lastStage": "Senaste steg",
+      "lastAt": "När",
+      "none": "Inga intents har audit-shards ännu.",
+      "branches": "Storygrenar på origin",
+      "branchAhead": "{n} commits som inte finns i main",
+      "noBranches": "Inga storygrenar på origin med commits utanför main.",
+      "collision": "Möjlig krock",
+      "onMachines": "{story} pågår på {n} datorer: {where}",
+      "onBranches": "{story} finns på {n} grenar: {where}",
+      "loadFailed": "Datorerna kunde inte läsas: {error}"
+    },
+    "comments": {
+      "source": {
+        "pull": "Pull request",
+        "review": "Granskning",
+        "question": "Öppen fråga",
+        "approval": "Godkännande",
+        "finding": "Granskningsfynd"
+      },
+      "reviewState": {
+        "approved": "Godkände",
+        "changes": "Bad om ändringar",
+        "commented": "Kommenterade"
+      },
+      "pull": "Pull request #{number}: {title}",
+      "noPull": "Ingen öppen pull request har storynumret i grenen eller titeln. Raderna nedan är AI-DLC:s.",
+      "approvedStage": "Godkände {stage}",
+      "verdict": "{stage}: {verdict}",
+      "empty": "Inga kommentarer, frågor eller godkännanden för intenten ännu.",
+      "loading": "Läser…",
+      "loadFailed": "Kommentarerna kunde inte läsas: {error}"
+    }
   },
   "terminal": {
     "label": "Terminal",
@@ -565,13 +639,25 @@
       "claude": "Claude Code CLI",
       "opencode": "opencode CLI",
       "gh": "GitHub CLI (gh)",
+      "glab": "GitLab CLI (glab)",
       "shell": "Skal",
       "neededFor": {
         "aidlc": "Behövs för AI-DLC-vyerna och för att köra AI-DLC-kommandon.",
         "claude": "Behövs för agentflikarna med Claude Code.",
         "opencode": "Behövs för agentflikarna med opencode.",
         "gh": "Används för GitHub-funktionerna, och som reserv när appens uppdateringar inte kan läsas direkt från GitHub.",
+        "glab": "Behövs för att läsa merge requests, granskningar och kommentarer från GitLab.",
         "shell": "Behövs för terminalflikarna."
+      },
+      "bitbucket": {
+        "title": "Bitbucket",
+        "help": "Bitbucket läses med ditt användarnamn och ett app-lösenord med läsrätt till pull requests. De sparas krypterat i datorns nyckelring i appens egen mapp, aldrig i projektet, och lösenordet visas inte igen.",
+        "username": "Användarnamn",
+        "appPassword": "App-lösenord",
+        "save": "Spara",
+        "clear": "Ta bort",
+        "set": "Sparat i nyckelringen",
+        "notSet": "Inte sparat"
       },
       "pathLabel": "Sökväg",
       "versionLabel": "Version",

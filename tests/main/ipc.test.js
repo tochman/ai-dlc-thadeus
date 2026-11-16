@@ -110,10 +110,29 @@ const m = vi.hoisted(() => {
       parseMenuState: vi.fn((raw) => (raw && typeof raw === 'object' ? raw : null)),
       setMenuState: vi.fn(),
       currentLanguage: vi.fn(() => 'sv'),
-      setLanguageFromSettings: vi.fn(() => 'sv')
+      setLanguageFromSettings: vi.fn(() => 'sv'),
+      // US-1201: git's new read-only calls, the platforms, the Bitbucket credentials and the shard reads.
+      originUrl: vi.fn(async () => 'git@github.com:tochman/aidlc-dash.git'),
+      behindCount: vi.fn(async () => 3),
+      changedFiles: vi.fn(async () => ['src/a.js']),
+      predictConflicts: vi.fn(async () => ['src/a.js']),
+      remoteStoryBranches: vi.fn(async () => [{ branch: 'origin/feat/US-0209', story: 'US-0209', ahead: 2 }]),
+      listPulls: vi.fn(async () => [
+        { number: 58, title: 'feat(US-0209): cost', branch: 'feat/US-0209', author: 'a', url: 'u58', files: ['src/a.js'] },
+        { number: 59, title: 'US-1201', branch: 'feat/US-1201', author: 'b', url: 'u59', files: ['src/a.js', 'src/b.js'] }
+      ]),
+      listComments: vi.fn(async () => [{ author: 'anna', body: 'Nice', time: '2026-11-16T10:00:00Z', url: null }]),
+      listReviews: vi.fn(async () => []),
+      saveBitbucket: vi.fn(async () => {}),
+      clearBitbucket: vi.fn(async () => {}),
+      hasBitbucket: vi.fn(async () => true),
+      loadBitbucket: vi.fn(async () => ({ username: 'u', appPassword: 'p' })),
+      loadMachines: vi.fn(async (_root, _space, intents) => intents.map((i) => ({ ...i, machines: [{ host: 'mac', cloneId: 'a' }] }))),
+      loadOpenQuestions: vi.fn(async () => [{ text: 'Q2. Open?', file: 'q.md', time: null }])
     }
   };
 });
+const platformError = (code) => Object.assign(new Error(`GitHub: ${code}`), { name: 'PlatformError', code, platform: 'GitHub' });
 
 vi.mock('electron', () => m.electron);
 vi.mock('node-pty', () => ({ spawn: vi.fn() }));
@@ -129,7 +148,23 @@ vi.mock('../../src/main/projectService.js', () => ({
   loadIntentList: m.svc.loadIntentList,
   loadCrossMachineCost: m.svc.loadCrossMachineCost,
   loadPendingQuestions: m.svc.loadPendingQuestions,
-  loadWorkingAgents: m.svc.loadWorkingAgents
+  loadWorkingAgents: m.svc.loadWorkingAgents,
+  assertName: (name, what) => {
+    if (typeof name !== 'string' || !/^[^/\\]+$/.test(name) || name.startsWith('.')) throw new Error(`Ogiltigt ${what}: ${name}`);
+  },
+  inProgress: (i) => i.status !== 'complete'
+}));
+vi.mock('../../src/main/platforms/index.js', () => ({ listPulls: m.svc.listPulls, listComments: m.svc.listComments, listReviews: m.svc.listReviews }));
+vi.mock('../../src/main/credentials.js', () => ({
+  saveBitbucket: m.svc.saveBitbucket,
+  clearBitbucket: m.svc.clearBitbucket,
+  hasBitbucket: m.svc.hasBitbucket,
+  loadBitbucket: m.svc.loadBitbucket
+}));
+vi.mock('../../src/main/teamActivity.js', async (importOriginal) => ({
+  ...(await importOriginal()),
+  loadMachines: m.svc.loadMachines,
+  loadOpenQuestions: m.svc.loadOpenQuestions
 }));
 vi.mock('../../src/main/usageSnapshot.js', () => ({ USAGE_DIR: '.thadeus/usage', snapshotOf: m.svc.snapshotOf, writeSnapshot: m.svc.writeSnapshot }));
 vi.mock('../../src/main/notify.js', () => ({ notifyQuestions: m.svc.notifyQuestions, notifyEvent: m.svc.notifyEvent }));
@@ -170,7 +205,12 @@ vi.mock('../../src/main/git.js', () => ({
   getRemoteChanges: m.svc.getRemoteChanges,
   listConflicts: m.svc.listConflicts,
   listReleaseTags: m.svc.listReleaseTags,
-  showRemoteFile: m.svc.showRemoteFile
+  showRemoteFile: m.svc.showRemoteFile,
+  originUrl: m.svc.originUrl,
+  behindCount: m.svc.behindCount,
+  changedFiles: m.svc.changedFiles,
+  predictConflicts: m.svc.predictConflicts,
+  remoteStoryBranches: m.svc.remoteStoryBranches
 }));
 vi.mock('../../src/main/setup.js', () => ({ getSetupInfo: m.svc.getSetupInfo, runSetup: m.svc.runSetup }));
 vi.mock('../../src/main/harness.js', () => ({ detectHarnesses: m.svc.detectHarnesses }));
@@ -604,6 +644,123 @@ describe('files, shell and git', () => {
     expect(svc.getRemoteChanges).toHaveBeenLastCalledWith('/work/git', 'origin/main', { space: 'default' });
     expect(await call('git:showRemote', {}, projectId, 'origin/main', 'a')).toBe('remote');
     expect(await call('git:conflicts', {}, projectId)).toEqual([]);
+  });
+});
+
+describe('team collaboration (US-1201 AC-1–AC-4)', () => {
+  it("team:platform names the origin remote's platform, and null for an unknown host", async () => {
+    const { projectId } = await openProject('/work/team-platform');
+    expect(await call('team:platform', {}, projectId)).toEqual({ id: 'github', name: 'GitHub', host: 'github.com', path: 'tochman/aidlc-dash' });
+    svc.originUrl.mockResolvedValueOnce('https://code.example.com/x/y.git');
+    const other = await openProject('/work/team-unknown');
+    expect(await call('team:platform', {}, other.projectId)).toBeNull();
+  });
+
+  it('team:pulls gives the pull requests, and a platform failure as a value instead of a rejection', async () => {
+    const { projectId } = await openProject('/work/team-pulls');
+    const ok = await call('team:pulls', {}, projectId);
+    expect(ok).toMatchObject({ ok: true, platform: { id: 'github' } });
+    expect(ok.pulls.map((p) => p.number)).toEqual([58, 59]);
+    expect(svc.listPulls).toHaveBeenLastCalledWith(expect.objectContaining({ id: 'github' }), expect.objectContaining({ credentials: svc.loadBitbucket }));
+    svc.listPulls.mockRejectedValueOnce(platformError('not-logged-in'));
+    expect(await call('team:pulls', {}, projectId)).toEqual({
+      ok: false,
+      platform: expect.objectContaining({ id: 'github' }),
+      error: { code: 'not-logged-in', message: 'GitHub: not-logged-in' }
+    });
+  });
+
+  it('team:collisions says how far behind main the branch is, and which pull requests share files and would conflict', async () => {
+    svc.getGitStatus.mockResolvedValueOnce({ isRepo: true, branch: 'feat/US-1201' });
+    const { projectId } = await openProject('/work/team-collide');
+    const fetches = svc.fetchRemote.mock.calls.length;
+    const res = await call('team:collisions', {}, projectId);
+    expect(res).toMatchObject({ isRepo: true, branch: 'feat/US-1201', base: 'origin/main', behind: 3, error: null });
+    expect(res.collisions).toEqual([{ number: 58, title: 'feat(US-0209): cost', branch: 'feat/US-0209', shared: ['src/a.js'], conflicts: ['src/a.js'] }]);
+    expect(svc.predictConflicts).toHaveBeenLastCalledWith('/work/team-collide', 'HEAD', 'origin/feat/US-0209');
+    expect(svc.fetchRemote.mock.calls.length).toBe(fetches); // never fetches by itself (AC-2)
+
+    svc.getGitStatus.mockResolvedValueOnce({ isRepo: true, branch: 'feat/US-1201' });
+    svc.listPulls.mockRejectedValueOnce(platformError('timeout'));
+    const offline = await call('team:collisions', {}, projectId);
+    expect(offline).toMatchObject({ behind: 3, collisions: [], error: { code: 'timeout' } });
+    svc.getGitStatus.mockResolvedValueOnce({ isRepo: false });
+    expect(await call('team:collisions', {}, projectId)).toEqual({ isRepo: false });
+  });
+
+  it('team:refresh runs git fetch, and only when it is called', async () => {
+    const { projectId } = await openProject('/work/team-refresh');
+    const fetches = svc.fetchRemote.mock.calls.length;
+    await call('team:machines', {}, projectId, 'default');
+    expect(svc.fetchRemote.mock.calls.length).toBe(fetches);
+    await call('team:refresh', {}, projectId);
+    expect(svc.fetchRemote).toHaveBeenLastCalledWith('/work/team-refresh');
+    expect(svc.fetchRemote.mock.calls.length).toBe(fetches + 1);
+  });
+
+  it('team:machines gives the machines per intent, the story branches and the possible collisions', async () => {
+    const { projectId } = await openProject('/work/team-machines');
+    svc.loadIntentList.mockResolvedValueOnce({
+      intents: [
+        { dirName: '261116-a', slug: 'a', status: 'in-flight' },
+        { dirName: '261116-b', slug: 'b', status: 'in-flight' },
+        { dirName: '261116-gone', missingOnDisk: true }
+      ]
+    });
+    svc.loadStoryLinks.mockResolvedValueOnce({ 'US-0209': ['261116-a'] });
+    svc.remoteStoryBranches.mockResolvedValueOnce([
+      { branch: 'origin/feat/US-0209', story: 'US-0209', ahead: 2 },
+      { branch: 'origin/fix/US-0209', story: 'US-0209', ahead: 1 }
+    ]);
+    const res = await call('team:machines', {}, projectId, 'default');
+    expect(res.intents.map((i) => [i.dirName, i.stories, i.inProgress])).toEqual([
+      ['261116-a', ['US-0209'], true],
+      ['261116-b', [], true]
+    ]);
+    expect(res.flags).toEqual([{ story: 'US-0209', kind: 'branches', where: ['origin/feat/US-0209', 'origin/fix/US-0209'] }]);
+    await expect(call('team:machines', {}, projectId, '../x')).rejects.toThrow();
+  });
+
+  it("team:comments joins the story's pull request comments with the intent's AI-DLC rows", async () => {
+    const { projectId } = await openProject('/work/team-comments');
+    svc.loadIntentDetail.mockResolvedValueOnce({ dirName: '261116-a', files: [], events: [] });
+    svc.loadStoryLinks.mockResolvedValueOnce({ 'US-0209': ['261116-a'] });
+    const res = await call('team:comments', {}, projectId, 'default', '261116-a');
+    expect(res.pull).toEqual({ number: 58, title: 'feat(US-0209): cost', url: 'u58' });
+    expect(res.rows.map((r) => r.source)).toEqual(['pull', 'question']);
+    expect(res.error).toBeNull();
+    expect(svc.listComments).toHaveBeenLastCalledWith(expect.objectContaining({ id: 'github' }), 58, expect.any(Object));
+
+    svc.loadIntentDetail.mockResolvedValueOnce({ dirName: '261116-a', files: [], events: [] });
+    svc.loadStoryLinks.mockResolvedValueOnce({ 'US-0209': ['261116-a'] });
+    svc.listComments.mockRejectedValueOnce(platformError('timeout'));
+    const failed = await call('team:comments', {}, projectId, 'default', '261116-a');
+    expect(failed.error).toMatchObject({ code: 'timeout' });
+    expect(failed.rows.map((r) => r.source)).toEqual(['question']);
+  });
+
+  it('credentials:bitbucket saves, clears and tells whether it is set, and never sends the password back', async () => {
+    const saved = await call('credentials:bitbucket', {}, { action: 'save', username: 'thomas', appPassword: 'pw-123' });
+    expect(saved).toEqual({ set: true });
+    expect(JSON.stringify(saved)).not.toContain('pw-123');
+    expect(svc.saveBitbucket).toHaveBeenCalledWith({ username: 'thomas', appPassword: 'pw-123' });
+    svc.hasBitbucket.mockResolvedValueOnce(false);
+    expect(await call('credentials:bitbucket', {}, { action: 'clear' })).toEqual({ set: false });
+    expect(svc.clearBitbucket).toHaveBeenCalled();
+    expect(await call('credentials:bitbucket', {}, { action: 'status' })).toEqual({ set: true });
+    await expect(call('credentials:bitbucket', {}, { action: 'read' })).rejects.toThrow();
+  });
+
+  it('team:mergeNote gives test-results.md and the "Efter merge med main" section, and writes nothing', async () => {
+    const { projectId } = await openProject('/work/team-note');
+    const writes = svc.writeFileSafe.mock.calls.length;
+    const note = await call('team:mergeNote', {}, projectId, 'default', '261116-a');
+    expect(note.rel).toBe('aidlc/spaces/default/intents/261116-a/construction/build-and-test/test-results.md');
+    expect(note.section).toMatch(/## Efter merge med main/);
+    expect(svc.writeFileSafe.mock.calls.length).toBe(writes);
+    await expect(call('team:mergeNote', {}, projectId, 'default', '../../etc')).rejects.toThrow();
+    svc.resolveInRoot.mockRejectedValueOnce(Object.assign(new Error('ENOENT'), { code: 'ENOENT' }));
+    await expect(call('team:mergeNote', {}, projectId, 'default', '261116-b')).rejects.toThrow(/test-results\.md/);
   });
 });
 

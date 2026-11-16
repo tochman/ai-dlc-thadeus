@@ -8,7 +8,7 @@
 
 **Stories:** US-1201, US-1202
 
-**Status (2026-11-16):** 🚧 US-1201 in progress, for v0.2.8. 📋 US-1202 planned. Each story names its release.
+**Status (2026-11-16):** 🚧 US-1201 and US-1202 in progress, for v0.2.8 (US-1202 is built inside US-1201). Each story names its release.
 
 ---
 
@@ -18,7 +18,7 @@
 - As a **developer working on a project with a team**, in order to **see and coordinate what everyone is doing without leaving the app**, I would like to **have the GitHub panel reviewed and a concept for team collaboration worked out, built on git and AI-DLC**.
 - **Epic:** EPIC-12
 - **Priority:** High
-- **Complexity:** Medium (a review and a concept, no code)
+- **Complexity:** Large (a review and a concept, then the build of backlog items 1–5 of the approved concept, with US-1202 merged in)
 - **Background:** Asked for 2026-11-15, for v0.3.0. There is no concept yet, so this story is discovery: its result is a concept the person approves and the stories that build it.
 - **Acceptance Criteria:**
   - [ ] **Given** the GitHub panel as it is today (`src/renderer/RefreshPanel.jsx`), **then** a review lists what it does well, what is missing or confusing, and what should change, with screenshots or concrete examples.
@@ -30,9 +30,27 @@
 - **Notes:**
   - **How to run it.** A good fit for an AI-DLC workflow with ideation stages (intent capture, scope), since the problem is still open.
   - **Related.** US-0502 (the GitHub panel), US-0507 (what the agents are doing), US-0804 (signing in to each tool), US-1101 (a public repository and outside contributors), US-0605 (planning releases together).
+- **Review of the GitHub panel (2026-11-16).** The panel is `src/renderer/RefreshPanel.jsx`, opened from the "Github" block in the left arm.
+  - **What it does well.**
+    - It only reads. `git fetch` runs when you press Update and at no other time, and the local status shows before any fetch.
+    - It splits what is new under `aidlc/` from the rest, counts the new audit lines, and lists intents that exist only on the remote.
+    - A remote file under `aidlc/` opens read-only from git objects, without touching the working tree.
+    - Pull, rebase and merge are typed into the shell tab without Enter, with a sentence on what each does. They are disabled while AI-DLC works.
+    - Conflicts in `intents.json` and `aidlc-state.md` get a line of help each.
+  - **What is missing or confusing.**
+    - The name says GitHub, but the panel only uses plain git. On a GitLab or Bitbucket remote the name is wrong, and on GitHub it shows nothing of GitHub: no pull requests, reviews or comments.
+    - "Ahead / behind" compares with the branch's own upstream. A story branch that is level with its upstream but 12 commits behind `origin/main` looks up to date. Nothing says that the tests should run again after main is merged in.
+    - Nothing says that another open pull request changes the same files. "Show conflicts" only lists conflicts after a merge has already gone wrong.
+    - The two abort buttons show whatever operation is in progress, and the "N new" badge counts only commits under `aidlc/`.
+  - **What changes (in this story).**
+    - The panel is named after the `origin` remote: "Update from GitHub", "Update from GitLab" or "Update from Bitbucket".
+    - A collision warning (US-1202) shows how far the branch is behind `origin/main`, the open pull requests that change the same files, and the files that would conflict, from `git merge-tree` without touching the working tree.
+    - After a merge that went wrong, a button opens the intent's `test-results.md` in the editor with an "Efter merge med main" section to fill in.
+    - The rule stays: every command that changes the working tree is typed into the shell tab without Enter.
+  - **Left for later.** One abort button for the operation in progress, and a badge that counts every new commit.
 - **Dependencies:** US-0502
 
-**US-1202: Warn when a story's branch is behind main or collides with another open pull request** 📋 Planned
+**US-1202: Warn when a story's branch is behind main or collides with another open pull request** 🚧 In progress, for v0.2.8 (merged into US-1201 and built with it)
 - As a **developer who runs more than one story at a time**, in order to **find out before I approve and merge that a story that was "done" no longer fits with main**, I would like **the app to warn me when a story's branch is behind `main` or touches the same files as another open pull request, and to help me write down what the merge turned up**.
 - **Epic:** EPIC-12
 - **Priority:** Medium
