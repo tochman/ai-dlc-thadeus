@@ -1,5 +1,5 @@
 // Read-only git for "Uppdatera från GitHub" (US-0502). Only fetch, rev-parse, rev-list, diff, status,
-// show, tag --list (US-0603) and log -1 (US-0507) run here, with fixed arguments and no shell (FR3.1, NFR1). Anything that changes the
+// show, tag --list (US-0603), log -1 (US-0507) and log -p over the epic files (US-0303 FR2.4) run here, with fixed arguments and no shell (FR3.1, NFR1). Anything that changes the
 // working tree is typed into the visible shell tab by the renderer instead.
 // US-1201 AC-2, AC-3 add remote get-url, for-each-ref and merge-tree --write-tree, which writes objects but never the
 // working tree, the index or a ref.
@@ -157,6 +157,27 @@ export async function listReleaseTags(root, { exec } = {}) {
   } catch (err) {
     console.info('git tag gick inte, releaser visas utan taggar:', err.message);
     return [];
+  }
+}
+
+// ponytail: the whole `log -p` is read into memory (about 0.5 MB today); stream it if the epic history passes 32 MB.
+const HISTORY_MAX_BUFFER = 32 * 1024 * 1024;
+
+/**
+ * US-0303 FR2.4, NFR4: the history of the epic files in `featuresDir` on the checked-out branch's first-parent line,
+ * oldest first, as `git log -p --unified=0` text for parseMarkerHistory. One fixed git command, no shell; the folder is a
+ * root-relative path through safeArg. Git missing or failing gives null, so the view can name it as a missing source.
+ * @returns {Promise<string|null>}
+ */
+export async function storyMarkerHistory(root, featuresDir, { exec } = {}) {
+  safeArg(featuresDir, t('errors.pathWord'));
+  if (featuresDir.startsWith('/') || featuresDir.split(/[\\/]/).includes('..')) throw new Error(t('errors.invalidValue', { what: 'path', value: featuresDir }));
+  const args = ['log', '--first-parent', '--reverse', '--format=%x00%H%x09%cI', '-p', '--unified=0', '--', featuresDir];
+  try {
+    return await runFixed('git', args, { cwd: root, exec, maxBuffer: HISTORY_MAX_BUFFER });
+  } catch (err) {
+    console.info('git log gick inte, storyhistoriken saknas:', err.message);
+    return null;
   }
 }
 

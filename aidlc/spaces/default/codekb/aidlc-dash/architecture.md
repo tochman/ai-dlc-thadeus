@@ -9,11 +9,11 @@ The app is a single Electron app with three processes:
 - **preload** (`window.bridge`, a named, narrow API);
 - **renderer** (React 19 in a sandboxed window with contextIsolation and a CSP).
 
-Pure modules in `src/shared/` and some parsers in `src/main/parsers/` are bundled into both sides. The project's AI-DLC files are the data source. There is no database and no server.
+Pure modules in `src/shared/` and some parsers in `src/main/parsers/` (`features`, `releases`, `ledger`) are bundled into both sides. The project's AI-DLC files and its git history are the data sources. There is no database and no server.
 
 ### Architectural Style
 
-A modular monolith on the desktop, split along Electron process lines. Main is organised as service modules behind one IPC router (`ipc.js`). The renderer is a tree of view components with two data hooks (`useProject`, `useFeatures`) and a per-project terminal context. The evidence:
+A modular monolith on the desktop, split along Electron process lines. Main is organised as service modules behind one IPC router (`ipc.js`, 87 handlers in one table at `bbfb4c0`). The renderer is a tree of view components with two data hooks (`useProject`, `useFeatures`) and a per-project terminal context. The evidence:
 - `ipc.js` imports almost every main module;
 - `preload/index.js` exposes one `invoke` wrapper per channel and no generic invoke.
 
@@ -25,79 +25,70 @@ flowchart LR
     App[App Shell] --> PV[ProjectView]
     PV --> IL[IntentList]
     PV --> ID[IntentDetail]
-    ID --> BD[BoltDag]
+    PV --> CP[CostPanel]
+    PV --> FV[FeaturesView]
     ID --> PL[Pipeline]
     ID --> TL[Timeline]
-    ID --> TD[TokenDetail]
-    TD --> AP[AgentProgress]
-    PV --> TP[TerminalPanel]
+    ID --> CT[CostTab]
     PV --> UP[useProject]
-    App --> AD[AgentDialog]
+    PV --> UF[useFeatures]
   end
   UP -->|window.bridge| PB[Preload Bridge]
+  UF -->|window.bridge| PB
   PB -->|ipcRenderer.invoke| IPC[IPC Router]
   subgraph Main
     IPC --> PS[Project Service]
-    PS --> PA[Project Access]
     PS --> PR[Parsers]
+    PS --> PA[Project Access]
+    IPC --> FL[Features Loader]
+    FL --> PR
+    IPC --> GIT[Git Reader]
     IPC --> W[Watcher]
-    IPC --> PTY[PTY Manager]
-    IPC --> EX[Exec Runner]
-    IPC --> AG[Agent Channel and Event Store]
   end
-  PA --> FS[(Project files: aidlc/)]
-  W --> FS
-  EX --> CLI[[aidlc / git / gh]]
-  AG --> HK[[.thadeus/hooks/dialog.sh]]
+  PA --> FS[(aidlc/ and docs/ files)]
+  FL --> PA
+  GIT --> CLI[[git]]
 ```
 
-Text fallback: the renderer views call `window.bridge`. The token detail view (with the agent progress rows) opens from IntentDetail. The bridge invokes the IPC Router. The router uses the Project Service (which reads through Project Access and the parsers), the Watcher, the PTY Manager, the Exec Runner (for the `aidlc`, `git` and `gh` CLIs) and the agent channel, which talks to the hook script.
+Text fallback: the views get their data through `useProject` (intents, detail, cost) and `useFeatures` (feature docs, story links). Both call `window.bridge`, which invokes the IPC Router. The router uses the Project Service (state, audit and graph through the parsers and Project Access), the Features Loader (the feature docs through the same parsers) and the Git Reader (fixed `git` commands). The PTY Manager, Exec Runner and agent channel are unchanged and are left out of this diagram (see `dependencies.md`).
 
 ### Data Flow
 
-1. **Opening a project**: `project:open` resolves the root (`openRoot`), runs `detectProject`, then starts the space watcher (`watchIntents`), the config watcher (with the inflight file), the feature-docs watcher and the `.git/HEAD` watcher.
-2. **Intent list and detail**: `loadIntentList` merges `intents.json` with the folders on disk, plus summaries from each intent's state file. `loadIntentDetail` → `buildDetail` reads `aidlc-state.md`, `runtime-graph.json`, `.aidlc-engine/active-directive.json`, the audit shards and the artifact tree. It returns `{state, graph, pipeline, events, units, directive, files, warnings}`.
-3. **Live updates**: chokidar sends a change to `watchIntents`, which debounces it (300 ms, max 800 ms). The router then sends `project:changed {dirNames, indexChanged, costChanged}`. `useProject` reloads the list for those dirs and the detail when the selected intent changed. Under `.aidlc-engine/`, only `active-directive.json` counts as a change.
-4. **Working agents**: the `aidlc/.aidlc-subagent-inflight` entry count limits `workingAgents()`. That function pairs `SUBAGENT_DISPATCHED` with `SUBAGENT_COMPLETED` by `Agent Type`. The Configuration view uses it ("Arbetar nu").
-5. **Agent dialogs**: the hooks write event files into the per-session channel folder. `agentChannel` validates them, `agentEvents` drives the state machine, and the answer goes back through the waiting hook or as picker keys.
-6. **Writes**: the app writes only its own settings, token readings (`.thadeus/tokens/`), editor saves (hash-checked) and feature-doc release markers. It writes AI-DLC config only through the `aidlc` CLI or the tier-2 Guard Policy edit.
+1. **Opening a project**: `project:open` resolves the root (`openRoot`), runs `detectProject`, then starts the space watcher (`watchIntents`), the config watcher, the feature-docs watcher and the `.git/HEAD` watcher.
+2. **Intent list and detail**: `loadIntentList` merges `intents.json` with the folders on disk, plus summaries from each intent's state file (no audit read). `loadIntentDetail` → `buildDetail` reads `aidlc-state.md`, `runtime-graph.json`, `.aidlc-engine/active-directive.json`, the audit shards and the artifact tree. It returns `{state, graph, pipeline, events, units, directive, files, warnings}`.
+3. **All intents at once**: only `loadCrossMachineCost` (`project:cost`) reads every intent's audit shards (through `auditEventsOrEmpty`). It is the one loop over all intents' events today.
+4. **Feature docs**: `features:load` returns `loadFeatures` (the overview, the parsed epics with hashes, and the release plans) plus `listReleaseTags` (`v*` tags with their creator date).
+5. **Live updates**: chokidar → `watchIntents` (debounced 300 ms, max 800 ms) → `project:changed {dirNames, indexChanged, costChanged}` → `useProject` reloads what changed. A feature-doc change sends `features:changed` → `useFeatures` reloads.
+6. **Writes**: the app writes only its own settings, token readings and usage snapshots (`.thadeus/`), editor saves (hash-checked) and feature-doc release markers.
 
-### US-0507 data sources
+### US-0303 data sources
 
-| Need | Where it is today | Read by the app now? |
-|---|---|---|
-| A Unit running and its stage | `runtime-graph.json` `stages[].instances[]` (`bolt`, `worktree`, `started_at`, `completed_at`, `outcome`); audit `BOLT_STARTED`, `WORKTREE_CREATED`, `SWARM_STARTED` (`Stage`) | Counts only (`runtimeGraph.js`); the audit events go to the timeline only |
-| Plan steps done and total | `<worktree>/…/construction/<unit>/code-generation/code-generation-plan.md`, `- [x]` and `- [ ]` lines | No; `.aidlc/worktrees/` is neither watched nor read |
-| Last commit subject | the worktree's git branch `bolt-<id8>_<unit>` | No; `git.js` has no log call |
-| Review requested and its verdict | audit `REVIEW_REQUESTED` and `REVIEW_COMPLETED` (`Stage`, `Reviewer`, `Unit`, `Verdict`, `Review Record`) | Timeline only |
-| Findings by severity | `<intent>/.aidlc-engine/reviews/<stage>/…/<n>.json` `findings[].severity` | No; the watcher ignores it |
-| Agent work with no Unit | `SUBAGENT_DISPATCHED` `Agent Type` plus the inflight count | Yes, `workingAgents()` |
-
-This table was written before US-0507 was built (main was not re-scanned in this run). US-0507 has since shipped the `agents:progress` channel and `AgentProgress.jsx`.
-
-### Tooltips in the renderer (US-0414)
-
-The renderer has no tooltip component. Tooltips come three ways:
-1. **Native `title=`** (31 sites). The OS draws them, on hover only, never on focus, and in the system style.
-2. **The CSS-only row tip** (`TokenDetail.jsx:272`, `theme.css:709-710`). A child span is positioned below its focusable row and shown on `:hover`/`:focus-visible` through opacity. It is never measured, so it can leave the window or be clipped by `.lcars-frame-body { overflow: auto }`.
-3. **The visx chart tooltip** (`TokenDetail.jsx:135-156`, `theme.css:679-684`). It is React state from `useTooltip`, opened on focus, pointer move and arrow keys, closed on blur, pointer leave and Esc, and linked by `aria-describedby`. It is clamped on the right only.
-
-No `createPortal` and no positioning library are used, so a shared tooltip that must stay inside the window has to measure itself or render into a portal at the body level.
+| Metric | Where it is | Parsed today? | Gap |
+|---|---|---|---|
+| Intent start and end | audit `WORKFLOW_STARTED`/`WORKFLOW_COMPLETED`; state `Start Date`, `Status`; `intents.json` `status` | events yes (`mergeAudits`); state yes (`parseState`) | no duration is computed |
+| Time per phase | audit `PHASE_STARTED`/`PHASE_COMPLETED`/`PHASE_SKIPPED` (`Phase` field) | events only | pairing not written |
+| Time per stage | audit `STAGE_STARTED`/`STAGE_COMPLETED`/`STAGE_SKIPPED` (`Stage`); `runtime-graph.json` `durationMs` | graph yes (`parseRuntimeGraph`) | the graph is git-ignored, so another clone has none; the audit is the portable source |
+| Waiting at approvals | audit `STAGE_AWAITING_APPROVAL` → `GATE_APPROVED`/`GATE_REJECTED` (`Stage`); `PLAN_APPROVAL_*` | events only | pairing not written |
+| Review rounds | audit `REVIEW_REQUESTED`/`REVIEW_COMPLETED` (`Stage`, `Request Id`, `Verdict`); `STAGE_REVISING`, `GATE_REJECTED` | paired only for running rows (`parsers/agentProgress.js`) | counting per stage not written |
+| Parked time | audit `WORKFLOW_PARKED`/`WORKFLOW_UNPARKED` | events only | whether parked time counts is a requirements choice |
+| Story 🚧/✅/released | epic head line markers (`parseEpic`, `statusOf`); `releaseOf` | current state only | no history: `git.js` has no `git log` over a file |
+| Release dates, stories per release | `listReleaseTags` (`creatordate:short`), `buildReleases` | yes | none |
+| Per week/month, average, trend | all of the above over every intent and story | no | an all-intents loader like `loadCrossMachineCost` |
 
 ### Key Design Decisions
 
 - **Read-only, root-confined access** (`projectAccess.js` holds no write calls). This keeps the app from corrupting AI-DLC state. The cost is that every new source needs a root-relative path.
 - **The last good value on broken input** (detail, graph, directive, ledger caches). Agents write files mid-stream, so the UI never blanks.
 - **Debounced folder watching with a max-wait**. The UI stays live during continuous agent writes without reload storms.
-- **Workflow actions typed into the visible terminal**. AI-DLC's own guards and audit apply. The app never submits on the person's behalf, except the intent switch.
-- **Agent dialogs through a file channel and hooks** (US-0506), with every byte validated in main before the renderer sees it.
-- **Styling through classes only**: LCARS tokens on `:root` in `theme.css`, so a shared tooltip style is one class with `var(--coral)`, `var(--bg)` and `var(--text)`.
+- **Fixed git commands only** (`git.js` header). Any new history call (for US-0303, `git log` over the epic files) must take fixed arguments and `safeArg` for values.
+- **Pure parsers, shared with the renderer.** Metrics written as pure functions over events and stories can be tested in plain node and reused on either side.
+- **Styling through classes only**: LCARS tokens on `:root` in `theme.css`; tooltips only through `Tooltip.jsx`.
 
 ### Improvement Opportunities
 
-- Unit status should come from the runtime graph instances and the `BOLT_*` events, not only `UNIT_STARTED`, which AI-DLC does not log for builds.
-- `ipc.js` (891 lines) and `agentHooks.js` (864) are the largest modules and are candidates for splitting.
-- One tooltip primitive beside the other LCARS primitives would replace three tooltip mechanisms (US-0414).
+- Stage times should come from the audit, not only `runtime-graph.json`, so that every clone shows them.
+- `ipc.js` (1038 lines) and `agentHooks.js` are the largest modules and are candidates for splitting.
+- `parsers/agentProgress.js` imports `projectService.js`. Moving `workingAgents` into a parser would keep the parsers Node-free.
 
 ## Interaction Diagrams
 
@@ -110,51 +101,55 @@ sequenceDiagram
   participant W as watchIntents
   participant IPC as IPC Router
   participant UP as useProject
-  participant ID as IntentDetail/BoltDag
-  AG->>FS: append audit, write runtime-graph.json
+  participant ID as IntentDetail
+  AG->>FS: append audit, write state
   FS-->>W: chokidar events
   W->>IPC: onChange({dirNames}) after 300-800 ms
   IPC->>UP: project:changed
   UP->>IPC: getIntent(projectId, space, dirName)
   IPC->>IPC: loadIntentDetail (state, graph, audit, units)
   IPC-->>UP: detail
-  UP->>ID: detail.graph.boltDag, detail.units
+  UP->>ID: detail.events, detail.pipeline
 ```
 
-Text fallback: the agent writes the files; the watcher debounces and notifies the router; the router pushes `project:changed`; `useProject` calls `getIntent`; main rebuilds the detail; the Units tab re-renders.
+Text fallback: the agent writes the files; the watcher debounces and notifies the router; the router pushes `project:changed`; `useProject` calls `getIntent`; main rebuilds the detail; the views re-render.
 
-### Resume an intent
+### Project cost over all intents (the pattern a velocity load can follow)
 
 ```mermaid
 sequenceDiagram
-  participant P as Person
-  participant RB as ResumeButton
-  participant TC as TerminalContext
-  participant PTY as PTY Manager
-  P->>RB: click Fortsätt
-  RB->>TC: busy? / sequence(commands)
-  TC->>PTY: ptyWrite('/aidlc intent <dir>' + Enter), then '/aidlc' without Enter
-  PTY-->>TC: pty:data (activity idle or busy)
+  participant CP as CostPanel
+  participant UP as useProject
+  participant IPC as IPC Router
+  participant PS as Project Service
+  participant AU as Audit Parser
+  UP->>IPC: getCost(projectId, space)
+  IPC->>PS: loadIntentList (cached)
+  IPC->>PS: loadCrossMachineCost(intents)
+  loop every intent
+    PS->>AU: auditEventsOrEmpty -> mergeAudits
+  end
+  PS-->>IPC: summary {perIntent, project, timeline}
+  IPC-->>UP: cost
+  UP->>CP: cost
 ```
 
-Text fallback: Resume checks that the agent tab is idle, submits the intent switch, then types `/aidlc` for the person to confirm.
+Text fallback: the cost load takes the cached intent list, reads and merges every intent's audit shards, sums them per intent and for the project, and returns one summary that `CostPanel` draws. A velocity load would read the same events and return durations instead.
 
-### Chart tooltip (today, the most complete tooltip)
+### Feature docs with tags
 
 ```mermaid
 sequenceDiagram
-  participant P as Person
-  participant CH as OverTimeChart group
-  participant UT as visx useTooltip
-  participant TT as Tooltip
-  P->>CH: focus (Tab) or pointer move
-  CH->>UT: showTooltip(index, left)
-  UT-->>TT: render with role=tooltip, id
-  CH-->>P: aria-describedby = tooltip id
-  P->>CH: ArrowLeft / ArrowRight
-  CH->>UT: showTooltip(index +/- 1)
-  P->>CH: Esc, blur or pointer leave
-  CH->>UT: hideTooltip()
+  participant UF as useFeatures
+  participant IPC as IPC Router
+  participant FL as Features Loader
+  participant GIT as Git Reader
+  UF->>IPC: loadFeatures(projectId)
+  par
+    IPC->>FL: loadFeatures(root, featuresPath)
+    IPC->>GIT: listReleaseTags(root)
+  end
+  IPC-->>UF: {epics[parsed stories], plans, tags}
 ```
 
-Text fallback: focus or the pointer on the chart group opens the tooltip at the nearest reading; the group points to it with `aria-describedby`; the arrow keys move it; Esc (stopped from closing the view), blur or leaving with the pointer close it. The row tip has none of this state; it is CSS hover and focus only.
+Text fallback: one call returns the parsed epics and release plans together with the `v*` tags and their dates. There is no history of when a marker changed; that needs a new git call.

@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { useEffect } from 'react';
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { t } from '../../src/shared/i18n.js';
 
 // The project view has its own tests; here it only reports what the left arm needs, as the real one does.
 // It renders the real latest-message strip (US-0506 u3), as the real one does above its terminal.
@@ -189,6 +190,22 @@ describe('App shell', () => {
     act(() => push.menuCommand({ command: 'panel', panel: 'github' }));
     expect(screen.getByTestId('project-view-switch-intents').getAttribute('aria-current')).toBe('page');
     expect(screen.getByTestId('arm-github').hasAttribute('aria-current')).toBe(false);
+  });
+
+  it('opens the Velocity view from its own arm block beside Cost; disabled without AI-DLC (US-0303 FR3.5)', async () => {
+    await renderApp({ openProjects: ['/p/aidlc-dash-a'], activeProject: '/p/aidlc-dash-a' });
+    await screen.findByTestId('project-view-switch-features');
+    fireEvent.click(screen.getByTestId('arm-velocity'));
+    expect(screen.getByTestId('arm-velocity').getAttribute('aria-current')).toBe('page');
+    expect(screen.getByTestId('project-view-p1').dataset.view).toBe('velocity');
+    expect(screen.getByRole('heading', { level: 1 }).textContent).toContain(t('app.velocity'));
+    cleanup();
+
+    mockBridge({ openProjects: ['/p/plain-a'], activeProject: '/p/plain-a' });
+    window.bridge.openProject = vi.fn(async (dir) => ({ ...projectInfo(dir, 'p1'), detection: { isAidlc: false } }));
+    render(<App />);
+    await screen.findByTestId('project-view-switch-intents');
+    expect(screen.getByTestId('arm-velocity').disabled).toBe(true);
   });
 
   it('sets data-motion from the setting, Dämpad under prefers-reduced-motion without one, and saves a new choice (FR4.2)', async () => {

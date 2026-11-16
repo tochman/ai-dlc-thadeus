@@ -1,0 +1,29 @@
+{
+  "stage": "code-generation",
+  "upstream_ids": ["FR1.1", "FR1.2", "FR1.3", "FR1.4", "FR1.5", "FR2.1", "FR2.2", "FR2.3", "FR2.4", "FR3.1", "FR3.2", "FR3.3", "FR3.4", "FR3.5", "FR4.1", "FR4.2", "FR4.3", "FR4.4", "NFR1", "NFR2", "NFR3", "NFR4", "NFR5"],
+  "coverage": [
+    { "id": "FR1.1", "status": "OK", "target": "src/main/parsers/velocity.js" },
+    { "id": "FR1.2", "status": "OK", "target": "src/main/parsers/velocity.js" },
+    { "id": "FR1.3", "status": "OK", "target": "src/main/parsers/velocity.js" },
+    { "id": "FR1.4", "status": "OK", "target": "src/main/parsers/velocity.js" },
+    { "id": "FR1.5", "status": "OK", "target": "src/renderer/VelocityView.jsx" },
+    { "id": "FR2.1", "status": "OK", "target": "src/main/parsers/velocity.js" },
+    { "id": "FR2.2", "status": "OK", "target": "src/main/parsers/velocity.js" },
+    { "id": "FR2.3", "status": "OK", "target": "src/main/parsers/velocity.js" },
+    { "id": "FR2.4", "status": "OK", "target": "src/main/git.js" },
+    { "id": "FR3.1", "status": "OK", "target": "src/main/parsers/velocity.js" },
+    { "id": "FR3.2", "status": "OK", "target": "src/main/parsers/velocity.js" },
+    { "id": "FR3.3", "status": "OK", "target": "src/renderer/VelocityView.jsx" },
+    { "id": "FR3.4", "status": "OK", "target": "src/main/projectService.js" },
+    { "id": "FR3.5", "status": "OK", "target": "src/main/ipc.js" },
+    { "id": "FR4.1", "status": "OK", "target": "src/main/parsers/velocity.js" },
+    { "id": "FR4.2", "status": "OK", "target": "src/main/projectService.js" },
+    { "id": "FR4.3", "status": "OK", "target": "src/renderer/VelocityView.jsx" },
+    { "id": "FR4.4", "status": "OK", "target": "tests/main/velocity.test.js" },
+    { "id": "NFR1", "status": "OK", "target": "tests/main/i18nKeys.test.js" },
+    { "id": "NFR2", "status": "OK", "target": "tests/renderer/VelocityView.test.jsx" },
+    { "id": "NFR3", "status": "OK", "target": "tests/main/velocity.test.js" },
+    { "id": "NFR4", "status": "OK", "target": "src/main/git.js" },
+    { "id": "NFR5", "status": "OK", "target": "tests/main/velocity.test.js" }
+  ]
+}

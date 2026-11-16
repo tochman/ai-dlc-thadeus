@@ -54,6 +54,7 @@
     "closeProject": "Close {name}",
     "open": "+ Open",
     "cost": "Cost",
+    "velocity": "Velocity",
     "github": "Github",
     "settings": "Settings",
     "config": "Configuration",
@@ -129,6 +130,7 @@
       "timeline": "Timeline",
       "units": "Units",
       "cost": "Cost",
+      "velocity": "Velocity",
       "comments": "Comments",
       "files": "Files"
     },
@@ -214,6 +216,81 @@
     "noStages": "aidlc-state.md is missing or has no stages yet.",
     "noGraph": "runtime-graph.json is missing (it is git-ignored). Status comes from aidlc-state.md.",
     "skipped": "{list} {n, plural, one {stage is} other {stages are}} not included"
+  },
+  "velocity": {
+    "title": "Velocity",
+    "meta": "From the records",
+    "loading": "Reading the records…",
+    "loadFailed": "The velocity could not be read: {error}",
+    "unknown": "unknown",
+    "notFinished": "not finished",
+    "finished": "finished",
+    "archived": "archived",
+    "empty": "no events",
+    "open": "open",
+    "total": "Total",
+    "active": "Active",
+    "parked": "Parked",
+    "waiting": "Waiting for you",
+    "reviews": "Reviews",
+    "rejections": "Rejections",
+    "reviewCount": "{reviews} · {rejections, plural, one {# rejected} other {# rejected}}",
+    "phases": "Phases",
+    "stages": "Stages",
+    "stage": "Stage",
+    "time": "Time",
+    "releases": "Stories per release",
+    "releaseLine": "{release}: {n, plural, one {# story} other {# stories}} ({stories})",
+    "readout": {
+      "finished": "Finished intents",
+      "running": "Not finished",
+      "average": "Average length",
+      "stories": "Stories done"
+    },
+    "unit": {
+      "label": "Period",
+      "week": "Week",
+      "month": "Month"
+    },
+    "chart": {
+      "bucket": "{key}: {intents, plural, one {# intent} other {# intents}}, {stories, plural, one {# story} other {# stories}}, average {avg}",
+      "empty": "Nothing finished yet",
+      "intents": "Finished intents",
+      "stories": "Stories done",
+      "average": "Average intent length"
+    },
+    "intents": {
+      "title": "Per intent",
+      "intent": "Intent",
+      "status": "Status"
+    },
+    "stories": {
+      "title": "Per story",
+      "story": "Story",
+      "started": "In progress",
+      "done": "Done",
+      "released": "Released",
+      "toDone": "To done",
+      "toRelease": "To release",
+      "from": {
+        "intent": "intent",
+        "git": "git"
+      }
+    },
+    "sources": {
+      "title": "Sources",
+      "records": "{intents, plural, one {# intent} other {# intents}} with {shards, plural, one {# audit shard} other {# audit shards}}",
+      "epics": "Epic files:",
+      "git": "Git history of {dir}: {commits, plural, one {# commit} other {# commits}}, {from} to {to}",
+      "missingTitle": "Not counted"
+    },
+    "missing": {
+      "missing": "No audit folder",
+      "unreadable": "Unreadable",
+      "epic": "Epic file missing",
+      "git": "Git history unavailable",
+      "features": "Feature docs missing"
+    }
   },
   "cost": {
     "title": "Cost",

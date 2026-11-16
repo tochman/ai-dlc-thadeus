@@ -9,16 +9,16 @@ T.H.A.D.E.U.S. (package `thadeus`, repository `aidlc-dash`) is a desktop "bridge
 | Area | What the person gets | Epic |
 |---|---|---|
 | Intents and pipeline | An intent list with filters, intent detail with phases and stages, an artifact reader, the Unit DAG | EPIC-01, US-0411 |
-| Audit timeline | A virtualised, filtered timeline of audit events with live highlighting | EPIC-03 |
-| Cost and tokens | Cost per stage, agent and model from the usage ledger; live token meters; a token detail view with agent progress | EPIC-02, US-0507 |
-| Branding and desktop | The LCARS look, menu, About, splash, settings, the in-app updater, one shared tooltip (US-0414, in progress) | EPIC-04 |
-| Workflow control | Resume, Refresh from GitHub, AI-DLC setup, a questions popup, agent dialogs (questions, permissions, replies through hooks), the AI-DLC update check | EPIC-05 |
+| Audit timeline | A virtualised, filtered timeline of audit events with live highlighting; project velocity (US-0303, in progress) | EPIC-03 |
+| Cost and tokens | Cost per stage, agent and model from the usage ledger and the audit shards of every machine; live token meters; a token detail view with agent progress | EPIC-02, US-0209, US-0507 |
+| Branding and desktop | The LCARS look, menu, About, splash, settings, the in-app updater, one shared tooltip (US-0414) | EPIC-04 |
+| Workflow control | Resume, Refresh from GitHub, AI-DLC setup, a questions popup, agent dialogs, the AI-DLC update check | EPIC-05 |
 | Feature docs | Epics and stories from `docs/FEATURES.md`, release markers, a Releases tab | EPIC-06 |
 | Languages | Swedish and English through `t()` with ICU | EPIC-07 |
 | Harnesses | Claude Code and opencode tabs; setup for other harnesses | EPIC-08 |
 | AI-DLC configuration | Reading and changing settings, guards, plans and models through the `aidlc` CLI | EPIC-09 |
 | Editing | Monaco editor tabs with hash-checked saves | EPIC-10 |
-| Open source | The public-readiness review, licences, the secret scan | EPIC-11 |
+| Open source and team | The public-readiness review, licences, the secret scan; the team view (machines, collisions, pull request comments) | EPIC-11, EPIC-12 |
 
 ## Business Rules That Shape the Code
 
@@ -27,22 +27,20 @@ T.H.A.D.E.U.S. (package `thadeus`, repository `aidlc-dash`) is a desktop "bridge
 - **Broken input stays local.** A half-written file keeps the last good value and affects only its own intent.
 - **Status is never colour alone, and every text is translated.**
 - **Keyboard parity.** What a pointer can reveal, focus must reveal too (US-0208 NFR3, US-0414).
+- **The LCARS look everywhere**, new views included (project rule, 2026-11-16).
 
-## Active Intent (US-0414)
+## Active Intent (US-0303)
 
-"One LCARS tooltip across the app": every tooltip should look and behave like the split-bar tooltip in the token detail view (`.token-detail-row-tip`, US-0208):
-- a coral 2 px border, the LCARS corner, the app background and tabular figures;
-- it opens on hover and on keyboard focus;
-- it stays inside the window;
-- its texts go through `t()`.
+"Project velocity: intent, story and project metrics" (EPIC-03, for v0.2.9). The person wants:
+- **per intent**: the total time, the time per phase and per stage, the time spent waiting at approvals, and the review rounds per stage, from the audit log and the state file;
+- **per story**: the time from 🚧 to ✅ to "Released in vX.Y.Z", and the stories per release, from the feature docs and their git history;
+- **per project**: the intents and stories finished per week and per month, the average intent length, and the trend.
 
-Native `title=` tooltips on interactive elements are replaced, and their accessible names are kept. The "Tokens over time" chart tooltip moves to the same style. The full list of today's tooltips is in the intent's `inception/reverse-engineering/developer-scan.md`. The short version is in `component-inventory.md` ("Tooltip Sites"), and the risks are in `code-quality-assessment.md` ("Brownfield Notes for US-0414").
+A running intent shows its numbers so far and is marked unfinished. A missing or unreadable record is named, not counted as zero. The view names the records it used, and all its text goes through `t()` in Swedish and English.
 
-## Previous Intent (US-0507, delivered in #55)
+The data sources and gaps are in `architecture.md` ("US-0303 data sources"). The risks are in `code-quality-assessment.md` ("Brownfield Notes for US-0303").
 
-"See what the agents are doing and how far they have come". Each running Unit shows:
-- its stage and how long it has run;
-- for a build, the plan steps done out of the total, plus its last commit subject;
-- for a review, the verdict and the findings by severity.
+## Previous Intents
 
-It shipped as the agent progress rows in the token detail view (`AgentProgress.jsx`). See `architecture.md` ("US-0507 data sources").
+- **US-0414** (shared tooltip, delivered): `Tooltip.jsx` with `tooltipPlacement.js`. It is portalled to `document.body`, opens on focus and hover, and stays inside the window. `tests/renderer/noNativeTitle.test.jsx` now forbids native `title=` in the renderer.
+- **US-0507** (agent progress, delivered in #55): the agent progress rows in the token detail view (`AgentProgress.jsx`, `parsers/agentProgress.js`).
