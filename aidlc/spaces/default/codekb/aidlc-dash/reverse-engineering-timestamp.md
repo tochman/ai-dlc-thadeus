@@ -3,16 +3,16 @@
 ## Run Record
 
 - Date: 2026-11-16
-- Commit: 721e051112b0906bad7eec75e798198455977425
-- Intent: agent-progress (`261116-agent-progress`, EPIC-05 US-0507)
+- Commit: f46cb71d05d86bea71fdc9d9e82e2087f67f8cc3
+- Intent: cross-machine-cost (`261116-cross-machine-cost`, EPIC-02 US-0209)
 
-This was a full rescan of the repository root, and it replaces every earlier artifact. The developer agent did both the scan and the synthesis, because the architect was switched off for this run.
+This was a focused scan merged onto a stale store (the full scan of intent `agent-progress` at `721e051`). The developer agent did both the scan and the synthesis, because the architect was switched off for this run. Prose outside the cost and audit area is kept from the earlier store; the earlier full coverage could not be re-verified and is recorded below as shallow.
 
 What was read, and how closely:
-- Read line by line: the intent and graph readers (`projectService.js`, the parsers), `watcher.js`, `projectAccess.js`, the project watch and detail parts of `ipc.js`, `BoltDag.jsx`, `IntentDetail.jsx`, `useProject.js` and the DAG styles.
-- Read at the level of header, imports and exports: every other tracked hand-written file, with the root configs read whole.
-- Read for orientation only: one earlier intent's audit, runtime graph, plan and review records.
-- Not opened: `node_modules/`, `out/`, `dist/`, `coverage/`, `tests/.tmp/`, `.thadeus/tokens/`, the `.claude/worktrees/` checkouts, and AI-DLC's install and workspace (`.claude/`, `.aidlc/`, `.opencode/`, `aidlc/`).
+- Read line by line: the ledger, audit and intents parsers, `projectService.js`, `tokenReadings.js`, `watcher.js`, `CostPanel.jsx`, `CostTab.jsx`, `TokenView.jsx`, the data parts of `TokenDetail.jsx`, `tokens.js`.
+- Read at the level of header, imports and exports: the other parsers, the cost and watch handlers in `ipc.js`, `useProject.js`, `IntentDetail.jsx`, `IntentList.jsx`, `tokenFlow.js`, the preload bridge, the related tests and fixtures.
+- Read for the format only: the cost fields of the committed audit shards.
+- Not opened: `node_modules/`, `out/`, `dist/`, `coverage/`, `tests/.tmp/`, `.thadeus/tokens/`, and AI-DLC's install and workspace.
 
 Code was read only: no tests, builds or app runs.
 
@@ -20,122 +20,51 @@ Code was read only: no tests, builds or app runs.
 
 ```yaml
 scope_version: 1
-kind: full
-intent: agent-progress
-fingerprint: 1bb514eb97e2b7cc12a91b7958bcadfdcd7211d0
+kind: partial
+intent: cross-machine-cost
+fingerprint: d99a7746929215a418f4943dfa0e20840d33418b
 analyzed:
   paths:
-    - ./
+    - src/main/parsers/ledger.js
+    - src/main/parsers/audit.js
+    - src/main/parsers/intents.js
+    - src/main/projectService.js
+    - src/main/tokenReadings.js
+    - src/main/watcher.js
+    - src/renderer/CostPanel.jsx
+    - src/renderer/CostTab.jsx
+    - src/renderer/TokenView.jsx
+    - src/renderer/TokenDetail.jsx
+    - src/renderer/tokens.js
   components:
-    - Main Entry
-    - IPC Router
     - Project Service
-    - Project Access
     - Watcher
     - Audit Parser
-    - State Parser
-    - Runtime Graph Parser
-    - Pipeline Merger
     - Intents Merger
-    - Units Status
     - Ledger Parser
-    - Features Parser
-    - Releases Parser
-    - Questions Parser
-    - Notifications
-    - PTY Manager
-    - Exec Runner
-    - Tools Registry
-    - Harness Detection
-    - Settings Store
-    - Setup Helper
-    - AI-DLC Config Reader
-    - AI-DLC Config Writer
-    - AI-DLC Update Check
-    - Plans Service
-    - Model Choice
-    - Model Config Reader
-    - Git Reader
-    - Updater
-    - File Editor Service
-    - Features Loader
-    - Releases Service
     - Token Readings
-    - App Menu
-    - Main i18n
-    - Agent Channel
-    - Agent Event Store
-    - Agent Adapters
-    - Agent Permissions
-    - Agent Replies
-    - Agent IPC
-    - Agent Hooks Installer
-    - Agent Timing Log
-    - Preload Bridge
-    - Harness Table
-    - Shared i18n
-    - Config Tables
-    - App Name Module
-    - Plan Name Rule
-    - Agent Text Sanitizer
-    - Agent Order
-    - Alert Plan
-    - Locale Files
-    - Renderer Bootstrap
-    - App Shell
-    - ProjectView
-    - TerminalContext
-    - TerminalPanel
-    - Terminal Control
-    - Picker Reader
-    - AgentDialog
-    - ReplyPage
-    - LatestMessageStrip
-    - AgentHooks UI
-    - ResumeButton
-    - IntentList
-    - IntentDetail
-    - Pipeline
-    - Timeline
-    - BoltDag
-    - ArtifactReader
     - CostPanel
     - CostTab
     - TokenView
     - TokenDetail
-    - Token Charts
-    - RefreshPanel
-    - Workflow Busy Rule
-    - AidlcUpdate
-    - SetupAidlc
-    - ProjectSettingsView
-    - SettingsView
-    - ConfigView
-    - ConfigEdit
-    - PlansView
-    - FeaturesView
-    - Story Filter
-    - Editor
-    - UpdateNotice
-    - AboutDialog
-    - DocsDialog
-    - Splash
-    - LCARS Primitives
-    - Format Helpers
     - Theme Tokens
-    - useProject
-    - useFeatures
-    - Feature Docs Prompt
-    - Theme Stylesheet
-    - Release Workflow
-    - Build Scripts
-    - Packaging Config
-    - Dialog Hook Script
-    - Test Suite
-    - Test Fixtures
-    - Project Docs
 shallow:
   paths:
+    - ./
     - docs/
     - build/
+    - src/main/parsers/state.js
+    - src/main/parsers/pipeline.js
+    - src/main/parsers/runtimeGraph.js
+    - src/main/parsers/units.js
+    - src/main/parsers/agentProgress.js
+    - src/main/parsers/features.js
+    - src/main/parsers/releases.js
+    - src/main/ipc.js
+    - src/preload/index.js
+    - src/renderer/useProject.js
+    - src/renderer/IntentDetail.jsx
+    - src/renderer/IntentList.jsx
+    - src/renderer/tokenFlow.js
+    - tests/
 ```

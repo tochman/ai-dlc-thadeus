@@ -54,40 +54,65 @@ Text fallback: the renderer views call `window.bridge`. The bridge invokes the I
 ### Data Flow
 
 1. **Opening a project**: `project:open` resolves the root (`openRoot`), runs `detectProject`, then starts the space watcher (`watchIntents`), the config watcher (with the inflight file), the feature-docs watcher and the `.git/HEAD` watcher.
-2. **Intent list and detail**: `loadIntentList` merges `intents.json` with the folders on disk, plus summaries from each intent's state file. `loadIntentDetail` → `buildDetail` reads `aidlc-state.md`, `runtime-graph.json`, `.aidlc-engine/active-directive.json`, the audit shards and the artifact tree. It returns `{state, graph, pipeline, events, units, directive, files, warnings}`.
-3. **Live updates**: chokidar sends a change to `watchIntents`, which debounces it (300 ms, max 800 ms). The router then sends `project:changed {dirNames, indexChanged, costChanged}`. `useProject` reloads the list for those dirs and the detail when the selected intent changed. Under `.aidlc-engine/`, only `active-directive.json` counts as a change.
-4. **Working agents**: the `aidlc/.aidlc-subagent-inflight` entry count limits `workingAgents()`. That function pairs `SUBAGENT_DISPATCHED` with `SUBAGENT_COMPLETED` by `Agent Type`. The Configuration view uses it ("Arbetar nu").
-5. **Agent dialogs**: the hooks write event files into the per-session channel folder. `agentChannel` validates them, `agentEvents` drives the state machine, and the answer goes back through the waiting hook or as picker keys.
-6. **Writes**: the app writes only its own settings, token readings (`.thadeus/tokens/`), editor saves (hash-checked) and feature-doc release markers. It writes AI-DLC config only through the `aidlc` CLI or the tier-2 Guard Policy edit.
+2. **Intent list and detail**: `loadIntentList` merges `intents.json` with the folders on disk, plus summaries from each intent's state file. `loadIntentDetail` → `buildDetail` reads `aidlc-state.md`, `runtime-graph.json`, `.aidlc-engine/active-directive.json`, every audit shard and the artifact tree.
+3. **Live updates**: chokidar sends a change to `watchIntents`, which debounces it (300 ms, max 800 ms). The router then sends `project:changed {dirNames, indexChanged, costChanged}`. `useProject` reloads the list for those dirs, the detail when the selected intent changed, and the cost only on `costChanged || indexChanged`.
+4. **Cost** (today): `project:cost` → `loadCost` reads `aidlc/.aidlc-sessions/usage-ledger.json` → `summarizeLedger(ledger, intents)` matches `workflows["intent:<uuid>"]` to each intent's `uuid` → `{project, perIntent, byScope, timeline}`. The same call records a token reading for each in-flight intent (`.thadeus/tokens/`). With no ledger it returns `{available: false}` and every cost view hides.
+5. **Working agents**: the `aidlc/.aidlc-subagent-inflight` entry count limits `workingAgents()`, which pairs `SUBAGENT_DISPATCHED` with `SUBAGENT_COMPLETED` by `Agent Type`.
+6. **Agent dialogs**: the hooks write event files into the per-session channel folder; `agentChannel` validates them, `agentEvents` drives the state machine, and the answer goes back through the waiting hook or as picker keys.
+7. **Writes**: the app writes only its own settings, token readings (`.thadeus/tokens/`), editor saves (hash-checked) and feature-doc release markers. It writes AI-DLC config only through the `aidlc` CLI or the tier-2 Guard Policy edit.
 
-### US-0507 data sources
+### US-0507 data sources (prior intent)
 
-| Need | Where it is today | Read by the app now? |
-|---|---|---|
-| A Unit running and its stage | `runtime-graph.json` `stages[].instances[]` (`bolt`, `worktree`, `started_at`, `completed_at`, `outcome`); audit `BOLT_STARTED`, `WORKTREE_CREATED`, `SWARM_STARTED` (`Stage`) | Counts only (`runtimeGraph.js`); the audit events go to the timeline only |
-| Plan steps done and total | `<worktree>/…/construction/<unit>/code-generation/code-generation-plan.md`, `- [x]` and `- [ ]` lines | No; `.aidlc/worktrees/` is neither watched nor read |
-| Last commit subject | the worktree's git branch `bolt-<id8>_<unit>` | No; `git.js` has no log call |
-| Review requested and its verdict | audit `REVIEW_REQUESTED` and `REVIEW_COMPLETED` (`Stage`, `Reviewer`, `Unit`, `Verdict`, `Review Record`) | Timeline only |
-| Findings by severity | `<intent>/.aidlc-engine/reviews/<stage>/…/<n>.json` `findings[].severity` | No; the watcher ignores it |
-| Agent work with no Unit | `SUBAGENT_DISPATCHED` `Agent Type` plus the inflight count | Yes, `workingAgents()` |
+Unit progress comes from `runtime-graph.json` instances, the audit `WORKTREE_CREATED`/`BOLT_*`/`REVIEW_*` events, the worktree's `code-generation-plan.md` ticks, its last commit subject and the review record JSON (`findings[].severity`). US-0507 is delivered (#55); its brownfield notes are kept in `code-quality-assessment.md`.
+
+### US-0209 cost sources
+
+| Source | Where | Per | Read for cost now? |
+|---|---|---|---|
+| Usage ledger | `aidlc/.aidlc-sessions/usage-ledger.json`, gitignored, this machine only | project, intent (`intent:<uuid>`), stage, agent, model; exact tokens with cache write 5 m / 1 h | Yes, the only source |
+| Audit rollups | `<intent>/audit/<host>-<clone-id>.md`, committed, one shard per clone | `STAGE_COMPLETED` (per stage) and `WORKFLOW_COMPLETED` (whole intent) | No; the blocks reach the timeline only |
+| Local clone id | `aidlc/.aidlc-clone-id`, gitignored | the suffix of this machine's shard name | No |
+
+The local shard and the ledger describe the same work, so a merge takes the ledger for the local clone and the audit rollups for every other shard.
 
 ### Key Design Decisions
 
-- **Read-only, root-confined access** (`projectAccess.js` holds no write calls). This keeps the app from corrupting AI-DLC state. The cost is that every new source needs a root-relative path.
+- **Read-only, root-confined access** (`projectAccess.js` holds no write calls). The cost is that every new source needs a root-relative path.
 - **The last good value on broken input** (detail, graph, directive, ledger caches). Agents write files mid-stream, so the UI never blanks.
 - **Debounced folder watching with a max-wait**. The UI stays live during continuous agent writes without reload storms.
-- **Workflow actions typed into the visible terminal**. AI-DLC's own guards and audit apply. The app never submits on the person's behalf, except the intent switch.
-- **Agent dialogs through a file channel and hooks** (US-0506), with every byte validated in main before the renderer sees it.
+- **Workflow actions typed into the visible terminal**. AI-DLC's own guards and audit apply.
+- **Agent dialogs through a file channel and hooks** (US-0506), with every byte validated in main.
+- **One cost summary shape** (`perIntent[dir]` = `{total, tokens, byStage, byAgent, byModel, stageModels, agentModels, complete}`) feeds every cost and token view, so a second source can be merged in main without view changes beyond the machine and partial marks.
 
 ### Improvement Opportunities
 
-- Unit status should come from the runtime graph instances and the `BOLT_*` events, not only `UNIT_STARTED`, which AI-DLC does not log for builds.
-- A small read model of the running work per intent (Units, reviews, agents) in main would let `BoltDag` stay a view.
+- A per-intent cost read model in main that combines ledger and audit rollups, so the views stay unchanged.
 - `ipc.js` (891 lines) and `agentHooks.js` (864) are the largest modules and are candidates for splitting.
 
 ## Interaction Diagrams
 
-### Live intent update (today)
+### Cost refresh (today)
+
+```mermaid
+sequenceDiagram
+  participant H as AI-DLC hooks
+  participant L as usage-ledger.json
+  participant W as watchIntents
+  participant UP as useProject
+  participant IPC as IPC Router
+  participant V as Cost and token views
+  H->>L: write totals
+  L-->>W: chokidar change
+  W->>UP: project:changed (costChanged)
+  UP->>IPC: getCost(projectId, space)
+  IPC->>IPC: loadCost, summarizeLedger, recordReading
+  IPC-->>UP: {project, perIntent, byScope, timeline}
+  UP->>V: cost, perIntent[dir]
+```
+
+Text fallback: the hooks write the ledger; the watcher sets `costChanged`; `useProject` calls `getCost`; main reads and summarises the ledger and stores token readings; the views re-render from `perIntent`. A shard pulled from another machine sends `project:changed` with its dir name but no `costChanged`, so the cost is not reloaded.
+
+### Live intent update
 
 ```mermaid
 sequenceDiagram
@@ -96,18 +121,17 @@ sequenceDiagram
   participant W as watchIntents
   participant IPC as IPC Router
   participant UP as useProject
-  participant ID as IntentDetail/BoltDag
+  participant ID as IntentDetail
   AG->>FS: append audit, write runtime-graph.json
   FS-->>W: chokidar events
   W->>IPC: onChange({dirNames}) after 300-800 ms
   IPC->>UP: project:changed
   UP->>IPC: getIntent(projectId, space, dirName)
-  IPC->>IPC: loadIntentDetail (state, graph, audit, units)
-  IPC-->>UP: detail
-  UP->>ID: detail.graph.boltDag, detail.units
+  IPC-->>UP: detail (state, graph, events, units)
+  UP->>ID: re-render
 ```
 
-Text fallback: the agent writes the files; the watcher debounces and notifies the router; the router pushes `project:changed`; `useProject` calls `getIntent`; main rebuilds the detail; the Units tab re-renders.
+Text fallback: the agent writes the files; the watcher debounces and notifies the router; the router pushes `project:changed`; `useProject` calls `getIntent`; main rebuilds the detail; the intent view re-renders.
 
 ### Resume an intent
 

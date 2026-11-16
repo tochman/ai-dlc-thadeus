@@ -11,6 +11,7 @@ import {
   intentsDir,
   listSpaces,
   loadCost,
+  loadCrossMachineCost,
   loadIntentDetail,
   loadIntentList,
   loadPendingQuestions,
@@ -21,6 +22,7 @@ import { notifyEvent, notifyQuestions } from './notify.js';
 import { agentName, summarizeLedger } from './parsers/ledger.js';
 import { getConfiguredModels } from './models.js';
 import { readReadings, readingOf, recordReading } from './tokenReadings.js';
+import { USAGE_DIR, snapshotOf, writeSnapshot } from './usageSnapshot.js';
 import { CONFIG_WATCH_PATHS, checkHarness, getAidlcConfig } from './aidlcConfig.js';
 import { applyPlanEdit, deletePlan, listPlans, planStages, previewPlanEdit, savePlan } from './plans.js';
 import { apply as applyConfigChange, applyGuardLock, preview as previewConfigChange, previewGuardLock } from './aidlcWrite.js';
@@ -403,6 +405,7 @@ async function watchSpace(projectId, space) {
   p.watcher = watchIntents({
     intentsDir: path.join(p.root, intentsDir(space)),
     ledgerFile: path.join(p.root, LEDGER_PATH),
+    usageDir: path.join(p.root, USAGE_DIR), // other machines' cost snapshots, pulled with git (US-0209 FR5.1)
     worktreesDir: path.join(p.root, '.aidlc', 'worktrees'), // Unit plans written in a build's worktree (US-0507 FR5.1)
     onChange: (change) => {
       if (!p.sender.isDestroyed()) p.sender.send('project:changed', { projectId, space, ...change });
@@ -467,17 +470,25 @@ const handlers = {
   'project:cost': async (_event, projectId, space) => {
     const p = project(projectId);
     const cost = await loadCost(p.root);
-    if (!cost.available) return cost;
     const { intents } = await loadIntentList(p.root, space, []); // cached list; only new folders are read
-    const { ledger, ...rest } = cost;
-    const summary = summarizeLedger(ledger, intents);
-    // A reading per running intent for the token detail view; never awaited, so the cost answer never waits (US-0208 FR2, NFR2).
-    const now = Date.now();
-    for (const i of intents) {
-      const reading = i.status === 'in-flight' ? readingOf(summary.perIntent[i.dirName], now) : null;
-      if (reading) recordReading(p.root, i.dirName, reading).catch((err) => console.error(`Kunde inte spara tokenavläsning för ${i.dirName}:`, err.message));
+    const { ledger = null, ...rest } = cost;
+    // US-0209: every machine's cost (ledger, audit shard rows, snapshots); a fresh clone without a ledger still has one (FR1.4).
+    const { summary, local } = await loadCrossMachineCost(p.root, space, intents, ledger);
+    if (!summary) return cost;
+    if (ledger) {
+      // US-0209 FR3.1: this machine's snapshot, written only when it changed; never awaited, like the readings below.
+      if (local) writeSnapshot(p.root, snapshotOf(ledger, local)).catch((err) => console.error('Kunde inte spara kostnadssnapshot:', err.message));
+      // A reading per running intent for the token detail view, from this machine's ledger only (US-0208 FR2, NFR2; US-0209 assumption).
+      const own = summarizeLedger(ledger, intents);
+      const now = Date.now();
+      for (const i of intents) {
+        const reading = i.status === 'in-flight' ? readingOf(own.perIntent[i.dirName], now) : null;
+        if (reading) recordReading(p.root, i.dirName, reading).catch((err) => console.error(`Kunde inte spara tokenavläsning för ${i.dirName}:`, err.message));
+      }
     }
-    return { ...rest, ...summary };
+    const kept = { ...rest };
+    delete kept.reason; // no ledger but audit rows: the cost is available
+    return { ...kept, available: true, ...summary };
   },
   // The stored readings of one intent (US-0208 FR2.1); readReadings checks the dir name before it becomes a path.
   'tokens:readings': async (_event, projectId, dirName) => readReadings(project(projectId).root, dirName),

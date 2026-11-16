@@ -1,0 +1,120 @@
+// US-0209 FR1.4, FR2.1–FR2.3, FR3.4, FR4.2, NFR1: one intent's cost from this machine's ledger, its own shard rows and
+// the other machines' snapshots or shard rows, each machine counted once.
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { promises as fs, readFileSync } from 'node:fs';
+import path from 'node:path';
+import { mergeAudits } from '../../src/main/parsers/audit.js';
+import { mergeIntentCosts, shardCosts } from '../../src/main/parsers/auditCost.js';
+import { loadCrossMachineCost } from '../../src/main/projectService.js';
+
+const FIX = path.join(process.cwd(), 'tests/fixtures/cost');
+const read = (f) => readFileSync(path.join(FIX, f), 'utf8');
+const ledger = JSON.parse(readFileSync(path.join(process.cwd(), 'tests/fixtures/ledger/usage-ledger.json'), 'utf8'));
+const UUID = '01a1c625-50f3-7f83-9755-b096bf4025e6'; // $4 in the ledger fixture
+const ledgerNode = ledger.workflows[`intent:${UUID}`];
+const A = { host: 'hosta', cloneId: 'aaaaaaaaaaaa' };
+const shards = shardCosts(mergeAudits(['hosta-aaaaaaaaaaaa.md', 'hostb-bbbbbbbbbbbb.md'].map((f) => ({ source: f, text: read(f) })))); // A $3.50, B $3
+const snapB = (usd) => ({ host: 'hostb', cloneId: 'bbbbbbbbbbbb', node: { totals: { usd, tokens: {} }, byStage: {}, byModel: {}, byAgent: {} } });
+const hosts = (m) => m.machines.map((x) => [x.host, x.local, x.source]);
+
+describe('mergeIntentCosts (US-0209 FR1.4, FR2, FR3.4, FR4.2)', () => {
+  it('with no ledger, every shard counts, this machine included, and the total is partial (FR1.4, FR2.2)', () => {
+    const m = mergeIntentCosts({ ledgerNode: null, local: A, shards, snapshots: [] });
+    expect(m.node.totals.usd).toBeCloseTo(6.5, 10);
+    expect(hosts(m)).toEqual([
+      ['hosta', true, 'audit'],
+      ['hostb', false, 'audit']
+    ]);
+    expect(m.partial).toBe(true);
+  });
+
+  it("A's ledger replaces A's shard; B's stage row is added once, nothing more (FR2.2, FR2.3, NFR1)", () => {
+    const m = mergeIntentCosts({ ledgerNode, local: A, shards, snapshots: [] });
+    expect(m.node.totals.usd).toBe(4 + 3);
+    expect(m.extra.totals.usd).toBe(3); // what the ledger does not already hold
+    expect(m.node.byModel['sonnet-5-5'].usd).toBe(1.5 + 3);
+    expect(hosts(m)).toEqual([
+      ['hosta', true, 'ledger'],
+      ['hostb', false, 'audit']
+    ]);
+    expect(m.partial).toBe(true); // B has stage rows only
+  });
+
+  it("B's snapshot counts instead of its shard rows, the larger total wins, never both (FR3.4)", () => {
+    const bigger = mergeIntentCosts({ ledgerNode, local: A, shards, snapshots: [snapB(4.5)] });
+    expect(bigger.node.totals.usd).toBe(4 + 4.5);
+    expect(hosts(bigger)[1]).toEqual(['hostb', false, 'snapshot']);
+    expect(bigger.partial).toBe(false);
+    const older = mergeIntentCosts({ ledgerNode, local: A, shards, snapshots: [snapB(2)] });
+    expect(older.node.totals.usd).toBe(4 + 3);
+    expect(hosts(older)[1]).toEqual(['hostb', false, 'audit']);
+  });
+
+  it('gives null when no machine has any cost, and treats every shard as another machine without a clone id', () => {
+    expect(mergeIntentCosts({ ledgerNode: null, local: A, shards: [], snapshots: [] })).toBeNull();
+    const m = mergeIntentCosts({ ledgerNode: null, local: null, shards, snapshots: [] });
+    expect(m.machines.every((x) => !x.local)).toBe(true);
+  });
+});
+
+describe('loadCrossMachineCost (US-0209 FR1.4, FR2, FR4.2)', () => {
+  const TMP_BASE = path.join(process.cwd(), 'tests/.tmp');
+  const intents = [
+    { dirName: '261116-two-machines', uuid: UUID, slug: 'two-machines', scope: 'feature', date: '2026-11-16' },
+    { dirName: '261116-no-uuid', uuid: null, slug: 'no-uuid', scope: 'express', date: '2026-11-16' },
+    { dirName: '261116-empty', uuid: '0000-none', slug: 'empty', scope: 'express', date: '2026-11-16' }
+  ];
+  let root;
+  beforeEach(async () => {
+    await fs.mkdir(TMP_BASE, { recursive: true });
+    root = await fs.realpath(await fs.mkdtemp(path.join(TMP_BASE, 'cross-machine-')));
+    const audit = (dir) => path.join(root, 'aidlc/spaces/default/intents', dir, 'audit');
+    for (const dir of ['261116-two-machines', '261116-no-uuid']) {
+      await fs.mkdir(audit(dir), { recursive: true });
+      for (const f of ['hosta-aaaaaaaaaaaa.md', 'hostb-bbbbbbbbbbbb.md']) await fs.writeFile(path.join(audit(dir), f), read(f));
+    }
+    await fs.writeFile(path.join(root, 'aidlc/.aidlc-clone-id'), 'aaaaaaaaaaaa\n');
+  });
+  afterEach(async () => {
+    await fs.rm(root, { recursive: true, force: true });
+    vi.restoreAllMocks();
+  });
+
+  it('merges the ledger with the other machine, per intent and in the project total, with machines and partial', async () => {
+    const { summary, local } = await loadCrossMachineCost(root, 'default', intents, ledger);
+    expect(local).toEqual(A);
+    const two = summary.perIntent['261116-two-machines'];
+    expect(two.total.usd).toBe(7);
+    expect(two.machines.map((x) => [x.host, x.local, x.source])).toEqual([
+      ['hosta', true, 'ledger'],
+      ['hostb', false, 'audit']
+    ]);
+    expect(two.partial).toBe(true);
+    expect(summary.perIntent['261116-no-uuid'].total.usd).toBeCloseTo(6.5, 10); // no ledger entry: both shards
+    expect(summary.perIntent['261116-empty']).toBeNull();
+    expect(summary.project.total.usd).toBeCloseTo(5.5 + 3 + 6.5, 10); // ledger + B's row + the no-uuid intent's rows
+    expect(summary.project.machines).toEqual([
+      { host: 'hosta', local: true },
+      { host: 'hostb', local: false }
+    ]);
+    expect(summary.project.partial).toBe(true);
+  });
+
+  it("counts B's committed snapshot instead of its rows, and needs no ledger on a fresh clone (FR1.4, FR3.4)", async () => {
+    const usage = path.join(root, '.thadeus/usage');
+    await fs.mkdir(usage, { recursive: true });
+    const snap = JSON.parse(read('hostb-bbbbbbbbbbbb.json'));
+    snap.intents[UUID] = snap.intents['0000b209-0000-7000-8000-000000000001'];
+    await fs.writeFile(path.join(usage, 'hostb-bbbbbbbbbbbb.json'), JSON.stringify(snap));
+    const { summary } = await loadCrossMachineCost(root, 'default', intents, null);
+    const two = summary.perIntent['261116-two-machines'];
+    expect(two.total.usd).toBe(3.5 + 4.5); // A's rows (no ledger) + B's snapshot
+    expect(two.machines.map((x) => x.source)).toEqual(['audit', 'snapshot']);
+    expect(two.partial).toBe(true); // this machine has no ledger
+  });
+
+  it('gives no summary when there is no ledger and no cost row anywhere', async () => {
+    await fs.rm(path.join(root, 'aidlc/spaces'), { recursive: true });
+    expect((await loadCrossMachineCost(root, 'default', intents, null)).summary).toBeNull();
+  });
+});

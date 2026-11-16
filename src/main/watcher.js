@@ -108,13 +108,38 @@ function watchWorktreePlans(worktreesDir, intentsDir, onPlan) {
 }
 
 /**
- * @param {{intentsDir: string, ledgerFile?: string, worktreesDir?: string,
+ * Calls `onHit` for a file directly in `dir` that `accept` takes (absolute path). chokidar v4 misses a file whose folder
+ * is absent at start (F-01), and `.thadeus/usage` can lack both levels, so this watches `dir`'s grandparent and lets
+ * through only the folders on the way down and the accepted files.
+ */
+function watchFilesIn(dir, accept, onHit) {
+  const inner = path.resolve(dir);
+  const chain = new Set([inner, path.dirname(inner), path.dirname(path.dirname(inner))]);
+  const hit = (p) => path.dirname(p) === inner && accept(p);
+  const w = chokidar.watch(path.dirname(path.dirname(inner)), {
+    ignoreInitial: true,
+    depth: 2,
+    ignored: (p) => {
+      const abs = path.resolve(p);
+      return !chain.has(abs) && !hit(abs);
+    }
+  });
+  w.on('all', (_event, p) => {
+    if (hit(path.resolve(p))) onHit();
+  });
+  return w;
+}
+
+/**
+ * @param {{intentsDir: string, ledgerFile?: string, usageDir?: string, worktreesDir?: string,
  *          onChange: (c: {dirNames: string[], indexChanged: boolean, costChanged: boolean}) => void,
  *          onError?: (err: Error) => void, debounceMs?: number, maxWaitMs?: number}} opts
  *   ledgerFile: absolute path to usage-ledger.json; a change there sets costChanged (FR5.1)
+ *   usageDir: absolute path to `<root>/.thadeus/usage`; a snapshot change there sets costChanged (US-0209 FR5.1),
+ *   as does a change to an intent's audit/*.md shard
  *   worktreesDir: absolute path to `<root>/.aidlc/worktrees`; a Unit plan written there reports its intent (US-0507 FR5.1)
  */
-export function watchIntents({ intentsDir, ledgerFile, worktreesDir, onChange, onError = console.error, debounceMs = 300, maxWaitMs = 800 }) {
+export function watchIntents({ intentsDir, ledgerFile, usageDir, worktreesDir, onChange, onError = console.error, debounceMs = 300, maxWaitMs = 800 }) {
   const pending = new Set();
   let indexChanged = false;
   let costChanged = false;
@@ -137,25 +162,17 @@ export function watchIntents({ intentsDir, ledgerFile, worktreesDir, onChange, o
     timer = setTimeout(flush, Math.min(debounceMs, Math.max(0, firstAt + maxWaitMs - Date.now())));
   };
 
+  const onCost = () => {
+    costChanged = true;
+    schedule();
+  };
   const watchers = [chokidar.watch(intentsDir, { ignoreInitial: true, ignored: isIgnored })];
   if (ledgerFile) {
-    // chokidar v4 misses a file whose folder is absent at start (F-01), so watch the ledger's grandparent
-    // (aidlc/) and let through only that folder, .aidlc-sessions/ and the ledger itself.
     const ledger = path.resolve(ledgerFile);
-    const sessionsDir = path.dirname(ledger);
-    const keep = new Set([path.dirname(sessionsDir), sessionsDir, ledger]);
-    const ledgerWatcher = chokidar.watch(path.dirname(sessionsDir), {
-      ignoreInitial: true,
-      depth: 1,
-      ignored: (p) => !keep.has(path.resolve(p))
-    });
-    ledgerWatcher.on('all', (_event, p) => {
-      if (path.resolve(p) !== ledger) return;
-      costChanged = true;
-      schedule();
-    });
-    watchers.push(ledgerWatcher);
+    watchers.push(watchFilesIn(path.dirname(ledger), (p) => p === ledger, onCost));
   }
+  // US-0209 FR5.1: a snapshot written here, or pulled from another machine, reloads the cost.
+  if (usageDir) watchers.push(watchFilesIn(usageDir, (p) => p.endsWith('.json'), onCost));
   if (worktreesDir) {
     watchers.push(
       watchWorktreePlans(worktreesDir, intentsDir, (dir) => {
@@ -176,6 +193,7 @@ export function watchIntents({ intentsDir, ledgerFile, worktreesDir, onChange, o
       indexChanged = true;
     } else if (!parts[0].startsWith('.')) {
       pending.add(parts[0]);
+      if (parts.length === 3 && parts[1] === 'audit' && parts[2].endsWith('.md')) costChanged = true; // US-0209 FR5.1
     } else {
       return;
     }

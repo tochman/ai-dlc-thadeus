@@ -12,7 +12,7 @@ T.H.A.D.E.U.S. (package `thadeus`, repository `aidlc-dash`) is a desktop "bridge
 | Audit timeline | A virtualised, filtered timeline of audit events with live highlighting | EPIC-03 |
 | Cost and tokens | Cost per stage, agent and model from the usage ledger; live token meters; a token detail view | EPIC-02 |
 | Branding and desktop | The LCARS look, menu, About, splash, settings, the in-app updater | EPIC-04 |
-| Workflow control | Resume, Refresh from GitHub, AI-DLC setup, a questions popup, agent dialogs (questions, permissions, replies through hooks), the AI-DLC update check | EPIC-05 |
+| Workflow control | Resume, Refresh from GitHub, AI-DLC setup, a questions popup, agent dialogs, agent progress on the Unit DAG (US-0507) | EPIC-05 |
 | Feature docs | Epics and stories from `docs/FEATURES.md`, release markers, a Releases tab | EPIC-06 |
 | Languages | Swedish and English through `t()` with ICU | EPIC-07 |
 | Harnesses | Claude Code and opencode tabs; setup for other harnesses | EPIC-08 |
@@ -25,13 +25,9 @@ T.H.A.D.E.U.S. (package `thadeus`, repository `aidlc-dash`) is a desktop "bridge
 - **The app reads AI-DLC; it does not change it.** Engine-owned files (state, audit, `intents.json`, `.aidlc-*`, harness folders) are never written. Workflow actions are typed into the visible terminal, or run through the official `aidlc` CLI with fixed arguments.
 - **Everything is confined to the root.** Every path the renderer names goes through `resolveInRoot`.
 - **Broken input stays local.** A half-written file keeps the last good value and affects only its own intent.
+- **Cost is AI-DLC's own figure.** Only the `usd` values AI-DLC wrote are shown; the app computes no prices (`ledger.js` FR2.4).
 - **Status is never colour alone, and every text is translated.**
 
-## Active Intent (US-0507)
+## Active Intent (US-0209)
 
-"See what the agents are doing and how far they have come": on the existing Unit diagram (`BoltDag.jsx`, the intent's Units tab), each running Unit shows:
-- its stage and how long it has run;
-- for a build, the plan steps done out of the total, from the ticked boxes in its worktree's `code-generation-plan.md`, plus its last commit subject;
-- for a review, "review requested", then the verdict and the findings by severity.
-
-A summary line in words sits above the diagram. It updates live; finished work drops off with its result, and a source it cannot read is named, not shown as 0. See `architecture.md` ("US-0507 data sources") and `code-quality-assessment.md` ("Brownfield notes for US-0507").
+"An intent's cost should count every machine." Today the cost views read only this machine's gitignored ledger, so work done on another computer is missing. The intent adds the cost rollups that every machine commits in its own audit shard (`<record>/audit/<host>-<clone-id>.md`), merged with the local ledger without double counting, and shows which machines contributed and when a total is partial. See `architecture.md` ("US-0209 cost sources") and `code-quality-assessment.md` ("Brownfield notes for US-0209").
