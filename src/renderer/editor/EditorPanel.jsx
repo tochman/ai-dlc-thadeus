@@ -72,14 +72,21 @@ export function useEditorTabs(projectId) {
   tabsRef.current = tabs;
   const patch = useCallback((rel, change) => setTabs((list) => list.map((tab) => (tab.rel === rel ? { ...tab, ...change(tab) } : tab))), []);
 
+  // US-1201 AC-2: `append` adds text after the file's content, unsaved, so nothing is written until the person saves.
   const open = useCallback(
-    async (rel) => {
+    async (rel, { append = '' } = {}) => {
       setActive(rel);
-      if (tabsRef.current.some((tab) => tab.rel === rel)) return;
+      if (tabsRef.current.some((tab) => tab.rel === rel)) {
+        if (append) patch(rel, (tab) => ({ text: tab.text + append }));
+        return;
+      }
       setTabs((list) => [...list, { rel, text: '', base: null, readOnly: null, loading: true }]);
       try {
         const r = await window.bridge.readFileForEdit(projectId, rel);
-        patch(rel, () => ({ ...fromDisk(r), loading: false }));
+        patch(rel, () => {
+          const disk = fromDisk(r);
+          return { ...disk, text: disk.readOnly ? disk.text : disk.text + append, loading: false };
+        });
       } catch (err) {
         patch(rel, () => ({ loading: false, error: errorText(err) }));
       }

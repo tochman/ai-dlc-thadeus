@@ -31,7 +31,19 @@ function stubBridge({ settings = {}, tools = [], appInfo, saveError = null } = {
     openExternal: vi.fn(async () => {}),
     // US-0504: the AI-DLC rows under the tool cards.
     getAidlcUpdateStatus: vi.fn(async () => ({ version: 'aidlc 2.11.3', status: 'current', latest: '2.11.3', reason: null, command: 'aidlc update' })),
-    getAidlcProjectPlans: vi.fn(async () => [])
+    getAidlcProjectPlans: vi.fn(async () => []),
+    // US-1201 AC-1: main keeps the Bitbucket credentials and only says whether they are set.
+    bitbucket: {
+      status: vi.fn(async () => ({ set: state.bitbucketSet === true })),
+      save: vi.fn(async () => {
+        state.bitbucketSet = true;
+        return { set: true };
+      }),
+      clear: vi.fn(async () => {
+        state.bitbucketSet = false;
+        return { set: false };
+      })
+    }
   };
   window.bridge = bridge;
   return { bridge, state };
@@ -297,6 +309,39 @@ describe('Settings in LCARS tabs (US-0410)', () => {
     // A found tool does not carry the needed-for line.
     await waitFor(() => expect(within(screen.getByTestId('settings-tool-opencode')).getByText('0.15.2')).toBeTruthy());
     expect(within(screen.getByTestId('settings-tool-opencode')).queryByText(/Behövs för/)).toBeNull();
+  });
+
+  it('saves the Bitbucket username and app password through main and never shows the password again (US-1201 AC-1)', async () => {
+    const { bridge } = stubBridge({ tools: TOOLS5 });
+    renderView();
+    const card = screen.getByTestId('settings-bitbucket');
+    expect(card.classList.contains('lcars-card')).toBe(true);
+    await waitFor(() => expect(within(card).getByTestId('settings-bitbucket-status').textContent).toBe('Inte sparat'));
+    const password = within(card).getByTestId('settings-bitbucket-password');
+    expect(password.getAttribute('type')).toBe('password');
+    fireEvent.change(within(card).getByTestId('settings-bitbucket-username'), { target: { value: 'thomas' } });
+    fireEvent.change(password, { target: { value: 'S3cret-pw' } });
+    fireEvent.click(within(card).getByTestId('settings-bitbucket-save'));
+    await waitFor(() => expect(within(card).getByTestId('settings-bitbucket-status').textContent).toBe('Sparat i nyckelringen'));
+    expect(bridge.bitbucket.save).toHaveBeenCalledWith('thomas', 'S3cret-pw');
+    expect(password.value).toBe('');
+    expect(document.body.innerHTML).not.toContain('S3cret-pw');
+
+    fireEvent.click(within(card).getByTestId('settings-bitbucket-clear'));
+    await waitFor(() => expect(within(card).getByTestId('settings-bitbucket-status').textContent).toBe('Inte sparat'));
+    expect(bridge.bitbucket.clear).toHaveBeenCalled();
+  });
+
+  it('shows a refused Bitbucket save on the card and keeps nothing it was given (US-1201 AC-1)', async () => {
+    const { bridge } = stubBridge({ tools: TOOLS5 });
+    bridge.bitbucket.save.mockRejectedValueOnce(new Error("Error invoking remote method 'credentials:bitbucket': Error: Datorns nyckelring kan inte kryptera"));
+    renderView();
+    const card = screen.getByTestId('settings-bitbucket');
+    fireEvent.change(within(card).getByTestId('settings-bitbucket-username'), { target: { value: 'thomas' } });
+    fireEvent.change(within(card).getByTestId('settings-bitbucket-password'), { target: { value: 'pw' } });
+    fireEvent.click(within(card).getByTestId('settings-bitbucket-save'));
+    expect((await within(card).findByRole('alert')).textContent).toBe('Datorns nyckelring kan inte kryptera');
+    expect(within(card).getByTestId('settings-bitbucket-password').value).toBe('');
   });
 
   it('lets a path break after each / and nowhere else (FR4.4)', async () => {

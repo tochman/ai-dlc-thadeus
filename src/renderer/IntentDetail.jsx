@@ -8,6 +8,7 @@ import CostTab from './CostTab.jsx';
 import ResumeButton from './ResumeButton.jsx';
 import TokenView from './TokenView.jsx';
 import TokenDetail from './TokenDetail.jsx';
+import StoryComments from './StoryComments.jsx';
 import { Dots, Frame, Hairlines } from './Lcars.jsx';
 import Tooltip from './Tooltip.jsx';
 import { formatCost, isInFlight, shortModel, stagePosition, stageStatusLabel, stageTitle } from './format.js';
@@ -17,6 +18,7 @@ const TABS = [
   { id: 'timeline', tone: 'mid' },
   { id: 'units', tone: 'mid' },
   { id: 'cost', tone: 'mid' },
+  { id: 'comments', tone: 'mid' }, // US-1201 AC-4
   { id: 'files', tone: 'dark' }
 ];
 const MODE_KEY = { 'in-flight': 'live', complete: 'complete' };
@@ -124,7 +126,19 @@ function ReadoutColumn({ pipeline, intentCost, intent, directive, cost, dirName,
   );
 }
 
-export default function IntentDetail({ projectId, detail, intent, activeDirName, activeIntent = null, newKeys, cost, models, stories = [], onOpenStory }) {
+export default function IntentDetail({
+  projectId,
+  space = 'default',
+  detail,
+  intent,
+  activeDirName,
+  activeIntent = null,
+  newKeys,
+  cost,
+  models,
+  stories = [],
+  onOpenStory
+}) {
   const { t } = useTranslation();
   const [tab, setTab] = useState('pipeline');
   const [openFile, setOpenFile] = useState(null);
@@ -245,6 +259,7 @@ export default function IntentDetail({ projectId, detail, intent, activeDirName,
           {tab === 'cost' && <CostTab cost={cost} intentCost={intentCost} pipeline={pipeline} models={models} />}
           {tab === 'timeline' && <Timeline events={detail.events} newKeys={newKeys} />}
           {tab === 'units' && <BoltDag dag={detail.graph?.boltDag ?? null} statuses={detail.units} />}
+          {tab === 'comments' && <StoryComments projectId={projectId} space={space} dirName={detail.dirName} />}
           {tab === 'files' && <ArtifactReader projectId={projectId} groups={detail.files} selected={openFile} onSelect={setOpenFile} />}
         </div>
       </Frame>

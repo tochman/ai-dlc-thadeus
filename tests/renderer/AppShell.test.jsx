@@ -152,10 +152,13 @@ describe('App shell', () => {
     const shownView = () => screen.getByTestId('project-view-p1').dataset.view;
 
     fireEvent.click(screen.getByTestId('arm-github'));
-    expect(current()).toEqual(['arm-github']);
+    expect(current()).toEqual(['arm-github', 'team-section-refresh']); // US-1201 AC-3: Update | Machines under the block
     expect(shownView()).toBe('github');
     expect(screen.getByRole('heading', { level: 1 }).textContent).toMatch(/aidlc-dash-a.*Github/);
     expect(screen.getByTestId('arm-github').hasAttribute('aria-expanded')).toBe(false); // a view, no longer a fold-out
+    fireEvent.click(screen.getByTestId('team-section-machines'));
+    expect(current()).toEqual(['arm-github', 'team-section-machines']);
+    fireEvent.click(screen.getByTestId('team-section-refresh'));
 
     fireEvent.click(screen.getByTestId('arm-cost'));
     expect(current()).toEqual(['arm-cost']);
@@ -164,7 +167,7 @@ describe('App shell', () => {
     expect(shownView()).toBe('cost');
 
     act(() => push.menuCommand({ command: 'panel', panel: 'github' }));
-    expect(current()).toEqual(['arm-github']);
+    expect(current()).toEqual(['arm-github', 'team-section-refresh']);
     act(() => push.menuCommand({ command: 'view', view: 'config' }));
     expect(current()).toEqual(['project-view-switch-config', 'config-section-docs']);
     expect(shownView()).toBe('config');

@@ -1,6 +1,8 @@
 // Read-only git for "Uppdatera från GitHub" (US-0502). Only fetch, rev-parse, rev-list, diff, status,
 // show, tag --list (US-0603) and log -1 (US-0507) run here, with fixed arguments and no shell (FR3.1, NFR1). Anything that changes the
 // working tree is typed into the visible shell tab by the renderer instead.
+// US-1201 AC-2, AC-3 add remote get-url, for-each-ref and merge-tree --write-tree, which writes objects but never the
+// working tree, the index or a ref.
 import { runFixed } from './exec.js';
 import { readJsonSafe } from './projectAccess.js';
 import { t } from '../shared/i18n.js';
@@ -161,6 +163,59 @@ export async function listReleaseTags(root, { exec } = {}) {
 /** US-0507 FR2.2, NFR2: the subject of the last commit on the branch checked out in `cwd`; null when git cannot say. */
 export async function lastCommitSubject(cwd, { exec } = {}) {
   return (await gitOrNull(cwd, ['log', '-1', '--format=%s'], exec)) || null;
+}
+
+/** US-1201 AC-1: the address of the `origin` remote, or null without one. */
+export async function originUrl(root, { exec } = {}) {
+  return (await gitOrNull(root, ['remote', 'get-url', 'origin'], exec)) || null;
+}
+
+/** US-1201 AC-2: how many commits HEAD is behind `base`; null when `base` is not here (not fetched, or no remote). */
+export async function behindCount(root, base = FALLBACK_REF, { exec } = {}) {
+  safeArg(base, 'ref');
+  const out = await gitOrNull(root, ['rev-list', '--count', `HEAD..${base}`], exec);
+  return out === null ? null : parseRevCount(out);
+}
+
+/** US-1201 AC-2: the repository-relative files `ref` changes since it left `base`, as a pull request shows them. */
+export async function changedFiles(root, ref = 'HEAD', base = FALLBACK_REF, { exec } = {}) {
+  safeArg(ref, 'ref');
+  safeArg(base, 'ref');
+  return lines(await git(root, ['diff', '--name-only', `${base}...${ref}`], exec));
+}
+
+/**
+ * US-1201 AC-2: the files that would conflict if `theirs` were merged into `ours`, from `git merge-tree --write-tree`
+ * (git 2.38+). It writes tree objects only: the working tree, the index and every ref stay as they are.
+ * Exit 1 is git's "conflicts" answer; any other failure (a missing ref, an old git) throws.
+ */
+export async function predictConflicts(root, ours, theirs, { exec } = {}) {
+  const args = ['merge-tree', '--write-tree', '--name-only', '--no-messages', safeArg(ours, 'ref'), safeArg(theirs, 'ref')];
+  try {
+    await git(root, args, exec);
+    return [];
+  } catch (err) {
+    if (err.code !== 1 || !err.stdout) throw err;
+    return [...new Set(lines(err.stdout).slice(1))]; // the first line is the merged tree's id
+  }
+}
+
+const STORY = /US-\d{4}/i;
+
+/** US-1201 AC-3: origin's story branches (a story id in the name) with commits that are not in `base`. */
+export async function remoteStoryBranches(root, base = FALLBACK_REF, { exec } = {}) {
+  safeArg(base, 'ref');
+  const refs = lines(await git(root, ['for-each-ref', '--format=%(refname:short)', 'refs/remotes/origin'], exec));
+  const rows = await Promise.all(
+    refs
+      .filter((ref) => ref !== base && !ref.startsWith('-') && STORY.test(ref))
+      .map(async (branch) => ({
+        branch,
+        story: branch.match(STORY)[0].toUpperCase(),
+        ahead: parseRevCount(await gitOrNull(root, ['rev-list', '--count', `${base}..${branch}`], exec))
+      }))
+  );
+  return rows.filter((r) => r.ahead > 0);
 }
 
 /** Files with unresolved conflicts after a pull, rebase or merge (FR3.8). */

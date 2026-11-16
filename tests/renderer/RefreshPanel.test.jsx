@@ -17,13 +17,20 @@ const changes = {
   newIntents: [{ dirName: '261114-from-laptop', slug: 'from-laptop' }]
 };
 
+// US-1201: the platform of origin and the collision warning (team:platform, team:collisions).
+const github = { id: 'github', name: 'GitHub', host: 'github.com', path: 'tochman/aidlc-dash' };
+const collisions = { isRepo: true, branch: 'feature/x', base: 'origin/main', behind: 2, error: null, collisions: [] };
+
 beforeEach(() => {
   window.bridge = {
     getGitStatus: vi.fn(async () => status),
     gitFetch: vi.fn(async () => {}),
     getRemoteChanges: vi.fn(async () => changes),
     showRemoteFile: vi.fn(async () => '# Remote'),
-    getConflicts: vi.fn(async () => [])
+    getConflicts: vi.fn(async () => []),
+    getPlatform: vi.fn(async () => github),
+    getCollisions: vi.fn(async () => collisions),
+    getMergeNote: vi.fn(async () => ({ rel: 'x.md', section: '' }))
   };
 });
 
@@ -79,5 +86,29 @@ describe('RefreshPanel', () => {
     expect(screen.getByTestId('refresh-panel-pull').disabled).toBe(true);
     await waitFor(() => expect(screen.getByTestId('refresh-panel-status').textContent).toMatch(/arbetar/));
     expect(terminal.type).not.toHaveBeenCalled();
+  });
+
+  it("is named after origin's platform, and after git when origin is on none of them (US-1201 AC-5)", async () => {
+    window.bridge.getPlatform.mockResolvedValueOnce({ ...github, id: 'gitlab', name: 'GitLab' });
+    render(<RefreshPanel projectId="p1" space="default" lastIntentChangeAt={null} />);
+    await waitFor(() => expect(screen.getByTestId('refresh-panel-toggle').textContent).toMatch(/^Uppdatera från GitLab/));
+    expect(window.bridge.getPlatform).toHaveBeenCalledWith('p1');
+    cleanup();
+    window.bridge.getPlatform.mockResolvedValueOnce(null);
+    render(<RefreshPanel projectId="p1" space="default" lastIntentChangeAt={null} />);
+    await waitFor(() => expect(screen.getByTestId('refresh-panel-toggle').textContent).toMatch(/^Uppdatera från git/));
+  });
+
+  it('shows the collision warning once open, reads it again after Uppdatera, and still fetches only then (US-1201 AC-2, AC-5)', async () => {
+    render(<RefreshPanel projectId="p1" space="default" lastIntentChangeAt={null} activeDirName="261116-a" />);
+    expect(window.bridge.getCollisions).not.toHaveBeenCalled(); // nothing is read while the panel is closed
+    fireEvent.click(screen.getByTestId('refresh-panel-toggle'));
+    expect((await screen.findByTestId('collision-panel-behind')).textContent).toMatch(/^Grenen ligger 2 commits efter origin\/main/);
+    expect(window.bridge.gitFetch).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByTestId('refresh-panel-update'));
+    await screen.findByTestId('refresh-panel-badge');
+    await waitFor(() => expect(window.bridge.getCollisions).toHaveBeenCalledTimes(2));
+    expect(window.bridge.gitFetch).toHaveBeenCalledTimes(1);
+    expect(screen.getByTestId('collision-panel-merge-note')).toBeTruthy();
   });
 });

@@ -22,7 +22,8 @@ import { PROJECT_SECTIONS } from './ProjectSettingsView.jsx';
 
 const bridge = window.bridge;
 // The view and, for Features and Configuration, the section chosen in the arm (US-0012).
-const UI_DEFAULT = { view: 'intents', configSection: 'docs', featuresTab: 'epics' };
+const UI_DEFAULT = { view: 'intents', configSection: 'docs', featuresTab: 'epics', teamSection: 'refresh' };
+const TEAM_SECTIONS = ['refresh', 'machines']; // the team view's sections under its arm block (US-1201 AC-3)
 
 function errorText(err) {
   return String(err?.message ?? err).replace(/^Error invoking remote method '[^']+': (Error: )?/, '');
@@ -610,6 +611,16 @@ export default function App() {
             <ArmBlock tone="dark" current={!settingsView && view === 'github'} disabled={!isAidlc} onClick={() => showView('github')} data-testid="arm-github">
               {t('app.github')}
             </ArmBlock>
+            {isAidlc && !settingsView && view === 'github' && (
+              <ArmSubtabs
+                label={t('app.github')}
+                ids={TEAM_SECTIONS}
+                current={activeUi.teamSection}
+                labelOf={(id) => t(`team.sections.${id}`)}
+                onPick={(id) => showView('github', { teamSection: id })}
+                testIdPrefix="team-section"
+              />
+            )}
           </>
         )}
         <ArmBlock tone="dark" current={settingsView} onClick={openAppSettings} data-testid="app-settings-open">
@@ -688,6 +699,7 @@ export default function App() {
                 visible={!settingsView && tab.projectId === activeId}
                 view={tabUi.view}
                 section={tabUi.configSection}
+                teamSection={tabUi.teamSection}
                 featuresTab={tabUi.featuresTab}
                 onView={(v, extra) => setUiOf(tab.projectId, { view: v, ...extra })}
                 onMeta={reportMeta}

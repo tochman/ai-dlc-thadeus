@@ -48,7 +48,10 @@ beforeEach(() => {
     getAidlcConfig: vi.fn(async () => ({ activeDir: null, plans: [], errors: {} })),
     getWorkingAgents: vi.fn(async () => []),
     getGitStatus: vi.fn(async () => ({ isRepo: true, branch: 'main', upstream: null, ahead: 0, behind: 0, dirtyAidlc: 0, dirtyOther: 0 })),
-    setProjectSettings: vi.fn(async () => ({}))
+    setProjectSettings: vi.fn(async () => ({})),
+    // US-1201: the collision warning in the panel and the machines section.
+    getCollisions: vi.fn(async () => ({ isRepo: true, branch: 'main', base: 'origin/main', behind: 0, error: null, collisions: [] })),
+    getMachines: vi.fn(async () => ({ intents: [], branches: [], flags: [] }))
   };
 });
 afterEach(() => {
@@ -92,6 +95,14 @@ describe('ProjectView: one view at a time', () => {
     show('github');
     await screen.findByTestId('refresh-panel-status');
     expect(window.bridge.getGitStatus).toHaveBeenCalledTimes(1);
+  });
+
+  it("the team view's Machines section shows who does what instead of the panel (US-1201 AC-3)", async () => {
+    renderView('github', { teamSection: 'machines' });
+    expect(await screen.findByTestId('machines-view')).toBeTruthy();
+    expect(window.bridge.getMachines).toHaveBeenCalledWith('p1', 'default');
+    expect(shown('refresh-panel')).toBe(false);
+    expect(shown('intent-list')).toBe(false);
   });
 
   it('Kostnad shows only the cost panel, open; folding it in goes back to the intents view', async () => {

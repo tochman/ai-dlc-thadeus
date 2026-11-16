@@ -70,6 +70,27 @@ describe('EditorPanel (EPIC-10 US-1001)', () => {
     expect(dirtyFiles('p1')).toEqual([]);
   });
 
+  it('adds an appended section after the content, unsaved, and writes nothing until the person saves (US-1201 AC-2)', async () => {
+    function AppendHarness() {
+      const editor = useEditorTabs('p1');
+      useEffect(() => {
+        editor.open('docs/notes.md', { append: '\n## Efter merge med main\n' });
+      }, []);
+      return (
+        <>
+          <button data-testid="append-again" onClick={() => editor.open('docs/notes.md', { append: 'again\n' })} />
+          <EditorPanel projectId="p1" editor={editor} />
+        </>
+      );
+    }
+    render(<AppendHarness />);
+    await waitFor(() => expect(screen.getByTestId('monaco').value).toBe('# Notes\n\n## Efter merge med main\n'));
+    expect(screen.getByTestId('editor-tab-dirty')).toBeTruthy();
+    fireEvent.click(screen.getByTestId('append-again')); // already open: appended to what is there
+    expect(screen.getByTestId('monaco').value).toBe('# Notes\n\n## Efter merge med main\nagain\n');
+    expect(window.bridge.writeFile).not.toHaveBeenCalled();
+  });
+
   it('opens the conflict dialog when the file changed on disk, and keeps mine against the disk version', async () => {
     window.bridge.writeFile
       .mockResolvedValueOnce({ conflict: true, disk: { content: '# By the agent\n', mtimeMs: 1500, hash: 'hash-agent' } })

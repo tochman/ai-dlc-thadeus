@@ -7,7 +7,9 @@ import { openRoot, readText, resolveInRoot } from './projectAccess.js';
 import {
   INFLIGHT_PATH,
   LEDGER_PATH,
+  assertName,
   detectProject,
+  inProgress,
   intentsDir,
   listSpaces,
   loadCost,
@@ -28,7 +30,23 @@ import { applyPlanEdit, deletePlan, listPlans, planStages, previewPlanEdit, save
 import { apply as applyConfigChange, applyGuardLock, preview as previewConfigChange, previewGuardLock } from './aidlcWrite.js';
 import { applyModelChange, checkDrift, estimateCost, ledgerRows, modelOptions, previewModelChange, pricesFromLedger } from './modelChoice.js';
 import { createUpdater } from './updater.js';
-import { fetchRemote, getGitStatus, getRemoteChanges, listConflicts, listReleaseTags, showRemoteFile } from './git.js';
+import {
+  behindCount,
+  changedFiles,
+  fetchRemote,
+  getGitStatus,
+  getRemoteChanges,
+  listConflicts,
+  listReleaseTags,
+  originUrl,
+  predictConflicts,
+  remoteStoryBranches,
+  showRemoteFile
+} from './git.js';
+import { detectPlatform } from './platforms/detect.js';
+import { listComments, listPulls, listReviews } from './platforms/index.js';
+import { clearBitbucket, hasBitbucket, loadBitbucket, saveBitbucket } from './credentials.js';
+import { collisions, loadMachines, loadOpenQuestions, matchPull, possibleCollisions, storyComments } from './teamActivity.js';
 import { createRelease, deleteRelease, readRuleStatus, setStoryRelease } from './releases.js';
 import { DELIVERY_DEFAULT } from './parsers/releases.js';
 import { getSetupInfo, runSetup } from './setup.js';
@@ -418,6 +436,90 @@ async function watchSpace(projectId, space) {
   });
 }
 
+// Team collaboration (US-1201). The platform of the project's origin remote is read once per opened project; null is
+// plain git. Bitbucket's app password is read here in main only and never crosses the bridge (AC-1).
+const PLATFORM_DEPS = { credentials: loadBitbucket };
+const BASE = 'origin/main';
+
+function platformOf(p) {
+  p.platform ??= originUrl(p.root).then(detectPlatform);
+  return p.platform;
+}
+
+/** US-1201 AC-1: a platform call as a value, {ok: true, value} or {ok: false, error: {code, message}}; other failures throw. */
+async function asValue(fn) {
+  try {
+    return { ok: true, value: await fn() };
+  } catch (err) {
+    if (err.name !== 'PlatformError') throw err;
+    return { ok: false, error: { code: err.code, message: err.message } };
+  }
+}
+
+/** US-1201 AC-1: the open pull requests of the project's platform, or its failure as a value. */
+async function pullsOf(p) {
+  const platform = await platformOf(p);
+  const res = await asValue(() => listPulls(platform, PLATFORM_DEPS));
+  return res.ok ? { ok: true, platform, pulls: res.value } : { ok: false, platform, error: res.error };
+}
+
+/** US-1201 AC-2: the branch's distance to main, and the open pull requests that share files with it and would conflict. */
+async function teamCollisions(p) {
+  const status = await getGitStatus(p.root);
+  if (!status.isRepo) return { isRepo: false };
+  const [behind, own, pulls] = await Promise.all([behindCount(p.root, BASE), changedFiles(p.root, 'HEAD', BASE).catch(() => null), pullsOf(p)]);
+  const found = pulls.ok ? collisions(pulls.pulls, status.branch, own) : [];
+  const withConflicts = await Promise.all(
+    found.map(async (c) => ({ ...c, conflicts: c.branch ? await predictConflicts(p.root, 'HEAD', `origin/${c.branch}`).catch(() => null) : null }))
+  );
+  return { isRepo: true, branch: status.branch, base: BASE, behind, platform: pulls.platform, collisions: withConflicts, error: pulls.ok ? null : pulls.error };
+}
+
+/** US-1201 AC-3: the machines per intent, origin's story branches and the possible collisions. */
+async function teamMachines(p, space) {
+  assertName(space, 'space');
+  const intents = (await loadIntentList(p.root, space, [])).intents.filter((i) => !i.missingOnDisk);
+  const byIntent = {};
+  for (const [story, dirs] of Object.entries(
+    await loadStoryLinks(
+      p.root,
+      space,
+      intents.map((i) => i.dirName)
+    )
+  )) {
+    for (const dir of dirs) (byIntent[dir] ??= []).push(story);
+  }
+  const list = await loadMachines(
+    p.root,
+    space,
+    intents.map((i) => ({ dirName: i.dirName, slug: i.slug ?? null, stories: byIntent[i.dirName] ?? [], inProgress: inProgress(i) }))
+  );
+  const branches = await remoteStoryBranches(p.root, BASE).catch((err) => {
+    console.warn('Storygrenarna på origin kunde inte läsas:', err.message);
+    return [];
+  });
+  return { intents: list, branches, flags: possibleCollisions(list, branches) };
+}
+
+/** US-1201 AC-4: the story's pull request comments and reviews with the intent's AI-DLC rows; a platform failure is `error`. */
+async function teamComments(p, space, dirName) {
+  const detail = await loadIntentDetail(p.root, space, dirName); // checks both names
+  const stories = Object.keys(await loadStoryLinks(p.root, space, [detail.dirName]));
+  const [questions, pulls] = await Promise.all([loadOpenQuestions(p.root, detail.files), pullsOf(p)]);
+  const match = pulls.ok ? matchPull(pulls.pulls, stories) : null;
+  let error = pulls.ok ? null : pulls.error;
+  let matched = [];
+  if (match) {
+    const [c, r] = await Promise.all([
+      asValue(() => listComments(pulls.platform, match.number, PLATFORM_DEPS)),
+      asValue(() => listReviews(pulls.platform, match.number, PLATFORM_DEPS))
+    ]);
+    error = (!c.ok && c.error) || (!r.ok && r.error) || null;
+    matched = [{ ...match, comments: c.ok ? c.value : [], reviews: r.ok ? r.value : [] }];
+  }
+  return { ...storyComments({ stories }, matched, detail.events, questions), stories, platform: pulls.platform, error };
+}
+
 const handlers = {
   'project:pick': async (event) => {
     const { defaultProjectFolder } = await getSettings();
@@ -678,6 +780,33 @@ const handlers = {
   'git:remoteChanges': async (_event, projectId, ref, space) => getRemoteChanges(project(projectId).root, String(ref), { space: String(space ?? 'default') }),
   'git:showRemote': async (_event, projectId, ref, rel) => showRemoteFile(project(projectId).root, String(ref), String(rel)),
   'git:conflicts': async (_event, projectId) => listConflicts(project(projectId).root),
+  // Team collaboration (US-1201). Platform failures come back as values, so the views keep working (AC-1); nothing here
+  // fetches except team:refresh, and nothing merges or pushes (AC-2).
+  'team:platform': async (_event, projectId) => platformOf(project(projectId)),
+  'team:pulls': async (_event, projectId) => pullsOf(project(projectId)),
+  'team:refresh': async (_event, projectId) => fetchRemote(project(projectId).root),
+  'team:collisions': async (_event, projectId) => teamCollisions(project(projectId)),
+  'team:machines': async (_event, projectId, space) => teamMachines(project(projectId), space),
+  'team:comments': async (_event, projectId, space, dirName) => teamComments(project(projectId), String(space), String(dirName)),
+  // AC-2: the intent's test-results.md and the "Efter merge med main" section for the editor; the person saves it there.
+  'team:mergeNote': async (_event, projectId, space, dirName) => {
+    const p = project(projectId);
+    assertName(space, 'space');
+    assertName(dirName, 'intent');
+    const rel = `${intentsDir(space)}/${dirName}/construction/build-and-test/test-results.md`;
+    await resolveInRoot(p.root, rel).catch(() => {
+      throw new Error(t('team.errors.noTestResults', { rel: 'construction/build-and-test/test-results.md' }));
+    });
+    return { rel, section: t('team.collision.mergeTemplate') };
+  },
+  // AC-1: the renderer sends the credentials in and only ever learns whether they are set.
+  'credentials:bitbucket': async (_event, request) => {
+    const action = request?.action;
+    if (action === 'save') await saveBitbucket({ username: request.username, appPassword: request.appPassword });
+    else if (action === 'clear') await clearBitbucket();
+    else if (action !== 'status') throw new Error(t('errors.invalidValue', { what: 'action', value: String(action) }));
+    return { set: await hasBitbucket() };
+  },
   // Setup (US-0503, US-0802): setup:run only runs after a setup:info preview for the same harness, and only
   // with plugins that preview read; runSetup checks every value.
   'setup:info': async (_event, projectId, options) => {

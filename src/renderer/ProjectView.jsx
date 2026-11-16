@@ -7,6 +7,7 @@ import IntentList from './IntentList.jsx';
 import IntentDetail from './IntentDetail.jsx';
 import CostPanel from './CostPanel.jsx';
 import RefreshPanel from './RefreshPanel.jsx';
+import MachinesView from './MachinesView.jsx';
 import SetupAidlc from './SetupAidlc.jsx';
 import TerminalPanel from './TerminalPanel.jsx';
 import LatestMessageStrip from './LatestMessageStrip.jsx'; // US-0506 u3
@@ -61,7 +62,7 @@ function invertLinks(links) {
 }
 
 /** Intents (list and detail), Kostnad or Github: one at a time, all fed by the same project data (FR2.2). */
-function AidlcProject({ project, view, onView, focusIntent, storiesByIntent, onOpenStory, onMeta, onActiveRecord }) {
+function AidlcProject({ project, view, teamSection = 'refresh', onView, focusIntent, storiesByIntent, onOpenStory, onMeta, onActiveRecord }) {
   const { t } = useTranslation();
   const { detection, projectId } = project;
   const p = useProject(projectId, detection.activeSpace);
@@ -94,9 +95,18 @@ function AidlcProject({ project, view, onView, focusIntent, storiesByIntent, onO
     <>
       {view === 'cost' && <CostPanel cost={p.cost} models={p.models} open onToggle={back} />}
       {/* Kept mounted, so the fetched status and changes survive a switch to another view. */}
-      <div hidden={view !== 'github'}>
-        <RefreshPanel projectId={projectId} space={p.space} lastIntentChangeAt={p.lastIntentChangeAt} open={view === 'github'} onToggle={back} />
+      <div hidden={view !== 'github' || teamSection === 'machines'}>
+        <RefreshPanel
+          projectId={projectId}
+          space={p.space}
+          lastIntentChangeAt={p.lastIntentChangeAt}
+          open={view === 'github'}
+          onToggle={back}
+          activeDirName={activeDirName}
+        />
       </div>
+      {/* Who does what across my machines, the team view's second section in the arm (US-1201 AC-3). */}
+      {view === 'github' && teamSection === 'machines' && <MachinesView projectId={projectId} space={p.space} />}
       <div className="project-body" hidden={view !== 'intents'}>
         <aside className="sidebar" aria-label={t('intents.overview')}>
           {detection.spaces.length > 1 && (
@@ -127,6 +137,7 @@ function AidlcProject({ project, view, onView, focusIntent, storiesByIntent, onO
           {p.detail ? (
             <IntentDetail
               projectId={projectId}
+              space={p.space}
               detail={p.detail}
               intent={p.intents.find((i) => i.dirName === p.detail.dirName)}
               activeDirName={activeDirName}
@@ -219,6 +230,7 @@ function ProjectContent({
   visible,
   view: chosenView = 'intents',
   section = 'docs',
+  teamSection = 'refresh',
   featuresTab = 'epics',
   onView,
   onMeta,
@@ -233,8 +245,8 @@ function ProjectContent({
   const editor = useEditorTabs(project.projectId);
   const openEditor = editor.open;
   const openInApp = useCallback(
-    (rel) => {
-      openEditor(rel);
+    (rel, options) => {
+      openEditor(rel, options); // US-1201 AC-2: the merge note appends its section, unsaved
       onView?.('editor');
     },
     [openEditor, onView]
@@ -387,6 +399,7 @@ function ProjectContent({
               <AidlcProject
                 project={project}
                 view={view}
+                teamSection={teamSection}
                 onView={onView}
                 focusIntent={focusIntent}
                 storiesByIntent={storiesByIntent}
@@ -455,6 +468,7 @@ export default function ProjectView({
   visible,
   view,
   section,
+  teamSection,
   featuresTab,
   onView,
   onMeta,
@@ -470,6 +484,7 @@ export default function ProjectView({
         visible={visible}
         view={view}
         section={section}
+        teamSection={teamSection}
         featuresTab={featuresTab}
         onView={onView}
         onMeta={onMeta}

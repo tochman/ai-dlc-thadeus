@@ -75,6 +75,32 @@ describe('preload bridge (US-0506 u1)', () => {
     expect(bridge.onQuestionFocus).toBeUndefined();
   });
 
+  it('has named team methods on the US-1201 channels; the Bitbucket password only ever goes in, with save', async () => {
+    const bridge = await load(false);
+    await bridge.getPlatform('p1');
+    await bridge.getPulls('p1');
+    await bridge.getCollisions('p1');
+    await bridge.getMachines('p1', 'default');
+    await bridge.getStoryComments('p1', 'default', '261116-a');
+    await bridge.teamRefresh('p1');
+    await bridge.getMergeNote('p1', 'default', '261116-a');
+    await bridge.bitbucket.status();
+    await bridge.bitbucket.save('thomas', 'pw');
+    await bridge.bitbucket.clear();
+    expect(m.ipcRenderer.invoke.mock.calls).toEqual([
+      ['team:platform', 'p1'],
+      ['team:pulls', 'p1'],
+      ['team:collisions', 'p1'],
+      ['team:machines', 'p1', 'default'],
+      ['team:comments', 'p1', 'default', '261116-a'],
+      ['team:refresh', 'p1'],
+      ['team:mergeNote', 'p1', 'default', '261116-a'],
+      ['credentials:bitbucket', { action: 'status' }],
+      ['credentials:bitbucket', { action: 'save', username: 'thomas', appPassword: 'pw' }],
+      ['credentials:bitbucket', { action: 'clear' }]
+    ]);
+  });
+
   it('has agentHooks status, preview, apply, cancel and onChanged, passing exactly their arguments (US-0506 u4 SD32)', async () => {
     const bridge = await load(false);
     await bridge.agentHooks.status('p1');

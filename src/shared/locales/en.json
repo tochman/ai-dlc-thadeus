@@ -129,6 +129,7 @@
       "timeline": "Timeline",
       "units": "Units",
       "cost": "Cost",
+      "comments": "Comments",
       "files": "Files"
     },
     "tabsLabel": "Intent views",
@@ -273,7 +274,6 @@
     }
   },
   "github": {
-    "title": "GitHub",
     "meta": "Branch · remote",
     "newCount": "{n} new",
     "badge": "{n, plural, one {# new change} other {# new changes}} in AI-DLC on {ref}",
@@ -301,14 +301,88 @@
     "noUpstream": "No remote to compare with: the branch has no upstream and origin/main does not exist.",
     "nothingNew": "Nothing new in AI-DLC on {ref}.",
     "otherFiles": "{n, plural, one {# changed file} other {# changed files}} outside aidlc/ will come in too.",
-    "onGithub": "on GitHub",
     "auditLines": "{n, plural, one {# new line} other {# new lines}} in the audit logs.",
     "readOnlyFile": "{ref}:{rel} (read-only)",
     "pull": "Pull",
     "fromMain": "Update from main",
     "showConflicts": "Show conflicts",
     "noConflicts": "No conflicts.",
-    "abortHelp": "The app resolves no conflicts itself. To abort, type the command in the shell tab:"
+    "abortHelp": "The app resolves no conflicts itself. To abort, type the command in the shell tab:",
+    "titleOn": "Update from {platform}",
+    "titleGit": "Update from git",
+    "onPlatform": "on {platform}",
+    "onRemote": "on the remote"
+  },
+  "team": {
+    "sections": {
+      "refresh": "Update",
+      "machines": "Machines"
+    },
+    "errors": {
+      "cli-missing": "{platform} cannot be read: {cli} is not installed. Install {cli}, or choose where it is in Settings › Tools.",
+      "not-logged-in": "{platform} cannot be read: you are not logged in. Run {cli} auth login in the shell tab.",
+      "bad-credentials": "Bitbucket refused the username or app password. Change them in Settings › Tools.",
+      "no-credentials": "Bitbucket cannot be read without a username and an app password. Add them in Settings › Tools.",
+      "timeout": "{platform} did not answer within 15 seconds. Try again in a moment.",
+      "failed": "{platform} could not be read: {error}",
+      "unknown-platform": "origin is not on GitHub, GitLab or Bitbucket, so there are no pull requests to read.",
+      "noKeychain": "The computer's keychain cannot encrypt, so the app password is not saved.",
+      "invalidCredential": "The username and app password must be filled in, on one line and at most {max} characters.",
+      "noTestResults": "The intent has no {rel} yet. Run Build and Test first."
+    },
+    "collision": {
+      "title": "Collision warning",
+      "behind": "{n, plural, one {The branch is # commit behind {base}.} other {The branch is # commits behind {base}.}} Merge main in and run the tests again before you approve.",
+      "upToDate": "The branch is level with {base}.",
+      "noBase": "{base} is not here yet. Press Update to fetch it.",
+      "shared": "Pull request #{number} {title} changes the same files:",
+      "conflicts": "Would conflict in a merge:",
+      "clean": "No conflicts in a merge.",
+      "unknownConflicts": "The conflicts cannot be worked out until the branch is fetched. Press Update.",
+      "noOverlap": "No other open pull request changes the same files.",
+      "mergeNote": "Write down what the merge turned up",
+      "mergeNoteHelp": "Opens the intent's test-results.md in the editor with an \"Efter merge med main\" section to fill in. Nothing is saved until you save.",
+      "mergeTemplate": "\n## Efter merge med main\n\n- **What was wrong:** \n- **Cause:** \n- **Fix (commit):** \n- **New results:** \n- **Lesson:** \n"
+    },
+    "machines": {
+      "title": "Machines",
+      "meta": "Who does what",
+      "intro": "Which machines worked on each intent, from the audit shards, and story branches on origin with commits that are not in main.",
+      "intent": "Intent",
+      "host": "Machine",
+      "clone": "Clone",
+      "lastStage": "Last stage",
+      "lastAt": "When",
+      "none": "No intent has audit shards yet.",
+      "branches": "Story branches on origin",
+      "branchAhead": "{n, plural, one {# commit} other {# commits}} not in main",
+      "noBranches": "No story branches on origin with commits outside main.",
+      "collision": "Possible collision",
+      "onMachines": "{story} is in progress on {n} machines: {where}",
+      "onBranches": "{story} is on {n} branches: {where}",
+      "loadFailed": "The machines could not be read: {error}"
+    },
+    "comments": {
+      "source": {
+        "pull": "Pull request",
+        "review": "Review",
+        "question": "Open question",
+        "approval": "Approval",
+        "finding": "Review finding"
+      },
+      "reviewState": {
+        "approved": "Approved",
+        "changes": "Asked for changes",
+        "commented": "Commented"
+      },
+      "pull": "Pull request #{number}: {title}",
+      "noPull": "No open pull request has the story number in its branch or title. The rows below are AI-DLC's.",
+      "approvedStage": "Approved {stage}",
+      "verdict": "{stage}: {verdict}",
+      "empty": "No comments, questions or approvals for the intent yet.",
+      "loading": "Reading…",
+      "loadFailed": "The comments could not be read: {error}"
+    }
   },
   "terminal": {
     "label": "Terminal",
@@ -565,13 +639,25 @@
       "claude": "Claude Code CLI",
       "opencode": "opencode CLI",
       "gh": "GitHub CLI (gh)",
+      "glab": "GitLab CLI (glab)",
       "shell": "Shell",
       "neededFor": {
         "aidlc": "Needed for the AI-DLC views and to run AI-DLC commands.",
         "claude": "Needed for the agent tabs with Claude Code.",
         "opencode": "Needed for the agent tabs with opencode.",
         "gh": "Used for the GitHub features, and as a fallback when app updates cannot be read from GitHub directly.",
+        "glab": "Needed to read merge requests, reviews and comments from GitLab.",
         "shell": "Needed for the terminal tabs."
+      },
+      "bitbucket": {
+        "title": "Bitbucket",
+        "help": "Bitbucket is read with your username and an app password with read access to pull requests. They are kept encrypted in the computer's keychain in the app's own folder, never in the project, and the password is not shown again.",
+        "username": "Username",
+        "appPassword": "App password",
+        "save": "Save",
+        "clear": "Remove",
+        "set": "Saved in the keychain",
+        "notSet": "Not saved"
       },
       "pathLabel": "Path",
       "versionLabel": "Version",

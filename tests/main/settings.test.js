@@ -132,7 +132,7 @@ describe('project settings', () => {
   });
 
   it('keeps the chosen tool paths and the default project folder, and drops anything that is not an absolute path (US-0405 FR7.1)', async () => {
-    expect(TOOL_IDS).toEqual(['aidlc', 'claude', 'opencode', 'gh', 'shell']); // US-0410 FR4.1
+    expect(TOOL_IDS).toEqual(['aidlc', 'claude', 'opencode', 'gh', 'glab', 'shell']); // US-0410 FR4.1, glab since US-1201 AC-1
     const empty = await getSettings();
     expect('toolPaths' in empty).toBe(false); // nothing saved: every tool is found automatically
     expect('defaultProjectFolder' in empty).toBe(false);

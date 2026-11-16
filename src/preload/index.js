@@ -63,6 +63,20 @@ contextBridge.exposeInMainWorld('bridge', {
   getRemoteChanges: call('git:remoteChanges'),
   showRemoteFile: call('git:showRemote'),
   getConflicts: call('git:conflicts'),
+  // Team collaboration (US-1201): a project id, a space and an intent dir name cross the bridge, never a path or a URL.
+  getPlatform: call('team:platform'),
+  getPulls: call('team:pulls'),
+  getCollisions: call('team:collisions'),
+  getMachines: call('team:machines'),
+  getStoryComments: call('team:comments'),
+  teamRefresh: call('team:refresh'),
+  getMergeNote: call('team:mergeNote'),
+  // The Bitbucket app password only goes in; main answers whether one is set (US-1201 AC-1).
+  bitbucket: {
+    status: () => ipcRenderer.invoke('credentials:bitbucket', { action: 'status' }),
+    save: (username, appPassword) => ipcRenderer.invoke('credentials:bitbucket', { action: 'save', username, appPassword }),
+    clear: () => ipcRenderer.invoke('credentials:bitbucket', { action: 'clear' })
+  },
   getSetupInfo: call('setup:info'),
   runSetup: call('setup:run'), // runs the setup after the preview (US-0802 FR2.2)
   loadFeatures: call('features:load'),

@@ -161,13 +161,14 @@ describe('writeAtomic (US-0506 u4 RD33)', () => {
 
   // US-0208 FR2.1 adds tokenReadings.js: it validates the intent dir name and resolves its folder in the root first.
   // US-0209 FR3.1 adds usageSnapshot.js, the same way: it validates <host>-<clone-id> and resolves .thadeus/usage in the root.
-  it('is imported only by fileWrite.js, agentHooks.js, tokenReadings.js and usageSnapshot.js (SD36)', () => {
+  // US-1201 AC-1 adds credentials.js: one fixed file name in the app's own userData folder, never in a project.
+  it('is imported only by fileWrite.js, agentHooks.js, tokenReadings.js, usageSnapshot.js and credentials.js (SD36)', () => {
     const src = path.resolve(__dirname, '../../src');
     const users = readdirSync(src, { recursive: true })
       .filter((f) => /\.jsx?$/.test(f))
       .filter((f) => /\bwriteAtomic\b/.test(readFileSync(path.join(src, f), 'utf8')))
       .map((f) => f.split(path.sep).join('/'))
       .sort();
-    expect(users).toEqual(['main/agentHooks.js', 'main/fileWrite.js', 'main/tokenReadings.js', 'main/usageSnapshot.js']);
+    expect(users).toEqual(['main/agentHooks.js', 'main/credentials.js', 'main/fileWrite.js', 'main/tokenReadings.js', 'main/usageSnapshot.js']);
   });
 });
