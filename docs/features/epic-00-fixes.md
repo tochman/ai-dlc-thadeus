@@ -6,9 +6,9 @@
 
 > Small fixes the person reports while using the app: something looks off, behaves wrongly or is missing a detail. Each fix becomes a story here, so nothing reported in passing gets lost. A fix that grows into a feature moves to its topic's epic.
 
-**Stories:** US-0001, US-0002, US-0003, US-0004, US-0005, US-0006, US-0007, US-0008, US-0009, US-0010, US-0011, US-0012, US-0013, US-0014, US-0015, US-0016, US-0017, US-0018, US-0019, US-0020, US-0021
+**Stories:** US-0001, US-0002, US-0003, US-0004, US-0005, US-0006, US-0007, US-0008, US-0009, US-0010, US-0011, US-0012, US-0013, US-0014, US-0015, US-0016, US-0017, US-0018, US-0019, US-0020, US-0021, US-0022, US-0023
 
-**Status (2026-11-15):** ✅ US-0001–US-0020 released (v0.2.3–v0.2.6). 📋 US-0021 planned for v0.2.7. Each story names its release.
+**Status (2026-11-15):** ✅ US-0001–US-0020 released (v0.2.3–v0.2.6). 📋 US-0021–US-0023 planned for v0.2.7. Each story names its release.
 
 ---
 
@@ -342,3 +342,33 @@
   - **Cause, as read in the code.** `applyPlanEdit()` in `src/main/plans.js` removes every harness copy (`removeHarnessCopies`), then runs `aidlc engine graph compile` once, which writes the copy only for the harness it runs as (here Claude Code). The other harnesses' copies stay deleted. `deletePlan()` recompiles the same way.
   - **Likely fix.** Recompile once per installed harness (`--harness <name>`, as `setup.js` passes since v0.2.2), or remove only the copies the compile writes back.
 - **Dependencies:** US-0903, US-0803
+
+---
+
+**US-0022: The token detail view opens in a narrow window too** 📋 Planned, for v0.2.7
+- As a **developer working in a smaller app window**, in order to **see where the tokens go without making the window wider**, I would like to **open the token detail view at any window width**.
+- **Epic:** EPIC-00
+- **Priority:** Medium
+- **Complexity:** Low
+- **Background:** Found 2026-11-16 while building US-0208. The way into the token detail view is the small token view and the "Tokens ›" button in the intent's right column (`.readout-col`), which `theme.css` hides below 1280 px (`@media (max-width: 1280px) { .readout-col { display: none; } }`). In a narrower window the view cannot be opened at all.
+- **Acceptance Criteria:**
+  - [ ] **Given** a window narrower than 1280 px, **when** I look at an intent, **then** there is a way to open the token detail view (for example a "Tokens" button in the intent header), reachable by keyboard.
+  - [ ] **Given** the token detail view open in a narrow window, **then** its right column stacks under the charts and nothing scrolls sideways.
+  - [ ] Every new text goes through `t()` in Swedish and English.
+- **Notes:** **Where.** `src/renderer/IntentDetail.jsx`, `src/renderer/TokenDetail.jsx`, the `.readout-col` rule in `src/renderer/theme.css`.
+- **Dependencies:** US-0208
+
+---
+
+**US-0023: Clear the npm audit warnings** 📋 Planned, for v0.2.7
+- As a **maintainer of a public repository**, in order to **ship without known vulnerable packages**, I would like **`npm audit` to report no critical or moderate issues**.
+- **Epic:** EPIC-00
+- **Priority:** High
+- **Complexity:** Low
+- **Background:** Found 2026-11-16 while building US-0208: `npm audit` reports 8 issues, all with a fix available. Critical: `dompurify` (pulled in through `monaco-editor`). Moderate: `electron-builder` and its `app-builder-lib`, `dmg-builder`, `electron-builder-squirrel-windows`, `@electron/universal`, and `minimatch`. Low: `monaco-editor`.
+- **Acceptance Criteria:**
+  - [ ] `npm audit` reports no critical or moderate issues; any low one left is named here with why.
+  - [ ] The app still builds the macOS `.dmg` and the Linux `.deb` in CI, and the editor (US-1001) still opens and saves files.
+  - [ ] The full test suite stays green.
+- **Notes:** Try `npm audit fix` first; a major bump of `electron-builder` or `monaco-editor` needs its release notes read. Consider an `npm audit --audit-level=moderate` step in the CI `verify` job so new issues show up on every pull request.
+- **Dependencies:** none
