@@ -8,7 +8,7 @@
 
 **Stories:** US-0201, US-0202, US-0203, US-0204, US-0205, US-0206, US-0207, US-0208, US-0209, US-0210, US-0211, US-0212, US-0213
 
-**Status (2026-11-17):** ✅ US-0201–US-0205 and US-0207 released (v0.2.0–v0.2.4; CSV export in US-0203 deferred). ➡️ US-0206 moved to US-0904. ✅ US-0208 released in v0.2.7. ✅ US-0209 released in v0.2.8. 📋 US-0210–US-0213 planned. Each story names its release.
+**Status (2026-11-17):** ✅ US-0201–US-0205 and US-0207 released (v0.2.0–v0.2.4; CSV export in US-0203 deferred). ➡️ US-0206 moved to US-0904. ✅ US-0208 released in v0.2.7. ✅ US-0209 released in v0.2.8. 📋 US-0210–US-0213 planned, for v0.2.9. Each story names its release.
 
 ---
 
@@ -168,7 +168,7 @@ The key format of `workflows` was confirmed during requirements analysis (see ab
 - **Built (2026-11-16, express intent `261116-cross-machine-cost`):** the app writes the snapshot itself, outside AI-DLC's folders, at `.thadeus/usage/<host>-<clone-id>.json` (commit it; the first write is the backfill). Only the last `STAGE_COMPLETED` per stage and Unit counts, because repeated rows are running totals. This machine (`aidlc/.aidlc-clone-id`) uses its ledger instead of its own shard; another machine counts the larger of its snapshot and its shard rows. "Partial" means some machine counts stage rows only. Known shortcuts: audit cache writes count as 5m; a machine with no shard yet is named from `os.hostname()`.
 - **Dependencies:** US-0201, US-0202
 
-**US-0210: Ask to switch to a stronger model profile when a critical intent starts, and switch back when it ends** 📋
+**US-0210: Ask to switch to a stronger model profile when a critical intent starts, and switch back when it ends** 📋 Planned, for v0.2.9
 - As a **developer who pays for every agent run**, in order to **use the expensive model only where a mistake costs more than tokens**, I would like **the app to ask me, when an intent starts on a plan I marked as critical, whether to switch to my stronger model profile, and to switch back to my economy profile when that intent is done**.
 - **Epic:** EPIC-02
 - **Priority:** Medium
@@ -185,7 +185,7 @@ The key format of `workflows` was confirmed during requirements analysis (see ab
 - **Notes:** Until this exists, the assistant asks at intent start in visinv. Open: which profile counts as active when two intents run at the same time, one critical and one not (proposal: critical wins until the last critical intent ends).
 - **Dependencies:** US-0204, US-0904
 
-**US-0211: Reprice recorded tokens with a current price table** 📋 ([#64](https://github.com/tochman/aidlc-dash/issues/64))
+**US-0211: Reprice recorded tokens with a current price table** 📋 Planned, for v0.2.9 ([#64](https://github.com/tochman/aidlc-dash/issues/64))
 - As a **developer who reads the cost view**, in order to **trust the figures for old intents too**, I would like **the app to compute USD from the stored token counts with a current price table, and to show the recorded figure next to it when the two differ**.
 - **Epic:** EPIC-02
 - **Priority:** High
@@ -201,7 +201,7 @@ The key format of `workflows` was confirmed during requirements analysis (see ab
   - [ ] Nothing in `aidlc/` is written.
 - **Dependencies:** US-0201, US-0209
 
-**US-0212: A THADEUS rule pack on top of AI-DLC to cut token cost** 📋
+**US-0212: A THADEUS rule pack on top of AI-DLC to cut token cost** 📋 Planned, for v0.2.9
 - As a **developer or team that pays for every run**, in order to **spend less on each intent without changing AI-DLC**, I would like **to switch on a short set of cost rules that the app keeps in the project's AI-DLC memory files, and that every stage and agent then follows**.
 - **Epic:** EPIC-02
 - **Priority:** High
@@ -219,7 +219,7 @@ The key format of `workflows` was confirmed during requirements analysis (see ab
 - **Notes:** Rules are text the model reads, not enforcement. Anything that must happen at a set moment, such as starting a fresh session, belongs to US-0213.
 - **Dependencies:** US-0901
 
-**US-0213: Offer to compact or start a fresh session, from a dialog, in Claude Code and opencode** 📋
+**US-0213: Offer to compact or start a fresh session, from a dialog, in Claude Code and opencode** 📋 Planned, for v0.2.9
 - As a **developer running long intents**, in order to **stop paying for the same long context on every turn**, I would like **the app to open a dialog when the context grows too large, when a stage is done, or at a gate, and on my answer send `/compact` or start a fresh session in the agent tab**.
 - **Epic:** EPIC-02
 - **Priority:** High
