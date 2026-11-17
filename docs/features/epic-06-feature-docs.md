@@ -8,7 +8,7 @@
 
 **Stories:** US-0601, US-0602, US-0603, US-0604, US-0605, US-0606, US-0607
 
-**Status (2026-11-17):** ✅ US-0601–US-0603 released (v0.2.0–v0.2.5). ✅ US-0604 and US-0605 released in v0.2.7. 📋 US-0606 and US-0607 planned, for v0.2.9. Each story names its release.
+**Status (2026-11-17):** ✅ US-0601–US-0603 released (v0.2.0–v0.2.5). ✅ US-0604 and US-0605 released in v0.2.7. ✅ US-0606 and US-0607 done, for v0.2.9. Each story names its release.
 
 **Decisions:**
 - **Q1 (where the view lives):** a switch "Intents | Features" at the top of the project view. Features replaces the sidebar and content area; the terminal stays.
@@ -116,38 +116,40 @@
   - **Where.** `releaseOptions()` and `buildReleases()` in `src/main/parsers/releases.js`; the release list and picker in `src/renderer/FeaturesView.jsx`.
 - **Dependencies:** US-0603
 
-**US-0606: Release planning changes are committed on their own branch** 📋 Planned, for v0.2.9
+**US-0606: Release planning changes are committed on their own branch** ✅ Done, for v0.2.9
 - As a **developer planning releases in the app**, in order to **never find release planning left uncommitted on whatever branch is checked out**, I would like **the app to commit the change to a branch of its own whenever I add stories to a release, remove them, or create a release**.
 - **Epic:** EPIC-06
 - **Priority:** High
 - **Complexity:** Medium
 - **Background:** Asked for 2026-11-16, after the v0.2.8 release. US-0412, US-0508 and US-0804 had been added to v0.2.9 from the release list. That wrote "for v0.2.9" into the epic files and `FEATURES.md` but committed nothing, and `docs/releases/0.2.9.md` did not list them. The changes sat uncommitted on `main` until they were noticed and committed by hand (`40d03b5`). The team's rule lets docs go straight to `main`, but changes nobody committed are easy to lose, or to sweep into an unrelated commit.
 - **Acceptance Criteria:**
-  - [ ] **Given** I add one or more stories to a release, remove a story from one, or create a release in the release list, **then** the app commits every file it changed (the story markers, the epic `**Status (…)**` lines, the `FEATURES.md` rows and `docs/releases/X.Y.Z.md`) in one commit on the branch `docs/release-vX.Y.Z`. Adding several stories in a row adds to that same branch.
-  - [ ] The commit is made in a temporary worktree from `origin/main`, so the checked-out branch and its uncommitted files are never touched or switched. If the checkout is already on `docs/release-vX.Y.Z`, the commit is made there.
-  - [ ] **Given** stories are added to a release, **then** `docs/releases/X.Y.Z.md` lists them in its slice table, with epic, title, priority, complexity and dependencies taken from the story, in the same commit.
-  - [ ] **Given** the branch has commits that are not on `main`, **then** the release list says so and offers to push it and open a pull request, typed into the shell tab without Enter, the way the GitHub panel does. The app pushes nothing by itself.
-  - [ ] **Given** the commit fails (no git, a conflict, a hook refusing), **then** the app names the reason and the files, and keeps the change in the working tree as today instead of losing it.
-  - [ ] A test proves that the current checkout's branch, index and working tree are unchanged after a release change.
-  - [ ] Every text goes through `t()` in Swedish and English, and the view follows the LCARS look.
-- **Notes:** The release markers are written in `src/main/releases.js` and `src/main/parsers/releases.js`, and the release list is in `src/renderer/FeaturesView.jsx` (US-0603, US-0605). The temporary-worktree pattern matches how planning docs are already committed by hand while a story branch is checked out. Commit subject: `docs: plan US-XXXX[, …] for vX.Y.Z`.
+  - [x] **Given** I add a story to a release, remove a story from one, or create or delete a release in the release list, **then** the app commits every file it changed (the story markers, the epic `**Status (…)**` lines, the `FEATURES.md` rows and `docs/releases/X.Y.Z.md`) in one commit, subject `docs: plan US-XXXX[, …] for vX.Y.Z`. Several actions in a row go out in one push.
+  - [x] **Given** the checkout is on a story branch (any branch other than `main` or the docs branch), **then** the commit is made in a temporary worktree on the app's own branch from the remote target, so the checked-out branch, its index and its working tree are never touched or switched. **Given** the checkout is on `main` or the docs branch, **then** the files are written there and only the feature-doc files are committed there.
+  - [x] **Given** stories are added to a release, **then** `docs/releases/X.Y.Z.md` lists them in its slice table, with epic, title, priority, complexity and dependencies taken from the story, in the same commit. Removing a story changes only its markers; the plan file stays as it is.
+  - [x] **Given** `main` is not protected, **then** the commits go straight to `origin/main`. **Given** it is protected, **then** they go to the project's docs branch (a project setting, `docs/planning` by default), and the app opens the pull request and squash-merges it itself with `gh`, with no shell tab. Without `gh`, the release list offers the pull request by hand.
+  - [x] **Given** the checkout is on `main` or the docs branch, **then** uncommitted changes an agent wrote to `docs/FEATURES.md`, `docs/features/` or `docs/releases/` are committed and pushed the same way. On a story branch they stay with the story.
+  - [x] **Given** the commit fails (a hook refusing), **then** the app names the reason and the files, and keeps the change in the working tree or the record instead of losing it.
+  - [x] A test proves that the current checkout's branch, index and working tree are unchanged after a release change made on a story branch.
+  - [x] Every text goes through `t()` in Swedish and English, and the view follows the LCARS look.
+- **Notes:** The release markers are written in `src/main/releases.js` and `src/main/parsers/releases.js`, the commit and push in `src/main/planningSync.js`, and the release list is in `src/renderer/FeaturesView.jsx` (US-0603, US-0605). Decided 2026-11-17 (Q1, Q8, Q10): straight to `origin/main` when `main` is not protected, otherwise through the docs branch and a pull request the app merges itself; this replaces the `docs/release-vX.Y.Z` branch and "the app pushes nothing". The app's own branch is `dash/planning`.
 - **Dependencies:** US-0603, US-0605
 
-**US-0607: Release planning is kept locally and pushed to GitHub when there is time** 📋 Planned, for v0.2.9
+**US-0607: Release planning is kept locally and pushed to GitHub when there is time** ✅ Done, for v0.2.9
 - As a **developer planning releases in the app**, in order to **never lose a planning change I made**, I would like **the app to keep each release planning action in a local record of its own, and to push the committed changes to GitHub at intervals or when nothing else is running**.
 - **Epic:** EPIC-06
 - **Priority:** High
 - **Complexity:** Medium
 - **Background:** Asked for on 2026-11-17. The person took US-0702, US-0412, US-0508 and US-0804 out of v0.2.9 from the release list. The change sat uncommitted in the working tree, was taken for a stray edit, and was discarded (`git checkout`), so it had to be redone by hand. US-0606 commits such changes on a branch of their own but pushes nothing. This story adds a record that survives a discarded working tree, and the push.
 - **Acceptance Criteria:**
-  - [ ] **Given** I add a story to a release, remove one, or create a release, **then** the app first writes the action (what, which stories, which release, when) to a local record outside the working tree, in the app's own data folder per project, before it changes any file.
-  - [ ] **Given** an action in the record whose change is not on `origin/main` and not in the working tree (for example after a discarded working tree or a branch switch), **then** the app applies it again and says so, instead of losing it.
-  - [ ] Committed planning changes (US-0606) are pushed at an interval the person sets (default 10 minutes), or sooner when the app is idle: no agent running, nothing waiting for an answer, and online.
-  - [ ] A planning commit holds only docs, so it is pushed straight to `main`, as the team's rule allows. When `main` has moved, the app rebases its own commit in its temporary worktree first. On a conflict it pushes nothing, keeps the record, and names the files.
-  - [ ] An action leaves the record only once its commit is on `origin/main`.
-  - [ ] The release list shows actions not yet pushed ("2 planning changes waiting to be pushed"), with a button to push now.
-  - [ ] Offline, or when `git push` is refused, the app keeps the record and tries again at the next interval, without a new dialog each time.
-  - [ ] A test proves that a planning action survives `git checkout -- <files>` of the working tree and is applied again.
-  - [ ] Every text goes through `t()` in Swedish and English, and the view follows the LCARS look.
-- **Notes:** This changes US-0606's "the app pushes nothing by itself" and its branch-and-pull-request flow: planning commits go to `main`. Open: whether the person wants a pull request instead after all, as US-0606 proposed (proposal: straight to `main`, as for other docs).
+  - [x] **Given** I add a story to a release, remove one, or create a release, **then** the app first writes the action (what, which stories, which release, when) to a local record outside the working tree, in the app's own data folder per project, before it changes any file.
+  - [x] **Given** an action in the record whose change is in neither the remote target nor the working tree (for example after a discarded working tree), **then** the app applies it again and says so, instead of losing it: at app start, when the release list opens, and at each push interval.
+  - [x] Committed planning changes (US-0606) are pushed at an interval set once in the app settings (default 10 minutes), or sooner when the app is idle: no agent running, nothing waiting for an answer, and online.
+  - [x] With `main` not protected, the commit is pushed straight to `origin/main`; when `main` has moved, the app rebases its own commit in its temporary worktree first. With `main` protected, it goes to the docs branch and a pull request (US-0606). On a conflict the app pushes nothing, keeps the record, and names the files.
+  - [x] An action leaves the record only once its change is on `origin/main`, or on `origin/<docs branch>` when `main` is protected.
+  - [x] The release list shows actions not yet pushed ("2 planning changes waiting to be pushed"), with a button to push now.
+  - [x] Without an `origin`, the app commits locally, keeps the record, and the release list says there is no remote.
+  - [x] Offline, or when `git push` is refused, the app keeps the record and tries again at the next interval, without a new dialog each time.
+  - [x] A test proves that a planning action survives `git checkout -- <files>` of the working tree and is applied again.
+  - [x] Every text goes through `t()` in Swedish and English, and the view follows the LCARS look.
+- **Notes:** This changes US-0606's "the app pushes nothing by itself". Decided 2026-11-17 (Q1, Q8, Q10): straight to `origin/main` when `main` is not protected, otherwise through the project's docs branch and a pull request the app squash-merges itself. The record is `<userData>/planning/<sha1 of the project root>.json`. "No agent running" is read from AI-DLC writes in the last five minutes, as the console's workflow check does without a terminal.
 - **Dependencies:** US-0606

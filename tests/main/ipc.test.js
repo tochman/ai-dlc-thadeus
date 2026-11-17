@@ -16,7 +16,8 @@ const m = vi.hoisted(() => {
       // userData is only read; no channel folder is made while no project's hooks are current (US-0506 u4 C5).
       app: { getVersion: vi.fn(() => '9.9.9'), quit: vi.fn(), getPath: vi.fn(() => '/nonexistent/thadeus-ipc-test') },
       dialog: { showOpenDialog: vi.fn(async () => ({ canceled: false, filePaths: ['/picked'] })) },
-      shell: { showItemInFolder: vi.fn(), openPath: vi.fn(async () => ''), openExternal: vi.fn(async () => {}) }
+      shell: { showItemInFolder: vi.fn(), openPath: vi.fn(async () => ''), openExternal: vi.fn(async () => {}) },
+      net: { isOnline: vi.fn(() => true) }
     },
     updater: {
       check: vi.fn(async () => ({ status: 'none' })),
@@ -85,6 +86,9 @@ const m = vi.hoisted(() => {
       listReleaseTags: vi.fn(async () => []),
       showRemoteFile: vi.fn(async () => 'remote'),
       setStoryRelease: vi.fn(async () => ({ ok: true })),
+      planAction: vi.fn(async () => ({ ok: true, inPlace: true })),
+      runCycle: vi.fn(async () => ({ reapplied: 0, pending: 0, pushed: true })),
+      reapplyLost: vi.fn(async () => ({ reapplied: 0 })),
       readRuleStatus: vi.fn(async () => 'current'),
       getSetupInfo: vi.fn(async () => ({ info: 1 })),
       runSetup: vi.fn(async () => ({ ok: true })),
@@ -237,6 +241,8 @@ vi.mock('../../src/main/tools.js', () => ({
   validateTool: m.svc.validateTool
 }));
 vi.mock('../../src/main/settings.js', () => ({
+  PLANNING_BRANCH_DEFAULT: 'docs/planning',
+  PLANNING_PUSH_DEFAULT: 10,
   getProjectSettings: m.svc.getProjectSettings,
   getSettings: m.svc.getSettings,
   setProjectSettings: m.svc.setProjectSettings,
@@ -272,6 +278,13 @@ vi.mock('../../src/main/features.js', () => ({
   loadStoryLinks: m.svc.loadStoryLinks
 }));
 vi.mock('../../src/main/releases.js', () => ({ setStoryRelease: m.svc.setStoryRelease, readRuleStatus: m.svc.readRuleStatus }));
+// US-0606/US-0607: the planning sync runs real git; here only its calls are checked, with the real scheduler.
+vi.mock('../../src/main/planningSync.js', async (importOriginal) => ({
+  createScheduler: (await importOriginal()).createScheduler,
+  planAction: m.svc.planAction,
+  reapplyLost: m.svc.reapplyLost,
+  runCycle: m.svc.runCycle
+}));
 // US-0506 u3: the real agent wiring, with a spy on terminalInput so pty:write's order can be checked.
 vi.mock('../../src/main/agentIpc.js', async (importOriginal) => {
   const real = await importOriginal();
@@ -961,12 +974,22 @@ describe('feature docs and project settings', () => {
     const { projectId, sender } = await openProject('/work/rel');
     sender.send.mockClear();
     const req = { storyId: 'US-0603', version: 'v0.2.6', epicHash: 'e', overviewHash: 'o' };
-    expect(await call('features:setRelease', {}, projectId, { ...req, file: '/etc/passwd' })).toEqual({ ok: true });
-    expect(svc.setStoryRelease).toHaveBeenLastCalledWith('/work/rel', 'docs/FEATURES.md', req);
+    expect(await call('features:setRelease', {}, projectId, { ...req, file: '/etc/passwd' })).toEqual({ ok: true, inPlace: true });
+    // US-0607 FR1.1: the action goes through the planning record and commit, with the project's paths from main only.
+    expect(svc.planAction).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        root: '/work/rel',
+        featuresPath: 'docs/FEATURES.md',
+        planningBranch: 'docs/planning',
+        userData: '/nonexistent/thadeus-ipc-test'
+      }),
+      { kind: 'setRelease', storyIds: ['US-0603'], version: 'v0.2.6' },
+      { epicHash: 'e', overviewHash: 'o' }
+    );
     expect(sender.send).toHaveBeenCalledWith('features:changed', { projectId });
 
     sender.send.mockClear();
-    svc.setStoryRelease.mockResolvedValueOnce({ conflict: 'docs/FEATURES.md' });
+    svc.planAction.mockResolvedValueOnce({ conflict: 'docs/FEATURES.md' });
     expect(await call('features:setRelease', {}, projectId, req)).toEqual({ conflict: 'docs/FEATURES.md' });
     expect(sender.send).not.toHaveBeenCalled();
 
@@ -975,6 +998,36 @@ describe('feature docs and project settings', () => {
     svc.getProjectSettings.mockResolvedValueOnce({ featuresPath: 'docs/FEATURES.md', delivery: 'continuous' });
     await call('features:ruleStatus', {}, projectId, 'default');
     expect(svc.readRuleStatus).toHaveBeenLastCalledWith('/work/rel', 'default', 'continuous');
+  });
+
+  it('creates and deletes a release through the planning record, and reports and pushes planning (US-0607 FR4.1, FR1.3)', async () => {
+    const { projectId, sender } = await openProject('/work/plan');
+    await call('features:createRelease', {}, projectId, 'v1.0.0');
+    expect(svc.planAction).toHaveBeenLastCalledWith(
+      expect.objectContaining({ root: '/work/plan' }),
+      { kind: 'createRelease', storyIds: [], version: 'v1.0.0' },
+      null
+    );
+    await call('features:deleteRelease', {}, projectId, { version: 'v1.0.0', hash: 'h' });
+    expect(svc.planAction).toHaveBeenLastCalledWith(expect.anything(), { kind: 'deleteRelease', storyIds: [], version: 'v1.0.0' }, { hash: 'h' });
+
+    svc.reapplyLost.mockResolvedValueOnce({ reapplied: 2 });
+    sender.send.mockClear();
+    expect(await call('features:planningStatus', {}, projectId, true)).toEqual({ pending: 0, reapplied: 2, noRemote: false, prOffer: null, error: null });
+    expect(sender.send).toHaveBeenCalledWith('features:changed', { projectId });
+    expect(svc.reapplyLost).toHaveBeenCalledTimes(1);
+    await call('features:planningStatus', {}, projectId, false);
+    expect(svc.reapplyLost).toHaveBeenCalledTimes(1); // only when the release list opens
+
+    svc.runCycle.mockResolvedValueOnce({ reapplied: 0, pending: 1, error: { kind: 'offline' } });
+    expect(await call('features:pushPlanning', {}, projectId)).toEqual({
+      pending: 0,
+      reapplied: 0,
+      noRemote: false,
+      prOffer: null,
+      error: { kind: 'offline' }
+    });
+    expect(svc.runCycle).toHaveBeenLastCalledWith(expect.objectContaining({ root: '/work/plan' }));
   });
 
   it('a feature doc change sends features:changed', async () => {

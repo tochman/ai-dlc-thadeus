@@ -1,6 +1,6 @@
 // IPC surface for the renderer. Every handler validates its projectId and routes
 // file paths through projectAccess, so nothing outside an opened root is reachable.
-import { BrowserWindow, app, dialog, ipcMain, shell } from 'electron';
+import { BrowserWindow, app, dialog, ipcMain, net, shell } from 'electron';
 import { randomUUID } from 'node:crypto';
 import path from 'node:path';
 import { openRoot, readText, resolveInRoot } from './projectAccess.js';
@@ -51,14 +51,17 @@ import { detectPlatform } from './platforms/detect.js';
 import { listComments, listPulls, listReviews } from './platforms/index.js';
 import { clearBitbucket, hasBitbucket, loadBitbucket, saveBitbucket } from './credentials.js';
 import { collisions, loadMachines, loadOpenQuestions, matchPull, possibleCollisions, storyComments } from './teamActivity.js';
-import { createRelease, deleteRelease, readRuleStatus, setStoryRelease } from './releases.js';
+import { readRuleStatus } from './releases.js';
+import { createScheduler, planAction, reapplyLost, runCycle } from './planningSync.js';
+import { readRecord } from './planningRecord.js';
+import { runFixed } from './exec.js';
 import { DELIVERY_DEFAULT } from './parsers/releases.js';
 import { getSetupInfo, runSetup } from './setup.js';
 import { detectHarnesses } from './harness.js';
 import { TOOL_IDS, getTools, setToolPaths, validateTool } from './tools.js';
 import { checkProgram, errorText as checkError, programCommand, projectCommand, projectPlan } from './aidlcUpdate.js';
 import { setupHarness } from '../shared/harnesses.js';
-import { getProjectSettings, getSettings, setProjectSettings, setSettings, settingsNow } from './settings.js';
+import { PLANNING_BRANCH_DEFAULT, PLANNING_PUSH_DEFAULT, getProjectSettings, getSettings, setProjectSettings, setSettings, settingsNow } from './settings.js';
 import { watchFiles, watchForAidlc, watchIntents, watchOpenFiles } from './watcher.js';
 import { listTree, readForEdit, writeFileSafe } from './fileWrite.js';
 import { featureWatchPaths, loadFeatures, loadStoryLinks } from './features.js';
@@ -459,6 +462,7 @@ async function watchSpace(projectId, space) {
     usageDir: path.join(p.root, USAGE_DIR), // other machines' cost snapshots, pulled with git (US-0209 FR5.1)
     worktreesDir: path.join(p.root, '.aidlc', 'worktrees'), // Unit plans written in a build's worktree (US-0507 FR5.1)
     onChange: (change) => {
+      p.intentChangedAt = Date.now(); // an AI-DLC write: the planning push waits while work runs (US-0607 FR3.1)
       if (!p.sender.isDestroyed()) p.sender.send('project:changed', { projectId, space, ...change });
       if (change.dirNames.length || change.indexChanged) refreshQuestions(projectId, change.dirNames);
       if (change.indexChanged) checkProfiles(projectId); // US-0210: not awaited, like the questions
@@ -468,6 +472,71 @@ async function watchSpace(projectId, space) {
       if (!p.sender.isDestroyed()) p.sender.send('project:watchError', { projectId, message: err.message });
     }
   });
+}
+
+// Release planning sync (US-0606, US-0607). One scheduler for the app; a minute tick runs each open project's cycle
+// when it is due (FR3.1). Paths and branches come from main's own settings, never from the renderer.
+const PLANNING_TICK_MS = 60 * 1000;
+const WORKING_MS = 5 * 60 * 1000;
+let planningTimer = null;
+
+/** US-0607 NFR3: gh through runFixed (no shell), the chosen gh path when one is saved (US-0410 FR4.2). */
+const runGh = (args, { cwd }) => runFixed(settingsNow().toolPaths?.gh ?? 'gh', args, { cwd, timeout: 30000 });
+
+async function planningCtx(p) {
+  const settings = await getProjectSettings(p.root);
+  return {
+    root: p.root,
+    userData: app.getPath('userData'),
+    featuresPath: settings.featuresPath,
+    planningBranch: settings.planningBranch ?? PLANNING_BRANCH_DEFAULT,
+    gh: runGh,
+    online: () => net.isOnline()
+  };
+}
+
+/**
+ * US-0607 FR3.1: busy while a question waits or an AI-DLC file changed in the last 5 minutes.
+ * ponytail: "an agent is running" is read from AI-DLC writes, as the renderer's workflowBusy does without a terminal; a
+ * busy agent tab that writes nothing for 5 minutes counts as idle. Ask the renderer if that ever pushes too early.
+ */
+const appBusy = () => allQuestions().length > 0 || [...projects.values()].some((p) => p.intentChangedAt && Date.now() - p.intentChangedAt < WORKING_MS);
+
+const planning = createScheduler({
+  run: async (projectId) => {
+    const p = project(projectId);
+    const settings = await getProjectSettings(p.root);
+    if (settings.featureDocs === 'hide' || settings.delivery === 'continuous') return {}; // no release list here
+    const res = await runCycle(await planningCtx(p));
+    if (res.reapplied || res.pushed) sendFeaturesChanged(projectId, p);
+    return res;
+  },
+  idle: () => net.isOnline() && !appBusy(),
+  intervalMs: () => (settingsNow().planningPushMinutes ?? PLANNING_PUSH_DEFAULT) * 60 * 1000
+});
+
+/** US-0607 FR4.1: the release list's line: the actions waiting, and the last cycle's outcome. */
+async function planningStatus(projectId, reapply = null) {
+  const p = project(projectId);
+  const { actions } = await readRecord(app.getPath('userData'), p.root);
+  const last = planning.status(projectId) ?? {};
+  return {
+    pending: actions.length,
+    reapplied: reapply?.reapplied ?? last.reapplied ?? 0,
+    noRemote: last.noRemote === true,
+    prOffer: last.prOffer ?? null,
+    error: reapply?.error ?? last.error ?? null
+  };
+}
+
+/** A planning action from the release list: recorded, applied and committed; then the scheduler may push at once. */
+async function planningAction(projectId, action, hashes) {
+  const p = project(projectId);
+  const res = await planAction(await planningCtx(p), action, hashes);
+  if (res.conflict) return res;
+  sendFeaturesChanged(projectId, p); // the view reloads with the new hashes and the waiting count at once
+  planning.kick(projectId); // not awaited: an idle app pushes right away (FR3.1)
+  return res;
 }
 
 // Team collaboration (US-1201). The platform of the project's origin remote is read once per opened project; null is
@@ -1023,34 +1092,29 @@ const handlers = {
     return { ...features, tags }; // the vX.Y.Z tags for the release picker and the Releases view (US-0603 FR2.1, FR3.2)
   },
   // A story's release marker (US-0603 FR2.2, FR2.3): named fields only; main finds the files from the overview.
-  'features:setRelease': async (_event, projectId, req) => {
-    const p = project(projectId);
-    const res = await setStoryRelease(p.root, (await getProjectSettings(p.root)).featuresPath, {
-      storyId: req?.storyId,
-      version: req?.version ?? null,
-      epicHash: req?.epicHash,
-      overviewHash: req?.overviewHash
-    });
-    if (res.ok) sendFeaturesChanged(projectId, p); // the view reloads with the new hashes at once
-    return res;
-  },
+  // US-0607 FR1.1, US-0606 FR2: each planning action is recorded first, then committed in place or in a worktree.
+  'features:setRelease': async (_event, projectId, req) =>
+    planningAction(
+      projectId,
+      { kind: 'setRelease', storyIds: [req?.storyId], version: req?.version ?? null },
+      { epicHash: req?.epicHash, overviewHash: req?.overviewHash }
+    ),
   // A release plan file in docs/releases/ (US-0605 FR1.3, FR4): a version and a read hash only, checked against the tags.
-  'features:createRelease': async (_event, projectId, version) => {
+  'features:createRelease': async (_event, projectId, version) => planningAction(projectId, { kind: 'createRelease', storyIds: [], version }, null),
+  'features:deleteRelease': async (_event, projectId, req) =>
+    planningAction(projectId, { kind: 'deleteRelease', storyIds: [], version: req?.version }, { hash: req?.hash }),
+  // US-0607 FR4.1, FR1.3: what waits to be pushed; `opened` (the release list just opened) applies lost actions again.
+  'features:planningStatus': async (_event, projectId, opened) => {
     const p = project(projectId);
-    const res = await createRelease(p.root, (await getProjectSettings(p.root)).featuresPath, version, await listReleaseTags(p.root));
-    sendFeaturesChanged(projectId, p); // FR2.2: the new release shows at once
-    return res;
+    const reapply = opened === true ? await reapplyLost(await planningCtx(p)) : null;
+    if (reapply?.reapplied) sendFeaturesChanged(projectId, p);
+    return planningStatus(projectId, reapply);
   },
-  'features:deleteRelease': async (_event, projectId, req) => {
-    const p = project(projectId);
-    const res = await deleteRelease(
-      p.root,
-      (await getProjectSettings(p.root)).featuresPath,
-      { version: req?.version, hash: req?.hash },
-      await listReleaseTags(p.root)
-    );
-    if (res.ok) sendFeaturesChanged(projectId, p);
-    return res;
+  // US-0607 FR4.1: "Push now", whether or not the app is idle.
+  'features:pushPlanning': async (_event, projectId) => {
+    project(projectId);
+    await planning.pushNow(projectId);
+    return planningStatus(projectId);
   },
   // The lifecycle rule in the space's memory, for the saved delivery setting (US-0603 FR5.2, FR5.3).
   'features:ruleStatus': async (_event, projectId, space) => {
@@ -1076,7 +1140,8 @@ const handlers = {
       harness: partial?.harness,
       harnessTabs: partial?.harnessTabs, // the agent tabs side by side (US-0803)
       delivery: partial?.delivery, // Releases or Continuous deployment (US-0603 FR1.1)
-      modelProfiles: partial?.modelProfiles // US-0210 FR1.5
+      modelProfiles: partial?.modelProfiles, // US-0210 FR1.5
+      planningBranch: partial?.planningBranch // the docs branch for a protected main (US-0607 FR3.3)
     });
     await syncFeaturesWatch(projectId);
     sendFeaturesChanged(projectId, p); // the open view reloads with the new setting
@@ -1121,6 +1186,9 @@ const handlers = {
 };
 
 export function registerIpc() {
+  // US-0607 FR3.1, FR1.3: the first tick runs every open project (never run is due), which also applies lost actions.
+  planningTimer = setInterval(() => planning.tick([...projects.keys()]), PLANNING_TICK_MS);
+  planningTimer.unref?.();
   const { handlers: agentHandlers, listeners } = agentWiring();
   for (const [channel, listener] of Object.entries(listeners)) ipcMain.on(channel, listener); // timing only (OD1)
   for (const [channel, handler] of Object.entries({ ...handlers, ...agentHandlers, ...hooksHandlers(installer) })) {
@@ -1136,6 +1204,7 @@ export function registerIpc() {
 }
 
 export async function shutdown() {
+  clearInterval(planningTimer);
   await agent?.shutdown(); // every channel session closes before the ptys are killed (US-0506 RD5)
   killAllSessions();
   await Promise.all([...projects.values()].map(closeWatcher));

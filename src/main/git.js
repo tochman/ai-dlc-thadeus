@@ -3,6 +3,7 @@
 // working tree is typed into the visible shell tab by the renderer instead.
 // US-1201 AC-2, AC-3 add remote get-url, for-each-ref and merge-tree --write-tree, which writes objects but never the
 // working tree, the index or a ref.
+// US-0606/US-0607 add the release planning helpers at the end (worktree, push), which never touch the person's checkout.
 import { runFixed } from './exec.js';
 import { readJsonSafe } from './projectAccess.js';
 import { t } from '../shared/i18n.js';
@@ -237,6 +238,33 @@ export async function remoteStoryBranches(root, base = FALLBACK_REF, { exec } = 
       }))
   );
   return rows.filter((r) => r.ahead > 0);
+}
+
+// US-0606 FR2, US-0607 FR3: the release planning commits. These change refs and worktrees, never the person's
+// checkout: a worktree is added under the app's own data folder and removed again.
+
+/** US-0606 FR2.1: the branch checked out in `cwd`, or null on a detached HEAD or without a repository. */
+export async function currentBranch(cwd, { exec } = {}) {
+  return gitOrNull(cwd, ['symbolic-ref', '--quiet', '--short', 'HEAD'], exec);
+}
+
+/** US-0606 FR2.1: a worktree at `dir`, on `branch` (created at `base` when given), or detached at `base`. */
+export async function worktreeAdd(root, dir, { branch, base, detach = false }, { exec } = {}) {
+  const args = ['worktree', 'add', '--quiet'];
+  if (detach) args.push('--detach', safeArg(dir, 'path'), safeArg(base, 'ref'));
+  else if (base) args.push('--no-track', '-b', safeArg(branch, 'ref'), safeArg(dir, 'path'), safeArg(base, 'ref'));
+  else args.push(safeArg(dir, 'path'), safeArg(branch, 'ref'));
+  await git(root, args, exec);
+}
+
+/** US-0606 FR2.1: removes the worktree at `dir`, with whatever it holds; its commits stay on their branch. */
+export async function worktreeRemove(root, dir, { exec } = {}) {
+  await git(root, ['worktree', 'remove', '--force', safeArg(dir, 'path')], exec);
+}
+
+/** US-0607 FR3.2, FR3.3: pushes `ref` in `cwd` to origin's branch `target`. */
+export async function pushRef(cwd, ref, target, { exec } = {}) {
+  await git(cwd, ['push', '--quiet', 'origin', `${safeArg(ref, 'ref')}:refs/heads/${safeArg(target, 'ref')}`], exec, FETCH_TIMEOUT_MS);
 }
 
 /** Files with unresolved conflicts after a pull, rebase or merge (FR3.8). */

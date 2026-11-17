@@ -6,9 +6,9 @@
 
 > Make the price and the "brains" of AI-DLC work visible. For every intent, stage and agent the console shows what the run cost (tokens and USD) and which model did the work, next to which model each agent is *configured* to use. The goal is that the user can answer "what did this feature cost?", "where does the money go?" and "is the reviewer really running on the cheaper model?" without leaving the app. Read-only, like everything else.
 
-**Stories:** US-0201, US-0202, US-0203, US-0204, US-0205, US-0206, US-0207, US-0208, US-0209, US-0210, US-0211, US-0212, US-0213
+**Stories:** US-0201, US-0202, US-0203, US-0204, US-0205, US-0206, US-0207, US-0208, US-0209, US-0210, US-0211, US-0212, US-0213, US-0214
 
-**Status (2026-11-17):** ✅ US-0201–US-0205 and US-0207 released (v0.2.0–v0.2.4; CSV export in US-0203 deferred). ➡️ US-0206 moved to US-0904. ✅ US-0208 released in v0.2.7. ✅ US-0209 released in v0.2.8. ✅ US-0212 done, for v0.2.9. ✅ US-0210 done, for v0.2.9. 📋 US-0211 and US-0213 planned, for v0.2.9. Each story names its release.
+**Status (2026-11-17):** ✅ US-0201–US-0205 and US-0207 released (v0.2.0–v0.2.4; CSV export in US-0203 deferred). ➡️ US-0206 moved to US-0904. ✅ US-0208 released in v0.2.7. ✅ US-0209 released in v0.2.8. ✅ US-0212 done, for v0.2.9. ✅ US-0210 done, for v0.2.9. 📋 US-0211 and US-0213 planned, for v0.2.9. 📋 US-0214 planned. Each story names its release.
 
 ---
 
@@ -238,3 +238,21 @@ The key format of `workflows` was confirmed during requirements analysis (see ab
   - [ ] Every text goes through `t()` in Swedish and English, in the LCARS interface.
 - **Notes:** To be checked in the first design stage: that `/aidlc` in a fresh session shows a waiting gate again and accepts the approval (AI-DLC's human-presence guard), and how a gate is recognised (a waiting question in the US-0506 channel, or the state file). Autonomous Construction rarely goes idle, because AI-DLC's `continue-workflow` `Stop` hook keeps it going, so there only the threshold moment may apply. An "automatic" mode without a dialog can come later, once the dialog has shown which answers people pick.
 - **Dependencies:** US-0506, US-0207, US-0212
+
+**US-0214: The token view shows the main session's work, and its chart can hide series from the legend** 📋 Planned
+- As a **developer watching an intent in the token view**, in order to **see what is working right now and read the series I care about**, I would like **Agent progress to show the main session's activity too, and the "Tokens over time" chart to let me hide and show series by clicking them in the legend**.
+- **Epic:** EPIC-02
+- **Priority:** Medium
+- **Complexity:** Medium
+- **Background:** Asked for on 2026-11-17, with screenshots of `261117-release-planning-sync`. Agent progress said "No agents are working in this intent right now" while the main session was working through the stages, because only dispatched agents show there. In "Tokens over time", cache reads (about 30 M) dwarf input and output, so the other series are flat lines at the bottom, and the legend (input, output, cache write 1 h, cache write 5 m, cache read) is a label only.
+- **Acceptance Criteria:**
+  - [ ] **Given** the main Claude chat (the conversation in the agent tab, not a dispatched subagent) is working on the intent, **when** I open the token view, **then** Agent progress shows a "Main" row for that chat with what it is doing now (for example running a tool, writing, or waiting for my answer), next to any dispatched agents. "No agents are working" shows only when neither the main chat nor any agent is.
+  - [ ] **Given** the "Tokens over time" chart, **when** I click a series in the legend (or press Enter or Space on it), **then** that series is hidden or shown again, and its legend entry looks switched off.
+  - [ ] The y-axis rescales to the series still shown, so hiding cache read makes input and output readable.
+  - [ ] At least one series always stays shown: the last one cannot be hidden.
+  - [ ] The hover box and the Table view show only the series that are shown.
+  - [ ] The choice is remembered per project while the app runs.
+  - [ ] Legend entries are buttons with `aria-pressed`, and each series keeps its text label, not colour alone.
+  - [ ] Every text goes through `t()` in Swedish and English, in the LCARS look.
+- **Notes:** Open: whether the other diagrams (rate, splits by stage, agent and model) get the same legend toggles (proposal: yes, wherever a diagram has more than one series), and how the main chat's activity is read (decided 2026-11-17: "Main" is the main Claude chat; proposal: from its transcript, the same source as US-0207's live view). Built on US-0208's view (`TokenDetail.jsx`, `AgentProgress.jsx`, visx).
+- **Dependencies:** US-0207, US-0208

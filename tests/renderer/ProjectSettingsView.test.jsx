@@ -57,6 +57,27 @@ describe('ProjectSettingsView (Configuration › Feature docs and Agent, US-0012
     expect(screen.getByTestId('project-settings-delivery-continuous').checked).toBe(true);
   });
 
+  it('saves a changed docs branch for a protected main, and refuses one git would not accept (US-0607 FR3.3, FR4.3, NFR3)', async () => {
+    render(<ProjectSettingsView projectId="p1" settings={settings} />);
+    const field = screen.getByTestId('project-settings-planning-branch');
+    expect(field.value).toBe('docs/planning');
+    fireEvent.change(field, { target: { value: 'bad..name' } });
+    expect(screen.getByTestId('project-settings-save').disabled).toBe(true);
+    expect(screen.getByRole('alert').textContent).toMatch(/grennamn/);
+    fireEvent.change(field, { target: { value: 'docs/plans' } });
+    fireEvent.click(screen.getByTestId('project-settings-save'));
+    await screen.findByTestId('project-settings-saved');
+    expect(window.bridge.setProjectSettings).toHaveBeenCalledWith('p1', {
+      featureDocs: 'auto',
+      featuresPath: 'docs/FEATURES.md',
+      planningBranch: 'docs/plans'
+    });
+    cleanup();
+
+    render(<ProjectSettingsView projectId="p1" settings={{ ...settings, delivery: 'continuous' }} />);
+    expect(screen.queryByTestId('project-settings-planning-branch')).toBeNull(); // no release list, no planning
+  });
+
   it('disables Spara for an invalid path, shows the main-process error, and offers setup without docs (FR3.3, FR3.6)', async () => {
     const onSetup = vi.fn();
     render(<ProjectSettingsView projectId="p1" settings={settings} onSetup={onSetup} />);

@@ -4,7 +4,8 @@ import path from 'node:path';
 
 const TMP = path.resolve(__dirname, '../.tmp/settings');
 vi.mock('electron', () => ({ app: { getPath: () => TMP } }));
-const { TOOL_IDS, getProjectSettings, getSettings, setProjectSettings, setSettings } = await import('../../src/main/settings.js');
+const { PLANNING_BRANCH_DEFAULT, PLANNING_PUSH_DEFAULT, TOOL_IDS, getProjectSettings, getSettings, setProjectSettings, setSettings } =
+  await import('../../src/main/settings.js');
 const FILE = path.join(TMP, 'settings.json');
 
 beforeEach(async () => {
@@ -245,6 +246,34 @@ describe('project settings', () => {
       '/p/a': { featureDocs: 'hide', featuresPath: 'docs/FEATURES.md' },
       '/p/b': { featureDocs: 'auto', featuresPath: 'FEATURES.md' }
     });
+  });
+});
+
+// US-0607 FR3.1, FR3.3: the push interval (app-wide) and the docs branch (per project).
+describe('release planning settings (US-0607)', () => {
+  it('keeps a push interval of 1 to 120 whole minutes and leaves out anything else, so 10 applies (FR3.1)', async () => {
+    expect(PLANNING_PUSH_DEFAULT).toBe(10);
+    expect((await setSettings({ planningPushMinutes: 25 })).planningPushMinutes).toBe(25);
+    expect((await setSettings({ planningPushMinutes: 1 })).planningPushMinutes).toBe(1);
+    for (const bad of [0, 121, 2.5, '10', null]) {
+      expect(await setSettings({ planningPushMinutes: bad })).not.toHaveProperty('planningPushMinutes');
+    }
+  });
+
+  it('keeps a valid docs branch per project and refuses an invalid one (FR3.3, NFR3)', async () => {
+    expect(PLANNING_BRANCH_DEFAULT).toBe('docs/planning');
+    expect(await setProjectSettings('/p/a', { planningBranch: 'docs/release-plans' })).toMatchObject({ planningBranch: 'docs/release-plans' });
+    for (const bad of ['-x', 'a..b', 'has space', 'main', '/docs', 'docs/', 'x.lock', 'a//b', 'a~b', 'a@{1}', '.hidden', '']) {
+      await expect(setProjectSettings('/p/a', { planningBranch: bad })).rejects.toThrow(/Okänt värde|Ogiltig/);
+    }
+    expect((await getProjectSettings('/p/a')).planningBranch).toBe('docs/release-plans');
+  });
+
+  it('drops an invalid docs branch read from the file, so the default applies', async () => {
+    await fs.writeFile(FILE, JSON.stringify({ projectSettings: { '/p/a': { planningBranch: 'bad..name' }, '/p/b': { planningBranch: 'docs/x' } } }));
+    const s = await getSettings();
+    expect(s.projectSettings['/p/a']).not.toHaveProperty('planningBranch');
+    expect(s.projectSettings['/p/b'].planningBranch).toBe('docs/x');
   });
 });
 

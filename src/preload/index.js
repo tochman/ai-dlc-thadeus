@@ -87,6 +87,9 @@ contextBridge.exposeInMainWorld('bridge', {
   // US-0605: a version (and for delete the plan's read hash), never a path.
   createRelease: call('features:createRelease'),
   deleteRelease: call('features:deleteRelease'),
+  // US-0607 FR4.1: the planning changes waiting to be pushed, and "Push now"; only the project id crosses the bridge.
+  getPlanningStatus: call('features:planningStatus'),
+  pushPlanning: call('features:pushPlanning'),
   getLifecycleRuleStatus: call('features:ruleStatus'),
   getProjectSettings: call('projectSettings:get'),
   setProjectSettings: call('projectSettings:set'),
