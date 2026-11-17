@@ -1,0 +1,1 @@
+"Build US-0213 (offer to compact or start a fresh session, from a dialog, in Claude Code and opencode; docs/features/epic-02-cost-and-models.md) bundled with US-0026 (the agent dialog is not left empty at a new session, and offers /clear or /clear + /aidlc --resume; docs/features/epic-00-fixes.md). Both touch the US-0506 agent dialog."

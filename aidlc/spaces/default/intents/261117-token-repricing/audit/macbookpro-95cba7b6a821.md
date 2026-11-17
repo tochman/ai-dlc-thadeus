@@ -1542,3 +1542,221 @@
 **Message Id**: da996117
 
 ---
+
+## Question Asked
+**Timestamp**: 2026-11-17T15:32:37Z
+**Event**: QUESTION_ASKED
+**Question Id**: 92bb6c57
+**Question Type**: new-work-routing
+**Question Chat**: e59fda82-1995-4a3f-9f2f-25cc3ec19571
+**Question Shows**: sha256:6e523b889c04fa85ee6efdcb554a1f31fc398bb05bcb14745bfd6d1f223363fc
+**Stage**: build-and-test
+**Options**: ["Part of the active work","Separate new piece of work","Reshape the active work"]
+**State Digest**: 26b091a7c22835dd7e8446658c6b8d0bbd2cb973ab5c82e0b7c54179aba3a2d2
+**Question Text SHA-256**: 15678c51a2afb04be1d5579efadd1d70cb6158712ceb488526c3ae9e23d019a2
+
+---
+
+## Human Turn
+**Timestamp**: 2026-11-17T15:33:01Z
+**Event**: HUMAN_TURN
+**Session**: e59fda82-1995-4a3f-9f2f-25cc3ec19571
+**Origin**: person
+**Source**: picker
+**Open Question**: new-work-routing
+**Picked**: ["Separate new piece of work"]
+**Message Id**: fa38c810
+**Open Questions**: 92bb6c57
+
+---
+
+## Question Replied
+**Timestamp**: 2026-11-17T15:33:01Z
+**Event**: QUESTION_REPLIED
+**Session**: e59fda82-1995-4a3f-9f2f-25cc3ec19571
+**Question**: US-0211's work is still open, paused at Build and Test. Where should the bundled US-0213 + US-0026 work go?
+**Reply**: Separate new piece of work
+**Options**: ["Part of the active work","Separate new piece of work","Reshape the active work"]
+
+---
+
+## Request Routed
+**Timestamp**: 2026-11-17T15:33:08Z
+**Event**: REQUEST_ROUTED
+**Request**: 92bb6c57
+**Session**: e59fda82-1995-4a3f-9f2f-25cc3ec19571
+**Message Id**: fa38c810
+
+---
+
+## Plan Recomposed
+**Timestamp**: 2026-11-17T15:37:26Z
+**Event**: RECOMPOSED
+**Scope**: ultra-express
+**Stages skipped**: deployment-pipeline, deployment-execution
+**Stages added**: none
+**Stages in Scope**: 7
+**Reason**: the person asked to skip it
+
+---
+
+## Human Turn
+**Timestamp**: 2026-11-17T15:40:13Z
+**Event**: HUMAN_TURN
+**Session**: e59fda82-1995-4a3f-9f2f-25cc3ec19571
+**Origin**: person
+**Source**: typed
+**Message Id**: 9b569b0c
+
+---
+
+## Workflow Unparked
+**Timestamp**: 2026-11-17T15:40:22Z
+**Event**: WORKFLOW_UNPARKED
+
+---
+
+## Artifact Created
+**Timestamp**: 2026-11-17T15:49:14Z
+**Event**: ARTIFACT_CREATED
+**Tool**: Write
+**File**: <project-dir>/aidlc/spaces/default/intents/261117-token-repricing/construction/build-and-test/build-instructions.md
+**Context**: construction > build-and-test > build-instructions.md
+
+---
+
+## Artifact Created
+**Timestamp**: 2026-11-17T15:49:20Z
+**Event**: ARTIFACT_CREATED
+**Tool**: Write
+**File**: <project-dir>/aidlc/spaces/default/intents/261117-token-repricing/construction/build-and-test/integration-test-instructions.md
+**Context**: construction > build-and-test > integration-test-instructions.md
+
+---
+
+## Artifact Created
+**Timestamp**: 2026-11-17T15:49:27Z
+**Event**: ARTIFACT_CREATED
+**Tool**: Write
+**File**: <project-dir>/aidlc/spaces/default/intents/261117-token-repricing/construction/build-and-test/test-results.md
+**Context**: construction > build-and-test > test-results.md
+
+---
+
+## Artifact Created
+**Timestamp**: 2026-11-17T15:49:33Z
+**Event**: ARTIFACT_CREATED
+**Tool**: Write
+**File**: <project-dir>/aidlc/spaces/default/intents/261117-token-repricing/construction/build-and-test/cross-unit-traceability.md
+**Context**: construction > build-and-test > cross-unit-traceability.md
+
+---
+
+## Artifact Created
+**Timestamp**: 2026-11-17T15:49:41Z
+**Event**: ARTIFACT_CREATED
+**Tool**: Write
+**File**: <project-dir>/aidlc/spaces/default/intents/261117-token-repricing/construction/build-and-test/build-and-test-summary.md
+**Context**: construction > build-and-test > build-and-test-summary.md
+
+---
+
+## Stage Awaiting Approval
+**Timestamp**: 2026-11-17T15:49:42Z
+**Event**: STAGE_AWAITING_APPROVAL
+**Stage**: build-and-test
+**Next Stage**: none
+**Brief Digest**: none
+**Sensor State**: required-sections@aidlc/spaces/default/intents/261117-token-repricing/construction/build-and-test/build-instructions.md=not-run; required-sections@aidlc/spaces/default/intents/261117-token-repricing/construction/build-and-test/build-and-test-summary.md=not-run; required-sections@aidlc/spaces/default/intents/261117-token-repricing/construction/build-and-test/test-results.md=not-run; required-sections@aidlc/spaces/default/intents/261117-token-repricing/construction/build-and-test/cross-unit-traceability.md=not-run; required-sections@aidlc/spaces/default/intents/261117-token-repricing/construction/build-and-test/integration-test-instructions.md=not-run; upstream-coverage@aidlc/spaces/default/intents/261117-token-repricing/construction/build-and-test/build-instructions.md=not-run
+**Open Decisions**: 0
+**Question Id**: 1317e575
+**Question Type**: gate
+**Question Chat**: e59fda82-1995-4a3f-9f2f-25cc3ec19571
+**Question Shows**: sha256:9a29101eac89e82260bd00a1b5c285d107f3e7bb3d08dea7a3f409b7aa3286ec
+
+---
+
+## Human Turn
+**Timestamp**: 2026-11-17T15:49:58Z
+**Event**: HUMAN_TURN
+**Session**: e59fda82-1995-4a3f-9f2f-25cc3ec19571
+**Origin**: person
+**Source**: picker
+**Picked**: ["Approve"]
+**Message Id**: 23d2af0c
+**Open Questions**: 1317e575
+
+---
+
+## Question Replied
+**Timestamp**: 2026-11-17T15:49:58Z
+**Event**: QUESTION_REPLIED
+**Session**: e59fda82-1995-4a3f-9f2f-25cc3ec19571
+**Question**: Approve Build and Test for US-0211? This is its last stage, so approving finishes the token-repricing work.
+**Reply**: Approve
+**Options**: ["Approve","Request Changes"]
+
+---
+
+## Gate Approved
+**Timestamp**: 2026-11-17T15:50:02Z
+**Event**: GATE_APPROVED
+**Stage**: build-and-test
+**User Input**: Approve
+**Person Reply**: just finish it off\nApprove
+**Message Id**: 23d2af0c
+**Message Ids**: 9b569b0c,23d2af0c
+**Brief Digest**: none
+
+---
+
+## Stage Completion
+**Timestamp**: 2026-11-17T15:50:02Z
+**Event**: STAGE_COMPLETED
+**Stage**: build-and-test
+**Validation Basis**: {"graphContract":"sha256:1aed809bd5f1f235d6ab1b1495c41997dd8cc201478d4991c474c4f1638a2b55","inputs":[{"artifact":"code-generation-plan","contentHash":"sha256:50ea0e68b8ce1afa6fc967b2bf43bd29faa4b63f03fb24aab80fd0d08d286114","instanceCount":1,"presentCount":1,"producer":"code-generation","required":true,"structureHash":"sha256:57667f56a330c120aa3302537f80e6d5c0f08520550a2a422bf63353737e3a5a"},{"artifact":"code-summary","contentHash":"sha256:8b387bdf8d7031c45834113a3a906ca8484f92c42936a9b68229ae65f56e1475","instanceCount":1,"presentCount":1,"producer":"code-generation","required":true,"structureHash":"sha256:21e572c95a4ab3d6522cbcf2f04c333b1af25a260499e4552e1f411834625d70"},{"artifact":"unit-test-instructions","contentHash":"sha256:68614dfe636754ebb5c827e71ac6efba9b1dbfd256f2bf0eb5b18963c4a30430","instanceCount":1,"presentCount":1,"producer":"code-generation","required":true,"structureHash":"sha256:ee2f932eeb25eecc48b9d3fc370e2ab727978ac8bec8b88e8593c3c037970ed0"}],"outputs":[{"artifact":"build-and-test-summary","contentHash":"sha256:7843a159f1315f493e4ccbf6040f2d80d292b13b8c206a5c8966030aed7576d0","instanceCount":1,"presentCount":1,"producer":"build-and-test","required":true,"structureHash":"sha256:3568c6f41d101d24690b220d2d34b518f9d24b15ad3c2037606e60cd842c3076"},{"artifact":"build-instructions","contentHash":"sha256:9076f4d9f299b05f4d1011c8cec098fe5c1a448d99c0a0ecdd376b42c01437f8","instanceCount":1,"presentCount":1,"producer":"build-and-test","required":true,"structureHash":"sha256:288399ee480af115aefd002ef005115c5497df6f4c66c58bb20f152f6b49bc65"},{"artifact":"build-test-results","contentHash":"sha256:d0aacc0e04f611dc4f56abfb29c094c8d259cfaf452c5e2db0729e3bc308e25b","instanceCount":1,"presentCount":1,"producer":"build-and-test","required":true,"structureHash":"sha256:358a5511178a1fd37415208a8a1c1bf9df82775d6955fd2feb4d696b1e77ec13"},{"artifact":"cross-unit-traceability","contentHash":"sha256:d14cac3d2012ae6629e22393d7e36e241d0b75899026a80a477d4277de981750","instanceCount":1,"presentCount":1,"producer":"build-and-test","required":true,"structureHash":"sha256:085c657fe6b7b53acafa3904378b2e20b57a82eb752d2c6761d745fd687bc966"},{"artifact":"integration-test-instructions","contentHash":"sha256:9cce98cb563abff045760ddd06fce2d21c88eda393b9c97d4323ad792510fb62","instanceCount":1,"presentCount":1,"producer":"build-and-test","required":false,"structureHash":"sha256:92d4f3198d813e0d413f87ccffa13b3e82c8210f0dc71cd16ddbf179aafa1894"}],"projectType":"brownfield","schema":3}
+**Details**: Stage Build and Test approved by gate
+**Tokens In**: 68
+**Tokens Out**: 13799
+**Cache Read**: 6484746
+**Cache Write**: 49389
+**Cost USD**: 1.97
+**By Model**: opus-5-5=1.97
+**By Agent**: main=1.97
+**Tokens By Model**: opus-5-5=68/13.8k/6.5M/49.4k
+**Tokens By Agent**: main=68/13.8k/6.5M/49.4k
+
+---
+
+## Phase Completion
+**Timestamp**: 2026-11-17T15:50:02Z
+**Event**: PHASE_COMPLETED
+**From phase**: construction
+**To phase**: (end)
+**Stages completed**: 7
+
+---
+
+## Phase Verification
+**Timestamp**: 2026-11-17T15:50:02Z
+**Event**: PHASE_VERIFIED
+**Phase boundary**: construction → end
+
+---
+
+## Workflow Completion
+**Timestamp**: 2026-11-17T15:50:02Z
+**Event**: WORKFLOW_COMPLETED
+**Scope**: ultra-express
+**Details**: Scope: ultra-express, 7 stages completed
+**Tokens In**: 534
+**Tokens Out**: 212327
+**Cache Read**: 42923002
+**Cache Write**: 1283054
+**Cost USD**: 21.48
+**By Model**: opus-5-5=21.48
+**By Agent**: main=13.66; aidlc-developer-agent=7.82
+**Tokens By Model**: opus-5-5=534/212.3k/42.9M/1.3M
+**Tokens By Agent**: main=316/123.4k/26.2M/744.7k; aidlc-developer-agent=218/88.9k/16.8M/538.3k
+
+---

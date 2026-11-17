@@ -300,7 +300,15 @@
     "slug": "token-repricing",
     "dirName": "261117-token-repricing",
     "scope": "ultra-express",
-    "status": "in-flight",
+    "status": "complete",
     "request": "9290c6ec"
+  },
+  {
+    "uuid": "01a1ea24-0ea5-71bc-a4c7-4ddaf60e5d0a",
+    "slug": "session-handoff-dialog",
+    "dirName": "261117-session-handoff-dialog",
+    "scope": "ultra-express",
+    "status": "in-flight",
+    "request": "92bb6c57"
   }
 ]
