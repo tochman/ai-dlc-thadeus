@@ -2,12 +2,13 @@
 // marker (FR2.2, FR2.3) and a release plan file in docs/releases/ (US-0605 FR1.3, FR4), and the lifecycle rule check
 // in the project's AI-DLC memory (FR5.2). The renderer names only a story id, a version and the hashes it read; the
 // files are found here from the project's own overview.
+import { createHash } from 'node:crypto';
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import { readText, resolveInRoot } from './projectAccess.js';
 import { writeFileSafe } from './fileWrite.js';
 import { loadFeatures, plansDir } from './features.js';
-import { DELIVERY, buildReleases, canDelete, newReleaseError, planHeading, releaseOf, ruleStatus, setReleaseMarker } from './parsers/releases.js';
+import { DELIVERY, addPlanRows, buildReleases, canDelete, newReleaseError, planHeading, releaseOf, ruleStatus, setReleaseMarker } from './parsers/releases.js';
 import { t } from '../shared/i18n.js';
 
 const STORY_ID = /^US-\d{4}$/;
@@ -40,7 +41,45 @@ export async function setStoryRelease(root, overviewRel, { storyId, version, epi
   const refused =
     (await writeMarked(root, epic.file, epic.parsed.raw, epicHash, storyId, version)) ??
     (await writeMarked(root, overviewRel, features.overviewText, overviewHash, storyId, version));
-  return refused ?? { ok: true };
+  if (refused) return refused;
+  // US-0606 FR2.4: a story added to a release is listed in its plan file too; a removed one leaves the plan file alone.
+  if (version)
+    await writePlanRow(
+      root,
+      overviewRel,
+      epic,
+      epic.parsed.stories.find((s) => s.id === storyId),
+      version
+    );
+  return { ok: true };
+}
+
+const MARKER = { planned: '📋', progress: '🚧', done: '✅', deployed: '🚀' };
+const sha256 = (text) => createHash('sha256').update(text, 'utf8').digest('hex');
+
+/** US-0606 FR2.4: adds the story's row to `docs/releases/X.Y.Z.md`, creating the file (and its folder) when missing. */
+async function writePlanRow(root, overviewRel, epic, story, version) {
+  const dir = plansDir(overviewRel);
+  const rel = `${dir}/${version.slice(1)}.md`; // the version is checked by setReleaseMarker, so the name is safe
+  const row = {
+    ...story,
+    epicId: epic.id,
+    epicLink: posix.relative(dir, epic.file),
+    status: story.status ? `${MARKER[story.status]} ${story.statusText.split(',')[0].trim()}` : null
+  };
+  let text = null;
+  try {
+    text = await readText(root, rel);
+  } catch (err) {
+    if (err.code !== 'ENOENT') throw err;
+  }
+  if (text === null) {
+    await fs.mkdir(path.join(await resolveInRoot(root, posix.dirname(dir)), posix.basename(dir)), { recursive: true });
+    await fs.writeFile(path.join(await resolveInRoot(root, dir), posix.basename(rel)), addPlanRows(planHeading(version), [row]), { flag: 'wx' });
+    return;
+  }
+  const next = addPlanRows(text, [row]);
+  if (next !== text) await writeFileSafe(root, rel, next, { expectHash: sha256(text) });
 }
 
 /** The releases as the release list shows them, from the docs read now and the given vX.Y.Z tags. */

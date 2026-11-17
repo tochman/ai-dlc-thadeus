@@ -127,6 +127,7 @@ function ReleasePicker({ projectId, features, epic, story }) {
         overviewHash: features.overviewHash
       });
       if (res?.conflict) setError(t('features.release.conflict', { file: res.conflict }));
+      else if (res?.error) setError(planningErrorText(t, res.error));
     } catch (err) {
       setError(t('features.release.failed', { error: errorText(err) }));
     } finally {
@@ -200,6 +201,79 @@ function NewRelease({ tags, locked, onCreate }) {
   );
 }
 
+/** US-0607 FR3.5, US-0606 FR4.2: one sentence for a planning error from main ({kind, reason?, files?}). */
+function planningErrorText(t, error) {
+  const kind = ['offline', 'conflict', 'push', 'commit'].includes(error?.kind) ? error.kind : 'git';
+  return t(`features.planning.error.${kind}`, { reason: error?.reason ?? '', files: (error?.files ?? []).join(', ') });
+}
+
+/**
+ * US-0607 FR4.1, FR1.3, FR3.3–FR3.5: the release list's planning sub-block: what waits to be pushed, with Push now,
+ * and the last cycle's outcome. Nothing shows while nothing waits. The first read, as the list opens, asks main to
+ * apply lost actions again; later reads follow each reload of the docs.
+ */
+function PlanningSync({ projectId, features }) {
+  const { t } = useTranslation();
+  const [status, setStatus] = useState(null);
+  const [busy, setBusy] = useState(false);
+  const opened = useRef(true);
+  useEffect(() => {
+    let live = true;
+    const first = opened.current;
+    opened.current = false;
+    window.bridge
+      .getPlanningStatus(projectId, first)
+      .then((s) => live && setStatus(s))
+      .catch((err) => live && setStatus({ pending: 0, error: { kind: 'git', reason: errorText(err) } }));
+    return () => {
+      live = false;
+    };
+  }, [projectId, features]);
+
+  async function pushNow() {
+    setBusy(true);
+    try {
+      setStatus(await window.bridge.pushPlanning(projectId));
+    } catch (err) {
+      setStatus((s) => ({ ...s, error: { kind: 'git', reason: errorText(err) } }));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  if (!status || !(status.pending > 0 || status.reapplied > 0 || status.prOffer || status.error)) return null;
+  return (
+    <div className="features-release" data-testid="planning-sync">
+      <div className="lcars-heading">
+        <h3 className="section-title">{t('features.planning.title')}</h3>
+        <span className="lcars-heading-line" aria-hidden="true" />
+      </div>
+      {status.pending > 0 && <p data-testid="planning-pending">{t('features.planning.pending', { n: status.pending })}</p>}
+      {status.reapplied > 0 && (
+        <p role="status" data-testid="planning-reapplied">
+          {t('features.planning.reapplied', { n: status.reapplied })}
+        </p>
+      )}
+      {status.noRemote && status.pending > 0 && (
+        <p className="muted" data-testid="planning-no-remote">
+          {t('features.planning.noRemote')}
+        </p>
+      )}
+      {status.error && (
+        <p className="refresh-error" role="alert" data-testid="planning-error">
+          {planningErrorText(t, status.error)}
+        </p>
+      )}
+      {status.prOffer && <p data-testid="planning-pr-offer">{t('features.planning.prOffer', { branch: status.prOffer.branch })}</p>}
+      {status.pending > 0 && !status.noRemote && (
+        <button className="lcars-block lcars-block--sm" disabled={busy} onClick={pushNow} data-testid="planning-push-now">
+          {t('features.planning.pushNow')}
+        </button>
+      )}
+    </div>
+  );
+}
+
 /** US-0605 FR3: the stories with no planned or released version, for a release's Add story picker. */
 const storiesWithoutRelease = (epics) =>
   (epics ?? []).flatMap((e) =>
@@ -233,7 +307,8 @@ function ReleasesView({ projectId, features, onOpenStory }) {
     try {
       const res = await call();
       if (res?.ok) return true;
-      setError(t('features.release.conflict', { file: res?.conflict }));
+      // US-0606 FR4.2: a refused commit names its reason and files; the change itself was kept.
+      setError(res?.error ? planningErrorText(t, res.error) : t('features.release.conflict', { file: res?.conflict }));
     } catch (err) {
       setError(t(failedKey, { error: errorText(err) }));
     }
@@ -255,6 +330,7 @@ function ReleasesView({ projectId, features, onOpenStory }) {
 
   return (
     <>
+      <PlanningSync projectId={projectId} features={features} />
       <NewRelease tags={features.tags} locked={locked} onCreate={create} />
       {error && (
         <p className="refresh-error" role="alert">

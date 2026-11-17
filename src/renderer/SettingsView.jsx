@@ -388,6 +388,48 @@ function Notifications({ motion, questionAlerts = 'popup-notify', replyAlerts = 
   );
 }
 
+/** US-0607 FR3.1, FR4.3: minutes between release planning pushes, for every project; saved when it is 1–120. */
+function PlanningInterval({ settings, onReload, save }) {
+  const { t } = useTranslation();
+  const saved = settings?.planningPushMinutes ?? 10; // PLANNING_PUSH_DEFAULT in settings.js
+  const [draft, setDraft] = useState(String(saved));
+  useEffect(() => setDraft(String(saved)), [saved]);
+  const n = Number(draft);
+  const valid = Number.isInteger(n) && n >= 1 && n <= 120;
+  function change(value) {
+    setDraft(value);
+    const minutes = Number(value);
+    if (Number.isInteger(minutes) && minutes >= 1 && minutes <= 120 && minutes !== saved) {
+      save(async () => {
+        await window.bridge.setSettings({ planningPushMinutes: minutes });
+        await onReload?.();
+      });
+    }
+  }
+  return (
+    <label className="field">
+      <span className="field-label">{t('settings.planningInterval.label')}</span>
+      <input
+        type="number"
+        min="1"
+        max="120"
+        step="1"
+        className="lcars-input"
+        value={draft}
+        onChange={(e) => change(e.target.value)}
+        aria-invalid={!valid}
+        data-testid="settings-planning-interval"
+      />
+      <span className="muted">{t('settings.planningInterval.help')}</span>
+      {!valid && (
+        <span className="refresh-error" role="alert">
+          {t('settings.planningInterval.invalid')}
+        </span>
+      )}
+    </label>
+  );
+}
+
 /** Projekt: the default folder, the recent projects and a way into each open project's settings (FR4.1–FR4.3). */
 function Project({ motion, onReload, settings, recentProjects = [], onRemoveRecent, projects = [], onProjectSettings }) {
   const { t } = useTranslation();
@@ -423,6 +465,7 @@ function Project({ motion, onReload, settings, recentProjects = [], onRemoveRece
           </button>
         )}
       </div>
+      <PlanningInterval settings={settings} onReload={onReload} save={save} />
       <h3 className="settings-subhead">{t('settings.recent.label')}</h3>
       {recentProjects.length === 0 ? (
         <p className="muted">{t('settings.recent.empty')}</p>

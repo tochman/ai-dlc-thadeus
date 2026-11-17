@@ -553,6 +553,21 @@
       "released": "Released",
       "storyCount": "{n, plural, one {# story} other {# stories}}"
     },
+    "planning": {
+      "title": "Planning sync",
+      "pending": "{n, plural, one {# planning change waiting to be pushed.} other {# planning changes waiting to be pushed.}}",
+      "pushNow": "Push now",
+      "reapplied": "{n, plural, one {# planning change had been lost and was made again.} other {# planning changes had been lost and were made again.}}",
+      "noRemote": "The project has no origin remote, so the planning is committed here only.",
+      "prOffer": "The planning is on the branch {branch}, since main is protected. Open a pull request from it into main by hand.",
+      "error": {
+        "offline": "Offline. The planning is kept and pushed when the app is online again.",
+        "conflict": "The planning conflicts with main in {files}. Nothing was pushed; the app tries again at the next interval.",
+        "push": "The push was refused: {reason}. The planning is kept and the app tries again at the next interval.",
+        "commit": "The planning could not be committed ({reason}): {files}. The change is kept.",
+        "git": "The planning sync failed: {reason}"
+      }
+    },
     "rule": {
       "missing": "This project's AI-DLC memory has no story lifecycle rule for {delivery}.",
       "older": "This project's story lifecycle rule is an older version. Update it for {delivery}.",
@@ -754,6 +769,11 @@
       "loadFailed": "The tools could not be read: {error}"
     },
     "fullscreenLabel": "Full screen at start",
+    "planningInterval": {
+      "label": "Minutes between release planning pushes",
+      "help": "Applies to every project. The app pushes sooner when it is idle.",
+      "invalid": "Enter a whole number from 1 to 120."
+    },
     "defaultFolder": {
       "label": "Default folder for Open project",
       "none": "No folder chosen",
@@ -792,6 +812,9 @@
       "titleFor": "Project settings: {name}",
       "featureDocsLegend": "Feature docs",
       "deliveryLegend": "How the project ships",
+      "planningBranchLabel": "Branch for planning when main is protected",
+      "planningBranchHelp": "Release planning is pushed here and merged into main through a pull request.",
+      "planningBranchInvalid": "That is not a branch name git accepts (and it cannot be main).",
       "deliveryHelp": {
         "releases": "Stories are marked for a release and listed per release.",
         "continuous": "Every merge is deployed; stories end at 🚀 Deployed."

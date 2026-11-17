@@ -4,7 +4,7 @@ import { app } from 'electron';
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import { DEFAULT_FEATURES_PATH, isValidFeaturesPath } from './parsers/features.js';
-import { DELIVERY } from './parsers/releases.js';
+import { DELIVERY, isValidBranchName } from './parsers/releases.js';
 import { LANGUAGE_SETTINGS, t } from '../shared/i18n.js';
 import { HARNESSES, selectableHarness } from '../shared/harnesses.js';
 import { TOOL_IDS, isStoredPath } from './tools.js';
@@ -55,6 +55,13 @@ function sanitizeUpdates(raw) {
   };
 }
 
+/** US-0607 FR3.1: minutes between planning pushes (1–120); unset means PLANNING_PUSH_DEFAULT. */
+export const PLANNING_PUSH_DEFAULT = 10;
+const validPushMinutes = (v) => Number.isInteger(v) && v >= 1 && v <= 120;
+
+/** US-0607 FR3.3: the docs branch for a protected `main`; unset means PLANNING_BRANCH_DEFAULT. */
+export { PLANNING_BRANCH_DEFAULT } from './parsers/releases.js';
+
 /** Per-project settings keyed by project root (EPIC-06 FR3.4); invalid values fall back to the defaults. */
 function sanitizeProject(raw) {
   const tabs = sanitizeHarnessTabs(raw?.harnessTabs);
@@ -67,7 +74,9 @@ function sanitizeProject(raw) {
     // "Releases / Continuous deployment" (US-0603 FR1.1); left out when unset or invalid, so DELIVERY_DEFAULT applies.
     ...(DELIVERY.includes(raw?.delivery) ? { delivery: raw.delivery } : {}),
     // "Model profiles" (US-0210 FR1.5); left out until saved.
-    ...(raw?.modelProfiles !== undefined ? { modelProfiles: sanitizeModelProfiles(raw.modelProfiles) } : {})
+    ...(raw?.modelProfiles !== undefined ? { modelProfiles: sanitizeModelProfiles(raw.modelProfiles) } : {}),
+    // The docs branch (US-0607 FR3.3); left out when unset or invalid, so PLANNING_BRANCH_DEFAULT applies.
+    ...(isValidBranchName(raw?.planningBranch) ? { planningBranch: raw.planningBranch } : {})
   };
 }
 
@@ -98,6 +107,8 @@ function sanitize(raw) {
     ...(isStoredPath(raw?.defaultProjectFolder) ? { defaultProjectFolder: raw.defaultProjectFolder } : {}),
     // The update check's memory (US-0407); left out when empty, so UPDATE_DEFAULTS apply where it is read.
     ...(Object.keys(updates).length ? { updates } : {}),
+    // Minutes between release planning pushes (US-0607 FR3.1); left out when invalid, so PLANNING_PUSH_DEFAULT applies.
+    ...(validPushMinutes(raw?.planningPushMinutes) ? { planningPushMinutes: raw.planningPushMinutes } : {}),
     // ponytail: capped at 200 projects, oldest kept; prune closed projects if that ever matters.
     projectSettings: Object.fromEntries(
       Object.entries(projects)
@@ -178,6 +189,9 @@ export async function setProjectSettings(root, partial) {
     partial = { ...partial, harnessTabs: tabs };
   }
   if (partial?.modelProfiles !== undefined) checkModelProfiles(partial.modelProfiles);
+  if (partial?.planningBranch !== undefined && !isValidBranchName(partial.planningBranch)) {
+    throw new Error(t('errors.invalidValue', { what: 'planningBranch', value: String(partial.planningBranch) }));
+  }
   const given = Object.fromEntries(Object.entries(partial ?? {}).filter(([, v]) => v !== undefined));
   const next = await update((cur) => {
     const was = cur.projectSettings[root] ?? PROJECT_DEFAULTS;

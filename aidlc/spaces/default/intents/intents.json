@@ -286,5 +286,13 @@
     "scope": "express",
     "status": "complete",
     "request": "00a1f446"
+  },
+  {
+    "uuid": "01a1e95f-a8ce-778e-9426-bb500f5554eb",
+    "slug": "release-planning-sync",
+    "dirName": "261117-release-planning-sync",
+    "scope": "ultra-express",
+    "status": "in-flight",
+    "request": "1b87e885"
   }
 ]

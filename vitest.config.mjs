@@ -18,6 +18,7 @@ const TIMED = [
   'tests/main/agentChannelSweep.test.js',
   'tests/main/velocity.test.js',
   'tests/main/git.test.js',
+  'tests/main/planningSync.test.js', // US-0607: real git repositories
   'tests/main/watcher.test.js'
 ];
 export default defineConfig({

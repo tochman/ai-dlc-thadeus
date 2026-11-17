@@ -236,6 +236,18 @@ describe('Inställningar as a view in the content frame (EPIC-04 US-0405)', () =
     expect(onProjectSettings).toHaveBeenCalledWith('p1');
   });
 
+  it('saves the planning push interval in whole minutes, 10 when unset, and refuses one outside 1–120 (US-0607 FR3.1, FR4.3)', async () => {
+    const { bridge } = stubBridge();
+    renderView({ tab: 'project' });
+    const field = await screen.findByTestId('settings-planning-interval');
+    expect(field.value).toBe('10');
+    fireEvent.change(field, { target: { value: '25' } });
+    await waitFor(() => expect(bridge.setSettings).toHaveBeenCalledWith({ planningPushMinutes: 25 }));
+    fireEvent.change(field, { target: { value: '500' } });
+    expect(screen.getByRole('alert').textContent).toMatch(/1 och 120/);
+    expect(bridge.setSettings).toHaveBeenCalledTimes(1);
+  });
+
   it('shows the app version, the AI-DLC version or its reason, and opens the two fixed links (FR5.1)', async () => {
     const { bridge } = stubBridge({ appInfo: { version: '0.2.3', aidlc: { found: false, error: 'hittades inte i PATH' } } });
     renderView({ tab: 'about' });

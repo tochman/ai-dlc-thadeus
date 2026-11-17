@@ -553,6 +553,21 @@
       "released": "Släppt",
       "storyCount": "{n, plural, one {# story} other {# storys}}"
     },
+    "planning": {
+      "title": "Planeringssynk",
+      "pending": "{n, plural, one {# planeringsändring väntar på att pushas.} other {# planeringsändringar väntar på att pushas.}}",
+      "pushNow": "Pusha nu",
+      "reapplied": "{n, plural, one {# planeringsändring hade gått förlorad och gjordes om.} other {# planeringsändringar hade gått förlorade och gjordes om.}}",
+      "noRemote": "Projektet har inget origin, så planeringen committas bara här.",
+      "prOffer": "Planeringen ligger på grenen {branch}, eftersom main är skyddad. Öppna en pull request från den till main för hand.",
+      "error": {
+        "offline": "Offline. Planeringen sparas och pushas när appen är online igen.",
+        "conflict": "Planeringen krockar med main i {files}. Inget pushades; appen försöker igen vid nästa intervall.",
+        "push": "Pushen nekades: {reason}. Planeringen sparas och appen försöker igen vid nästa intervall.",
+        "commit": "Planeringen kunde inte committas ({reason}): {files}. Ändringen finns kvar.",
+        "git": "Planeringssynken misslyckades: {reason}"
+      }
+    },
     "rule": {
       "missing": "Projektets AI-DLC-minne har ingen livscykelregel för storys för {delivery}.",
       "older": "Projektets livscykelregel för storys är en äldre version. Uppdatera den för {delivery}.",
@@ -754,6 +769,11 @@
       "loadFailed": "Verktygen kunde inte läsas: {error}"
     },
     "fullscreenLabel": "Helskärm vid start",
+    "planningInterval": {
+      "label": "Minuter mellan pushar av releaseplanering",
+      "help": "Gäller alla projekt. Appen pushar tidigare när den är ledig.",
+      "invalid": "Ange ett heltal mellan 1 och 120."
+    },
     "defaultFolder": {
       "label": "Standardmapp för Öppna projekt",
       "none": "Ingen mapp vald",
@@ -792,6 +812,9 @@
       "titleFor": "Projektinställningar: {name}",
       "featureDocsLegend": "Feature-beskrivningar",
       "deliveryLegend": "Hur projektet levereras",
+      "planningBranchLabel": "Gren för planering när main är skyddad",
+      "planningBranchHelp": "Releaseplaneringen pushas hit och mergas in i main genom en pull request.",
+      "planningBranchInvalid": "Det är inte ett grennamn som git godtar (och det får inte vara main).",
       "deliveryHelp": {
         "releases": "Storys märks för en release och listas per release.",
         "continuous": "Varje merge driftsätts; storys slutar på 🚀 Driftsatt."

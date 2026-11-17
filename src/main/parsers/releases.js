@@ -143,6 +143,74 @@ export const canDelete = (entry) => Boolean(entry && !entry.released && entry.st
 export const planHeading = (version) => `# Release plan ${version}\n`;
 export const isHeadingOnly = (text, version) => String(text).trim() === planHeading(version).trim();
 
+const SLICE_HEAD = /^\|\s*story\s*\|/i;
+const NEW_TABLE = ['| Story | Epic | Title | Priority | Complexity | Depends on |', '|---|---|---|---|---|---|'];
+const cellsOf = (line) =>
+  line
+    .trim()
+    .replace(/^\||\|$/g, '')
+    .split('|')
+    .map((c) => c.trim().toLowerCase());
+const cell = (v) =>
+  v
+    ? String(v)
+        .replace(/\|/g, '\\|')
+        .replace(/\s*\n\s*/g, ' ')
+    : '–';
+
+/** One slice-table row for `story`, with the columns the table's header names, in its order. */
+function planRow(header, story) {
+  const epic = story.epicLink ? `[${String(story.epicId).replace(/^EPIC-/, '')}](${story.epicLink})` : story.epicId;
+  const value = {
+    story: story.id,
+    epic,
+    title: story.title,
+    priority: story.priority,
+    complexity: story.complexity,
+    'depends on': story.dependencies,
+    dependencies: story.dependencies,
+    status: story.status
+  };
+  return `| ${header.map((name) => cell(value[name])).join(' | ')} |`;
+}
+
+/**
+ * US-0606 FR2.4: `planText` with a slice-table row for each story it does not list yet (epic, title, priority,
+ * complexity and dependencies). The rows go after the last row of the first table whose header starts with "Story";
+ * a file without one gets a new table at its end. Every other line stays as it was.
+ * @param {{id: string, epicId: string, epicLink?: string, title: string, priority?: string, complexity?: string,
+ *   dependencies?: string, status?: string}[]} stories
+ */
+export function addPlanRows(planText, stories) {
+  const lines = String(planText).replace(/\n$/, '').split('\n');
+  const head = lines.findIndex((l) => SLICE_HEAD.test(l));
+  if (head === -1) {
+    const header = cellsOf(NEW_TABLE[0]);
+    return [...lines, '', ...NEW_TABLE, ...stories.map((s) => planRow(header, s)), ''].join('\n');
+  }
+  let end = head + 1;
+  while (end < lines.length && lines[end].trim().startsWith('|')) end++;
+  const listed = new Set(lines.slice(head + 2, end).map((l) => cellsOf(l)[0]?.toUpperCase()));
+  const header = cellsOf(lines[head]);
+  const rows = stories.filter((s) => !listed.has(s.id)).map((s) => planRow(header, s));
+  if (!rows.length) return planText;
+  return [...lines.slice(0, end), ...rows, ...lines.slice(end), ''].join('\n');
+}
+
+/** US-0607 FR3.3: the docs branch for a protected `main`, until the project sets one. */
+export const PLANNING_BRANCH_DEFAULT = 'docs/planning';
+
+/**
+ * US-0607 NFR3: git's ref rules for a branch name (as `git check-ref-format --branch`, which planningSync.js runs again
+ * before use), and never `main`, the branch it stands in for.
+ */
+export function isValidBranchName(name) {
+  if (typeof name !== 'string' || name === '' || name === 'main' || name === '@' || name.length > 200) return false;
+  if (name.startsWith('-') || name.startsWith('/') || name.endsWith('/') || name.endsWith('.')) return false;
+  if (/[\0-\x20\x7f~^:?*[\\]|\.\.|\/\/|@\{/.test(name)) return false;
+  return name.split('/').every((part) => !part.startsWith('.') && !part.endsWith('.lock'));
+}
+
 /** US-0603 FR5.1: the tag that ends the lifecycle rule for one delivery setting. */
 export const lifecycleTag = (delivery) => `(story-lifecycle: ${delivery} v${LIFECYCLE_RULE_VERSION})`;
 

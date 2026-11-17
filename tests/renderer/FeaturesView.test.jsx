@@ -11,7 +11,12 @@ import FeaturesView from '../../src/renderer/FeaturesView.jsx';
 let features;
 beforeAll(async () => {
   features = await loadFeatures(await openRoot(path.resolve(__dirname, '../fixtures/features')), 'FEATURES.md');
-  window.bridge = { platform: 'darwin', revealInFinder: vi.fn(async () => {}), openInEditor: vi.fn(async () => {}) };
+  window.bridge = {
+    platform: 'darwin',
+    revealInFinder: vi.fn(async () => {}),
+    openInEditor: vi.fn(async () => {}),
+    getPlanningStatus: vi.fn(async () => ({ pending: 0, reapplied: 0, noRemote: false, prOffer: null, error: null }))
+  };
 });
 
 afterEach(() => {
@@ -321,6 +326,66 @@ describe('FeaturesView: releases made by hand (US-0605)', () => {
   it('with continuous deployment shows none of the release actions (FR5)', () => {
     render(<FeaturesView projectId="p1" features={releaseDocs(undefined, PLANS)} delivery="continuous" tab="releases" />);
     for (const id of ['releases-new', 'releases-add-story', 'releases-remove-story', 'releases-delete']) expect(screen.queryByTestId(id)).toBeNull();
+  });
+});
+
+// US-0607 FR4: the release list's planning line, from features:planningStatus.
+describe('FeaturesView: planning sync (US-0607 FR4)', () => {
+  const NONE = { pending: 0, reapplied: 0, noRemote: false, prOffer: null, error: null };
+  const status = (s) => window.bridge.getPlanningStatus.mockResolvedValue({ ...NONE, ...s });
+  const show = () => render(<FeaturesView projectId="p1" features={releaseDocs(undefined, PLANS)} delivery="releases" tab="releases" />);
+  afterEach(() => window.bridge.getPlanningStatus.mockResolvedValue(NONE));
+
+  it('shows the changes waiting to be pushed, and Push now pushes them (FR4.1)', async () => {
+    status({ pending: 2 });
+    window.bridge.pushPlanning = vi.fn(async () => NONE);
+    show();
+    expect((await screen.findByTestId('planning-pending')).textContent).toBe('2 planeringsändringar väntar på att pushas.');
+    expect(window.bridge.getPlanningStatus).toHaveBeenCalledWith('p1', true); // the list just opened (FR1.3)
+    fireEvent.click(screen.getByTestId('planning-push-now'));
+    await waitFor(() => expect(window.bridge.pushPlanning).toHaveBeenCalledWith('p1'));
+    await waitFor(() => expect(screen.queryByTestId('planning-pending')).toBeNull());
+  });
+
+  it('shows nothing while nothing waits, and says when lost changes were applied again (FR1.3)', async () => {
+    show();
+    await waitFor(() => expect(window.bridge.getPlanningStatus).toHaveBeenCalled());
+    expect(screen.queryByTestId('planning-sync')).toBeNull();
+    cleanup();
+    status({ reapplied: 1 });
+    show();
+    expect((await screen.findByTestId('planning-reapplied')).textContent).toBe('1 planeringsändring hade gått förlorad och gjordes om.');
+  });
+
+  it('says there is no remote, without Push now (FR3.4)', async () => {
+    status({ pending: 1, noRemote: true });
+    show();
+    expect((await screen.findByTestId('planning-no-remote')).textContent).toMatch(/inget origin/);
+    expect(screen.queryByTestId('planning-push-now')).toBeNull();
+  });
+
+  it('names the files of a conflict, and offers the pull request by hand without gh (FR3.5, FR3.3)', async () => {
+    status({ pending: 1, error: { kind: 'conflict', files: ['docs/features/epic-06.md'] } });
+    show();
+    expect((await screen.findByTestId('planning-error')).textContent).toBe(
+      'Planeringen krockar med main i docs/features/epic-06.md. Inget pushades; appen försöker igen vid nästa intervall.'
+    );
+    cleanup();
+    status({ prOffer: { branch: 'docs/planning' } });
+    show();
+    expect((await screen.findByTestId('planning-pr-offer')).textContent).toMatch(/docs\/planning/);
+  });
+
+  it('a commit a hook refuses names the reason and the files, and unlocks the list (FR4.2)', async () => {
+    window.bridge.setStoryRelease = vi.fn(async () => ({
+      ok: false,
+      inPlace: true,
+      error: { kind: 'commit', reason: 'lint failed', files: ['docs/FEATURES.md'] }
+    }));
+    show();
+    fireEvent.change(inRelease('v0.2.7').getByTestId('releases-add-story'), { target: { value: 'US-0604' } });
+    expect((await screen.findByRole('alert')).textContent).toBe('Planeringen kunde inte committas (lint failed): docs/FEATURES.md. Ändringen finns kvar.');
+    expect(screen.getByTestId('releases-new').disabled).toBe(false);
   });
 });
 

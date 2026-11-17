@@ -6,7 +6,7 @@ import { isValidFeaturesPath } from '../main/parsers/features.js';
 import { HARNESSES, selectableHarness } from '../shared/harnesses.js';
 import { useTerminal } from './TerminalContext.jsx';
 import AgentHooksSection from './AgentHooksSection.jsx'; // US-0506 u4
-import { DELIVERY, DELIVERY_DEFAULT } from '../main/parsers/releases.js';
+import { DELIVERY, DELIVERY_DEFAULT, PLANNING_BRANCH_DEFAULT, isValidBranchName } from '../main/parsers/releases.js';
 import { RadioBlocks, Section } from './SettingsView.jsx';
 
 const errorText = (err) => String(err?.message ?? err).replace(/^Error invoking remote method '[^']+': (Error: )?/, '');
@@ -90,28 +90,39 @@ function Actions({ canSave, saving, status, onReset }) {
 function DocsSection({ projectId, settings, onSetup, motion }) {
   const { t } = useTranslation();
   const savedDelivery = settings.delivery ?? DELIVERY_DEFAULT;
+  const savedBranch = settings.planningBranch ?? PLANNING_BRANCH_DEFAULT;
   const [mode, setMode] = useState(settings.featureDocs);
   const [path, setPath] = useState(settings.featuresPath);
   const [delivery, setDelivery] = useState(savedDelivery);
+  const [branch, setBranch] = useState(savedBranch);
   const { save, saving, status, clear } = useSectionSave(projectId);
   const load = () => {
     setMode(settings.featureDocs);
     setPath(settings.featuresPath);
     setDelivery(savedDelivery);
+    setBranch(savedBranch);
   };
   const reset = () => {
     load();
     clear();
   };
-  useEffect(load, [settings.featureDocs, settings.featuresPath, savedDelivery]); // the saved values, also after our own save
+  useEffect(load, [settings.featureDocs, settings.featuresPath, savedDelivery, savedBranch]); // the saved values, also after our own save
   const validPath = isValidFeaturesPath(path);
+  const validBranch = isValidBranchName(branch);
 
   return (
     <form
       onSubmit={(e) => {
         e.preventDefault();
-        // Like the harness, an unchanged delivery is not saved, so the default is not pinned.
-        if (validPath) save({ featureDocs: mode, featuresPath: path, ...(delivery !== savedDelivery ? { delivery } : {}) });
+        // Like the harness, an unchanged delivery or docs branch is not saved, so the default is not pinned.
+        if (validPath && validBranch) {
+          save({
+            featureDocs: mode,
+            featuresPath: path,
+            ...(delivery !== savedDelivery ? { delivery } : {}),
+            ...(branch !== savedBranch ? { planningBranch: branch } : {})
+          });
+        }
       }}
     >
       <Section id="project-docs" motion={motion} title={t('settings.project.sections.docs')}>
@@ -139,6 +150,25 @@ function DocsSection({ projectId, settings, onSetup, motion }) {
           />
           <span className="muted">{t(`settings.project.deliveryHelp.${delivery}`)}</span>
         </div>
+        {delivery === 'releases' && (
+          <label className="field">
+            <span className="field-label">{t('settings.project.planningBranchLabel')}</span>
+            <input
+              type="text"
+              className="lcars-input"
+              value={branch}
+              onChange={(e) => setBranch(e.target.value)}
+              aria-invalid={!validBranch}
+              data-testid="project-settings-planning-branch"
+            />
+            <span className="muted">{t('settings.project.planningBranchHelp')}</span>
+            {!validBranch && (
+              <span className="refresh-error" role="alert">
+                {t('settings.project.planningBranchInvalid')}
+              </span>
+            )}
+          </label>
+        )}
         <label className="field">
           <span className="field-label">{t('settings.project.pathLabel')}</span>
           <input
@@ -164,7 +194,7 @@ function DocsSection({ projectId, settings, onSetup, motion }) {
             </button>
           </p>
         )}
-        <Actions canSave={validPath} saving={saving} status={status} onReset={reset} />
+        <Actions canSave={validPath && validBranch} saving={saving} status={status} onReset={reset} />
       </Section>
     </form>
   );
