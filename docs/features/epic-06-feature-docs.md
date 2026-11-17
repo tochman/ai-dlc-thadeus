@@ -8,7 +8,7 @@
 
 **Stories:** US-0601, US-0602, US-0603, US-0604, US-0605, US-0606, US-0607
 
-**Status (2026-11-17):** ✅ US-0601–US-0603 released (v0.2.0–v0.2.5). ✅ US-0604 and US-0605 released in v0.2.7. 📋 US-0606 and US-0607 planned. Each story names its release.
+**Status (2026-11-17):** ✅ US-0601–US-0603 released (v0.2.0–v0.2.5). ✅ US-0604 and US-0605 released in v0.2.7. 📋 US-0606 and US-0607 planned, for v0.2.9. Each story names its release.
 
 **Decisions:**
 - **Q1 (where the view lives):** a switch "Intents | Features" at the top of the project view. Features replaces the sidebar and content area; the terminal stays.
@@ -116,7 +116,7 @@
   - **Where.** `releaseOptions()` and `buildReleases()` in `src/main/parsers/releases.js`; the release list and picker in `src/renderer/FeaturesView.jsx`.
 - **Dependencies:** US-0603
 
-**US-0606: Release planning changes are committed on their own branch** 📋 Planned
+**US-0606: Release planning changes are committed on their own branch** 📋 Planned, for v0.2.9
 - As a **developer planning releases in the app**, in order to **never find release planning left uncommitted on whatever branch is checked out**, I would like **the app to commit the change to a branch of its own whenever I add stories to a release, remove them, or create a release**.
 - **Epic:** EPIC-06
 - **Priority:** High
@@ -133,7 +133,7 @@
 - **Notes:** The release markers are written in `src/main/releases.js` and `src/main/parsers/releases.js`, and the release list is in `src/renderer/FeaturesView.jsx` (US-0603, US-0605). The temporary-worktree pattern matches how planning docs are already committed by hand while a story branch is checked out. Commit subject: `docs: plan US-XXXX[, …] for vX.Y.Z`.
 - **Dependencies:** US-0603, US-0605
 
-**US-0607: Release planning is kept locally and pushed to GitHub when there is time** 📋 Planned
+**US-0607: Release planning is kept locally and pushed to GitHub when there is time** 📋 Planned, for v0.2.9
 - As a **developer planning releases in the app**, in order to **never lose a planning change I made**, I would like **the app to keep each release planning action in a local record of its own, and to push the committed changes to GitHub at intervals or when nothing else is running**.
 - **Epic:** EPIC-06
 - **Priority:** High
