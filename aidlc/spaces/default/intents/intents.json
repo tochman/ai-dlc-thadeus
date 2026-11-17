@@ -292,7 +292,15 @@
     "slug": "release-planning-sync",
     "dirName": "261117-release-planning-sync",
     "scope": "ultra-express",
-    "status": "in-flight",
+    "status": "complete",
     "request": "1b87e885"
+  },
+  {
+    "uuid": "01a1e9c5-85fd-7997-bb67-22d5c9ada3f5",
+    "slug": "token-repricing",
+    "dirName": "261117-token-repricing",
+    "scope": "ultra-express",
+    "status": "in-flight",
+    "request": "9290c6ec"
   }
 ]
