@@ -189,6 +189,35 @@ describe('recorded and missing data (US-0208 FR5, FR6)', () => {
   });
 });
 
+// US-0211 AC1.4.1, FR3.2: token detail and intent detail show the recorded figure with the current-price one beside it.
+describe('current prices (US-0211)', () => {
+  const RATES = { 'opus-5-5': { input: 1, output: 1, cacheWrite5m: 1, cacheWrite1h: 1, cacheRead: 1, source: 'app' } };
+  const repriced = () => ({ available: true, ...summarizeLedger(ledger, [intentOf('in-flight')], RATES) });
+
+  it('token detail shows "recorded · at current prices" as its cost, and in each split row tooltip', async () => {
+    window.bridge = bridge(READINGS);
+    render(<TokenDetail {...detailProps()} cost={repriced()} />);
+    await act(async () => {});
+    expect(screen.getByTestId('token-detail-cost').textContent).toMatch(/^registrerat \$4\.00 · till dagens priser \$0\.0\d$/);
+    vi.useFakeTimers();
+    try {
+      const row = screen.getByTestId('token-detail-split-model').querySelector('.token-detail-row');
+      fireEvent.mouseOver(row);
+      act(() => vi.advanceTimersByTime(HOVER_DELAY_MS));
+      expect(screen.getByRole('tooltip').textContent).toMatch(/registrerat \$2\.50 · till dagens priser \$0\.0\d/);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('intent detail shows the pair in its cost readout', () => {
+    window.bridge = bridge(READINGS);
+    const detail = { dirName: DIR, state: { currentStage: null }, pipeline: { phases: [{ name: 'construction', stages: STAGES.map((slug) => ({ slug, status: 'done' })) }], done: 2, executed: 2 }, files: [], warnings: [], events: [], graph: null, units: {} };
+    render(<IntentDetail projectId="p1" detail={detail} intent={intentOf('complete')} activeDirName={null} cost={repriced()} models={null} />);
+    expect(screen.getByTestId('intent-detail-cost').textContent).toMatch(/^registrerat \$4\.00 · till dagens priser \$/);
+  });
+});
+
 describe('tooltip (US-0208 FR4, NFR3)', () => {
   it('focusing the chart shows the latest reading with each kind and the cost; arrows move, Esc hides', async () => {
     await renderDetail();

@@ -1,7 +1,8 @@
 // The "Kostnad" tab of one intent, plus the cost and model tables the project panel reuses.
+// US-0211 FR3: each figure is the recorded one, with the current-price one beside it when a rate table was loaded.
 import { useTranslation } from 'react-i18next';
 import { compareModels } from '../main/parsers/ledger.js';
-import { formatCost, formatTokens, formatUsd, shortModel, tokenBreakdown } from './format.js';
+import { formatCostPair, formatTokens, shortModel, tokenBreakdown } from './format.js';
 import { Readout } from './Lcars.jsx';
 import Tooltip from './Tooltip.jsx';
 import i18n, { t as translate } from '../shared/i18n.js';
@@ -37,7 +38,9 @@ export function CostLabel({ complete = true }) {
 export function MachinesLine({ machines, partial }) {
   const { t } = useTranslation();
   if (!machines?.length) return null;
-  const names = machines.map((m) => (m.local ? t('cost.thisMachine', { host: m.host ?? '–' }) : m.host));
+  const name = (m) => (m.local ? t('cost.thisMachine', { host: m.host ?? '–' }) : m.host);
+  // US-0211 FR3.2: a repriced machine also shows its figures; without a rate table only the names show.
+  const names = machines.map((m) => (m.currentUsd === undefined ? name(m) : `${name(m)} ${formatCostPair(m)}`));
   return (
     <p className="muted cost-machines" data-testid="cost-machines">
       {t('cost.machines', { list: names.join(', ') })}
@@ -52,11 +55,19 @@ export function MachinesLine({ machines, partial }) {
   );
 }
 
-/** USD, share of the total and tokens per row; the largest row is highlighted (FR2.2, FR6.3). */
+/** US-0211 AC1.2.1, AC1.3.3: where a model row's current price came from, or "price missing" when no table has it. */
+const rateSourceText = (source) =>
+  !source ? translate('cost.missingPrice') : i18n.exists(`cost.reprice.source.${source}`) ? translate(`cost.reprice.source.${source}`) : source;
+
+/**
+ * USD, share of the total and tokens per row; the largest row is highlighted (FR2.2, FR6.3). Model rows that were
+ * repriced (they carry `source`) also get the "Pris från" column (US-0211 AC1.2.1).
+ */
 export function CostTable({ title, rows, totalUsd, testId }) {
   const { t } = useTranslation();
   if (rows.length === 0) return null;
   const top = Math.max(...rows.map((r) => r.usd));
+  const sources = rows.some((r) => 'source' in r);
   return (
     <table className="cost-table" data-testid={testId}>
       <caption>{title}</caption>
@@ -66,21 +77,44 @@ export function CostTable({ title, rows, totalUsd, testId }) {
           <th scope="col">{t('cost.usd')}</th>
           <th scope="col">{t('cost.share')}</th>
           <th scope="col">{t('cost.tokensHeader')}</th>
+          {sources && <th scope="col">{t('cost.reprice.priceFrom')}</th>}
         </tr>
       </thead>
       <tbody>
         {rows.map((r) => (
           <tr key={r.name} className={r.usd > 0 && r.usd === top ? 'is-top' : ''}>
             <td>{r.name}</td>
-            <td className={r.missingPrice ? 'missing-price' : ''}>{formatCost(r)}</td>
+            <td className={r.missingPrice ? 'missing-price' : ''}>{formatCostPair(r)}</td>
             <td>{totalUsd > 0 && !r.missingPrice ? `${Math.round((r.usd / totalUsd) * 100)} %` : '–'}</td>
             <Tooltip text={tokenBreakdown(r.tokens)} focusable>
               <td>{formatTokens(r.totalTokens)}</td>
             </Tooltip>
+            {sources && <td>{rateSourceText(r.source)}</td>}
           </tr>
         ))}
       </tbody>
     </table>
+  );
+}
+
+/**
+ * US-0211 AC1.1.4, AC1.2.2, AC1.2.3: why a figure is priced the way it is: a skipped override file, haiku-5-5 at its
+ * higher tier from the app's table, audit cache writes as 5m. Nothing shows without a rate table (`rates` null).
+ * @param {{rates?: {notes?: {kind: string, path: string}[]}|null, byModel?: object[], audit?: boolean}} props
+ */
+export function CostNotes({ rates, byModel = [], audit = false }) {
+  const { t } = useTranslation();
+  if (!rates) return null;
+  const notes = (rates.notes ?? []).map((n) => t(`cost.reprice.notes.${n.kind}`, { path: n.path }));
+  if (byModel.some((r) => r.key === 'haiku-5-5' && r.source === 'app')) notes.push(t('cost.reprice.notes.haikuTier'));
+  if (audit) notes.push(t('cost.reprice.notes.auditFiveMinute'));
+  if (notes.length === 0) return null;
+  return (
+    <div className="muted cost-notes" data-testid="cost-notes">
+      {notes.map((text) => (
+        <p key={text}>{text}</p>
+      ))}
+    </div>
   );
 }
 
@@ -178,10 +212,13 @@ export default function CostTab({ cost, intentCost, pipeline, models }) {
       )}
       <div className="cost-total">
         <CostLabel complete={intentCost.complete} />
-        <span className="cost-total-usd">{total.missingPrice ? t('cost.missingPrice') : formatUsd(total.usd)}</span>
+        <span className="cost-total-usd" data-testid="cost-tab-total">
+          {formatCostPair(total)}
+        </span>
         <span className="muted">{tokenBreakdown(total.tokens)}</span>
       </div>
       <MachinesLine machines={intentCost.machines} partial={intentCost.partial} />
+      <CostNotes rates={cost.rates} byModel={intentCost.byModel} audit={!!intentCost.machines?.some((m) => m.source === 'audit')} />
       <Readout
         rows={[...intentCost.byModel].sort((a, b) => b.usd - a.usd).map((r, i) => ({ ...r, label: shortModel(r.name), key: i === 0 ? 'steel' : 'light' }))}
         totalUsd={total.usd}

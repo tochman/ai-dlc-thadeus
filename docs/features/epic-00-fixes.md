@@ -8,7 +8,7 @@
 
 **Stories:** US-0001, US-0002, US-0003, US-0004, US-0005, US-0006, US-0007, US-0008, US-0009, US-0010, US-0011, US-0012, US-0013, US-0014, US-0015, US-0016, US-0017, US-0018, US-0019, US-0020, US-0021, US-0022, US-0023, US-0024, US-0025
 
-**Status (2026-11-16):** ✅ US-0001–US-0020 released (v0.2.3–v0.2.6). ✅ US-0021–US-0023 released in v0.2.7. ✅ US-0024 released in v0.2.8. ✅ US-0025 done, not yet released, for v0.2.9. Each story names its release.
+**Status (2026-11-16):** ✅ US-0001–US-0020 released (v0.2.3–v0.2.6). ✅ US-0021–US-0023 released in v0.2.7. ✅ US-0024 released in v0.2.8. ✅ US-0025 done, not yet released, for v0.2.9. 📋 US-0026 planned, for v0.2.9. Each story names its release.
 
 ---
 
@@ -405,3 +405,20 @@
   - [x] A test fails without the fix and passes with it; the full suite stays green.
 - **Notes:** **Fix.** `workingAgents` reads the audit log alone and skips `unknown`; one open dispatch per agent type and stage (a `ponytail:` comment names the limit for parallel same-type agents). Open Unit builds and reviews still show only while the inflight file has entries. **Tests.** `tests/main/workingAgents.test.js` (with a trimmed real audit excerpt), `tests/main/agentProgress.test.js`. **Where.** `src/main/projectService.js`, `src/main/parsers/agentProgress.js`. An upstream fix belongs in AI-DLC's SubagentStop hook: ignore completions with no known agent type instead of clearing the inflight entry.
 - **Dependencies:** US-0507, US-0901
+
+---
+
+**US-0026: The agent dialog is not left empty at a new session, and offers /clear or /clear + resume** 📋 Planned, for v0.2.9
+- As a **developer starting a new Claude Code session**, in order to **carry on without a dead dialog in the way**, I would like **the agent dialog to show something I can act on at that moment: start a clean chat with `/clear`, or `/clear` and then `/aidlc --resume`**.
+- **Epic:** EPIC-00
+- **Priority:** High
+- **Complexity:** Low
+- **Background:** Reported 2026-11-17: when a new session starts, the agent dialog stays open with no text and no buttons, and the only way out is to close it. That is also the moment the person usually wants a fresh context (the cost rule: park, then resume in a fresh session), so the dialog can offer it.
+- **Acceptance Criteria:**
+  - [ ] **Given** a new session starts while the agent dialog is open, **then** the dialog never shows a page with no text and no choices: an event with nothing to show closes its page (or the dialog when it was the last one).
+  - [ ] **Given** a Claude Code project at a new session (or a parked workflow), **when** the dialog offers the next step, **then** it has two choices: "/clear" (sends `/clear` to the session's terminal) and "/clear + /aidlc --resume" (sends `/clear`, waits until the new session is ready, then sends `/aidlc --resume`).
+  - [ ] **Given** a harness other than Claude Code, **then** the choices are not shown (or use that harness's own commands).
+  - [ ] Both choices are reachable by keyboard, LCARS look, and every text goes through `t()` in Swedish and English.
+  - [ ] A test fails without the fix and passes with it; the full suite stays green.
+- **Notes:** Start from the root cause: which event opens the empty page (a SessionStart or `ended` hook event with no questions, see `statusOf` and `HookPage` in `src/renderer/AgentDialog.jsx` and the states in `src/main/agentPermissions.js` / `src/main/agentEvents.js`). Send the commands through the existing terminal path (`TerminalContext`). Runs on the `quick-fix` plan.
+- **Dependencies:** US-0506

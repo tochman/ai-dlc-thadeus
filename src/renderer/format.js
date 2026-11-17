@@ -52,6 +52,26 @@ export function formatUsd(n) {
 /** USD, or "pris saknas" when tokens were used but the ledger has no price (FR6.2). */
 export const formatCost = (c) => (!c ? '–' : c.missingPrice ? t('cost.missingPrice') : formatUsd(c.usd));
 
+const cents = (n) => Math.round(n * 100);
+
+/** US-0211 FR3.1: the current-price USD when it differs from the recorded figure by $0.01 or more (or that has no price), else null. */
+export function currentUsdOf(c) {
+  if (!c || c.currentUsd == null || !Number.isFinite(c.currentUsd)) return null;
+  return !c.missingPrice && cents(c.usd) === cents(c.currentUsd) ? null : c.currentUsd;
+}
+
+/** US-0211 FR3.1: "recorded $12.40 · at current prices $9.80", or the recorded figure alone when they agree. */
+export function formatCostPair(c) {
+  const current = currentUsdOf(c);
+  return current == null ? formatCost(c) : t('cost.reprice.pair', { recorded: formatCost(c), current: formatUsd(current) });
+}
+
+/** US-0211 AC1.4.3: the tooltip line for compact places (list rows, chart points), or null when the figures agree. */
+export function currentTip(c) {
+  const current = currentUsdOf(c);
+  return current == null ? null : t('cost.reprice.tip', { current: formatUsd(current) });
+}
+
 const oneDecimal = (n) => n.toLocaleString(locale(), { minimumFractionDigits: 1, maximumFractionDigits: 1 });
 
 export function formatTokens(n) {

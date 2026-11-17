@@ -12,7 +12,7 @@ import { GridColumns, GridRows } from '@visx/grid';
 import { Tooltip as ChartTooltip, useTooltip } from '@visx/tooltip';
 import { ParentSize } from '@visx/responsive';
 import { Bar, Frame } from './Lcars.jsx';
-import { formatTokens, formatUsd, shortModel, stageTitle } from './format.js';
+import { formatCostPair, formatTokens, formatUsd, shortModel, stageTitle } from './format.js';
 import { agentName } from '../main/parsers/ledger.js';
 import { SPLIT_KINDS, STACK_KINDS, elapsedLabel, rateSeries, splitRows, stackSeries } from './tokenChart.js';
 import AgentProgress from './AgentProgress.jsx';
@@ -261,7 +261,7 @@ function SplitCard({ id, rows, keepOrder = false, nameOf, hasEntry }) {
               key={r.name}
               text={[
                 ...SPLIT_KINDS.map((k) => `${t(`tokens.${k}`)} ${formatTokens(r.tokens[k])}`),
-                r.missingPrice ? t('cost.missingPrice') : formatUsd(r.usd)
+                formatCostPair(r) // US-0211 FR3.2: with the current-price figure when it differs
               ].join(' · ')}
             >
               <li className="token-detail-row" tabIndex={0}>
@@ -448,7 +448,7 @@ export default function TokenDetail({ projectId, dirName, intent, cost, live, st
         <div className="readout">
           <span className="readout-label">{t('tokenDetail.cost')}</span>
           <span className="readout-value readout-value--steel token-detail-big" data-testid="token-detail-cost">
-            {intentCost ? (intentCost.total.missingPrice ? t('cost.missingPrice') : formatUsd(intentCost.total.usd)) : '–'}
+            {formatCostPair(intentCost?.total)}
           </span>
         </div>
         <div className="readout">

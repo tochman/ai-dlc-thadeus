@@ -348,6 +348,22 @@
       "aidlc-config": "aidlc config",
       "agent-files": "agent files",
       "none": "no source"
+    },
+    "reprice": {
+      "pair": "recorded {recorded} · at current prices {current}",
+      "tip": "At current prices: {current}",
+      "priceFrom": "Price from",
+      "source": {
+        "project": "the project file",
+        "app": "the app table",
+        "aidlc": "the AI-DLC table"
+      },
+      "notes": {
+        "overrideMissing": "The rates file {path} does not exist and is skipped.",
+        "overrideInvalid": "The rates file {path} is not valid JSON and is skipped.",
+        "haikuTier": "haiku-5-5 is priced at its higher prompt-size tier (prompts over 100,000 tokens), so a cost is never under-counted.",
+        "auditFiveMinute": "Cache writes from the audit log are priced as 5 minutes: the log does not tell 5-minute and 1-hour writes apart."
+      }
     }
   },
   "github": {
@@ -831,6 +847,9 @@
       },
       "pathLabel": "Path to the overview",
       "pathInvalid": "The path must be relative to the project, end in .md and not contain ..",
+      "ratesPathLabel": "Rate table (optional)",
+      "ratesPathHelp": "A model-rates.json of the project's own. Empty: the AI-DLC setting, then the app table.",
+      "ratesPathInvalid": "The path must be relative to the project, end in .json and not contain ..",
       "noDocs": "The project has no feature docs yet.",
       "harnessLabel": "Agent terminal",
       "tabsLegend": "Agent tabs",

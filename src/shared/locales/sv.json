@@ -348,6 +348,22 @@
       "aidlc-config": "aidlc config",
       "agent-files": "agentfiler",
       "none": "ingen källa"
+    },
+    "reprice": {
+      "pair": "registrerat {recorded} · till dagens priser {current}",
+      "tip": "Till dagens priser: {current}",
+      "priceFrom": "Pris från",
+      "source": {
+        "project": "projektfilen",
+        "app": "appens tabell",
+        "aidlc": "AI-DLC:s tabell"
+      },
+      "notes": {
+        "overrideMissing": "Prisfilen {path} finns inte och hoppas över.",
+        "overrideInvalid": "Prisfilen {path} är inte giltig JSON och hoppas över.",
+        "haikuTier": "haiku-5-5 prissätts med den högre nivån (prompter över 100 000 tokens), så kostnaden räknas aldrig för lågt.",
+        "auditFiveMinute": "Cache-skrivningar från audit-loggen prissätts som 5 minuter: loggen skiljer inte på 5 minuter och 1 timme."
+      }
     }
   },
   "github": {
@@ -831,6 +847,9 @@
       },
       "pathLabel": "Sökväg till översikten",
       "pathInvalid": "Sökvägen ska vara relativ till projektet, sluta på .md och inte innehålla ..",
+      "ratesPathLabel": "Pristabell (valfri)",
+      "ratesPathHelp": "En egen model-rates.json i projektet. Tom: AI-DLC:s inställning, sedan appens tabell.",
+      "ratesPathInvalid": "Sökvägen ska vara relativ till projektet, sluta på .json och inte innehålla ..",
       "noDocs": "Projektet har inga feature-beskrivningar ännu.",
       "harnessLabel": "Agent-terminal",
       "tabsLegend": "Agentflikar",

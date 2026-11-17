@@ -6,6 +6,7 @@ import path from 'node:path';
 import { mergeAudits } from '../../src/main/parsers/audit.js';
 import { mergeIntentCosts, shardCosts } from '../../src/main/parsers/auditCost.js';
 import { loadCrossMachineCost } from '../../src/main/projectService.js';
+import { loadRates } from '../../src/main/modelRates.js';
 
 const FIX = path.join(process.cwd(), 'tests/fixtures/cost');
 const read = (f) => readFileSync(path.join(FIX, f), 'utf8');
@@ -48,6 +49,14 @@ describe('mergeIntentCosts (US-0209 FR1.4, FR2, FR3.4, FR4.2)', () => {
     const older = mergeIntentCosts({ ledgerNode, local: A, shards, snapshots: [snapB(2)] });
     expect(older.node.totals.usd).toBe(4 + 3);
     expect(hosts(older)[1]).toEqual(['hostb', false, 'audit']);
+  });
+
+  it('US-0211: gives each machine its current-price figure when a rate table is passed (FR3.2)', () => {
+    const rates = { 'sonnet-5-5': { input: 0, output: 0, cacheWrite5m: 0, cacheWrite1h: 0, cacheRead: 1, source: 'app' } };
+    const m = mergeIntentCosts({ ledgerNode, local: A, shards, snapshots: [], rates });
+    const b = m.machines.find((x) => x.host === 'hostb');
+    expect(b.currentUsd).toBeCloseTo(1.2, 10); // 1.2M cache reads at $1/M
+    expect(mergeIntentCosts({ ledgerNode, local: A, shards, snapshots: [] }).machines[0].currentUsd).toBeUndefined();
   });
 
   it('gives null when no machine has any cost, and treats every shard as another machine without a clone id', () => {
@@ -111,6 +120,39 @@ describe('loadCrossMachineCost (US-0209 FR1.4, FR2, FR4.2)', () => {
     expect(two.total.usd).toBe(3.5 + 4.5); // A's rows (no ledger) + B's snapshot
     expect(two.machines.map((x) => x.source)).toEqual(['audit', 'snapshot']);
     expect(two.partial).toBe(true); // this machine has no ledger
+  });
+
+  it('US-0211: reprices every machine and the merged total from stored tokens; audit cache writes marked as 5m (AC1.3.2, AC1.5.1)', async () => {
+    const rates = { 'opus-5-5': { input: 1, output: 1, cacheWrite5m: 1, cacheWrite1h: 1, cacheRead: 1, source: 'app' } };
+    const { summary } = await loadCrossMachineCost(root, 'default', intents, ledger, rates);
+    const two = summary.perIntent['261116-two-machines'];
+    expect(two.machines.every((x) => x.currentUsd === null || typeof x.currentUsd === 'number')).toBe(true);
+    const sum = two.machines.reduce((n, x) => n + (x.currentUsd ?? 0), 0);
+    expect(two.total.currentUsd).toBeCloseTo(sum, 10);
+    expect(two.total.currentMissing).toBeGreaterThan(0); // sonnet-5-5 has no rate in this table
+    expect(summary.project.auditFiveMinute).toBe(true);
+  });
+
+  it('US-0211 NFR1: loading rates and repriced costs writes nothing under aidlc/ or .claude/ (AC1.3.4)', async () => {
+    await fs.mkdir(path.join(root, '.claude/tools/data'), { recursive: true });
+    await fs.writeFile(path.join(root, '.claude/settings.json'), JSON.stringify({ env: { AIDLC_MODEL_RATES: 'gone.json' } }));
+    await fs.writeFile(path.join(root, '.claude/tools/data/model-rates.json'), JSON.stringify({ rates: {} }));
+    const snapshot = async () => {
+      const out = [];
+      const walk = async (dir) => {
+        for (const e of await fs.readdir(dir, { withFileTypes: true })) {
+          const p = path.join(dir, e.name);
+          if (e.isDirectory()) await walk(p);
+          else out.push(`${path.relative(root, p)} ${(await fs.stat(p)).mtimeMs}`);
+        }
+      };
+      for (const d of ['aidlc', '.claude']) await walk(path.join(root, d));
+      return out.sort();
+    };
+    const before = await snapshot();
+    const rates = await loadRates(root);
+    await loadCrossMachineCost(root, 'default', intents, ledger, rates.rates);
+    expect(await snapshot()).toEqual(before);
   });
 
   it('gives no summary when there is no ledger and no cost row anywhere', async () => {
