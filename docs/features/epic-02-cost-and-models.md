@@ -8,7 +8,7 @@
 
 **Stories:** US-0201, US-0202, US-0203, US-0204, US-0205, US-0206, US-0207, US-0208, US-0209, US-0210, US-0211, US-0212, US-0213
 
-**Status (2026-11-17):** ✅ US-0201–US-0205 and US-0207 released (v0.2.0–v0.2.4; CSV export in US-0203 deferred). ➡️ US-0206 moved to US-0904. ✅ US-0208 released in v0.2.7. ✅ US-0209 released in v0.2.8. 📋 US-0210–US-0213 planned, for v0.2.9. Each story names its release.
+**Status (2026-11-17):** ✅ US-0201–US-0205 and US-0207 released (v0.2.0–v0.2.4; CSV export in US-0203 deferred). ➡️ US-0206 moved to US-0904. ✅ US-0208 released in v0.2.7. ✅ US-0209 released in v0.2.8. ✅ US-0212 done, for v0.2.9. 📋 US-0210, US-0211 and US-0213 planned, for v0.2.9. Each story names its release.
 
 ---
 
@@ -201,21 +201,21 @@ The key format of `workflows` was confirmed during requirements analysis (see ab
   - [ ] Nothing in `aidlc/` is written.
 - **Dependencies:** US-0201, US-0209
 
-**US-0212: A THADEUS rule pack on top of AI-DLC to cut token cost** 📋 Planned, for v0.2.9
+**US-0212: A THADEUS rule pack on top of AI-DLC to cut token cost** ✅ Done, for v0.2.9
 - As a **developer or team that pays for every run**, in order to **spend less on each intent without changing AI-DLC**, I would like **to switch on a short set of cost rules that the app keeps in the project's AI-DLC memory files, and that every stage and agent then follows**.
 - **Epic:** EPIC-02
 - **Priority:** High
 - **Complexity:** Medium
 - **Background:** Asked for on 2026-11-17. The app must not change AI-DLC or drift from it as published on GitHub. AI-DLC builds the rules for each stage from whole files with fixed names in `aidlc/spaces/<space>/memory/`: `org.md`, `team.md`, `project.md` and `phases/<phase>.md` (`resolveRulesForStage`, `.claude/tools/aidlc-graph.ts`). Those files belong to the project, and their rules also reach the delegated agents. A file of its own (`thadeus.md`) would never be read, so the pack is a marked block inside those files. Across this repository's intents, `main` was 57% of the cost and the developer agent 36%.
 - **Acceptance Criteria:**
-  - [ ] In the project's settings the person turns the pack on or off and can edit its lines. The app writes only between `<!-- thadeus:cost-rules:start -->` and `<!-- thadeus:cost-rules:end -->`, shows a diff first, and leaves everything outside the markers unchanged.
-  - [ ] General rules go in `project.md`; rules for one phase go in that phase's file (for example targeted tests in `phases/construction.md`), so they cost context only there.
-  - [ ] The first pack holds: `main` delegates reading and writing source code to the developer agent and keeps only its short report; agents report in a few lines, without file dumps; during the TDD loop only the test being worked on runs, the full suite once before Build and Test is approved; never read `node_modules`, lock files, `dist`/`build` or large logs.
-  - [ ] The pack is short (a handful of lines), because the memory files are read again on every stage.
-  - [ ] No rule contradicts the layers above. The app warns when a line clashes with a rule in `team.md` (for example "never run the full suite" against "suite green before merge").
-  - [ ] After writing, the app runs `aidlc engine graph compile` and shows its output; on a failure it puts the file back as it was.
-  - [ ] No AI-DLC file outside the memory files is written.
-  - [ ] Every text goes through `t()` in Swedish and English, in the LCARS interface.
+  - [x] In the project's settings the person turns the pack on or off and can edit its lines. The app writes only between `<!-- thadeus:cost-rules:start -->` and `<!-- thadeus:cost-rules:end -->`, shows a diff first, and leaves everything outside the markers unchanged.
+  - [x] General rules go in `project.md`; rules for one phase go in that phase's file (for example targeted tests in `phases/construction.md`), so they cost context only there.
+  - [x] The first pack holds: `main` delegates reading and writing source code to the developer agent and keeps only its short report; agents report in a few lines, without file dumps; during the TDD loop only the test being worked on runs, the full suite once before Build and Test is approved; never read `node_modules`, lock files, `dist`/`build` or large logs.
+  - [x] The pack is short (a handful of lines), because the memory files are read again on every stage.
+  - [x] No rule contradicts the layers above. The app warns when a line clashes with a rule in `team.md` (for example "never run the full suite" against "suite green before merge").
+  - [x] After writing, the app runs `aidlc engine graph compile` and shows its output; on a failure it puts the file back as it was.
+  - [x] No AI-DLC file outside the memory files is written.
+  - [x] Every text goes through `t()` in Swedish and English, in the LCARS interface.
 - **Notes:** Rules are text the model reads, not enforcement. Anything that must happen at a set moment, such as starting a fresh session, belongs to US-0213.
 - **Dependencies:** US-0901
 

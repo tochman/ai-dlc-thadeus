@@ -820,7 +820,8 @@
       "sections": {
         "docs": "Feature-beskrivningar",
         "agent": "Agent",
-        "aidlc": "AI-DLC"
+        "aidlc": "AI-DLC",
+        "costRules": "Kostnadsregler"
       },
       "saved": "Sparat.",
       "reset": "Återställ"
@@ -928,6 +929,32 @@
       "guard_policy": "skyddspolicy",
       "collaborators": "medarbetare"
     }
+  },
+  "costRules": {
+    "help": "Ett kort block med regler som gör varje intent billigare. Appen skriver bara mellan sina markörer i project.md och phases/construction.md i varje space, och bygger om AI-DLC efteråt.",
+    "loading": "Läser kostnadsreglerna…",
+    "spacesTitle": "Spaces som skrivs",
+    "state": { "present": "Finns", "absent": "Saknas", "broken": "Trasig" },
+    "problem": {
+      "missing": "filen saknas",
+      "onlyStart": "bara startmarkören finns",
+      "onlyEnd": "bara slutmarkören finns",
+      "startAfterEnd": "startmarkören står efter slutmarkören",
+      "twice": "markörerna finns mer än en gång"
+    },
+    "modeLegend": "Kostnadsregler",
+    "mode": { "on": "På", "off": "Av" },
+    "linesFor": "Regler i {file} (en per rad)",
+    "preview": "Förhandsvisa",
+    "noChanges": "Inga filer ändras.",
+    "warningsTitle": "Kan krocka med teamets regler",
+    "warning": "Varning",
+    "clash": "”{line}” kan krocka med ”{rule}” i {file} ({space}).",
+    "errorsTitle": "Skrivs inte",
+    "notWritten": "Skrivs inte",
+    "compiled": "AI-DLC byggdes om.",
+    "restored": "Kompileringen misslyckades, så varje fil sattes tillbaka som den var: {error}",
+    "notRestored": "Kompileringen misslyckades och {files} kunde inte sättas tillbaka: {error}"
   },
   "configEdit": {
     "previewing": "Kontrollerar ändringen…",
@@ -1229,6 +1256,7 @@
     "unknownExternal": "Okänd extern länk: {key}",
     "changedSincePreview": "{file} ändrades efter förhandsvisningen. Titta på ändringen igen innan du tillämpar den.",
     "compileFailedFor": "Kunde inte bygga om planerna för {harness}: {error}",
+    "costRulesBroken": "Kostnadsreglernas markörer är trasiga ({problem}).",
     "invalidPlanName": "Ogiltigt plannamn: {name}. Använd små bokstäver och ord med bindestreck emellan, som min-plan.",
     "stockPlan": "{name} är en av AI-DLC:s egna planer och kan inte ändras.",
     "planInUse": "{name} används av en pågående intent ({intents}) och kan inte tas bort.",

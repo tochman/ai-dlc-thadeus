@@ -820,7 +820,8 @@
       "sections": {
         "docs": "Feature docs",
         "agent": "Agent",
-        "aidlc": "AI-DLC"
+        "aidlc": "AI-DLC",
+        "costRules": "Cost rules"
       },
       "saved": "Saved.",
       "reset": "Reset"
@@ -928,6 +929,32 @@
       "guard_policy": "guard policy",
       "collaborators": "collaborators"
     }
+  },
+  "costRules": {
+    "help": "A short block of rules that makes each intent cheaper. The app writes only between its markers in project.md and phases/construction.md of every space, and rebuilds AI-DLC afterwards.",
+    "loading": "Reading the cost rules…",
+    "spacesTitle": "Spaces written to",
+    "state": { "present": "Present", "absent": "Absent", "broken": "Broken" },
+    "problem": {
+      "missing": "the file is missing",
+      "onlyStart": "only the start marker is there",
+      "onlyEnd": "only the end marker is there",
+      "startAfterEnd": "the start marker comes after the end marker",
+      "twice": "the markers are there more than once"
+    },
+    "modeLegend": "Cost rules",
+    "mode": { "on": "On", "off": "Off" },
+    "linesFor": "Rules in {file} (one per line)",
+    "preview": "Preview",
+    "noChanges": "No file changes.",
+    "warningsTitle": "May clash with the team's rules",
+    "warning": "Warning",
+    "clash": "“{line}” may clash with “{rule}” in {file} ({space}).",
+    "errorsTitle": "Not written",
+    "notWritten": "Not written",
+    "compiled": "AI-DLC was rebuilt.",
+    "restored": "The compile failed, so every file was put back as it was: {error}",
+    "notRestored": "The compile failed and {files} could not be put back: {error}"
   },
   "configEdit": {
     "previewing": "Checking the change…",
@@ -1229,6 +1256,7 @@
     "unknownExternal": "Unknown external link: {key}",
     "changedSincePreview": "{file} changed after the preview. Look at the change again before applying it.",
     "compileFailedFor": "Rebuilding the plans for {harness} failed: {error}",
+    "costRulesBroken": "The cost rule markers are broken ({problem}).",
     "invalidPlanName": "Invalid plan name: {name}. Use lowercase words joined by hyphens, such as my-plan.",
     "stockPlan": "{name} is a stock plan and is read-only.",
     "planInUse": "{name} is used by an intent in progress ({intents}) and can't be deleted.",

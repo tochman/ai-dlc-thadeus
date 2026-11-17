@@ -11,8 +11,12 @@ import { RadioBlocks, Section } from './SettingsView.jsx';
 
 const errorText = (err) => String(err?.message ?? err).replace(/^Error invoking remote method '[^']+': (Error: )?/, '');
 const MODES = ['auto', 'show', 'hide'];
-/** The sections in the arm (US-0012); `aidlc` is the AI-DLC configuration, shown by ConfigView. */
-export const PROJECT_SECTIONS = ['docs', 'agent', 'aidlc'];
+/**
+ * The sections in the arm (US-0012); `aidlc` is the AI-DLC configuration, shown by ConfigView; `costRules` is the
+ * cost rule pack (US-0212), shown by CostRulesSection. Both only in AI-DLC projects (AIDLC_SECTIONS).
+ */
+export const PROJECT_SECTIONS = ['docs', 'agent', 'aidlc', 'costRules'];
+export const AIDLC_SECTIONS = ['aidlc', 'costRules'];
 
 /**
  * The "Agent-terminal" options (US-0801 FR2.1): the selectable harnesses with their CLI version, and the

@@ -120,7 +120,7 @@ button:disabled { cursor: default; }
 .link:hover { color: var(--steel-light); text-decoration: underline; }
 .link.is-selected { color: var(--white); }
 /* Text fields as LCARS bars, like .lcars-select (US-0012): a dark bar with a steel cap, amber while focused. */
-input[type='search'], input[type='text'], input[type='password'] {
+input[type='search'], input[type='text'], input[type='password'], textarea {
   min-height: 32px;
   padding: 4px 10px;
   background: var(--slate-1);
@@ -131,8 +131,10 @@ input[type='search'], input[type='text'], input[type='password'] {
   font: inherit;
   font-size: 14px;
 }
-input[type='search']:hover, input[type='text']:hover, input[type='password']:hover { background: var(--slate-2); }
-input[type='search']:focus-visible, input[type='text']:focus-visible, input[type='password']:focus-visible { outline: none; border-left-color: var(--amber); background: var(--slate-2); }
+input[type='search']:hover, input[type='text']:hover, input[type='password']:hover, textarea:hover { background: var(--slate-2); }
+input[type='search']:focus-visible, input[type='text']:focus-visible, input[type='password']:focus-visible, textarea:focus-visible { outline: none; border-left-color: var(--amber); background: var(--slate-2); }
+/* The cost rule lines (US-0212): one rule per line, full width. */
+.cost-rules-lines { width: 100%; resize: vertical; font-family: var(--mono, monospace); }
 input[type='text'][aria-invalid='true'] { border-left-color: var(--coral); }
 /* Every <select> carries .lcars-select: an LCARS bar with an amber arrow cap. Customizable select (appearance:
    base-select, Chromium 135+) styles the open list too; an older engine keeps its native popup. Amber with black
