@@ -16,7 +16,8 @@ import AgentHooksStrip from './AgentHooksStrip.jsx'; // US-0506 u4
 import FeaturesView from './FeaturesView.jsx';
 import ConfigView from './ConfigView.jsx';
 import PlansView from './PlansView.jsx';
-import ProjectSettingsView, { confirmHarnessSwitch } from './ProjectSettingsView.jsx';
+import ProjectSettingsView, { AIDLC_SECTIONS, confirmHarnessSwitch } from './ProjectSettingsView.jsx';
+import CostRulesSection from './CostRulesSection.jsx';
 import { Frame } from './Lcars.jsx';
 import { featureDocsPrompt, lifecycleRulePrompt } from './featureDocsPrompt.js';
 import { DELIVERY_DEFAULT } from '../main/parsers/releases.js';
@@ -346,7 +347,7 @@ function ProjectContent({
   // Configuration holds the project's own settings for every project, and the AI-DLC configuration in an AI-DLC one (US-0012).
   const offered = { features: showFeatures, config: true, plans: isAidlc, cost: isAidlc, velocity: isAidlc, github: isAidlc, editor: true };
   const view = offered[chosenView] ? chosenView : 'intents';
-  const configSection = section === 'aidlc' && !isAidlc ? 'docs' : section;
+  const configSection = AIDLC_SECTIONS.includes(section) && !isAidlc ? 'docs' : section;
   const aidlcShown = view === 'config' && configSection === 'aidlc';
   // The AI-DLC configuration mounts the first time it is chosen, so its CLI reads wait until then, and then stays (FR6.1).
   const [configShown, setConfigShown] = useState(false);
@@ -426,7 +427,8 @@ function ProjectContent({
               onSetup={offerSetup}
             />
           )}
-          {view === 'config' && configSection !== 'aidlc' && (
+          {view === 'config' && configSection === 'costRules' && <CostRulesSection projectId={project.projectId} />}
+          {view === 'config' && !AIDLC_SECTIONS.includes(configSection) && (
             <ProjectSettingsView
               section={configSection}
               agentHooksFocus={hooksFocus}

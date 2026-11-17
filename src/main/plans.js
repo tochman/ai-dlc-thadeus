@@ -160,9 +160,9 @@ async function installedHarnessDirs(root) {
 /**
  * US-0021 FR1–FR3: `aidlc engine graph compile` rebuilds the plan list and the plan copies only for the harness it
  * runs as, so it runs once per installed harness (`AIDLC_HARNESS_DIR`). The first failure stops and names its harness;
- * the plan file itself is already written by then.
+ * the plan file itself is already written by then. Also used by the cost rule pack (US-0212 FR5.3).
  */
-async function compileEveryHarness(root, exec) {
+export async function compileEveryHarness(root, exec) {
   const dirs = await installedHarnessDirs(root);
   if (!dirs.length) return runAidlc(root, ['engine', 'graph', 'compile'], exec);
   const outputs = [];

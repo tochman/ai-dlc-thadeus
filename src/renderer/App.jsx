@@ -18,7 +18,7 @@ import { alertPlan } from '../shared/alertPlan.js';
 
 const NOTICE_MS = 5000; // US-0506 u2 K11: how long the hand-back notice stays
 import { dirtyFiles } from './editor/EditorContext.jsx';
-import { PROJECT_SECTIONS } from './ProjectSettingsView.jsx';
+import { AIDLC_SECTIONS, PROJECT_SECTIONS } from './ProjectSettingsView.jsx';
 
 const bridge = window.bridge;
 // The view and, for Features and Configuration, the section chosen in the arm (US-0012).
@@ -591,8 +591,8 @@ export default function App() {
             {!settingsView && view === 'config' && (
               <ArmSubtabs
                 label={t('app.config')}
-                ids={PROJECT_SECTIONS.filter((id) => id !== 'aidlc' || isAidlc)}
-                current={activeUi.configSection === 'aidlc' && !isAidlc ? 'docs' : activeUi.configSection}
+                ids={PROJECT_SECTIONS.filter((id) => isAidlc || !AIDLC_SECTIONS.includes(id))}
+                current={AIDLC_SECTIONS.includes(activeUi.configSection) && !isAidlc ? 'docs' : activeUi.configSection}
                 labelOf={(id) => t(`settings.project.sections.${id}`)}
                 onPick={(id) => showView('config', { configSection: id })}
                 testIdPrefix="config-section"

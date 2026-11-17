@@ -127,6 +127,7 @@ describe('App shell', () => {
     expect(screen.getByTestId('config-section-docs').getAttribute('aria-current')).toBe('page');
     fireEvent.click(screen.getByTestId('config-section-aidlc'));
     expect(screen.getByTestId('config-section-aidlc').getAttribute('aria-current')).toBe('page');
+    expect(screen.getByTestId('config-section-costRules').textContent).toBe('Kostnadsregler'); // US-0212 FR1.1
 
     act(() => push.menuCommand({ command: 'view', view: 'intents' }));
     expect(screen.getByTestId('project-view-switch-intents').getAttribute('aria-current')).toBe('page');
@@ -140,6 +141,7 @@ describe('App shell', () => {
     fireEvent.click(await screen.findByTestId('project-view-switch-config'));
     expect(screen.getByTestId('config-section-agent')).toBeTruthy();
     expect(screen.queryByTestId('config-section-aidlc')).toBeNull();
+    expect(screen.queryByTestId('config-section-costRules')).toBeNull();
   });
 
   it('makes Kostnad and Github views of their own, one at a time, from the arm and the menu; disabled without AI-DLC', async () => {

@@ -67,6 +67,9 @@ const m = vi.hoisted(() => {
       applyGuardLock: vi.fn(async () => ({ ok: true })),
       previewConfigChange: vi.fn(async () => ({ diff: 'd' })),
       previewGuardLock: vi.fn(async () => ({ before: 'b', file: 'f', diff: 'd' })),
+      costRulesStatus: vi.fn(async () => ({ spaces: [], on: false, lines: {} })),
+      previewCostRules: vi.fn(async () => ({ changes: [{ space: 's', file: 'f', before: 'b', next: 'n', diff: 'd' }], errors: [], warnings: [] })),
+      applyCostRules: vi.fn(async () => ({ ok: true, files: ['f'], output: 'o' })),
       applyModelChange: vi.fn(async () => ({ ok: true })),
       checkDrift: vi.fn(async () => ({ drift: false })),
       estimateCost: vi.fn(() => ({ usd: 1 })),
@@ -191,6 +194,11 @@ vi.mock('../../src/main/aidlcWrite.js', () => ({
   applyGuardLock: m.svc.applyGuardLock,
   preview: m.svc.previewConfigChange,
   previewGuardLock: m.svc.previewGuardLock
+}));
+vi.mock('../../src/main/costRules.js', () => ({
+  applyCostRules: m.svc.applyCostRules,
+  costRulesStatus: m.svc.costRulesStatus,
+  previewCostRules: m.svc.previewCostRules
 }));
 vi.mock('../../src/main/modelChoice.js', () => ({
   applyModelChange: m.svc.applyModelChange,
@@ -520,6 +528,18 @@ describe('AI-DLC configuration and plans', () => {
     expect(await call('config:guardLockPreview', {}, projectId, { layer: 'team', mode: 'strict' })).toEqual({ file: 'f', diff: 'd' });
     await call('config:guardLockApply', {}, projectId);
     expect(svc.applyGuardLock).toHaveBeenCalledWith('/work/lock', { space: 'default', layer: 'team', mode: 'strict' }, 'b');
+  });
+
+  it('applies the cost rules exactly as previewed, only after a preview, and keeps the texts in main (US-0212 FR5.2)', async () => {
+    const { projectId } = await openProject('/work/cost-rules');
+    expect(await call('costRules:status', {}, projectId)).toEqual({ spaces: [], on: false, lines: {} });
+    await expect(call('costRules:apply', {}, projectId)).rejects.toThrow();
+    const shown = await call('costRules:preview', {}, projectId, { on: 'yes', lines: { project: ['x'] }, extra: 1 });
+    expect(shown).toEqual({ changes: [{ space: 's', file: 'f', diff: 'd' }], errors: [], warnings: [] });
+    expect(svc.previewCostRules).toHaveBeenCalledWith('/work/cost-rules', { on: false, lines: { project: ['x'] } });
+    expect(await call('costRules:apply', {}, projectId)).toEqual({ ok: true, files: ['f'], output: 'o' });
+    expect(svc.applyCostRules).toHaveBeenCalledWith('/work/cost-rules', [{ space: 's', file: 'f', before: 'b', next: 'n', diff: 'd' }]);
+    await expect(call('costRules:apply', {}, projectId)).rejects.toThrow(); // used up
   });
 
   it('lists, stages, saves, edits and deletes plans', async () => {

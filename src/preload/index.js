@@ -98,6 +98,10 @@ contextBridge.exposeInMainWorld('bridge', {
   applyConfigChange: call('config:apply'),
   previewGuardLock: call('config:guardLockPreview'),
   applyGuardLock: call('config:guardLockApply'),
+  // The cost rule pack (US-0212): {on, lines} cross the bridge, never a path; apply writes the last preview.
+  costRulesStatus: call('costRules:status'),
+  previewCostRules: call('costRules:preview'),
+  applyCostRules: call('costRules:apply'),
   // Plans (US-0903): a plan name and the three editable fields cross the bridge, never a path or a command.
   listPlans: call('plans:list'),
   getPlanStages: call('plans:stages'),

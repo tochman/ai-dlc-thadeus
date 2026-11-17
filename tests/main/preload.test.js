@@ -127,3 +127,17 @@ describe('preload bridge (US-0506 u1)', () => {
     expect(m.ipcRenderer.invoke).toHaveBeenCalledWith('project:velocity', 'p1', 'default');
   });
 });
+
+describe('preload bridge (US-0212)', () => {
+  it('has the cost rule calls on their channels; only {on, lines} cross the bridge', async () => {
+    const bridge = await load(false);
+    await bridge.costRulesStatus('p1');
+    await bridge.previewCostRules('p1', { on: true, lines: { project: ['x'] } });
+    await bridge.applyCostRules('p1');
+    expect(m.ipcRenderer.invoke.mock.calls).toEqual([
+      ['costRules:status', 'p1'],
+      ['costRules:preview', 'p1', { on: true, lines: { project: ['x'] } }],
+      ['costRules:apply', 'p1']
+    ]);
+  });
+});

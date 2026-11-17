@@ -29,6 +29,7 @@ import { USAGE_DIR, snapshotOf, writeSnapshot } from './usageSnapshot.js';
 import { CONFIG_WATCH_PATHS, checkHarness, getAidlcConfig } from './aidlcConfig.js';
 import { applyPlanEdit, deletePlan, listPlans, planStages, previewPlanEdit, savePlan } from './plans.js';
 import { apply as applyConfigChange, applyGuardLock, preview as previewConfigChange, previewGuardLock } from './aidlcWrite.js';
+import { applyCostRules, costRulesStatus, previewCostRules } from './costRules.js';
 import { applyModelChange, checkDrift, estimateCost, ledgerRows, modelOptions, previewModelChange, pricesFromLedger } from './modelChoice.js';
 import { createUpdater } from './updater.js';
 import {
@@ -663,6 +664,24 @@ const handlers = {
     const { before, ...request } = p.guardLock;
     p.guardLock = null;
     const result = await applyGuardLock(p.root, request, before);
+    sendConfigChanged(projectId, p);
+    return result;
+  },
+  // The cost rule pack (US-0212). The renderer sends only {on, lines}; the diffs are kept here, and apply writes
+  // exactly those, only if every file is still as shown (FR5.2).
+  'costRules:status': async (_event, projectId) => costRulesStatus(project(projectId).root),
+  'costRules:preview': async (_event, projectId, choice) => {
+    const p = project(projectId);
+    const { changes, errors, warnings } = await previewCostRules(p.root, { on: choice?.on === true, lines: choice?.lines });
+    p.costRules = changes;
+    return { changes: changes.map(({ space, file, diff }) => ({ space, file, diff })), errors, warnings };
+  },
+  'costRules:apply': async (_event, projectId) => {
+    const p = project(projectId);
+    if (!p.costRules) throw new Error(t('errors.previewFirst'));
+    const changes = p.costRules;
+    p.costRules = null;
+    const result = await applyCostRules(p.root, changes);
     sendConfigChanged(projectId, p);
     return result;
   },

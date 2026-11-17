@@ -1,0 +1,28 @@
+{
+  "stage": "code-generation",
+  "upstream_ids": ["FR1.1", "FR1.2", "FR2.1", "FR2.2", "FR2.3", "FR2.4", "FR3.1", "FR3.2", "FR4.1", "FR4.2", "FR4.3", "FR4.4", "FR5.1", "FR5.2", "FR5.3", "FR5.4", "FR6.1", "FR6.2", "NFR1", "NFR2", "NFR3", "NFR4"],
+  "coverage": [
+    { "id": "FR1.1", "status": "OK", "target": "src/renderer/CostRulesSection.jsx" },
+    { "id": "FR1.2", "status": "OK", "target": "src/renderer/CostRulesSection.jsx" },
+    { "id": "FR2.1", "status": "OK", "target": "src/main/costRules.js" },
+    { "id": "FR2.2", "status": "OK", "target": "src/main/costRules.js" },
+    { "id": "FR2.3", "status": "OK", "target": "src/main/costRules.js" },
+    { "id": "FR2.4", "status": "OK", "target": "src/main/costRules.js" },
+    { "id": "FR3.1", "status": "OK", "target": "src/shared/costRules.js" },
+    { "id": "FR3.2", "status": "OK", "target": "src/main/costRules.js" },
+    { "id": "FR4.1", "status": "OK", "target": "src/shared/costRules.js" },
+    { "id": "FR4.2", "status": "OK", "target": "src/shared/costRules.js" },
+    { "id": "FR4.3", "status": "OK", "target": "src/shared/costRules.js" },
+    { "id": "FR4.4", "status": "OK", "target": "src/shared/costRules.js" },
+    { "id": "FR5.1", "status": "OK", "target": "src/main/costRules.js" },
+    { "id": "FR5.2", "status": "OK", "target": "src/main/costRules.js" },
+    { "id": "FR5.3", "status": "OK", "target": "src/main/costRules.js" },
+    { "id": "FR5.4", "status": "OK", "target": "src/main/costRules.js" },
+    { "id": "FR6.1", "status": "OK", "target": "src/shared/costRules.js" },
+    { "id": "FR6.2", "status": "OK", "target": "src/main/costRules.js" },
+    { "id": "NFR1", "status": "OK", "target": "tests/main/costRules.test.js" },
+    { "id": "NFR2", "status": "OK", "target": "tests/main/costRules.test.js" },
+    { "id": "NFR3", "status": "OK", "target": "src/renderer/CostRulesSection.jsx" },
+    { "id": "NFR4", "status": "OK", "target": "src/main/costRules.js" }
+  ]
+}
