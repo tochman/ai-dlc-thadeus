@@ -56,15 +56,32 @@ describe('ownership: appKind (RD38, SD34)', () => {
 });
 
 describe('the canonical release (RD41, D2, SD35)', () => {
-  it('holds the four entries of the functional spec, with the wait constant imported', () => {
-    expect(KINDS).toEqual(['question', 'answered', 'permission', 'reply']);
+  it('holds the four entries of the functional spec and the four of US-0213, with the wait constant imported', () => {
+    expect(KINDS).toEqual(['question', 'answered', 'permission', 'reply', 'session', 'notify', 'precompact', 'postcompact']);
     expect(Object.fromEntries(KINDS.map((k) => [k, [CANONICAL[k].event, CANONICAL[k].matcher]]))).toEqual({
       question: ['PreToolUse', 'AskUserQuestion'],
       answered: ['PostToolUse', 'AskUserQuestion'],
       permission: ['PermissionRequest', '*'],
-      reply: ['Stop', undefined]
+      reply: ['Stop', undefined],
+      session: ['SessionStart', undefined],
+      notify: ['Notification', undefined],
+      precompact: ['PreCompact', undefined],
+      postcompact: ['PostCompact', undefined]
     });
     expect([CANONICAL.answered.timeout, CANONICAL.reply.timeout]).toEqual([10, 10]);
+    // US-0213 NFR3: the new entries never wait.
+    expect([CANONICAL.session, CANONICAL.notify, CANONICAL.precompact, CANONICAL.postcompact].map((e) => e.timeout)).toEqual([10, 10, 10, 10]);
+    // US-0213 NFR3: every report-only entry is async; the waiting kinds and PreCompact (its output feeds the compaction) are not.
+    expect(Object.fromEntries(KINDS.map((k) => [k, CANONICAL[k].async === true]))).toEqual({
+      question: false,
+      answered: true,
+      permission: false,
+      reply: true,
+      session: true,
+      notify: true,
+      precompact: false,
+      postcompact: true
+    });
     for (const k of ['question', 'permission']) {
       expect(CANONICAL[k].timeout).toBe(600);
       expect(CANONICAL[k].timeout).toBeGreaterThanOrEqual(WAIT_SECONDS.claude + 5);
@@ -85,6 +102,27 @@ describe('the canonical release (RD41, D2, SD35)', () => {
     expect(CURRENT.pluginDigest).toBe(sha(Buffer.from(PLUGIN, 'utf8')));
     expect(RELEASES.at(-1)).toBe(CURRENT);
     expect(RELEASES.some((r) => r.scriptDigest === CURRENT.scriptDigest && r.pluginDigest === CURRENT.pluginDigest)).toBe(true);
+  });
+
+  it.each(['v0.2.8', 'before-US-0213'])('reads an install of %s (four sync entries) as outOfDate, and update brings all eight (US-0213 FR1.4)', (release) => {
+    const old = RELEASES.find((r) => r.release === release);
+    expect(Object.keys(old.entries)).toEqual(['question', 'answered', 'permission', 'reply']);
+    expect(old.scriptDigest).not.toBe(CURRENT.scriptDigest);
+    expect(old.pluginDigest).not.toBe(CURRENT.pluginDigest);
+    const four = Object.fromEntries(
+      Object.values(old.entries).map((e) => [
+        e.event,
+        [{ ...(e.matcher ? { matcher: e.matcher } : {}), hooks: [{ type: 'command', command: e.command, timeout: e.timeout }] }]
+      ])
+    );
+    const bytes = Buffer.from(JSON.stringify({ hooks: four }, null, 2));
+    expect(Object.values(old.entries).map((e) => appKind(e.command))).toEqual(['question', 'answered', 'permission', 'reply']);
+    const c = classify(parse(bytes));
+    expect(c.status).toBe('outOfDate');
+    expect([c.kinds.question, c.kinds.reply, c.kinds.session]).toEqual(['current', 'outOfDate', 'missing']); // reply gains async
+    const out = splice(bytes, 'update');
+    expect(classify(parse(out.bytes)).status).toBe('current');
+    expect(parse(out.bytes).hooks.Stop[0].hooks[0]).toMatchObject({ async: true });
   });
 
   it('ships a dialog.sh with no redirect on the : builtin (RD31, u1 review R-01)', () => {
@@ -227,7 +265,7 @@ describe('classify (BR7.4–BR7.6)', () => {
 
   it('counts an app entry under the wrong event, or with another key, as a hand edit', () => {
     const value = parse(fixture('current.json'));
-    value.hooks.PostToolUse[0].hooks[0].async = true;
+    value.hooks.PostToolUse[0].hooks[0].once = true; // US-0213: async is now the canonical shape, so another key
     expect(classify(value, releases).kinds.answered).toBe('editedByHand');
     const moved = parse(fixture('current.json'));
     moved.hooks.Stop[0].hooks[0].command = command('question');
@@ -261,11 +299,15 @@ describe('splice: install and update (BR7.10, BR7.11, RD36, SD34)', () => {
       'PreToolUse',
       'PostToolUse',
       'PermissionRequest',
-      'Stop'
+      'Stop',
+      'SessionStart',
+      'Notification',
+      'PreCompact',
+      'PostCompact'
     ]);
     const repo = parse(splice(fixture('aidlc.json'), 'install', releases).bytes).hooks;
     expect(repo.PreToolUse.at(-1).matcher).toBe('AskUserQuestion'); // appended at the end of an existing event array
-    expect(Object.keys(repo).at(-1)).toBe('PermissionRequest'); // the one new event key goes last
+    expect(Object.keys(repo).at(-1)).toBe('PostCompact'); // new event keys go last, in the fixed order
   });
 
   it('creates a missing file with only the app’s entries, two spaces and a final newline (BR7.11)', () => {
@@ -378,7 +420,7 @@ describe('splice: remove, post-check and diff (BR7.19, RD37, SD34, D5)', () => {
     const noGroup = next.replace(/\{\s*"matcher": "Bash",\s*"hooks": \[\]\s*\},\s*/, '');
     expect(noGroup).not.toBe(next);
     expect(postCheck(old, Buffer.from(noGroup), 'install', releases)).toBe('unexpectedShape');
-    const noEvent = next.replace(/"Notification": \[\],\s*/, '');
+    const noEvent = next.replace(/"SubagentStop": \[\],\s*/, ''); // US-0213: Notification is the app's now
     expect(noEvent).not.toBe(next);
     expect(postCheck(old, Buffer.from(noEvent), 'install', releases)).toBe('unexpectedShape');
     const hooksEmpty = fixture('hooks-empty.json');

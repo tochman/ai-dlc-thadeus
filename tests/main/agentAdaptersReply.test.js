@@ -21,7 +21,8 @@ describe('Claude Code Stop payloads', () => {
     expect(adapters.claude.parse('reply', body('claude', 'stop-which-name'))).toEqual({
       ok: true,
       kind: 'reply',
-      message: { text: 'Which name should the file have?', truncated: false, empty: false }
+      message: { text: 'Which name should the file have?', truncated: false, empty: false },
+      signals: { transcriptPath: 'tests/.tmp/u3-transcript-marker.jsonl', backgroundTasks: null } // US-0213: passed on, never read here
     });
   });
 
@@ -66,7 +67,10 @@ describe('Claude Code Stop payloads', () => {
 
 describe('opencode idle payloads (K12, provisional)', () => {
   it('idle-which-name gives the same message as the Claude Code fixture (AC3.1.4)', () => {
-    expect(adapters.opencode.parse('reply', body('opencode', 'idle-which-name'))).toEqual(adapters.claude.parse('reply', body('claude', 'stop-which-name')));
+    // US-0213: Claude Code's reply also carries its signals; the message is the same.
+    const { signals, ...claudeReply } = adapters.claude.parse('reply', body('claude', 'stop-which-name'));
+    expect(signals).toBeTruthy();
+    expect(adapters.opencode.parse('reply', body('opencode', 'idle-which-name'))).toEqual(claudeReply);
   });
 
   it('joins the text parts of the last assistant message with a blank line', () => {

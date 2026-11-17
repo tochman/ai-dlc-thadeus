@@ -187,6 +187,19 @@ export async function loadWorkingAgents(root, space, dirName) {
   return workingAgents(await loadAuditEvents(root, `${intentsDir(space)}/${dirName}`));
 }
 
+/**
+ * US-0213 FR2.2, FR2.3: the active intent's state text and audit events (the space's `active-intent` cursor), as a
+ * one-item list; [] when there is no cursor or its intent is finished. Read only.
+ */
+export async function loadHandoffInputs(root, space) {
+  const cursor = (await readTextOrNull(root, `${intentsDir(space)}/active-intent`))?.trim();
+  if (!cursor || !/^[\w.-]+$/.test(cursor)) return [];
+  const base = `${intentsDir(space)}/${cursor}`;
+  const stateText = await readTextOrNull(root, `${base}/aidlc-state.md`);
+  if (!stateText || /\*\*Status\*\*:\s*complete/i.test(stateText)) return [];
+  return [{ dirName: cursor, stateText, events: await loadAuditEvents(root, base) }];
+}
+
 /** An intent is in progress unless intents.json or aidlc-state.md says it is finished (US-0505 FR1.1). */
 export function inProgress(intent) {
   if (intent.missingOnDisk || intent.status === 'complete' || intent.status === 'archived') return false;

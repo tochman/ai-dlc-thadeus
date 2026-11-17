@@ -17,6 +17,7 @@ import { byPager } from '../shared/agentOrder.js';
 import { formatLog, WAITING } from './agentChannel.js';
 import { createPermissions } from './agentPermissions.js';
 import { createReplies } from './agentReplies.js';
+import { SIGNAL_KINDS } from './agentAdapters.js';
 
 // "the session ended", "answered in the terminal" (BR2.3, BR5.11) and a typed reply's "sent" line (u3 K6) stay this long
 const ENDED_MS = 3000;
@@ -84,7 +85,8 @@ const PUBLIC = [
   'staleReason', // u3
   'lastError',
   'via',
-  'endedBy'
+  'endedBy',
+  'handoff' // US-0213: the handoff page's offer (moment, size, cost, choices); no session id, no file
 ];
 const view = (ev) => Object.fromEntries(PUBLIC.map((k) => [k, ev[k]]));
 
@@ -217,10 +219,48 @@ export function createAgentEventStore({
     }
   }
 
+  // --- US-0213 FR1.3, FR1.5, FR5.1, FR8.1: session signals for the handoff, kept per session, never a page ---------
+  const signals = new Map(); // sessionId -> signal state
+  const signalFns = new Set();
+  const readyWaits = new Set(); // { sessionId, sources, resolve, timer }
+  const handoffClosed = new Set();
+  const signalOf = (sessionId) => {
+    if (!signals.has(sessionId))
+      signals.set(sessionId, {
+        lastStopMs: null,
+        lastInputMs: null,
+        busy: false,
+        notify: null,
+        backgroundTasks: null,
+        transcriptPath: null,
+        context: null,
+        compactedAtMs: null
+      });
+    return signals.get(sessionId);
+  };
+  function recordSignal(raw, session, parsed) {
+    const s = signalOf(raw.sessionId);
+    const now = Date.now();
+    if (parsed.kind === 'reply') Object.assign(s, { lastStopMs: now, busy: false, notify: null, ...(parsed.signals ?? {}) });
+    else if (parsed.kind === 'notify') s.notify = parsed.type;
+    else if (parsed.kind === 'status') s.busy = parsed.busy;
+    else if (parsed.kind === 'usage') s.context = parsed.context;
+    else if (parsed.kind === 'postcompact') s.compactedAtMs = now;
+    else if (parsed.kind === 'session') {
+      Object.assign(s, { busy: false, context: null });
+      if (parsed.source === 'compact') s.compactedAtMs ??= now; // the fallback when PostCompact is absent
+      for (const w of readyWaits) if (w.sessionId === raw.sessionId && w.sources.includes(parsed.source)) w.resolve(true);
+    }
+    const note = { sessionId: raw.sessionId, projectId: session.projectId, tabId: session.tabId, harness: session.harness, kind: parsed.kind, parsed };
+    for (const fn of signalFns) fn(note);
+  }
+
   function onRaw(raw) {
     const session = sessions.get(raw.sessionId);
     const parsed = session && adapters[session.harness]?.parse(raw.kind, raw.body);
     if (!parsed) return; // an unknown session or kind is ignored (C1 ownership rules)
+    if (parsed.ok && (SIGNAL_KINDS.has(parsed.kind) || parsed.kind === 'reply')) recordSignal(raw, session, parsed);
+    if (parsed.ok && SIGNAL_KINDS.has(parsed.kind)) return; // US-0213: never a page, never moves a reply on
     if (!parsed.ok) {
       const reason = parsed.reason === 'question tool' ? 'handed back: question tool' : `adapter refused: ${parsed.reason}`;
       log(formatLog(reason, { session: raw.sessionId, file: `${raw.file}.evt`, text: parsed.text }));
@@ -304,6 +344,9 @@ export function createAgentEventStore({
       const s = sessions.get(sessionId);
       replies.endSession(sessionId); // u3 BR6.7: a shown reply goes stale and keeps its text
       sessions.delete(sessionId);
+      signals.delete(sessionId); // US-0213; its handoff page goes at once, there is nothing left to send to
+      for (const ev of [...events.values()]) if (ev.kind === 'handoff' && ev.sessionId === sessionId) move(ev, 'ended', { endedBy: 'movedOn' });
+      for (const w of readyWaits) if (w.sessionId === sessionId) w.resolve(false);
       for (const ev of openOf(sessionId)) move(ev, 'ended', { endedBy: 'session' });
       if (s) emit(s.projectId);
     },
@@ -336,6 +379,11 @@ export function createAgentEventStore({
      * dismisses a reply (u3). */
     async close(eventId) {
       const ev = events.get(eventId);
+      if (ev?.kind === 'handoff') {
+        move(ev, 'ended', { endedBy: 'closed' }); // US-0213 FR6.2: Close is Not now
+        for (const fn of handoffClosed) fn(ev);
+        return { state: 'dismissed' };
+      }
       if (ev?.kind === 'permission') return permissions.close(ev);
       if (ev?.kind === 'reply') return replies.close(ev);
       if (!ev || !OPEN.has(ev.state)) return { state: 'dismissed' };
@@ -343,8 +391,87 @@ export function createAgentEventStore({
       if (events.get(eventId) === ev && OPEN.has(ev.state)) move(ev, 'handedBack');
       return { state: 'handedBack' };
     },
-    /** u3 C2 terminalInput: the person's input to a pty moves that tab's open reply on (BR6.6, SD10). */
-    terminalInput: (ptyId, data) => replies.terminalInput(ptyId, data),
+    /** u3 C2 terminalInput: the person's input to a pty moves that tab's open reply on (BR6.6, SD10). US-0213 FR5.2:
+     * every key counts as typing and means the agent is about to work. */
+    terminalInput(ptyId, data) {
+      replies.terminalInput(ptyId, data);
+      for (const sessionId of sessions.keys())
+        if (channel.ptyOf(sessionId) === ptyId) Object.assign(signalOf(sessionId), { lastInputMs: Date.now(), busy: true, notify: null });
+    },
+    /** US-0213 FR5.1: a copy of the session's signals with whether a question or permission waits; null when unknown. */
+    signalsOf(sessionId) {
+      if (!sessions.has(sessionId)) return null;
+      const waiting = openOf(sessionId).some((e) => e.kind === 'question' || e.kind === 'permission');
+      return { ...signalOf(sessionId), waiting };
+    },
+    /** US-0213: the live sessions of a project, with their tab and harness. */
+    sessionsOf: (projectId) => [...sessions].filter(([, s]) => s.projectId === projectId).map(([sessionId, s]) => ({ sessionId, ...s })),
+    /** US-0213 FR3.2: resolves true at the session's next SessionStart with one of `sources`, false after `ms`. */
+    waitForSession(sessionId, sources, ms) {
+      return new Promise((resolve) => {
+        const w = { sessionId, sources };
+        w.resolve = (ok) => {
+          clearTimeout(w.timer);
+          readyWaits.delete(w);
+          resolve(ok);
+        };
+        w.timer = setTimeout(() => w.resolve(false), ms);
+        readyWaits.add(w);
+      });
+    },
+    /**
+     * US-0213 FR3.1: shows the handoff page for a live session (one per session: a newer offer replaces it). Returns
+     * its event id, or null for an unknown session.
+     */
+    addHandoff(sessionId, handoff) {
+      const s = sessions.get(sessionId);
+      if (!s) return null;
+      for (const old of [...events.values()]) if (old.kind === 'handoff' && old.sessionId === sessionId) move(old, 'ended', { endedBy: 'movedOn' });
+      const at = Date.now();
+      const ev = {
+        eventId: newId(),
+        sessionId,
+        projectId: s.projectId,
+        tabId: s.tabId,
+        harness: s.harness,
+        source: 'hook',
+        kind: 'handoff',
+        state: 'shown',
+        arrivedAt: new Date(at).toISOString(),
+        arrivedAtMs: at,
+        seq: 0,
+        context: contextOf(s.projectId) ?? null,
+        handoff,
+        lastError: null,
+        via: null,
+        endedBy: null
+      };
+      events.set(ev.eventId, ev);
+      emit(ev.projectId);
+      for (const fn of added) fn(view(ev));
+      return ev.eventId;
+    },
+    /** US-0213: main's own view of a handoff page, with its session; null when it is gone. */
+    handoffOf(eventId) {
+      const ev = events.get(eventId);
+      return ev?.kind === 'handoff' && ev.state !== 'ended'
+        ? { eventId, sessionId: ev.sessionId, projectId: ev.projectId, harness: ev.harness, tabId: ev.tabId, handoff: ev.handoff, state: ev.state }
+        : null;
+    },
+    /** US-0213 FR5.3: shown, waiting (for idle) or sending; ended removes the page. */
+    setHandoff(eventId, state) {
+      const ev = events.get(eventId);
+      if (ev?.kind === 'handoff' && ev.state !== 'ended') move(ev, state, state === 'ended' ? { endedBy: 'sent' } : {});
+    },
+    onHandoffClosed(fn) {
+      handoffClosed.add(fn);
+      return () => handoffClosed.delete(fn);
+    },
+    /** US-0213: one call per accepted signal (reply included), for the handoff wiring. */
+    onSignal(fn) {
+      signalFns.add(fn);
+      return () => signalFns.delete(fn);
+    },
     /** u3 C4 agentEvents.reopen. */
     reopen: (eventId) => replies.reopen(eventId),
     /** u3 C4 agentEvents.latest. */
@@ -362,6 +489,7 @@ export function createAgentEventStore({
     rulesHeld: () => permissions.rulesHeld(),
     dispose() {
       replies.dispose();
+      for (const w of readyWaits) w.resolve(false);
       for (const ev of events.values()) {
         clearTimeout(ev.timer);
         clearTimeout(ev.removal);

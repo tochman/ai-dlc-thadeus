@@ -303,6 +303,12 @@ export default function App() {
     setActiveId(q.projectId);
     setTerminalCommand((c) => ({ seq: (c?.seq ?? 0) + 1, action: 'agent', projectId: q.projectId }));
   }
+  /** US-0213 FR3.2: a handoff choice goes to the event's own agent tab without switching views. Resolves { ok, reason? }. */
+  function sendHandoff(event, choice, { onWaiting } = {}) {
+    return new Promise((reply) =>
+      setTerminalCommand((c) => ({ seq: (c?.seq ?? 0) + 1, action: 'handoff', projectId: event.projectId, event, choice, onWaiting, reply }))
+    );
+  }
   /** The popup's answer: `text` goes to that project's agent tab without switching views. Resolves {ok, error}. */
   function sendAnswer(q, answer) {
     return new Promise((reply) =>
@@ -739,6 +745,7 @@ export default function App() {
         harnessOf={(projectId) => selectableHarness(meta[projectId]?.harness)}
         projectNameOf={(projectId) => tabs.find((tab) => tab.projectId === projectId)?.name ?? ''}
         onAuditSend={sendAnswer}
+        onHandoff={sendHandoff}
         onOpenTerminal={answerInAgent}
         onClose={closePopup}
         onNotice={setNotice}

@@ -17,9 +17,13 @@ import {
   loadVelocity,
   loadIntentDetail,
   loadIntentList,
+  loadHandoffInputs,
   loadPendingQuestions,
   loadWorkingAgents
 } from './projectService.js';
+import os from 'node:os';
+import { readTranscriptContext } from './contextSize.js';
+import { HANDOFF_DEFAULTS, createHandoffController } from './sessionHandoff.js';
 import { loadAgentProgress } from './agentProgress.js';
 import { notifyEvent, notifyQuestions } from './notify.js';
 import { agentName, summarizeLedger } from './parsers/ledger.js';
@@ -375,6 +379,7 @@ async function refreshQuestions(projectId, dirNames) {
     p.questions = list;
     publishQuestions();
     agent?.publish(projectId); // the dialog lists these as audit events while no hook session runs (US-0506 BR2.7)
+    handoff?.refreshBoundary(projectId).catch((err) => console.warn('[handoff] boundary failed:', err.message)); // US-0213 FR2.2
     const fresh = list.filter((q) => !startedWith.has(q.id));
     if (fresh.length) {
       const win = p.sender.isDestroyed() ? null : BrowserWindow.fromWebContents(p.sender);
@@ -390,6 +395,8 @@ async function refreshQuestions(projectId, dirNames) {
 // project (isCurrent, from memory); every other tab gets no THADEUS_* variable and the dialog shows today's audit questions.
 let agent = null;
 let installer = null;
+let handoff = null; // US-0213
+let agentStore = null;
 
 /** BR7.15: the harnesses a project uses: its folder markers, or an agent tab of it opened in this app run. */
 async function usedHarnesses(projectId) {
@@ -421,6 +428,7 @@ function agentWiring() {
     auditEventsOf: (projectId) => questionsOf(projectId).map((q) => auditEvent({ ...q, early: startedWith.has(q.id) })),
     settings: settingsNow // US-0506 u5 D2: a reply's state at arrival
   });
+  agentStore = store;
   // US-0506 u5 D5, PD50: one notification decision per accepted event, in the store's own turn.
   store.onAdded((ev) => {
     const p = projects.get(ev.projectId);
@@ -428,8 +436,40 @@ function agentWiring() {
     notifyEvent(ev, { settings: settingsNow(), win, activeProjectId, projectName: p ? path.basename(p.root) : '', timing });
   });
   agent = createAgentIpc({ channel, store, timing, hooksCurrent, senders: () => new Set([...projects.values()].map((p) => p.sender)) });
+  // US-0213: the session handoff. Transcripts are read only under ~/.claude/projects (FR1.1); nothing is written in the
+  // project, only compact.txt in the app's own session folder (NFR1).
+  handoff = createHandoffController({
+    store,
+    readContext: (file) => readTranscriptContext(file, path.join(os.homedir(), '.claude', 'projects')),
+    ratesOf: async (projectId) => (await costRates(project(projectId).root))?.rates ?? {},
+    settingsOf: async (projectId) => ({ ...HANDOFF_DEFAULTS, ...(await getProjectSettings(project(projectId).root)).handoff }),
+    inputsOf: async (projectId) => {
+      const p = projects.get(projectId);
+      return p?.space ? loadHandoffInputs(p.root, p.space) : [];
+    },
+    writeInstruction: (sessionId, text) => channel.writeInstruction(sessionId, text)
+  });
+  store.onSignal((note) => handoff.onSignal(note));
   return agent;
 }
+
+/** US-0213 NFR4: the handoff page's calls; the renderer names an event id and one fixed choice only. */
+const HANDOFF_CHOICES = new Set(['compact', 'fresh', 'clear', 'clearResume']);
+const handoffId = (id) => {
+  if (typeof id !== 'string' || !id || id.length > 64) throw new Error(t('agentDialog.errors.unknownEvent'));
+  return id;
+};
+const handoffChoice = (c) => {
+  if (!HANDOFF_CHOICES.has(c)) throw new Error(t('errors.invalidValue', { what: 'choice', value: String(c) }));
+  return c;
+};
+const handoffHandlers = {
+  'handoff:commands': async (_event, id, choice) => handoff?.commandsFor(handoffId(id), handoffChoice(choice)) ?? null,
+  'handoff:idle': async (_event, id) => handoff?.idle(handoffId(id)) ?? false,
+  'handoff:waitReady': async (_event, id) => handoff?.waitReady(handoffId(id)) ?? false,
+  'handoff:waiting': async (_event, id, on) => agentStore?.setHandoff(handoffId(id), on === true ? 'waiting' : 'shown'),
+  'handoff:sent': async (_event, id, choice) => handoff?.sent(handoffId(id), handoffChoice(choice))
+};
 
 // Model profile switch (US-0210). Per project a tracker over the intent list; the intents open when the space is
 // first watched are its baseline and never ask (FR2.4). The renderer shows the question and answers with its harness.
@@ -1158,7 +1198,8 @@ const handlers = {
       delivery: partial?.delivery, // Releases or Continuous deployment (US-0603 FR1.1)
       modelProfiles: partial?.modelProfiles, // US-0210 FR1.5
       planningBranch: partial?.planningBranch, // the docs branch for a protected main (US-0607 FR3.3)
-      ratesPath: partial?.ratesPath // the project's rate table (US-0211 FR1.2)
+      ratesPath: partial?.ratesPath, // the project's rate table (US-0211 FR1.2)
+      handoff: partial?.handoff // the session handoff (US-0213 FR6.1), checked in settings.js
     });
     await syncFeaturesWatch(projectId);
     sendFeaturesChanged(projectId, p); // the open view reloads with the new setting
@@ -1171,12 +1212,14 @@ const handlers = {
     const { toolPaths } = await getSettings();
     const p = project(projectId);
     const root = p.root;
+    const { handoff: h } = await getProjectSettings(root); // US-0213 FR6.3: off unless turned on
+    const autoCompactWindow = h?.autoCompactWindow ? h.threshold : undefined;
     if (kind === 'agent' && !p.agentTabs.has(harness)) {
       p.agentTabs.add(harness); // BR7.15: a harness with an agent tab in this run is used
       installer?.refresh(projectId).catch((err) => console.error('[agent-hooks] status failed:', err.code ?? err.message));
     }
     return agentWiring().spawn({ projectId, root, kind, harness }, (extra) =>
-      spawnSession({ projectId, root, kind, harness, cols, rows, toolPaths, sender: event.sender, ...extra })
+      spawnSession({ projectId, root, kind, harness, cols, rows, toolPaths, sender: event.sender, autoCompactWindow, ...extra })
     );
   },
   // US-0506 u3 BR6.6, SD10: the person's input moves the tab's open reply on, in the same call, before it is written.
@@ -1208,7 +1251,7 @@ export function registerIpc() {
   planningTimer.unref?.();
   const { handlers: agentHandlers, listeners } = agentWiring();
   for (const [channel, listener] of Object.entries(listeners)) ipcMain.on(channel, listener); // timing only (OD1)
-  for (const [channel, handler] of Object.entries({ ...handlers, ...agentHandlers, ...hooksHandlers(installer) })) {
+  for (const [channel, handler] of Object.entries({ ...handlers, ...agentHandlers, ...hooksHandlers(installer), ...handoffHandlers })) {
     ipcMain.handle(channel, async (...args) => {
       try {
         return await handler(...args);

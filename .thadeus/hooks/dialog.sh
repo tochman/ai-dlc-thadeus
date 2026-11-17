@@ -13,7 +13,7 @@
 # dash exits 2 when such a redirect fails, before `|| exit 0` runs).
 exec 2>/dev/null
 d=${THADEUS_SESSION_DIR:-}; s=${THADEUS_SESSION_SECRET:-}; w=${THADEUS_WAIT_SECONDS:-}
-case ${1:-} in question | permission) waits=1 ;; answered | reply) waits=0 ;; *) exit 0 ;; esac
+case ${1:-} in question | permission) waits=1 ;; answered | reply | session | notify | precompact | postcompact) waits=0 ;; *) exit 0 ;; esac
 case $w in '' | *[!0-9]*) exit 0 ;; esac
 [ -n "$d" ] && [ -n "$s" ] && read -r last < "$d/alive" || exit 0
 # R-03: probe fractional sleep, and count it as the first of the 20 liveness sleeps, so 20 unchanged polls
@@ -29,10 +29,12 @@ trap 'exit 0' HUP INT TERM
 # would lose the bytes already read; with cat gone the pipe ends and head writes what it has.
 # fd 3 is set on brace groups, not by `exec 3<&0`: no redirect on a special builtin (u1 review R-01). The first
 # group only checks that stdin is open, before anything is written.
-if [ "$1" = reply ]; then
+# US-0213 NFR3: session (SessionStart), notify (Notification), precompact (PreCompact) and postcompact (PostCompact)
+# take the same bounded copy. precompact then prints the instruction file the app wrote into the session folder (FR4.2).
+case $1 in reply | session | notify | precompact | postcompact)
   { true; } 3<&0 || exit 0
   f=$d/events/$n.tmp
-  printf 'THADEUS-EVENT v1 reply %s\n' "$s" > "$f" || exit 0
+  printf 'THADEUS-EVENT v1 %s %s\n' "$1" "$s" > "$f" || exit 0
   {
     cat <&3 & c=$!
     ( sleep 2; kill "$c" ) </dev/null >/dev/null 3<&- & k=$!
@@ -40,8 +42,9 @@ if [ "$1" = reply ]; then
     kill "$k"
   } 3<&0 | head -c 1048577 >> "$f" || exit 0
   mv "$f" "$d/events/$n.evt" || exit 0
-  exit 0
-fi
+  if [ "$1" = precompact ] && [ -f "$d/compact.txt" ]; then cat "$d/compact.txt"; fi
+  exit 0 ;;
+esac
 # The wait marker exists before the event can be seen, so the app never writes an answer nobody waits for (RD2).
 if [ "$waits" = 1 ]; then printf '' > "$a.wait" || exit 0; fi
 { printf 'THADEUS-EVENT v1 %s %s\n' "$1" "$s" && cat; } > "$d/events/$n.tmp" || exit 0

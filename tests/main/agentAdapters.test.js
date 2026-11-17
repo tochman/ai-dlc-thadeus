@@ -175,3 +175,59 @@ describe('key sequences for a hand-back (K11, BR3.2)', () => {
     expect(adapters.claude.pickerLabel(parse('claude', 'reordered'))).toBe('SQLite');
   });
 });
+
+// US-0213 FR1.3, FR1.5, FR5.1, FR8.1: the report-only kinds. Only known fields are read; any other value is null.
+describe('handoff signals (US-0213)', () => {
+  const raw = (harness, kind, payload) => adapters[harness].parse(kind, Buffer.from(JSON.stringify(payload)));
+
+  it('claude session reads source, and only the four known sources (FR1.5)', () => {
+    expect(raw('claude', 'session', { hook_event_name: 'SessionStart', source: 'clear', model: 'x' })).toEqual({ ok: true, kind: 'session', source: 'clear' });
+    expect(raw('claude', 'session', { source: 'rm -rf' })).toEqual({ ok: true, kind: 'session', source: null });
+    expect(raw('claude', 'session', {})).toEqual({ ok: true, kind: 'session', source: null }); // absent: degrades
+  });
+
+  it('claude notify reads notification_type and never the message (FR1.3)', () => {
+    expect(raw('claude', 'notify', { notification_type: 'idle_prompt', message: 'Claude is waiting' })).toEqual({
+      ok: true,
+      kind: 'notify',
+      type: 'idle_prompt'
+    });
+    expect(raw('claude', 'notify', { notification_type: 7 })).toEqual({ ok: true, kind: 'notify', type: null });
+  });
+
+  it('claude postcompact reads trigger and never compact_summary (FR8.1)', () => {
+    const out = raw('claude', 'postcompact', { trigger: 'manual', compact_summary: 'SECRET SUMMARY' });
+    expect(out).toEqual({ ok: true, kind: 'postcompact', trigger: 'manual' });
+    expect(JSON.stringify(out)).not.toContain('SECRET');
+    expect(raw('claude', 'precompact', { trigger: 'auto', custom_instructions: '' })).toEqual({ ok: true, kind: 'precompact', trigger: 'auto' });
+  });
+
+  it('claude reply carries the transcript path and whether background tasks run (FR1.1, FR5.1)', () => {
+    const base = { last_assistant_message: 'Done.', transcript_path: '/Users/x/.claude/projects/p/s.jsonl' };
+    expect(raw('claude', 'reply', { ...base, background_tasks: [{ id: 'b1' }] }).signals).toEqual({
+      transcriptPath: base.transcript_path,
+      backgroundTasks: true
+    });
+    expect(raw('claude', 'reply', { ...base, background_tasks: [] }).signals.backgroundTasks).toBe(false);
+    expect(raw('claude', 'reply', base).signals.backgroundTasks).toBe(null); // absent: the rule behaves as before
+    expect(raw('claude', 'reply', { last_assistant_message: 'x', transcript_path: 5 }).signals.transcriptPath).toBe(null);
+  });
+
+  it('opencode session, status, usage and postcompact read V2 data or properties (FR1.2, FR1.5, FR5.1)', () => {
+    expect(raw('opencode', 'session', { type: 'session.created', data: { info: { id: 's' } } })).toEqual({ ok: true, kind: 'session', source: 'startup' });
+    expect(raw('opencode', 'status', { data: { status: { type: 'busy' } } })).toEqual({ ok: true, kind: 'status', busy: true });
+    expect(raw('opencode', 'status', { properties: { sessionID: 's' } })).toEqual({ ok: true, kind: 'status', busy: false }); // session.idle
+    const tokens = { input: 10, output: 5, cache: { read: 90_000, write: 1_000 } };
+    expect(raw('opencode', 'usage', { data: { tokens, modelID: 'claude-sonnet-4-5' } })).toEqual({
+      ok: true,
+      kind: 'usage',
+      context: { tokens: 91_010, model: 'claude-sonnet-4-5' }
+    });
+    expect(raw('opencode', 'postcompact', { data: { tokens } })).toEqual({ ok: true, kind: 'postcompact', trigger: null });
+  });
+
+  it('refuses a body that is not JSON, for every new kind of both harnesses', () => {
+    for (const kind of ['session', 'notify', 'precompact', 'postcompact']) expect(adapters.claude.parse(kind, Buffer.from('{'))).toMatchObject({ ok: false });
+    for (const kind of ['session', 'status', 'usage', 'postcompact']) expect(adapters.opencode.parse(kind, Buffer.from('{'))).toMatchObject({ ok: false });
+  });
+});

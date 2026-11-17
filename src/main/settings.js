@@ -10,6 +10,7 @@ import { HARNESSES, selectableHarness } from '../shared/harnesses.js';
 import { TOOL_IDS, isStoredPath } from './tools.js';
 import { checkModelProfiles, sanitizeModelProfiles } from './modelProfiles.js';
 import { isValidRatesPath } from './modelRates.js';
+import { HANDOFF_DEFAULTS, THRESHOLD_MAX, THRESHOLD_MIN } from './sessionHandoff.js';
 
 export { TOOL_IDS };
 
@@ -63,6 +64,28 @@ const validPushMinutes = (v) => Number.isInteger(v) && v >= 1 && v <= 120;
 /** US-0607 FR3.3: the docs branch for a protected `main`; unset means PLANNING_BRANCH_DEFAULT. */
 export { PLANNING_BRANCH_DEFAULT } from './parsers/releases.js';
 
+const HANDOFF_FLAGS = ['onThreshold', 'onStage', 'onGate', 'autoCompactWindow'];
+const validThreshold = (v) => Number.isInteger(v) && v >= THRESHOLD_MIN && v <= THRESHOLD_MAX;
+
+/** US-0213 FR6.1, FR6.3: the session handoff settings; each invalid field falls back to its default. */
+function sanitizeHandoff(raw) {
+  const r = raw && typeof raw === 'object' && !Array.isArray(raw) ? raw : {};
+  return {
+    threshold: validThreshold(r.threshold) ? r.threshold : HANDOFF_DEFAULTS.threshold,
+    ...Object.fromEntries(HANDOFF_FLAGS.map((k) => [k, typeof r[k] === 'boolean' ? r[k] : HANDOFF_DEFAULTS[k]]))
+  };
+}
+
+/** US-0213: a saved handoff change must be an object of known keys with valid values, or it is refused. */
+function checkHandoff(partial) {
+  const ok =
+    partial &&
+    typeof partial === 'object' &&
+    !Array.isArray(partial) &&
+    Object.entries(partial).every(([k, v]) => (k === 'threshold' ? validThreshold(v) : HANDOFF_FLAGS.includes(k) && typeof v === 'boolean'));
+  if (!ok) throw new Error(t('errors.invalidValue', { what: 'handoff', value: JSON.stringify(partial) ?? String(partial) }));
+}
+
 /** Per-project settings keyed by project root (EPIC-06 FR3.4); invalid values fall back to the defaults. */
 function sanitizeProject(raw) {
   const tabs = sanitizeHarnessTabs(raw?.harnessTabs);
@@ -79,7 +102,9 @@ function sanitizeProject(raw) {
     // The docs branch (US-0607 FR3.3); left out when unset or invalid, so PLANNING_BRANCH_DEFAULT applies.
     ...(isValidBranchName(raw?.planningBranch) ? { planningBranch: raw.planningBranch } : {}),
     // The project's rate table (US-0211 FR1.2); left out when unset, cleared or invalid, so the settings files decide.
-    ...(raw?.ratesPath && isValidRatesPath(raw.ratesPath) ? { ratesPath: raw.ratesPath } : {})
+    ...(raw?.ratesPath && isValidRatesPath(raw.ratesPath) ? { ratesPath: raw.ratesPath } : {}),
+    // The session handoff (US-0213 FR6.1); left out until saved, so HANDOFF_DEFAULTS apply where it is read.
+    ...(raw?.handoff !== undefined ? { handoff: sanitizeHandoff(raw.handoff) } : {})
   };
 }
 
@@ -198,12 +223,14 @@ export async function setProjectSettings(root, partial) {
   if (partial?.ratesPath !== undefined && !isValidRatesPath(partial.ratesPath)) {
     throw new Error(t('errors.invalidValue', { what: 'ratesPath', value: String(partial.ratesPath) }));
   }
+  if (partial?.handoff !== undefined) checkHandoff(partial.handoff);
   const given = Object.fromEntries(Object.entries(partial ?? {}).filter(([, v]) => v !== undefined));
   const next = await update((cur) => {
     const was = cur.projectSettings[root] ?? PROJECT_DEFAULTS;
     // US-0210: modelProfiles is merged per key, so the view's save and main's `active` never overwrite each other.
     const profiles = given.modelProfiles ? { modelProfiles: { ...was.modelProfiles, ...given.modelProfiles } } : {};
-    return { ...cur, projectSettings: { ...cur.projectSettings, [root]: { ...was, ...given, ...profiles } } };
+    const handoff = given.handoff ? { handoff: { ...was.handoff, ...given.handoff } } : {}; // US-0213: merged per key too
+    return { ...cur, projectSettings: { ...cur.projectSettings, [root]: { ...was, ...given, ...profiles, ...handoff } } };
   });
   return next.projectSettings[root];
 }

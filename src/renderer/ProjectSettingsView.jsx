@@ -9,6 +9,7 @@ import { useTerminal } from './TerminalContext.jsx';
 import AgentHooksSection from './AgentHooksSection.jsx'; // US-0506 u4
 import { DELIVERY, DELIVERY_DEFAULT, PLANNING_BRANCH_DEFAULT, isValidBranchName } from '../main/parsers/releases.js';
 import { RadioBlocks, Section } from './SettingsView.jsx';
+import { HANDOFF_DEFAULTS, THRESHOLD_MAX, THRESHOLD_MIN } from '../main/sessionHandoff.js';
 
 const errorText = (err) => String(err?.message ?? err).replace(/^Error invoking remote method '[^']+': (Error: )?/, '');
 const MODES = ['auto', 'show', 'hide'];
@@ -316,7 +317,79 @@ function AgentSection({ projectId, settings, harness, harnesses, onAddHarness, a
       <Section id="project-hooks" motion={motion} title={t('agentHooks.section.title')}>
         <AgentHooksSection projectId={projectId} focus={agentHooksFocus} />
       </Section>
+      <HandoffSection projectId={projectId} settings={settings} motion={motion} />
     </>
+  );
+}
+
+const HANDOFF_FLAGS = ['onThreshold', 'onStage', 'onGate', 'autoCompactWindow'];
+
+/** US-0213 FR6.1, FR6.3: when the session handoff page shows, per project; saved whole, so the defaults get pinned once. */
+function HandoffSection({ projectId, settings, motion }) {
+  const { t } = useTranslation();
+  const saved = { ...HANDOFF_DEFAULTS, ...settings.handoff };
+  const [form, setForm] = useState({ ...saved, threshold: String(saved.threshold) });
+  const { save, saving, status, clear } = useSectionSave(projectId);
+  const threshold = Number(form.threshold);
+  const valid = Number.isInteger(threshold) && threshold >= THRESHOLD_MIN && threshold <= THRESHOLD_MAX;
+  const reset = () => {
+    setForm({ ...saved, threshold: String(saved.threshold) });
+    clear();
+  };
+  function submit(e) {
+    e.preventDefault();
+    if (valid) save({ handoff: { threshold, ...Object.fromEntries(HANDOFF_FLAGS.map((k) => [k, form[k]])) } });
+  }
+  return (
+    <form onSubmit={submit}>
+      <Section id="project-handoff" motion={motion} title={t('settings.project.handoff.title')}>
+        <label className="field">
+          <span className="field-label">{t('settings.project.handoff.threshold')}</span>
+          <input
+            type="number"
+            className="lcars-input"
+            min={THRESHOLD_MIN}
+            max={THRESHOLD_MAX}
+            step={1000}
+            value={form.threshold}
+            onChange={(e) => setForm((f) => ({ ...f, threshold: e.target.value }))}
+            data-testid="project-settings-handoff-threshold"
+          />
+        </label>
+        {!valid && (
+          <p className="refresh-error" role="alert" data-testid="project-settings-handoff-invalid">
+            {t('settings.project.handoff.invalid', { min: THRESHOLD_MIN, max: THRESHOLD_MAX })}
+          </p>
+        )}
+        <fieldset className="settings-group">
+          {HANDOFF_FLAGS.map((k) => (
+            <label key={k} className="check">
+              <input
+                type="checkbox"
+                checked={form[k]}
+                onChange={(e) => setForm((f) => ({ ...f, [k]: e.target.checked }))}
+                data-testid={`project-settings-handoff-${k}`}
+              />
+              {t(`settings.project.handoff.${k}`)}
+            </label>
+          ))}
+        </fieldset>
+        {status && !status.ok && (
+          <p className="refresh-error" role="alert">
+            {status.text}
+          </p>
+        )}
+        <div className="settings-actions">
+          <button type="submit" className="btn btn-accent" disabled={!valid || saving} data-testid="project-settings-handoff-save">
+            {t('common.save')}
+          </button>
+          <button type="button" className="btn" onClick={reset} data-testid="project-settings-handoff-cancel">
+            {t('settings.project.reset')}
+          </button>
+          {status?.ok && <span className="muted">{t('settings.project.handoff.saved')}</span>}
+        </div>
+      </Section>
+    </form>
   );
 }
 

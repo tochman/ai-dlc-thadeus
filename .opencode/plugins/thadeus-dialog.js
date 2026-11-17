@@ -121,8 +121,11 @@ const onAnswered = (ctx, env, event) => writeEvent(env.dir, env.secret, 'answere
 // and ctx.session.context({ sessionID }) giving { session: { id, parentID? }, messages }. The NFR2.5 manual run
 // confirms them or replaces them with the recorded payloads.
 const codeOf = (err) => err?.code ?? err?.name ?? 'unknown';
+/** US-0213: a V2 event is { id, created, type, data }; the older shape is { type, properties }. Read both, defensively. */
+const dataOf = (event) => event?.data ?? event?.properties ?? null;
+
 function onIdle(ctx, env, event) {
-  const props = event?.properties;
+  const props = dataOf(event);
   if (props?.status?.type !== 'idle') return Promise.resolve();
   return new Promise((resolve) => resolve(ctx.session.context({ sessionID: props.sessionID })))
     .catch((err) => {
@@ -135,6 +138,56 @@ function onIdle(ctx, env, event) {
       });
     })
     .catch((err) => ctx.log?.error?.(`thadeus-dialog: ${err.message}: ${err.step}`));
+}
+
+// US-0213 FR1.2, FR1.5, FR4.2, FR5.1, FR8.1: opencode V2 names, each in one place (checked against opencode 2.1.4's docs).
+export const OC = {
+  created: 'session.created', // FR1.5: a new session; a child session has parentID
+  status: 'session.status', // FR5.1: status.type idle | busy | retry
+  idle: 'session.idle', // FR5.1 fallback when session.status is not sent
+  usage: 'session.usage.updated', // FR1.2: { tokens: { input, output, reasoning, cache: { read, write } }, cost }
+  compacted: 'session.compaction.ended', // FR8.1: compaction happened
+  compactionHook: 'compaction' // FR4.2: ctx.session.hook(name, fn), V1 experimental.session.compacting
+};
+
+/** A report-only event: written in its own task, never awaited by opencode; a failure logs its code only (NFR3). */
+function report(ctx, env, kind, event) {
+  writeEvent(env.dir, env.secret, kind, event, filesOf(env.dir, nextName())).catch((err) =>
+    ctx.log?.error?.(`thadeus-dialog: ${kind} write failed: ${codeOf(err)}`)
+  );
+}
+
+/** FR4.2: the compact instruction the app wrote into the session folder, as one more system part. Never sets a result. */
+async function addCompactInstruction(env, event) {
+  const text = await fs.readFile(path.join(env.dir, 'compact.txt'), 'utf8').catch(() => '');
+  if (text && Array.isArray(event?.system)) event.system.push(text);
+}
+
+function subscribeHandoff(ctx, env, on) {
+  let statusSeen = false;
+  on(OC.created, (event) => {
+    const d = dataOf(event);
+    if (!(d?.info?.parentID ?? d?.parentID)) report(ctx, env, 'session', event); // the main chat only
+  });
+  on(OC.usage, (event) => report(ctx, env, 'usage', event));
+  on(OC.compacted, (event) => report(ctx, env, 'postcompact', event));
+  on(OC.idle, (event) => {
+    if (!statusSeen) report(ctx, env, 'status', event);
+  });
+  on(OC.status, (event) => {
+    statusSeen = true;
+    const type = dataOf(event)?.status?.type;
+    if (type === 'idle') return onIdle(ctx, env, event); // u3: the reply is the idle signal
+    report(ctx, env, 'status', event); // busy, retry or unknown: not idle
+    return undefined;
+  });
+  if (typeof ctx.session?.hook === 'function') {
+    try {
+      ctx.session.hook(OC.compactionHook, (event) => addCompactInstruction(env, event).catch(() => {}));
+    } catch (err) {
+      ctx.log?.error?.(`thadeus-dialog: compaction hook failed: ${codeOf(err)}`);
+    }
+  }
 }
 
 export default {
@@ -160,6 +213,6 @@ export default {
       if (typeof id === 'string') env.replied.add(id);
       return onAnswered(ctx, env, event);
     });
-    on('session.status', (event) => onIdle(ctx, env, event)); // u3
+    subscribeHandoff(ctx, env, on); // u3 idle replies and US-0213 reports
   }
 };

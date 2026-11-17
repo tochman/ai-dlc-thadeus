@@ -850,6 +850,16 @@
       "ratesPathLabel": "Rate table (optional)",
       "ratesPathHelp": "A model-rates.json of the project's own. Empty: the AI-DLC setting, then the app table.",
       "ratesPathInvalid": "The path must be relative to the project, end in .json and not contain ..",
+      "handoff": {
+        "title": "Fresh session or compaction",
+        "threshold": "Ask when the context passes (tokens)",
+        "invalid": "Enter a whole number from {min} to {max}.",
+        "onThreshold": "Ask when the context passes the threshold",
+        "onStage": "Ask when a stage is done",
+        "onGate": "Ask when AI-DLC waits at a gate",
+        "autoCompactWindow": "Let Claude Code compact by itself at the threshold (CLAUDE_CODE_AUTO_COMPACT_WINDOW, for new agent tabs)",
+        "saved": "Saved."
+      },
       "noDocs": "The project has no feature docs yet.",
       "harnessLabel": "Agent terminal",
       "tabsLegend": "Agent tabs",
@@ -1396,6 +1406,31 @@
     "position": "{i} of {n}",
     "previous": "Previous",
     "next": "Next",
+    "handoff": {
+      "title": {
+        "threshold": "The context has grown large",
+        "stage": "A stage is done",
+        "gate": "AI-DLC waits at a gate",
+        "newSession": "A new session"
+      },
+      "size": "Context: {tokens} tokens",
+      "cost": "One turn at this size: about {usd} (API-price estimate)",
+      "priceMissing": "price missing",
+      "choice": {
+        "compact": "Compact",
+        "fresh": "Fresh session",
+        "notNow": "Not now",
+        "clear": "/clear",
+        "clearResume": "/clear + /aidlc --resume"
+      },
+      "gateNote": "AI-DLC shows the gate again in the new session.",
+      "waiting": "Waiting until the agent is idle…",
+      "failed": {
+        "notReady": "The new session did not start. Type /aidlc --resume in the terminal.",
+        "notIdle": "The agent never went idle. Nothing was sent.",
+        "noCommands": "This tool has no commands for this."
+      }
+    },
     "errors": {
       "unknownEvent": "The question no longer exists.",
       "eventNotOpen": "The question is no longer open.",

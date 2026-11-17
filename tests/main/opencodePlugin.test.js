@@ -308,3 +308,93 @@ describe('opencode plugin: permissions', () => {
     vi.restoreAllMocks();
   });
 });
+
+// US-0213 FR1.2, FR1.5, FR4.2, FR5.1, FR8.1: the plugin's report-only events. V2 envelope { type, data }, with the
+// older { properties } still read. Every handler returns at once and never throws to opencode.
+describe('opencode plugin: session handoff reports (US-0213)', () => {
+  const evts = () => files('events').filter((f) => f.endsWith('.evt'));
+  const read = (f) => {
+    const s = readFileSync(path.join(dir, 'events', f), 'utf8');
+    return { kind: s.split('\n')[0].split(' ')[2], body: JSON.parse(s.slice(s.indexOf('\n') + 1)) };
+  };
+  const fire = (type, data, envelope = 'data') => handlers[type]({ id: 'e1', type, [envelope]: data });
+  const USAGE = { input: 10, output: 5, reasoning: 0, cache: { read: 90_000, write: 1_000 }, cost: 0.1 };
+
+  it('session.created reports the main chat as kind session, and a child session (parentID) not at all (FR1.5)', async () => {
+    await load();
+    expect(fire('session.created', { info: { id: 'ses_child', parentID: 'ses_main' } })).toBeUndefined();
+    await sleep(100);
+    expect(evts()).toEqual([]);
+    fire('session.created', { info: { id: 'ses_main' } });
+    const [f] = await waitFor(() => evts().length === 1 && evts());
+    expect(read(f)).toEqual({ kind: 'session', body: { id: 'e1', type: 'session.created', data: { info: { id: 'ses_main' } } } });
+  });
+
+  it('session.usage.updated reports kind usage with the token object, from data or properties (FR1.2)', async () => {
+    await load();
+    fire('session.usage.updated', { sessionID: 'ses_main', tokens: USAGE }, 'properties');
+    const [f] = await waitFor(() => evts().length === 1 && evts());
+    expect(read(f).kind).toBe('usage');
+    expect(read(f).body.properties.tokens).toEqual(USAGE);
+  });
+
+  it('session.compaction.ended reports kind postcompact (FR8.1)', async () => {
+    await load();
+    fire('session.compaction.ended', { sessionID: 'ses_main', tokens: USAGE });
+    const [f] = await waitFor(() => evts().length === 1 && evts());
+    expect(read(f).kind).toBe('postcompact');
+  });
+
+  it.each(['busy', 'retry'])('a %s session.status reports kind status (FR5.1)', async (type) => {
+    await load({ reply: vi.fn() });
+    fire('session.status', { sessionID: 'ses_main', status: { type } });
+    const [f] = await waitFor(() => evts().length === 1 && evts());
+    expect(read(f).kind).toBe('status');
+  });
+
+  it('session.idle reports kind status only while no session.status has been seen (FR5.1 fallback)', async () => {
+    await load();
+    fire('session.idle', { sessionID: 'ses_main' });
+    const [f] = await waitFor(() => evts().length === 1 && evts());
+    expect(read(f).kind).toBe('status');
+    fire('session.status', { sessionID: 'ses_main', status: { type: 'busy' } });
+    await waitFor(() => evts().length === 2);
+    fire('session.idle', { sessionID: 'ses_main' });
+    await sleep(100);
+    expect(evts()).toHaveLength(2);
+  });
+
+  it('the compaction hook adds the instruction the app wrote as a system part, never a result; nothing without the file (FR4.2)', async () => {
+    const hook = vi.fn();
+    await load();
+    vi.resetModules();
+    ctx.session.hook = hook;
+    const plugin = (await import('../../.opencode/plugins/thadeus-dialog.js')).default;
+    await plugin.setup(ctx);
+    expect(hook).toHaveBeenCalledWith('compaction', expect.any(Function));
+    const fn = hook.mock.calls[0][1];
+    const none = { system: [] };
+    await fn(none);
+    expect(none).toEqual({ system: [] });
+    writeFileSync(path.join(dir, 'compact.txt'), 'Keep intent 261117.');
+    const event = { system: [] };
+    await fn(event);
+    expect(event.system).toEqual(['Keep intent 261117.']);
+    expect('result' in event).toBe(false);
+    await expect(fn(undefined)).resolves.toBeUndefined();
+  });
+
+  it('without ctx.session.hook, setup still subscribes and never throws', async () => {
+    await load();
+    expect(ctx.session.hook).toBeUndefined();
+    expect(Object.keys(handlers)).toEqual(expect.arrayContaining(['session.created', 'session.usage.updated', 'session.compaction.ended', 'session.idle']));
+  });
+
+  it('a failed write never reaches opencode: the handler returns undefined and logs the code only', async () => {
+    await load();
+    rmSync(path.join(dir, 'events'), { recursive: true });
+    expect(fire('session.created', { info: { id: 'ses_main' } })).toBeUndefined();
+    await sleep(100);
+    expect(ctx.log.error.mock.calls.flat().join(' ')).not.toContain(SECRET);
+  });
+});

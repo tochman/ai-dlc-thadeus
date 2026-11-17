@@ -51,11 +51,15 @@ export function childEnv(base, extra = {}) {
   return { ...env, TERM: 'xterm-256color', COLORTERM: 'truecolor', ...extra };
 }
 
+/** US-0213 FR6.3: Claude Code compacts by itself at the handoff threshold, only when the person turned it on. */
+const compactEnv = (harness, tokens) =>
+  harness === 'claude' && Number.isInteger(tokens) && tokens > 0 ? { CLAUDE_CODE_AUTO_COMPACT_WINDOW: String(tokens) } : {};
+
 /**
  * @param {object} options `env` holds the agent channel variables (US-0506 u1, agent tabs only); `onExit` is called
  *   with { id, exitCode, signal } when the process exits (RD5)
  */
-export async function spawnSession({ projectId, root, kind, harness, cols, rows, toolPaths: paths, sender, env, onExit }) {
+export async function spawnSession({ projectId, root, kind, harness, cols, rows, toolPaths: paths, sender, env, onExit, autoCompactWindow }) {
   if (paths) setToolPaths(paths); // the saved paths at spawn time, so the two tabs use them (US-0405 FR2.4)
   const args = shellArgs(kind, harness); // validate before loading the native module
   const { spawn: spawnPty } = await loadPty();
@@ -65,7 +69,7 @@ export async function spawnSession({ projectId, root, kind, harness, cols, rows,
     cols: clampSize(cols, 100),
     rows: clampSize(rows, 30),
     cwd: root,
-    env: childEnv(process.env, kind === 'agent' ? env : undefined) // a shell tab never gets the channel (SD2)
+    env: childEnv(process.env, kind === 'agent' ? { ...env, ...compactEnv(harness, autoCompactWindow) } : undefined) // a shell tab never gets the channel (SD2)
   });
   const id = randomUUID();
   const taps = new Set();

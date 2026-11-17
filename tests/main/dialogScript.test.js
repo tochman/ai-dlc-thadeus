@@ -418,3 +418,49 @@ describe.each(SHELLS)('permission argument under %s', (shell) => {
     stop();
   });
 });
+
+// US-0213 FR1.3, FR1.5, FR4.2, NFR3: the SessionStart, Notification and PreCompact kinds never wait.
+describe.each(SHELLS)('session, notify, precompact and postcompact under %s (US-0213)', (shell) => {
+  it.each(['session', 'notify', 'precompact', 'postcompact'])('%s writes its event byte for byte, leaves no marker and exits at once', async (kind) => {
+    const dir = session();
+    const payload = `{"source":"clear","notification_type":"idle_prompt","x":"$(touch marker)"}`;
+    const r = await run(shell, [SCRIPT, kind], { env: envFor(dir), input: payload, cwd: dir }).done;
+    quiet(r);
+    expect(r.ms).toBeLessThan(500);
+    const [evt] = files(dir, 'events');
+    expect(readFileSync(path.join(dir, 'events', evt), 'utf8')).toBe(`THADEUS-EVENT v1 ${kind} ${SECRET}\n${payload}`);
+    expect(files(dir, 'answers')).toEqual([]);
+    expect(existsSync(path.join(dir, 'marker'))).toBe(false);
+  });
+
+  it('precompact prints the instruction the app wrote, and nothing when there is none (FR4.2)', async () => {
+    const dir = session();
+    const none = await run(shell, [SCRIPT, 'precompact'], { env: envFor(dir) }).done;
+    quiet(none);
+    expect(none.stdout.length).toBe(0);
+    writeFileSync(path.join(dir, 'compact.txt'), 'Keep intent 261117, stage code-generation.\n');
+    const r = await run(shell, [SCRIPT, 'precompact'], { env: envFor(dir) }).done;
+    quiet(r);
+    expect(r.stdout.toString('utf8')).toBe('Keep intent 261117, stage code-generation.\n');
+  });
+
+  it('without a session folder every new kind exits 0, silent, writing nothing (NFR3)', async () => {
+    for (const kind of ['session', 'notify', 'precompact', 'postcompact']) {
+      const r = await run(shell, [SCRIPT, kind], { env: envFor(path.join(TMP, 'no-such-folder')) }).done;
+      quiet(r);
+      expect(r.stdout.length).toBe(0);
+      expect(r.ms).toBeLessThan(300);
+    }
+  });
+
+  timed('a stdin that never closes still returns within 2.5 s (NFR3)', async () => {
+    const dir = session();
+    const child = spawn(shell, [SCRIPT, 'notify'], { env: envFor(dir) });
+    const started = Date.now();
+    child.stdin.write('{"notification_type":"idle_prompt"}');
+    const code = await new Promise((resolve) => child.on('close', resolve));
+    expect(code).toBe(0);
+    expect(Date.now() - started).toBeLessThan(2500);
+    child.stdin.destroy();
+  });
+});
