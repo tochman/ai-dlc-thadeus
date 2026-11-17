@@ -81,10 +81,11 @@ import { auditContext, auditEvent } from './questions.js';
 import { AIDLC_DOCS_URL, applyMenu, parseMenuState, setMenuState } from './menu.js';
 import { currentLanguage, setLanguageFromSettings } from './i18n.js';
 import { t } from '../shared/i18n.js';
+import { APP_REPO_URL } from '../shared/appName.js';
 
 const OPEN_IN_EDITOR_EXT = new Set(['.md', '.json', '.txt', '.yaml', '.yml']);
 // The Om section's links, by a fixed key: the renderer never names a URL (NFR1, US-0405 FR5.1).
-const REPO_URL = 'https://github.com/tochman/aidlc-dash';
+const REPO_URL = APP_REPO_URL; // US-0027
 const EXTERNAL_URLS = {
   repo: REPO_URL,
   features: `${REPO_URL}/tree/main/docs/features`,

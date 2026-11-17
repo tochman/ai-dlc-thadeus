@@ -18,7 +18,7 @@ const changes = {
 };
 
 // US-1201: the platform of origin and the collision warning (team:platform, team:collisions).
-const github = { id: 'github', name: 'GitHub', host: 'github.com', path: 'tochman/aidlc-dash' };
+const github = { id: 'github', name: 'GitHub', host: 'github.com', path: 'tochman/ai-dlc-thadeus' };
 const collisions = { isRepo: true, branch: 'feature/x', base: 'origin/main', behind: 2, error: null, collisions: [] };
 
 beforeEach(() => {

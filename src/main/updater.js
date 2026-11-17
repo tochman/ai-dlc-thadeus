@@ -1,7 +1,7 @@
 // Updating the app from a GitHub release (EPIC-04 US-0407, US-0413). The repository is public, so the release is
 // read from GitHub's REST API and downloaded from its own URLs with Node's fetch, no token (US-0413 FR1, FR2).
 // When that fails, the person's own `gh` CLI is tried once (fixed arguments, execFile without a shell; FR5).
-// Only `tochman/aidlc-dash` release assets are fetched, checked before download (NFR3). Nothing downloaded runs
+// Only this repository's (APP_REPO, US-0027) release assets are fetched, checked before download (NFR3). Nothing downloaded runs
 // except through the platform's installer step. A check never blocks the app (NFR5).
 // ponytail: Node's fetch ignores the system proxy; behind one the gh fallback carries the update (Electron net.fetch if it matters).
 import { createHash } from 'node:crypto';
@@ -10,9 +10,10 @@ import path from 'node:path';
 import { defaultExec, runFixed } from './exec.js';
 import { UPDATE_DEFAULTS } from './settings.js';
 import { toolPath } from './tools.js';
+import { APP_REPO } from '../shared/appName.js';
 import { t } from '../shared/i18n.js';
 
-export const REPO = 'tochman/aidlc-dash';
+export const REPO = APP_REPO;
 const DAY_MS = 24 * 60 * 60 * 1000;
 const VIEW_TIMEOUT_MS = 20000;
 const DOWNLOAD_TIMEOUT_MS = 30 * 60 * 1000;

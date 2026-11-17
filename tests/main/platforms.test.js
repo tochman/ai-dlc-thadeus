@@ -39,13 +39,13 @@ afterEach(() => vi.unstubAllGlobals());
 
 describe('detectPlatform (US-1201 AC-1)', () => {
   it('knows GitHub, GitLab and Bitbucket from https and ssh addresses', () => {
-    expect(detectPlatform('https://github.com/tochman/aidlc-dash.git')).toEqual({
+    expect(detectPlatform('https://github.com/tochman/ai-dlc-thadeus.git')).toEqual({
       id: 'github',
       name: 'GitHub',
       host: 'github.com',
-      path: 'tochman/aidlc-dash'
+      path: 'tochman/ai-dlc-thadeus'
     });
-    expect(detectPlatform('git@github.com:tochman/aidlc-dash.git')).toMatchObject({ id: 'github', path: 'tochman/aidlc-dash' });
+    expect(detectPlatform('git@github.com:tochman/ai-dlc-thadeus.git')).toMatchObject({ id: 'github', path: 'tochman/ai-dlc-thadeus' });
     expect(detectPlatform('https://gitlab.com/team/apps/dash')).toMatchObject({ id: 'gitlab', host: 'gitlab.com', path: 'team/apps/dash' });
     expect(detectPlatform('git@gitlab.com:team/dash.git')).toMatchObject({ id: 'gitlab', path: 'team/dash' });
     expect(detectPlatform('https://thomas@bitbucket.org/team/dash.git')).toEqual({
@@ -75,14 +75,14 @@ describe('detectPlatform (US-1201 AC-1)', () => {
 describe('listPulls, listComments, listReviews (US-1201 AC-1)', () => {
   it('reads GitHub through gh api into the common shape, with the 15 s limit', async () => {
     const { exec, calls } = cliExec('gh', fixture('github'));
-    const github = detectPlatform('git@github.com:tochman/aidlc-dash.git');
+    const github = detectPlatform('git@github.com:tochman/ai-dlc-thadeus.git');
     const [pull] = await listPulls(github, { exec });
     expect(pull).toEqual({
       number: 58,
       title: "feat(US-0209): an intent's cost counts every machine",
       branch: 'feat/US-0209',
       author: 'tochman',
-      url: 'https://github.com/tochman/aidlc-dash/pull/58',
+      url: 'https://github.com/tochman/ai-dlc-thadeus/pull/58',
       files: FILES
     });
     expect(await listComments(github, 58, { exec })).toEqual([
@@ -90,11 +90,17 @@ describe('listPulls, listComments, listReviews (US-1201 AC-1)', () => {
         author: 'anna',
         body: 'Looks good, one question on the snapshot.',
         time: '2026-11-15T11:00:00Z',
-        url: 'https://github.com/tochman/aidlc-dash/pull/58#issuecomment-1'
+        url: 'https://github.com/tochman/ai-dlc-thadeus/pull/58#issuecomment-1'
       }
     ]);
     expect(await listReviews(github, 58, { exec })).toEqual([
-      { author: 'anna', state: 'approved', time: '2026-11-15T12:00:00Z', body: '', url: 'https://github.com/tochman/aidlc-dash/pull/58#pullrequestreview-2' }
+      {
+        author: 'anna',
+        state: 'approved',
+        time: '2026-11-15T12:00:00Z',
+        body: '',
+        url: 'https://github.com/tochman/ai-dlc-thadeus/pull/58#pullrequestreview-2'
+      }
     ]);
     expect(calls.every((c) => c.args[0] === 'api' && c.opts.timeout === PLATFORM_TIMEOUT_MS && c.opts.shell === undefined)).toBe(true);
     expect(PLATFORM_TIMEOUT_MS).toBe(15000);
@@ -145,7 +151,7 @@ describe('listPulls, listComments, listReviews (US-1201 AC-1)', () => {
   });
 
   it('names the platform and what went wrong: a missing CLI, a missing login, a timeout, missing credentials', async () => {
-    const github = detectPlatform('https://github.com/tochman/aidlc-dash');
+    const github = detectPlatform('https://github.com/tochman/ai-dlc-thadeus');
     const failing = (err) => async (file) => {
       if (file !== 'gh') return '__AIDLC_DASH_PATH__/usr/bin';
       throw err;
@@ -179,7 +185,7 @@ describe('listPulls, listComments, listReviews (US-1201 AC-1)', () => {
 
   it('refuses a pull request number that is not a positive whole number before anything runs', async () => {
     const { exec, calls } = cliExec('gh', fixture('github'));
-    const github = detectPlatform('https://github.com/tochman/aidlc-dash');
+    const github = detectPlatform('https://github.com/tochman/ai-dlc-thadeus');
     await expect(listComments(github, '58;rm', { exec })).rejects.toThrow();
     await expect(listReviews(github, -1, { exec })).rejects.toThrow();
     await expect(listPulls(null, { exec })).rejects.toMatchObject({ code: 'unknown-platform' });

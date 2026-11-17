@@ -27,7 +27,9 @@ describe('app name (EPIC-04 US-0406)', () => {
       APP_FULL_NAME: 'Transformative Human-AI Development Environment for Ubiquitous Systems',
       APP_TAGLINE: 'AI-driven software development, under human direction.',
       APP_SHORT: 'THADEUS',
-      APP_VENDOR: 'Auctum'
+      APP_VENDOR: 'Auctum',
+      APP_REPO: 'tochman/ai-dlc-thadeus',
+      APP_REPO_URL: 'https://github.com/tochman/ai-dlc-thadeus'
     });
   });
 
@@ -42,5 +44,17 @@ describe('app name (EPIC-04 US-0406)', () => {
   it('keeps userData in aidlc-dash so settings survive the rename (FR4.1)', () => {
     const main = readFileSync(path.join(SRC, 'main/index.js'), 'utf8');
     expect(main).toContain("app.setPath('userData', join(app.getPath('appData'), 'aidlc-dash'));");
+  });
+
+  // US-0027: the repository was renamed from tochman/aidlc-dash to tochman/ai-dlc-thadeus on 2026-11-17.
+  it('uses the repository name from appName.js everywhere, with no old address left (US-0027)', () => {
+    const OLD_REPO = 'tochman/' + 'aidlc-dash';
+    const ROOT = path.resolve(__dirname, '../..');
+    const files = [...sourceFiles(SRC), path.join(ROOT, 'package.json'), path.join(ROOT, 'README.md')];
+    const offending = files.filter((f) => readFileSync(f, 'utf8').includes(OLD_REPO));
+    expect(offending.map((f) => path.relative(ROOT, f))).toEqual([]);
+    for (const f of ['main/updater.js', 'main/menu.js', 'main/ipc.js']) {
+      expect(readFileSync(path.join(SRC, f), 'utf8')).not.toMatch(/github\.com\/tochman\//);
+    }
   });
 });

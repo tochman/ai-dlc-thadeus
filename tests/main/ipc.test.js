@@ -124,7 +124,7 @@ const m = vi.hoisted(() => {
       currentLanguage: vi.fn(() => 'sv'),
       setLanguageFromSettings: vi.fn(() => 'sv'),
       // US-1201: git's new read-only calls, the platforms, the Bitbucket credentials and the shard reads.
-      originUrl: vi.fn(async () => 'git@github.com:tochman/aidlc-dash.git'),
+      originUrl: vi.fn(async () => 'git@github.com:tochman/ai-dlc-thadeus.git'),
       behindCount: vi.fn(async () => 3),
       changedFiles: vi.fn(async () => ['src/a.js']),
       predictConflicts: vi.fn(async () => ['src/a.js']),
@@ -781,7 +781,7 @@ describe('files, shell and git', () => {
 describe('team collaboration (US-1201 AC-1–AC-4)', () => {
   it("team:platform names the origin remote's platform, and null for an unknown host", async () => {
     const { projectId } = await openProject('/work/team-platform');
-    expect(await call('team:platform', {}, projectId)).toEqual({ id: 'github', name: 'GitHub', host: 'github.com', path: 'tochman/aidlc-dash' });
+    expect(await call('team:platform', {}, projectId)).toEqual({ id: 'github', name: 'GitHub', host: 'github.com', path: 'tochman/ai-dlc-thadeus' });
     svc.originUrl.mockResolvedValueOnce('https://code.example.com/x/y.git');
     const other = await openProject('/work/team-unknown');
     expect(await call('team:platform', {}, other.projectId)).toBeNull();
@@ -937,7 +937,7 @@ describe('setup, settings and tools', () => {
   it('gives app info and opens only the fixed external addresses', async () => {
     expect(await call('app:info', {})).toEqual({ version: '9.9.9', aidlc: { id: 'aidlc', path: '/bin/aidlc' } });
     await call('app:openExternal', {}, 'repo');
-    expect(electron.shell.openExternal).toHaveBeenLastCalledWith('https://github.com/tochman/aidlc-dash');
+    expect(electron.shell.openExternal).toHaveBeenLastCalledWith('https://github.com/tochman/ai-dlc-thadeus');
     await expect(call('app:openExternal', {}, 'https://evil.example')).rejects.toThrow();
     await expect(call('app:openExternal', {}, 'toString')).rejects.toThrow();
     await call('app:openDocsUrl', {});
