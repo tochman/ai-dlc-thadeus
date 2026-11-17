@@ -9,6 +9,7 @@
 // `permissionAnswer` builds the hook output (Claude Code) or the decision word (opencode) for one choice.
 import { cleanLine, visibleText } from '../shared/agentText.js';
 import { t } from '../shared/i18n.js';
+import { opencodeContext } from './contextSize.js';
 
 export const MAX_TEXT_BYTES = 65_536;
 /** SD12: the fixed reason Claude Code gets with a deny; never agent text. */
@@ -202,12 +203,47 @@ const effectOf = (event, i) => event.permission.choices[i].effect;
 const message = (text) => ({ ...cutUtf8(text), empty: text.trim() === '' });
 const NO_MESSAGE = { ok: false, reason: 'no last message' };
 
-/** US-0506 u3 SD12, PD13: Claude Code's Stop stdin. Only last_assistant_message is read; transcript_path never is. */
+/**
+ * US-0506 u3 SD12, PD13: Claude Code's Stop stdin. The adapter reads no file. US-0213 FR1.1, FR5.1: it passes on the
+ * transcript path (main reads the context size from it) and whether `background_tasks` is non-empty (null when absent).
+ */
 function claudeReply(body) {
   const payload = parseJson(body);
   if (payload === undefined) return { ok: false, reason: 'not JSON' };
   const text = payload?.last_assistant_message;
-  return typeof text === 'string' ? { ok: true, kind: 'reply', message: message(text) } : NO_MESSAGE;
+  if (typeof text !== 'string') return NO_MESSAGE;
+  const tasks = payload.background_tasks;
+  const signals = {
+    transcriptPath: isText(payload.transcript_path) ? payload.transcript_path : null,
+    backgroundTasks: Array.isArray(tasks) ? tasks.length > 0 : null
+  };
+  return { ok: true, kind: 'reply', message: message(text), signals };
+}
+
+// --- Handoff signals (US-0213) ---------------------------------------------------------------------------------------
+const SOURCES = new Set(['startup', 'resume', 'clear', 'compact']);
+const TRIGGERS = new Set(['manual', 'auto']);
+const MAX_SIGNAL = 64; // a notification type longer than this is not one Claude Code sends
+const known = (v, set) => (set.has(v) ? v : null);
+
+/** US-0213 FR1.3, FR1.5, FR4.2, FR8.1: SessionStart, Notification, PreCompact, PostCompact. Never the message or summary. */
+function claudeSignal(kind, body) {
+  const p = parseJson(body);
+  if (p === undefined || !isObject(p)) return { ok: false, reason: 'not JSON' };
+  if (kind === 'session') return { ok: true, kind, source: known(p.source, SOURCES) };
+  if (kind === 'notify') return { ok: true, kind, type: isText(p.notification_type) && p.notification_type.length <= MAX_SIGNAL ? p.notification_type : null };
+  return { ok: true, kind, trigger: known(p.trigger, TRIGGERS) };
+}
+
+/** US-0213: the opencode plugin's V2 envelope { type, data } or the older { properties }. */
+function opencodeSignal(kind, body) {
+  const p = parseJson(body);
+  if (p === undefined || !isObject(p)) return { ok: false, reason: 'not JSON' };
+  const d = isObject(p.data) ? p.data : isObject(p.properties) ? p.properties : {};
+  if (kind === 'session') return { ok: true, kind, source: 'startup' }; // the plugin reports main sessions only
+  if (kind === 'status') return { ok: true, kind, busy: isObject(d.status) && d.status.type !== 'idle' };
+  if (kind === 'usage') return { ok: true, kind, context: opencodeContext(d) };
+  return { ok: true, kind: 'postcompact', trigger: null };
 }
 
 /**
@@ -227,10 +263,16 @@ function opencodeReply(body) {
   return { ok: true, kind: 'reply', message: message(text) };
 }
 
+/** US-0213: the report-only kinds; they never open a dialog page (agentEvents keeps them as session signals). */
+export const SIGNAL_KINDS = new Set(['session', 'notify', 'precompact', 'postcompact', 'status', 'usage']);
+const CLAUDE_SIGNALS = new Set(['session', 'notify', 'precompact', 'postcompact']);
+const OPENCODE_SIGNALS = new Set(['session', 'status', 'usage', 'postcompact']);
+
 const claude = {
   /** Claude Code hook stdin: PreToolUse (kind question) or PostToolUse (kind answered) for AskUserQuestion. */
   parse(kind, body) {
     if (kind === 'reply') return claudeReply(body);
+    if (CLAUDE_SIGNALS.has(kind)) return claudeSignal(kind, body);
     if (kind === 'answered') return { ok: true, kind, toolCallId: parseJson(body)?.tool_use_id ?? null };
     if (kind === 'permission') return parseClaudePermission(body);
     if (kind !== 'question') return null; // unknown kinds are ignored (C1 ownership rules)
@@ -285,6 +327,7 @@ const opencode = {
     }
     if (kind === 'permission') return parseOpencodePermission(body);
     if (kind === 'reply') return opencodeReply(body);
+    if (OPENCODE_SIGNALS.has(kind)) return opencodeSignal(kind, body);
     if (kind !== 'question') return null;
     const payload = parseJson(body);
     if (payload === undefined) return { ok: false, reason: 'not JSON' };

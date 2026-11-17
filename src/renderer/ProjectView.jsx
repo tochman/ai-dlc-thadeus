@@ -274,6 +274,13 @@ function ProjectContent({
       );
       return;
     }
+    // US-0213 FR3.2: a handoff choice, typed into the event's agent tab once main says it is idle.
+    if (terminalCommand.action === 'handoff') {
+      terminal
+        .sendHandoff(terminalCommand.event, terminalCommand.choice, { onWaiting: terminalCommand.onWaiting })
+        .then(terminalCommand.reply, (err) => terminalCommand.reply?.({ ok: false, reason: err.message }));
+      return;
+    }
     // An AI-DLC update from Settings › Tools: typed into the shell tab for the person's Enter (US-0504 FR1.3, FR2.3).
     if (terminalCommand.action === 'type') {
       terminal.show('shell');

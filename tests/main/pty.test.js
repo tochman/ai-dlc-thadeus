@@ -149,6 +149,19 @@ describe('agent channel variables, exit and output tap (US-0506 u1 LC5: SD2, RD5
     pty.killAllSessions();
   });
 
+  it('claude starts with CLAUDE_CODE_AUTO_COMPACT_WINDOW only when the handoff asks for it (US-0213 FR6.3)', async () => {
+    delete process.env.CLAUDE_CODE_AUTO_COMPACT_WINDOW;
+    const working = livePty();
+    vi.doMock('node-pty', () => working);
+    const pty = await import('../../src/main/pty.js');
+    await pty.spawnSession({ ...spawnArgs, kind: 'agent', harness: 'claude', autoCompactWindow: 150_000 });
+    await pty.spawnSession({ ...spawnArgs, kind: 'agent', harness: 'claude' });
+    await pty.spawnSession({ ...spawnArgs, kind: 'agent', harness: 'opencode', autoCompactWindow: 150_000 });
+    await pty.spawnSession({ ...spawnArgs, kind: 'shell', autoCompactWindow: 150_000 });
+    expect(working.procs.map((p) => p.options.env.CLAUDE_CODE_AUTO_COMPACT_WINDOW)).toEqual(['150000', undefined, undefined, undefined]);
+    pty.killAllSessions();
+  });
+
   it('childEnv is pure: it drops THADEUS_* from the base and adds only the given keys', async () => {
     const { childEnv } = await import('../../src/main/pty.js');
     const base = { PATH: '/bin', THADEUS_TIMING: '1', THADEUS_X: 'y' };

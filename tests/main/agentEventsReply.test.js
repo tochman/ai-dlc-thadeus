@@ -195,11 +195,21 @@ describe('refused replies (RD11)', () => {
     expect(replies()).toEqual([]);
   });
 
-  it('an empty message is not a refusal: it is a reply with empty set', () => {
+  // US-0026 FR7.1: the empty page. A turn with no text (a new session's first Stop, an opencode idle with only tool
+  // parts) used to become a shown reply with nothing in it and no choices, and opened the dialog on it.
+  it.each([
+    ['empty', ''],
+    ['whitespace', ' \n\t '],
+    ['invisible only', '​‮']
+  ])('a %s message opens no page and adds nothing; an older shown reply moves on (US-0026 FR7.1)', (_name, text) => {
     start();
-    reply('s1', '');
-    expect(only()).toMatchObject({ state: 'shown', message: { empty: true } });
-    expect(store.latest('p1').status).toBe('waiting');
+    reply('s1', TEXT);
+    added.length = 0;
+    reply('s1', text);
+    expect(replies().filter((e) => e.state === 'shown')).toEqual([]);
+    expect(only()).toMatchObject({ message: { text: TEXT }, state: 'stale', staleReason: 'movedOn' });
+    expect(added).toEqual([]);
+    expect(store.latest('p1').text).toBe(TEXT);
   });
 });
 

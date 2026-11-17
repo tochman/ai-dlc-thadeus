@@ -17,7 +17,9 @@ import { t } from '../shared/i18n.js';
 export const FILES = { settings: '.claude/settings.json', script: '.thadeus/hooks/dialog.sh', plugin: '.opencode/plugins/thadeus-dialog.js' };
 export const HARNESS_FILES = { claude: ['settings', 'script'], opencode: ['plugin'] };
 export const ACTIONS = ['install', 'update', 'remove'];
-export const KINDS = ['question', 'answered', 'permission', 'reply'];
+// US-0213 FR1.3, FR1.5, FR4.2, FR8.1: session (SessionStart), notify (Notification), precompact (PreCompact) and
+// postcompact (PostCompact) never wait.
+export const KINDS = ['question', 'answered', 'permission', 'reply', 'session', 'notify', 'precompact', 'postcompact'];
 
 // C6: the one command string; only the kind is filled in, so no project data enters a command (SD35).
 const C6 =
@@ -42,12 +44,26 @@ export function appKind(cmd) {
 // RD41: the waiting entries' timeout sits 5 s above the script's wait, from the same constant main passes it.
 const WAITING_TIMEOUT = WAIT_SECONDS.claude + 5;
 const entry = (event, matcher, timeout, kind) => ({ event, matcher, timeout, command: command(kind) });
-/** BR7.2: the current release's four entries, one group each. */
-export const CANONICAL = {
+// US-0213 NFR3: a report-only entry runs async, so it can never slow the agent. The waiting kinds stay sync (they return
+// an answer), and so does PreCompact (its printed instruction must reach the compaction).
+const report = (event, matcher, kind) => ({ ...entry(event, matcher, 10, kind), async: true });
+/** The four entries of US-0506, as installed before US-0213 (all sync). */
+const DIALOG_ENTRIES = {
   question: entry('PreToolUse', 'AskUserQuestion', WAITING_TIMEOUT, 'question'),
   answered: entry('PostToolUse', 'AskUserQuestion', 10, 'answered'),
   permission: entry('PermissionRequest', '*', WAITING_TIMEOUT, 'permission'),
   reply: entry('Stop', undefined, 10, 'reply')
+};
+/** BR7.2: the current release's entries, one group each; US-0213 FR1.4 adds four that never wait. */
+export const CANONICAL = {
+  question: DIALOG_ENTRIES.question,
+  answered: report('PostToolUse', 'AskUserQuestion', 'answered'),
+  permission: DIALOG_ENTRIES.permission,
+  reply: report('Stop', undefined, 'reply'),
+  session: report('SessionStart', undefined, 'session'),
+  notify: report('Notification', undefined, 'notify'),
+  precompact: entry('PreCompact', undefined, 10, 'precompact'),
+  postcompact: report('PostCompact', undefined, 'postcompact')
 };
 
 const sha256 = (buf) => createHash('sha256').update(buf).digest('hex');
@@ -63,9 +79,16 @@ export const RELEASES = [
   // US-0210: dialog.sh up to v0.2.8, before `date` moved to every 10th poll.
   {
     release: 'v0.2.8',
-    entries: CANONICAL,
+    entries: DIALOG_ENTRIES,
     scriptDigest: '3b5ca42f4009660a6da771116fcb67618b7e5c6adebe597648d7983d692132b9',
-    pluginDigest: CURRENT.pluginDigest
+    pluginDigest: 'b061adbb5f7d64b48906fb48ae294f190156c5b79edc4b529bd46476c5b8d902'
+  },
+  // US-0213: the four US-0506 entries, dialog.sh and the plugin as US-0210 left them, before the three new kinds.
+  {
+    release: 'before-US-0213',
+    entries: DIALOG_ENTRIES,
+    scriptDigest: '42236b11e28a709020cf7684068511f3303410b9b85c6f306b549b59eac5ef01',
+    pluginDigest: 'b061adbb5f7d64b48906fb48ae294f190156c5b79edc4b529bd46476c5b8d902'
   },
   CURRENT
 ];
@@ -235,7 +258,7 @@ function appHooks(value) {
   return out;
 }
 
-const canonicalHook = (e) => ({ type: 'command', command: e.command, timeout: e.timeout });
+const canonicalHook = (e) => ({ type: 'command', command: e.command, timeout: e.timeout, ...(e.async ? { async: true } : {}) });
 const canonicalGroup = (e) => ({ ...(e.matcher !== undefined ? { matcher: e.matcher } : {}), hooks: [canonicalHook(e)] });
 const sameAs = (app, e) => app.event === e.event && app.group.matcher === e.matcher && isDeepStrictEqual(app.hook, canonicalHook(e));
 
@@ -252,7 +275,8 @@ export function classify(value, releases = RELEASES) {
   const earlier = releases.slice(0, -1);
   const apps = appHooks(value).map((a) => {
     const e = current.entries[a.kind];
-    const status = sameAs(a, e) ? 'current' : earlier.some((r) => sameAs(a, r.entries[a.kind])) ? 'outOfDate' : 'editedByHand';
+    // An earlier release may not have this kind at all (US-0213).
+    const status = sameAs(a, e) ? 'current' : earlier.some((r) => r.entries[a.kind] && sameAs(a, r.entries[a.kind])) ? 'outOfDate' : 'editedByHand';
     return { ...a, status };
   });
   const kinds = {};

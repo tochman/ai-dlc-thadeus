@@ -493,3 +493,120 @@ describe('what leaves the store', () => {
     expect(ev.arrivedAt).toBe(new Date(12345).toISOString());
   });
 });
+
+// US-0213 FR1.3, FR1.5, FR5.1: report-only kinds are session signals, never pages.
+describe('handoff signals (US-0213)', () => {
+  const sig = (sessionId, kind, payload, harness = 'claude') =>
+    raw(sessionId, `1700000000-${seq + 100}`, { kind, harness, bytes: Buffer.from(JSON.stringify(payload)) });
+
+  it('session, notify, precompact and postcompact open no page and push nothing', () => {
+    start();
+    pushes.length = 0;
+    sig('s1', 'session', { source: 'clear' });
+    sig('s1', 'notify', { notification_type: 'idle_prompt' });
+    sig('s1', 'precompact', { trigger: 'auto' });
+    sig('s1', 'postcompact', { trigger: 'auto', compact_summary: 'x' });
+    expect(store.list('p1')).toEqual([]);
+    expect(pushes).toEqual([]);
+  });
+
+  it('a signal does not move an open reply on (only the person and the agent do)', () => {
+    start();
+    raw('s1', '1700000000-1', { kind: 'reply', bytes: Buffer.from(JSON.stringify({ last_assistant_message: 'Which one?' })) });
+    sig('s1', 'notify', { notification_type: 'idle_prompt' });
+    expect(store.list('p1')[0]).toMatchObject({ kind: 'reply', state: 'shown' });
+  });
+
+  it('keeps per session: the last stop, its background tasks and transcript, a notify, a running status and a waiting question', () => {
+    start();
+    vi.setSystemTime(1_000_000);
+    raw('s1', '1700000000-2', {
+      kind: 'reply',
+      bytes: Buffer.from(JSON.stringify({ last_assistant_message: 'Done.', transcript_path: '/t/s.jsonl', background_tasks: [{ id: 1 }] }))
+    });
+    expect(store.signalsOf('s1')).toMatchObject({ lastStopMs: 1_000_000, backgroundTasks: true, transcriptPath: '/t/s.jsonl', busy: false, waiting: false });
+    sig('s1', 'notify', { notification_type: 'permission_prompt' });
+    expect(store.signalsOf('s1').notify).toBe('permission_prompt');
+    raw('s1', '1700000000-3');
+    expect(store.signalsOf('s1').waiting).toBe(true);
+    store.terminalInput('pty-s1', 'x');
+    expect(store.signalsOf('s1')).toMatchObject({ lastInputMs: 1_000_000, busy: true });
+    expect(store.signalsOf('nope')).toBeNull();
+  });
+
+  it('opencode status busy and idle set busy; usage keeps the context size', () => {
+    start('s2', { harness: 'opencode' });
+    sig('s2', 'status', { data: { status: { type: 'busy' } } }, 'opencode');
+    expect(store.signalsOf('s2').busy).toBe(true);
+    sig('s2', 'status', { data: { status: { type: 'idle' } } }, 'opencode');
+    expect(store.signalsOf('s2').busy).toBe(false);
+    sig('s2', 'usage', { data: { tokens: { input: 1, cache: { read: 2, write: 3 } } } }, 'opencode');
+    expect(store.signalsOf('s2').context).toEqual({ tokens: 6, model: null });
+  });
+
+  it('waitForSession resolves on a session event with that source, and false on timeout (FR3.2)', async () => {
+    start();
+    const ready = store.waitForSession('s1', ['clear'], 5000);
+    sig('s1', 'session', { source: 'startup' });
+    sig('s1', 'session', { source: 'clear' });
+    await expect(ready).resolves.toBe(true);
+    const late = store.waitForSession('s1', ['clear'], 5000);
+    vi.advanceTimersByTime(5000);
+    await expect(late).resolves.toBe(false);
+  });
+
+  it('onSignal tells every signal with its session, and a compaction is stamped (FR8.1)', () => {
+    const seen = [];
+    store.onSignal((s) => seen.push(s));
+    start();
+    vi.setSystemTime(2_000_000);
+    sig('s1', 'postcompact', { trigger: 'manual' });
+    expect(seen).toEqual([expect.objectContaining({ sessionId: 's1', projectId: 'p1', kind: 'postcompact', harness: 'claude' })]);
+    expect(store.signalsOf('s1').compactedAtMs).toBe(2_000_000);
+  });
+});
+
+// US-0213 FR3.1, US-0026 FR3.3: the handoff page is one more kind of page in the same pager.
+describe('handoff pages (US-0213)', () => {
+  const offer = { moment: 'threshold', tokens: 160_000, model: 'claude-opus-5-5', cost: 0.08, choices: ['compact', 'fresh', 'notNow'] };
+
+  it('addHandoff shows one page per session, after questions; a newer one replaces it', () => {
+    start();
+    const id = store.addHandoff('s1', offer);
+    raw('s1', '1700000000-9');
+    const list = store.list('p1');
+    expect(list.map((e) => e.kind)).toEqual(['question', 'handoff']);
+    expect(list[1]).toMatchObject({ eventId: id, state: 'shown', handoff: offer, source: 'hook', tabId: 'agent:claude' });
+    const id2 = store.addHandoff('s1', { ...offer, moment: 'gate' });
+    expect(
+      store
+        .list('p1')
+        .filter((e) => e.kind === 'handoff')
+        .map((e) => e.eventId)
+    ).toEqual([id2]);
+    expect(store.handoffOf(id2)).toMatchObject({ sessionId: 's1', projectId: 'p1', harness: 'claude', handoff: { moment: 'gate' } });
+  });
+
+  it('close ends the page and tells onHandoffClosed (Not now); unknown sessions add nothing', async () => {
+    const closed = [];
+    store.onHandoffClosed((h) => closed.push(h.handoff.moment));
+    start();
+    const id = store.addHandoff('s1', offer);
+    await store.close(id);
+    expect(store.list('p1')).toEqual([]);
+    expect(closed).toEqual(['threshold']);
+    expect(store.addHandoff('nope', offer)).toBeNull();
+  });
+
+  it('setHandoff moves the page to waiting or ends it; the session’s end ends it too', () => {
+    start();
+    const id = store.addHandoff('s1', offer);
+    store.setHandoff(id, 'waiting');
+    expect(store.list('p1')[0].state).toBe('waiting');
+    store.setHandoff(id, 'ended');
+    expect(store.list('p1')).toEqual([]);
+    store.addHandoff('s1', offer);
+    store.endSession('s1');
+    expect(store.list('p1').filter((e) => e.kind === 'handoff')).toEqual([]);
+  });
+});

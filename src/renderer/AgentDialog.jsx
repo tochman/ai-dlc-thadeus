@@ -21,6 +21,7 @@ import { selectableHarness } from '../shared/harnesses.js';
 import { cleanBody, visibleText } from '../shared/agentText.js';
 import { FileContent } from './ArtifactReader.jsx';
 import ReplyPage from './ReplyPage.jsx'; // US-0506 u3: the MESSAGE page
+import { formatTokens, formatUsd } from './format.js';
 
 export const OVERDUE_MS = 20_000;
 /** After an audit send, how long the question may stay open before the dialog says the answer may not have arrived. */
@@ -453,6 +454,82 @@ function PermissionPage({ ev, keysRef, guarded }) {
   );
 }
 
+// --- The session handoff (US-0213, US-0026) -------------------------------------------------------------------------
+
+/**
+ * US-0213 FR3.1–FR3.4, FR5.3, NFR2, US-0026 FR3.3: the size, one turn's cost, and main's choices for this moment. A
+ * digit or a click picks; Not now closes the page. The choice is typed by the terminal once main says the agent is idle.
+ */
+function HandoffPage({ ev, keysRef, guarded, onHandoff }) {
+  const { t } = useTranslation();
+  const h = ev.handoff;
+  const [error, setError] = useState(null);
+  const [busy, setBusy] = useState(false);
+  const waiting = ev.state === 'waiting';
+  const disabled = busy || waiting || ev.state !== 'shown';
+
+  function pick(choice) {
+    if (guarded() || disabled) return;
+    setError(null);
+    if (choice === 'notNow') {
+      agentBridge()
+        ?.close(ev.eventId)
+        .catch((err) => console.warn('Sidan kunde inte stängas:', errorText(err)));
+      return;
+    }
+    setBusy(true);
+    Promise.resolve(onHandoff?.(ev, choice, { onWaiting: () => {} }) ?? { ok: false, reason: 'noCommands' })
+      .then((r) => !r?.ok && setError(t(`agentDialog.handoff.failed.${r?.reason ?? 'noCommands'}`)))
+      .catch((err) => setError(errorText(err)))
+      .finally(() => setBusy(false));
+  }
+  keysRef.current = (e) => {
+    if (!/^[1-9]$/.test(e.key) || guarded()) return;
+    const choice = h.choices[Number(e.key) - 1];
+    if (!choice) return;
+    e.preventDefault();
+    pick(choice);
+  };
+
+  return (
+    <section className="agent-dialog-handoff" data-testid="agent-dialog-handoff">
+      <p className="agent-dialog-what" data-testid="agent-dialog-handoff-size">
+        {t('agentDialog.handoff.size', { tokens: formatTokens(h.tokens) })}
+      </p>
+      <p className="muted" data-testid="agent-dialog-handoff-cost">
+        {h.cost == null ? t('agentDialog.handoff.priceMissing') : t('agentDialog.handoff.cost', { usd: formatUsd(h.cost) })}
+      </p>
+      <div className="question-popup-choices">
+        {h.choices.map((c, i) => (
+          <button
+            key={c}
+            type="button"
+            className="question-popup-choice"
+            disabled={disabled}
+            onClick={() => pick(c)}
+            data-testid={`agent-dialog-handoff-choice-${c}`}
+          >
+            <span className="question-popup-key">{i + 1}</span>
+            <span>
+              {t(`agentDialog.handoff.choice.${c}`)}
+              {c === 'fresh' && h.gate && (
+                <small className="muted" data-testid="agent-dialog-handoff-gate-note">
+                  {t('agentDialog.handoff.gateNote')}
+                </small>
+              )}
+            </span>
+          </button>
+        ))}
+      </div>
+      {(waiting || error) && (
+        <p className={`question-popup-status${error ? ' is-error' : ''}`} role="status" data-testid="agent-dialog-handoff-status">
+          {error ?? t('agentDialog.handoff.waiting')}
+        </p>
+      )}
+    </section>
+  );
+}
+
 // --- The dialog ------------------------------------------------------------------------------------------------------
 
 /**
@@ -471,7 +548,8 @@ export default function AgentDialog({
   onAuditSend,
   onOpenTerminal,
   onClose,
-  onNotice
+  onNotice,
+  onHandoff // US-0213: (ev, choice, { onWaiting }) => Promise<{ ok, reason? }>
 }) {
   const { t } = useTranslation();
   const ref = useRef(null);
@@ -602,13 +680,16 @@ export default function AgentDialog({
   };
   const reply = ev?.kind === 'reply';
   const harnessLabel = ev ? (selectableHarness(ev.harness)?.label ?? ev.harness) : '';
-  const waiting = permPage
-    ? `${t('agentDialog.kind.permission')}: ${t(red ? 'agentDialog.title.permissionStillWaiting' : 'agentDialog.title.permission', { harness: harnessLabel })}`
-    : reply
-      ? t(red ? 'agentDialog.reply.titleOverdue' : 'agentDialog.reply.title', { harness: harnessLabel })
-      : hook
-        ? `${t('agentDialog.kind.question')}: ${t(red ? 'agentDialog.title.stillWaiting' : 'agentDialog.title.waiting')}`
-        : t(red ? 'app.question.stillWaiting' : 'app.question.waiting');
+  const handoffPage = ev?.kind === 'handoff';
+  const waiting = handoffPage
+    ? t(`agentDialog.handoff.title.${ev.handoff.moment}`)
+    : permPage
+      ? `${t('agentDialog.kind.permission')}: ${t(red ? 'agentDialog.title.permissionStillWaiting' : 'agentDialog.title.permission', { harness: harnessLabel })}`
+      : reply
+        ? t(red ? 'agentDialog.reply.titleOverdue' : 'agentDialog.reply.title', { harness: harnessLabel })
+        : hook
+          ? `${t('agentDialog.kind.question')}: ${t(red ? 'agentDialog.title.stillWaiting' : 'agentDialog.title.waiting')}`
+          : t(red ? 'app.question.stillWaiting' : 'app.question.waiting');
   const time = reply ? new Date(ev.arrivedAt).toLocaleTimeString('sv-SE', { hour: '2-digit', minute: '2-digit' }) : '';
   const whereText = reply
     ? t('agentDialog.reply.where', { project: where.project, tab: harnessLabel, time })
@@ -642,7 +723,9 @@ export default function AgentDialog({
           <p className="question-popup-where" data-testid="agent-dialog-where">
             {whereText}
           </p>
-          {permPage ? (
+          {handoffPage ? (
+            <HandoffPage key={ev.eventId} ev={ev} keysRef={keysRef} guarded={guarded} onHandoff={onHandoff} />
+          ) : permPage ? (
             <PermissionPage key={ev.eventId} ev={ev} keysRef={keysRef} guarded={guarded} />
           ) : reply ? (
             <ReplyPage key={ev.eventId} ev={ev} harnessLabel={harnessLabel} keysRef={keysRef} guarded={guarded} onSent={onClose} />

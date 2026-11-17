@@ -79,3 +79,37 @@ export async function runSequence(term, steps, { timeoutMs = READY_TIMEOUT_MS } 
     if (submit) await waitFor(term.activity, 'busy', ECHO_TIMEOUT_MS).catch(() => {});
   }
 }
+
+const sleepMs = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+// ponytail: a choice waits for idle at most this long, then gives up; a longer wait only matters for a stuck agent.
+const HANDOFF_WAIT_MS = 30 * 60 * 1000;
+
+/**
+ * US-0213 FR3.2, FR3.3, FR5.3, NFR4, US-0026 FR3.3: types one handoff choice. Main gives the fixed lines and says when
+ * the agent is idle; nothing is typed before that, and the page is told it waits. For Fresh session the second line
+ * goes only after main saw the new session start.
+ * @param {{bridge: {commands, idle, waiting, waitReady, sent}, eventId: string, choice: string, write: (text) => void,
+ *   onWaiting?: () => void, pollMs?: number}} options
+ * @returns {Promise<{ok: true}|{ok: false, reason: 'noCommands'|'notIdle'|'notReady'}>}
+ */
+export async function sendHandoff({ bridge, eventId, choice, write, onWaiting = () => {}, pollMs = 500 }) {
+  const cmds = await bridge.commands(eventId, choice);
+  if (!cmds?.lines?.length) return { ok: false, reason: 'noCommands' };
+  let told = false;
+  for (const end = Date.now() + HANDOFF_WAIT_MS; !(await bridge.idle(eventId)); await sleepMs(pollMs)) {
+    if (Date.now() > end) return { ok: false, reason: 'notIdle' };
+    if (!told) {
+      told = true;
+      await bridge.waiting(eventId, true);
+      onWaiting();
+    }
+  }
+  const [first, ...rest] = cmds.lines;
+  write(withEnter(first, true));
+  if (rest.length) {
+    if (cmds.waitReady && !(await bridge.waitReady(eventId))) return { ok: false, reason: 'notReady' };
+    for (const line of rest) write(withEnter(line, true));
+  }
+  await bridge.sent(eventId, choice);
+  return { ok: true };
+}

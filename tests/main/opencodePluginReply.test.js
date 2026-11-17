@@ -72,11 +72,12 @@ describe('opencode idle handler (BR6.2, RD15)', () => {
     expect(evts()).toEqual([]);
   });
 
-  it.each(['busy', 'retry'])('a %s status writes nothing and reads no context', async (type) => {
+  it.each(['busy', 'retry'])('a %s status writes no reply and reads no context (US-0213: only a status report)', async (type) => {
     await load({ context: vi.fn(async () => fixture('idle-which-name').context) });
     handlers['session.status'](statusEvent(type));
     await sleep(100);
-    expect(evts()).toEqual([]);
+    const kinds = evts().map((f) => readFileSync(path.join(dir, 'events', f), 'utf8').split(' ')[2]);
+    expect(kinds).toEqual(['status']);
     expect(ctx.session.context).not.toHaveBeenCalled();
   });
 

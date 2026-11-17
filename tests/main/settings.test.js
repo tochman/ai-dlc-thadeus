@@ -53,6 +53,21 @@ describe('project settings', () => {
     expect((await getProjectSettings('/p/a')).ratesPath).toBeUndefined();
   });
 
+  it('keeps the handoff settings per project: defaults until saved, bounds on the threshold, booleans only (US-0213 FR6.1, FR6.3)', async () => {
+    expect((await getProjectSettings('/p/h')).handoff).toBeUndefined(); // the defaults apply where it is read
+    const saved = await setProjectSettings('/p/h', { handoff: { threshold: 200_000, onStage: false } });
+    expect(saved.handoff).toEqual({ threshold: 200_000, onThreshold: true, onStage: false, onGate: true, autoCompactWindow: false });
+    expect((await setProjectSettings('/p/h', { handoff: { autoCompactWindow: true } })).handoff).toMatchObject({
+      threshold: 200_000,
+      onStage: false,
+      autoCompactWindow: true
+    });
+    for (const bad of [{ threshold: 9_999 }, { threshold: 1_000_001 }, { threshold: 150_000.5 }, { onGate: 'yes' }, { other: 1 }, 'x'])
+      await expect(setProjectSettings('/p/h', { handoff: bad })).rejects.toThrow(/handoff/);
+    await fs.writeFile(FILE, JSON.stringify({ projectSettings: { '/p/h': { handoff: { threshold: 5, onGate: 'no', autoCompactWindow: true } } } }));
+    expect((await getProjectSettings('/p/h')).handoff).toEqual({ threshold: 150_000, onThreshold: true, onStage: true, onGate: true, autoCompactWindow: true });
+  });
+
   it('keeps the delivery setting per project, left out until chosen so Releases applies, and refuses an unknown one (US-0603 FR1.1)', async () => {
     expect((await getProjectSettings('/p/d')).delivery).toBeUndefined();
     expect(await setProjectSettings('/p/d', { delivery: 'continuous' })).toMatchObject({ delivery: 'continuous' });

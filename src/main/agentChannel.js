@@ -293,6 +293,21 @@ export function createAgentChannel({ root, log = (line) => console.warn(line), h
         throw channelError('cannotWrite', `cannot write the answer file: ${err.code ?? err.message}`);
       }
     },
+    /**
+     * US-0213 FR4.2: the compact instruction dialog.sh's precompact (and the opencode plugin's compaction hook) prints,
+     * as `<session>/compact.txt`, written by a `wx` temp file and a rename. Throws with code sessionEnded or cannotWrite.
+     */
+    async writeInstruction(sessionId, text) {
+      const s = live(sessionId);
+      const tmp = path.join(s.dir, `compact.${crypto.randomUUID()}.tmp`);
+      try {
+        await fsp.writeFile(tmp, String(text), { flag: 'wx', mode: 0o600 });
+        await fsp.rename(tmp, path.join(s.dir, 'compact.txt'));
+      } catch (err) {
+        await fsp.unlink(tmp).catch(() => {});
+        throw channelError('cannotWrite', `cannot write the instruction: ${err.code ?? err.message}`);
+      }
+    },
     /** Main-internal (LC2): the hook's markers for one answer file. */
     async answerState(sessionId, file) {
       const s = sessions.get(sessionId);

@@ -6,9 +6,9 @@
 
 > Make the price and the "brains" of AI-DLC work visible. For every intent, stage and agent the console shows what the run cost (tokens and USD) and which model did the work, next to which model each agent is *configured* to use. The goal is that the user can answer "what did this feature cost?", "where does the money go?" and "is the reviewer really running on the cheaper model?" without leaving the app. Read-only, like everything else.
 
-**Stories:** US-0201, US-0202, US-0203, US-0204, US-0205, US-0206, US-0207, US-0208, US-0209, US-0210, US-0211, US-0212, US-0213, US-0214
+**Stories:** US-0201, US-0202, US-0203, US-0204, US-0205, US-0206, US-0207, US-0208, US-0209, US-0210, US-0211, US-0212, US-0213, US-0214, US-0215
 
-**Status (2026-11-17):** ✅ US-0201–US-0205 and US-0207 released (v0.2.0–v0.2.4; CSV export in US-0203 deferred). ➡️ US-0206 moved to US-0904. ✅ US-0208 released in v0.2.7. ✅ US-0209 released in v0.2.8. ✅ US-0212 done, for v0.2.9. ✅ US-0210 done, for v0.2.9. ✅ US-0211 done, for v0.2.9. 📋 US-0213 planned, for v0.2.9. 📋 US-0214 planned. Each story names its release.
+**Status (2026-11-17):** ✅ US-0201–US-0205 and US-0207 released (v0.2.0–v0.2.4; CSV export in US-0203 deferred). ➡️ US-0206 moved to US-0904. ✅ US-0208 released in v0.2.7. ✅ US-0209 released in v0.2.8. ✅ US-0212 done, for v0.2.9. ✅ US-0210 done, for v0.2.9. ✅ US-0211 done, for v0.2.9. ✅ US-0213 done, for v0.2.9. 📋 US-0214 planned, for v0.2.9. 📋 US-0215 planned. Each story names its release.
 
 ---
 
@@ -219,34 +219,41 @@ The key format of `workflows` was confirmed during requirements analysis (see ab
 - **Notes:** Rules are text the model reads, not enforcement. Anything that must happen at a set moment, such as starting a fresh session, belongs to US-0213.
 - **Dependencies:** US-0901
 
-**US-0213: Offer to compact or start a fresh session, from a dialog, in Claude Code and opencode** 📋 Planned, for v0.2.9
+**US-0213: Offer to compact or start a fresh session, from a dialog, in Claude Code and opencode** ✅ Done, for v0.2.9 (not yet released)
 - As a **developer running long intents**, in order to **stop paying for the same long context on every turn**, I would like **the app to open a dialog when the context grows too large, when a stage is done, or at a gate, and on my answer send `/compact` or start a fresh session in the agent tab**.
 - **Epic:** EPIC-02
 - **Priority:** High
 - **Complexity:** Large
 - **Background:** Asked for on 2026-11-17. The cost comes from context length times the number of turns: cache reads are about two thirds of this repository's cost. AI-DLC keeps its state on disk and resumes from `aidlc-state.md`, and its own `SessionStart` hook injects the resume context, also after a compaction. So a fresh session at a stage boundary loses nothing. A Claude Code hook cannot run `/compact` or `/clear` itself, but the app owns the agent tab's terminal and can type them. Both harnesses have the same commands: `/compact` (opencode also `/summarize`) and `/clear` (opencode also `/new`), and both resume with `/aidlc`. The hook only reports the context size. The dialog and the hooks reuse US-0506: its dialog channel, and its installer with a preview (`src/main/agentHooks.js`, `.thadeus/hooks/`, `.opencode/plugins/`), next to AI-DLC's hook entries, which are never changed.
 - **Acceptance Criteria:**
-  - [ ] Claude Code: a THADEUS `Stop` entry reports the context size of the last request (input + cache read + cache write, from the transcript) and never blocks the stop. opencode: the THADEUS plugin reports the same from the message's token usage. Both install, update and remove through the US-0506 preview.
-  - [ ] The dialog opens at three moments: the context passes the threshold (default 150k tokens); a stage is completed (`STAGE_COMPLETED` in the audit); AI-DLC waits at a gate. It shows the context size and what one turn costs at that size.
+  - [x] Claude Code: a THADEUS `Stop` entry reports the context size of the last request (input + cache read + cache write, from the transcript) and never blocks the stop. opencode: the THADEUS plugin reports the same from the message's token usage. Both install, update and remove through the US-0506 preview.
+  - [x] The dialog opens at three moments: the context passes the threshold (default 150k tokens); a stage is completed (`STAGE_COMPLETED` in the audit); AI-DLC waits at a gate. It shows the context size and what one turn costs at that size.
   - [ ] It offers: **Compact** (sends `/compact` with an AI-DLC instruction), **Fresh session** (sends `/clear`, then `/aidlc`), **Not now**. At a gate, Fresh session says that AI-DLC will show the gate again in the new session.
   - [ ] The compact instruction keeps the current intent, stage and Unit, the open decisions and the files left to change, and drops file contents and test output. In Claude Code a THADEUS `PreCompact` entry prints the same instruction, so an automatic compaction uses it too.
-  - [ ] The app sends a command only when the agent is idle: no tool or dispatched agent is running, no question or permission is waiting, and the person is not typing. Otherwise the choice waits until it is idle.
-  - [ ] Per project the person sets the threshold and turns each of the three moments on or off. "Not now" for the threshold asks again only after another 50k tokens.
-  - [ ] Claude Code: the app can also start `claude` with `CLAUDE_CODE_AUTO_COMPACT_WINDOW` set to the threshold, so Claude Code compacts earlier by itself. Off by default; nothing is written for it.
-  - [ ] The console shows each action with the context size before and after.
-  - [ ] Nothing in `aidlc/` and no AI-DLC hook entry is written.
+  - [x] The app sends a command only when the agent is idle: no tool or dispatched agent is running, no question or permission is waiting, and the person is not typing. Otherwise the choice waits until it is idle.
+  - [x] Per project the person sets the threshold and turns each of the three moments on or off. "Not now" for the threshold asks again only after another 50k tokens.
+  - [x] Claude Code: the app can also start `claude` with `CLAUDE_CODE_AUTO_COMPACT_WINDOW` set to the threshold, so Claude Code compacts earlier by itself. Off by default; nothing is written for it.
+  - [x] The console shows each action with the context size before and after.
+  - [x] Nothing in `aidlc/` and no AI-DLC hook entry is written.
   - [ ] Every text goes through `t()` in Swedish and English, in the LCARS interface.
 - **Notes:** To be checked in the first design stage: that `/aidlc` in a fresh session shows a waiting gate again and accepts the approval (AI-DLC's human-presence guard), and how a gate is recognised (a waiting question in the US-0506 channel, or the state file). Autonomous Construction rarely goes idle, because AI-DLC's `continue-workflow` `Stop` hook keeps it going, so there only the threshold moment may apply. An "automatic" mode without a dialog can come later, once the dialog has shown which answers people pick.
+- **Implementation (Code Generation, 2026-11-17):** Claude Code gets four new THADEUS entries through the US-0506 preview: `SessionStart` (`session`), `Notification` (`notify`), `PreCompact` (`precompact`, prints the instruction the app wrote into the session folder) and `PostCompact` (`postcompact`). Every report-only entry (`answered`, `reply`, `session`, `notify`, `postcompact`) is `"async": true`; `question`, `permission` and `PreCompact` stay synchronous. An install from v0.2.8 reads as out of date and updates through the preview. The size comes from the transcript the `Stop` payload names (`src/main/contextSize.js`); `background_tasks` at a stop means not idle. opencode: the plugin reports `session.created` (main chat only), `session.status`, `session.idle` (fallback), `session.usage.updated` and `session.compaction.ended`, and adds the instruction through `ctx.session.hook('compaction')` when it exists. Decisions live in `src/main/sessionHandoff.js`; the page is `HandoffPage` in `AgentDialog.jsx`, typed through `sendHandoff` in `terminalControl.js`; settings in Configuration › Agent.
+- **Build and Test (2026-11-17, intent `261117-session-handoff-dialog`):** 1796/1796 tests, 92.19% lines. Fresh session sends `/aidlc --resume` (decided at requirements). Three criteria stay open until the manual checks in the running app, owed before the v0.2.9 tag: Fresh session shows a waiting gate again (OQ1), the PreCompact instruction reaches the compaction, and the LCARS look by eye. Real opencode 2.1.4 events are checked by hand too.
 - **Dependencies:** US-0506, US-0207, US-0212
 
-**US-0214: The token view shows the main session's work, and its chart can hide series from the legend** 📋 Planned
+**US-0214: The token view shows the main session's work, and its chart can hide series from the legend** 📋 Planned, for v0.2.9
 - As a **developer watching an intent in the token view**, in order to **see what is working right now and read the series I care about**, I would like **Agent progress to show the main session's activity too, and the "Tokens over time" chart to let me hide and show series by clicking them in the legend**.
 - **Epic:** EPIC-02
 - **Priority:** Medium
 - **Complexity:** Medium
-- **Background:** Asked for on 2026-11-17, with screenshots of `261117-release-planning-sync`. Agent progress said "No agents are working in this intent right now" while the main session was working through the stages, because only dispatched agents show there. In "Tokens over time", cache reads (about 30 M) dwarf input and output, so the other series are flat lines at the bottom, and the legend (input, output, cache write 1 h, cache write 5 m, cache read) is a label only.
+- **Background:** Asked for on 2026-11-17, with screenshots of `261117-release-planning-sync`. Agent progress said "No agents are working in this intent right now" while the main session was working through the stages, because only dispatched agents show there. In "Tokens over time", cache reads (about 30 M) dwarf input and output, so the other series are flat lines at the bottom, and the legend (input, output, cache write 1 h, cache write 5 m, cache read) is a label only. Updated 2026-11-17 22:33, with a screenshot of `261117-session-handoff-dialog`: agent activity is very often not shown at all. A dispatched `aidlc-developer-agent` had been running for 18 minutes (Claude Code's own footer: "Running agentHooks tests after fixture updates", 308.2k tokens), while Agent progress said "No agents are working in this intent right now". So the dispatched agents are missed too, not only the main chat. Reading activity from the transcripts is not reliable enough; the hook events Claude Code and opencode send are (checked against both harnesses' docs on 2026-11-17, see Notes).
 - **Acceptance Criteria:**
+  - [ ] **Given** a dispatched agent is working on the intent, **when** I open the token view, **then** Agent progress shows its row (agent type and what it is doing now) within 2 seconds of its start, and removes it within 2 seconds of its end. The screenshot case (a developer agent running while the view says none) is a test.
   - [ ] **Given** the main Claude chat (the conversation in the agent tab, not a dispatched subagent) is working on the intent, **when** I open the token view, **then** Agent progress shows a "Main" row for that chat with what it is doing now (for example running a tool, writing, or waiting for my answer), next to any dispatched agents. "No agents are working" shows only when neither the main chat nor any agent is.
+  - [ ] Each row shows one of: running a tool (with its name), writing, thinking (opencode), waiting for me, idle, or stopped on an error (with the reason). The state comes from hook events, not from guessing in the transcript.
+  - [ ] Main chat and agents are told apart: Claude Code by `agent_id` on subagent events, opencode by `parentID` on the child session.
+  - [ ] The hooks only report: they never block or slow the agent (Claude Code entries are `async`; the opencode plugin's handlers are fire-and-forget), and they install, update and remove through the US-0506 preview, beside AI-DLC's entries, which are never changed.
+  - [ ] When the app's hooks are not installed or out of date, Agent progress says so and offers the update, and it falls back to today's reading. It never shows "No agents are working" as if that were known.
   - [ ] **Given** the "Tokens over time" chart, **when** I click a series in the legend (or press Enter or Space on it), **then** that series is hidden or shown again, and its legend entry looks switched off.
   - [ ] The y-axis rescales to the series still shown, so hiding cache read makes input and output readable.
   - [ ] At least one series always stays shown: the last one cannot be hidden.
@@ -254,5 +261,45 @@ The key format of `workflows` was confirmed during requirements analysis (see ab
   - [ ] The choice is remembered per project while the app runs.
   - [ ] Legend entries are buttons with `aria-pressed`, and each series keeps its text label, not colour alone.
   - [ ] Every text goes through `t()` in Swedish and English, in the LCARS look.
-- **Notes:** Open: whether the other diagrams (rate, splits by stage, agent and model) get the same legend toggles (proposal: yes, wherever a diagram has more than one series), and how the main chat's activity is read (decided 2026-11-17: "Main" is the main Claude chat; proposal: from its transcript, the same source as US-0207's live view). Built on US-0208's view (`TokenDetail.jsx`, `AgentProgress.jsx`, visx).
-- **Dependencies:** US-0207, US-0208
+- **Notes:** Open: whether the other diagrams (rate, splits by stage, agent and model) get the same legend toggles (proposal: yes, wherever a diagram has more than one series), and how the main chat's activity is read (decided 2026-11-17: "Main" is the main Claude chat; proposal: from its transcript, the same source as US-0207's live view). Built on US-0208's view (`TokenDetail.jsx`, `AgentProgress.jsx`, visx). Updated 2026-11-17: activity is read from hook events, reported through the US-0506 channel that US-0213 extends. Start by finding why today's reading missed the running developer agent.
+  - Claude Code (all 33 events confirmed in its hooks reference):
+
+    | State | Starts | Ends |
+    |---|---|---|
+    | Running a tool | `PreToolUse` | `PostToolUse`, or `PostToolUseFailure` (same `tool_use_id`) |
+    | Writing | `MessageDisplay` | `MessageDisplay` with `final: true` |
+    | Waiting for me | `PermissionRequest`, `AskUserQuestion`, `Elicitation`, `Notification` | the matching answer event |
+    | Idle (main chat) | `Stop` | `UserPromptSubmit` |
+    | Agent alive | `SubagentStart` | `SubagentStop` |
+    | Error | `StopFailure` | the next prompt |
+
+    Not stated in the docs: whether `MessageDisplay`, `Notification` and `StopFailure` fire inside subagents, and how an interrupt shows (`Stop` does not fire then).
+  - opencode 2.1.4 (V2 event API; the V1 names in older guides are out of date):
+
+    | State | Event |
+    |---|---|
+    | Working or idle | `session.status` (`busy`, `idle`, `retry`) |
+    | Tool | `session.tool.input.started` (carries the name; later tool events carry only the call id) → `session.tool.success`, or `session.tool.failed` |
+    | Writing or thinking | `session.text.*`, `session.reasoning.*` |
+    | Waiting for me | `permission.asked`, `form.created` |
+    | Error | `session.execution.failed`, `session.execution.interrupted` (with its reason) |
+    | Agent or main chat | `session.created`, where `parentID` set means a child session |
+    | Tokens | `session.usage.updated` |
+- **Dependencies:** US-0207, US-0208, US-0213 (its hook kinds and channel)
+
+**US-0215: Token diagrams and figures for finished intents** 📋 Planned
+- As a **developer looking back at finished work**, in order to **see how a past intent used its tokens and compare it with others**, I would like **the token view of a finished intent to show the same diagrams and figures as a live one: tokens over time, the rate, and the splits by stage, agent and model**.
+- **Epic:** EPIC-02
+- **Priority:** Medium
+- **Complexity:** Medium
+- **Background:** Asked for on 2026-11-17. The time history in the token view comes from readings the app records in `.thadeus/tokens/` while it watches a running intent (US-0208), so only 11 of the 39 intents have any. An intent that finished before v0.2.7, or ran while the app was closed, has no history: its "Tokens over time" and rate diagrams are empty, and only the ledger's totals are left. Claude Code's transcripts hold every model call with its timestamp and token counts, and the ledger's `workflows["intent:<uuid>"].sessions` names the sessions that belong to the intent, so the history can be rebuilt after the fact.
+- **Acceptance Criteria:**
+  - [ ] **Given** a finished intent with recorded readings, **when** I open its token view, **then** every diagram shows its whole run, from the first reading to the last, without the live mode's 120-reading window.
+  - [ ] **Given** a finished intent with no readings, **when** I open its token view, **then** "Tokens over time" and the rate are rebuilt from the timestamps and token counts in its sessions' transcripts, and the view says they were rebuilt from the transcripts.
+  - [ ] **Given** neither readings nor transcripts (for example, work done on another machine), **then** the view shows the ledger's totals and splits, and says in one sentence that no time history exists on this machine. It never shows an empty chart as if nothing was used.
+  - [ ] A figures strip shows the run's totals: tokens by kind, estimated cost (labelled as an estimate), duration, peak rate, and the share of cache reads.
+  - [ ] The figures agree with the ledger's totals for the intent, or the difference is shown and explained (for example, sessions the ledger counts that are not on this machine).
+  - [ ] Rebuilding reads the transcripts only and writes nothing in `aidlc/` or `.thadeus/`. A rebuilt history is kept in memory while the app runs, so reopening the view is fast.
+  - [ ] Every text goes through `t()` in Swedish and English, in the LCARS look.
+- **Notes:** Decided 2026-11-17: a rebuilt history is not saved as readings in `.thadeus/tokens/`; the transcripts stay the source, and nothing is written for a past intent. Decided 2026-11-17: comparing several intents side by side is a later story, not part of this one. Transcripts are local to the machine that ran the work: a teammate's intent has the ledger totals only (see US-0209).
+- **Dependencies:** US-0208, US-0209

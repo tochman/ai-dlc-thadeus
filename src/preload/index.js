@@ -168,5 +168,14 @@ contextBridge.exposeInMainWorld('bridge', {
     apply: call('agentHooks:apply'),
     cancel: call('agentHooks:cancel'),
     onChanged: subscribe('agent-hooks:changed')
+  },
+  // The session handoff page (US-0213, US-0026): an event id and a fixed choice cross the bridge; main gives back the
+  // fixed lines to type, never anything the renderer named (NFR4).
+  handoff: {
+    commands: call('handoff:commands'),
+    idle: call('handoff:idle'),
+    waitReady: call('handoff:waitReady'),
+    waiting: call('handoff:waiting'),
+    sent: call('handoff:sent')
   }
 });

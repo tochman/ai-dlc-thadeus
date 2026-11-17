@@ -208,15 +208,16 @@ describe.each(SHELLS)('dialog.sh reply under %s (BR6.1, RD10)', (shell) => {
 describe('dialog.sh reply: source and wiring', () => {
   it('8. the branch has no while, no answers/, one sleep only inside the watchdog, no redirect on : or exec (NFR5.24, SCD10)', () => {
     const src = readFileSync(SCRIPT, 'utf8');
-    const start = src.indexOf('if [ "$1" = reply ]; then');
+    // US-0213: the branch also serves session, notify and precompact, with the same checks.
+    const start = src.indexOf('case $1 in reply | session | notify | precompact | postcompact)');
     expect(start).toBeGreaterThan(-1);
-    const branch = src.slice(start, src.indexOf('\nfi\n', start) + 3);
+    const branch = src.slice(start, src.indexOf('\nesac\n', start) + 5);
     expect(branch).not.toMatch(/\bwhile\b/);
     expect(branch).not.toMatch(/answers\//);
     expect(branch.match(/\bsleep\b/g)).toHaveLength(1);
     expect(branch).toMatch(/\(\s*sleep 2; kill "\$c"\s*\)/);
     expect(branch).not.toMatch(/(^|[;&|{(]|\n)\s*(:|exec)\b[^\n]*[<>]/);
-    expect(src).toMatch(/case \$\{1:-\} in [^\n]*reply\) waits=0 ;;/);
+    expect(src).toMatch(/case \$\{1:-\} in [^\n]*answered \| reply \| session \| notify \| precompact \| postcompact\) waits=0 ;;/);
   });
 
   let base, channel;

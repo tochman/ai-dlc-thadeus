@@ -850,6 +850,16 @@
       "ratesPathLabel": "Pristabell (valfri)",
       "ratesPathHelp": "En egen model-rates.json i projektet. Tom: AI-DLC:s inställning, sedan appens tabell.",
       "ratesPathInvalid": "Sökvägen ska vara relativ till projektet, sluta på .json och inte innehålla ..",
+      "handoff": {
+        "title": "Ny session eller komprimering",
+        "threshold": "Fråga när kontexten passerar (tokens)",
+        "invalid": "Ange ett heltal mellan {min} och {max}.",
+        "onThreshold": "Fråga när kontexten passerar gränsen",
+        "onStage": "Fråga när ett steg är klart",
+        "onGate": "Fråga när AI-DLC väntar vid en grind",
+        "autoCompactWindow": "Låt Claude Code komprimera själv vid gränsen (CLAUDE_CODE_AUTO_COMPACT_WINDOW, gäller nya agentflikar)",
+        "saved": "Sparat."
+      },
       "noDocs": "Projektet har inga feature-beskrivningar ännu.",
       "harnessLabel": "Agent-terminal",
       "tabsLegend": "Agentflikar",
@@ -1396,6 +1406,31 @@
     "position": "{i} av {n}",
     "previous": "Föregående",
     "next": "Nästa",
+    "handoff": {
+      "title": {
+        "threshold": "Kontexten har blivit stor",
+        "stage": "Ett steg är klart",
+        "gate": "AI-DLC väntar vid en grind",
+        "newSession": "En ny session"
+      },
+      "size": "Kontext: {tokens} tokens",
+      "cost": "En tur i den här storleken: cirka {usd} (uppskattning från API-priset)",
+      "priceMissing": "pris saknas",
+      "choice": {
+        "compact": "Komprimera",
+        "fresh": "Ny session",
+        "notNow": "Inte nu",
+        "clear": "/clear",
+        "clearResume": "/clear + /aidlc --resume"
+      },
+      "gateNote": "AI-DLC visar grinden igen i den nya sessionen.",
+      "waiting": "Väntar tills agenten är ledig …",
+      "failed": {
+        "notReady": "Den nya sessionen startade inte. Skriv /aidlc --resume i terminalen.",
+        "notIdle": "Agenten blev aldrig ledig. Inget skickades.",
+        "noCommands": "Det här verktyget har inga kommandon för det här."
+      }
+    },
     "errors": {
       "unknownEvent": "Frågan finns inte längre.",
       "eventNotOpen": "Frågan är inte öppen längre.",

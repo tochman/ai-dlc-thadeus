@@ -6,9 +6,9 @@
 
 > Small fixes the person reports while using the app: something looks off, behaves wrongly or is missing a detail. Each fix becomes a story here, so nothing reported in passing gets lost. A fix that grows into a feature moves to its topic's epic.
 
-**Stories:** US-0001, US-0002, US-0003, US-0004, US-0005, US-0006, US-0007, US-0008, US-0009, US-0010, US-0011, US-0012, US-0013, US-0014, US-0015, US-0016, US-0017, US-0018, US-0019, US-0020, US-0021, US-0022, US-0023, US-0024, US-0025
+**Stories:** US-0001, US-0002, US-0003, US-0004, US-0005, US-0006, US-0007, US-0008, US-0009, US-0010, US-0011, US-0012, US-0013, US-0014, US-0015, US-0016, US-0017, US-0018, US-0019, US-0020, US-0021, US-0022, US-0023, US-0024, US-0025, US-0026, US-0027
 
-**Status (2026-11-16):** ✅ US-0001–US-0020 released (v0.2.3–v0.2.6). ✅ US-0021–US-0023 released in v0.2.7. ✅ US-0024 released in v0.2.8. ✅ US-0025 done, not yet released, for v0.2.9. 📋 US-0026 planned, for v0.2.9. Each story names its release.
+**Status (2026-11-17):** ✅ US-0001–US-0020 released (v0.2.3–v0.2.6). ✅ US-0021–US-0023 released in v0.2.7. ✅ US-0024 released in v0.2.8. ✅ US-0025 done, not yet released, for v0.2.9. ✅ US-0026 done, not yet released, for v0.2.9. 📋 US-0027 planned, for v0.2.9. Each story names its release.
 
 ---
 
@@ -408,17 +408,34 @@
 
 ---
 
-**US-0026: The agent dialog is not left empty at a new session, and offers /clear or /clear + resume** 📋 Planned, for v0.2.9
+**US-0026: The agent dialog is not left empty at a new session, and offers /clear or /clear + resume** ✅ Done, for v0.2.9 (not yet released)
 - As a **developer starting a new Claude Code session**, in order to **carry on without a dead dialog in the way**, I would like **the agent dialog to show something I can act on at that moment: start a clean chat with `/clear`, or `/clear` and then `/aidlc --resume`**.
 - **Epic:** EPIC-00
 - **Priority:** High
 - **Complexity:** Low
 - **Background:** Reported 2026-11-17: when a new session starts, the agent dialog stays open with no text and no buttons, and the only way out is to close it. That is also the moment the person usually wants a fresh context (the cost rule: park, then resume in a fresh session), so the dialog can offer it.
 - **Acceptance Criteria:**
-  - [ ] **Given** a new session starts while the agent dialog is open, **then** the dialog never shows a page with no text and no choices: an event with nothing to show closes its page (or the dialog when it was the last one).
-  - [ ] **Given** a Claude Code project at a new session (or a parked workflow), **when** the dialog offers the next step, **then** it has two choices: "/clear" (sends `/clear` to the session's terminal) and "/clear + /aidlc --resume" (sends `/clear`, waits until the new session is ready, then sends `/aidlc --resume`).
-  - [ ] **Given** a harness other than Claude Code, **then** the choices are not shown (or use that harness's own commands).
+  - [x] **Given** a new session starts while the agent dialog is open, **then** the dialog never shows a page with no text and no choices: an event with nothing to show closes its page (or the dialog when it was the last one).
+  - [x] **Given** a Claude Code project at a new session (or a parked workflow), **when** the dialog offers the next step, **then** it has two choices: "/clear" (sends `/clear` to the session's terminal) and "/clear + /aidlc --resume" (sends `/clear`, waits until the new session is ready, then sends `/aidlc --resume`).
+  - [x] **Given** a harness other than Claude Code, **then** the choices are not shown (or use that harness's own commands).
   - [ ] Both choices are reachable by keyboard, LCARS look, and every text goes through `t()` in Swedish and English.
-  - [ ] A test fails without the fix and passes with it; the full suite stays green.
+  - [x] A test fails without the fix and passes with it; the full suite stays green.
 - **Notes:** Start from the root cause: which event opens the empty page (a SessionStart or `ended` hook event with no questions, see `statusOf` and `HookPage` in `src/renderer/AgentDialog.jsx` and the states in `src/main/agentPermissions.js` / `src/main/agentEvents.js`). Send the commands through the existing terminal path (`TerminalContext`). Runs on the `quick-fix` plan.
+- **Implementation (Code Generation, 2026-11-17, built with US-0213):** The empty page was a reply with no visible text: a `Stop` (or an opencode idle) whose last message is empty, whitespace or only invisible characters became a shown reply with no text and no choices, and opened the dialog. `agentReplies.js` now opens no page for it (an older reply of the tab still moves on), so every caller is covered. The new-session page comes from THADEUS's `SessionStart` entry (source `startup` or `resume`, with an intent open) and offers `/clear` and `/clear + /aidlc --resume`; opencode uses `/new`; other harnesses get no page.
+- **Build and Test (2026-11-17, intent `261117-session-handoff-dialog`):** the regression test in `tests/main/agentEventsReply.test.js` fails without the fix and passes with it; 1796/1796 tests. The LCARS look of the page is checked by eye in the running app before the v0.2.9 tag.
 - **Dependencies:** US-0506
+
+**US-0027: The app follows the repository's new name, ai-dlc-thadeus** 📋 Planned, for v0.2.9
+- As a **developer using THADEUS**, in order to **keep getting updates and reach the right GitHub pages**, I would like **the app to use the repository's new name, `tochman/ai-dlc-thadeus`**.
+- **Epic:** EPIC-00
+- **Priority:** High
+- **Complexity:** Low
+- **Background:** Reported 2026-11-17: the repository was renamed from `tochman/aidlc-dash` to `tochman/ai-dlc-thadeus`. GitHub forwards the old address, but the updater compares each release file's address with `https://github.com/tochman/aidlc-dash/releases/download/<tag>/<name>` as text (`assertOwnAsset`, `src/main/updater.js`). GitHub now returns the new name, so every installed copy up to v0.2.8 refuses every update as "not this repository's own file". Installed copies cannot be fixed from here: they must download v0.2.9 by hand once.
+- **Acceptance Criteria:**
+  - [ ] **Given** a release of `tochman/ai-dlc-thadeus`, **when** the app checks for updates, **then** it accepts that repository's own release files and still refuses any other repository's.
+  - [ ] The repository name is defined once and used by the updater (`REPO`), the Issues link (`src/main/menu.js`), the repository link (`src/main/ipc.js`), `package.json` `homepage` and `README.md`. No `tochman/aidlc-dash` address is left in the app or its tests.
+  - [ ] The old package and settings-folder names stay: `aidlc-dash` in `electron-builder.yml` (`--replaces`, `--conflicts`) and the `userData` folder in `src/main/index.js`. These are names, not addresses.
+  - [ ] The v0.2.9 release notes tell users on v0.2.8 or earlier to download v0.2.9 by hand once, because their copy cannot update itself across the rename.
+  - [ ] A test fails without the fix and passes with it; the full suite stays green.
+- **Notes:** Runs on the `quick-fix` plan, after the US-0213/US-0026 intent. The local git remote was already pointed at the new address on 2026-11-17.
+- **Dependencies:** US-0407, US-0413 (the updater)

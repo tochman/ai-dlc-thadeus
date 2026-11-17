@@ -5,7 +5,7 @@
 // stays an alias for the last agent tab used, so Fortsätt, the quick commands, "Answer in …" and the setup
 // offers go there, and every caller that names 'agent' keeps working.
 import { createContext, useCallback, useContext, useMemo, useRef, useState } from 'react';
-import { READY_TIMEOUT_MS, runSequence, waitFor, withEnter } from './terminalControl.js';
+import { READY_TIMEOUT_MS, runSequence, sendHandoff as sendHandoffLines, waitFor, withEnter } from './terminalControl.js';
 import { t } from '../shared/i18n.js';
 import { waitForAnswer } from './picker.js';
 
@@ -183,6 +183,16 @@ export function TerminalProvider({ children, askingIntents = [] }) {
         if (found.error) throw fail(t(`app.question.${found.error}`, { harness: harnessOf(lastRef.current)?.name ?? t('terminal.agent') }));
         const s = sessions.current[found.tab];
         for (const key of found.keys) s.write(key);
+      },
+      /**
+       * US-0213 FR3.2, NFR4: a handoff choice, typed into the event's own agent tab through its write (so it counts as
+       * input, like any key) once main says the agent is idle. Resolves { ok } or { ok: false, reason }.
+       */
+      sendHandoff: async (ev, choice, { onWaiting } = {}) => {
+        const bridge = window.bridge?.handoff;
+        const s = sessions.current[ev?.tabId];
+        if (!bridge || !s) return { ok: false, reason: 'noCommands' };
+        return sendHandoffLines({ bridge, eventId: ev.eventId, choice, write: (text) => sessions.current[ev.tabId]?.write(text), onWaiting });
       },
       sequence: async (tab, steps) => {
         const key = resolve(tab);

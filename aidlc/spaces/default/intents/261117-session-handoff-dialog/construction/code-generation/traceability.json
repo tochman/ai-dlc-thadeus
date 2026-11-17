@@ -1,0 +1,181 @@
+{
+  "stage": "code-generation",
+  "upstream_ids": [
+    "FR1.1",
+    "FR1.2",
+    "FR1.3",
+    "FR1.4",
+    "FR1.5",
+    "FR2.1",
+    "FR2.2",
+    "FR2.3",
+    "FR2.4",
+    "FR3.1",
+    "FR3.2",
+    "FR3.3",
+    "FR3.4",
+    "FR3.5",
+    "FR4.1",
+    "FR4.2",
+    "FR5.1",
+    "FR5.2",
+    "FR5.3",
+    "FR6.1",
+    "FR6.2",
+    "FR6.3",
+    "FR7.1",
+    "FR8.1",
+    "NFR1",
+    "NFR2",
+    "NFR3",
+    "NFR4",
+    "NFR5"
+  ],
+  "coverage": [
+    {
+      "id": "FR1.1",
+      "status": "OK",
+      "target": "src/main/contextSize.js"
+    },
+    {
+      "id": "FR1.2",
+      "status": "OK",
+      "target": ".opencode/plugins/thadeus-dialog.js"
+    },
+    {
+      "id": "FR1.3",
+      "status": "OK",
+      "target": "src/main/agentAdapters.js"
+    },
+    {
+      "id": "FR1.4",
+      "status": "OK",
+      "target": "src/main/agentHooks.js"
+    },
+    {
+      "id": "FR1.5",
+      "status": "OK",
+      "target": "src/main/agentEvents.js"
+    },
+    {
+      "id": "FR2.1",
+      "status": "OK",
+      "target": "src/main/sessionHandoff.js"
+    },
+    {
+      "id": "FR2.2",
+      "status": "OK",
+      "target": "src/main/sessionHandoff.js"
+    },
+    {
+      "id": "FR2.3",
+      "status": "OK",
+      "target": "src/main/sessionHandoff.js"
+    },
+    {
+      "id": "FR2.4",
+      "status": "OK",
+      "target": "src/main/sessionHandoff.js"
+    },
+    {
+      "id": "FR3.1",
+      "status": "OK",
+      "target": "src/renderer/AgentDialog.jsx"
+    },
+    {
+      "id": "FR3.2",
+      "status": "OK",
+      "target": "src/renderer/TerminalContext.jsx"
+    },
+    {
+      "id": "FR3.3",
+      "status": "OK",
+      "target": "src/renderer/AgentDialog.jsx"
+    },
+    {
+      "id": "FR3.4",
+      "status": "OK",
+      "target": "src/main/sessionHandoff.js"
+    },
+    {
+      "id": "FR3.5",
+      "status": "OK",
+      "target": "src/renderer/terminalControl.js"
+    },
+    {
+      "id": "FR4.1",
+      "status": "OK",
+      "target": "src/renderer/TerminalContext.jsx"
+    },
+    {
+      "id": "FR4.2",
+      "status": "OK",
+      "target": ".thadeus/hooks/dialog.sh"
+    },
+    {
+      "id": "FR5.1",
+      "status": "OK",
+      "target": "src/main/sessionHandoff.js"
+    },
+    {
+      "id": "FR5.2",
+      "status": "OK",
+      "target": "src/main/sessionHandoff.js"
+    },
+    {
+      "id": "FR5.3",
+      "status": "OK",
+      "target": "src/renderer/TerminalContext.jsx"
+    },
+    {
+      "id": "FR6.1",
+      "status": "OK",
+      "target": "src/renderer/ProjectSettingsView.jsx"
+    },
+    {
+      "id": "FR6.2",
+      "status": "OK",
+      "target": "src/main/sessionHandoff.js"
+    },
+    {
+      "id": "FR6.3",
+      "status": "OK",
+      "target": "src/main/pty.js"
+    },
+    {
+      "id": "FR7.1",
+      "status": "OK",
+      "target": "src/main/agentReplies.js"
+    },
+    {
+      "id": "FR8.1",
+      "status": "OK",
+      "target": "src/renderer/TerminalContext.jsx"
+    },
+    {
+      "id": "NFR1",
+      "status": "OK",
+      "target": "tests/main/agentHooks.test.js"
+    },
+    {
+      "id": "NFR2",
+      "status": "OK",
+      "target": "src/shared/locales/en.json"
+    },
+    {
+      "id": "NFR3",
+      "status": "OK",
+      "target": ".thadeus/hooks/dialog.sh"
+    },
+    {
+      "id": "NFR4",
+      "status": "OK",
+      "target": "src/renderer/terminalControl.js"
+    },
+    {
+      "id": "NFR5",
+      "status": "OK",
+      "target": "tests/main/sessionHandoff.test.js"
+    }
+  ]
+}

@@ -187,3 +187,31 @@ describe('ProjectSettingsView (Configuration › Feature docs and Agent, US-0012
     expect(screen.queryByTestId('project-settings-add-harness')).toBeNull(); // not an AI-DLC project: setup is the main view
   });
 });
+
+// US-0213 FR6.1, FR6.3: the session handoff settings in Configuration › Agent.
+describe('ProjectSettingsView: session handoff (US-0213)', () => {
+  it('shows the defaults, saves the threshold and the moments, and keeps the auto-compact window off by default', async () => {
+    render(<ProjectSettingsView section="agent" projectId="p1" settings={settings} harness="claude" harnesses={detected} />);
+    expect(screen.getByTestId('project-settings-handoff-threshold').value).toBe('150000');
+    for (const k of ['onThreshold', 'onStage', 'onGate']) expect(screen.getByTestId(`project-settings-handoff-${k}`).checked).toBe(true);
+    expect(screen.getByTestId('project-settings-handoff-autoCompactWindow').checked).toBe(false);
+    fireEvent.change(screen.getByTestId('project-settings-handoff-threshold'), { target: { value: '200000' } });
+    fireEvent.click(screen.getByTestId('project-settings-handoff-onGate'));
+    fireEvent.click(screen.getByTestId('project-settings-handoff-save'));
+    await waitFor(() =>
+      expect(window.bridge.setProjectSettings).toHaveBeenCalledWith('p1', {
+        handoff: { threshold: 200_000, onThreshold: true, onStage: true, onGate: false, autoCompactWindow: false }
+      })
+    );
+  });
+
+  it('refuses a threshold outside 10 000–1 000 000 before saving', () => {
+    render(
+      <ProjectSettingsView section="agent" projectId="p1" settings={{ ...settings, handoff: { threshold: 120_000 } }} harness="claude" harnesses={detected} />
+    );
+    expect(screen.getByTestId('project-settings-handoff-threshold').value).toBe('120000');
+    fireEvent.change(screen.getByTestId('project-settings-handoff-threshold'), { target: { value: '500' } });
+    expect(screen.getByTestId('project-settings-handoff-save').disabled).toBe(true);
+    expect(screen.getByTestId('project-settings-handoff-invalid')).toBeTruthy();
+  });
+});

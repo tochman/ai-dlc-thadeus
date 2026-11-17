@@ -19,7 +19,8 @@
           {
             "type": "command",
             "command": "[ -n \"$THADEUS_SESSION_DIR\" ] && [ -f \"$CLAUDE_PROJECT_DIR/.thadeus/hooks/dialog.sh\" ] && sh \"$CLAUDE_PROJECT_DIR/.thadeus/hooks/dialog.sh\" answered; exit 0",
-            "timeout": 10
+            "timeout": 10,
+            "async": true
           }
         ]
       }
@@ -42,7 +43,55 @@
           {
             "type": "command",
             "command": "[ -n \"$THADEUS_SESSION_DIR\" ] && [ -f \"$CLAUDE_PROJECT_DIR/.thadeus/hooks/dialog.sh\" ] && sh \"$CLAUDE_PROJECT_DIR/.thadeus/hooks/dialog.sh\" reply; exit 0",
+            "timeout": 10,
+            "async": true
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "[ -n \"$THADEUS_SESSION_DIR\" ] && [ -f \"$CLAUDE_PROJECT_DIR/.thadeus/hooks/dialog.sh\" ] && sh \"$CLAUDE_PROJECT_DIR/.thadeus/hooks/dialog.sh\" session; exit 0",
+            "timeout": 10,
+            "async": true
+          }
+        ]
+      }
+    ],
+    "Notification": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "[ -n \"$THADEUS_SESSION_DIR\" ] && [ -f \"$CLAUDE_PROJECT_DIR/.thadeus/hooks/dialog.sh\" ] && sh \"$CLAUDE_PROJECT_DIR/.thadeus/hooks/dialog.sh\" notify; exit 0",
+            "timeout": 10,
+            "async": true
+          }
+        ]
+      }
+    ],
+    "PreCompact": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "[ -n \"$THADEUS_SESSION_DIR\" ] && [ -f \"$CLAUDE_PROJECT_DIR/.thadeus/hooks/dialog.sh\" ] && sh \"$CLAUDE_PROJECT_DIR/.thadeus/hooks/dialog.sh\" precompact; exit 0",
             "timeout": 10
+          }
+        ]
+      }
+    ],
+    "PostCompact": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "[ -n \"$THADEUS_SESSION_DIR\" ] && [ -f \"$CLAUDE_PROJECT_DIR/.thadeus/hooks/dialog.sh\" ] && sh \"$CLAUDE_PROJECT_DIR/.thadeus/hooks/dialog.sh\" postcompact; exit 0",
+            "timeout": 10,
+            "async": true
           }
         ]
       }

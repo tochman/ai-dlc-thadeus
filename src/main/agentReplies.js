@@ -5,7 +5,7 @@
 // - LatestMessage per project (BR6.15, SCD8, SD12), in memory only;
 // - typed delivery (BR6.10–BR6.12, RD13, RD14, K1): the cleaned line, then one Enter to the same pty.
 import { t } from '../shared/i18n.js';
-import { cleanLine, utf8Bytes } from '../shared/agentText.js';
+import { cleanBody, cleanLine, utf8Bytes } from '../shared/agentText.js';
 import { alertPlan } from '../shared/alertPlan.js';
 import { formatLog } from './agentChannel.js';
 
@@ -46,7 +46,8 @@ export function createReplies({ events, sessions, move, emit, channel, pty, timi
   const latest = new Map(); // projectId -> LatestMessage, with sessionId for main's own use only
   const isReply = (e) => e.kind === 'reply';
   const of = (sessionId, states) => [...events.values()].filter((e) => isReply(e) && e.sessionId === sessionId && states.has(e.state));
-  const blocked = (projectId) => [...events.values()].some((e) => !isReply(e) && e.projectId === projectId && BLOCKING.has(e.state));
+  // A handoff page (US-0213) never holds a reply back.
+  const blocked = (projectId) => [...events.values()].some((e) => !isReply(e) && e.kind !== 'handoff' && e.projectId === projectId && BLOCKING.has(e.state));
   const logFor = (ev, reason) => log(formatLog(reason, { session: ev.sessionId, file: `${ev.file}.evt` }));
 
   /** A pending Enter (K1) is cancelled: it is never written, then or later, and the send fails with one sentence. */
@@ -85,6 +86,9 @@ export function createReplies({ events, sessions, move, emit, channel, pty, timi
   }
 
   function add(raw, session, parsed) {
+    // US-0026 FR7.1: a turn with nothing to show (no visible text, and a reply has no choices of its own) opens no page.
+    // It still means the agent moved on, so an older reply of the tab goes stale as it would for any newer turn.
+    if (cleanBody(parsed.message.text).trim() === '') return moveOn(raw.sessionId, 'movedOn');
     const newest = of(raw.sessionId, UNIQUE)
       .sort((a, b) => a.seq - b.seq)
       .at(-1);

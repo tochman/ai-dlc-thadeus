@@ -2,7 +2,8 @@
 // Questions and permission prompts come before replies, then arrival, then tab, then the channel's own sequence
 // number, never a file name (SCD7).
 
-const rank = (e) => (e.kind === 'reply' ? 1 : 0);
+// US-0213: the handoff page comes last, after what the agent asks and says.
+const rank = (e) => (e.kind === 'handoff' ? 2 : e.kind === 'reply' ? 1 : 0);
 
 /** Comparator: [rank, arrivedAtMs, tabId, seq]. */
 export const byPager = (a, b) =>
