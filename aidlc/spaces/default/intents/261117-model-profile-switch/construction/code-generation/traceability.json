@@ -1,0 +1,43 @@
+{
+  "stage": "code-generation",
+  "upstream_ids": [
+    "AC1.1.1",
+    "AC1.1.2",
+    "AC1.1.3",
+    "AC1.1.4",
+    "AC1.1.5",
+    "AC1.1.6",
+    "AC1.2.1",
+    "AC1.2.2",
+    "AC1.2.3",
+    "AC1.2.4",
+    "AC1.2.5",
+    "AC1.2.6",
+    "AC1.3.1",
+    "AC1.3.2",
+    "AC1.3.3",
+    "AC1.3.4",
+    "AC1.3.5",
+    "AC1.3.6"
+  ],
+  "coverage": [
+    { "id": "AC1.1.1", "status": "OK", "target": "src/renderer/ModelProfilesSection.jsx" },
+    { "id": "AC1.1.2", "status": "OK", "target": "src/renderer/ModelProfilesSection.jsx" },
+    { "id": "AC1.1.3", "status": "OK", "target": "src/renderer/ModelProfilesSection.jsx" },
+    { "id": "AC1.1.4", "status": "OK", "target": "src/main/settings.js" },
+    { "id": "AC1.1.5", "status": "OK", "target": "src/main/settings.js" },
+    { "id": "AC1.1.6", "status": "OK", "target": "src/main/modelProfiles.js" },
+    { "id": "AC1.2.1", "status": "OK", "target": "src/main/ipc.js" },
+    { "id": "AC1.2.2", "status": "OK", "target": "src/main/modelProfiles.js" },
+    { "id": "AC1.2.3", "status": "OK", "target": "src/main/modelProfiles.js" },
+    { "id": "AC1.2.4", "status": "OK", "target": "src/main/modelProfiles.js" },
+    { "id": "AC1.2.5", "status": "OK", "target": "src/main/modelProfiles.js" },
+    { "id": "AC1.2.6", "status": "OK", "target": "src/main/ipc.js" },
+    { "id": "AC1.3.1", "status": "OK", "target": "src/main/modelProfiles.js" },
+    { "id": "AC1.3.2", "status": "OK", "target": "src/renderer/ProfileSwitchDialog.jsx" },
+    { "id": "AC1.3.3", "status": "OK", "target": "src/main/modelProfiles.js" },
+    { "id": "AC1.3.4", "status": "OK", "target": "src/main/modelProfiles.js" },
+    { "id": "AC1.3.5", "status": "OK", "target": "src/main/modelProfiles.js" },
+    { "id": "AC1.3.6", "status": "OK", "target": "src/main/ipc.js" }
+  ]
+}

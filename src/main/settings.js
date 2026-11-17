@@ -8,6 +8,7 @@ import { DELIVERY } from './parsers/releases.js';
 import { LANGUAGE_SETTINGS, t } from '../shared/i18n.js';
 import { HARNESSES, selectableHarness } from '../shared/harnesses.js';
 import { TOOL_IDS, isStoredPath } from './tools.js';
+import { checkModelProfiles, sanitizeModelProfiles } from './modelProfiles.js';
 
 export { TOOL_IDS };
 
@@ -64,7 +65,9 @@ function sanitizeProject(raw) {
     ...(selectableHarness(raw?.harness) ? { harness: raw.harness } : {}),
     ...(tabs ? { harnessTabs: tabs } : {}),
     // "Releases / Continuous deployment" (US-0603 FR1.1); left out when unset or invalid, so DELIVERY_DEFAULT applies.
-    ...(DELIVERY.includes(raw?.delivery) ? { delivery: raw.delivery } : {})
+    ...(DELIVERY.includes(raw?.delivery) ? { delivery: raw.delivery } : {}),
+    // "Model profiles" (US-0210 FR1.5); left out until saved.
+    ...(raw?.modelProfiles !== undefined ? { modelProfiles: sanitizeModelProfiles(raw.modelProfiles) } : {})
   };
 }
 
@@ -174,13 +177,13 @@ export async function setProjectSettings(root, partial) {
     }
     partial = { ...partial, harnessTabs: tabs };
   }
+  if (partial?.modelProfiles !== undefined) checkModelProfiles(partial.modelProfiles);
   const given = Object.fromEntries(Object.entries(partial ?? {}).filter(([, v]) => v !== undefined));
-  const next = await update((cur) => ({
-    ...cur,
-    projectSettings: {
-      ...cur.projectSettings,
-      [root]: { ...(cur.projectSettings[root] ?? PROJECT_DEFAULTS), ...given }
-    }
-  }));
+  const next = await update((cur) => {
+    const was = cur.projectSettings[root] ?? PROJECT_DEFAULTS;
+    // US-0210: modelProfiles is merged per key, so the view's save and main's `active` never overwrite each other.
+    const profiles = given.modelProfiles ? { modelProfiles: { ...was.modelProfiles, ...given.modelProfiles } } : {};
+    return { ...cur, projectSettings: { ...cur.projectSettings, [root]: { ...was, ...given, ...profiles } } };
+  });
   return next.projectSettings[root];
 }

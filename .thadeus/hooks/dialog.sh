@@ -47,14 +47,20 @@ if [ "$waits" = 1 ]; then printf '' > "$a.wait" || exit 0; fi
 { printf 'THADEUS-EVENT v1 %s %s\n' "$1" "$s" && cat; } > "$d/events/$n.tmp" || exit 0
 mv "$d/events/$n.tmp" "$d/events/$n.evt" || exit 0
 [ "$waits" = 1 ] || exit 0
-# Per poll: one [ -f ], one read, one date, one sleep; mv and cat only when an answer is there (SCD4).
-same=0
+# Per poll: one [ -f ], one read, one sleep; mv and cat only when an answer is there (SCD4). The deadline is whole
+# seconds, so `date` runs every 10th poll only: each fork adds to the 20 liveness polls, and on a loaded macOS `sh`
+# two forks a poll pushed the hand-back past 2.5 s (US-0210 Build and Test).
+same=0 i=0
 while :; do
   if [ -f "$a.ans" ] && mv "$a.ans" "$a.took"; then cat "$a.took"; exit 0; fi
   read -r cur < "$d/alive" || exit 0
   if [ "$cur" = "$last" ]; then same=$((same + 1)); else same=0; last=$cur; fi
   [ "$same" -lt 20 ] || exit 0
-  now=$(date +%s) || exit 0
-  [ $((now - t0)) -lt "$w" ] || exit 0
+  i=$((i + 1))
+  if [ "$i" -ge 10 ]; then
+    i=0
+    now=$(date +%s) || exit 0
+    [ $((now - t0)) -lt "$w" ] || exit 0
+  fi
   sleep 0.1 || exit 0
 done

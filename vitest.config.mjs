@@ -5,7 +5,21 @@ import react from '@vitejs/plugin-react';
 // (Vitest 3+ replaced environmentMatchGlobs with projects; same split.)
 // The hook script tests measure real time against the design's windows (US-0506 RD1), so they run as their own
 // project after the others have finished, never beside a loaded machine (groupOrder 1).
-const TIMED = ['tests/main/dialogScript.test.js', 'tests/main/dialogScriptReply.test.js', 'tests/main/agentHooksGuard.test.js'];
+// US-0210: every main test with a wall-clock limit, or that waits on real shells, git or file watching, runs here,
+// after the parallel projects and one file at a time; under a full parallel run they went over on a loaded machine.
+const TIMED = [
+  'tests/main/dialogScript.test.js',
+  'tests/main/dialogScriptReply.test.js',
+  'tests/main/agentHooksGuard.test.js',
+  'tests/main/agentHooksInstaller.test.js',
+  'tests/main/agentPermissionAdapter.test.js',
+  'tests/main/agentChannel.test.js',
+  'tests/main/agentChannelScript.test.js',
+  'tests/main/agentChannelSweep.test.js',
+  'tests/main/velocity.test.js',
+  'tests/main/git.test.js',
+  'tests/main/watcher.test.js'
+];
 export default defineConfig({
   plugins: [react()],
   test: {
@@ -39,7 +53,7 @@ export default defineConfig({
       {
         extends: true,
         // US-0010: wall-clock tests retry up to twice under a loaded run; every attempt keeps its full limit.
-        test: { name: 'scripts', include: TIMED, environment: 'node', sequence: { groupOrder: 1 }, retry: 2 }
+        test: { name: 'scripts', include: TIMED, environment: 'node', sequence: { groupOrder: 1 }, retry: 2, fileParallelism: false }
       },
       {
         extends: true,

@@ -2,18 +2,18 @@
 
 ## Run Record
 
-- Date: 2026-11-16
-- Commit: bbfb4c06bcd4a887a4f6c1b32137e43a42cec9b9
-- Intent: project-velocity (`261116-project-velocity`, EPIC-03 US-0303)
+- Date: 2026-11-17
+- Commit: 2b5d6a47c83532c7e55358c2307043461127f990
+- Intent: model-profile-switch (`261117-model-profile-switch`, EPIC-02 US-0210)
 
-This was a focused scan of the parsers, the Project Service, the feature-doc and git modules, the IPC Router and `src/renderer`. It was merged onto the store from the shared-tooltip scan at `f46cb71`. That store was stale, so only this run's coverage is recorded as verified. `src/renderer` was re-read and stays deep, and the earlier shallow paths stay shallow. The prose outside the analyzed area is kept from the earlier scans and is marked where it is not re-verified. The US-0414 tooltip notes were replaced by short "delivered" notes, because `Tooltip.jsx` now exists. The developer agent did both the scan and the synthesis, because the architect was switched off for this run.
+This was a focused scan of the CLI runner, the model commands, the project settings store and UI, and intent watching. It was merged onto the store from the US-0303 scan at `bbfb4c0`. That store was stale, so only this run's coverage is recorded as verified, and its analyzed paths are demoted to shallow. The prose outside the analyzed area is kept from the earlier scans and is marked where it is not re-verified. The developer agent did both the scan and the synthesis, because the architect was switched off for this run.
 
 What was read, and how closely:
-- Read line by line: every file in `src/main/parsers/` except `ledger.js` (exports and `summarizeLedger`), plus `projectService.js`, `features.js`, `git.js` and `releases.js`.
-- Read by sections: `ipc.js` (imports, the handler table, the project, cost and features handlers, `registerIpc`); in the renderer, `useProject.js`, `useFeatures.js`, `Lcars.jsx`, `Tooltip.jsx`, the view switch in `ProjectView.jsx` and `App.jsx`, the tabs of `IntentDetail.jsx`, and the heads of `Timeline.jsx`, `CostPanel.jsx` and `FeaturesView.jsx`.
-- Read at the level of header, imports and searches: the rest of `src/renderer`.
-- Listed or searched only, outside the analyzed paths: `src/main/` (other modules), `src/preload/index.js`, `tests/`, `src/shared/locales/`, `package.json`, `.gitignore`, `docs/features/epic-03-audit-timeline.md`, and the event types and fields in this project's audit shards (as input data).
-- Not opened: `node_modules/`, `out/`, `dist/`, `coverage/`, `tests/.tmp/`, `.thadeus/`, and AI-DLC's install and workspace.
+- Read line by line: `exec.js`, `modelChoice.js`, `models.js`, `aidlcWrite.js`, `settings.js`, `watcher.js`, `parsers/intents.js`, `ProjectSettingsView.jsx`, `useProject.js`.
+- Read by sections: `projectService.js` (lines 1-200: the intent list, summaries and `inProgress`) and `ipc.js` (the model, config, cost-rules and plans handlers, `watchSpace`, `refreshQuestions`, `project:open`, `projectSettings:*`, `registerIpc`).
+- Skimmed or searched, outside the analyzed paths: `src/preload/index.js`, `aidlcConfig.js`, `ConfigEdit.jsx` (`ModelPicker`), `ConfigView.jsx`, `ProjectView.jsx`, `App.jsx`, `costRules.js`, `CostRulesSection.jsx`, `VelocityView.jsx`, `notify.js`, `src/shared/configTables.js`, `src/shared/harnesses.js`, and the test file names.
+- Read as input contracts only: `intents.json`, this intent's `aidlc-state.md`, and the `config models` flag parsing in AI-DLC's CLI (`--from`, `--save-as`, `ModelProfile`).
+- Not opened: `node_modules/`, `out/`, `dist/`, `coverage/`, `tests/.tmp/`, `.thadeus/`, and the rest of AI-DLC's install and workspace.
 
 Code was read only: no tests, builds or app runs.
 
@@ -22,53 +22,50 @@ Code was read only: no tests, builds or app runs.
 ```yaml
 scope_version: 1
 kind: partial
-intent: project-velocity
-fingerprint: 95ecd985b1204242567081c519704e0f5ea17b22
+intent: model-profile-switch
+fingerprint: 7e27b02192e4dadadc7d421c56c8789c26344ff4
 analyzed:
   paths:
-    - src/main/parsers/
-    - src/main/features.js
-    - src/main/git.js
-    - src/main/releases.js
+    - src/main/exec.js
+    - src/main/modelChoice.js
+    - src/main/models.js
+    - src/main/aidlcWrite.js
+    - src/main/settings.js
+    - src/main/watcher.js
     - src/main/projectService.js
+    - src/main/parsers/intents.js
     - src/main/ipc.js
-    - src/renderer/
+    - src/renderer/ProjectSettingsView.jsx
+    - src/renderer/useProject.js
   components:
-    - IPC Router
+    - Exec Runner
+    - Model Choice
+    - Model Config Reader
+    - AI-DLC Config Writer
+    - Settings Store
+    - Watcher
     - Project Service
-    - Audit Parser
-    - State Parser
-    - Runtime Graph Parser
-    - Pipeline Merger
     - Intents Merger
-    - Units Status
-    - Ledger Parser
-    - Audit Cost Parser
-    - Agent Progress Parser
-    - Features Parser
-    - Releases Parser
-    - Git Reader
-    - Features Loader
-    - Releases Service
-    - App Shell
-    - ProjectView
-    - IntentDetail
-    - Timeline
-    - CostPanel
-    - FeaturesView
-    - LCARS Primitives
-    - Tooltip
-    - Format Helpers
+    - IPC Router
+    - ProjectSettingsView
     - useProject
-    - useFeatures
 shallow:
   paths:
     - ./
     - src/main/
+    - src/main/parsers/
+    - src/main/features.js
+    - src/main/git.js
+    - src/main/releases.js
+    - src/main/aidlcConfig.js
+    - src/main/costRules.js
     - src/preload/
+    - src/renderer/
+    - src/renderer/ConfigEdit.jsx
+    - src/shared/
+    - src/shared/locales/
     - docs/
     - build/
     - tests/main/
     - tests/renderer/
-    - src/shared/locales/
 ```

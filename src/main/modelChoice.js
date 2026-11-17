@@ -13,6 +13,8 @@ const AGENT = /^[a-z][a-z0-9-]{0,63}$/;
 const OPENCODE_ID = /^[a-z0-9][a-z0-9._-]*\/[A-Za-z0-9][A-Za-z0-9._:-]*$/;
 const CLAUDE_ID = /^claude-[a-z0-9-]+$/;
 const TABLES = new Set(['claude', 'opencode']);
+/** A saved AI-DLC profile name, for `--from <name>` (US-0210 NFR2). */
+export const PROFILE_NAME = /^[a-z0-9][a-z0-9-]*$/;
 
 const refuse = (value) => {
   throw new Error(t('errors.invalidValue', { what: 'aidlc config models', value: String(value) }));
@@ -57,6 +59,7 @@ export async function modelOptions(root, harness, { exec = defaultExec } = {}) {
     );
     if (out?.ok !== true || !Array.isArray(out.data?.effective)) throw new Error(out?.message ?? t('errors.missingField', { field: 'data.effective' }));
     configured = out.data.effective.filter((e) => e && typeof e.agent === 'string').map((e) => ({ ...e, agent: agentName(e.agent) }));
+    base.savedProfiles = out.data.profiles ?? null; // US-0210 FR1.2: as reported; savedProfileNames reads the names
   } catch (err) {
     console.warn(`aidlc config models --show --harness ${harness} misslyckades:`, errorText(err));
     return { ...base, editable: false, reason: t('configEdit.models.readFailed', { error: errorText(err) }) };
@@ -72,12 +75,16 @@ export async function modelOptions(root, harness, { exec = defaultExec } = {}) {
   }
 }
 
-const MODEL_FIELDS = new Set(['harness', 'agent', 'preset', 'group', 'model', 'effort', 'where']);
+const MODEL_FIELDS = new Set(['harness', 'agent', 'preset', 'group', 'from', 'model', 'effort', 'where']);
 
-/** The policy part of the command: exactly one of agent, preset or group (FR1.3). */
-function policyArgs({ agent, preset, group, model, effort }, models) {
-  const targets = [agent, preset, group].filter((v) => v !== undefined);
-  if (targets.length !== 1) refuse('agent|preset|group');
+/** The policy part of the command: exactly one of agent, preset, group or a saved profile (FR1.3, US-0210 FR2.2). */
+function policyArgs({ agent, preset, group, from, model, effort }, models) {
+  const targets = [agent, preset, group, from].filter((v) => v !== undefined);
+  if (targets.length !== 1) refuse('agent|preset|group|from');
+  if (from !== undefined) {
+    if (!PROFILE_NAME.test(from) || from.length > 64 || model !== undefined || effort !== undefined) refuse(from);
+    return ['--from', from];
+  }
   if (preset !== undefined) {
     if (!PRESETS.includes(preset) || model !== undefined || effort !== undefined) refuse(preset);
     return ['--preset', preset];
@@ -107,7 +114,8 @@ export function buildModelCommand(change, models) {
   return { args: [...args, '--yes'], dryRunArgs: [...args, '--dry-run'] };
 }
 
-async function run(root, args, exec) {
+/** Runs one `aidlc` command; never throws: `{ok, command, output}` or `{ok: false, command, error}`. */
+export async function run(root, args, exec = defaultExec) {
   const command = ['aidlc', ...args].join(' ');
   try {
     return { ok: true, command, output: (await runFixed(toolPath('aidlc'), args, { cwd: root, timeout: TIMEOUT_MS, exec })).trim() };

@@ -18,6 +18,8 @@ import ConfigView from './ConfigView.jsx';
 import PlansView from './PlansView.jsx';
 import ProjectSettingsView, { AIDLC_SECTIONS, confirmHarnessSwitch } from './ProjectSettingsView.jsx';
 import CostRulesSection from './CostRulesSection.jsx';
+import ModelProfilesSection from './ModelProfilesSection.jsx'; // US-0210
+import ProfileSwitchDialog from './ProfileSwitchDialog.jsx'; // US-0210
 import { Frame } from './Lcars.jsx';
 import { featureDocsPrompt, lifecycleRulePrompt } from './featureDocsPrompt.js';
 import { DELIVERY_DEFAULT } from '../main/parsers/releases.js';
@@ -320,6 +322,9 @@ function ProjectContent({
     onView?.('config', { configSection: 'agent' });
   };
   const [addingHarness, setAddingHarness] = useState(false); // setup in add mode, from Projektinställningar (US-0802 FR3.1)
+  // US-0210 FR2.1, FR3.1: main asks to switch the model profile; the answer runs with the agent tab's harness (FR5.1).
+  const [profileAsk, setProfileAsk] = useState(null);
+  useEffect(() => window.bridge.onModelProfileAsk?.((ask) => ask.projectId === project.projectId && setProfileAsk(ask)), [project.projectId]);
   // The switch offer after setup goes the same way as the dialog's: asked first while the tab works (FR4.2).
   async function switchHarness(id) {
     if (!confirmHarnessSwitch(terminal, harnessId, id, t)) return;
@@ -428,6 +433,14 @@ function ProjectContent({
             />
           )}
           {view === 'config' && configSection === 'costRules' && <CostRulesSection projectId={project.projectId} />}
+          {view === 'config' && configSection === 'modelProfiles' && (
+            <ModelProfilesSection projectId={project.projectId} harness={harnessId} settings={settings} />
+          )}
+          <ProfileSwitchDialog
+            ask={profileAsk}
+            answer={(yes) => window.bridge.answerModelProfile(project.projectId, profileAsk.kind, yes, harnessId)}
+            onClose={() => setProfileAsk(null)}
+          />
           {view === 'config' && !AIDLC_SECTIONS.includes(configSection) && (
             <ProjectSettingsView
               section={configSection}

@@ -1,6 +1,6 @@
 # Dependencies
 
-The external package versions are in `technology-stack.md`; this file covers how the parts depend on each other.
+The external package versions are in `technology-stack.md`. This file covers how the parts depend on each other.
 
 ## Internal Dependencies (main process)
 
@@ -12,63 +12,79 @@ flowchart TD
   IPC --> GIT[git.js]
   IPC --> TA[teamActivity.js]
   IPC --> W[watcher.js]
-  IPC --> OTHER[pty, config, agent and writer modules]
+  IPC --> SS[settings.js]
+  IPC --> MC[modelChoice.js]
+  IPC --> MO[models.js]
+  IPC --> AC[aidlcConfig.js]
+  IPC --> AW[aidlcWrite.js]
+  IPC --> CR[costRules.js]
+  IPC --> OTHER[pty, agent and plan modules]
   PS --> PA[projectAccess.js]
-  PS --> P[parsers: intents, state, runtimeGraph, audit, pipeline, units, ledger, auditCost]
-  PS --> US[usageSnapshot.js]
-  PS --> Q[questions.js]
-  FL --> PA
-  FL --> PF[parsers: features, releases]
-  RS --> FL
-  RS --> FW[fileWrite.js]
-  GIT --> EX[exec.js]
-  GIT --> PA
+  PS --> P[parsers: intents, state, runtimeGraph, audit, pipeline, units, ledger, auditCost, velocity]
+  MC --> EX[exec.js]
+  MC --> TL[tools.js]
+  MC --> CT[shared/configTables.js]
+  MO --> EX
+  AW --> EX
+  AC --> EX
+  SS --> PF[parsers: features, releases]
+  SS --> H[shared/harnesses.js]
+  GIT --> EX
+  CR --> PL[plans.js]
   AP[parsers/agentProgress.js] --> PS
 ```
 
 Text fallback:
-- `ipc.js` depends on the Project Service, the Features Loader, the Releases Service, the Git Reader, Team Activity, the Watcher and the other modules.
-- `projectService.js` depends on Project Access, most parsers, Usage Snapshot and the Questions Parser.
-- `features.js` reads through Project Access and parses with the features and releases parsers; `releases.js` builds on `features.js` and writes through `fileWrite.js`.
-- `git.js` runs commands through `exec.js`.
-- `parsers/agentProgress.js` imports `workingAgents` from `projectService.js`. It is the only parser that reaches back into a service. There is no cycle, because `projectService.js` does not import it.
+- `ipc.js` depends on every service:
+  - the Project Service, Features Loader, Releases Service, Git Reader, Team Activity and Watcher;
+  - the Settings Store;
+  - Model Choice and the Model Config Reader;
+  - the AI-DLC config reader and writer;
+  - the cost rules and the other modules.
+- Model Choice, the Model Config Reader, the config reader and writer, and the Git Reader all run commands through `exec.js`, with the binary from `tools.js`.
+- Model Choice and the config writer take every argument from `shared/configTables.js`.
+- `settings.js` validates against the features and releases parsers and the harness table.
+- `parsers/agentProgress.js` imports `workingAgents` from `projectService.js`. There is no cycle.
 
 ## Internal Dependencies (renderer)
 
-- `App.jsx` → `ProjectView`, `AgentDialog`, `LatestMessageStrip`, `SettingsView`, the dialogs.
-- `ProjectView` → `useProject`, `useFeatures`, `IntentList`, `IntentDetail`, `TerminalPanel`, `FeaturesView`, `ConfigView`, `PlansView`, `CostPanel`, `RefreshPanel`, `MachinesView`, `EditorPanel`.
-- `IntentDetail` → `Pipeline`, `Timeline`, `BoltDag`, `ArtifactReader`, `CostTab`, `StoryComments`, `ResumeButton`, `TokenView`, `TokenDetail`, `Lcars`, `format.js`.
-- `CostPanel` → `CostTab` (`CostLabel`, `CostTable`, `MachinesLine`, `ModelTable`), `Lcars` (`Readout`), `Tooltip`, `format.js`.
-- `FeaturesView` → `ArtifactReader` (`FileContent`), `editor/EditorContext`, `Lcars` (`Frame`), `Tooltip`, `../main/parsers/releases.js`, `../main/parsers/features.js`, `storyFilter.js`.
+- `App.jsx` → `ProjectView`, `AgentDialog`, `LatestMessageStrip`, `SettingsView`, the dialogs; `PROJECT_SECTIONS` from `ProjectSettingsView`.
+- `ProjectView` → `useProject`, `useFeatures`, `IntentList`, `IntentDetail`, `TerminalPanel`, `FeaturesView`, `ConfigView`, `ProjectSettingsView`, `CostRulesSection`, `PlansView`, `CostPanel`, `VelocityView`, `RefreshPanel`, `MachinesView`, `EditorPanel`.
+- `ProjectSettingsView` → `SettingsView` (`Section`, `RadioBlocks`), `AgentHooksSection`, `TerminalContext`, `shared/harnesses.js`, `parsers/features.js`, `parsers/releases.js`.
+- `ConfigView` → `ConfigEdit` (`ModelPicker`, `ChangePanel` and the editors).
+- `CostRulesSection` → `ConfigEdit` (`ChangePanel`), `SettingsView`.
+- `IntentDetail` → `Pipeline`, `Timeline`, `BoltDag`, `ArtifactReader`, `CostTab`, `VelocityView` (the intent tab), `StoryComments`, `ResumeButton`, `TokenView`, `TokenDetail`.
 - `Lcars.jsx` → `Tooltip.jsx` → `tooltipPlacement.js`.
-- The main modules the renderer bundles directly: the parsers `features`, `releases`, `ledger`, plus `src/shared/*`.
 
 ## External Integrations
 
 | Integration | Direction | Module |
 |---|---|---|
 | AI-DLC project files (`aidlc/…`) | read; watched | Project Service, Watcher |
-| Feature docs (`docs/FEATURES.md`, `docs/features/`, `docs/releases/`) | read; marker and plan writes | Features Loader, Releases Service |
-| `aidlc` CLI | run with fixed arguments | config modules, Setup Helper, AI-DLC Update Check |
+| AI-DLC memory files | marked-block and Guard Policy writes after a diff | Cost Rules Service, AI-DLC Config Writer |
+| Feature docs | read; marker and plan writes | Features Loader, Releases Service |
+| `aidlc` CLI | run with fixed arguments | Model Choice, Model Config Reader, config reader and writer, Setup Helper, Plans Service, AI-DLC Update Check |
 | git | read-only commands, plus `init` in setup | Git Reader, File Editor Service |
 | GitHub, GitLab, Bitbucket | read pull requests and comments | Team Activity, `platforms/` |
 | GitHub releases API / `gh` | read and download | Updater |
-| Agent harness hooks | file channel in userData | Agent Channel, Dialog Hook Script |
+| Agent harness hooks | a file channel in userData | Agent Channel, Dialog Hook Script |
+| App settings | read and write `userData/settings.json` | Settings Store |
 
-## US-0303 Blast Radius
+## US-0210 Blast Radius
 
-| File | Change likely | Dependents and tests |
+| File | Likely change | Dependents and tests |
 |---|---|---|
-| a new pure parser (`src/main/parsers/velocity.js` or similar) | intent, story and project metrics from events, state and stories | new `tests/main` test |
-| `src/main/projectService.js` | an all-intents velocity loader (like `loadCrossMachineCost`) that names missing or unreadable records | `projectService.test.js` |
-| `src/main/git.js` | a fixed `git log` over the epic files for marker history | `git.test.js` |
-| `src/main/ipc.js`, `src/preload/index.js` | one handler and one bridge member | the IPC wrapper is generic |
-| `App.jsx`, `ProjectView.jsx` (and maybe `IntentDetail.jsx` `TABS`) | the new view or tab | `AppShell.test.jsx`, `ProjectView.test.jsx`, `IntentDetail.test.jsx` |
-| a new view component | LCARS frame, tables or SVG chart, `Tooltip` | new `tests/renderer` test; `noNativeTitle.test.jsx` |
+| `src/main/modelChoice.js` | a `from` policy (preset name or profile name), and possibly a profile list | `modelChoice.test.js`; `ModelPicker` keeps working |
+| `src/main/settings.js` | the new project fields in `sanitizeProject` and `setProjectSettings` | `settings.test.js` |
+| `src/main/ipc.js` | pass the new fields in `projectSettings:set`; a critical-intent check in `watchSpace` `onChange` with a baseline; an apply handler; a push channel | `ipc.test.js` |
+| `src/preload/index.js` | one subscribe and one or two invoke members | none of its own |
+| `src/renderer/ProjectSettingsView.jsx` (+ `App.jsx` if it gets a new section) | the settings form | `ProjectSettingsView.test.jsx`, `AppShell.test.jsx` |
+| a new LCARS dialog, or a reuse of `AgentDialog` | the question and the output | new `tests/renderer` test; `noNativeTitle.test.jsx` |
+| `src/renderer/ConfigView.jsx` | show the active profile | `ConfigView.test.jsx` |
 | `src/shared/locales/{sv,en}.json` | new keys | `tests/main/i18nKeys.test.js` |
 
-Impact: medium. Mostly new files; small additions to `git.js`, `projectService.js`, `ipc.js`, the preload and the view switch. No new dependency is needed.
+Impact: medium. The change runs across the processes, but every piece has an existing pattern to copy. No new dependency is needed.
 
 ## Licences
 
-All runtime dependencies are permissively licensed. `scripts/third-party-licenses.mjs` generates `build/THIRD_PARTY_LICENSES.txt` at build time, which ships and opens from About (US-1101).
+All runtime dependencies are permissively licensed. `scripts/third-party-licenses.mjs` generates `build/THIRD_PARTY_LICENSES.txt` at build time (US-1101).

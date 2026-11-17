@@ -114,6 +114,10 @@ contextBridge.exposeInMainWorld('bridge', {
   previewModelChange: call('models:preview'),
   applyModelChange: call('models:apply'),
   checkModels: call('models:check'),
+  // The model profile switch (US-0210): saved profile names, the answer to a question, and the question itself.
+  getSavedModelProfiles: call('modelProfile:saved'),
+  answerModelProfile: call('modelProfile:answer'),
+  onModelProfileAsk: subscribe('modelProfile:ask'),
   // The app updater (EPIC-04 US-0407): no URL, file or command crosses the bridge.
   checkUpdate: call('update:check'),
   downloadUpdate: call('update:download'),

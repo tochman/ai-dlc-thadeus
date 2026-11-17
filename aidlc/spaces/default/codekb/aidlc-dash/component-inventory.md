@@ -1,119 +1,153 @@
 # Component Inventory
 
-One heading per component; the heading text is the component's name in the Scope of Analysis block. Paths are repo-relative. External packages are in `dependencies.md`. Re-read at `bbfb4c0` (US-0303): the parsers, Project Service, Features Loader, Releases Service, Git Reader, IPC Router and the renderer. The other entries are from earlier scans (`721e051`, `f46cb71`) or were only listed in this run, which is marked.
+One heading per component; the heading text is the component's name in the Scope of Analysis block. Paths are repo-relative. The external packages are in `dependencies.md`.
+
+This run (`2b5d6a4`, US-0210) re-read these components: Exec Runner, Model Choice, Model Config Reader, AI-DLC Config Writer, Settings Store, Watcher, Project Service, Intents Merger, IPC Router, ProjectSettingsView and useProject. The other entries are from earlier scans (`721e051`, `f46cb71`, `bbfb4c0`), or were only listed in this run, which is marked.
 
 ## Main process (`src/main/`)
 
 ### Main Entry
-- `src/main/index.js`: app lifecycle, single instance, `windowOptions()` (sandbox, contextIsolation), navigation block, close guard, update check, shutdown.
+- `src/main/index.js`: the app lifecycle, single instance, `windowOptions()` (sandbox, contextIsolation), the navigation block, the close guard, the update check and shutdown.
 
 ### IPC Router
-- `src/main/ipc.js` (1038 lines): 87 invoke handlers in one table, wrapped by `registerIpc`. Per-project state (root, space, watchers, sender, caches); `watchSpace`, `watchConfig`, `watchGitHead`, `syncFeaturesWatch`; agent dialogs and team handlers. `project:cost` and `features:load` are the models for a velocity handler.
+- `src/main/ipc.js` (1070 lines): the invoke handlers in one table, wrapped by `registerIpc` (log, then rethrow).
+- Per-project state in `projects`: root, space, watchers, sender, `harnesses` (a detection promise), `models`, `modelOptions`, pending previews and `questions`.
+- `watchSpace` starts `watchIntents`. Its `onChange` sends `project:changed` and calls `refreshQuestions`, which keeps a `startedWith` baseline: ids from a project's first computation never alert. This is the hook point for a US-0210 "new critical intent" check.
+- `harnessModelOptions` checks that the harness is installed (`checkHarness`) and caches the model list.
+- `sendConfigChanged`.
+- `projectSettings:set` passes through only `featureDocs`, `featuresPath`, `harness`, `harnessTabs` and `delivery`.
 
 ### Project Service
-- `src/main/projectService.js`: `detectProject`, `loadIntentList` (cached summaries from the state file, `activityAt`), `loadIntentDetail`/`buildDetail`, `loadAuditEvents` (a missing audit folder gives `[]`), `workingAgents`, `inflightCount`, `inProgress`, `loadPendingQuestions`, `loadCost`, `loadCrossMachineCost` (the only loop over every intent's audit). Defines `LEDGER_PATH`, `INFLIGHT_PATH`, `intentsDir`, `assertName`.
+- `src/main/projectService.js` (417 lines):
+  - `detectProject`;
+  - `loadIntentList`, which caches per root and space, keeps the previous index when `intents.json` is half-written, and re-reads only `onlyDirs`;
+  - `summarizeIntent` (`stateScope`, `plan`, `request`, `currentStage`, `stateStatus`, `done`, `executed`, `activityAt`);
+  - `inProgress(intent)`: false for `complete` or `archived`, a `Complete…` state status, or all executed stages done;
+  - `loadAuditEvents`, `workingAgents`, `inflightCount`, `loadPendingQuestions`, `loadCost`, `loadCrossMachineCost`, and the velocity loader (US-0303, not re-read).
+- It defines `LEDGER_PATH`, `INFLIGHT_PATH`, `intentsDir` and `assertName`.
 
 ### Project Access
 - `src/main/projectAccess.js`: root-confined reads (`openRoot`, `resolveInRoot`, `readText`, `readJsonSafe`, `listDir`, `newestMtime`, `exists`). No write calls.
 
 ### Watcher
-- `src/main/watcher.js`: `watchIntents` (the intents folder and the ledger), `watchFiles`, `watchOpenFiles`, `watchForAidlc`. Debounce 300 ms, max wait 800 ms.
+- `src/main/watcher.js`:
+  - `watchIntents` watches the intents folder (ignoring `.aidlc-engine/` except `active-directive.json`), the ledger, `.thadeus/usage` and the worktree Unit plans.
+  - A top-level change (`intents.json`, `active-intent`, a new intent folder) sets `indexChanged`. A change inside an intent adds its `dirName`. An audit shard change sets `costChanged`.
+  - Debounce 300 ms, max wait 800 ms.
+  - Also `watchFiles` (the config watch), `watchOpenFiles` and `watchForAidlc`.
 
 ### Audit Parser
-- `src/main/parsers/audit.js`: shards into events (`## Title`, `**Key**: value`, `---`) with stable keys; `mergeAudits` sorts by `timeMs`, source, index and adds `seq`; a block without a valid timestamp inherits the previous one's time; `categoryOf`, `NOISY_EVENTS`. Pure.
+- `src/main/parsers/audit.js`: turns the shards into events (`## Title`, `**Key**: value`, `---`) with stable keys. `mergeAudits` sorts and adds `seq`; `categoryOf`. Pure.
 
 ### State Parser
-- `src/main/parsers/state.js`: `aidlc-state.md` sections and stage checkboxes (`CHECKBOX_STATUS`), `startDate`, `currentStage`, `currentStatus`, `lastUpdated`. Pure.
+- `src/main/parsers/state.js`: the `aidlc-state.md` sections and stage checkboxes, `scope`, `plan` (a custom plan's name), `startDate`, `currentStage`, `currentStatus`, `lastUpdated`. Pure.
 
 ### Runtime Graph Parser
-- `src/main/parsers/runtimeGraph.js`: stages with `startedAt`, `completedAt`, `durationMs`, unit counts (times from `instances` for unit-built stages), and the Bolt DAG. Pure. The source file is git-ignored.
+- `src/main/parsers/runtimeGraph.js`: the stages with their times and unit counts, and the Bolt DAG. Pure. The source file is git-ignored.
 
 ### Pipeline Merger
-- `src/main/parsers/pipeline.js`: state and graph merged per stage (mismatch, units, failed, current); `done`/`executed` counts skip `[S]` stages.
+- `src/main/parsers/pipeline.js`: state and graph merged per stage; the `done`/`executed` counts skip `[S]` stages.
 
 ### Intents Merger
-- `src/main/parsers/intents.js`: `intents.json` merged with the folders on disk; `dateFromDirName` (`YYMMDD-` prefix), active, missing flags.
+- `src/main/parsers/intents.js`: `mergeIntents(index, diskDirs, activeDirName)` merges `intents.json` entries (`uuid`, `slug`, `dirName`, `scope`, `status`) with the folders on disk. It flags `missingOnDisk` and `missingInIndex`, sets `date` from the `YYMMDD-` prefix and `active`, and sorts newest first. Pure.
 
 ### Units Status
-- `src/main/parsers/units.js`: `pending`/`running`/`done` per Unit from `UNIT_*` and `WORKTREE_CREATED`/`BOLT_*` by `Bolt slug`.
+- `src/main/parsers/units.js`: `pending`/`running`/`done` per Unit.
 
 ### Ledger Parser
-- `src/main/parsers/ledger.js`: `summarizeLedger` (project, perIntent, byScope, timeline), `agentModels`, `compareModels`, `agentName`, `costOf`. Pure.
+- `src/main/parsers/ledger.js`: `summarizeLedger`, `agentModels`, `compareModels`, `agentName`, `costOf`. Pure.
 
 ### Audit Cost Parser
-- `src/main/parsers/auditCost.js` (US-0209): `stageRollups` (the last `STAGE_COMPLETED` cost row per shard, stage and Unit), `shardCosts`, `shardName` (host and clone from the shard name), `mergeIntentCosts`, `addTree`. Pure.
+- `src/main/parsers/auditCost.js` (US-0209): `stageRollups`, `shardCosts`, `shardName`, `mergeIntentCosts`, `addTree`. Pure.
 
 ### Agent Progress Parser
-- `src/main/parsers/agentProgress.js` (US-0507, US-0025): `progressRows` pairs `WORKTREE_CREATED`/`BOLT_STARTED` → `BOLT_COMPLETED`/`BOLT_FAILED` by `Bolt slug` and `REVIEW_REQUESTED` → `REVIEW_COMPLETED` by `Request Id`; `planSteps`, `severityCounts`. Imports `workingAgents` from `projectService.js`.
+- `src/main/parsers/agentProgress.js` (US-0507): `progressRows`, `planSteps`, `severityCounts`. Imports `workingAgents` from `projectService.js`.
+
+### Velocity Parser
+- `src/main/parsers/velocity.js` (US-0303, listed only): `intentMetrics`, `storyMetrics`, `projectMetrics`, `parseMarkerHistory`.
 
 ### Features Parser
-- `src/main/parsers/features.js`: `parseOverview`, `parseEpic`, story head lines and criteria, `statusOf`, `epicStatusOf`, `storyIdsIn`, `STATUS_MARKER`, `isValidFeaturesPath`. Pure; never throws.
+- `src/main/parsers/features.js`: `parseOverview`, `parseEpic`, `statusOf`, `epicStatusOf`, `storyIdsIn`, `isValidFeaturesPath`. Pure; never throws.
 
 ### Releases Parser
-- `src/main/parsers/releases.js`: `releaseOf`, `setReleaseMarker`, `nextVersions`, `releaseOptions`, `buildReleases` (per version: released, tag date, plan, stories, stale), `newReleaseError`, `canDelete`, `ruleStatus`. Pure.
+- `src/main/parsers/releases.js`: `releaseOf`, `setReleaseMarker`, `buildReleases`, `DELIVERY`, `DELIVERY_DEFAULT` and others. Pure.
 
 ### Questions Parser
-- `src/main/questions.js`: `parseOptions`, `pendingQuestions` from the audit events, `auditEvent`/`auditContext`.
+- `src/main/questions.js`: `pendingQuestions` from the audit events, `auditEvent`/`auditContext`.
 
 ### Notifications
 - `src/main/notify.js`: system notifications for agent events and audit questions, decided once per event id through Alert Plan.
 
 ### PTY Manager
-- `src/main/pty.js`: lazy `node-pty`; agent or shell sessions per project; data and exit; write, resize, kill.
+- `src/main/pty.js`: lazy `node-pty`; agent or shell sessions per project.
 
 ### Exec Runner
-- `src/main/exec.js`: `runFixed` (execFile, no shell, timeout, login PATH), `loginPath`.
+- `src/main/exec.js`: `runFixed(file, args, {cwd, timeout = 10 s, exec, env, maxBuffer})` uses execFile with no shell and refuses non-string arguments. It runs with the login shell's PATH (`loginPath`, probed once with a marker). `defaultExec` keeps stdout on a non-zero exit (`err.stdout`). `exec` is injectable for tests.
 
 ### Tools Registry
-- `src/main/tools.js`: `TOOL_IDS` (aidlc, claude, opencode, gh, shell), saved paths, PATH lookup, `probeTool`.
+- `src/main/tools.js`: `TOOL_IDS` (aidlc, claude, opencode, gh, shell), saved paths, PATH lookup, `toolPath`, `probeTool`.
 
 ### Harness Detection
 - `src/main/harness.js`: `detectHarnesses()` from folder markers and `--version`.
 
 ### Settings Store
-- `src/main/settings.js`: the app's `settings.json` in userData; per-root project settings (`featureDocs`, `featuresPath`, `delivery`).
+- `src/main/settings.js`: the app's `settings.json` in userData.
+- `sanitize` keeps known keys only.
+- Per-root `projectSettings` go through `sanitizeProject`: `featureDocs`, `featuresPath`, and optionally `harness`, `harnessTabs` and `delivery`. It is capped at 200 projects.
+- `setProjectSettings(root, partial)` validates each known field and merges it.
+- Writes run one at a time through a queue; `settingsNow()` is the synchronous copy.
+- There are no model-profile fields yet.
 
 ### Setup Helper
 - `src/main/setup.js`: `getSetupInfo` (a dry-run preview), `runSetup`.
 
 ### AI-DLC Config Reader
-- `src/main/aidlcConfig.js`: read-only `aidlc config … --show --json`, `checkHarness`, `CONFIG_WATCH_PATHS`.
+- `src/main/aidlcConfig.js` (skimmed): read-only `aidlc config <section> --show --json --harness <h>` for each section, `checkHarness`, `CONFIG_WATCH_PATHS`. `parse.models` keeps `data.effective` rows (`agent`, `model`, `effort`, `modelSource`, `effortSource`, `env`) only.
 
 ### AI-DLC Config Writer
-- `src/main/aidlcWrite.js`: tier-1 CLI changes from fixed tables; the tier-2 Guard Policy edit after a diff.
+- `src/main/aidlcWrite.js`:
+  - Tier 1: `buildCommand({kind: project|active|guard, key, value, where})` from the tables, with `--yes` and `--dry-run` forms; `preview` and `apply` return values (apply timeout 120 s).
+  - Tier 2: `guardLockDiff`, `previewGuardLock`, `applyGuardLock` edit only `## Guard Policy`, and only if the file is unchanged since the preview.
 
 ### AI-DLC Update Check
 - `src/main/aidlcUpdate.js`: `update --check` and the project `config --dry-run` plan.
 
 ### Plans Service
-- `src/main/plans.js`: own and stock plans, stages, save, edit, delete, recompile.
+- `src/main/plans.js`: own and stock plans, stages, save, edit, delete, recompile (`compileEveryHarness`).
+
+### Cost Rules Service
+- `src/main/costRules.js` (US-0212, listed only): the marked block in `project.md` and the phase files; status, preview and apply with a diff, recompile and roll back.
 
 ### Model Choice
-- `src/main/modelChoice.js`: model and effort options per harness, preview/apply, drift, cost estimate.
+- `src/main/modelChoice.js` (US-0904):
+  - `modelOptions(root, harness)` never throws. It reads `config models --show --json`; for opencode it also reads `opencode models`. It returns `editable: false` with a reason for a harness without a rule table (only `claude` and `opencode` have one).
+  - `buildModelCommand(change, models)` accepts the fields `harness`, `agent`, `preset`, `group`, `model`, `effort` and `where`, with exactly one of `agent`, `preset` and `group`. It has no `from`.
+  - `previewModelChange` and `applyModelChange` run through `run()`, which returns `{ok, command, output}` or `{ok: false, command, error}` with a 20 s timeout.
+  - Also `checkDrift`, `estimateCost`, `pricesFromLedger` and `ledgerRows`.
 
 ### Model Config Reader
-- `src/main/models.js`: the configured model per agent.
+- `src/main/models.js`: `getConfiguredModels(root)` reads `config models --show --json --harness claude`. It falls back to the `model:`/`effort:` frontmatter of `.claude/agents/aidlc-*-agent.md`, never throws, and gives `source: aidlc-config | agent-files | none`. It is Claude-only.
 
 ### Git Reader
-- `src/main/git.js`: read-only fixed git with `safeArg`: status, fetch, remote changes, `show`, conflicts, `listReleaseTags` (`v*` with creator date), `lastCommitSubject`, `originUrl`, `behindCount`, `changedFiles`, `predictConflicts`, `remoteStoryBranches`. No history over a path.
+- `src/main/git.js`: read-only fixed git with `safeArg`: status, fetch, remote changes, `show`, conflicts, `listReleaseTags`, `lastCommitSubject`, `originUrl`, `behindCount`, `changedFiles`, `predictConflicts`, `remoteStoryBranches`, and the epic history for US-0303.
 
 ### Updater
-- `src/main/updater.js`: GitHub release check, asset pick and checksum, install, relaunch.
+- `src/main/updater.js`: the GitHub release check, asset pick and checksum, install, relaunch.
 
 ### File Editor Service
-- `src/main/fileWrite.js`: editor reads and atomic hash-checked writes (`writeFileSafe`); refuses engine-owned paths; `listTree`.
+- `src/main/fileWrite.js`: editor reads and atomic hash-checked writes; refuses engine-owned paths; `listTree`, `writeAtomic`.
 
 ### Features Loader
-- `src/main/features.js`: `loadFeatures` (overview, epics with hashes, release plans, warnings), `plansDir`, `featureWatchPaths`, `loadStoryLinks` (story ids in each intent's description and requirements).
+- `src/main/features.js`: `loadFeatures`, `plansDir`, `featureWatchPaths`, `loadStoryLinks`.
 
 ### Releases Service
 - `src/main/releases.js`: `setStoryRelease`, `createRelease`, `deleteRelease` (hash-checked), `readRuleStatus`.
 
 ### Team Activity
-- `src/main/teamActivity.js`, `src/main/platforms/` (listed only): machines per intent from the shard names, collisions, pull requests and comments (US-1201).
+- `src/main/teamActivity.js` and `src/main/platforms/` (listed only): machines per intent, collisions, pull requests and comments (US-1201).
 
 ### Usage Snapshot
-- `src/main/usageSnapshot.js` (listed only): this machine's cost snapshot in `.thadeus/usage/`, `localClone`, `readSnapshots` (US-0209).
+- `src/main/usageSnapshot.js` (listed only): this machine's cost snapshot in `.thadeus/usage/` (US-0209).
 
 ### Token Readings
 - `src/main/tokenReadings.js`: token readings per intent in `.thadeus/tokens/<dir>.json`.
@@ -125,7 +159,7 @@ One heading per component; the heading text is the component's name in the Scope
 - `src/main/i18n.js`: the main process language.
 
 ### Agent Channel
-- `src/main/agentChannel.js`: per-session folders in userData; event files in, answer files out; validation.
+- `src/main/agentChannel.js`: per-session folders in userData; event files in, answer files out.
 
 ### Agent Event Store
 - `src/main/agentEvents.js`: open agent events per project, the state machine, answers.
@@ -143,7 +177,7 @@ One heading per component; the heading text is the component's name in the Scope
 - `src/main/agentIpc.js`: renderer-facing agent handlers and listeners.
 
 ### Agent Hooks Installer
-- `src/main/agentHooks.js`: status, preview and apply for the app's hook files.
+- `src/main/agentHooks.js` (864 lines): status, preview and apply for the app's hook files.
 
 ### Agent Timing Log
 - `src/main/agentTiming.js`: the development timing log.
@@ -151,18 +185,21 @@ One heading per component; the heading text is the component's name in the Scope
 ## Preload
 
 ### Preload Bridge
-- `src/preload/index.js`: `window.bridge` with named members only (see `api-documentation.md` section 1).
+- `src/preload/index.js` (165 lines): `window.bridge` with named members only (see `api-documentation.md` section 1).
 
 ## Shared (`src/shared/`)
 
 ### Harness Table
-- `src/shared/harnesses.js`: six harnesses with markers, CLI, commands, `pickerKeys`.
+- `src/shared/harnesses.js`: six harnesses with markers, CLI, commands and `perAgentModels`; `selectableHarness`, `setupHarness`, `resolveHarness(setting, detected)`.
 
 ### Shared i18n
 - `src/shared/i18n.js`: one i18next instance per process with ICU, `sv`/`en`, `t`, `locale`.
 
 ### Config Tables
-- `src/shared/configTables.js`: fixed tables for settings, guards, efforts, presets, models.
+- `src/shared/configTables.js`: fixed tables for settings, guards, the lock and models: `EFFORTS`, `PRESETS` (`thorough`, `balanced`, `minimal`), `GROUPS` (`deciding`, `reviewing`, `writing-up`), `MODEL_WHERE` (`project`, `local`), `CLAUDE_MODELS`, `APPLIED_EFFORT`.
+
+### Cost Rules Table
+- `src/shared/costRules.js` (US-0212, listed only): the markers, target files, the first pack and the clash rules.
 
 ### App Name Module
 - `src/shared/appName.js`: the app name in every form.
@@ -180,33 +217,37 @@ One heading per component; the heading text is the component's name in the Scope
 - `src/shared/alertPlan.js`: one alert decision per kind and setting.
 
 ### Locale Files
-- `src/shared/locales/sv.json`, `en.json` (1334 lines each): every UI text, nested by view.
+- `src/shared/locales/sv.json`, `en.json`: every UI text, nested by view.
 
 ## Renderer (`src/renderer/`)
 
 ### Renderer Bootstrap
-- `main.jsx`, `index.html`: fonts, theme, language before the first render, CSP.
+- `main.jsx`, `index.html`: fonts, theme, the language before the first render, the CSP.
 
 ### App Shell
-- `App.jsx` (748 lines): project tabs, the left arm (`ArmBlock` per view: intents, features, config, plans, editor, cost, github; `ArmSubtabs` for sections), settings, menu commands, dialogs. Sets `data-motion` on `<html>`.
+- `App.jsx`: project tabs, the left arm (`ArmBlock` per view; for `config`, the sections from `PROJECT_SECTIONS`, with the AI-DLC ones hidden in other projects), settings, menu commands, dialogs.
 
 ### ProjectView
-- `ProjectView.jsx` (497 lines): one `TerminalProvider` per project; `useProject` and `useFeatures`; the `view === '<id>'` branches (cost → `CostPanel`, github → `RefreshPanel`/`MachinesView`, intents, features, config, plans, editor).
+- `ProjectView.jsx`:
+  - one `TerminalProvider` per project, with `useProject` and `useFeatures`;
+  - the `view === '<id>'` branches;
+  - for `config`: `CostRulesSection`, `ProjectSettingsView` (`docs`, `agent`) and `ConfigView` (`aidlc`);
+  - it resolves the agent harness from `settings.harnessTabs` and `settings.harness` (line 305).
 
 ### TerminalContext
-- `TerminalContext.jsx`: the tab registry, `type`, `sequence`, `restart`, `anyBusy`, `answer`.
+- `TerminalContext.jsx`: the tab registry, `type`, `sequence`, `restart`, `anyBusy`, `answer`, `state`.
 
 ### TerminalPanel
 - `TerminalPanel.jsx`: xterm sessions bound to ptys, the tab bar, quick commands.
 
 ### Terminal Control
-- `terminalControl.js`: activity signal, `waitFor`, `runSequence`, shell quoting. Pure.
+- `terminalControl.js`: the activity signal, `waitFor`, `runSequence`, shell quoting. Pure.
 
 ### Picker Reader
 - `picker.js`: reads Claude Code's picker from the screen rows. Pure.
 
 ### AgentDialog
-- `AgentDialog.jsx`: modal pager for questions, permissions and replies.
+- `AgentDialog.jsx`: the LCARS modal pager for questions, permissions and replies.
 
 ### ReplyPage
 - `ReplyPage.jsx`: the reply page, sanitised Markdown.
@@ -215,7 +256,7 @@ One heading per component; the heading text is the component's name in the Scope
 - `LatestMessageStrip.jsx`: the newest agent reply line per project.
 
 ### AgentHooks UI
-- `AgentHooksStrip.jsx`, `AgentHooksSection.jsx`, `AgentHooksPreview.jsx`: hook status, settings section, preview.
+- `AgentHooksStrip.jsx`, `AgentHooksSection.jsx`, `AgentHooksPreview.jsx`: the hook status, the settings section and the preview.
 
 ### ResumeButton
 - `ResumeButton.jsx`: resumes an in-flight intent through the idle agent tab.
@@ -224,37 +265,40 @@ One heading per component; the heading text is the component's name in the Scope
 - `IntentList.jsx`: intents with search, filters, sort, cost and step dots.
 
 ### IntentDetail
-- `IntentDetail.jsx`: header, progress, request text, `TABS` (pipeline, timeline, units, cost, comments, files), readout column. The place for a per-intent velocity tab.
+- `IntentDetail.jsx`: the header, progress, request text, `TABS` (pipeline, timeline, units, cost, velocity, comments, files) and the readout column.
 
 ### Pipeline
-- `Pipeline.jsx`: phases and stage cards with the unit level bar and stage durations from the graph.
+- `Pipeline.jsx`: phases and stage cards.
 
 ### Timeline
-- `Timeline.jsx` (231 lines): the virtualised (`@tanstack/react-virtual`) audit timeline, filtered by type and stage, newest first.
+- `Timeline.jsx`: the virtualised audit timeline.
 
 ### BoltDag
 - `BoltDag.jsx`: the SVG Unit DAG.
 
 ### StoryComments
-- `StoryComments.jsx` (US-1201): the intent's comments tab: pull request comments with AI-DLC questions, approvals and findings.
+- `StoryComments.jsx` (US-1201): the intent's comments tab.
 
 ### ArtifactReader
 - `ArtifactReader.jsx`: the artifact tree and `FileContent`.
 
 ### CostPanel
-- `CostPanel.jsx` (152 lines): the project cost view: `CostChart` (plain SVG bars per intent by date), `ScopeTable` (per scope total and average), readouts, model table. The closest model for a project velocity view.
+- `CostPanel.jsx`: the project cost view (`CostChart`, `ScopeTable`, readouts, model table).
 
 ### CostTab
 - `CostTab.jsx`: intent cost tables, `CostLabel`, `CostTable`, `ModelTable`, `MachinesLine`.
+
+### VelocityView
+- `VelocityView.jsx` (US-0303, listed only): the project Velocity view and the intent's Velocity tab.
 
 ### TokenView
 - `TokenView.jsx`: live token meters.
 
 ### TokenDetail
-- `TokenDetail.jsx` (472 lines): `@visx` charts of tokens over time and by stage, agent and model, plus the agent progress rows.
+- `TokenDetail.jsx`: `@visx` charts of tokens, plus the agent progress rows.
 
 ### AgentProgress
-- `AgentProgress.jsx`: US-0507 progress rows in the token detail view.
+- `AgentProgress.jsx`: US-0507 progress rows.
 
 ### Token Charts
 - `tokenFlow.js`, `tokenChart.js`: token history and chart series. Pure.
@@ -263,37 +307,47 @@ One heading per component; the heading text is the component's name in the Scope
 - `RefreshPanel.jsx`: Refresh from GitHub, with `CollisionPanel`.
 
 ### CollisionPanel
-- `CollisionPanel.jsx` (US-1201): behind-main count, overlapping pull requests, predicted conflicts, the merge note.
+- `CollisionPanel.jsx` (US-1201): the behind-main count, overlapping pull requests, predicted conflicts.
 
 ### MachinesView
-- `MachinesView.jsx` (US-1201): machines per intent from the shard names, their last stage and time; remote story branches.
+- `MachinesView.jsx` (US-1201): machines per intent.
 
 ### Workflow Busy Rule
 - `workflowBusy.js`: `isWorkflowRunning`.
 
 ### AidlcUpdate
-- `AidlcUpdate.jsx`: AI-DLC update rows in Settings › Tools.
+- `AidlcUpdate.jsx`: the AI-DLC update rows in Settings › Tools.
 
 ### SetupAidlc
 - `SetupAidlc.jsx`: AI-DLC setup and add harness.
 
 ### ProjectSettingsView
-- `ProjectSettingsView.jsx`: project settings sections.
+- `ProjectSettingsView.jsx` (282 lines):
+  - `PROJECT_SECTIONS = ['docs', 'agent', 'aidlc', 'costRules']` and `AIDLC_SECTIONS`;
+  - `DocsSection` (feature docs mode, delivery, path) and `AgentSection` (harness, tabs side by side, agent hooks);
+  - each section is a `<form>` built from `Section` and `RadioBlocks` with `useSectionSave(projectId)`, which calls `setProjectSettings` and shows saved or the error;
+  - `confirmHarnessSwitch` uses `window.confirm`.
 
 ### SettingsView
-- `SettingsView.jsx`: app settings tabs; exports `Section` and `RadioBlocks`.
+- `SettingsView.jsx`: the app settings tabs; exports `Section` and `RadioBlocks`.
 
 ### ConfigView
-- `ConfigView.jsx`: AI-DLC configuration per harness, working agents.
+- `ConfigView.jsx`: AI-DLC configuration per installed harness (`getAidlcConfig`), working agents, and the models section with `ModelPicker`. It reloads on `config:changed`.
 
 ### ConfigEdit
-- `ConfigEdit.jsx`: `ChangePanel` and the editors for settings, guards, the lock and models.
+- `ConfigEdit.jsx` (skimmed):
+  - `ChangePanel` shows the command, the dry run, then Apply with the output or the error;
+  - `ActiveEditor`, `DefaultsEditor`, `GuardSwitches`, `GuardLock`;
+  - `ModelPicker` handles the agent, preset or group change, the cost estimate and the drift check.
+
+### CostRulesSection
+- `CostRulesSection.jsx` (US-0212, listed only): the cost rule pack in Configuration, saved through `ChangePanel`.
 
 ### PlansView
 - `PlansView.jsx`: plans, stages, save, edit, delete.
 
 ### FeaturesView
-- `FeaturesView.jsx` (682 lines): epics, stories, filters, the release picker, `ReleasesView` (per version: date, stories, stale flags), `StatusBadge`.
+- `FeaturesView.jsx`: epics, stories, filters, the release picker, `ReleasesView`, `StatusBadge`.
 
 ### Story Filter
 - `storyFilter.js`: the shared story filter. Pure.
@@ -314,33 +368,35 @@ One heading per component; the heading text is the component's name in the Scope
 - `Splash.jsx`: the start-up splash.
 
 ### LCARS Primitives
-- `Lcars.jsx`, `AuctumMark.jsx`: `Bar`, `Frame`, `Hairlines`, `Dots`, `Readout`, `progressStates`, `dotsLabel`; the mark. Uses `t` from `src/shared/i18n.js` and `Tooltip`.
+- `Lcars.jsx`, `AuctumMark.jsx`: `Bar`, `Frame`, `Hairlines`, `Dots`, `Readout`; the mark.
 
 ### Tooltip
-- `Tooltip.jsx`, `tooltipPlacement.js` (US-0414): the one LCARS tooltip, portalled to `document.body`, open on focus at once and on hover after 300 ms, closed on blur, leave, scroll and Esc; `placeTooltip` is pure. `tests/renderer/noNativeTitle.test.jsx` forbids native `title=`.
+- `Tooltip.jsx`, `tooltipPlacement.js` (US-0414): the one LCARS tooltip. `tests/renderer/noNativeTitle.test.jsx` forbids native `title=`.
 
 ### Format Helpers
-- `format.js`: status labels, `formatTime`, `formatDuration`, `stageTitle`, `stagePosition`, cost and token formats, `withSlots`.
+- `format.js`: status labels, `formatTime`, `formatDuration`, `stageTitle`, cost and token formats.
 
 ### Theme Tokens
 - `tokens.js`: CSS tokens for xterm.
 
 ### useProject
-- `useProject.js`: the intent list, detail, cost and models per project tab; partial reload on `project:changed`; new-event highlight. Errors become translated banner texts; a cost failure stays in the cost view.
+- `useProject.js` (137 lines): per project tab, the intent list, the selected detail, cost, models (`getModels`, Claude-only) and `lastIntentChangeAt`.
+- On `project:changed` it reloads the list (all of it when `indexChanged`, else `dirNames`), the cost when `costChanged || indexChanged`, and the detail when it is named; new audit keys are highlighted for 4 s.
+- Errors become translated banner texts; a cost failure stays in the cost view.
 
 ### useFeatures
-- `useFeatures.js`: feature docs, project settings, story links and lifecycle rule; reload on `features:changed` and on index changes.
+- `useFeatures.js`: feature docs, project settings, story links and the lifecycle rule; reloads on `features:changed`.
 
 ### Feature Docs Prompt
 - `featureDocsPrompt.js`: the request typed into the agent tab to create feature docs.
 
 ### Theme Stylesheet
-- `theme.css` (1429 lines): LCARS tokens on `:root` and component styles, including `.lcars-tip`.
+- `theme.css`: the LCARS tokens on `:root` and the component styles.
 
 ## Build, CI and tests
 
 ### Release Workflow
-- `.github/workflows/release.yml`: gitleaks, tag/version check, tests with coverage, ESLint, Prettier, mac and Linux builds, GitHub Release.
+- `.github/workflows/release.yml`: gitleaks, the tag/version check, tests with coverage, ESLint, Prettier, the mac and Linux builds, the GitHub Release.
 
 ### Build Scripts
 - `scripts/`, `electron.vite.config.mjs`, `vitest.config.mjs`, `eslint.config.mjs`.
@@ -352,7 +408,7 @@ One heading per component; the heading text is the component's name in the Scope
 - `.thadeus/hooks/dialog.sh`: the POSIX sh hook bundled into main with `?raw`.
 
 ### Test Suite
-- `tests/main` (82 files), `tests/renderer` (48 files), `tests/helpers`; see `code-quality-assessment.md`.
+- `tests/main` (85 entries), `tests/renderer` (50 entries), `tests/helpers`; see `code-quality-assessment.md`.
 
 ### Test Fixtures
 - `tests/fixtures/`: agent events, hooks, audit, features, ledger, picker screens, a sample project.

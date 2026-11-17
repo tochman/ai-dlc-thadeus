@@ -31,6 +31,7 @@ import { applyPlanEdit, deletePlan, listPlans, planStages, previewPlanEdit, save
 import { apply as applyConfigChange, applyGuardLock, preview as previewConfigChange, previewGuardLock } from './aidlcWrite.js';
 import { applyCostRules, costRulesStatus, previewCostRules } from './costRules.js';
 import { applyModelChange, checkDrift, estimateCost, ledgerRows, modelOptions, previewModelChange, pricesFromLedger } from './modelChoice.js';
+import { createProfileTracker, runProfile, savedProfileNames } from './modelProfiles.js';
 import { createUpdater } from './updater.js';
 import {
   behindCount,
@@ -413,6 +414,30 @@ function agentWiring() {
   return agent;
 }
 
+// Model profile switch (US-0210). Per project a tracker over the intent list; the intents open when the space is
+// first watched are its baseline and never ask (FR2.4). The renderer shows the question and answers with its harness.
+
+/** US-0210 FR2.1, FR3.1: on an intents.json change, asks for the critical profile or for the switch back. */
+async function checkProfiles(projectId) {
+  const p = projects.get(projectId);
+  if (!p?.profileTracker) return;
+  const tracker = p.profileTracker;
+  try {
+    await p.profileBaseline;
+    const [intents, { modelProfiles }] = await Promise.all([spaceIntents(p), getProjectSettings(p.root)]);
+    if (p.profileTracker !== tracker || !modelProfiles) return; // switched space meanwhile, or nothing set up
+    const next = tracker.update(intents, modelProfiles);
+    if (!next || p.sender.isDestroyed()) return;
+    // A switch back without "Ask before switching back" is still answered by the renderer, which holds the harness (FR5.1).
+    const ask = next.ask
+      ? { kind: 'critical', intent: next.ask.dirName, confirm: true }
+      : { kind: 'back', intent: null, confirm: modelProfiles.askBeforeBack === true };
+    p.sender.send('modelProfile:ask', { projectId, ...ask });
+  } catch (err) {
+    console.error(`Modellprofilen kunde inte kontrolleras för ${p.root}:`, err);
+  }
+}
+
 /** (Re)starts the watcher when the renderer looks at a different space. */
 async function watchSpace(projectId, space) {
   const p = project(projectId);
@@ -423,6 +448,11 @@ async function watchSpace(projectId, space) {
   p.space = space;
   p.questions = null; // a new space starts a new baseline
   refreshQuestions(projectId); // not awaited, like the feature docs
+  const tracker = createProfileTracker(); // US-0210 FR2.4: a new space starts a new baseline too
+  p.profileTracker = tracker;
+  p.profileBaseline = spaceIntents(p)
+    .then((intents) => tracker.baseline(intents))
+    .catch((err) => console.error(`Modellprofilens utgångsläge kunde inte läsas för ${p.root}:`, err));
   p.watcher = watchIntents({
     intentsDir: path.join(p.root, intentsDir(space)),
     ledgerFile: path.join(p.root, LEDGER_PATH),
@@ -431,6 +461,7 @@ async function watchSpace(projectId, space) {
     onChange: (change) => {
       if (!p.sender.isDestroyed()) p.sender.send('project:changed', { projectId, space, ...change });
       if (change.dirNames.length || change.indexChanged) refreshQuestions(projectId, change.dirNames);
+      if (change.indexChanged) checkProfiles(projectId); // US-0210: not awaited, like the questions
     },
     onError: (err) => {
       console.error(`Filbevakning misslyckades för ${p.root}:`, err);
@@ -765,6 +796,47 @@ const handlers = {
     checkHarness(harness, await p.harnesses);
     return checkDrift(p.root, harness);
   },
+  // US-0210 FR1.2, FR1.3: the saved AI-DLC profile names, the agents and the model table for the profile pickers.
+  'modelProfile:saved': async (_event, projectId, harness) => {
+    const p = project(projectId);
+    checkHarness(harness, await p.harnesses);
+    const options = await modelOptions(p.root, harness);
+    return {
+      editable: options.editable,
+      ...(options.reason ? { reason: options.reason } : {}),
+      names: savedProfileNames(options.savedProfiles),
+      models: options.models,
+      agents: (options.configured ?? []).map((c) => c.agent)
+    };
+  },
+  // US-0210 FR2.2, FR3.1, FR4, FR5: the answer to a modelProfile:ask, with the agent tab's harness. `active` is saved
+  // only when every command ran (FR4.3); a harness without a model table runs nothing and gives its reason (FR5.2).
+  'modelProfile:answer': async (_event, projectId, kind, yes, harness) => {
+    const p = project(projectId);
+    if (kind !== 'critical' && kind !== 'back') throw new Error(t('errors.invalidValue', { what: 'modelProfile', value: String(kind) }));
+    if (yes !== true) {
+      p.profileTracker?.answered(kind, false);
+      return { ok: true, results: [], skipped: true };
+    }
+    let options;
+    try {
+      options = await harnessModelOptions(p, harness);
+    } catch (err) {
+      p.profileTracker?.answered(kind, false);
+      return { ok: false, results: [], error: err.message };
+    }
+    const target = kind === 'critical' ? 'critical' : 'economy';
+    const { modelProfiles } = await getProjectSettings(p.root);
+    const res = await runProfile(p.root, modelProfiles?.[target] ?? { models: {} }, harness, options.models);
+    p.profileTracker?.answered(kind, res.ok);
+    if (!res.ok) return res;
+    await setProjectSettings(p.root, { modelProfiles: { active: target } });
+    p.models = null;
+    p.modelOptions = null;
+    sendConfigChanged(projectId, p);
+    sendFeaturesChanged(projectId, p); // the project settings reload, so the section shows the new active profile (FR4.1)
+    return { ...res, active: target };
+  },
   // The app updater (EPIC-04 US-0407). The renderer names no URL, file or version to download: main keeps the
   // offered release itself, and only its own repository's assets are fetched (NFR3).
   'update:check': async (_event, options) => updater.check({ force: options?.force === true }),
@@ -1003,7 +1075,8 @@ const handlers = {
       featuresPath: partial?.featuresPath,
       harness: partial?.harness,
       harnessTabs: partial?.harnessTabs, // the agent tabs side by side (US-0803)
-      delivery: partial?.delivery // Releases or Continuous deployment (US-0603 FR1.1)
+      delivery: partial?.delivery, // Releases or Continuous deployment (US-0603 FR1.1)
+      modelProfiles: partial?.modelProfiles // US-0210 FR1.5
     });
     await syncFeaturesWatch(projectId);
     sendFeaturesChanged(projectId, p); // the open view reloads with the new setting

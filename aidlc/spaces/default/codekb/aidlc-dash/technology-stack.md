@@ -1,6 +1,6 @@
 # Technology Stack
 
-Versions are the ones locked in `package-lock.json` at `721e051`. The `package.json` ranges were re-checked at `bbfb4c0` and are unchanged; no dependency was added since.
+The versions are the ones locked in `package-lock.json` at `721e051`. The `package.json` ranges were re-checked at `bbfb4c0` and are unchanged; no dependency has been added since (`git diff bbfb4c0 2b5d6a4 -- package.json` is empty).
 
 ## Languages and Runtime
 
@@ -16,17 +16,17 @@ Versions are the ones locked in `package-lock.json` at `721e051`. The `package.j
 
 | Library | Version | Purpose |
 |---|---|---|
-| react, react-dom | 19.3.1 | renderer UI; `createPortal` is used by `Tooltip.jsx` |
+| react, react-dom | 19.3.1 | renderer UI; `createPortal` in `Tooltip.jsx` |
 | @xterm/xterm, @xterm/addon-fit | 6.0.0, ^0.11 | terminal tabs |
 | node-pty | 1.1.0 | ptys (native, unpacked from asar) |
-| chokidar | 4.0.3 | file watching |
+| chokidar | 4.0.3 | file watching (`watcher.js`) |
 | i18next, i18next-icu, react-i18next, intl-messageformat | 27.1.1, 2.7.0, 18.0.1, ^12.1 | translation with ICU |
 | react-markdown, remark-gfm | 10.1.0, ^4.0 | Markdown in the artifact reader and replies |
-| @visx/* (axis, grid, group, responsive, scale, shape, tooltip) | 4.0.0 | token charts in `TokenDetail.jsx`; available for velocity charts |
+| @visx/* | 4.0.0 | token and velocity charts |
 | @tanstack/react-virtual | 3.14.24 | the virtualised timeline |
 | @fontsource/antonio | ^5.3 | LCARS font |
 
-No date library is installed. Week and month grouping for US-0303 would use `Date` and `Intl` (as `format.js` does today).
+No date library is installed; `Date` and `Intl` are used. US-0210 needs no new library: `node:child_process` through `runFixed`, chokidar and the existing settings store cover it.
 
 ## Build and Tooling (dev)
 
@@ -42,7 +42,7 @@ No date library is installed. Week and month grouping for US-0303 would use `Dat
 
 ## External Programs Used at Run Time
 
-The app calls `aidlc` (AI-DLC CLI), `git`, `gh` (updater fallback), the agent CLIs `claude` and `opencode`, and the login shell (`$SHELL`). It calls them only through `runFixed` or the pty, with paths from Tools Registry. `git merge-tree --write-tree` (US-1201) needs git 2.38 or later.
+The app calls `aidlc` (the AI-DLC CLI), `git`, `gh` (updater fallback), the agent CLIs `claude` and `opencode`, and the login shell (`$SHELL`). It calls them only through `runFixed` or the pty, with paths from the Tools Registry. US-0210 depends on `aidlc config models --from <preset|profile>` and `--save-as <name>` in the installed AI-DLC. `git merge-tree --write-tree` (US-1201) needs git 2.38 or later.
 
 ## Platforms
 
