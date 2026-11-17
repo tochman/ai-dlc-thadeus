@@ -53,7 +53,9 @@ describe('CostTab current prices (US-0211)', () => {
     { kind: 'overrideInvalid', path: 'rates/bad.json' }
   ];
   const renderTab = (extra = {}) =>
-    render(<CostTab cost={{ available: true, rates: { sources: {}, notes } }} intentCost={{ ...intentCost, ...extra }} pipeline={{ phases: [] }} models={null} />);
+    render(
+      <CostTab cost={{ available: true, rates: { sources: {}, notes } }} intentCost={{ ...intentCost, ...extra }} pipeline={{ phases: [] }} models={null} />
+    );
 
   it('shows the total and each machine as "recorded · at current prices" (AC1.4.1, FR3.2)', () => {
     renderTab({ machines });

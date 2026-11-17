@@ -49,7 +49,11 @@ export function priceTokens(model, tokens, rates) {
   const r = rates[key];
   const t = tokens ?? {};
   return (
-    (num(t.input) * r.input + num(t.output) * r.output + num(t.cacheCreate5m) * r.cacheWrite5m + num(t.cacheCreate1h) * r.cacheWrite1h + num(t.cacheRead) * r.cacheRead) /
+    (num(t.input) * r.input +
+      num(t.output) * r.output +
+      num(t.cacheCreate5m) * r.cacheWrite5m +
+      num(t.cacheCreate1h) * r.cacheWrite1h +
+      num(t.cacheRead) * r.cacheRead) /
     1e6
   );
 }

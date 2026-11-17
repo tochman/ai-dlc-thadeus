@@ -212,7 +212,16 @@ describe('current prices (US-0211)', () => {
 
   it('intent detail shows the pair in its cost readout', () => {
     window.bridge = bridge(READINGS);
-    const detail = { dirName: DIR, state: { currentStage: null }, pipeline: { phases: [{ name: 'construction', stages: STAGES.map((slug) => ({ slug, status: 'done' })) }], done: 2, executed: 2 }, files: [], warnings: [], events: [], graph: null, units: {} };
+    const detail = {
+      dirName: DIR,
+      state: { currentStage: null },
+      pipeline: { phases: [{ name: 'construction', stages: STAGES.map((slug) => ({ slug, status: 'done' })) }], done: 2, executed: 2 },
+      files: [],
+      warnings: [],
+      events: [],
+      graph: null,
+      units: {}
+    };
     render(<IntentDetail projectId="p1" detail={detail} intent={intentOf('complete')} activeDirName={null} cost={repriced()} models={null} />);
     expect(screen.getByTestId('intent-detail-cost').textContent).toMatch(/^registrerat \$4\.00 · till dagens priser \$/);
   });

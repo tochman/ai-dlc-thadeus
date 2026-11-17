@@ -109,7 +109,11 @@ describe('ProjectSettingsView (Configuration › Feature docs and Agent, US-0012
     fireEvent.change(field, { target: { value: 'config/rates.json' } });
     fireEvent.click(screen.getByTestId('project-settings-save'));
     await screen.findByTestId('project-settings-saved');
-    expect(window.bridge.setProjectSettings).toHaveBeenCalledWith('p1', { featureDocs: 'auto', featuresPath: 'docs/FEATURES.md', ratesPath: 'config/rates.json' });
+    expect(window.bridge.setProjectSettings).toHaveBeenCalledWith('p1', {
+      featureDocs: 'auto',
+      featuresPath: 'docs/FEATURES.md',
+      ratesPath: 'config/rates.json'
+    });
     cleanup();
 
     render(<ProjectSettingsView projectId="p1" settings={{ ...settings, ratesPath: 'config/rates.json' }} />);

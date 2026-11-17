@@ -45,7 +45,10 @@ describe('repriceMap (US-0211 FR2.3, AC1.5.1)', () => {
   it('sums the priced models and counts the ones without a rate', () => {
     const r = repriceMap(ledger.byModel, RATES);
     expect(r.missing).toBe(1); // claude-haiku-5-5
-    expect(r.usd).toBeCloseTo(priceTokens('opus-5-5', ledger.byModel['opus-5-5'].tokens, RATES) + priceTokens('sonnet-5-5', ledger.byModel['sonnet-5-5'].tokens, RATES), 10);
+    expect(r.usd).toBeCloseTo(
+      priceTokens('opus-5-5', ledger.byModel['opus-5-5'].tokens, RATES) + priceTokens('sonnet-5-5', ledger.byModel['sonnet-5-5'].tokens, RATES),
+      10
+    );
   });
   it('is null when no model in it has a rate, and ignores rows without tokens', () => {
     expect(repriceMap({ 'claude-haiku-5-5': ledger.byModel['claude-haiku-5-5'] }, RATES)).toEqual({ usd: null, missing: 1 });
@@ -74,7 +77,10 @@ describe('summarizeLedger with a rate table (US-0211 FR2, US1.5)', () => {
 
   it('sums intent, stage and project totals from their models, missing ones counted (AC1.5.1)', () => {
     const a = s.perIntent['261113-a'];
-    expect(a.total.currentUsd).toBeCloseTo(a.byModel.reduce((n, r) => n + r.currentUsd, 0), 10);
+    expect(a.total.currentUsd).toBeCloseTo(
+      a.byModel.reduce((n, r) => n + r.currentUsd, 0),
+      10
+    );
     expect(a.total.currentMissing).toBe(0);
     expect(a.byStage.every((r) => typeof r.currentUsd === 'number')).toBe(true);
     const b = s.perIntent['261113-b'];
