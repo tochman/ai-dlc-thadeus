@@ -6,9 +6,9 @@
 
 > Make the price and the "brains" of AI-DLC work visible. For every intent, stage and agent the console shows what the run cost (tokens and USD) and which model did the work, next to which model each agent is *configured* to use. The goal is that the user can answer "what did this feature cost?", "where does the money go?" and "is the reviewer really running on the cheaper model?" without leaving the app. Read-only, like everything else.
 
-**Stories:** US-0201, US-0202, US-0203, US-0204, US-0205, US-0206, US-0207, US-0208, US-0209, US-0210
+**Stories:** US-0201, US-0202, US-0203, US-0204, US-0205, US-0206, US-0207, US-0208, US-0209, US-0210, US-0211, US-0212, US-0213
 
-**Status (2026-11-17):** ✅ US-0201–US-0205 and US-0207 released (v0.2.0–v0.2.4; CSV export in US-0203 deferred). ➡️ US-0206 moved to US-0904. ✅ US-0208 released in v0.2.7. ✅ US-0209 released in v0.2.8. 📋 US-0210 planned. Each story names its release.
+**Status (2026-11-17):** ✅ US-0201–US-0205 and US-0207 released (v0.2.0–v0.2.4; CSV export in US-0203 deferred). ➡️ US-0206 moved to US-0904. ✅ US-0208 released in v0.2.7. ✅ US-0209 released in v0.2.8. 📋 US-0210–US-0213 planned. Each story names its release.
 
 ---
 
@@ -184,3 +184,58 @@ The key format of `workflows` was confirmed during requirements analysis (see ab
   - [ ] Every text goes through `t()` in Swedish and English.
 - **Notes:** Until this exists, the assistant asks at intent start in visinv. Open: which profile counts as active when two intents run at the same time, one critical and one not (proposal: critical wins until the last critical intent ends).
 - **Dependencies:** US-0204, US-0904
+
+**US-0211: Reprice recorded tokens with a current price table** 📋 ([#64](https://github.com/tochman/aidlc-dash/issues/64))
+- As a **developer who reads the cost view**, in order to **trust the figures for old intents too**, I would like **the app to compute USD from the stored token counts with a current price table, and to show the recorded figure next to it when the two differ**.
+- **Epic:** EPIC-02
+- **Priority:** High
+- **Complexity:** Medium
+- **Background:** Reported on 2026-11-17 in issue #64. The app shows the `usd` that AI-DLC wrote, so mistakes in AI-DLC's price table (`.claude/tools/data/model-rates.json`, "as of 2026-10") remain in every intent recorded so far: `sonnet-5-5` cache reads at $0.20/M instead of $0.10/M; `fable-5-2` and `haiku-5-5` missing. In this repository about two thirds of the cost is cache reads (about 5 billion tokens on `opus-5-5`), so the cache-read price matters most. This replaces the rule "the app never computes prices itself" (Data sources): the app still never writes a price anywhere.
+- **Acceptance Criteria:**
+  - [ ] The price table comes from the project's `AIDLC_MODEL_RATES` file when it is set, otherwise from AI-DLC's shipped table, otherwise from the app's own table, and the cost view says which one it used.
+  - [ ] An intent whose ledger used `sonnet-5-5` shows cache reads at $0.10/M, from the stored token counts.
+  - [ ] A `fable-5-2` or `haiku-5-5` intent gets a cost instead of "pris saknas".
+  - [ ] When the recorded and the repriced USD differ, both are shown ("recorded $12.40 · at current prices $9.80").
+  - [ ] Audit rows without a 5m/1h cache-write split are priced as 5m, as `auditCost.js` does today, and the view says so.
+  - [ ] A model with no price in any table stays "pris saknas". It is never guessed.
+  - [ ] Nothing in `aidlc/` is written.
+- **Dependencies:** US-0201, US-0209
+
+**US-0212: A THADEUS rule pack on top of AI-DLC to cut token cost** 📋
+- As a **developer or team that pays for every run**, in order to **spend less on each intent without changing AI-DLC**, I would like **to switch on a short set of cost rules that the app keeps in the project's AI-DLC memory files, and that every stage and agent then follows**.
+- **Epic:** EPIC-02
+- **Priority:** High
+- **Complexity:** Medium
+- **Background:** Asked for on 2026-11-17. The app must not change AI-DLC or drift from it as published on GitHub. AI-DLC builds the rules for each stage from whole files with fixed names in `aidlc/spaces/<space>/memory/`: `org.md`, `team.md`, `project.md` and `phases/<phase>.md` (`resolveRulesForStage`, `.claude/tools/aidlc-graph.ts`). Those files belong to the project, and their rules also reach the delegated agents. A file of its own (`thadeus.md`) would never be read, so the pack is a marked block inside those files. Across this repository's intents, `main` was 57% of the cost and the developer agent 36%.
+- **Acceptance Criteria:**
+  - [ ] In the project's settings the person turns the pack on or off and can edit its lines. The app writes only between `<!-- thadeus:cost-rules:start -->` and `<!-- thadeus:cost-rules:end -->`, shows a diff first, and leaves everything outside the markers unchanged.
+  - [ ] General rules go in `project.md`; rules for one phase go in that phase's file (for example targeted tests in `phases/construction.md`), so they cost context only there.
+  - [ ] The first pack holds: `main` delegates reading and writing source code to the developer agent and keeps only its short report; agents report in a few lines, without file dumps; during the TDD loop only the test being worked on runs, the full suite once before Build and Test is approved; never read `node_modules`, lock files, `dist`/`build` or large logs.
+  - [ ] The pack is short (a handful of lines), because the memory files are read again on every stage.
+  - [ ] No rule contradicts the layers above. The app warns when a line clashes with a rule in `team.md` (for example "never run the full suite" against "suite green before merge").
+  - [ ] After writing, the app runs `aidlc engine graph compile` and shows its output; on a failure it puts the file back as it was.
+  - [ ] No AI-DLC file outside the memory files is written.
+  - [ ] Every text goes through `t()` in Swedish and English, in the LCARS interface.
+- **Notes:** Rules are text the model reads, not enforcement. Anything that must happen at a set moment, such as starting a fresh session, belongs to US-0213.
+- **Dependencies:** US-0901
+
+**US-0213: Compact or start a fresh session automatically, through a THADEUS hook, in Claude Code and opencode** 📋
+- As a **developer running long intents**, in order to **stop paying for the same long context on every turn**, I would like **the app to watch how large the session's context is, compact it when it grows too large, and start a fresh session at a stage boundary, automatically or after asking me**.
+- **Epic:** EPIC-02
+- **Priority:** High
+- **Complexity:** Large
+- **Background:** Asked for on 2026-11-17. The cost comes from context length times the number of turns: cache reads are about two thirds of this repository's cost. AI-DLC keeps its state on disk and resumes from `aidlc-state.md`, and its own `SessionStart` hook injects the resume context, also after a compaction. So a fresh session at a stage boundary loses nothing. A Claude Code hook cannot itself run `/compact` or `/clear`, or start a session: it can only report (`Stop`, `transcript_path`) and steer the summary (`PreCompact` stdout becomes the instruction for the compaction summary). The hook therefore reports and the app acts, through the terminal it already owns. In opencode the plugin can call `ctx.session.compact` and `ctx.session.create` itself. The hooks go in through the existing installer and channel from US-0506 (`src/main/agentHooks.js`, `.thadeus/hooks/`, `.opencode/plugins/`), next to AI-DLC's hook entries, which are never changed.
+- **Acceptance Criteria:**
+  - [ ] Per project the person chooses off, ask or automatic, a context threshold (default 150k tokens) and whether a stage boundary starts a fresh session. Default: ask.
+  - [ ] Claude Code: a THADEUS `Stop` entry reports the context size of the last request (input + cache read + cache write, from the transcript) and never blocks the stop. Installing, updating and removing it go through the same preview as the dialog hooks.
+  - [ ] Claude Code: the app starts `claude` with `CLAUDE_CODE_AUTO_COMPACT_WINDOW` set to the threshold, so Claude Code compacts earlier by itself. Nothing is written for it.
+  - [ ] A THADEUS `PreCompact` entry prints the summary instruction: keep the current intent, stage and Unit, the open decisions and the files left to change; drop file contents and test output.
+  - [ ] Over the threshold in the middle of a stage, the app sends `/compact` with that instruction when the agent is idle.
+  - [ ] When a stage is completed (`STAGE_COMPLETED` in the audit) or the work is parked, and the agent is idle, the app ends the session and starts a new one that runs `/aidlc` to resume.
+  - [ ] opencode: the THADEUS plugin does the same through `ctx.session.compact` and `ctx.session.create`.
+  - [ ] Nothing happens while a question or permission waits, while a tool or a dispatched agent runs, or while the person is typing.
+  - [ ] Each action is shown in the console with the context size before and after and what it is estimated to save per turn.
+  - [ ] Nothing in `aidlc/` and no AI-DLC hook entry is written.
+  - [ ] Every text goes through `t()` in Swedish and English, in the LCARS interface.
+- **Notes:** To be checked in the first design stage: whether an approval given in a fresh session is accepted by AI-DLC's human-presence guard; that autonomous Construction rarely goes idle, because AI-DLC's `continue-workflow` `Stop` hook keeps it going, so a boundary may need a park first; and the opencode plugin API, which, as with US-0506, is provisional until a manual run.
+- **Dependencies:** US-0506, US-0207, US-0212
