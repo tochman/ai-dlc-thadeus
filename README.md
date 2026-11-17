@@ -6,7 +6,7 @@
 
 T.H.A.D.E.U.S. is a desktop bridge console for [AI-DLC](https://github.com/awslabs/aidlc-workflows) projects. It shows what the AI agents are doing as it happens: the work in progress, every stage and decision, cost, and the feature roadmap. An embedded agent terminal lets you steer the work from the same window. It is built by Auctum Solutions AB (repository: `aidlc-dash`).
 
-**[Download the latest release →](https://github.com/tochman/aidlc-dash/releases/latest)** · [All releases](https://github.com/tochman/aidlc-dash/releases)
+**[Download the latest release →](https://github.com/tochman/ai-dlc-thadeus/releases/latest)** · [All releases](https://github.com/tochman/ai-dlc-thadeus/releases)
 
 ![Project view: intents, pipeline, cost and terminal](docs/screenshots/intents.png)
 
@@ -64,7 +64,7 @@ That isn't AI's fault. An AI coding agent is an incredibly capable tool, and lik
 
 ## Installation
 
-Download the build for your platform from the [releases page](https://github.com/tochman/aidlc-dash/releases):
+Download the build for your platform from the [releases page](https://github.com/tochman/ai-dlc-thadeus/releases):
 
 - **macOS** (universal `.dmg`): open the disk image and drag `THADEUS.app` to Applications. The build is unsigned, so the first time, right-click the app and choose **Open**.
 - **Linux** (`.deb`, x64, Ubuntu 22.04 or later): `sudo apt install ./thadeus_<version>_amd64.deb`.
@@ -85,7 +85,7 @@ Open projects are restored on the next start. **Full screen:** `Ctrl+Cmd+F` on m
 Requires macOS or Linux, Node.js from [`.nvmrc`](.nvmrc) (`nvm use`) and npm.
 
 ```bash
-git clone https://github.com/tochman/aidlc-dash.git && cd aidlc-dash
+git clone https://github.com/tochman/ai-dlc-thadeus.git && cd ai-dlc-thadeus
 npm install            # install dependencies and rebuild node-pty for Electron
 npm run dev            # run the app with hot reload
 npm test               # run the test suite
@@ -134,7 +134,7 @@ I'm open-sourcing T.H.A.D.E.U.S. because I think it's a good thing to do. If you
 
 ## Contributing
 
-Read [CONTRIBUTING.md](CONTRIBUTING.md) for how work is organised (stories in epics, test first, one pull request per story) and what CI checks. Everyone taking part follows the [Code of Conduct](CODE_OF_CONDUCT.md). Bugs and feature ideas go in [GitHub issues](https://github.com/tochman/aidlc-dash/issues/new/choose).
+Read [CONTRIBUTING.md](CONTRIBUTING.md) for how work is organised (stories in epics, test first, one pull request per story) and what CI checks. Everyone taking part follows the [Code of Conduct](CODE_OF_CONDUCT.md). Bugs and feature ideas go in [GitHub issues](https://github.com/tochman/ai-dlc-thadeus/issues/new/choose).
 
 ## License
 

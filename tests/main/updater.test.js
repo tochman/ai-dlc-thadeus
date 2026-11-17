@@ -5,9 +5,13 @@ const { assertOwnAsset, checksumFor, createUpdater, pickAsset, releaseStatus } =
 const { setToolPaths } = await import('../../src/main/tools.js');
 const { t } = await import('../../src/shared/i18n.js');
 
-const API = 'https://api.github.com/repos/tochman/aidlc-dash/releases/latest';
-const apiAsset = (tag, name, size = 100) => ({ name, size, browser_download_url: `https://github.com/tochman/aidlc-dash/releases/download/${tag}/${name}` });
-// Shaped like GET https://api.github.com/repos/tochman/aidlc-dash/releases/latest (US-0413, 2026-11-15).
+const API = 'https://api.github.com/repos/tochman/ai-dlc-thadeus/releases/latest';
+const apiAsset = (tag, name, size = 100) => ({
+  name,
+  size,
+  browser_download_url: `https://github.com/tochman/ai-dlc-thadeus/releases/download/${tag}/${name}`
+});
+// Shaped like GET https://api.github.com/repos/tochman/ai-dlc-thadeus/releases/latest (US-0413, 2026-11-15).
 const apiRelease = (tag, extra = {}) => ({
   tag_name: tag,
   body: '## What changed\n- **Updates** from GitHub',
@@ -46,8 +50,8 @@ function fakeFetch(routes = {}) {
   return { fetch, calls };
 }
 
-const asset = (tag, name, size = 100) => ({ name, size, url: `https://github.com/tochman/aidlc-dash/releases/download/${tag}/${name}` });
-// Shaped like `gh release view --repo tochman/aidlc-dash --json tagName,body,isDraft,isPrerelease,assets` (2026-11-14).
+const asset = (tag, name, size = 100) => ({ name, size, url: `https://github.com/tochman/ai-dlc-thadeus/releases/download/${tag}/${name}` });
+// Shaped like `gh release view --repo tochman/ai-dlc-thadeus --json tagName,body,isDraft,isPrerelease,assets` (2026-11-14).
 const release = (tag, extra = {}) => ({
   tagName: tag,
   body: '## What changed\n- **Updates** from GitHub',
@@ -147,7 +151,7 @@ describe('update check (EPIC-04 US-0407)', () => {
   it('runs gh release view for this repository at most once a day unless forced, and saves the check time', async () => {
     const { updater, calls, saved } = setup({ answers: { gh: JSON.stringify(release('v0.2.4')) } });
     expect((await updater.check()).status).toBe('available');
-    expect(calls[0]).toEqual(['gh', 'release', 'view', '--repo', 'tochman/aidlc-dash', '--json', 'tagName,body,isDraft,isPrerelease,assets']);
+    expect(calls[0]).toEqual(['gh', 'release', 'view', '--repo', 'tochman/ai-dlc-thadeus', '--json', 'tagName,body,isDraft,isPrerelease,assets']);
     expect(saved().updates.lastCheckMs).toBe(1_000_000_000_000);
     expect((await updater.check()).status).toBe('available'); // within the day: the last answer, no new call
     expect(calls).toHaveLength(1);
@@ -201,10 +205,10 @@ describe('update check (EPIC-04 US-0407)', () => {
   it('assertOwnAsset refuses another repository, another tag and an unknown name (NFR3)', () => {
     const own = asset('v0.2.4', 'THADEUS-0.2.4-universal.dmg');
     expect(assertOwnAsset(own, 'v0.2.4')).toBe(own);
-    expect(() => assertOwnAsset({ ...own, url: own.url.replace('tochman/aidlc-dash', 'evil/aidlc-dash') }, 'v0.2.4')).toThrow(/tochman\/aidlc-dash/);
+    expect(() => assertOwnAsset({ ...own, url: own.url.replace('tochman/ai-dlc-thadeus', 'evil/aidlc-dash') }, 'v0.2.4')).toThrow(/tochman\/ai-dlc-thadeus/);
     expect(() => assertOwnAsset(own, 'v0.2.5')).toThrow();
     expect(() => assertOwnAsset(asset('v0.2.4', 'install.sh'), 'v0.2.4')).toThrow();
-    expect(() => assertOwnAsset({ ...own, url: `http://github.com/tochman/aidlc-dash/releases/download/v0.2.4/${own.name}` }, 'v0.2.4')).toThrow();
+    expect(() => assertOwnAsset({ ...own, url: `http://github.com/tochman/ai-dlc-thadeus/releases/download/v0.2.4/${own.name}` }, 'v0.2.4')).toThrow();
   });
 });
 
@@ -227,7 +231,7 @@ describe('download and install', () => {
       'download',
       TAG,
       '--repo',
-      'tochman/aidlc-dash',
+      'tochman/ai-dlc-thadeus',
       '--pattern',
       DMG,
       '--pattern',
@@ -301,8 +305,8 @@ describe('update from the public release without gh (EPIC-04 US-0413)', () => {
   const TAG = 'v0.2.4';
   const DMG = 'THADEUS-0.2.4-universal.dmg';
   const DIR = `/ud/updates/${TAG}`;
-  const DMG_URL = `https://github.com/tochman/aidlc-dash/releases/download/${TAG}/${DMG}`;
-  const SUMS_URL = `https://github.com/tochman/aidlc-dash/releases/download/${TAG}/SHA256SUMS.txt`;
+  const DMG_URL = `https://github.com/tochman/ai-dlc-thadeus/releases/download/${TAG}/${DMG}`;
+  const SUMS_URL = `https://github.com/tochman/ai-dlc-thadeus/releases/download/${TAG}/SHA256SUMS.txt`;
   const withSums = apiRelease(TAG, { assets: [apiAsset(TAG, DMG, 9), apiAsset(TAG, 'SHA256SUMS.txt', 92)] });
   const ghMissing = () => Object.assign(new Error('spawn gh ENOENT'), { code: 'ENOENT' });
 
@@ -347,7 +351,7 @@ describe('update from the public release without gh (EPIC-04 US-0413)', () => {
     await updater.check({ force: true });
     const res = await updater.download();
     expect(res.status).toBe('error');
-    expect(res.error).toMatch(/tochman\/aidlc-dash/);
+    expect(res.error).toMatch(/tochman\/ai-dlc-thadeus/);
     expect(fetches).toHaveLength(1);
     expect(calls).toHaveLength(0);
   });

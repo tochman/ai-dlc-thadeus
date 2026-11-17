@@ -8,7 +8,7 @@
 
 **Stories:** US-0001, US-0002, US-0003, US-0004, US-0005, US-0006, US-0007, US-0008, US-0009, US-0010, US-0011, US-0012, US-0013, US-0014, US-0015, US-0016, US-0017, US-0018, US-0019, US-0020, US-0021, US-0022, US-0023, US-0024, US-0025, US-0026, US-0027
 
-**Status (2026-11-17):** ✅ US-0001–US-0020 released (v0.2.3–v0.2.6). ✅ US-0021–US-0023 released in v0.2.7. ✅ US-0024 released in v0.2.8. ✅ US-0025 done, not yet released, for v0.2.9. ✅ US-0026 done, not yet released, for v0.2.9. 📋 US-0027 planned, for v0.2.9. Each story names its release.
+**Status (2026-11-17):** ✅ US-0001–US-0020 released (v0.2.3–v0.2.6). ✅ US-0021–US-0023 released in v0.2.7. ✅ US-0024 released in v0.2.8. ✅ US-0025 done, not yet released, for v0.2.9. ✅ US-0026 done, not yet released, for v0.2.9. ✅ US-0027 done, not yet released, for v0.2.9. Each story names its release.
 
 ---
 
@@ -425,17 +425,18 @@
 - **Build and Test (2026-11-17, intent `261117-session-handoff-dialog`):** the regression test in `tests/main/agentEventsReply.test.js` fails without the fix and passes with it; 1796/1796 tests. The LCARS look of the page is checked by eye in the running app before the v0.2.9 tag.
 - **Dependencies:** US-0506
 
-**US-0027: The app follows the repository's new name, ai-dlc-thadeus** 📋 Planned, for v0.2.9
+**US-0027: The app follows the repository's new name, ai-dlc-thadeus** ✅ Done, for v0.2.9 (not yet released)
 - As a **developer using THADEUS**, in order to **keep getting updates and reach the right GitHub pages**, I would like **the app to use the repository's new name, `tochman/ai-dlc-thadeus`**.
 - **Epic:** EPIC-00
 - **Priority:** High
 - **Complexity:** Low
 - **Background:** Reported 2026-11-17: the repository was renamed from `tochman/aidlc-dash` to `tochman/ai-dlc-thadeus`. GitHub forwards the old address, but the updater compares each release file's address with `https://github.com/tochman/aidlc-dash/releases/download/<tag>/<name>` as text (`assertOwnAsset`, `src/main/updater.js`). GitHub now returns the new name, so every installed copy up to v0.2.8 refuses every update as "not this repository's own file". Installed copies cannot be fixed from here: they must download v0.2.9 by hand once.
 - **Acceptance Criteria:**
-  - [ ] **Given** a release of `tochman/ai-dlc-thadeus`, **when** the app checks for updates, **then** it accepts that repository's own release files and still refuses any other repository's.
-  - [ ] The repository name is defined once and used by the updater (`REPO`), the Issues link (`src/main/menu.js`), the repository link (`src/main/ipc.js`), `package.json` `homepage` and `README.md`. No `tochman/aidlc-dash` address is left in the app or its tests.
-  - [ ] The old package and settings-folder names stay: `aidlc-dash` in `electron-builder.yml` (`--replaces`, `--conflicts`) and the `userData` folder in `src/main/index.js`. These are names, not addresses.
-  - [ ] The v0.2.9 release notes tell users on v0.2.8 or earlier to download v0.2.9 by hand once, because their copy cannot update itself across the rename.
-  - [ ] A test fails without the fix and passes with it; the full suite stays green.
+  - [x] **Given** a release of `tochman/ai-dlc-thadeus`, **when** the app checks for updates, **then** it accepts that repository's own release files and still refuses any other repository's.
+  - [x] The repository name is defined once and used by the updater (`REPO`), the Issues link (`src/main/menu.js`), the repository link (`src/main/ipc.js`), `package.json` `homepage` and `README.md`. No `tochman/aidlc-dash` address is left in the app or its tests.
+  - [x] The old package and settings-folder names stay: `aidlc-dash` in `electron-builder.yml` (`--replaces`, `--conflicts`) and the `userData` folder in `src/main/index.js`. These are names, not addresses.
+  - [x] The v0.2.9 release notes tell users on v0.2.8 or earlier to download v0.2.9 by hand once, because their copy cannot update itself across the rename.
+  - [x] A test fails without the fix and passes with it; the full suite stays green.
 - **Notes:** Runs on the `quick-fix` plan, after the US-0213/US-0026 intent. The local git remote was already pointed at the new address on 2026-11-17.
+- **Done (2026-11-17, without AI-DLC, branch `fix/US-0027`):** `APP_REPO` and `APP_REPO_URL` in `src/shared/appName.js` are the one place the repository is named. The updater (`REPO`), the Issues link, the About links, `package.json` and the README use them. `tests/main/appName.test.js` fails while any `tochman/aidlc-dash` address is left under `src/`, in `package.json` or in the README. The download-by-hand note for v0.2.8 and earlier is on the v0.2.9 release checklist (`docs/releases/0.2.9.md`). 1797/1797 tests pass.
 - **Dependencies:** US-0407, US-0413 (the updater)
