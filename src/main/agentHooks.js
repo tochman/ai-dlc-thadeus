@@ -59,7 +59,16 @@ export const CURRENT = { release: 'current', entries: CANONICAL, scriptDigest: s
  * D2: every release, oldest first, the current one last. A release that changes the entries, dialog.sh or the plugin
  * adds the previous `{ release, entries, scriptDigest, pluginDigest }` before CURRENT, so those files read as outOfDate.
  */
-export const RELEASES = [CURRENT];
+export const RELEASES = [
+  // US-0210: dialog.sh up to v0.2.8, before `date` moved to every 10th poll.
+  {
+    release: 'v0.2.8',
+    entries: CANONICAL,
+    scriptDigest: '3b5ca42f4009660a6da771116fcb67618b7e5c6adebe597648d7983d692132b9',
+    pluginDigest: CURRENT.pluginDigest
+  },
+  CURRENT
+];
 
 const isObject = (v) => typeof v === 'object' && v !== null && !Array.isArray(v);
 

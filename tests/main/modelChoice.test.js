@@ -100,6 +100,23 @@ describe('models and effort per agent (EPIC-09 US-0904)', () => {
     expect(() => buildModelCommand({ harness: 'claude', preset: 'cheap', where: 'project' })).toThrow();
   });
 
+  it('builds --from <name> for a saved AI-DLC profile and refuses a bad name or a model beside it (US-0210 FR2.2, NFR2)', () => {
+    expect(buildModelCommand({ harness: 'claude', from: 'strong-2', where: 'project' }).args).toEqual([
+      'config',
+      'models',
+      '--from',
+      'strong-2',
+      '--harness',
+      'claude',
+      '--project',
+      '--yes'
+    ]);
+    expect(() => buildModelCommand({ harness: 'claude', from: 'Strong', where: 'project' })).toThrow(/Strong/);
+    expect(() => buildModelCommand({ harness: 'claude', from: 'x; rm -rf /', where: 'project' })).toThrow();
+    expect(() => buildModelCommand({ harness: 'claude', from: 'strong', model: 'opus', where: 'project' }, CLAUDE_LIST)).toThrow();
+    expect(() => buildModelCommand({ harness: 'claude', from: 'strong', agent: 'developer', where: 'project' }, CLAUDE_LIST)).toThrow();
+  });
+
   it('estimateCost on a two-row ledger returns the expected difference, labelled as an estimate', () => {
     const project = {
       byAgent: [
@@ -130,6 +147,9 @@ describe('model options and running the CLI', () => {
     const claude = await modelOptions('/p', 'claude', fakeExec());
     expect(claude).toMatchObject({ editable: true, models: CLAUDE_LIST, applied: {} });
     expect(claude.configured.map((c) => c.agent)).toEqual(['developer', 'product-lead', 'quality']);
+    expect(claude.savedProfiles).toBeNull(); // US-0210 FR1.2: no data.profiles reported
+    const withProfiles = JSON.stringify({ ok: true, data: { effective: [], profiles: { strong: { groups: {} } } } });
+    expect((await modelOptions('/p', 'claude', fakeExec({ show: { claude: withProfiles } }))).savedProfiles).toEqual({ strong: { groups: {} } });
 
     const opencode = await modelOptions('/p', 'opencode', fakeExec());
     expect(opencode.editable).toBe(true);

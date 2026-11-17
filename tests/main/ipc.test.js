@@ -77,6 +77,7 @@ const m = vi.hoisted(() => {
       modelOptions: vi.fn(async () => ({ editable: true, models: ['m'] })),
       previewModelChange: vi.fn(async () => ({ diff: 'd' })),
       pricesFromLedger: vi.fn(() => ({})),
+      runProfile: vi.fn(async () => ({ ok: true, results: [{ ok: true, command: 'aidlc config models --from strong', output: 'done' }] })),
       fetchRemote: vi.fn(async () => 'fetched'),
       getGitStatus: vi.fn(async () => 'status'),
       getRemoteChanges: vi.fn(async () => 'changes'),
@@ -201,6 +202,7 @@ vi.mock('../../src/main/costRules.js', () => ({
   previewCostRules: m.svc.previewCostRules
 }));
 vi.mock('../../src/main/modelChoice.js', () => ({
+  PROFILE_NAME: /^[a-z0-9][a-z0-9-]*$/,
   applyModelChange: m.svc.applyModelChange,
   checkDrift: m.svc.checkDrift,
   estimateCost: m.svc.estimateCost,
@@ -209,6 +211,8 @@ vi.mock('../../src/main/modelChoice.js', () => ({
   previewModelChange: m.svc.previewModelChange,
   pricesFromLedger: m.svc.pricesFromLedger
 }));
+// US-0210: the real tracker and names; only running a profile is faked.
+vi.mock('../../src/main/modelProfiles.js', async (importOriginal) => ({ ...(await importOriginal()), runProfile: m.svc.runProfile }));
 vi.mock('../../src/main/updater.js', () => ({ createUpdater: () => m.updater }));
 vi.mock('../../src/main/git.js', () => ({
   fetchRemote: m.svc.fetchRemote,
@@ -585,6 +589,70 @@ describe('models', () => {
     expect(await call('models:apply', {}, projectId, { harness: 'claude' })).toEqual({ ok: true });
     expect(sender.send).toHaveBeenCalledWith('config:changed', { projectId });
     expect(await call('models:check', {}, projectId, 'claude')).toEqual({ drift: false });
+  });
+});
+
+// US-0210: the profile switch. The settings hold the profiles; runProfile is faked.
+describe('model profile switch (US-0210)', () => {
+  const PROFILES = { criticalPlans: ['feature'], critical: { from: 'strong', models: {} }, economy: { models: {} }, askBeforeBack: false, active: null };
+  const withProfiles = (mp = PROFILES) => svc.getProjectSettings.mockResolvedValueOnce({ featureDocs: 'show', modelProfiles: mp });
+
+  it('asks once in the renderer when a new critical intent appears, and not for intents open at start (FR2.1, FR2.4)', async () => {
+    svc.loadIntentList.mockResolvedValueOnce({ intents: [{ dirName: 'old', plan: 'feature', status: 'in-flight' }] });
+    const { projectId, sender } = await openProject('/work/ask');
+    const { onChange } = svc.watchIntents.mock.calls.at(-1)[0];
+    svc.loadIntentList.mockResolvedValueOnce({
+      intents: [
+        { dirName: 'old', plan: 'feature', status: 'in-flight' },
+        { dirName: 'new', plan: 'feature', status: 'in-flight' }
+      ]
+    });
+    withProfiles();
+    onChange({ dirNames: [], indexChanged: true });
+    await flush();
+    expect(sender.send).toHaveBeenCalledWith('modelProfile:ask', { projectId, kind: 'critical', intent: 'new', confirm: true });
+    expect(sender.send.mock.calls.filter(([ch]) => ch === 'modelProfile:ask')).toHaveLength(1);
+  });
+
+  it('Yes runs the critical profile, saves it as active and announces the change (FR2.2, FR4.1, FR4.2)', async () => {
+    const { projectId, sender } = await openProject('/work/yes');
+    withProfiles();
+    const res = await call('modelProfile:answer', {}, projectId, 'critical', true, 'claude');
+    expect(svc.runProfile).toHaveBeenLastCalledWith('/work/yes', PROFILES.critical, 'claude', ['m']);
+    expect(res).toMatchObject({ ok: true, active: 'critical', results: [{ output: 'done' }] });
+    expect(svc.setProjectSettings).toHaveBeenLastCalledWith('/work/yes', { modelProfiles: { active: 'critical' } });
+    expect(sender.send).toHaveBeenCalledWith('config:changed', { projectId });
+  });
+
+  it('a failed command keeps the active profile (FR4.3, AC1.3.6)', async () => {
+    const { projectId } = await openProject('/work/fail');
+    withProfiles({ ...PROFILES, active: 'critical' });
+    svc.runProfile.mockResolvedValueOnce({ ok: false, results: [{ ok: false, command: 'aidlc config models --from cheap', error: 'refused' }] });
+    svc.setProjectSettings.mockClear();
+    const res = await call('modelProfile:answer', {}, projectId, 'back', true, 'claude');
+    expect(svc.runProfile).toHaveBeenLastCalledWith('/work/fail', PROFILES.economy, 'claude', ['m']);
+    expect(res).toMatchObject({ ok: false, results: [{ error: 'refused' }] });
+    expect(svc.setProjectSettings).not.toHaveBeenCalled();
+  });
+
+  it('a harness without a model table gives its message and runs nothing (FR5.2); No runs nothing (FR2.3)', async () => {
+    const { projectId } = await openProject('/work/notable');
+    svc.runProfile.mockClear();
+    svc.modelOptions.mockResolvedValueOnce({ editable: false, reason: 'Kiro har ingen modelltabell' });
+    expect(await call('modelProfile:answer', {}, projectId, 'critical', true, 'claude')).toEqual({
+      ok: false,
+      results: [],
+      error: 'Kiro har ingen modelltabell'
+    });
+    expect(await call('modelProfile:answer', {}, projectId, 'critical', false, 'claude')).toEqual({ ok: true, results: [], skipped: true });
+    expect(svc.runProfile).not.toHaveBeenCalled();
+    await expect(call('modelProfile:answer', {}, projectId, 'turbo', true, 'claude')).rejects.toThrow();
+  });
+
+  it('lists the saved AI-DLC profile names, the agents and the model table (FR1.2, FR1.3)', async () => {
+    const { projectId } = await openProject('/work/saved');
+    svc.modelOptions.mockResolvedValueOnce({ editable: true, models: ['opus'], configured: [{ agent: 'developer' }], savedProfiles: { strong: {} } });
+    expect(await call('modelProfile:saved', {}, projectId, 'claude')).toEqual({ editable: true, names: ['strong'], models: ['opus'], agents: ['developer'] });
   });
 });
 

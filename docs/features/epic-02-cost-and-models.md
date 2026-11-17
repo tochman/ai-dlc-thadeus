@@ -8,7 +8,7 @@
 
 **Stories:** US-0201, US-0202, US-0203, US-0204, US-0205, US-0206, US-0207, US-0208, US-0209, US-0210, US-0211, US-0212, US-0213
 
-**Status (2026-11-17):** ✅ US-0201–US-0205 and US-0207 released (v0.2.0–v0.2.4; CSV export in US-0203 deferred). ➡️ US-0206 moved to US-0904. ✅ US-0208 released in v0.2.7. ✅ US-0209 released in v0.2.8. ✅ US-0212 done, for v0.2.9. 📋 US-0210, US-0211 and US-0213 planned, for v0.2.9. Each story names its release.
+**Status (2026-11-17):** ✅ US-0201–US-0205 and US-0207 released (v0.2.0–v0.2.4; CSV export in US-0203 deferred). ➡️ US-0206 moved to US-0904. ✅ US-0208 released in v0.2.7. ✅ US-0209 released in v0.2.8. ✅ US-0212 done, for v0.2.9. ✅ US-0210 done, for v0.2.9. 📋 US-0211 and US-0213 planned, for v0.2.9. Each story names its release.
 
 ---
 
@@ -168,20 +168,20 @@ The key format of `workflows` was confirmed during requirements analysis (see ab
 - **Built (2026-11-16, express intent `261116-cross-machine-cost`):** the app writes the snapshot itself, outside AI-DLC's folders, at `.thadeus/usage/<host>-<clone-id>.json` (commit it; the first write is the backfill). Only the last `STAGE_COMPLETED` per stage and Unit counts, because repeated rows are running totals. This machine (`aidlc/.aidlc-clone-id`) uses its ledger instead of its own shard; another machine counts the larger of its snapshot and its shard rows. "Partial" means some machine counts stage rows only. Known shortcuts: audit cache writes count as 5m; a machine with no shard yet is named from `os.hostname()`.
 - **Dependencies:** US-0201, US-0202
 
-**US-0210: Ask to switch to a stronger model profile when a critical intent starts, and switch back when it ends** 📋 Planned, for v0.2.9
+**US-0210: Ask to switch to a stronger model profile when a critical intent starts, and switch back when it ends** ✅ Done, for v0.2.9
 - As a **developer who pays for every agent run**, in order to **use the expensive model only where a mistake costs more than tokens**, I would like **the app to ask me, when an intent starts on a plan I marked as critical, whether to switch to my stronger model profile, and to switch back to my economy profile when that intent is done**.
 - **Epic:** EPIC-02
 - **Priority:** Medium
 - **Complexity:** Medium
 - **Background:** Asked for on 2026-11-17 in visinv. The developer agent was 44 % of one project's cost. Models can only be set per agent (`aidlc config models`), not per plan or stage, and AI-DLC's own hooks belong to the framework, so start and end hooks cannot live there. `aidlc config models` can already save and load named sets (`--save-as <name>`, `--from <name>`), and a change applies from the next step, so switching right after an intent is created is in time for its first stage. The app already reads `intents.json` and `aidlc-state.md`.
 - **Acceptance Criteria:**
-  - [ ] In the project's settings the person picks which plans (scopes) are critical, and which saved model profile is "critical" and which is "economy".
-  - [ ] When a new intent appears on a critical plan, the app asks once: switch to the critical profile? Yes runs `aidlc config models --from <critical> --project --harness <harness> --yes`; No changes nothing.
-  - [ ] When that intent is completed or archived, the app switches back to the economy profile, or asks first if the person chose that.
-  - [ ] An intent on a plan not marked critical gets no question.
-  - [ ] The app shows which profile is active, and the command's own output after each switch.
-  - [ ] If the command fails (for example a refused setup), the app shows its message and changes nothing else.
-  - [ ] Every text goes through `t()` in Swedish and English.
+  - [x] In the project's settings the person picks which plans (scopes) are critical, and which saved model profile is "critical" and which is "economy".
+  - [x] When a new intent appears on a critical plan, the app asks once: switch to the critical profile? Yes runs `aidlc config models --from <critical> --project --harness <harness> --yes`; No changes nothing.
+  - [x] When that intent is completed or archived, the app switches back to the economy profile, or asks first if the person chose that.
+  - [x] An intent on a plan not marked critical gets no question.
+  - [x] The app shows which profile is active, and the command's own output after each switch.
+  - [x] If the command fails (for example a refused setup), the app shows its message and changes nothing else.
+  - [x] Every text goes through `t()` in Swedish and English.
 - **Notes:** Until this exists, the assistant asks at intent start in visinv. Open: which profile counts as active when two intents run at the same time, one critical and one not (proposal: critical wins until the last critical intent ends).
 - **Dependencies:** US-0204, US-0904
 

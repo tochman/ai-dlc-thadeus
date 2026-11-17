@@ -187,6 +187,51 @@ describe('project settings', () => {
     expect(s.projectSettings['/p/b'].harnessTabs).toEqual(['opencode']);
   });
 
+  // US-0210 FR1.5, AC1.1.4–AC1.1.6: the model profiles per project.
+  it('keeps the model profiles per project, merges a partial change, and falls back on invalid parts (US-0210 FR1.5)', async () => {
+    expect((await getProjectSettings('/p/m')).modelProfiles).toBeUndefined();
+    const saved = {
+      criticalPlans: ['feature', 'mvp'],
+      critical: { from: 'strong', models: { developer: 'opus', architect: 'opus' } },
+      economy: { models: { developer: 'sonnet' } },
+      askBeforeBack: true
+    };
+    expect((await setProjectSettings('/p/m', { modelProfiles: saved })).modelProfiles).toEqual({ ...saved, active: null });
+    await setProjectSettings('/p/m', { modelProfiles: { active: 'critical' } }); // main saves only the active profile
+    expect((await getSettings()).projectSettings['/p/m'].modelProfiles).toEqual({ ...saved, active: 'critical' });
+
+    await fs.writeFile(
+      FILE,
+      JSON.stringify({
+        projectSettings: {
+          '/p/m': {
+            modelProfiles: {
+              criticalPlans: ['ok', 7],
+              critical: { from: 'Bad Name', models: { 'dev eloper': 'x', quality: 3, developer: 'opus' } },
+              economy: 'junk',
+              askBeforeBack: 'yes',
+              active: 'turbo'
+            }
+          }
+        }
+      })
+    );
+    expect((await getSettings()).projectSettings['/p/m'].modelProfiles).toEqual({
+      criticalPlans: ['ok'],
+      critical: { models: { developer: 'opus' } },
+      economy: { models: {} },
+      askBeforeBack: false,
+      active: null
+    });
+  });
+
+  it('refuses a saved profile name that does not match the name rule and keeps the earlier value (US-0210 AC1.1.6)', async () => {
+    await setProjectSettings('/p/m', { modelProfiles: { critical: { from: 'strong', models: {} } } });
+    await expect(setProjectSettings('/p/m', { modelProfiles: { critical: { from: 'strong; rm -rf /', models: {} } } })).rejects.toThrow(/strong; rm -rf/);
+    await expect(setProjectSettings('/p/m', { modelProfiles: { economy: { from: '-x', models: {} } } })).rejects.toThrow();
+    expect((await getProjectSettings('/p/m')).modelProfiles.critical).toEqual({ from: 'strong', models: {} });
+  });
+
   it('keeps both changes when two writes run at the same time (FR3.5)', async () => {
     await Promise.all([
       setSettings({ openProjects: ['/p/a', '/p/b'], activeProject: '/p/b' }),

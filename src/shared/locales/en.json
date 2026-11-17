@@ -821,7 +821,8 @@
         "docs": "Feature docs",
         "agent": "Agent",
         "aidlc": "AI-DLC",
-        "costRules": "Cost rules"
+        "costRules": "Cost rules",
+        "modelProfiles": "Model profiles"
       },
       "saved": "Saved.",
       "reset": "Reset"
@@ -929,6 +930,32 @@
       "guard_policy": "guard policy",
       "collaborators": "collaborators"
     }
+  },
+  "modelProfiles": {
+    "help": "When an intent starts on a critical plan, the app offers to switch to the critical profile. When the last critical intent ends, it switches back to the economy profile.",
+    "loading": "Reading plans and models…",
+    "active": "Active profile: {profile}",
+    "profile": { "critical": "critical", "economy": "economy", "none": "not set" },
+    "plansLegend": "Critical plans",
+    "critical": "Critical",
+    "noPlans": "No plans found.",
+    "kindLegend": { "critical": "Critical profile", "economy": "Economy profile" },
+    "from": "AI-DLC saved profile (effort per group)",
+    "fromNone": "None",
+    "saveAsHint": "No saved AI-DLC profile yet. Save one with: aidlc config models --save-as <name>",
+    "modelUnchanged": "Unchanged",
+    "modelFor": "Model for {agent}",
+    "askBeforeBack": "Ask before switching back",
+    "ask": {
+      "critical": "Intent {intent} started on a critical plan. Switch to the critical profile?",
+      "back": "The last critical intent has ended. Switch back to the economy profile?"
+    },
+    "yes": "Yes, switch",
+    "no": "No",
+    "running": "Switching…",
+    "results": "Commands run",
+    "done": "Active profile is now {profile}.",
+    "failed": "The switch stopped at a failing command. The active profile is unchanged."
   },
   "costRules": {
     "help": "A short block of rules that makes each intent cheaper. The app writes only between its markers in project.md and phases/construction.md of every space, and rebuilds AI-DLC afterwards.",

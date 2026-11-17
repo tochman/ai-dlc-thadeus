@@ -13,10 +13,11 @@ const errorText = (err) => String(err?.message ?? err).replace(/^Error invoking 
 const MODES = ['auto', 'show', 'hide'];
 /**
  * The sections in the arm (US-0012); `aidlc` is the AI-DLC configuration, shown by ConfigView; `costRules` is the
- * cost rule pack (US-0212), shown by CostRulesSection. Both only in AI-DLC projects (AIDLC_SECTIONS).
+ * cost rule pack (US-0212), shown by CostRulesSection; `modelProfiles` is the model profile switch (US-0210), shown by
+ * ModelProfilesSection. All three only in AI-DLC projects (AIDLC_SECTIONS).
  */
-export const PROJECT_SECTIONS = ['docs', 'agent', 'aidlc', 'costRules'];
-export const AIDLC_SECTIONS = ['aidlc', 'costRules'];
+export const PROJECT_SECTIONS = ['docs', 'agent', 'aidlc', 'costRules', 'modelProfiles'];
+export const AIDLC_SECTIONS = ['aidlc', 'costRules', 'modelProfiles'];
 
 /**
  * The "Agent-terminal" options (US-0801 FR2.1): the selectable harnesses with their CLI version, and the

@@ -821,7 +821,8 @@
         "docs": "Feature-beskrivningar",
         "agent": "Agent",
         "aidlc": "AI-DLC",
-        "costRules": "Kostnadsregler"
+        "costRules": "Kostnadsregler",
+        "modelProfiles": "Modellprofiler"
       },
       "saved": "Sparat.",
       "reset": "Återställ"
@@ -929,6 +930,32 @@
       "guard_policy": "skyddspolicy",
       "collaborators": "medarbetare"
     }
+  },
+  "modelProfiles": {
+    "help": "När en intent startar på en kritisk plan erbjuder appen att byta till den kritiska profilen. När den sista kritiska intenten är klar byter den tillbaka till ekonomiprofilen.",
+    "loading": "Läser planer och modeller…",
+    "active": "Aktiv profil: {profile}",
+    "profile": { "critical": "kritisk", "economy": "ekonomi", "none": "inte satt" },
+    "plansLegend": "Kritiska planer",
+    "critical": "Kritisk",
+    "noPlans": "Inga planer hittades.",
+    "kindLegend": { "critical": "Kritisk profil", "economy": "Ekonomiprofil" },
+    "from": "Sparad AI-DLC-profil (insats per grupp)",
+    "fromNone": "Ingen",
+    "saveAsHint": "Ingen sparad AI-DLC-profil än. Spara en med: aidlc config models --save-as <namn>",
+    "modelUnchanged": "Oförändrad",
+    "modelFor": "Modell för {agent}",
+    "askBeforeBack": "Fråga innan appen byter tillbaka",
+    "ask": {
+      "critical": "Intent {intent} startade på en kritisk plan. Byta till den kritiska profilen?",
+      "back": "Den sista kritiska intenten är klar. Byta tillbaka till ekonomiprofilen?"
+    },
+    "yes": "Ja, byt",
+    "no": "Nej",
+    "running": "Byter…",
+    "results": "Körda kommandon",
+    "done": "Aktiv profil är nu {profile}.",
+    "failed": "Bytet stannade vid ett kommando som misslyckades. Den aktiva profilen är oförändrad."
   },
   "costRules": {
     "help": "Ett kort block med regler som gör varje intent billigare. Appen skriver bara mellan sina markörer i project.md och phases/construction.md i varje space, och bygger om AI-DLC efteråt.",
