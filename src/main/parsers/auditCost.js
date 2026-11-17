@@ -2,6 +2,7 @@
 // committed audit shards, and merges them with this machine's ledger and other machines' snapshots, each counted once.
 // Every cost here is a ledger-shaped workflow node ({totals, byStage, byModel, byAgent}), so summarizeLedger shows it.
 // Pure functions with no Node imports; `events` come from loadAuditEvents.
+import { repriceMap } from '../reprice.js';
 
 const SHARD = /^(.+)-([^-]+)\.md$/;
 const SCALE = { k: 1e3, M: 1e6, B: 1e9 };
@@ -96,7 +97,7 @@ const usd = (node) => zero(node?.totals?.usd);
  * @returns {{node: object, extra: object|null, machines: {host: string|null, local: boolean, source: 'ledger'|'snapshot'|'audit', usd: number}[],
  *            partial: boolean}|null} `extra` is the part the ledger does not hold; null when no machine has a cost
  */
-export function mergeIntentCosts({ ledgerNode, local, shards = [], snapshots = [] }) {
+export function mergeIntentCosts({ ledgerNode, local, shards = [], snapshots = [], rates = null }) {
   const own = local ? shards.find((s) => s.cloneId === local.cloneId) : null;
   const parts = [];
   if (ledgerNode) parts.push({ host: local?.host ?? own?.host ?? null, local: true, source: 'ledger', node: ledgerNode });
@@ -116,7 +117,14 @@ export function mergeIntentCosts({ ledgerNode, local, shards = [], snapshots = [
   return {
     node: parts.map((p) => p.node).reduce(addTree),
     extra: parts.filter((p) => p.source !== 'ledger').reduce((sum, p) => addTree(sum, p.node), null),
-    machines: parts.map(({ host, local: isLocal, source, node }) => ({ host, local: isLocal, source, usd: usd(node) })),
+    // US-0211 FR3.2: each machine's current-price figure, from its own stored tokens, when a rate table is passed.
+    machines: parts.map(({ host, local: isLocal, source, node }) => ({
+      host,
+      local: isLocal,
+      source,
+      usd: usd(node),
+      ...(rates ? { currentUsd: repriceMap(node?.byModel, rates).usd } : {})
+    })),
     partial: parts.some((p) => p.source === 'audit')
   };
 }

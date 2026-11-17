@@ -1,7 +1,9 @@
 // Summarises AI-DLC's usage-ledger.json (schemaVersion 3) per project, intent, stage, agent and model.
-// Only the ledger's own `usd` values are used; no prices are computed here (FR2.4).
+// The ledger's own `usd` values are the recorded figures. US-0211 FR2: with a rate table, each model row and total also
+// gets `currentUsd` repriced from its stored tokens (reprice.js), beside the recorded figure, never instead of it.
 // Pure functions with no Node imports: the renderer imports compareModels too.
 import { t } from '../../shared/i18n.js';
+import { repriceMap, repriceModel } from '../reprice.js';
 
 const INTENT_KEY = 'intent:';
 const LEGACY_KEY = /^record:.+\/legacy$/;
@@ -37,10 +39,16 @@ function addCost(a, b) {
   return { usd: a.usd + b.usd, tokens, totalTokens, missingPrice: a.missingPrice || b.missingPrice };
 }
 
-/** A `byX` map as rows, most expensive first; empty rows (no tokens, no usd) are dropped. */
-function rows(map) {
+/** US-0211 AC1.5.1: a `byModel` map's current-price total and how many of its models have no rate. */
+function current(byModel, rates) {
+  const r = repriceMap(byModel, rates);
+  return { currentUsd: r.usd, currentMissing: r.missing };
+}
+
+/** A `byX` map as rows, most expensive first; empty rows (no tokens, no usd) are dropped. `rates`: model rows (US-0211). */
+function rows(map, rates = null) {
   return entries(map)
-    .map(([name, node]) => ({ name, ...costOf(node) }))
+    .map(([name, node]) => ({ name, ...costOf(node), ...(rates ? repriceModel(name, node, rates) : {}) }))
     .filter((r) => r.usd > 0 || r.totalTokens > 0)
     .sort((a, b) => b.usd - a.usd || b.totalTokens - a.totalTokens);
 }
@@ -82,18 +90,19 @@ function agentModels(workflows) {
   return Object.fromEntries([...usage].map(([a, models]) => [a, ordered(models)]));
 }
 
-function intentCost(wf) {
-  const byStage = rows(Object.fromEntries(entries(wf.byStage).map(([s, n]) => [s, n?.totals])));
+function intentCost(wf, rates) {
+  const stages = rows(Object.fromEntries(entries(wf.byStage).map(([s, n]) => [s, n?.totals])));
+  const byStage = rates ? stages.map((r) => ({ ...r, ...current(wf.byStage[r.name]?.byModel, rates) })) : stages;
   const stageModels = {};
   for (const [stage, node] of entries(wf.byStage)) {
     stageModels[stage] = rows(node?.byModel)
       .filter((r) => r.name !== SYNTHETIC_MODEL)
       .map((r) => r.name);
   }
-  const byModel = rows(wf.byModel);
+  const byModel = rows(wf.byModel, rates);
   const raw = wf.totals?.tokens ?? {};
   return {
-    total: costOf(wf.totals),
+    total: { ...costOf(wf.totals), ...(rates ? current(wf.byModel, rates) : {}) },
     // The ledger's own split, cache writes 5 m and 1 h apart, for the stored readings (US-0208 FR2.3).
     tokens: {
       input: num(raw.input),
@@ -114,8 +123,9 @@ function intentCost(wf) {
 /**
  * @param {object} ledger parsed usage-ledger.json
  * @param {{dirName: string, uuid: string|null, slug: string, scope: string|null, date: string|null}[]} intents
+ * @param {Record<string, object>|null} [rates] US-0211: the current rate table (modelRates.js); without it nothing is repriced
  */
-export function summarizeLedger(ledger, intents) {
+export function summarizeLedger(ledger, intents, rates = null) {
   const workflows = entries(ledger?.workflows);
   const byUuid = new Map(workflows.filter(([k]) => k.startsWith(INTENT_KEY)).map(([k, wf]) => [k.slice(INTENT_KEY.length), wf]));
   const legacyNodes = workflows.filter(([k]) => LEGACY_KEY.test(k)).map(([, wf]) => wf);
@@ -123,7 +133,7 @@ export function summarizeLedger(ledger, intents) {
   const perIntent = {};
   for (const intent of intents) {
     const wf = intent.uuid ? byUuid.get(intent.uuid) : null;
-    perIntent[intent.dirName] = wf ? intentCost(wf) : null; // null = no entry, shown as "–" (FR1.4)
+    perIntent[intent.dirName] = wf ? intentCost(wf, rates) : null; // null = no entry, shown as "–" (FR1.4)
   }
 
   const byScope = {};
@@ -134,18 +144,25 @@ export function summarizeLedger(ledger, intents) {
     s.usd += c.total.usd;
     s.count += 1;
     s.missingPrice ||= !c.complete;
+    if (rates) {
+      s.currentUsd = c.total.currentUsd === null ? (s.currentUsd ?? null) : (s.currentUsd ?? 0) + c.total.currentUsd;
+      s.currentMissing = (s.currentMissing ?? 0) + c.total.currentMissing;
+    }
   }
   for (const s of Object.values(byScope)) s.avg = s.usd / s.count;
 
   const timeline = intents
     .filter((i) => perIntent[i.dirName])
-    .map((i) => ({ dirName: i.dirName, slug: i.slug, date: i.date, usd: perIntent[i.dirName].total.usd }))
+    .map((i) => {
+      const { usd, currentUsd } = perIntent[i.dirName].total;
+      return { dirName: i.dirName, slug: i.slug, date: i.date, usd, ...(rates ? { currentUsd } : {}) };
+    })
     .sort((a, b) => a.dirName.localeCompare(b.dirName));
 
-  const byModel = rows(ledger?.byModel);
+  const byModel = rows(ledger?.byModel, rates);
   return {
     project: {
-      total: costOf(ledger?.totals),
+      total: { ...costOf(ledger?.totals), ...(rates ? current(ledger?.byModel, rates) : {}) },
       byModel,
       byAgent: rows(ledger?.byAgent),
       legacy: legacyNodes.length ? legacyNodes.map((wf) => costOf(wf?.totals)).reduce(addCost) : null,

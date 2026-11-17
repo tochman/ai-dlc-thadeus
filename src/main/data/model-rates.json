@@ -1,0 +1,10 @@
+{
+  "_comment": "US-0211 FR1.3, FR1.4: the app's own rate table, USD per 1,000,000 tokens, in AI-DLC's model-rates.json format. Published Anthropic list prices (global routing), read from the source below on the asOf date. haiku-5-5 is priced at its higher tier (prompts over 100,000 tokens), so a cost is never under-counted. Models not listed here fall back to AI-DLC's table.",
+  "asOf": "2026-11-17",
+  "source": "https://platform.claude.com/docs/en/about-claude/pricing",
+  "rates": {
+    "sonnet-5-5": { "input": 2.0, "output": 10.0, "cacheWrite5m": 2.5, "cacheWrite1h": 4.0, "cacheRead": 0.1 },
+    "fable-5-2": { "input": 8.0, "output": 40.0, "cacheWrite5m": 10.0, "cacheWrite1h": 16.0, "cacheRead": 0.2 },
+    "haiku-5-5": { "input": 0.5, "output": 2.5, "cacheWrite5m": 0.625, "cacheWrite1h": 1.0, "cacheRead": 0.05 }
+  }
+}

@@ -1,10 +1,11 @@
 // Collapsible project cost overview at the top of the intent list (FR3, FR4.6, FR6).
+// US-0211 FR3.2: totals show "recorded · at current prices"; chart points carry the current figure in their tooltip.
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { CostLabel, CostTable, MachinesLine, ModelTable } from './CostTab.jsx';
+import { CostLabel, CostNotes, CostTable, MachinesLine, ModelTable } from './CostTab.jsx';
 import { Readout } from './Lcars.jsx';
 import Tooltip from './Tooltip.jsx';
-import { formatCost, formatTokens, formatUsd, shortModel, tokenBreakdown } from './format.js';
+import { currentTip, formatCost, formatCostPair, formatTokens, formatUsd, shortModel, tokenBreakdown } from './format.js';
 
 const BAR_W = 14;
 const BAR_GAP = 6;
@@ -23,7 +24,7 @@ function CostChart({ timeline }) {
           const h = Math.max(1, (x.usd / max) * (CHART_H - 2));
           return (
             <rect key={x.dirName} x={i * (BAR_W + BAR_GAP)} y={CHART_H - h} width={BAR_W} height={h}>
-              <title>{`${x.date ?? '–'} ${x.slug}: ${formatUsd(x.usd)}`}</title>
+              <title>{[`${x.date ?? '–'} ${x.slug}: ${formatUsd(x.usd)}`, currentTip(x)].filter(Boolean).join('\n')}</title>
             </rect>
           );
         })}
@@ -53,7 +54,8 @@ function ScopeTable({ byScope }) {
           <tr key={scope}>
             <td>{scope}</td>
             <td>
-              {formatUsd(s.usd)}
+              {/* US-0211 FR3.2: a scope's sum is never "price missing"; its missingPrice only adds the *. */}
+              {formatCostPair({ usd: s.usd, currentUsd: s.currentUsd })}
               {s.missingPrice && '*'}
             </td>
             <td>{s.count}</td>
@@ -110,7 +112,7 @@ export default function CostPanel({ cost, models, open: openProp, onToggle }) {
           <p className="cost-big">
             <Tooltip text={t('cost.label')} focusable>
               <span className="cost-big-usd">
-                {formatCost(project.total)}
+                {formatCostPair(project.total)}
                 {!project.complete && '*'}
               </span>
             </Tooltip>
@@ -129,9 +131,12 @@ export default function CostPanel({ cost, models, open: openProp, onToggle }) {
           )}
           <p className="cost-total">
             <CostLabel complete={project.complete} />
-            <span className="cost-total-usd">{project.total.missingPrice ? t('cost.missingPrice') : formatUsd(project.total.usd)}</span>
+            <span className="cost-total-usd" data-testid="cost-panel-total">
+              {formatCostPair(project.total)}
+            </span>
             <span className="muted">{tokenBreakdown(project.total.tokens)}</span>
           </p>
+          <CostNotes rates={cost.rates} byModel={project.byModel} audit={!!project.auditFiveMinute} />
           {project.legacy && (
             <Tooltip text={t('cost.legacyTitle')} focusable>
               <p className="cost-legacy" data-testid="cost-panel-legacy">

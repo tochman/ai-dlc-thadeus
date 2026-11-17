@@ -301,9 +301,10 @@ function projectMachines(parts, hasLedger, local) {
  * machine's ledger, every intent's audit shard rows and the committed snapshots in .thadeus/usage/. Each perIntent entry
  * and the project get `machines` and `partial`. An intent without a uuid is matched by its folder (shard rows only).
  * @param {object|null} ledger this machine's parsed usage-ledger.json, or null when it has none
+ * @param {Record<string, object>|null} [rates] US-0211 FR2: the current rate table; every figure also gets `currentUsd`
  * @returns {Promise<{summary: object|null, local: {host: string, cloneId: string}|null}>} summary null: no cost anywhere
  */
-export async function loadCrossMachineCost(root, space, intents, ledger) {
+export async function loadCrossMachineCost(root, space, intents, ledger, rates = null) {
   assertName(space, 'space');
   const shards = await Promise.all(intents.map(async (i) => shardCosts(await auditEventsOrEmpty(root, `${intentsDir(space)}/${i.dirName}`))));
   const local = await localClone(
@@ -318,7 +319,7 @@ export async function loadCrossMachineCost(root, space, intents, ledger) {
   keyed.forEach((intent, n) => {
     const key = `intent:${intent.uuid}`;
     const snapshots = snaps.filter((s) => s.intents[intent.uuid]).map((s) => ({ host: s.host, cloneId: s.cloneId, node: s.intents[intent.uuid] }));
-    const m = mergeIntentCosts({ ledgerNode: ledger?.workflows?.[key] ?? null, local, shards: shards[n], snapshots });
+    const m = mergeIntentCosts({ ledgerNode: ledger?.workflows?.[key] ?? null, local, shards: shards[n], snapshots, rates });
     if (!m) return;
     workflows[key] = m.node;
     extra = addTree(extra, m.extra);
@@ -328,7 +329,7 @@ export async function loadCrossMachineCost(root, space, intents, ledger) {
 
   const all = { ...ledger, workflows };
   for (const k of ['totals', 'byModel', 'byAgent']) all[k] = addTree(ledger?.[k], extra?.[k]);
-  const summary = summarizeLedger(all, keyed);
+  const summary = summarizeLedger(all, keyed, rates);
   for (const [dir, m] of Object.entries(merged)) Object.assign(summary.perIntent[dir], { machines: m.machines, partial: m.partial });
   const parts = Object.values(merged);
   summary.project.machines = projectMachines(
@@ -337,6 +338,8 @@ export async function loadCrossMachineCost(root, space, intents, ledger) {
     local
   );
   summary.project.partial = parts.some((m) => m.partial);
+  // US-0211 FR2.2, AC1.2.3: audit rows have no 5m/1h split, so their cache writes are priced as 5m; the view says so.
+  summary.project.auditFiveMinute = parts.some((m) => m.machines.some((x) => x.source === 'audit'));
   return { summary, local };
 }
 

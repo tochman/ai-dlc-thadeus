@@ -78,3 +78,32 @@ describe('CostPanel', () => {
     expect(screen.queryByTestId('cost-machines')).toBeNull(); // no machines from main: no line
   });
 });
+
+// US-0211 FR3.2, AC1.4.1, AC1.4.3, AC1.5.1: the project total and scope totals as a pair, chart points with a tooltip.
+describe('CostPanel current prices (US-0211)', () => {
+  const RATES = { 'opus-5-5': { input: 100, output: 100, cacheWrite5m: 100, cacheWrite1h: 100, cacheRead: 100, source: 'app' } };
+  const repriced = {
+    available: true,
+    ...summarizeLedger(ledger, intents, RATES),
+    rates: { sources: {}, notes: [{ kind: 'overrideMissing', path: 'r.json' }] }
+  };
+  repriced.project.auditFiveMinute = true;
+
+  it('shows the project total, the scope totals and the chart points with the current-price figure', () => {
+    const { container } = render(<CostPanel cost={repriced} models={models} />);
+    expect(container.querySelector('.cost-big-usd').textContent).toMatch(/^registrerat \$\d+\.\d\d · till dagens priser \$\d+\.\d\d\*?$/);
+    fireEvent.click(screen.getByTestId('cost-panel-toggle'));
+    expect(screen.getByTestId('cost-panel-total').textContent).toMatch(/· till dagens priser/);
+    expect(within(screen.getByTestId('cost-panel-scopes')).getAllByText(/till dagens priser/).length).toBe(2);
+    const titles = [...container.querySelectorAll('.cost-chart rect title')].map((n) => n.textContent);
+    expect(titles.every((x) => /Till dagens priser: \$/.test(x))).toBe(true);
+    expect(screen.getByTestId('cost-notes').textContent).toMatch(/r\.json finns inte.*prissätts som 5 minuter/);
+  });
+
+  it('keeps the recorded figures alone without a rate table', () => {
+    const { container } = render(<CostPanel cost={cost} models={models} />);
+    expect(container.querySelector('.cost-big-usd').textContent).not.toMatch(/dagens priser/);
+    fireEvent.click(screen.getByTestId('cost-panel-toggle'));
+    expect(screen.queryByTestId('cost-notes')).toBeNull();
+  });
+});

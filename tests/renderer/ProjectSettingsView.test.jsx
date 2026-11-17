@@ -99,6 +99,27 @@ describe('ProjectSettingsView (Configuration › Feature docs and Agent, US-0012
     expect(onSetup).toHaveBeenCalledTimes(1);
   });
 
+  it('US-0211: saves a changed rates path, empty by default, and refuses one outside the project (FR1.2)', async () => {
+    render(<ProjectSettingsView projectId="p1" settings={settings} />);
+    const field = screen.getByTestId('project-settings-rates-path');
+    expect(field.value).toBe('');
+    fireEvent.change(field, { target: { value: '../rates.json' } });
+    expect(screen.getByTestId('project-settings-save').disabled).toBe(true);
+    expect(screen.getByRole('alert').textContent).toMatch(/sluta på \.json/);
+    fireEvent.change(field, { target: { value: 'config/rates.json' } });
+    fireEvent.click(screen.getByTestId('project-settings-save'));
+    await screen.findByTestId('project-settings-saved');
+    expect(window.bridge.setProjectSettings).toHaveBeenCalledWith('p1', {
+      featureDocs: 'auto',
+      featuresPath: 'docs/FEATURES.md',
+      ratesPath: 'config/rates.json'
+    });
+    cleanup();
+
+    render(<ProjectSettingsView projectId="p1" settings={{ ...settings, ratesPath: 'config/rates.json' }} />);
+    expect(screen.getByTestId('project-settings-rates-path').value).toBe('config/rates.json');
+  });
+
   it('lists the harnesses, disables the unsupported ones, and saves opencode for this project (US-0801 FR2.1, FR2.3)', async () => {
     render(<ProjectSettingsView section="agent" projectId="p1" settings={settings} harness="claude" harnesses={detected} />);
     const select = screen.getByTestId('project-settings-harness');

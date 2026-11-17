@@ -24,6 +24,7 @@ import { loadAgentProgress } from './agentProgress.js';
 import { notifyEvent, notifyQuestions } from './notify.js';
 import { agentName, summarizeLedger } from './parsers/ledger.js';
 import { getConfiguredModels } from './models.js';
+import { loadRates } from './modelRates.js';
 import { readReadings, readingOf, recordReading } from './tokenReadings.js';
 import { USAGE_DIR, snapshotOf, writeSnapshot } from './usageSnapshot.js';
 import { CONFIG_WATCH_PATHS, checkHarness, getAidlcConfig } from './aidlcConfig.js';
@@ -152,6 +153,19 @@ async function modelEstimate(root, change) {
   const { project: summary } = summarizeLedger(cost.ledger, []);
   const agents = change.agent ? [change.agent] : null; // a preset or group changes every agent
   return estimateCost(ledgerRows(summary), pricesFromLedger(summary.byModel), { agents, model: change.model });
+}
+
+/**
+ * US-0211 FR1, NFR2: the current rate table for `project:cost`, loaded once per call (cached in modelRates.js until a
+ * file changes). Null when it cannot be loaded, so the recorded figures still show.
+ */
+async function costRates(root) {
+  try {
+    return await loadRates(root, { ratesPath: (await getProjectSettings(root)).ratesPath ?? '' });
+  } catch (err) {
+    console.error('Kunde inte läsa pristabellen:', err.message);
+    return null;
+  }
 }
 
 function project(projectId) {
@@ -688,8 +702,9 @@ const handlers = {
     const cost = await loadCost(p.root);
     const { intents } = await loadIntentList(p.root, space, []); // cached list; only new folders are read
     const { ledger = null, ...rest } = cost;
+    const rates = await costRates(p.root);
     // US-0209: every machine's cost (ledger, audit shard rows, snapshots); a fresh clone without a ledger still has one (FR1.4).
-    const { summary, local } = await loadCrossMachineCost(p.root, space, intents, ledger);
+    const { summary, local } = await loadCrossMachineCost(p.root, space, intents, ledger, rates?.rates ?? null);
     if (!summary) return cost;
     if (ledger) {
       // US-0209 FR3.1: this machine's snapshot, written only when it changed; never awaited, like the readings below.
@@ -704,7 +719,8 @@ const handlers = {
     }
     const kept = { ...rest };
     delete kept.reason; // no ledger but audit rows: the cost is available
-    return { ...kept, available: true, ...summary };
+    const shown = rates ? { sources: rates.sources, notes: rates.notes, asOf: rates.asOf } : null;
+    return { ...kept, available: true, ...summary, rates: shown };
   },
   // The stored readings of one intent (US-0208 FR2.1); readReadings checks the dir name before it becomes a path.
   'tokens:readings': async (_event, projectId, dirName) => readReadings(project(projectId).root, dirName),
@@ -1141,7 +1157,8 @@ const handlers = {
       harnessTabs: partial?.harnessTabs, // the agent tabs side by side (US-0803)
       delivery: partial?.delivery, // Releases or Continuous deployment (US-0603 FR1.1)
       modelProfiles: partial?.modelProfiles, // US-0210 FR1.5
-      planningBranch: partial?.planningBranch // the docs branch for a protected main (US-0607 FR3.3)
+      planningBranch: partial?.planningBranch, // the docs branch for a protected main (US-0607 FR3.3)
+      ratesPath: partial?.ratesPath // the project's rate table (US-0211 FR1.2)
     });
     await syncFeaturesWatch(projectId);
     sendFeaturesChanged(projectId, p); // the open view reloads with the new setting

@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { isValidFeaturesPath } from '../main/parsers/features.js';
+import { isValidRatesPath } from '../main/reprice.js';
 import { HARNESSES, selectableHarness } from '../shared/harnesses.js';
 import { useTerminal } from './TerminalContext.jsx';
 import AgentHooksSection from './AgentHooksSection.jsx'; // US-0506 u4
@@ -92,35 +93,41 @@ function DocsSection({ projectId, settings, onSetup, motion }) {
   const savedDelivery = settings.delivery ?? DELIVERY_DEFAULT;
   const savedBranch = settings.planningBranch ?? PLANNING_BRANCH_DEFAULT;
   const [mode, setMode] = useState(settings.featureDocs);
+  const savedRates = settings.ratesPath ?? ''; // US-0211 FR1.2: empty = no project rate table
   const [path, setPath] = useState(settings.featuresPath);
   const [delivery, setDelivery] = useState(savedDelivery);
   const [branch, setBranch] = useState(savedBranch);
+  const [rates, setRates] = useState(savedRates);
   const { save, saving, status, clear } = useSectionSave(projectId);
   const load = () => {
     setMode(settings.featureDocs);
     setPath(settings.featuresPath);
     setDelivery(savedDelivery);
     setBranch(savedBranch);
+    setRates(savedRates);
   };
   const reset = () => {
     load();
     clear();
   };
-  useEffect(load, [settings.featureDocs, settings.featuresPath, savedDelivery, savedBranch]); // the saved values, also after our own save
+  useEffect(load, [settings.featureDocs, settings.featuresPath, savedDelivery, savedBranch, savedRates]); // the saved values, also after our own save
   const validPath = isValidFeaturesPath(path);
   const validBranch = isValidBranchName(branch);
+  const validRates = isValidRatesPath(rates);
+  const canSave = validPath && validBranch && validRates;
 
   return (
     <form
       onSubmit={(e) => {
         e.preventDefault();
         // Like the harness, an unchanged delivery or docs branch is not saved, so the default is not pinned.
-        if (validPath && validBranch) {
+        if (canSave) {
           save({
             featureDocs: mode,
             featuresPath: path,
             ...(delivery !== savedDelivery ? { delivery } : {}),
-            ...(branch !== savedBranch ? { planningBranch: branch } : {})
+            ...(branch !== savedBranch ? { planningBranch: branch } : {}),
+            ...(rates !== savedRates ? { ratesPath: rates } : {})
           });
         }
       }}
@@ -186,6 +193,24 @@ function DocsSection({ projectId, settings, onSetup, motion }) {
             {t('settings.project.pathInvalid')}
           </p>
         )}
+        <label className="field">
+          <span className="field-label">{t('settings.project.ratesPathLabel')}</span>
+          <input
+            type="text"
+            className="lcars-input"
+            value={rates}
+            onChange={(e) => setRates(e.target.value)}
+            aria-invalid={!validRates}
+            aria-describedby={validRates ? undefined : `project-settings-rates-path-error-${projectId}`}
+            data-testid="project-settings-rates-path"
+          />
+          <span className="muted">{t('settings.project.ratesPathHelp')}</span>
+        </label>
+        {!validRates && (
+          <p className="refresh-error" id={`project-settings-rates-path-error-${projectId}`} role="alert">
+            {t('settings.project.ratesPathInvalid')}
+          </p>
+        )}
         {onSetup && (
           <p className="settings-setup">
             <span className="muted">{t('settings.project.noDocs')}</span>
@@ -194,7 +219,7 @@ function DocsSection({ projectId, settings, onSetup, motion }) {
             </button>
           </p>
         )}
-        <Actions canSave={validPath && validBranch} saving={saving} status={status} onReset={reset} />
+        <Actions canSave={canSave} saving={saving} status={status} onReset={reset} />
       </Section>
     </form>
   );

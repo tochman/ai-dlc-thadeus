@@ -12,7 +12,7 @@ import StoryComments from './StoryComments.jsx';
 import { IntentVelocity } from './VelocityView.jsx';
 import { Dots, Frame, Hairlines } from './Lcars.jsx';
 import Tooltip from './Tooltip.jsx';
-import { formatCost, isInFlight, shortModel, stagePosition, stageStatusLabel, stageTitle } from './format.js';
+import { formatCostPair, isInFlight, shortModel, stagePosition, stageStatusLabel, stageTitle } from './format.js';
 
 const TABS = [
   { id: 'pipeline', tone: 'mid' },
@@ -82,7 +82,10 @@ function ReadoutColumn({ pipeline, intentCost, intent, directive, cost, dirName,
       {intentCost && (
         <div className="readout">
           <span className="readout-label">{t('intents.readoutCost')}</span>
-          <span className="readout-value readout-value--steel">{formatCost(intentCost.total)}</span>
+          {/* US-0211 FR3.2: recorded, with the current-price figure beside it when they differ. */}
+          <span className="readout-value readout-value--steel" data-testid="intent-detail-cost">
+            {formatCostPair(intentCost.total)}
+          </span>
         </div>
       )}
       {/* Live tokens beside the cost while the work runs (EPIC-02 US-0207). */}

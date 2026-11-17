@@ -9,6 +9,7 @@ import { LANGUAGE_SETTINGS, t } from '../shared/i18n.js';
 import { HARNESSES, selectableHarness } from '../shared/harnesses.js';
 import { TOOL_IDS, isStoredPath } from './tools.js';
 import { checkModelProfiles, sanitizeModelProfiles } from './modelProfiles.js';
+import { isValidRatesPath } from './modelRates.js';
 
 export { TOOL_IDS };
 
@@ -76,7 +77,9 @@ function sanitizeProject(raw) {
     // "Model profiles" (US-0210 FR1.5); left out until saved.
     ...(raw?.modelProfiles !== undefined ? { modelProfiles: sanitizeModelProfiles(raw.modelProfiles) } : {}),
     // The docs branch (US-0607 FR3.3); left out when unset or invalid, so PLANNING_BRANCH_DEFAULT applies.
-    ...(isValidBranchName(raw?.planningBranch) ? { planningBranch: raw.planningBranch } : {})
+    ...(isValidBranchName(raw?.planningBranch) ? { planningBranch: raw.planningBranch } : {}),
+    // The project's rate table (US-0211 FR1.2); left out when unset, cleared or invalid, so the settings files decide.
+    ...(raw?.ratesPath && isValidRatesPath(raw.ratesPath) ? { ratesPath: raw.ratesPath } : {})
   };
 }
 
@@ -191,6 +194,9 @@ export async function setProjectSettings(root, partial) {
   if (partial?.modelProfiles !== undefined) checkModelProfiles(partial.modelProfiles);
   if (partial?.planningBranch !== undefined && !isValidBranchName(partial.planningBranch)) {
     throw new Error(t('errors.invalidValue', { what: 'planningBranch', value: String(partial.planningBranch) }));
+  }
+  if (partial?.ratesPath !== undefined && !isValidRatesPath(partial.ratesPath)) {
+    throw new Error(t('errors.invalidValue', { what: 'ratesPath', value: String(partial.ratesPath) }));
   }
   const given = Object.fromEntries(Object.entries(partial ?? {}).filter(([, v]) => v !== undefined));
   const next = await update((cur) => {

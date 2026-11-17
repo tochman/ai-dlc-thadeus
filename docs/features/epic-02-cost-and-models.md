@@ -8,7 +8,7 @@
 
 **Stories:** US-0201, US-0202, US-0203, US-0204, US-0205, US-0206, US-0207, US-0208, US-0209, US-0210, US-0211, US-0212, US-0213, US-0214
 
-**Status (2026-11-17):** ✅ US-0201–US-0205 and US-0207 released (v0.2.0–v0.2.4; CSV export in US-0203 deferred). ➡️ US-0206 moved to US-0904. ✅ US-0208 released in v0.2.7. ✅ US-0209 released in v0.2.8. ✅ US-0212 done, for v0.2.9. ✅ US-0210 done, for v0.2.9. 📋 US-0211 and US-0213 planned, for v0.2.9. 📋 US-0214 planned. Each story names its release.
+**Status (2026-11-17):** ✅ US-0201–US-0205 and US-0207 released (v0.2.0–v0.2.4; CSV export in US-0203 deferred). ➡️ US-0206 moved to US-0904. ✅ US-0208 released in v0.2.7. ✅ US-0209 released in v0.2.8. ✅ US-0212 done, for v0.2.9. ✅ US-0210 done, for v0.2.9. ✅ US-0211 done, for v0.2.9. 📋 US-0213 planned, for v0.2.9. 📋 US-0214 planned. Each story names its release.
 
 ---
 
@@ -185,20 +185,20 @@ The key format of `workflows` was confirmed during requirements analysis (see ab
 - **Notes:** Until this exists, the assistant asks at intent start in visinv. Open: which profile counts as active when two intents run at the same time, one critical and one not (proposal: critical wins until the last critical intent ends).
 - **Dependencies:** US-0204, US-0904
 
-**US-0211: Reprice recorded tokens with a current price table** 📋 Planned, for v0.2.9 ([#64](https://github.com/tochman/aidlc-dash/issues/64))
+**US-0211: Reprice recorded tokens with a current price table** ✅ Done, for v0.2.9 ([#64](https://github.com/tochman/aidlc-dash/issues/64))
 - As a **developer who reads the cost view**, in order to **trust the figures for old intents too**, I would like **the app to compute USD from the stored token counts with a current price table, and to show the recorded figure next to it when the two differ**.
 - **Epic:** EPIC-02
 - **Priority:** High
 - **Complexity:** Medium
 - **Background:** Reported on 2026-11-17 in issue #64. The app shows the `usd` that AI-DLC wrote, so mistakes in AI-DLC's price table (`.claude/tools/data/model-rates.json`, "as of 2026-10") remain in every intent recorded so far: `sonnet-5-5` cache reads at $0.20/M instead of $0.10/M; `fable-5-2` and `haiku-5-5` missing. In this repository about two thirds of the cost is cache reads (about 5 billion tokens on `opus-5-5`), so the cache-read price matters most. This replaces the rule "the app never computes prices itself" (Data sources): the app still never writes a price anywhere.
 - **Acceptance Criteria:**
-  - [ ] The price table comes from the project's `AIDLC_MODEL_RATES` file when it is set, otherwise from AI-DLC's shipped table, otherwise from the app's own table, and the cost view says which one it used.
-  - [ ] An intent whose ledger used `sonnet-5-5` shows cache reads at $0.10/M, from the stored token counts.
-  - [ ] A `fable-5-2` or `haiku-5-5` intent gets a cost instead of "pris saknas".
-  - [ ] When the recorded and the repriced USD differ, both are shown ("recorded $12.40 · at current prices $9.80").
-  - [ ] Audit rows without a 5m/1h cache-write split are priced as 5m, as `auditCost.js` does today, and the view says so.
-  - [ ] A model with no price in any table stays "pris saknas". It is never guessed.
-  - [ ] Nothing in `aidlc/` is written.
+  - [x] The price table comes from the project's `AIDLC_MODEL_RATES` file when it is set, otherwise from AI-DLC's shipped table, otherwise from the app's own table, and the cost view says which one it used.
+  - [x] An intent whose ledger used `sonnet-5-5` shows cache reads at $0.10/M, from the stored token counts.
+  - [x] A `fable-5-2` or `haiku-5-5` intent gets a cost instead of "pris saknas".
+  - [x] When the recorded and the repriced USD differ, both are shown ("recorded $12.40 · at current prices $9.80").
+  - [x] Audit rows without a 5m/1h cache-write split are priced as 5m, as `auditCost.js` does today, and the view says so.
+  - [x] A model with no price in any table stays "pris saknas". It is never guessed.
+  - [x] Nothing in `aidlc/` is written.
 - **Dependencies:** US-0201, US-0209
 
 **US-0212: A THADEUS rule pack on top of AI-DLC to cut token cost** ✅ Done, for v0.2.9

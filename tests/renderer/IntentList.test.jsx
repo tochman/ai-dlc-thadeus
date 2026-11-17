@@ -134,6 +134,22 @@ describe('IntentList', () => {
     expect(screen.queryAllByTestId('intent-list-row-cost')).toEqual([]);
   });
 
+  it('US-0211: a row keeps the recorded figure and puts the current-price one in its tooltip when they differ (AC1.4.3)', () => {
+    const repriced = {
+      available: true,
+      perIntent: {
+        '261112-epic29-small-k2-fixes': { ...costEntry(5), total: { ...costEntry(5).total, currentUsd: 3.2 } },
+        '261111-orphan-notes': null,
+        '261110-epic02-finish': { ...costEntry(4), total: { ...costEntry(4).total, currentUsd: 4.001 } }
+      }
+    };
+    render(<IntentList intents={intents} selected={null} onSelect={vi.fn()} cost={repriced} />);
+    const cells = screen.getAllByTestId('intent-list-row-cost');
+    expect(cells.map((c) => c.textContent)).toEqual(['$5.00', '–', '$4.00']);
+    expect(hoverTip(cells[0])).toBe('Uppskattad kostnad (API-pris)\nTill dagens priser: $3.20');
+    expect(hoverTip(cells[2])).toBe('Uppskattad kostnad (API-pris)'); // under $0.01 apart: no second figure
+  });
+
   it('a row shows the combined text of its parts on focus, and each part its own on hover (US-0414 FR2.3)', () => {
     const row = { ...intents[0], plan: 'min-plan', error: 'trasig state-fil' };
     render(<IntentList intents={[row]} selected={null} onSelect={vi.fn()} cost={cost} />);

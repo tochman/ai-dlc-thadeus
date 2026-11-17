@@ -42,6 +42,17 @@ describe('project settings', () => {
     expect((await getSettings()).projectSettings['/p/a']).toEqual({ featureDocs: 'auto', featuresPath: 'docs/FEATURES.md' });
   });
 
+  it('keeps the rates path per project, left out until set or when cleared, and refuses an unsafe one (US-0211 FR1.2)', async () => {
+    expect(await setProjectSettings('/p/a', { ratesPath: 'config/rates.json' })).toMatchObject({ ratesPath: 'config/rates.json' });
+    expect((await getProjectSettings('/p/a')).ratesPath).toBe('config/rates.json');
+    expect((await setProjectSettings('/p/a', { ratesPath: '' })).ratesPath).toBeUndefined();
+    await expect(setProjectSettings('/p/a', { ratesPath: '../rates.json' })).rejects.toThrow(/ratesPath/);
+    await expect(setProjectSettings('/p/a', { ratesPath: '/etc/rates.json' })).rejects.toThrow(/ratesPath/);
+    await expect(setProjectSettings('/p/a', { ratesPath: 'rates.txt' })).rejects.toThrow(/ratesPath/);
+    await fs.writeFile(FILE, JSON.stringify({ projectSettings: { '/p/a': { ratesPath: '../x.json' } } }));
+    expect((await getProjectSettings('/p/a')).ratesPath).toBeUndefined();
+  });
+
   it('keeps the delivery setting per project, left out until chosen so Releases applies, and refuses an unknown one (US-0603 FR1.1)', async () => {
     expect((await getProjectSettings('/p/d')).delivery).toBeUndefined();
     expect(await setProjectSettings('/p/d', { delivery: 'continuous' })).toMatchObject({ delivery: 'continuous' });

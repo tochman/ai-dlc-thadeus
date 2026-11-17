@@ -43,6 +43,8 @@ const m = vi.hoisted(() => {
         local: { host: 'hosta', cloneId: 'aaaaaaaaaaaa' }
       })),
       loadVelocity: vi.fn(async () => ({ velocity: true })), // US-0303
+      // US-0211: the current rate table with its sources and notes.
+      loadRates: vi.fn(async () => ({ rates: { 'opus-5-5': { input: 1 } }, sources: { 'opus-5-5': 'app' }, notes: [], asOf: '2026-11-17' })),
       storyMarkerHistory: vi.fn(async () => null),
       snapshotOf: vi.fn((ledger, clone) => ({ schemaVersion: 1, ...clone, intents: {} })),
       writeSnapshot: vi.fn(async () => true),
@@ -181,6 +183,7 @@ vi.mock('../../src/main/usageSnapshot.js', () => ({ USAGE_DIR: '.thadeus/usage',
 vi.mock('../../src/main/notify.js', () => ({ notifyQuestions: m.svc.notifyQuestions, notifyEvent: m.svc.notifyEvent }));
 vi.mock('../../src/main/parsers/ledger.js', () => ({ agentName: m.svc.agentName, summarizeLedger: m.svc.summarizeLedger }));
 vi.mock('../../src/main/models.js', () => ({ getConfiguredModels: m.svc.getConfiguredModels }));
+vi.mock('../../src/main/modelRates.js', () => ({ loadRates: m.svc.loadRates }));
 vi.mock('../../src/main/aidlcConfig.js', () => ({
   CONFIG_WATCH_PATHS: ['aidlc.settings.json'],
   checkHarness: m.svc.checkHarness,
@@ -446,7 +449,7 @@ describe('projects', () => {
     svc.loadCost.mockResolvedValueOnce({ available: false, reason: 'no ledger' });
     svc.loadCrossMachineCost.mockResolvedValueOnce({ summary: { project: { total: { usd: 2 }, partial: true }, perIntent: {} }, local: null });
     const cost = await call('project:cost', {}, projectId, 'default');
-    expect(cost).toEqual({ available: true, project: { total: { usd: 2 }, partial: true }, perIntent: {} });
+    expect(cost).toEqual({ available: true, project: { total: { usd: 2 }, partial: true }, perIntent: {}, rates: expect.any(Object) });
     expect(svc.writeSnapshot).not.toHaveBeenCalled();
   });
 
@@ -456,9 +459,32 @@ describe('projects', () => {
     const ledger = { workflows: {} };
     svc.loadCost.mockResolvedValueOnce({ available: true, ledger });
     await call('project:cost', {}, projectId, 'default');
-    expect(svc.loadCrossMachineCost).toHaveBeenLastCalledWith('/work/snap', 'default', [], ledger);
+    expect(svc.loadCrossMachineCost).toHaveBeenLastCalledWith('/work/snap', 'default', [], ledger, { 'opus-5-5': { input: 1 } });
     expect(svc.snapshotOf).toHaveBeenLastCalledWith(ledger, { host: 'hosta', cloneId: 'aaaaaaaaaaaa' });
     expect(svc.writeSnapshot).toHaveBeenLastCalledWith('/work/snap', expect.objectContaining({ cloneId: 'aaaaaaaaaaaa' }));
+  });
+
+  it('loads the rates once per call with the project rates path, and returns their sources and notes (US-0211 FR1.2, FR1.5, FR1.6)', async () => {
+    const { projectId } = await openProject('/work/rates');
+    svc.loadRates.mockClear();
+    svc.getProjectSettings.mockResolvedValueOnce({ featureDocs: 'show', ratesPath: 'rates.json' });
+    svc.loadRates.mockResolvedValueOnce({ rates: {}, sources: { 'opus-5-5': 'project' }, notes: [{ kind: 'overrideMissing', path: 'rates.json' }], asOf: 'x' });
+    svc.loadCost.mockResolvedValueOnce({ available: true, ledger: { workflows: {} } });
+    const cost = await call('project:cost', {}, projectId, 'default');
+    expect(svc.loadRates).toHaveBeenCalledTimes(1);
+    expect(svc.loadRates).toHaveBeenCalledWith('/work/rates', { ratesPath: 'rates.json' });
+    expect(cost.rates).toEqual({ sources: { 'opus-5-5': 'project' }, notes: [{ kind: 'overrideMissing', path: 'rates.json' }], asOf: 'x' });
+  });
+
+  it('still answers with the recorded cost when the rates cannot be loaded (US-0211, NFR3 of US-0209)', async () => {
+    const { projectId } = await openProject('/work/norates');
+    svc.loadRates.mockRejectedValueOnce(new Error('boom'));
+    svc.loadCost.mockResolvedValueOnce({ available: true, ledger: { workflows: {} } });
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    const cost = await call('project:cost', {}, projectId, 'default');
+    expect(cost).toMatchObject({ available: true, project: expect.any(Object) });
+    expect(cost.rates).toBeNull();
+    expect(svc.loadCrossMachineCost.mock.calls.at(-1)[4]).toBeNull();
   });
 
   it('caches the configured models and the harness detection per project', async () => {

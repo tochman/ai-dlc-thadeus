@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { formatCost, isInFlight, stagePosition } from './format.js';
+import { currentTip, formatCost, isInFlight, stagePosition } from './format.js';
 import ResumeButton from './ResumeButton.jsx';
 import { Dots, progressStates } from './Lcars.jsx';
 import Tooltip from './Tooltip.jsx';
@@ -31,10 +31,14 @@ export function filterIntents(intents, { status, scope, query }) {
   );
 }
 
-/** The explanation of a row's cost: "no entry", the label, or the label marked incomplete (FR1.4, FR5.2). */
+/**
+ * The explanation of a row's cost: "no entry", the label, or the label marked incomplete (FR1.4, FR5.2); the
+ * current-price figure on its own line when it differs from the recorded one (US-0211 AC1.4.3).
+ */
 function costTip(t, c) {
   const label = t('cost.label');
-  return !c ? t('cost.noEntry') : c.complete ? label : t('intents.costIncomplete', { label });
+  if (!c) return t('cost.noEntry');
+  return [c.complete ? label : t('intents.costIncomplete', { label }), currentTip(c.total)].filter(Boolean).join('\n');
 }
 
 /** Running cost next to the live dot; "–" with an explanation when the ledger has no entry (FR1.2, FR1.4, FR5.2). */
