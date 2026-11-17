@@ -6,9 +6,9 @@
 
 > Make the price and the "brains" of AI-DLC work visible. For every intent, stage and agent the console shows what the run cost (tokens and USD) and which model did the work, next to which model each agent is *configured* to use. The goal is that the user can answer "what did this feature cost?", "where does the money go?" and "is the reviewer really running on the cheaper model?" without leaving the app. Read-only, like everything else.
 
-**Stories:** US-0201, US-0202, US-0203, US-0204, US-0205, US-0206, US-0207, US-0208, US-0209
+**Stories:** US-0201, US-0202, US-0203, US-0204, US-0205, US-0206, US-0207, US-0208, US-0209, US-0210
 
-**Status (2026-11-16):** ✅ US-0201–US-0205 and US-0207 released (v0.2.0–v0.2.4; CSV export in US-0203 deferred). ➡️ US-0206 moved to US-0904. ✅ US-0208 released in v0.2.7. ✅ US-0209 released in v0.2.8. Each story names its release.
+**Status (2026-11-17):** ✅ US-0201–US-0205 and US-0207 released (v0.2.0–v0.2.4; CSV export in US-0203 deferred). ➡️ US-0206 moved to US-0904. ✅ US-0208 released in v0.2.7. ✅ US-0209 released in v0.2.8. 📋 US-0210 planned. Each story names its release.
 
 ---
 
@@ -167,3 +167,20 @@ The key format of `workflows` was confirmed during requirements analysis (see ab
 - **Notes:** The issue's proposal, in order: (1) read the `STAGE_COMPLETED` rollups from every shard; (2) merge with the local ledger keyed by intent, stage, attempt and clone, so a rolled-up stage is not counted twice; (3) a per-clone totals snapshot, for example `<record>/usage/<host>-<clone-id>.json`, for cost outside stages (skipped stages, work after the workflow), written at stage completion, park and workflow end; (4) a one-time backfill of each machine's ledger into its snapshot; (5) show the sources. Who writes the snapshot (AI-DLC's usage tool or the app) is open: the app must not write engine-owned files. Example gap: `261116-epic29-k3-revenue-benefi`, ledger $40.70 against $32.58 in stage rows.
 - **Built (2026-11-16, express intent `261116-cross-machine-cost`):** the app writes the snapshot itself, outside AI-DLC's folders, at `.thadeus/usage/<host>-<clone-id>.json` (commit it; the first write is the backfill). Only the last `STAGE_COMPLETED` per stage and Unit counts, because repeated rows are running totals. This machine (`aidlc/.aidlc-clone-id`) uses its ledger instead of its own shard; another machine counts the larger of its snapshot and its shard rows. "Partial" means some machine counts stage rows only. Known shortcuts: audit cache writes count as 5m; a machine with no shard yet is named from `os.hostname()`.
 - **Dependencies:** US-0201, US-0202
+
+**US-0210: Ask to switch to a stronger model profile when a critical intent starts, and switch back when it ends** 📋
+- As a **developer who pays for every agent run**, in order to **use the expensive model only where a mistake costs more than tokens**, I would like **the app to ask me, when an intent starts on a plan I marked as critical, whether to switch to my stronger model profile, and to switch back to my economy profile when that intent is done**.
+- **Epic:** EPIC-02
+- **Priority:** Medium
+- **Complexity:** Medium
+- **Background:** Asked for on 2026-11-17 in visinv. The developer agent was 44 % of one project's cost. Models can only be set per agent (`aidlc config models`), not per plan or stage, and AI-DLC's own hooks belong to the framework, so start and end hooks cannot live there. `aidlc config models` can already save and load named sets (`--save-as <name>`, `--from <name>`), and a change applies from the next step, so switching right after an intent is created is in time for its first stage. The app already reads `intents.json` and `aidlc-state.md`.
+- **Acceptance Criteria:**
+  - [ ] In the project's settings the person picks which plans (scopes) are critical, and which saved model profile is "critical" and which is "economy".
+  - [ ] When a new intent appears on a critical plan, the app asks once: switch to the critical profile? Yes runs `aidlc config models --from <critical> --project --harness <harness> --yes`; No changes nothing.
+  - [ ] When that intent is completed or archived, the app switches back to the economy profile, or asks first if the person chose that.
+  - [ ] An intent on a plan not marked critical gets no question.
+  - [ ] The app shows which profile is active, and the command's own output after each switch.
+  - [ ] If the command fails (for example a refused setup), the app shows its message and changes nothing else.
+  - [ ] Every text goes through `t()` in Swedish and English.
+- **Notes:** Until this exists, the assistant asks at intent start in visinv. Open: which profile counts as active when two intents run at the same time, one critical and one not (proposal: critical wins until the last critical intent ends).
+- **Dependencies:** US-0204, US-0904
