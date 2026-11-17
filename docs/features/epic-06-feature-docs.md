@@ -6,9 +6,9 @@
 
 > Many projects describe their product in a feature document: an overview (`docs/FEATURES.md`) listing epics, and one file per epic (`docs/features/epic-XX-*.md`) with user stories, acceptance criteria and status. The format is not part of AI-DLC, but it works well together with it: the feature docs say *what* and *why*, and AI-DLC's records say *how* and *when*. The console should offer this format when a project is set up, and let people read and follow it next to the AI-DLC work.
 
-**Stories:** US-0601, US-0602, US-0603, US-0604, US-0605, US-0606
+**Stories:** US-0601, US-0602, US-0603, US-0604, US-0605, US-0606, US-0607
 
-**Status (2026-11-16):** ✅ US-0601–US-0603 released (v0.2.0–v0.2.5). ✅ US-0604 and US-0605 released in v0.2.7. 📋 US-0606 planned. Each story names its release.
+**Status (2026-11-17):** ✅ US-0601–US-0603 released (v0.2.0–v0.2.5). ✅ US-0604 and US-0605 released in v0.2.7. 📋 US-0606 and US-0607 planned. Each story names its release.
 
 **Decisions:**
 - **Q1 (where the view lives):** a switch "Intents | Features" at the top of the project view. Features replaces the sidebar and content area; the terminal stays.
@@ -132,3 +132,22 @@
   - [ ] Every text goes through `t()` in Swedish and English, and the view follows the LCARS look.
 - **Notes:** The release markers are written in `src/main/releases.js` and `src/main/parsers/releases.js`, and the release list is in `src/renderer/FeaturesView.jsx` (US-0603, US-0605). The temporary-worktree pattern matches how planning docs are already committed by hand while a story branch is checked out. Commit subject: `docs: plan US-XXXX[, …] for vX.Y.Z`.
 - **Dependencies:** US-0603, US-0605
+
+**US-0607: Release planning is kept locally and pushed to GitHub when there is time** 📋 Planned
+- As a **developer planning releases in the app**, in order to **never lose a planning change I made**, I would like **the app to keep each release planning action in a local record of its own, and to push the committed changes to GitHub at intervals or when nothing else is running**.
+- **Epic:** EPIC-06
+- **Priority:** High
+- **Complexity:** Medium
+- **Background:** Asked for on 2026-11-17. The person took US-0702, US-0412, US-0508 and US-0804 out of v0.2.9 from the release list. The change sat uncommitted in the working tree, was taken for a stray edit, and was discarded (`git checkout`), so it had to be redone by hand. US-0606 commits such changes on a branch of their own but pushes nothing. This story adds a record that survives a discarded working tree, and the push.
+- **Acceptance Criteria:**
+  - [ ] **Given** I add a story to a release, remove one, or create a release, **then** the app first writes the action (what, which stories, which release, when) to a local record outside the working tree, in the app's own data folder per project, before it changes any file.
+  - [ ] **Given** an action in the record whose change is not on `origin/main` and not in the working tree (for example after a discarded working tree or a branch switch), **then** the app applies it again and says so, instead of losing it.
+  - [ ] Committed planning changes (US-0606) are pushed at an interval the person sets (default 10 minutes), or sooner when the app is idle: no agent running, nothing waiting for an answer, and online.
+  - [ ] A planning commit holds only docs, so it is pushed straight to `main`, as the team's rule allows. When `main` has moved, the app rebases its own commit in its temporary worktree first. On a conflict it pushes nothing, keeps the record, and names the files.
+  - [ ] An action leaves the record only once its commit is on `origin/main`.
+  - [ ] The release list shows actions not yet pushed ("2 planning changes waiting to be pushed"), with a button to push now.
+  - [ ] Offline, or when `git push` is refused, the app keeps the record and tries again at the next interval, without a new dialog each time.
+  - [ ] A test proves that a planning action survives `git checkout -- <files>` of the working tree and is applied again.
+  - [ ] Every text goes through `t()` in Swedish and English, and the view follows the LCARS look.
+- **Notes:** This changes US-0606's "the app pushes nothing by itself" and its branch-and-pull-request flow: planning commits go to `main`. Open: whether the person wants a pull request instead after all, as US-0606 proposed (proposal: straight to `main`, as for other docs).
+- **Dependencies:** US-0606
