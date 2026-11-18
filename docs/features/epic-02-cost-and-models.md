@@ -219,7 +219,7 @@ The key format of `workflows` was confirmed during requirements analysis (see ab
 - **Notes:** Rules are text the model reads, not enforcement. Anything that must happen at a set moment, such as starting a fresh session, belongs to US-0213.
 - **Dependencies:** US-0901
 
-**US-0213: Offer to compact or start a fresh session, from a dialog, in Claude Code and opencode** ✅ Released in v0.2.9 (not yet released)
+**US-0213: Offer to compact or start a fresh session, from a dialog, in Claude Code and opencode** ✅ Released in v0.2.9
 - As a **developer running long intents**, in order to **stop paying for the same long context on every turn**, I would like **the app to open a dialog when the context grows too large, when a stage is done, or at a gate, and on my answer send `/compact` or start a fresh session in the agent tab**.
 - **Epic:** EPIC-02
 - **Priority:** High

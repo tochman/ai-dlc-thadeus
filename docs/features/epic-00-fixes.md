@@ -6,9 +6,9 @@
 
 > Small fixes the person reports while using the app: something looks off, behaves wrongly or is missing a detail. Each fix becomes a story here, so nothing reported in passing gets lost. A fix that grows into a feature moves to its topic's epic.
 
-**Stories:** US-0001, US-0002, US-0003, US-0004, US-0005, US-0006, US-0007, US-0008, US-0009, US-0010, US-0011, US-0012, US-0013, US-0014, US-0015, US-0016, US-0017, US-0018, US-0019, US-0020, US-0021, US-0022, US-0023, US-0024, US-0025, US-0026, US-0027
+**Stories:** US-0001, US-0002, US-0003, US-0004, US-0005, US-0006, US-0007, US-0008, US-0009, US-0010, US-0011, US-0012, US-0013, US-0014, US-0015, US-0016, US-0017, US-0018, US-0019, US-0020, US-0021, US-0022, US-0023, US-0024, US-0025, US-0026, US-0027, US-0028
 
-**Status (2026-11-17):** ✅ US-0001–US-0020 released (v0.2.3–v0.2.6). ✅ US-0021–US-0023 released in v0.2.7. ✅ US-0024 released in v0.2.8. ✅ US-0025 released in v0.2.9. ✅ US-0026 released in v0.2.9. ✅ US-0027 released in v0.2.9. Each story names its release.
+**Status (2026-11-18):** ✅ US-0001–US-0020 released (v0.2.3–v0.2.6). ✅ US-0021–US-0023 released in v0.2.7. ✅ US-0024 released in v0.2.8. ✅ US-0025 released in v0.2.9. ✅ US-0026 released in v0.2.9. ✅ US-0027 released in v0.2.9. 📋 US-0028 planned, no release yet. Each story names its release.
 
 ---
 
@@ -392,7 +392,7 @@
 
 ---
 
-**US-0025: Agent progress shows a running build when the inflight file is empty** ✅ Released in v0.2.9 (not yet released)
+**US-0025: Agent progress shows a running build when the inflight file is empty** ✅ Released in v0.2.9
 - As a **developer watching agents work**, in order to **see that a build is running**, I would like **the "Agenternas framsteg" panel and "Arbetar nu" to show a running AI-DLC agent even when AI-DLC's inflight file is missing or empty**.
 - **Epic:** EPIC-00
 - **Priority:** High
@@ -408,7 +408,7 @@
 
 ---
 
-**US-0026: The agent dialog is not left empty at a new session, and offers /clear or /clear + resume** ✅ Released in v0.2.9 (not yet released)
+**US-0026: The agent dialog is not left empty at a new session, and offers /clear or /clear + resume** ✅ Released in v0.2.9
 - As a **developer starting a new Claude Code session**, in order to **carry on without a dead dialog in the way**, I would like **the agent dialog to show something I can act on at that moment: start a clean chat with `/clear`, or `/clear` and then `/aidlc --resume`**.
 - **Epic:** EPIC-00
 - **Priority:** High
@@ -425,7 +425,7 @@
 - **Build and Test (2026-11-17, intent `261117-session-handoff-dialog`):** the regression test in `tests/main/agentEventsReply.test.js` fails without the fix and passes with it; 1796/1796 tests. The LCARS look of the page is checked by eye in the running app before the v0.2.9 tag.
 - **Dependencies:** US-0506
 
-**US-0027: The app follows the repository's new name, ai-dlc-thadeus** ✅ Released in v0.2.9 (not yet released)
+**US-0027: The app follows the repository's new name, ai-dlc-thadeus** ✅ Released in v0.2.9
 - As a **developer using THADEUS**, in order to **keep getting updates and reach the right GitHub pages**, I would like **the app to use the repository's new name, `tochman/ai-dlc-thadeus`**.
 - **Epic:** EPIC-00
 - **Priority:** High
@@ -440,3 +440,18 @@
 - **Notes:** Runs on the `quick-fix` plan, after the US-0213/US-0026 intent. The local git remote was already pointed at the new address on 2026-11-17.
 - **Done (2026-11-17, without AI-DLC, branch `fix/US-0027`):** `APP_REPO` and `APP_REPO_URL` in `src/shared/appName.js` are the one place the repository is named. The updater (`REPO`), the Issues link, the About links, `package.json` and the README use them. `tests/main/appName.test.js` fails while any `tochman/aidlc-dash` address is left under `src/`, in `package.json` or in the README. The download-by-hand note for v0.2.8 and earlier is on the v0.2.9 release checklist (`docs/releases/0.2.9.md`). 1797/1797 tests pass.
 - **Dependencies:** US-0407, US-0413 (the updater)
+
+**US-0028: The pipeline view does not warn about a missing runtime-graph.json that is expected** 📋 Planned
+- As a **developer watching an intent in the pipeline view**, in order to **tell a real problem from a normal state**, I would like **the view to show no warning-like note when runtime-graph.json is simply not there yet, and a calm one when it cannot be there**.
+- **Epic:** EPIC-00
+- **Priority:** Low
+- **Complexity:** Low
+- **Background:** Reported 2026-11-18. The pipeline view kept saying "runtime-graph.json is missing (it is git-ignored). Status comes from aidlc-state.md." (`pipeline.noGraph`, `src/renderer/Pipeline.jsx`). The note is shown for any intent without the file (`hasGraph` false). That fits two normal cases. A new intent has no file yet, because AI-DLC writes it once the workflow records stage timings; this happened for `261118-release-0-2-9`. An intent from another clone never has the file, because it is git-ignored and stays on the machine that made it. In both cases the status read from `aidlc-state.md` is correct; only timings and the Unit graph are missing.
+- **Acceptance Criteria:**
+  - [ ] **Given** an intent with no runtime-graph.json and no completed stage, **when** I open its pipeline view, **then** no note about the file is shown.
+  - [ ] **Given** an intent with no runtime-graph.json and at least one completed stage (for example one made on another machine), **when** I open its pipeline view, **then** it shows one calm sentence that timings are kept only on the machine that ran the work, not a warning.
+  - [ ] **Given** a runtime-graph.json that exists but cannot be read, **then** the view still warns, as today (`buildDetail` warnings).
+  - [ ] Every text goes through `t()` in Swedish and English, in the LCARS look.
+  - [ ] A test fails without the fix and passes with it; the existing suite stays green.
+- **Notes:** A code fix, so it runs on the `quick-fix` plan. Touches `src/renderer/Pipeline.jsx` and the `pipeline.noGraph` keys in `sv.json` and `en.json`.
+- **Dependencies:** none
