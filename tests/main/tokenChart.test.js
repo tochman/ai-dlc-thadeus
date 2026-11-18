@@ -1,7 +1,7 @@
 // The token detail view's chart numbers (EPIC-02 US-0208 FR3): elapsed labels, the stacked kinds over time, the rate
 // between readings, and the top-12 splits. Pure, so they are tested without visx or the DOM.
 import { describe, expect, it } from 'vitest';
-import { STACK_KINDS, elapsedLabel, rateSeries, splitRows, stackSeries, toggleKind } from '../../src/renderer/tokenChart.js';
+import { STACK_KINDS, elapsedLabel, rateSeries, runFigures, splitRows, stackSeries, toggleKind } from '../../src/renderer/tokenChart.js';
 
 const MIN = 60_000;
 const reading = (at, n) => ({ at, input: n, output: 2 * n, cacheWrite5m: 3 * n, cacheWrite1h: 4 * n, cacheRead: 5 * n, usd: n / 100 });
@@ -106,5 +106,42 @@ describe('shown series (US-0214 FR5)', () => {
     expect(toggleKind(all, all, 'output')).toEqual(['input', 'cacheRead']);
     expect(toggleKind(['input', 'cacheRead'], all, 'output')).toEqual(['input', 'output', 'cacheRead']);
     expect(toggleKind(['cacheRead'], all, 'cacheRead')).toEqual(['cacheRead']);
+  });
+});
+
+// US-0215 FR4: the run's figures strip; a figure that cannot be known is null, shown as "–" (FR4.6).
+describe('runFigures (US-0215 FR4)', () => {
+  const intentCost = { total: { usd: 4, totalTokens: 1000, tokens: { input: 100, output: 200, cacheWrite: 300, cacheRead: 400 } } };
+  const readings = [reading(1000, 10), reading(1000 + MIN, 20), reading(1000 + 3 * MIN, 30)];
+
+  it('takes the kinds from the ledger and the cache-read share of input + cache (FR4.1, FR4.5)', () => {
+    const f = runFigures({ intentCost, readings, wallMs: null });
+    expect([f.input, f.output, f.cacheWrite, f.cacheRead]).toEqual([100, 200, 300, 400]);
+    expect(f.cacheShare).toBe(0.5); // 400 / (100 + 400 + 300)
+  });
+
+  it('gives working time from the readings and wall-clock as given (FR4.3)', () => {
+    const f = runFigures({ intentCost, readings, wallMs: 10 * MIN });
+    expect([f.workingMs, f.wallMs]).toEqual([3 * MIN, 10 * MIN]);
+  });
+
+  it('takes the peak rate as the highest point of the rate diagram, of the shown kinds (FR4.4)', () => {
+    expect(runFigures({ intentCost, readings, wallMs: null }).peakRate).toBe(150);
+    expect(runFigures({ intentCost, readings, wallMs: null, shown: ['input'] }).peakRate).toBe(10);
+  });
+
+  it('makes every unknown figure null, never 0 (FR4.6)', () => {
+    expect(runFigures({ intentCost: null, readings: [], wallMs: null })).toEqual({
+      input: null,
+      output: null,
+      cacheWrite: null,
+      cacheRead: null,
+      cacheShare: null,
+      workingMs: null,
+      wallMs: null,
+      peakRate: null
+    });
+    const noCache = { total: { tokens: { input: 0, output: 5, cacheWrite: 0, cacheRead: 0 } } };
+    expect(runFigures({ intentCost: noCache, readings: readings.slice(0, 1), wallMs: null })).toMatchObject({ cacheShare: null, workingMs: 0, peakRate: null });
   });
 });

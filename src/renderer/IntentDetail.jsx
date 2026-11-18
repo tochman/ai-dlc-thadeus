@@ -180,6 +180,7 @@ export default function IntentDetail({
       <article className="intent-detail" data-testid="intent-detail">
         <TokenDetail
           projectId={projectId}
+          space={space}
           dirName={detail.dirName}
           intent={intent}
           cost={cost}

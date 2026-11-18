@@ -52,6 +52,28 @@ export function rateSeries(readings, shown = STACK_KINDS) {
   });
 }
 
+/**
+ * US-0215 FR4: the run's figures. Kinds and the cache-read share (FR4.5: cache reads of input + cache reads + cache
+ * writes) from the ledger entry; working time from the first to the last reading; peak rate the top of `rateSeries` of
+ * the `shown` kinds (FR4.4). FR4.6: a figure that cannot be known is null, never 0.
+ * @param {{intentCost: object|null, readings: object[], wallMs: number|null, shown?: string[]}} args
+ */
+export function runFigures({ intentCost, readings, wallMs, shown = STACK_KINDS }) {
+  const tk = intentCost?.total?.tokens ?? null;
+  const cacheBase = tk ? tk.input + tk.cacheRead + tk.cacheWrite : 0;
+  const rates = rateSeries(readings, shown).map((r) => r.rate);
+  return {
+    input: tk?.input ?? null,
+    output: tk?.output ?? null,
+    cacheWrite: tk?.cacheWrite ?? null,
+    cacheRead: tk?.cacheRead ?? null,
+    cacheShare: cacheBase > 0 ? tk.cacheRead / cacheBase : null,
+    workingMs: readings.length ? readings.at(-1).at - readings[0].at : null,
+    wallMs: Number.isFinite(wallMs) ? wallMs : null,
+    peakRate: rates.length ? Math.max(...rates) : null
+  };
+}
+
 function sumRows(rows) {
   const tokens = Object.fromEntries(SPLIT_KINDS.map((k) => [k, rows.reduce((s, r) => s + r.tokens[k], 0)]));
   return {

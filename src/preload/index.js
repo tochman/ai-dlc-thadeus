@@ -24,7 +24,9 @@ contextBridge.exposeInMainWorld('bridge', {
   getIntent: call('project:intent'),
   getCost: call('project:cost'),
   getVelocity: call('project:velocity'), // intent, story and project velocity (US-0303 FR3.5)
-  getTokenReadings: call('tokens:readings'), // an intent's stored token readings, by dir name (EPIC-02 US-0208)
+  // An intent's token readings by dir name (EPIC-02 US-0208); with a space, `{source, readings, wallMs, gap}`, rebuilt
+  // from the transcripts for a finished intent without stored readings (US-0215 FR6).
+  getTokenReadings: call('tokens:readings'),
   getModels: call('project:models'),
   detectHarnesses: call('harness:detect'), // installed harnesses and CLI versions (EPIC-08 US-0801)
   readFile: call('project:file'),
