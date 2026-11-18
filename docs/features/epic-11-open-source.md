@@ -8,7 +8,7 @@
 
 **Stories:** US-1101, US-1102
 
-**Status (2026-11-15):** ✅ US-1101 released in v0.2.6. 📋 US-1102 planned. Each story names its release.
+**Status (2026-11-15):** ✅ US-1101 released in v0.2.6. 📋 US-1102 planned, for v0.3.0. Each story names its release.
 
 ---
 
@@ -36,7 +36,7 @@
 
 ---
 
-**US-1102: A visual first impression on GitHub, and topics to be found by** 📋 Planned
+**US-1102: A visual first impression on GitHub, and topics to be found by** 📋 Planned, for v0.3.0
 - As a **developer who comes across the repository on GitHub**, in order to **see at a glance what the app does and find it by topic**, I would like **a short animated GIF or screenshot gallery at the top of the README, and repository topics**.
 - **Epic:** EPIC-11
 - **Priority:** Low
