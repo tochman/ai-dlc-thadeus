@@ -151,6 +151,96 @@ function parseStory(id, title, rest, body) {
 
 const STORY_HEAD = /^\*\*(US-\d{4})\s*[:–-]\s*(.+?)\*\*\s*(.*)$/;
 
+/**
+ * US-0608 FR3.2: a feature-doc text cut into blocks that join back (with '\n') to the same text: one per story (from its
+ * `**US-XXXX: …**` line to the next story, heading or `---`), one per table row outside a story, keyed `row:<id>` by the
+ * first epic or story id it names, and the text between them, keyed `~<the key before it>`. `ids`: the stories a block is about.
+ * @returns {{key: string, ids: string[], text: string}[]}
+ */
+export function storyBlocks(text) {
+  const blocks = [];
+  const seen = new Map();
+  let story = false;
+  const push = (key, line, ids) => {
+    const n = (seen.get(key) ?? 0) + 1;
+    seen.set(key, n);
+    blocks.push({ key: n > 1 ? `${key}#${n}` : key, lines: [line], ids });
+  };
+  for (const line of String(text ?? '').split('\n')) {
+    const head = line.match(STORY_HEAD);
+    const last = blocks.at(-1);
+    if (head) {
+      story = true;
+      push(head[1], line, [head[1]]);
+    } else if (story && !/^#{1,2}\s/.test(line) && !/^---\s*$/.test(line)) last.lines.push(line);
+    else if (/^\s*\|/.test(line) && /EPIC-\d+|US-\d{4}/.test(line)) {
+      story = false;
+      push(`row:${line.match(/EPIC-\d+/)?.[0] ?? line.match(/US-\d{4}/)[0]}`, line, null);
+    } else if (last && last.key.startsWith('~')) last.lines.push(line);
+    else {
+      story = false;
+      blocks.push({ key: `~${last?.key ?? ''}`, lines: [line], ids: null });
+    }
+  }
+  return blocks.map(({ key, lines, ids }) => {
+    const joined = lines.join('\n');
+    return { key, ids: ids ?? storyIdsIn(joined), text: joined };
+  });
+}
+
+/**
+ * US-0608 FR3.2, FR3.3, AC1.3.3: a change of one file split by story block. `keep` is `work` with every block that is not
+ * about an `own` story put back as it is in `head`; `changes` are those other blocks, each `{key, ids, before, after, prev}`
+ * (null `before`: a new block, null `after`: a removed one; `prev`: the key it follows).
+ */
+export function splitChange(head, work, own) {
+  const H = storyBlocks(head);
+  const W = storyBlocks(work);
+  const byKey = (list) => new Map(list.map((b, i) => [b.key, { ...b, prev: list[i - 1]?.key ?? null }]));
+  const h = byKey(H);
+  const w = byKey(W);
+  const isOwn = (b) => b.ids.some((id) => own.includes(id));
+  const changes = [];
+  for (const key of new Set([...w.keys(), ...h.keys()])) {
+    const before = h.get(key) ?? null;
+    const after = w.get(key) ?? null;
+    if (before?.text === after?.text || [before, after].some((b) => b && isOwn(b))) continue;
+    const ids = [...new Set([...(before?.ids ?? []), ...(after?.ids ?? [])])];
+    changes.push({ key, ids, before: before?.text ?? null, after: after?.text ?? null, prev: (after ?? before).prev });
+  }
+  const other = new Map(changes.map((c) => [c.key, c]));
+  const keep = W.flatMap((b) => (!other.has(b.key) ? [b.text] : other.get(b.key).before === null ? [] : [other.get(b.key).before]));
+  return { keep: insertRemoved(keep, W, changes).join('\n'), changes };
+}
+
+/** The removed other blocks back in `keep`, after the block they followed (else first). */
+function insertRemoved(keep, W, changes) {
+  const out = W.filter((b) => !changes.some((c) => c.key === b.key && c.before === null)).map((b, i) => ({ key: b.key, text: keep[i] }));
+  for (const c of changes.filter((x) => x.after === null)) out.splice(out.findIndex((b) => b.key === c.prev) + 1, 0, { key: c.key, text: c.before });
+  return out.map((b) => b.text);
+}
+
+/**
+ * US-0608 FR3.3, FR5.2: `changes` (from splitChange) applied onto `target` (null: no such file). A block the target
+ * changed itself is still given the app's text and named in `conflicts`, so the caller keeps the target's file.
+ * @returns {{text: string, conflicts: string[]}}
+ */
+export function applyChange(target, changes) {
+  const blocks = storyBlocks(target ?? '').map(({ key, text }) => ({ key, text }));
+  const conflicts = [];
+  for (const c of changes) {
+    const i = blocks.findIndex((b) => b.key === c.key);
+    if ((i === -1 ? null : blocks[i].text) !== c.before) conflicts.push(c.key);
+    if (i !== -1 && c.after === null) blocks.splice(i, 1);
+    else if (i !== -1) blocks[i].text = c.after;
+    else if (c.after !== null) {
+      const at = blocks.findIndex((b) => b.key === c.prev);
+      blocks.splice(at === -1 ? blocks.length : at + 1, 0, { key: c.key, text: c.after });
+    }
+  }
+  return { text: blocks.map((b) => b.text).join('\n'), conflicts };
+}
+
 /** @returns {{id: string|null, title: string, description: string, intro: string, storiesLine: string|null, statusLine: string|null, stories: object[], raw: string, warnings: string[]}} */
 export function parseEpic(md) {
   const raw = String(md ?? '');

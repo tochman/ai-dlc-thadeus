@@ -92,6 +92,9 @@ contextBridge.exposeInMainWorld('bridge', {
   // US-0607 FR4.1: the planning changes waiting to be pushed, and "Push now"; only the project id crosses the bridge.
   getPlanningStatus: call('features:planningStatus'),
   pushPlanning: call('features:pushPlanning'),
+  // US-0608 FR5.3, FR7.2: "Use mine" / "Keep theirs" (an entry id and a fixed word), and the waiting list after each cycle.
+  resolvePlanning: call('features:resolvePlanning'),
+  onPlanningChanged: subscribe('features:planningChanged'),
   getLifecycleRuleStatus: call('features:ruleStatus'),
   getProjectSettings: call('projectSettings:get'),
   setProjectSettings: call('projectSettings:set'),

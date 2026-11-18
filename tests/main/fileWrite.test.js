@@ -164,7 +164,8 @@ describe('writeAtomic (US-0506 u4 RD33)', () => {
   // US-1201 AC-1 adds credentials.js: one fixed file name in the app's own userData folder, never in a project.
   // US-0212 NFR1 adds costRules.js: it validates the space name, takes the file only from its target table and resolves it in the root.
   // US-0607 FR1.1 adds planningRecord.js: one file per project in the app's own userData folder, named by a hash of the root.
-  it('is imported only by fileWrite.js, agentHooks.js, tokenReadings.js, usageSnapshot.js, credentials.js, costRules.js and planningRecord.js (SD36)', () => {
+  // US-0608 D5 adds planningSync.js: it writes only feature-doc paths that validDocFile checked, its folder resolved in the root.
+  it('is imported only by fileWrite.js, agentHooks.js, tokenReadings.js, usageSnapshot.js, credentials.js, costRules.js, planningRecord.js and planningSync.js (SD36)', () => {
     const src = path.resolve(__dirname, '../../src');
     const users = readdirSync(src, { recursive: true })
       .filter((f) => /\.jsx?$/.test(f))
@@ -177,6 +178,7 @@ describe('writeAtomic (US-0506 u4 RD33)', () => {
       'main/credentials.js',
       'main/fileWrite.js',
       'main/planningRecord.js',
+      'main/planningSync.js',
       'main/tokenReadings.js',
       'main/usageSnapshot.js'
     ]);

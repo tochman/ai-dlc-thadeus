@@ -1,11 +1,12 @@
-import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
-import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { useState } from 'react';
 import path from 'node:path';
 import { openRoot } from '../../src/main/projectAccess.js';
 import { loadFeatures } from '../../src/main/features.js';
 import { parseEpic } from '../../src/main/parsers/features.js';
 import FeaturesView from '../../src/renderer/FeaturesView.jsx';
+import { EditorCtx } from '../../src/renderer/editor/EditorContext.jsx';
 
 // The same shape features:load returns, built by the real loader from the fixture docs.
 let features;
@@ -282,7 +283,8 @@ describe('FeaturesView: releases made by hand (US-0605)', () => {
   });
 
   it('adds a story with no release, removes one, and keeps every action disabled until the view has reloaded (FR3.1–FR3.3)', async () => {
-    window.bridge.setStoryRelease = vi.fn(async () => ({ ok: true }));
+    // US-0608 FR1.2: a write that changed the docs in place keeps the lock until a load with other hashes.
+    window.bridge.setStoryRelease = vi.fn(async () => ({ ok: true, inPlace: true, changed: true }));
     const { rerender } = render(<FeaturesView projectId="p1" features={releaseDocs(undefined, PLANS)} delivery="releases" tab="releases" />);
     const add = inRelease('v0.2.7').getByTestId('releases-add-story');
     expect([...add.options].map((o) => o.value)).toEqual(['', 'US-0604', 'US-0605']);
@@ -296,7 +298,7 @@ describe('FeaturesView: releases made by hand (US-0605)', () => {
     expect(inRelease('v0.2.8').getByTestId('releases-add-story').disabled).toBe(true);
     expect(inRelease('v0.2.5').getByTestId('releases-remove-story').disabled).toBe(true);
 
-    rerender(<FeaturesView projectId="p1" features={releaseDocs(undefined, PLANS)} delivery="releases" tab="releases" />);
+    rerender(<FeaturesView projectId="p1" features={{ ...releaseDocs(undefined, PLANS), overviewHash: 'oh2' }} delivery="releases" tab="releases" />);
     const remove = inRelease('v0.2.5').getByTestId('releases-remove-story');
     expect(remove.disabled).toBe(false);
     fireEvent.click(remove);
@@ -304,7 +306,7 @@ describe('FeaturesView: releases made by hand (US-0605)', () => {
 
     // A refused write unlocks the list at once and says so.
     window.bridge.setStoryRelease.mockResolvedValueOnce({ conflict: 'docs/FEATURES.md' });
-    rerender(<FeaturesView projectId="p1" features={releaseDocs(undefined, PLANS)} delivery="releases" tab="releases" />);
+    rerender(<FeaturesView projectId="p1" features={{ ...releaseDocs(undefined, PLANS), overviewHash: 'oh3' }} delivery="releases" tab="releases" />);
     fireEvent.change(inRelease('v0.2.7').getByTestId('releases-add-story'), { target: { value: 'US-0605' } });
     expect((await screen.findByRole('alert')).textContent).toMatch(/docs\/FEATURES\.md har ändrats på disken/);
     expect(screen.getByTestId('releases-new').disabled).toBe(false);
@@ -386,6 +388,99 @@ describe('FeaturesView: planning sync (US-0607 FR4)', () => {
     fireEvent.change(inRelease('v0.2.7').getByTestId('releases-add-story'), { target: { value: 'US-0604' } });
     expect((await screen.findByRole('alert')).textContent).toBe('Planeringen kunde inte committas (lint failed): docs/FEATURES.md. Ändringen finns kvar.');
     expect(screen.getByTestId('releases-new').disabled).toBe(false);
+  });
+});
+
+// US-0608: the shared lock, the waiting list with its target and stories, live updates and the conflict choices.
+describe('FeaturesView: every planning change is kept (US-0608)', () => {
+  const NONE = { pending: 0, reapplied: 0, noRemote: false, prOffer: null, error: null, target: 'origin/main', entries: [] };
+  const ASSIGN = { id: 'a1', kind: 'setRelease', storyIds: ['US-0604'], version: 'v0.2.7', file: null, state: 'pending' };
+  const CONFLICT = { id: 'c1', kind: 'content', storyIds: ['US-0603'], version: null, file: 'docs/features/e6.md', state: 'conflict', content: '# mine\n' };
+  const waiting = (...entries) => window.bridge.getPlanningStatus.mockResolvedValue({ ...NONE, pending: entries.length, entries });
+  let heard;
+  beforeEach(() => {
+    heard = null;
+    window.bridge.onPlanningChanged = vi.fn((fn) => {
+      heard = fn;
+      return () => {};
+    });
+  });
+  afterEach(() => window.bridge.getPlanningStatus.mockResolvedValue(NONE));
+  const docs = releaseDocs(undefined, PLANS);
+
+  it('keeps the list and the story picker locked until a load with other hashes, and unlocks at once when no reload follows (FR1.2)', async () => {
+    window.bridge.setStoryRelease = vi.fn(async () => ({ ok: true, inPlace: true, changed: true }));
+    const { rerender } = render(<WithTab initial="releases" projectId="p1" features={docs} delivery="releases" />);
+    fireEvent.change(inRelease('v0.2.7').getByTestId('releases-add-story'), { target: { value: 'US-0604' } });
+    await waitFor(() => expect(window.bridge.setStoryRelease).toHaveBeenCalledTimes(1));
+    rerender(<WithTab initial="releases" projectId="p1" features={{ ...docs }} delivery="releases" />); // a reload with the same hashes
+    await waitFor(() => expect(screen.getByTestId('releases-new').disabled).toBe(true));
+
+    fireEvent.click(inRelease('v0.2.5').getByRole('button', { name: /US-0603/ })); // the story detail shares the lock
+    const picker = screen.getByTestId('features-view-release-picker');
+    expect(picker.disabled).toBe(true);
+    rerender(<WithTab initial="releases" projectId="p1" features={{ ...docs, epics: [{ ...docs.epics[0], hash: 'eh2' }] }} delivery="releases" />);
+    expect(screen.getByTestId('features-view-release-picker').disabled).toBe(false);
+
+    for (const reply of [
+      { ok: true, inPlace: true, changed: false },
+      { ok: true, inPlace: false, changed: true }
+    ]) {
+      window.bridge.setStoryRelease.mockResolvedValueOnce(reply);
+      fireEvent.change(screen.getByTestId('features-view-release-picker'), { target: { value: 'v0.3.0' } });
+      await waitFor(() => expect(screen.getByTestId('features-view-release-picker').disabled).toBe(false));
+    }
+    expect(window.bridge.setStoryRelease).toHaveBeenCalledTimes(3);
+  });
+
+  it('lists each waiting change with its stories and target and Push now, and follows every cycle, also a failed one (FR7, FR4.2)', async () => {
+    waiting(ASSIGN);
+    render(<FeaturesView projectId="p1" features={docs} delivery="releases" tab="releases" />);
+    const entry = await screen.findByTestId('planning-entry');
+    expect(entry.textContent).toMatch(/Release v0\.2\.7.*Storys: US-0604/);
+    expect(screen.getByTestId('planning-target').textContent).toBe('Mål: origin/main');
+    expect(screen.getByTestId('planning-push-now')).toBeTruthy();
+
+    await act(async () => heard({ projectId: 'p2', status: { ...NONE, reapplied: 3 } })); // another project's list
+    expect(screen.getByTestId('planning-entry')).toBeTruthy();
+    await act(async () => heard({ projectId: 'p1', status: { ...NONE, reapplied: 2, error: { kind: 'offline' } } }));
+    expect(screen.queryByTestId('planning-entry')).toBeNull(); // on the target: gone
+    expect(screen.getByTestId('planning-reapplied').textContent).toBe('2 planeringsändringar hade gått förlorade och gjordes om.');
+    expect(screen.getByTestId('planning-error').textContent).toMatch(/^Offline\./);
+  });
+
+  it('shows the waiting list beside the story-detail picker too (FR7.1)', async () => {
+    waiting(ASSIGN);
+    render(<FeaturesView projectId="p1" features={docs} delivery="releases" tab="epics" />);
+    openStory('US-0604');
+    const detail = within(screen.getByTestId('features-view-story-detail'));
+    expect((await detail.findByTestId('planning-entry')).textContent).toMatch(/US-0604/);
+  });
+
+  it('a conflict names the file and offers Use mine, Keep theirs and Open both in the editor (FR5.3)', async () => {
+    waiting(CONFLICT);
+    window.bridge.resolvePlanning = vi.fn(async () => NONE);
+    const open = vi.fn();
+    render(
+      <EditorCtx.Provider value={{ open }}>
+        <FeaturesView projectId="p1" features={docs} delivery="releases" tab="releases" />
+      </EditorCtx.Provider>
+    );
+    const entry = within(await screen.findByTestId('planning-entry'));
+    expect(screen.getByTestId('planning-entry').textContent).toMatch(/docs\/features\/e6\.md har ändrats även på målet/);
+    expect(screen.queryByTestId('planning-mine')).toBeNull();
+    fireEvent.click(entry.getByTestId('planning-open-both'));
+    expect(open).toHaveBeenCalledWith('docs/features/e6.md');
+    expect(screen.getByTestId('planning-mine').textContent).toContain('# mine');
+
+    window.bridge.resolvePlanning.mockRejectedValueOnce(new Error("Error invoking remote method 'features:resolvePlanning': Error: trasig"));
+    fireEvent.click(entry.getByTestId('planning-keep-theirs'));
+    await waitFor(() => expect(screen.getByTestId('planning-error').textContent).toBe('Planeringssynken misslyckades: trasig'));
+    expect(window.bridge.resolvePlanning).toHaveBeenCalledWith('p1', 'c1', 'theirs');
+
+    fireEvent.click(entry.getByTestId('planning-use-mine'));
+    await waitFor(() => expect(window.bridge.resolvePlanning).toHaveBeenLastCalledWith('p1', 'c1', 'mine'));
+    await waitFor(() => expect(screen.queryByTestId('planning-entry')).toBeNull());
   });
 });
 

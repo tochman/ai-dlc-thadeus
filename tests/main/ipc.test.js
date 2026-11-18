@@ -91,6 +91,12 @@ const m = vi.hoisted(() => {
       planAction: vi.fn(async () => ({ ok: true, inPlace: true })),
       runCycle: vi.fn(async () => ({ reapplied: 0, pending: 0, pushed: true })),
       reapplyLost: vi.fn(async () => ({ reapplied: 0 })),
+      // US-0608: the record's other ways in, and the waiting list.
+      recordContent: vi.fn(async () => null),
+      recordTree: vi.fn(async () => ({ recorded: 0 })),
+      resolvePlanning: vi.fn(async () => ({ ok: true })),
+      noteAppWrite: vi.fn(),
+      waitingList: vi.fn(async () => ({ target: 'origin/main', entries: [] })),
       readRuleStatus: vi.fn(async () => 'current'),
       getSetupInfo: vi.fn(async () => ({ info: 1 })),
       runSetup: vi.fn(async () => ({ ok: true })),
@@ -286,7 +292,12 @@ vi.mock('../../src/main/planningSync.js', async (importOriginal) => ({
   createScheduler: (await importOriginal()).createScheduler,
   planAction: m.svc.planAction,
   reapplyLost: m.svc.reapplyLost,
-  runCycle: m.svc.runCycle
+  runCycle: m.svc.runCycle,
+  recordContent: m.svc.recordContent,
+  recordTree: m.svc.recordTree,
+  resolvePlanning: m.svc.resolvePlanning,
+  noteAppWrite: m.svc.noteAppWrite,
+  waitingList: m.svc.waitingList
 }));
 // US-0506 u3: the real agent wiring, with a spy on terminalInput so pty:write's order can be checked.
 vi.mock('../../src/main/agentIpc.js', async (importOriginal) => {
@@ -1015,9 +1026,10 @@ describe('feature docs and project settings', () => {
     expect(sender.send).toHaveBeenCalledWith('features:changed', { projectId });
 
     sender.send.mockClear();
-    svc.planAction.mockResolvedValueOnce({ conflict: 'docs/FEATURES.md' });
-    expect(await call('features:setRelease', {}, projectId, req)).toEqual({ conflict: 'docs/FEATURES.md' });
-    expect(sender.send).not.toHaveBeenCalled();
+    svc.planAction.mockResolvedValueOnce({ conflict: 'docs/FEATURES.md', kept: true });
+    expect(await call('features:setRelease', {}, projectId, req)).toEqual({ conflict: 'docs/FEATURES.md', kept: true });
+    expect(sender.send).not.toHaveBeenCalledWith('features:changed', { projectId });
+    expect(sender.send).toHaveBeenCalledWith('features:planningChanged', expect.objectContaining({ projectId })); // it waits (US-0608 FR1.3)
 
     expect(await call('features:ruleStatus', {}, projectId, 'default')).toBe('current');
     expect(svc.readRuleStatus).toHaveBeenLastCalledWith('/work/rel', 'default', 'releases'); // unset means Releases
@@ -1039,7 +1051,15 @@ describe('feature docs and project settings', () => {
 
     svc.reapplyLost.mockResolvedValueOnce({ reapplied: 2 });
     sender.send.mockClear();
-    expect(await call('features:planningStatus', {}, projectId, true)).toEqual({ pending: 0, reapplied: 2, noRemote: false, prOffer: null, error: null });
+    expect(await call('features:planningStatus', {}, projectId, true)).toEqual({
+      pending: 0,
+      reapplied: 2,
+      noRemote: false,
+      prOffer: null,
+      error: null,
+      target: 'origin/main',
+      entries: []
+    });
     expect(sender.send).toHaveBeenCalledWith('features:changed', { projectId });
     expect(svc.reapplyLost).toHaveBeenCalledTimes(1);
     await call('features:planningStatus', {}, projectId, false);
@@ -1051,9 +1071,54 @@ describe('feature docs and project settings', () => {
       reapplied: 0,
       noRemote: false,
       prOffer: null,
-      error: { kind: 'offline' }
+      error: { kind: 'offline' },
+      target: 'origin/main',
+      entries: []
     });
-    expect(svc.runCycle).toHaveBeenLastCalledWith(expect.objectContaining({ root: '/work/plan' }));
+    // US-0608 FR7.1: Push now commits what waits at once, without the 30-second window.
+    expect(svc.runCycle).toHaveBeenLastCalledWith(expect.objectContaining({ root: '/work/plan', windowMs: 0 }));
+  });
+
+  // US-0608 AC1.2.1: an editor save of a feature doc is in the record before the file is written.
+  it('records an editor save before writing it, and remembers the app wrote it (FR2.2, D2)', async () => {
+    const { projectId } = await openProject('/work/save');
+    svc.writeFileSafe.mockResolvedValueOnce({ ok: true, mtimeMs: 2, hash: 'h2' });
+    await call('file:write', {}, projectId, 'docs/features/epic-01.md', 'new', { mtimeMs: 1, hash: 'h1' });
+    expect(svc.recordContent).toHaveBeenLastCalledWith(expect.objectContaining({ root: '/work/save' }), 'docs/features/epic-01.md', 'new', {
+      expectHash: 'h1'
+    });
+    expect(svc.recordContent.mock.invocationCallOrder.at(-1)).toBeLessThan(svc.writeFileSafe.mock.invocationCallOrder.at(-1));
+    expect(svc.noteAppWrite).toHaveBeenLastCalledWith('/work/save', 'docs/features/epic-01.md', 'h1', 'h2');
+  });
+
+  // US-0608 FR7.2: every cycle's result reaches the release list at once, a failed one too.
+  it('sends every cycle result as features:planningChanged, also a failed one, and resolves a conflict (FR7.2, FR5.3)', async () => {
+    const { projectId, sender } = await openProject('/work/live');
+    svc.waitingList.mockResolvedValue({ target: 'origin/main', entries: [{ id: 'e1', kind: 'content', storyIds: ['US-0101'], state: 'conflict' }] });
+    sender.send.mockClear();
+    svc.runCycle.mockRejectedValueOnce(new Error('git missing'));
+    await call('features:pushPlanning', {}, projectId);
+    expect(sender.send).toHaveBeenCalledWith('features:planningChanged', {
+      projectId,
+      status: expect.objectContaining({ error: { kind: 'git', reason: 'git missing' }, entries: [expect.objectContaining({ id: 'e1' })] })
+    });
+
+    sender.send.mockClear();
+    expect(await call('features:resolvePlanning', {}, projectId, 'e1', 'mine')).toMatchObject({ entries: [expect.objectContaining({ id: 'e1' })] });
+    expect(svc.resolvePlanning).toHaveBeenLastCalledWith(expect.objectContaining({ root: '/work/live' }), 'e1', 'mine');
+    expect(sender.send).toHaveBeenCalledWith('features:planningChanged', expect.objectContaining({ projectId }));
+    svc.waitingList.mockResolvedValue({ target: 'origin/main', entries: [] });
+  });
+
+  // US-0608 FR2.1: a write the docs watcher sees is recorded as soon as it is seen.
+  it('records what the docs watcher sees', async () => {
+    const { projectId } = await openProject('/work/seen');
+    const featureCall = svc.watchFiles.mock.calls.findLast((c) => c[0].root === '/work/seen' && c[0].paths[0] === 'docs/FEATURES.md');
+    svc.recordTree.mockClear();
+    featureCall[0].onChange();
+    await flush();
+    expect(svc.recordTree).toHaveBeenCalledWith(expect.objectContaining({ root: '/work/seen', featuresPath: 'docs/FEATURES.md' }));
+    expect(projectId).toBeTruthy();
   });
 
   it('a feature doc change sends features:changed', async () => {

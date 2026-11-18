@@ -1,15 +1,22 @@
-// US-0606 + US-0607: release planning is recorded, committed without touching a story branch's checkout, and pushed,
-// against real repositories in os.tmpdir(): a bare origin.git and a clone, removed after each test. `gh` is a stub.
+// US-0606 + US-0607 + US-0608: release planning is recorded, committed without touching a story branch's checkout, and
+// pushed, against real repositories in os.tmpdir(): a bare origin.git and a clone, removed after each test. `gh` is a
+// stub. `windowMs: 0` lets a cycle commit at once; the 30-second window itself is tested with fake timers (FR6).
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { execFileSync } from 'node:child_process';
-import { promises as fs, chmodSync, readFileSync, writeFileSync } from 'node:fs';
+import { createHash } from 'node:crypto';
+import { promises as fs, chmodSync, existsSync, readFileSync, writeFileSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import { loadFeatures } from '../../src/main/features.js';
 import { readRecord } from '../../src/main/planningRecord.js';
-import { createScheduler, planAction, reapplyLost, runCycle } from '../../src/main/planningSync.js';
+import { createScheduler, planAction, reapplyLost, recordContent, recordTree, resolvePlanning, runCycle } from '../../src/main/planningSync.js';
 
 const env = { ...process.env, GIT_AUTHOR_NAME: 'T', GIT_AUTHOR_EMAIL: 't@example.com', GIT_COMMITTER_NAME: 'T', GIT_COMMITTER_EMAIL: 't@example.com' };
 const run = (cwd, ...args) => execFileSync('git', ['-c', 'init.defaultBranch=main', ...args], { cwd, env, encoding: 'utf8' }).trim();
+
+// US-0608: each cycle runs real git several times and FR4.1 runs four cycles; the 5 s default is the runner's, not a
+// requirement (no cycle-latency target exists), so this file's real-git tests get 20 s. No assertion changes.
+vi.setConfig({ testTimeout: 20_000 });
 
 const EPIC = 'docs/features/epic-01.md';
 const EPIC_TEXT = [
@@ -71,20 +78,20 @@ async function setup({ withOrigin = true } = {}) {
   run(clone, 'add', '.');
   run(clone, 'commit', '-q', '-m', 'start');
   if (withOrigin) run(clone, 'push', '-q', '-u', 'origin', 'main');
-  ctx = { root: clone, userData, featuresPath: 'docs/FEATURES.md', planningBranch: 'docs/planning', gh: null, online: () => true };
+  ctx = { root: clone, userData, featuresPath: 'docs/FEATURES.md', planningBranch: 'docs/planning', gh: null, online: () => true, windowMs: 0 };
 }
 
-/** A second clone that moves origin's main on with one commit. */
-async function moveMain(rel, text) {
+/** A second clone that moves origin's main on with one commit of `files` ({rel: text}). */
+async function moveMain(rel, text, more = {}) {
   const other = path.join(tmp, 'other');
   run(tmp, 'clone', '-q', origin, other);
   configure(other);
-  write(rel, text, other);
+  for (const [r, t] of Object.entries({ [rel]: text, ...more })) write(r, t, other);
   run(other, 'commit', '-q', '-am', 'main moves on');
   run(other, 'push', '-q', 'origin', 'main');
 }
 
-const storyBranch = () => run(clone, 'checkout', '-q', '-b', 'feat/US-0001');
+const storyBranch = (name = 'feat/US-0001') => run(clone, 'checkout', '-q', '-b', name);
 
 afterEach(() => fs.rm(tmp, { recursive: true, force: true }));
 
@@ -92,7 +99,7 @@ describe('commit without touching the work (US-0606 FR2)', () => {
   beforeEach(() => setup());
 
   it('leaves a story branch, its index and its working tree byte for byte as they were, and pushes to origin/main (NFR1, FR2.1, FR3.2)', async () => {
-    storyBranch();
+    storyBranch('feat/US-0102'); // the edit below is in US-0102's own block, so it stays (US-0608 FR3.2)
     write('src.txt', 'code in progress\n');
     write(EPIC, `${EPIC_TEXT}story edit\n`);
     run(clone, 'add', 'src.txt');
@@ -109,7 +116,7 @@ describe('commit without touching the work (US-0606 FR2)', () => {
       epic: before.epic,
       src: before.src
     });
-    expect(run(clone, 'rev-parse', '--abbrev-ref', 'HEAD')).toBe('feat/US-0001');
+    expect(run(clone, 'rev-parse', '--abbrev-ref', 'HEAD')).toBe('feat/US-0102');
     expect(run(clone, 'status', '--porcelain')).toBe(status);
     expect(run(clone, 'worktree', 'list').split('\n')).toHaveLength(1);
     expect(res).toMatchObject({ pending: 0 });
@@ -118,32 +125,33 @@ describe('commit without touching the work (US-0606 FR2)', () => {
     expect(run(origin, 'show', 'main:docs/releases/1.0.0.md')).toContain('| US-0101 |');
   });
 
-  it('on main, commits in place and pushes (FR2.2)', async () => {
+  it('on main, writes in place, and the cycle commits and pushes (FR2.2)', async () => {
     expect(await setRelease('US-0101', 'v1.0.0')).toMatchObject({ ok: true, inPlace: true });
+    expect(read(EPIC)).toContain('📋 Planned, for v1.0.0');
+    await runCycle(ctx);
     expect(run(clone, 'log', '-1', '--format=%s')).toBe('docs: plan US-0101 for v1.0.0');
     expect(run(clone, 'status', '--porcelain')).toBe('');
-    await runCycle(ctx);
     expect(run(origin, 'rev-parse', 'main')).toBe(run(clone, 'rev-parse', 'HEAD'));
   });
 
-  it('puts several actions in a row into one push, each with its subject (FR2.3)', async () => {
+  it('puts several actions in a row into one commit with one subject (FR2.3, US-0608 FR6.2)', async () => {
     storyBranch();
     await setRelease('US-0101', 'v1.0.0');
     await setRelease('US-0102', 'v1.0.0');
     await planAction(ctx, { kind: 'createRelease', storyIds: [], version: 'v2.0.0' });
     expect(originLog()).toEqual(['start']);
     await runCycle(ctx);
-    expect(originLog()).toEqual(['docs: plan v2.0.0', 'docs: plan US-0102 for v1.0.0', 'docs: plan US-0101 for v1.0.0', 'start']);
+    expect(originLog()).toEqual(['docs: plan US-0101, US-0102 for v1.0.0; plan v2.0.0', 'start']);
   });
 
-  it('agent edits to the feature docs are committed and pushed on main, and stay on a story branch (FR2.5)', async () => {
+  it('agent edits to the feature docs are committed and pushed on main, and an own story edit stays on a story branch (FR2.5)', async () => {
     write(EPIC, `${EPIC_TEXT}agent edit\n`);
     write('src.txt', 'not a doc\n');
     await runCycle(ctx);
-    expect(originLog()[0]).toBe('docs: update the feature docs');
+    expect(originLog()[0]).toBe('docs: update US-0102');
     expect(status()).toBe(' M src.txt\n');
 
-    storyBranch();
+    storyBranch('feat/US-0102');
     write(EPIC, `${EPIC_TEXT}agent edit on the story\n`);
     await runCycle(ctx);
     expect(originLog()).toHaveLength(2);
@@ -152,7 +160,8 @@ describe('commit without touching the work (US-0606 FR2)', () => {
 
   it('a commit hook refusing returns the reason and the files, and keeps the change (FR4.2)', async () => {
     hook(path.join(clone, '.git'), 'pre-commit', 'echo "lint failed" >&2; exit 1');
-    const res = await setRelease('US-0101', 'v1.0.0');
+    expect(await setRelease('US-0101', 'v1.0.0')).toMatchObject({ ok: true });
+    const res = await runCycle(ctx);
     expect(res.error).toMatchObject({ kind: 'commit', files: [EPIC, 'docs/releases/1.0.0.md'] });
     expect(res.error.reason).toMatch(/lint failed/);
     expect(read(EPIC)).toContain('📋 Planned, for v1.0.0');
@@ -245,6 +254,145 @@ describe('push (US-0607 FR3)', () => {
     expect(await reapplyLost(ctx)).toMatchObject({ reapplied: 1 });
     expect(await runCycle(ctx)).toMatchObject({ reapplied: 0, pending: 0 });
     expect(originLog()[0]).toBe('docs: plan US-0101 for v1.0.0');
+  });
+});
+
+describe('every planning change is kept until it is on the target (US-0608)', () => {
+  beforeEach(() => setup());
+  const sha = (text) => createHash('sha256').update(text, 'utf8').digest('hex');
+  const hashesNow = async () => {
+    const f = await loadFeatures(clone, 'docs/FEATURES.md');
+    return { epicHash: f.epics[0].hash, overviewHash: f.overviewHash };
+  };
+  const contents = async () => (await readRecord(userData, clone)).actions.filter((a) => a.kind === 'content');
+  const withText = (text, line) => text.replace('- **Priority:** Low', `- **Priority:** Low\n${line}`);
+
+  it('FR1.1: a second assignment on main with the hashes read before the first succeeds', async () => {
+    const seen = await hashesNow();
+    expect(await planAction(ctx, { kind: 'setRelease', storyIds: ['US-0101'], version: 'v1.0.0' }, seen)).toMatchObject({ ok: true });
+    expect(await planAction(ctx, { kind: 'setRelease', storyIds: ['US-0102'], version: 'v1.0.0' }, seen)).toMatchObject({ ok: true });
+    expect(read(EPIC)).toContain('**US-0102: Second story** 📋 Planned, for v1.0.0');
+  });
+
+  it('FR1.2: an action says whether it changed the docs, so the view knows a reload with new hashes follows', async () => {
+    expect(await setRelease('US-0101', 'v1.0.0')).toEqual({ ok: true, inPlace: true, changed: true });
+    expect(await setRelease('US-0101', 'v1.0.0')).toEqual({ ok: true, inPlace: true, changed: false }); // already so: no reload
+  });
+
+  it('FR1.3: a file changed outside the app is refused with the file named, and the change stays in the record', async () => {
+    const seen = await hashesNow();
+    write(EPIC, `${EPIC_TEXT}outside\n`);
+    expect(await planAction(ctx, { kind: 'setRelease', storyIds: ['US-0101'], version: 'v1.0.0' }, seen)).toEqual({ conflict: EPIC, kept: true });
+    expect((await readRecord(userData, clone)).actions).toMatchObject([{ kind: 'setRelease', storyIds: ['US-0101'], state: 'pending' }]);
+  });
+
+  it('FR2.1, FR2.3: an editor save and an agent write are recorded once each, the app own writes not at all, and leave only on origin/main', async () => {
+    await setRelease('US-0101', 'v1.0.0'); // the app's own writes: the epic and docs/releases/1.0.0.md
+    const mine = withText(read(EPIC), '- free text');
+    expect(await recordContent(ctx, EPIC, mine, { expectHash: sha(read(EPIC)) })).toMatchObject({ kind: 'content', file: EPIC, by: 'editor' });
+    write(EPIC, mine);
+    write('docs/FEATURES.md', `${OVERVIEW}agent line\n`);
+    await recordTree(ctx);
+    await recordTree(ctx);
+    expect((await contents()).map((e) => e.file)).toEqual([EPIC, 'docs/FEATURES.md']);
+    await runCycle({ ...ctx, online: () => false });
+    expect((await readRecord(userData, clone)).actions).toHaveLength(3); // committed, not on the target yet
+    await runCycle(ctx);
+    expect((await readRecord(userData, clone)).actions).toEqual([]);
+    expect(run(origin, 'show', `main:${EPIC}`)).toContain('- free text');
+    expect(run(origin, 'show', 'main:docs/FEATURES.md')).toContain('agent line');
+  });
+
+  it('FR3: on a story branch another story and a release file go to dash/planning and leave the tree and index; the own block stays', async () => {
+    storyBranch('feat/US-0101');
+    const own = EPIC_TEXT.replace('- **Priority:** High', '- **Priority:** High\n- own note');
+    write(EPIC, own.replace('**US-0102: Second story** 📋 Planned', '**US-0102: Second story** 🚧 In progress'));
+    write('docs/releases/2.0.0.md', '# Release plan v2.0.0\n');
+    run(clone, 'add', EPIC, 'docs/releases/2.0.0.md');
+    await recordTree(ctx);
+    expect(read(EPIC)).toBe(own);
+    expect(existsSync(path.join(clone, 'docs/releases/2.0.0.md'))).toBe(false);
+    expect(run(clone, 'diff', '--cached', '--name-only')).toBe('');
+    await runCycle(ctx);
+    expect(originLog()[0]).toBe('docs: update US-0102');
+    expect(run(origin, 'show', `main:${EPIC}`)).toContain('**US-0102: Second story** 🚧 In progress');
+    expect(run(origin, 'show', `main:${EPIC}`)).not.toContain('own note');
+    expect(run(origin, 'show', 'main:docs/releases/2.0.0.md')).toBe('# Release plan v2.0.0');
+    expect({ epic: read(EPIC), branch: run(clone, 'rev-parse', '--abbrev-ref', 'HEAD') }).toEqual({ epic: own, branch: 'feat/US-0101' });
+  });
+
+  it('FR4.1: after a discard, a stash, a restart and a branch switch, the next cycle applies every waiting change again', async () => {
+    hook(path.join(clone, '.git'), 'pre-commit', 'exit 1'); // nothing commits, so every change keeps waiting
+    await setRelease('US-0101', 'v1.0.0');
+    const mine = withText(read(EPIC), '- free text');
+    await recordContent(ctx, EPIC, mine, { expectHash: sha(read(EPIC)) });
+    write(EPIC, mine);
+    const waiting = () => [read(EPIC), read('docs/releases/1.0.0.md')];
+    const expected = waiting();
+
+    run(clone, 'checkout', '--', 'docs');
+    expect((await runCycle(ctx)).reapplied).toBeGreaterThan(0);
+    expect(waiting()).toEqual(expected);
+    run(clone, 'stash', '-q');
+    expect((await runCycle(ctx)).reapplied).toBeGreaterThan(0);
+    expect(waiting()).toEqual(expected);
+    run(clone, 'checkout', '--', 'docs');
+    vi.resetModules(); // a fresh app process: only the record on disk is left
+    const fresh = await import('../../src/main/planningSync.js');
+    expect((await fresh.runCycle(ctx)).reapplied).toBeGreaterThan(0);
+    expect(waiting()).toEqual(expected);
+
+    run(clone, 'checkout', '--', 'docs');
+    await fs.rm(path.join(clone, '.git/hooks/pre-commit'));
+    storyBranch();
+    await fresh.runCycle(ctx);
+    expect(run(origin, 'show', `main:${EPIC}`)).toContain('- free text');
+    expect(run(origin, 'show', `main:${EPIC}`)).toContain('**US-0101: First story** 📋 Planned, for v1.0.0');
+    expect(status()).toBe('');
+  });
+
+  it('FR5.2, FR5.3: a conflict keeps the target in the file and mine in the record; Use mine and Keep theirs do so', async () => {
+    const mineEpic = withText(EPIC_TEXT, '- my text');
+    const theirsEpic = withText(EPIC_TEXT, '- their text');
+    const theirsOverview = `${OVERVIEW}their line\n`;
+    await recordContent(ctx, EPIC, mineEpic, { expectHash: sha(EPIC_TEXT) });
+    await recordContent(ctx, 'docs/FEATURES.md', `${OVERVIEW}my line\n`, { expectHash: sha(OVERVIEW) });
+    await moveMain(EPIC, theirsEpic, { 'docs/FEATURES.md': theirsOverview });
+    run(clone, 'pull', '-q', '--ff-only');
+
+    expect(await runCycle(ctx)).toMatchObject({ conflicts: 2 });
+    expect([read(EPIC), read('docs/FEATURES.md')]).toEqual([theirsEpic, theirsOverview]);
+    const [epic, overview] = await contents();
+    expect(epic).toMatchObject({ state: 'conflict', content: mineEpic });
+
+    await resolvePlanning(ctx, epic.id, 'mine');
+    await resolvePlanning(ctx, overview.id, 'theirs');
+    await runCycle(ctx);
+    expect([read(EPIC), read('docs/FEATURES.md')]).toEqual([mineEpic, theirsOverview]);
+    expect(run(origin, 'show', `main:${EPIC}`)).toContain('- my text');
+    expect(await contents()).toEqual([]);
+  });
+
+  it('FR6: three changes within 30 s are one commit, 30 s after the last, with the FR6.2 subject', async () => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'Date'] });
+    try {
+      let committed;
+      const done = new Promise((resolve) => (committed = resolve));
+      const timed = { ...ctx, windowMs: undefined, onCommitted: committed };
+      const head = run(clone, 'rev-parse', 'HEAD');
+      await planAction(timed, { kind: 'setRelease', storyIds: ['US-0101'], version: 'v1.0.0' });
+      await vi.advanceTimersByTimeAsync(10000);
+      await planAction(timed, { kind: 'setRelease', storyIds: ['US-0102'], version: 'v1.0.0' });
+      await vi.advanceTimersByTimeAsync(10000);
+      await planAction(timed, { kind: 'createRelease', storyIds: [], version: 'v2.0.0' });
+      await vi.advanceTimersByTimeAsync(29000);
+      expect(run(clone, 'rev-parse', 'HEAD')).toBe(head);
+      await vi.advanceTimersByTimeAsync(1000);
+      await done;
+      expect(run(clone, 'log', '--format=%s', `${head}..HEAD`)).toBe('docs: plan US-0101, US-0102 for v1.0.0; plan v2.0.0');
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });
 

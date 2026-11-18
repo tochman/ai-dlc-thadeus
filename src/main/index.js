@@ -8,7 +8,8 @@ import { setLanguageFromSettings } from './i18n.js';
 import { APP_NAME } from '../shared/appName.js';
 
 // The folder is still called aidlc-dash so settings and open projects survive renames (US-0406 FR4.1).
-app.setPath('userData', join(app.getPath('appData'), 'aidlc-dash'));
+// US-0608 FR9: the end-to-end tests set THADEUS_E2E_USER_DATA to a temp folder, whose settings open a temp project.
+app.setPath('userData', process.env.THADEUS_E2E_USER_DATA || join(app.getPath('appData'), 'aidlc-dash'));
 
 /**
  * US-0506 u1 K5 (review R-02): one app instance per user. A second start quits before registerIpc, so its start-up

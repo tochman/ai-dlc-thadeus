@@ -43,7 +43,8 @@ describe('app name (EPIC-04 US-0406)', () => {
 
   it('keeps userData in aidlc-dash so settings survive the rename (FR4.1)', () => {
     const main = readFileSync(path.join(SRC, 'main/index.js'), 'utf8');
-    expect(main).toContain("app.setPath('userData', join(app.getPath('appData'), 'aidlc-dash'));");
+    // US-0608 FR9: only the end-to-end tests point it elsewhere, through THADEUS_E2E_USER_DATA.
+    expect(main).toContain("app.setPath('userData', process.env.THADEUS_E2E_USER_DATA || join(app.getPath('appData'), 'aidlc-dash'));");
   });
 
   // US-0027: the repository was renamed from tochman/aidlc-dash to tochman/ai-dlc-thadeus on 2026-11-17.

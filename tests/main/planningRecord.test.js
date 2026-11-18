@@ -4,7 +4,17 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { promises as fs } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { addAction, markCommitted, readRecord, recordFile, removeActions, setProtectedMain } from '../../src/main/planningRecord.js';
+import {
+  addAction,
+  addContent,
+  markCommitted,
+  markConflict,
+  readRecord,
+  recordFile,
+  removeActions,
+  resolveEntry,
+  setProtectedMain
+} from '../../src/main/planningRecord.js';
 
 let userData;
 beforeEach(async () => {
@@ -58,6 +68,57 @@ describe('planning record (US-0607 FR1.1, FR1.2)', () => {
     ]);
     await removeActions(userData, '/work/a', [a.id]);
     expect((await readRecord(userData, '/work/a')).actions.map((x) => x.id)).toEqual([b.id]);
+  });
+
+  // US-0608 FR2.2, FR5.1: a change that is not an action is kept as the file's new content and the hash it was based on.
+  it('keeps a content entry and reads it back; a later save of the same file replaces it and keeps its earlier base', async () => {
+    const base = 'a'.repeat(64);
+    const one = await addContent(userData, '/work/a', {
+      file: 'docs/features/epic-01.md',
+      baseHash: base,
+      content: 'one\n',
+      storyIds: ['US-0101'],
+      by: 'editor'
+    });
+    expect(one).toMatchObject({ kind: 'content', file: 'docs/features/epic-01.md', baseHash: base, content: 'one\n', storyIds: ['US-0101'], state: 'pending' });
+    expect((await readRecord(userData, '/work/a')).actions).toEqual([one]);
+    const two = await addContent(userData, '/work/a', {
+      file: 'docs/features/epic-01.md',
+      baseHash: 'b'.repeat(64),
+      content: 'two\n',
+      storyIds: [],
+      by: 'watcher'
+    });
+    const { actions } = await readRecord(userData, '/work/a');
+    expect(actions).toHaveLength(1);
+    expect(actions[0]).toMatchObject({
+      id: two.id,
+      content: 'two\n',
+      baseHash: 'b'.repeat(64),
+      earlier: expect.arrayContaining([base]),
+      storyIds: ['US-0101']
+    });
+  });
+
+  it('drops a content entry outside the docs or without a base hash, and refuses to add one (FR2.2)', async () => {
+    const good = { id: 'g', kind: 'content', file: 'docs/FEATURES.md', baseHash: null, content: 'x', storyIds: [], state: 'pending', version: null };
+    await fs.mkdir(path.join(userData, 'planning'), { recursive: true });
+    await fs.writeFile(
+      recordFile(userData, '/work/a'),
+      JSON.stringify({
+        actions: [good, { ...good, id: 'o', file: '../outside.md' }, { ...good, id: 'abs', file: '/etc/x.md' }, { ...good, id: 'h', baseHash: undefined }]
+      })
+    );
+    expect((await readRecord(userData, '/work/a')).actions.map((a) => a.id)).toEqual(['g']);
+    await expect(addContent(userData, '/work/a', { file: '../x.md', baseHash: null, content: '' })).rejects.toThrow();
+  });
+
+  it('marks an entry as a conflict and resolves it with a new base (FR5.2)', async () => {
+    const e = await addContent(userData, '/work/a', { file: 'docs/FEATURES.md', baseHash: 'a'.repeat(64), content: 'mine\n' });
+    await markConflict(userData, '/work/a', [e.id]);
+    expect((await readRecord(userData, '/work/a')).actions[0].state).toBe('conflict');
+    await resolveEntry(userData, '/work/a', e.id, { baseHash: 'c'.repeat(64) });
+    expect((await readRecord(userData, '/work/a')).actions[0]).toMatchObject({ state: 'pending', baseHash: 'c'.repeat(64), content: 'mine\n' });
   });
 
   it('keeps protectedMain across later changes', async () => {
