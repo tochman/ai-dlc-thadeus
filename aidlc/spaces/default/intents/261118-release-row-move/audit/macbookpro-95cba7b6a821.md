@@ -551,3 +551,20 @@
 **Tokens By Agent**: main=44/15.1k/2.7M/58.6k; aidlc-developer-agent=34/14.1k/1.8M/132.4k
 
 ---
+
+## Session Start
+**Timestamp**: 2026-11-18T16:01:24Z
+**Event**: SESSION_STARTED
+**Source**: clear
+**Session**: 9162de92-a44f-411b-83fc-dc6dd7398feb
+
+---
+
+## Recovery: merge conflicts with US-0028 after approval
+**Timestamp**: 2026-11-18T16:07:24Z
+**Issue**: PR #75 conflicted with main after PR #74 (US-0028) merged; both stories edited the same EPIC-00 status lines and appended to intents.json.
+**Recovery steps**: merged origin/main into fix/US-0029; kept both intents in intents.json; status lines show US-0028 and US-0029 done.
+**Outcome**: 148 files / 1886 tests green, eslint 0 errors, prettier clean.
+**Artifacts affected**: construction/build-and-test/test-results.md, intents.json, docs/FEATURES.md, docs/features/epic-00-fixes.md, docs/releases/0.2.10.md
+
+---

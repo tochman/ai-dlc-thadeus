@@ -18,3 +18,11 @@ All files 92.3% (floor 80%). `src/main/releases.js` 95.08%, `src/main/parsers/re
 ## Failures
 
 None.
+
+## Efter merge med main
+
+- **Vad som var fel:** PR #75 krockade med main efter att PR #74 (US-0028) mergats. Konflikter i `intents.json`, `docs/FEATURES.md`, `docs/features/epic-00-fixes.md` och `docs/releases/0.2.10.md`.
+- **Orsak:** båda storys uppdaterade samma statusrader och la till sin intent sist i `intents.json`.
+- **Åtgärd:** origin/main mergad in i `fix/US-0029`; båda intents behölls i `intents.json`, och statusraderna visar US-0028 och US-0029 som ✅ klara. Ingen kod krockade.
+- **Nya resultat:** 148 testfiler / 1886 tester gröna, ESLint 0 fel (29 varningar), Prettier rent.
+- **Lärdom:** två fixar i samma epic krockar alltid på statusraderna; räkna med en docs-merge.
