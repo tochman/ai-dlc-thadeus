@@ -10,6 +10,7 @@
   - `planningRecord.test.js`, `releases.test.js` (one stale-hash conflict, `:248`), `releasesPlan.test.js`, `releaseVersion.test.js`, `features.test.js`, `fileWrite.test.js`.
   - `tests/renderer/FeaturesView.test.jsx` (mocks the bridge; 14 planning references) and `useFeatures.test.jsx`.
   - Not covered: two actions in quick succession from the view, a reload that arrives mid-action or out of order, a pick queued behind a push, git lock contention, two app instances, the story-detail picker after a pick, and any run of the built app. So the story's "every test mocks git" holds for the IPC and renderer layers, not for `planningSync`.
+- **Tests near US-0031** (by name): `tests/renderer/AgentDialog.test.jsx` (65 cases; `:259` pins BR2.1, page stays and "+n nya"), `AgentDialogHandoff.test.jsx` (8), `tests/main/agentEvents.test.js` (63), `agentOrder.test.js` (5). No case closes and reopens the dialog, or keeps a settled page in the list.
 - **Tests near US-0030 and US-0210** (kept): `agentActivity.test.js`, `agentProgress*.test.js`, `agentEvents*.test.js`, `AgentProgress.test.jsx`, `TokenDetail.test.jsx`; `modelChoice.test.js`, `settings.test.js`, `watcher.test.js`, `ipc.test.js`, `ProjectSettingsView.test.jsx`, `useProject.test.jsx`, `noNativeTitle.test.jsx`.
 
 ## Lint, Format, CI
@@ -29,7 +30,7 @@
 | Aspect | Rating | Evidence |
 |---|---|---|
 | Naming clarity | good | intent-revealing names; story ids in the headers |
-| Function size | fair | most functions are small; `ipc.js` (1300 lines), `agentHooks.js` (864), `FeaturesView.jsx` (758), `agentEvents.js` (557) are large |
+| Function size | fair | most functions are small; `ipc.js` (1300 lines), `agentHooks.js` (864), `FeaturesView.jsx` (758), `agentEvents.js` (569), `AgentDialog.jsx` (775) are large |
 | Error handling | good | never-throw readers, results as values, refused commits unstaged again, worktrees removed in `finally`; but see note 3 below for a throw after a write |
 | Input validation | good | story ids, versions and branch names checked before git runs; `safeArg`; no shell |
 | Test presence | good | real-git planning tests; pure parsers; an injectable `exec` |
@@ -50,8 +51,16 @@
   - `parsers/releases.js:53`: a segment naming several stories is left alone;
   - `ipc.js:563`: "an agent is running" is read from AI-DLC writes;
   - `fileWrite.js:95`: no fsync before rename;
-  - kept from earlier scans: `parsers/agentProgress.js:69`, `projectService.js:158`, `agentEvents.js:339-341`, `agentAdapters.js:320`, `settings.js` (200 roots), `modelChoice.js` (alias price).
+  - kept from earlier scans: `parsers/agentProgress.js:69`, `projectService.js:158`, `agentEvents.js:345-347`, `agentAdapters.js:320`, `settings.js` (200 roots), `modelChoice.js` (alias price).
 - `.thadeus/tokens/<intent>.json` is written into the project and shows as untracked (US-0609).
+
+## Brownfield Notes for US-0031 (read at `6ec3546`)
+
+1. **No page is chosen on open.** `AgentDialog` stays mounted (`App.jsx:741`), so `pageId`/`lastIndex` (`AgentDialog.jsx:559-565`, written back at `:587-590`) survive close and reopen. Only a `focus` (`:598-601`) or Previous/Next changes them; the `[open]` effect (`:603-611`) does not. `receiveAgentEvents` (`App.jsx:222-229`) opens the dialog without naming the fresh event. The "+n nya" snapshot (`:593-595`) also survives, so the new page shows only as "+1 ny".
+2. **Settled pages stay in the list.** `move` deletes only on `ended` (`agentEvents.js:146-157`); `list` returns every state (`:133-137`). A question in `sent`/`handedBack`, a reply in `stale`, a handoff in `waiting` stay. A settled question ends only on the harness's answered event (`:232-239`), a newer non-reply event of the session (`:197`) or the session's end (`:400`); a reply (`:322`) and `addHandoff` (`:496`) do not end it.
+3. **The handoff ranks last** (`agentOrder.js:6`), so the index fallback lands on older pages first. This is why the stale page shows mostly at the compact / fresh-session moment.
+4. **The dialog cannot close by itself while a settled page is left:** `hasNewQuestion` (`App.jsx:258`) counts every non-early page.
+5. **Keep:** BR2.1 (a live page being read stays put, `AgentDialog.test.jsx:259`); audit pages have no store state and count as open; a KEPT `ended` page lingers 3 s for its status line on purpose; a newer handoff offer replaces the old one silently (`agentEvents.js:496`).
 
 ## Brownfield Notes for US-0608
 

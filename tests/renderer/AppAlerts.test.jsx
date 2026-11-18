@@ -1,6 +1,6 @@
 // US-0506 u5 D2, D6, SD53 (LC53): the app shell opens the dialog per alertPlan and acts on a clicked notification.
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { act, cleanup, render, screen, waitFor } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 
 vi.mock('../../src/renderer/ProjectView.jsx', () => ({
   default: function ProjectViewStub({ project }) {
@@ -117,5 +117,50 @@ describe('App shell alerts (US-0506 u5)', () => {
     expect(dialogOpen()).toBe(false);
     push('p1', [question(), reply()]);
     await waitFor(() => expect(dialogOpen()).toBe(true));
+  });
+});
+
+// US-0031: the dialog opens on the page that just arrived, and settled pages no longer hold it open.
+const handoff = (over = {}) => ({
+  ...question({ eventId: 'h3-h', kind: 'handoff', questions: undefined, arrivedAtMs: 9, seq: 3 }),
+  handoff: { moment: 'threshold', tokens: 162_000, model: 'claude-opus-5-5', cost: 0.081, choices: ['compact', 'fresh', 'notNow'], gate: false },
+  ...over
+});
+const header = () => screen.queryByTestId('agent-dialog-header')?.textContent;
+
+describe('App shell: the newest page (US-0031)', () => {
+  it('closed on an old page, a handoff page opens the dialog on itself; Previous reaches the old one (AC1.1.1, AC1.1.3, FR1, FR1.2)', async () => {
+    await renderApp();
+    push('p1', [question()]);
+    await waitFor(() => expect(dialogOpen()).toBe(true));
+    fireEvent.click(screen.getByTestId('agent-dialog-close'));
+    expect(dialogOpen()).toBe(false);
+    push('p1', [question({ state: 'handedBack' }), handoff()]);
+    await waitFor(() => expect(dialogOpen()).toBe(true));
+    expect(screen.queryByTestId('agent-dialog-handoff-size')).toBeTruthy();
+    fireEvent.click(screen.getByTestId('agent-dialog-prev'));
+    expect(screen.getByText('Vilken fil?')).toBeTruthy();
+  });
+
+  it('two new pages in one push open the dialog on the first in pager order (AC1.1.2, FR1.1)', async () => {
+    await renderApp();
+    push('p1', [question()]);
+    await waitFor(() => expect(dialogOpen()).toBe(true));
+    fireEvent.click(screen.getByTestId('agent-dialog-close'));
+    const later = question({ eventId: 'h4-q', arrivedAtMs: 8, questions: [{ ...question().questions[0], header: 'Mapp', text: 'Vilken mapp?' }] });
+    push('p1', [reply({ arrivedAtMs: 7 }), later, question({ state: 'handedBack' })]);
+    await waitFor(() => expect(dialogOpen()).toBe(true));
+    expect(header()).toBe('Mapp');
+  });
+
+  it('only a sent page left closes the dialog by itself; a live page beside it keeps it open (AC1.4.1, AC1.4.2, FR4)', async () => {
+    await renderApp();
+    const other = question({ eventId: 'h4-q', arrivedAtMs: 8 });
+    push('p1', [question(), other]);
+    await waitFor(() => expect(dialogOpen()).toBe(true));
+    push('p1', [question({ state: 'sent' }), other]);
+    expect(dialogOpen()).toBe(true);
+    push('p1', [question({ state: 'sent' }), { ...other, state: 'sent' }]);
+    await waitFor(() => expect(dialogOpen()).toBe(false));
   });
 });
