@@ -576,6 +576,19 @@
       "reapplied": "{n, plural, one {# planning change had been lost and was made again.} other {# planning changes had been lost and were made again.}}",
       "noRemote": "The project has no origin remote, so the planning is committed here only.",
       "prOffer": "The planning is on the branch {branch}, since main is protected. Open a pull request from it into main by hand.",
+      "target": "Target: {target}",
+      "entry": {
+        "setRelease": "{version, select, none {No release} other {Release {version}}}",
+        "createRelease": "New release {version}",
+        "deleteRelease": "Delete release {version}",
+        "content": "Change in {file}",
+        "stories": "Stories: {ids}"
+      },
+      "conflict": "{file} has changed on the target as well.",
+      "useMine": "Use mine",
+      "keepTheirs": "Keep theirs",
+      "openBoth": "Open both in the editor",
+      "mine": "My version, read-only",
       "error": {
         "offline": "Offline. The planning is kept and pushed when the app is online again.",
         "conflict": "The planning conflicts with main in {files}. Nothing was pushed; the app tries again at the next interval.",

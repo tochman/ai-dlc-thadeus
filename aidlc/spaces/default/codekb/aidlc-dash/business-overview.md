@@ -13,7 +13,7 @@ T.H.A.D.E.U.S. (package `thadeus`, repository `aidlc-dash`) is a desktop "bridge
 | Cost and tokens | Cost per stage, agent and model from the usage ledger and the audit shards of every machine; live token meters; a token detail view with Agent progress (US-0507, US-0214); the THADEUS cost rule pack (US-0212) | EPIC-02, EPIC-05 |
 | Branding and desktop | The LCARS look, menu, About, splash, settings, the in-app updater, one shared tooltip | EPIC-04 |
 | Workflow control | Resume, Refresh from GitHub, AI-DLC setup, a questions popup, agent dialogs, the AI-DLC update check | EPIC-05 |
-| Feature docs | Epics and stories from `docs/FEATURES.md`, release markers, a Releases tab | EPIC-06 |
+| Feature docs | Epics and stories from `docs/FEATURES.md`, release markers, a Releases tab, and release planning that is committed and pushed by the app (US-0606, US-0607) | EPIC-06 |
 | Languages | Swedish and English through `t()` with ICU | EPIC-07 |
 | Harnesses | Claude Code and opencode tabs; setup for other harnesses | EPIC-08 |
 | AI-DLC configuration | Reading and changing settings, guards, plans and models through the `aidlc` CLI | EPIC-09 |
@@ -28,21 +28,23 @@ T.H.A.D.E.U.S. (package `thadeus`, repository `aidlc-dash`) is a desktop "bridge
 - **Status is never colour alone, and every text is translated.**
 - **Keyboard parity.** Whatever a pointer can reveal, focus must reveal too.
 - **The LCARS look everywhere**, new views and dialogs included (project rule, 2026-11-16).
-- **No agent text in an activity row** (US-0214 NFR2). Only identifier-shaped hook fields are kept. US-0030 asks for the task and tool descriptions, which breaks this rule on purpose (see `code-quality-assessment.md`, "Brownfield Notes for US-0030").
+- **No agent text in an activity row** (US-0214 NFR2), except the deliberate US-0030 fields.
+- **Release planning never disturbs the work** (US-0606): on a branch other than the target, the app commits in a temporary worktree on its own branch `dash/planning`, never in the checkout.
 
-## Active Intent (US-0030)
+## Active Intent (US-0608)
 
-The story is "Agent progress keeps an old state and is vague about what an agent is doing" (EPIC-00, express plan, for v0.2.10). The person wants Agent progress in the token detail view to:
-- show the main row's real state, so that a permission wait clears once it is answered or the next event arrives;
-- show each agent's task next to its name;
-- show "step n of m" from the plan, Unit-level or stage-level (zero-Unit);
-- describe the current tool call in words when the call has a description, and fall back to "running Bash";
-- show how long ago an old state was seen.
+The story is "Every planning change is kept by the app until it is on `main` or the docs branch" (EPIC-06, express, for v0.2.10). Today only three release-list actions are kept. The person wants:
+- every change to `docs/FEATURES.md`, `docs/features/` and `docs/releases/` kept outside the working tree until it is on `origin/main` (or the docs branch when `main` is protected), whoever made it: the release list, the editor or an agent;
+- a change that is not the story's own committed on the app's branch, never left in a story's tree;
+- the waiting changes shown in the release list, with Push now;
+- the intermittent error when a story is assigned to a release reproduced in a test, found and fixed;
+- grouped commits, and end-to-end tests of the built app against a real git repo with a bare `origin`, run in CI.
 
-Where this lands, and the causes found, are in `architecture.md` ("Agent progress today") and `code-quality-assessment.md` ("Brownfield Notes for US-0030").
+Where this lands, and the causes found, are in `architecture.md` ("Release planning today") and `code-quality-assessment.md` ("Brownfield Notes for US-0608").
 
 ## Previous Intents
 
+- **US-0030** (agent progress honesty, EPIC-00): the notes are kept in `architecture.md` ("Agent progress today") and `code-quality-assessment.md`.
 - **US-0210** (model profile switch, built). It asks to switch to a stronger model profile when an intent on a critical plan starts, and switches back when it ends. Its building blocks and limits are kept in `architecture.md` and `code-quality-assessment.md`. The main limit: a saved AI-DLC profile holds only efforts per group, not models.
 - **US-0214** (agent activity from hook events, delivered): `src/shared/agentActivity.js`, the activity kinds in `dialog.sh` and `agentAdapters.js`, `agentActivity:list` and `agent:activity`.
 - **US-0303** (project velocity, built): `parsers/velocity.js`, `project:velocity`, `VelocityView.jsx` with an intent tab.

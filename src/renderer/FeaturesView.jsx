@@ -105,33 +105,32 @@ function StaleFlag({ version }) {
 
 /**
  * US-0603 FR2.1–FR2.4: the story's release, as a picker of the planned and next versions and None. A released story
- * shows its release and no picker. A refused or failed write is shown under it.
+ * shows its release and no picker. A refused or failed write is shown under it. US-0608 FR1.2: `locked` and `write`
+ * are the view's, so the picker and the release list share one lock.
  */
-function ReleasePicker({ projectId, features, epic, story }) {
+function ReleasePicker({ projectId, features, epic, story, locked, write }) {
   const { t } = useTranslation();
   const [error, setError] = useState(null);
-  const [busy, setBusy] = useState(false);
   const { planned, released } = releaseOf(story.statusText);
   if (released) return <p className="features-release">{t('features.release.releasedIn', { version: released })}</p>;
   const options = releaseOptions(features.epics, features.tags, features.plans); // plan files too (US-0605 FR2.1)
   if (planned && !options.includes(planned)) options.unshift(planned); // a stale marker still shows as chosen
 
   async function pick(value) {
-    setBusy(true);
     setError(null);
     try {
-      const res = await window.bridge.setStoryRelease(projectId, {
-        storyId: story.id,
-        version: value || null,
-        epicHash: epic.hash,
-        overviewHash: features.overviewHash
-      });
+      const res = await write(() =>
+        window.bridge.setStoryRelease(projectId, {
+          storyId: story.id,
+          version: value || null,
+          epicHash: epic.hash,
+          overviewHash: features.overviewHash
+        })
+      );
       if (res?.conflict) setError(t('features.release.conflict', { file: res.conflict }));
       else if (res?.error) setError(planningErrorText(t, res.error));
     } catch (err) {
       setError(t('features.release.failed', { error: errorText(err) }));
-    } finally {
-      setBusy(false);
     }
   }
 
@@ -142,7 +141,7 @@ function ReleasePicker({ projectId, features, epic, story }) {
         <select
           className="lcars-select"
           value={planned ?? ''}
-          disabled={busy}
+          disabled={locked}
           onChange={(e) => pick(e.target.value)}
           data-testid="features-view-release-picker"
         >
@@ -201,22 +200,71 @@ function NewRelease({ tags, locked, onCreate }) {
   );
 }
 
+/** US-0608 FR1.2: the docs' hashes as one key, to tell the reload that belongs to a write from one that does not. */
+const hashesOf = (f) => JSON.stringify([f?.overviewHash ?? null, (f?.epics ?? []).map((e) => e.hash ?? null), (f?.plans ?? []).map((p) => p.hash ?? null)]);
+
 /** US-0607 FR3.5, US-0606 FR4.2: one sentence for a planning error from main ({kind, reason?, files?}). */
 function planningErrorText(t, error) {
   const kind = ['offline', 'conflict', 'push', 'commit'].includes(error?.kind) ? error.kind : 'git';
   return t(`features.planning.error.${kind}`, { reason: error?.reason ?? '', files: (error?.files ?? []).join(', ') });
 }
 
+/** US-0608 FR7.1: one line for a waiting change: what it does, then its stories. */
+function entryText(t, e) {
+  const what =
+    e.kind === 'content' ? t('features.planning.entry.content', { file: e.file }) : t(`features.planning.entry.${e.kind}`, { version: e.version ?? 'none' });
+  return e.storyIds?.length ? `${what} · ${t('features.planning.entry.stories', { ids: e.storyIds.join(', ') })}` : what;
+}
+
 /**
- * US-0607 FR4.1, FR1.3, FR3.3–FR3.5: the release list's planning sub-block: what waits to be pushed, with Push now,
- * and the last cycle's outcome. Nothing shows while nothing waits. The first read, as the list opens, asks main to
- * apply lost actions again; later reads follow each reload of the docs.
+ * US-0608 FR5.3: a conflicting change names its file and offers Use mine, Keep theirs and Open both: the file in the
+ * editor and the app's text read-only here.
  */
-function PlanningSync({ projectId, features }) {
+function PlanningConflict({ entry, busy, onResolve }) {
+  const { t } = useTranslation();
+  const editor = useEditor();
+  const [both, setBoth] = useState(false);
+  return (
+    <>
+      <span className="tag-warn" role="note">
+        {t('features.planning.conflict', { file: entry.file })}
+      </span>{' '}
+      <button className="btn btn-quiet" disabled={busy} onClick={() => onResolve(entry.id, 'mine')} data-testid="planning-use-mine">
+        {t('features.planning.useMine')}
+      </button>
+      <button className="btn btn-quiet" disabled={busy} onClick={() => onResolve(entry.id, 'theirs')} data-testid="planning-keep-theirs">
+        {t('features.planning.keepTheirs')}
+      </button>
+      <button
+        className="btn btn-quiet"
+        onClick={() => {
+          editor?.open(entry.file);
+          setBoth(true);
+        }}
+        data-testid="planning-open-both"
+      >
+        {t('features.planning.openBoth')}
+      </button>
+      {both && (
+        <pre className="code-block" aria-label={t('features.planning.mine')} data-testid="planning-mine">
+          {entry.content}
+        </pre>
+      )}
+    </>
+  );
+}
+
+/**
+ * US-0607 FR4.1, FR1.3, FR3.3–FR3.5, US-0608 FR7: the planning sub-block: each change still waiting, with its stories
+ * and its target, Push now, and the last cycle's outcome. Nothing shows while nothing waits. The first read, as the
+ * list opens, asks main to apply lost actions again (not from a story detail, `reapply` false); later reads follow
+ * each reload of the docs, and every cycle main sends replaces the list (FR7.2).
+ */
+function PlanningSync({ projectId, features, reapply = true }) {
   const { t } = useTranslation();
   const [status, setStatus] = useState(null);
   const [busy, setBusy] = useState(false);
-  const opened = useRef(true);
+  const opened = useRef(reapply);
   useEffect(() => {
     let live = true;
     const first = opened.current;
@@ -229,19 +277,23 @@ function PlanningSync({ projectId, features }) {
       live = false;
     };
   }, [projectId, features]);
+  useEffect(() => window.bridge.onPlanningChanged?.((msg) => msg?.projectId === projectId && msg.status && setStatus(msg.status)), [projectId]);
 
-  async function pushNow() {
+  async function run(call) {
     setBusy(true);
     try {
-      setStatus(await window.bridge.pushPlanning(projectId));
+      setStatus(await call());
     } catch (err) {
       setStatus((s) => ({ ...s, error: { kind: 'git', reason: errorText(err) } }));
     } finally {
       setBusy(false);
     }
   }
+  const pushNow = () => run(() => window.bridge.pushPlanning(projectId));
+  const resolve = (id, choice) => run(() => window.bridge.resolvePlanning(projectId, id, choice));
 
-  if (!status || !(status.pending > 0 || status.reapplied > 0 || status.prOffer || status.error)) return null;
+  const entries = status?.entries ?? [];
+  if (!status || !(status.pending > 0 || entries.length > 0 || status.reapplied > 0 || status.prOffer || status.error)) return null;
   return (
     <div className="features-release" data-testid="planning-sync">
       <div className="lcars-heading">
@@ -249,6 +301,22 @@ function PlanningSync({ projectId, features }) {
         <span className="lcars-heading-line" aria-hidden="true" />
       </div>
       {status.pending > 0 && <p data-testid="planning-pending">{t('features.planning.pending', { n: status.pending })}</p>}
+      {entries.length > 0 && (
+        <>
+          {status.target && (
+            <p className="muted" data-testid="planning-target">
+              {t('features.planning.target', { target: status.target })}
+            </p>
+          )}
+          <ul className="features-release-stories" aria-label={t('features.planning.title')}>
+            {entries.map((e) => (
+              <li key={e.id} data-testid="planning-entry">
+                {entryText(t, e)} {e.state === 'conflict' && <PlanningConflict entry={e} busy={busy} onResolve={resolve} />}
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
       {status.reapplied > 0 && (
         <p role="status" data-testid="planning-reapplied">
           {t('features.planning.reapplied', { n: status.reapplied })}
@@ -287,32 +355,27 @@ const storiesWithoutRelease = (epics) =>
 
 /**
  * US-0603 FR3: every release from the markers, the tags and the plan files, newest first; a story opens its detail
- * (FR3.3). US-0605: New release, Add story and Remove under a planned release, and Delete for a deletable one. A write
- * locks every action until the next `features` arrives, so no write goes out with stale hashes (FR3.3); a refusal or
- * failure unlocks at once and is said in one sentence (NFR3).
+ * (FR3.3). US-0605: New release, Add story and Remove under a planned release, and Delete for a deletable one. Writes
+ * go through the view's shared lock (`locked`, `lockedWrite`, US-0608 FR1.2); a refusal or failure is said in one
+ * sentence (NFR3).
  */
-function ReleasesView({ projectId, features, onOpenStory }) {
+function ReleasesView({ projectId, features, onOpenStory, locked, lockedWrite }) {
   const { t } = useTranslation();
-  const [sentWith, setSentWith] = useState(null); // the features a write went out with
   const [error, setError] = useState(null);
   const releases = buildReleases(features.epics, features.tags, features.plans);
   const unassigned = storiesWithoutRelease(features.epics);
-  // ponytail: a write that succeeds unlocks only when features:changed reloads the view; reload by hand if one is lost.
-  const locked = sentWith === features;
   const bridge = window.bridge;
 
   async function write(call, failedKey) {
-    setSentWith(features);
     setError(null);
     try {
-      const res = await call();
+      const res = await lockedWrite(call);
       if (res?.ok) return true;
       // US-0606 FR4.2: a refused commit names its reason and files; the change itself was kept.
       setError(res?.error ? planningErrorText(t, res.error) : t('features.release.conflict', { file: res?.conflict }));
     } catch (err) {
       setError(t(failedKey, { error: errorText(err) }));
     }
-    setSentWith(null);
     return false;
   }
   function setStory(epicId, storyId, version) {
@@ -425,6 +488,7 @@ function StoryDetail({ id, story, links, onOpenIntent, release }) {
   return (
     <div id={id} className="file-view features-story" role="region" aria-label={story.id} data-testid="features-view-story-detail">
       {release && <ReleasePicker {...release} story={story} />}
+      {release && <PlanningSync projectId={release.projectId} features={release.features} reapply={false} />}
       {links.length > 0 && (
         <p className="features-links">
           <span className="field-label">{t('features.intents')}</span>
@@ -501,7 +565,7 @@ function StoryFilters({ prefix, filters, setFilters, options, count }) {
  * `features`: given with the Releases delivery setting, so each story gets its release picker (US-0603 FR2).
  * `releases`: the release filter's values, or null to hide it (US-0604 FR2, FR4.2).
  */
-function EpicDetail({ projectId, epic, links, storyId, setStoryId, onOpenIntent, features, releases }) {
+function EpicDetail({ projectId, epic, links, storyId, setStoryId, onOpenIntent, features, releases, lock }) {
   const { t } = useTranslation();
   const [filters, setFilters] = useState(EMPTY_FILTERS);
   const stories = epic.parsed?.stories ?? [];
@@ -580,7 +644,7 @@ function EpicDetail({ projectId, epic, links, storyId, setStoryId, onOpenIntent,
                         story={s}
                         links={links[s.id] ?? []}
                         onOpenIntent={onOpenIntent}
-                        release={features ? { projectId, features, epic } : null}
+                        release={features ? { projectId, features, epic, ...lock } : null}
                       />
                     </div>
                   )}
@@ -620,6 +684,27 @@ export default function FeaturesView({
   const setTab = (id) => id !== tab && onTab?.(id); // Epics | Releases (US-0603 FR3.1)
   const releases = delivery === 'releases';
   const showReleases = releases && tab === 'releases';
+
+  // US-0608 FR1.2: one lock for the release list and the story picker. A write that changed the docs here keeps it
+  // until a load whose hashes differ from those it went out with; any other answer unlocks at once.
+  // ponytail: a lost features:changed keeps the lock until the next reload; a timeout if that is ever seen.
+  const hashes = hashesOf(features);
+  const [sentWith, setSentWith] = useState(null);
+  const locked = sentWith === hashes;
+  useEffect(() => {
+    if (sentWith !== null && sentWith !== hashes) setSentWith(null);
+  }, [hashes, sentWith]);
+  async function lockedWrite(call) {
+    setSentWith(hashes);
+    try {
+      const res = await call();
+      if (!(res?.ok && res.inPlace && res.changed)) setSentWith(null);
+      return res;
+    } catch (err) {
+      setSentWith(null);
+      throw err;
+    }
+  }
 
   // A story link from an intent opens that story (FR2.6).
   useEffect(() => {
@@ -731,6 +816,7 @@ export default function FeaturesView({
               onOpenIntent={onOpenIntent}
               features={releases ? features : null}
               releases={options.releases}
+              lock={{ locked, write: lockedWrite }}
             />
           </Frame>
         </section>
@@ -739,7 +825,7 @@ export default function FeaturesView({
     if (showReleases) {
       body = (
         <Frame>
-          <ReleasesView projectId={projectId} features={features} onOpenStory={openStory} />
+          <ReleasesView projectId={projectId} features={features} onOpenStory={openStory} locked={locked} lockedWrite={lockedWrite} />
         </Frame>
       );
     }

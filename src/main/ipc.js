@@ -59,8 +59,8 @@ import { listComments, listPulls, listReviews } from './platforms/index.js';
 import { clearBitbucket, hasBitbucket, loadBitbucket, saveBitbucket } from './credentials.js';
 import { collisions, loadMachines, loadOpenQuestions, matchPull, possibleCollisions, storyComments } from './teamActivity.js';
 import { readRuleStatus } from './releases.js';
-import { createScheduler, planAction, reapplyLost, runCycle } from './planningSync.js';
-import { readRecord } from './planningRecord.js';
+import { createScheduler, noteAppWrite, planAction, reapplyLost, recordContent, recordTree, resolvePlanning, runCycle, waitingList } from './planningSync.js';
+import { storyIdsIn } from './parsers/features.js';
 import { runFixed } from './exec.js';
 import { DELIVERY_DEFAULT } from './parsers/releases.js';
 import { getSetupInfo, runSetup } from './setup.js';
@@ -323,6 +323,7 @@ async function syncFeaturesWatch(projectId) {
       paths,
       onChange: () => {
         sendFeaturesChanged(projectId, p);
+        recordSeen(projectId); // US-0608 FR2.1: a write from a terminal session is recorded as soon as it is seen
         syncFeaturesWatch(projectId); // a new epic folder in the overview is picked up
       },
       onError: (err) => console.error(`Bevakning av feature-dokument misslyckades för ${p.root}:`, err)
@@ -546,16 +547,64 @@ let planningTimer = null;
 /** US-0607 NFR3: gh through runFixed (no shell), the chosen gh path when one is saved (US-0410 FR4.2). */
 const runGh = (args, { cwd }) => runFixed(settingsNow().toolPaths?.gh ?? 'gh', args, { cwd, timeout: 30000 });
 
-async function planningCtx(p) {
+/** No release list (hidden docs or continuous deployment), so no planning sync either. */
+const planningOff = (settings) => settings.featureDocs === 'hide' || settings.delivery === 'continuous';
+
+/** US-0608 FR3.1: the story ids the active intent's description names; [] when there is none or it cannot be read. */
+async function intentStoryIds(p) {
+  const intent = await activeIntent(p);
+  if (!intent?.dirName) return [];
+  try {
+    return storyIdsIn(await readText(p.root, `aidlc/spaces/${p.space}/intents/${intent.dirName}/project-description.json`));
+  } catch (err) {
+    console.warn(`Intentens beskrivning kunde inte läsas för ${p.root}:`, err.message);
+    return [];
+  }
+}
+
+async function planningCtx(projectId) {
+  const p = project(projectId);
   const settings = await getProjectSettings(p.root);
   return {
     root: p.root,
     userData: app.getPath('userData'),
     featuresPath: settings.featuresPath,
     planningBranch: settings.planningBranch ?? PLANNING_BRANCH_DEFAULT,
+    ownStoryIds: await intentStoryIds(p),
     gh: runGh,
-    online: () => net.isOnline()
+    online: () => net.isOnline(),
+    // US-0608 FR6.1: the grouped commit was made; the list hears of it and an idle app pushes it.
+    onCommitted: async (res) => {
+      sendFeaturesChanged(projectId, p);
+      await sendPlanningChanged(projectId, res);
+      planning.kick(projectId);
+    }
   };
+}
+
+/** US-0608 FR7.2: the release list's waiting list, sent after every cycle and change; never throws. */
+async function sendPlanningChanged(projectId, result) {
+  try {
+    const p = project(projectId);
+    const status = await planningStatus(projectId, result);
+    if (!p.sender.isDestroyed()) p.sender.send('features:planningChanged', { projectId, status });
+    return status;
+  } catch (err) {
+    console.warn('Planeringens lista kunde inte skickas:', err.message);
+    return null;
+  }
+}
+
+/** US-0608 FR2.1, FR3: records (and on a story branch splits) what the docs watcher saw; never throws. */
+async function recordSeen(projectId) {
+  try {
+    const p = projects.get(projectId);
+    if (!p || planningOff(await getProjectSettings(p.root))) return;
+    const res = await recordTree(await planningCtx(projectId));
+    if (res?.recorded) await sendPlanningChanged(projectId, null);
+  } catch (err) {
+    console.warn('Planeringsändringen kunde inte registreras:', err.message);
+  }
 }
 
 /**
@@ -566,38 +615,48 @@ async function planningCtx(p) {
 const appBusy = () => allQuestions().length > 0 || [...projects.values()].some((p) => p.intentChangedAt && Date.now() - p.intentChangedAt < WORKING_MS);
 
 const planning = createScheduler({
-  run: async (projectId) => {
+  run: async (projectId, opts) => {
     const p = project(projectId);
-    const settings = await getProjectSettings(p.root);
-    if (settings.featureDocs === 'hide' || settings.delivery === 'continuous') return {}; // no release list here
-    const res = await runCycle(await planningCtx(p));
+    if (planningOff(await getProjectSettings(p.root))) return {}; // no release list here
+    let res;
+    try {
+      // US-0608 FR7.1: Push now commits what waits at once, without the 30-second window.
+      res = await runCycle({ ...(await planningCtx(projectId)), ...(opts?.force ? { windowMs: 0 } : {}) });
+    } catch (err) {
+      res = { error: { kind: 'git', reason: err.message } };
+    }
     if (res.reapplied || res.pushed) sendFeaturesChanged(projectId, p);
+    await sendPlanningChanged(projectId, res); // FR7.2: after every cycle, a failed one too
     return res;
   },
   idle: () => net.isOnline() && !appBusy(),
   intervalMs: () => (settingsNow().planningPushMinutes ?? PLANNING_PUSH_DEFAULT) * 60 * 1000
 });
 
-/** US-0607 FR4.1: the release list's line: the actions waiting, and the last cycle's outcome. */
-async function planningStatus(projectId, reapply = null) {
-  const p = project(projectId);
-  const { actions } = await readRecord(app.getPath('userData'), p.root);
+/**
+ * US-0607 FR4.1, US-0608 FR7.1: the release list's block: each change waiting with its stories, the target, and the
+ * outcome of `result` (else the last cycle).
+ */
+async function planningStatus(projectId, result = null) {
+  const { target, entries } = await waitingList(await planningCtx(projectId));
   const last = planning.status(projectId) ?? {};
   return {
-    pending: actions.length,
-    reapplied: reapply?.reapplied ?? last.reapplied ?? 0,
-    noRemote: last.noRemote === true,
-    prOffer: last.prOffer ?? null,
-    error: reapply?.error ?? last.error ?? null
+    pending: entries.length,
+    reapplied: result?.reapplied ?? last.reapplied ?? 0,
+    noRemote: (result?.noRemote ?? last.noRemote) === true,
+    prOffer: result?.prOffer ?? last.prOffer ?? null,
+    error: result?.error ?? last.error ?? null,
+    target,
+    entries
   };
 }
 
-/** A planning action from the release list: recorded, applied and committed; then the scheduler may push at once. */
+/** A planning action from the release list: recorded and applied; the commit follows the window, then the push. */
 async function planningAction(projectId, action, hashes) {
   const p = project(projectId);
-  const res = await planAction(await planningCtx(p), action, hashes);
-  if (res.conflict) return res;
-  sendFeaturesChanged(projectId, p); // the view reloads with the new hashes and the waiting count at once
+  const res = await planAction(await planningCtx(projectId), action, hashes);
+  if (!res.conflict) sendFeaturesChanged(projectId, p); // the view reloads with the new hashes at once
+  await sendPlanningChanged(projectId, null); // a refused action waits in the record too (US-0608 FR1.3)
   planning.kick(projectId); // not awaited: an idle app pushes right away (FR3.1)
   return res;
 }
@@ -1005,8 +1064,18 @@ const handlers = {
   'project:file': async (_event, projectId, rel) => readText(project(projectId).root, rel),
   // Editing files (EPIC-10 US-1001): a relative path, content and the hash it was opened with; never a root.
   'file:read': async (_event, projectId, rel) => readForEdit(project(projectId).root, rel),
-  'file:write': async (_event, projectId, rel, content, expect) =>
-    writeFileSafe(project(projectId).root, rel, content, { expectMtime: expect?.mtimeMs, expectHash: expect?.hash }),
+  // US-0608 FR2.2, AC1.2.1: a feature doc is in the planning record before it is written; the watcher records it too, should this fail.
+  'file:write': async (_event, projectId, rel, content, expect) => {
+    const p = project(projectId);
+    try {
+      if (!planningOff(await getProjectSettings(p.root))) await recordContent(await planningCtx(projectId), rel, content, { expectHash: expect?.hash });
+    } catch (err) {
+      console.warn(`Sparningen av ${rel} kunde inte registreras i planeringen:`, err.message);
+    }
+    const res = await writeFileSafe(p.root, rel, content, { expectMtime: expect?.mtimeMs, expectHash: expect?.hash });
+    if (res?.ok && res.hash) noteAppWrite(p.root, rel, expect?.hash ?? null, res.hash); // D2: not recorded again as seen
+    return res;
+  },
   'file:watch': async (_event, projectId, rels) => watchEditorFiles(projectId, Array.isArray(rels) ? rels.map(String) : []),
   'project:listTree': async (_event, projectId) => listTree(project(projectId).root),
   // The renderer's answer to app:confirmClose: true closes (or quits), false keeps the window.
@@ -1190,7 +1259,7 @@ const handlers = {
   // US-0607 FR4.1, FR1.3: what waits to be pushed; `opened` (the release list just opened) applies lost actions again.
   'features:planningStatus': async (_event, projectId, opened) => {
     const p = project(projectId);
-    const reapply = opened === true ? await reapplyLost(await planningCtx(p)) : null;
+    const reapply = opened === true ? await reapplyLost(await planningCtx(projectId)) : null;
     if (reapply?.reapplied) sendFeaturesChanged(projectId, p);
     return planningStatus(projectId, reapply);
   },
@@ -1199,6 +1268,15 @@ const handlers = {
     project(projectId);
     await planning.pushNow(projectId);
     return planningStatus(projectId);
+  },
+  // US-0608 FR5.3: "Use mine" or "Keep theirs" for a conflicting change; an id and a fixed word, checked in planningSync.
+  'features:resolvePlanning': async (_event, projectId, id, choice) => {
+    const p = project(projectId);
+    await resolvePlanning(await planningCtx(projectId), String(id), String(choice));
+    sendFeaturesChanged(projectId, p);
+    const status = await sendPlanningChanged(projectId, null);
+    planning.kick(projectId);
+    return status;
   },
   // The lifecycle rule in the space's memory, for the saved delivery setting (US-0603 FR5.2, FR5.3).
   'features:ruleStatus': async (_event, projectId, space) => {

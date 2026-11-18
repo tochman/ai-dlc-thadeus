@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { t } from '../shared/i18n.js';
 
 const DEFAULT_SETTINGS = { featureDocs: 'auto', featuresPath: 'docs/FEATURES.md' };
@@ -28,12 +28,17 @@ export function useFeatures(projectId, space) {
     }
   }, [projectId, space]);
 
+  // US-0608 FR1.2: only the latest load counts; a reply that comes after a later one would bring back older hashes.
+  const seq = useRef(0);
   const loadDocs = useCallback(async () => {
+    const mine = ++seq.current;
     try {
       const [s, f] = await Promise.all([bridge.getProjectSettings(projectId), bridge.loadFeatures(projectId)]);
+      if (mine !== seq.current) return;
       setSettings(s);
       setFeatures(f);
     } catch (err) {
+      if (mine !== seq.current) return;
       setSettings((s) => s ?? DEFAULT_SETTINGS); // the agent tab still starts, on the default harness
       setFeatures({ available: false, reason: t('features.loadFailed', { error: errorText(err) }) });
     }

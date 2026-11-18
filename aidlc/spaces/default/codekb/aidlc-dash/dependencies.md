@@ -8,66 +8,55 @@ The external package versions are in `technology-stack.md`. This file covers how
 flowchart TD
   IPC[ipc.js] --> PS[projectService.js]
   IPC --> FL[features.js]
+  IPC --> PSY[planningSync.js]
+  IPC --> PRC[planningRecord.js]
+  IPC --> FW[fileWrite.js]
   IPC --> RS[releases.js]
   IPC --> GIT[git.js]
   IPC --> TA[teamActivity.js]
   IPC --> W[watcher.js]
   IPC --> SS[settings.js]
   IPC --> MC[modelChoice.js]
-  IPC --> MO[models.js]
   IPC --> AC[aidlcConfig.js]
   IPC --> AW[aidlcWrite.js]
-  IPC --> CR[costRules.js]
   IPC --> APL[agentProgress.js]
   IPC --> ES[agentEvents.js]
   IPC --> OTHER[pty, other agent and plan modules]
-  PS --> PA[projectAccess.js]
-  PS --> P[parsers: intents, state, runtimeGraph, audit, pipeline, units, ledger, auditCost, velocity]
-  MC --> EX[exec.js]
-  MC --> TL[tools.js]
-  MC --> CT[shared/configTables.js]
-  MO --> EX
-  AW --> EX
-  AC --> EX
-  SS --> PF[parsers: features, releases]
-  SS --> H[shared/harnesses.js]
+  PSY --> PRC
+  PSY --> RS
+  PSY --> FL
+  PSY --> GIT
+  PSY --> EX[exec.js]
+  PSY --> PA[projectAccess.js]
+  PRC --> FW
+  RS --> FW
+  RS --> FL
+  RS --> PA
+  RS --> PRP[parsers/releases.js]
+  FW --> PA
+  FW --> EX
+  FL --> PRP
+  PS --> PA
+  MC --> EX
   GIT --> EX
-  CR --> PL[plans.js]
-  APL --> AP[parsers/agentProgress.js]
-  APL --> PA
-  APL --> GIT
-  AP --> PS
-  ES --> AAD[agentAdapters.js]
+  SS --> PRP
+  APL --> PS
   ES --> AACT[shared/agentActivity.js]
-  ES --> ACH[agentChannel.js]
-  ES --> APM[agentPermissions.js]
-  ES --> ARP[agentReplies.js]
 ```
 
 Text fallback:
-- `ipc.js` depends on every service:
-  - the Project Service, Features Loader, Releases Service, Git Reader, Team Activity and Watcher;
-  - the Settings Store;
-  - Model Choice and the Model Config Reader;
-  - the AI-DLC config reader and writer;
-  - the cost rules;
-  - the Agent Progress Loader and the Agent Event Store;
-  - the other modules.
-- Model Choice, the Model Config Reader, the config reader and writer, and the Git Reader all run commands through `exec.js`, with the binary from `tools.js`.
-- Model Choice and the config writer take every argument from `shared/configTables.js`.
-- `settings.js` validates against the features and releases parsers and the harness table.
-- `agentProgress.js` (the Agent Progress Loader) uses the progress parser, Project Access and `lastCommitSubject` from the Git Reader. `parsers/agentProgress.js` imports `workingAgents` from `projectService.js`. There is no cycle.
-- `agentEvents.js` uses the adapters, the channel, permissions, replies and the pure `shared/agentActivity.js`.
+- `ipc.js` depends on every service: the Project Service, the Features Loader, Planning Sync and the Planning Record (the status read), the File Editor Service (`file:read`, `file:write`), the Releases Service (the rule status), the Git Reader, Team Activity, the Watcher, the Settings Store, Model Choice, the AI-DLC config reader and writer, the Agent Progress Loader, the Agent Event Store and the other modules.
+- `planningSync.js` uses the Planning Record, the Releases Service, the Features Loader (fingerprints and fresh hashes), the Git Reader (`currentBranch`, `listReleaseTags`, `originUrl`, `pushRef`, `worktreeAdd`, `worktreeRemove`), the Exec Runner (its own git calls), and `openRoot` from Project Access. `gh` comes in through `ctx.gh` (`runGh` in `ipc.js`).
+- `planningRecord.js` and `releases.js` write through `fileWrite.js` (`writeAtomic`, `writeFileSafe`). `releases.js` also writes new plan files directly with `fs.writeFile(…, {flag: 'wx'})` and deletes with `fs.unlink`.
+- `parsers/releases.js` is pure and is imported by `releases.js`, `features.js`, `settings.js` and the renderer (`FeaturesView.jsx`).
+- There is no cycle.
 
 ## Internal Dependencies (renderer)
 
-- `App.jsx` → `ProjectView`, `AgentDialog`, `LatestMessageStrip`, `SettingsView`, the dialogs; `PROJECT_SECTIONS` from `ProjectSettingsView`.
+- `App.jsx` → `ProjectView`, `AgentDialog`, `LatestMessageStrip`, `SettingsView`, the dialogs.
 - `ProjectView` → `useProject`, `useFeatures`, `IntentList`, `IntentDetail`, `TerminalPanel`, `FeaturesView`, `ConfigView`, `ProjectSettingsView`, `CostRulesSection`, `PlansView`, `CostPanel`, `VelocityView`, `RefreshPanel`, `MachinesView`, `EditorPanel`.
-- `ProjectSettingsView` → `SettingsView` (`Section`, `RadioBlocks`), `AgentHooksSection`, `TerminalContext`, `shared/harnesses.js`, `parsers/features.js`, `parsers/releases.js`.
-- `ConfigView` → `ConfigEdit` (`ModelPicker`, `ChangePanel` and the editors).
-- `CostRulesSection` → `ConfigEdit` (`ChangePanel`), `SettingsView`.
-- `IntentDetail` → `Pipeline`, `Timeline`, `BoltDag`, `ArtifactReader`, `CostTab`, `VelocityView` (the intent tab), `StoryComments`, `ResumeButton`, `TokenView`, `TokenDetail`.
-- `TokenDetail` → `AgentProgress` → `format.js` (`stageTitle`), `parsers/ledger.js` (`agentName`), `AgentHooksPreview` (`harnessLabel`), `AgentHooksSection` (`useAgentHooks`).
+- `FeaturesView` → `parsers/releases.js` (`buildReleases`, `canDelete`, `newReleaseError`, `nextVersions`, `releaseOf`, `releaseOptions`), `StatusBadge`, `Tooltip`, and `window.bridge` directly for the release writes and the planning status.
+- `IntentDetail` → `Pipeline`, `Timeline`, `BoltDag`, `ArtifactReader`, `CostTab`, `VelocityView`, `StoryComments`, `ResumeButton`, `TokenView`, `TokenDetail` → `AgentProgress`.
 - `Lcars.jsx` → `Tooltip.jsx` → `tooltipPlacement.js`.
 
 ## External Integrations
@@ -76,29 +65,35 @@ Text fallback:
 |---|---|---|
 | AI-DLC project files (`aidlc/…`) | read; watched | Project Service, Watcher, Agent Progress Loader |
 | AI-DLC memory files | marked-block and Guard Policy writes after a diff | Cost Rules Service, AI-DLC Config Writer |
-| Feature docs | read; marker and plan writes | Features Loader, Releases Service |
-| `aidlc` CLI | run with fixed arguments | Model Choice, Model Config Reader, config reader and writer, Setup Helper, Plans Service, AI-DLC Update Check |
-| git | read-only commands, plus `init` in setup | Git Reader, File Editor Service |
+| Feature docs (`docs/FEATURES.md`, `docs/features/`, `docs/releases/`) | read; watched; marker and plan writes; editor saves | Features Loader, Releases Service, File Editor Service, IPC Router (watch) |
+| git (local) | reads; planning commits, worktrees, rebases, fast-forwards | Git Reader, Planning Sync, File Editor Service (`ls-files`) |
+| git remote `origin` | fetch; planning push to `main` or the docs branch | Planning Sync |
+| GitHub via `gh` | branch protection, pull request create and squash-merge | Planning Sync; Updater (fallback) |
 | GitHub, GitLab, Bitbucket | read pull requests and comments | Team Activity, `platforms/` |
-| GitHub releases API / `gh` | read and download | Updater |
 | Agent harness hooks | a file channel in userData | Agent Channel, Dialog Hook Script, Agent Adapters, Agent Event Store |
-| App settings | read and write `userData/settings.json` | Settings Store |
+| App data (`userData/`) | `settings.json`, `planning/*.json`, planning worktrees | Settings Store, Planning Record, Planning Sync |
 
-## US-0030 Blast Radius
+## US-0608 Blast Radius
 
 | File | Likely change | Dependents and tests |
 |---|---|---|
-| `src/shared/agentActivity.js` | clear waits from agent events and answers; expose last-seen time; carry task and description | `tests/main/agentActivity.test.js`; `agentEvents.js` is the only producer |
-| `src/main/agentEvents.js` | route a dialog kind's wait to its agent; feed activity when a permission is answered in the app | `agentEvents*.test.js`, `agentPermissions.test.js`, `agentAlertsFlow.test.js` |
-| `src/main/agentAdapters.js` | read `tool_input.description` (and the Agent tool's task) as bounded, sanitised text | the adapter tests; NFR2 assertions in them must change on purpose |
-| `src/renderer/AgentProgress.jsx` | join hook rows with audit build rows for steps; show task, description and last seen | `tests/renderer/AgentProgress.test.jsx`, `TokenDetail.test.jsx` |
-| `src/shared/locales/{sv,en}.json` | new `tokenDetail.progress` keys | `tests/main/i18nKeys.test.js` |
-| `.thadeus/hooks/dialog.sh`, `src/main/agentHooks.js` | likely none: the payload is already copied whole | the timed hook-script tests |
-| `src/main/agentProgress.js`, `parsers/agentProgress.js` | likely none: the zero-Unit plan read works | `agentProgressLoad.test.js:101-115` |
+| `src/main/planningRecord.js` | new kinds (file content with base hash, or edit kinds); a per-project queue | `planningSync.js`, `ipc.js`; `planningRecord.test.js` |
+| `src/main/planningSync.js` | apply and commit the new kinds; story-owned or not; grouping window; keep both versions on conflict | `ipc.js`; `planningSync.test.js` (real git, bare origin) |
+| `src/main/ipc.js` | record from `file:write` and the docs watcher; push the status after every cycle; richer status | `ipc.test.js` |
+| `src/main/releases.js` | maybe a single-pass write of epic and overview so a conflict leaves nothing half-written | `releases.test.js`, `releasesPlan.test.js` |
+| `src/main/fileWrite.js` | likely none | `fileWrite.test.js` |
+| `src/renderer/FeaturesView.jsx`, `useFeatures.js` | a visible waiting list; a lock that waits for its own result; ignore stale reloads; lock `ReleasePicker` | `FeaturesView.test.jsx`, `useFeatures.test.jsx` |
+| `src/preload/index.js` | a status subscription, if pushed | `preload` tests, if any |
+| `src/shared/locales/{sv,en}.json` | new `features.planning.*` keys | `i18nKeys.test.js` |
+| `package.json`, `.github/workflows/release.yml` | an end-to-end dev dependency and a `verify` step (build, xvfb) | CI |
 
-Impact: medium. Main and renderer change, and so does the NFR2 rule. Every piece has a pure test seam, and no new dependency is needed.
+Impact: high. Main, renderer, CI and a new kind of test are involved, and planning runs git in the person's checkout.
 
-## US-0210 Blast Radius (kept from the previous scan, not re-verified)
+## US-0030 Blast Radius (kept from `0ebb196`, not re-verified)
+
+`src/shared/agentActivity.js`, `src/main/agentEvents.js`, `src/main/agentAdapters.js`, `src/renderer/AgentProgress.jsx`, both locale files. Impact: medium.
+
+## US-0210 Blast Radius (kept, not re-verified)
 
 `modelChoice.js`, `settings.js`, `ipc.js`, `preload/index.js`, `ProjectSettingsView.jsx` (+ `App.jsx`), a new LCARS dialog, `ConfigView.jsx` and both locale files. Impact: medium.
 

@@ -85,6 +85,18 @@ describe('useFeatures', () => {
     expect(result.current.links).toEqual({});
   });
 
+  it('ignores a load that answers after a later one, so older hashes never replace newer (US-0608 FR1.2)', async () => {
+    const replies = [];
+    bridge.loadFeatures.mockImplementation(() => new Promise((resolve) => replies.push(resolve)));
+    const { result } = renderHook(() => useFeatures('p1', 'default'));
+    await waitFor(() => expect(replies).toHaveLength(1));
+    await act(async () => listeners.features({ projectId: 'p1' }));
+    await waitFor(() => expect(replies).toHaveLength(2));
+    await act(async () => replies[1]({ available: true, epics: [], overviewHash: 'new' }));
+    await act(async () => replies[0]({ available: true, epics: [], overviewHash: 'old' }));
+    expect(result.current.features.overviewHash).toBe('new');
+  });
+
   it('reloads the docs on features:changed and the links on an index change, for its own project only', async () => {
     renderHook(() => useFeatures('p1', 'default'));
     await waitFor(() => expect(bridge.loadFeatures).toHaveBeenCalledTimes(1));

@@ -47,6 +47,14 @@ jobs:
         run: npx eslint .
       - name: Prettier
         run: npx prettier --check .
+      # US-0608 FR9.3: the planning end-to-end tests drive the built app. Ubuntu 24.04 blocks the unprivileged user
+      # namespaces Electron's sandbox needs, so that is allowed for this job; xvfb gives Electron a display.
+      - name: Allow Electron's sandbox
+        run: sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
+      - name: End-to-end tests of the built app
+        run: |
+          npx electron-vite build
+          xvfb-run -a npx playwright test
 
   build-mac:
     needs: verify
@@ -61,6 +69,9 @@ jobs:
       - run: npm run build:mac
         env:
           CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+      # US-0608 FR9.3: the same end-to-end tests against the macOS build in out/.
+      - name: End-to-end tests of the built app
+        run: npx playwright test
       - uses: actions/upload-artifact@v4
         with:
           name: mac

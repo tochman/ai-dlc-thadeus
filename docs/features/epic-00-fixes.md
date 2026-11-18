@@ -6,9 +6,9 @@
 
 > Small fixes the person reports while using the app: something looks off, behaves wrongly or is missing a detail. Each fix becomes a story here, so nothing reported in passing gets lost. A fix that grows into a feature moves to its topic's epic.
 
-**Stories:** US-0001, US-0002, US-0003, US-0004, US-0005, US-0006, US-0007, US-0008, US-0009, US-0010, US-0011, US-0012, US-0013, US-0014, US-0015, US-0016, US-0017, US-0018, US-0019, US-0020, US-0021, US-0022, US-0023, US-0024, US-0025, US-0026, US-0027, US-0028, US-0029, US-0030
+**Stories:** US-0001, US-0002, US-0003, US-0004, US-0005, US-0006, US-0007, US-0008, US-0009, US-0010, US-0011, US-0012, US-0013, US-0014, US-0015, US-0016, US-0017, US-0018, US-0019, US-0020, US-0021, US-0022, US-0023, US-0024, US-0025, US-0026, US-0027, US-0028, US-0029, US-0030, US-0031
 
-**Status (2026-11-18):** ✅ US-0001–US-0020 released (v0.2.3–v0.2.6). ✅ US-0021–US-0023 released in v0.2.7. ✅ US-0024 released in v0.2.8. ✅ US-0025 released in v0.2.9. ✅ US-0026 released in v0.2.9. ✅ US-0027 released in v0.2.9. ✅ US-0028 done, for v0.2.10. ✅ US-0029 done, for v0.2.10. ✅ US-0030 done, for v0.2.10. Each story names its release.
+**Status (2026-11-18):** ✅ US-0001–US-0020 released (v0.2.3–v0.2.6). ✅ US-0021–US-0023 released in v0.2.7. ✅ US-0024 released in v0.2.8. ✅ US-0025 released in v0.2.9. ✅ US-0026 released in v0.2.9. ✅ US-0027 released in v0.2.9. ✅ US-0028 done, for v0.2.10. ✅ US-0029 done, for v0.2.10. ✅ US-0030 done, for v0.2.10. 📋 US-0031 planned, for v0.2.10. Each story names its release.
 
 ---
 
@@ -489,3 +489,20 @@
 - **Notes:** Runs on the `express` plan (decided 2026-11-18), not `quick-fix`. Likely touches `src/main/parsers/agentProgress.js`, `src/main/agentEvents.js` (the hook event state) and `src/renderer/AgentProgress.jsx`. Screenshot of the report: the token view of `261118-finished-token-history`, 2026-11-18 19:51.
 - **Done (2026-11-18, express workflow `261118-honest-agent-progress`, branch `fix/US-0030`):** A permission request now lands on the row of the agent that asked (`src/shared/agentActivity.js`, `src/main/agentEvents.js`), and main shows "waiting for <agent>" until that wait ends; an answer in the app clears it. `src/main/agentAdapters.js` lets two bounded texts through `agentLine()` (one line, at most 80 characters, outside paths hidden): the tool call's description and the Agent tool's task, which deliberately relaxes US-0214's identifiers-only rule. Claude Code's SubagentStart carries no task or parent id, so a task is paired with its agent by type and order. Hook rows take "step n of m" from the audit build row of the same agent (`src/renderer/AgentProgress.jsx`), and any row quiet for 30 s shows "seen N ago". 1931/1931 tests pass, 92.32% line coverage. Known limit: two agents of the same type started at the same moment may swap tasks.
 - **Dependencies:** US-0507, US-0214
+
+**US-0031: The agent dialog opens on the page that just arrived, never on the message read last** 📋 Planned, for v0.2.10
+- As a **developer answering the app's dialogs**, in order to **trust that what I read and pick belongs to the moment I am in**, I would like **the dialog to open on the page that just arrived, and an old page that is already answered never to show as the current one**.
+- **Epic:** EPIC-00
+- **Priority:** High
+- **Complexity:** Medium
+- **Background:** Reported 2026-11-18: "the dialogs seem a bit flaky. quite often they seem to hang on to old messages and next time a dialog is shown the old message is still there. this is mostly when we display if we want to compact or create new session." Two things meet. The dialog keeps the page it was last on (`pageId`, `lastIndex` in `AgentDialog.jsx`) across being closed and opened again, and only falls back to the newest event when that page has left the list; a new event arriving while the dialog is closed opens it (`setPopupOpen(true)` in `App.jsx`) without naming a page. And a page that is no longer waiting stays in the store's list: `move` in `agentEvents.js` deletes an event only on `ended`, so a question in `sent` or `handedBack`, and a reply in `stale`, are still pager items. `byPager` puts the handoff page last (rank 2, after questions and replies), so an old answered question always wins over the compact / fresh-session page — which is why it shows up mostly there. The same list decides `hasNewQuestion` in `App.jsx`, so settled pages also keep the dialog from closing by itself once nothing new is waiting. Hypotheses to check while building: the reopening rule (which page shows when the dialog is opened by a new event), the dialog's "still something open" test, and whether a handoff page can be replaced by a newer offer without the person seeing it.
+- **Acceptance Criteria:**
+  - [ ] **Given** the dialog was closed on a page that is still in the list, **when** a compact, fresh-session or gate page arrives and the dialog opens, **then** that page is the one shown, not the earlier message; the earlier page is still reachable with Previous/Next.
+  - [ ] **Given** the page on screen is settled (sent, handed back or stale) and a new page arrives while the dialog is open, **then** the new page takes over.
+  - [ ] **Given** the dialog is open on a live page and a new page arrives, **then** the page being read stays put and "+n nya" counts the new one, as today (BR2.1 unchanged).
+  - [ ] **Given** only settled pages are left and nothing is waiting, **then** the dialog closes by itself, as it does when no event is left.
+  - [ ] **Given** Claude Code and opencode, both behave the same; the fresh-session choice is still typed through the existing handoff path.
+  - [ ] Every text goes through `t()` in Swedish and English, in the LCARS look; a state is never shown by colour alone.
+  - [ ] A test fails without the fix and passes with it; the existing suite stays green.
+- **Notes:** A code fix, so it runs on the `quick-fix` plan. Most likely touches `src/renderer/AgentDialog.jsx` (the page it opens on and `lastIndex`), `src/renderer/App.jsx` (`hasNewQuestion`, `receiveAgentEvents`) and, if a settled page should leave the list sooner, `src/main/agentEvents.js` (`move`, `KEPT`, `OPEN`). Existing tests: `tests/renderer/AgentDialog.test.jsx`, `tests/renderer/AgentDialogHandoff.test.jsx`, `tests/main/agentEvents.test.js`. Keep the deliberate rule that a page stays put while it is being read — the fix is about which page is shown when the dialog opens or when the shown page is already finished.
+- **Dependencies:** US-0506, US-0213, US-0026

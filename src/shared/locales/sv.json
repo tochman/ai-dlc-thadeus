@@ -576,6 +576,19 @@
       "reapplied": "{n, plural, one {# planeringsändring hade gått förlorad och gjordes om.} other {# planeringsändringar hade gått förlorade och gjordes om.}}",
       "noRemote": "Projektet har inget origin, så planeringen committas bara här.",
       "prOffer": "Planeringen ligger på grenen {branch}, eftersom main är skyddad. Öppna en pull request från den till main för hand.",
+      "target": "Mål: {target}",
+      "entry": {
+        "setRelease": "{version, select, none {Ingen release} other {Release {version}}}",
+        "createRelease": "Ny release {version}",
+        "deleteRelease": "Ta bort release {version}",
+        "content": "Ändring i {file}",
+        "stories": "Storys: {ids}"
+      },
+      "conflict": "{file} har ändrats även på målet.",
+      "useMine": "Använd min",
+      "keepTheirs": "Behåll deras",
+      "openBoth": "Öppna båda i editorn",
+      "mine": "Min version, bara att läsa",
       "error": {
         "offline": "Offline. Planeringen sparas och pushas när appen är online igen.",
         "conflict": "Planeringen krockar med main i {files}. Inget pushades; appen försöker igen vid nästa intervall.",
