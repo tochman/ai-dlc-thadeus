@@ -1,4 +1,5 @@
 // The intent's pipeline: phases of stages, each stage an LCARS card with a unit level bar (US-0411 FR1–FR5).
+// US-0028: the note about runtime-graph.json shows only when stages are done and the file is not on this machine.
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { formatCost, formatDuration, formatTime, shortModel, stageStatusLabel, tokenBreakdown } from './format.js';
@@ -169,10 +170,16 @@ export default function Pipeline({ pipeline, files, hasGraph, onOpenFile, cost }
   const skippedTotal = skipped.reduce((sum, [, n]) => sum + n, 0);
   const fileCount = (slug) => filesForStage(files, slug).reduce((n, g) => n + g.files.length, 0);
   const detailsOf = (s) => stageDetails(s, cost?.stageModels[s.slug], fileCount(s.slug));
+  // US-0028 FR1, FR2: a missing runtime-graph.json is normal on a new intent; say so only once stages are done without it.
+  const timingsElsewhere = !hasGraph && pipeline.phases.some((p) => p.stages.some((s) => s.status === 'done'));
 
   return (
     <div className="pipeline" data-testid="pipeline">
-      {!hasGraph && <p className="muted">{t('pipeline.noGraph')}</p>}
+      {timingsElsewhere && (
+        <p className="muted" data-testid="pipeline-timings-note">
+          {t('pipeline.noGraph')}
+        </p>
+      )}
       {pipeline.phases.map((phase) => {
         const stages = showSkipped ? phase.stages : phase.stages.filter((s) => !isSkipped(s));
         if (stages.length === 0) return null;

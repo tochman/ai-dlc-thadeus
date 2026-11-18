@@ -214,7 +214,7 @@
     "levelTodo": "Inte klar",
     "noStageFiles": "Inga filer för den här stagen.",
     "noStages": "aidlc-state.md saknas eller har inga stages ännu.",
-    "noGraph": "runtime-graph.json saknas (den är git-ignorerad). Status kommer från aidlc-state.md.",
+    "noGraph": "Tidsuppgifter finns bara på den dator som körde arbetet. Status kommer från aidlc-state.md.",
     "skipped": "{list} {n, plural, one {stage ingår} other {stages ingår}} inte"
   },
   "velocity": {

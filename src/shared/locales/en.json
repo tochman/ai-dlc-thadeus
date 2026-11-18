@@ -214,7 +214,7 @@
     "levelTodo": "Not done",
     "noStageFiles": "No files for this stage.",
     "noStages": "aidlc-state.md is missing or has no stages yet.",
-    "noGraph": "runtime-graph.json is missing (it is git-ignored). Status comes from aidlc-state.md.",
+    "noGraph": "Timings are kept only on the machine that ran the work. Status comes from aidlc-state.md.",
     "skipped": "{list} {n, plural, one {stage is} other {stages are}} not included"
   },
   "velocity": {
