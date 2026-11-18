@@ -75,7 +75,7 @@
 
 ---
 
-**US-0805: A health check on the start screen, with install commands for what is missing** 📋 Planned
+**US-0805: A health check on the start screen, with install commands for what is missing** 📋 Planned, for v0.3.0
 - As a **new user opening the app for the first time**, in order to **get from install to a working project without guessing**, I would like to **see on the start screen whether the tools the app needs are found and signed in, with a command to copy for each one that is missing**.
 - **Epic:** EPIC-08
 - **Priority:** Medium
