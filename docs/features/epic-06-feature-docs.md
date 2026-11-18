@@ -6,9 +6,9 @@
 
 > Many projects describe their product in a feature document: an overview (`docs/FEATURES.md`) listing epics, and one file per epic (`docs/features/epic-XX-*.md`) with user stories, acceptance criteria and status. The format is not part of AI-DLC, but it works well together with it: the feature docs say *what* and *why*, and AI-DLC's records say *how* and *when*. The console should offer this format when a project is set up, and let people read and follow it next to the AI-DLC work.
 
-**Stories:** US-0601, US-0602, US-0603, US-0604, US-0605, US-0606, US-0607
+**Stories:** US-0601, US-0602, US-0603, US-0604, US-0605, US-0606, US-0607, US-0608
 
-**Status (2026-11-17):** ✅ US-0601–US-0603 released (v0.2.0–v0.2.5). ✅ US-0604 and US-0605 released in v0.2.7. ✅ US-0606 and US-0607 released in v0.2.9. Each story names its release.
+**Status (2026-11-18):** ✅ US-0601–US-0603 released (v0.2.0–v0.2.5). ✅ US-0604 and US-0605 released in v0.2.7. ✅ US-0606 and US-0607 released in v0.2.9. 📋 US-0608 planned, for v0.2.10. Each story names its release.
 
 **Decisions:**
 - **Q1 (where the view lives):** a switch "Intents | Features" at the top of the project view. Features replaces the sidebar and content area; the terminal stays.
@@ -153,3 +153,24 @@
   - [x] Every text goes through `t()` in Swedish and English, and the view follows the LCARS look.
 - **Notes:** This changes US-0606's "the app pushes nothing by itself". Decided 2026-11-17 (Q1, Q8, Q10): straight to `origin/main` when `main` is not protected, otherwise through the project's docs branch and a pull request the app squash-merges itself. The record is `<userData>/planning/<sha1 of the project root>.json`. "No agent running" is read from AI-DLC writes in the last five minutes, as the console's workflow check does without a terminal.
 - **Dependencies:** US-0606
+
+**US-0608: Every planning change is kept by the app until it is on `main` or the docs branch** 📋 Planned, for v0.2.10
+- As a **developer planning and describing work in the app**, in order to **never lose a planning change or find it inside an unrelated pull request**, I would like **the app to hold every change to the feature docs until it is on `origin/main`, or on the docs branch when `main` is protected, whatever branch is checked out and whoever made the change**.
+- **Epic:** EPIC-06
+- **Priority:** High
+- **Complexity:** High
+- **Background:** Asked for on 2026-11-18. US-0606 and US-0607 keep only three release-list actions in the app's record (`KINDS` in `src/main/planningRecord.js`: `setRelease`, `createRelease`, `deleteRelease`). Every other change to the feature docs is held by nothing: a new story, a story edited in the app's editor (US-1001), a status marker, a ticked criterion, or a story an agent writes. On a story branch such changes "stay with the story" (US-0606), so US-0030, written while `feat/US-0215` was checked out, reached `main` only inside #76. Had #76 been dropped, the story would have been lost. Planning four stories for v0.3.0 also made four separate `docs: plan …` commits. The person also reports (2026-11-18) that the waiting changes US-0607 promises ("2 planning changes waiting to be pushed") never show in the UI, and that assigning a story to a release sometimes fails with an error, not always easy to reproduce. The app has no end-to-end tests: every test of this flow mocks git or the bridge, so none of it has been run as a person runs it.
+- **Acceptance Criteria:**
+  - [ ] **Given** I assign a story to a release, move it to another or take it out, many times in a row, also quickly one after another and while a push is running, **then** every assignment succeeds. The intermittent error is reproduced in a test first, its cause found and fixed; an error that still can happen (a file changed outside the app) names the reason and the file and keeps the change.
+  - [ ] **Given** changes are waiting in the record, **then** the release list shows them where I can see them without looking for it, and it is gone once they are on the target.
+  - [ ] **Given** the app or an agent changes `docs/FEATURES.md`, a file under `docs/features/` or a file under `docs/releases/`, by a release-list action, the app's editor or a terminal session in the app, **then** the app keeps the change in its record outside the working tree before or as soon as it is written, and holds it until the change is on `origin/main`, or on `origin/<docs branch>` when `main` is protected.
+  - [ ] **Given** the checkout is on a story branch, **then** a planning change that does not belong to that story (a new story, another story's markers, another release) is committed on the app's own branch from the remote target, never left in the story's working tree or swept into its commit. A change to the story's own markers and criteria stays with the story.
+  - [ ] **Given** the working tree is discarded (`git checkout -- <files>`, `git stash`, a branch switch) or the app is restarted, **then** every change in the record not yet on the target is applied again and the release list says so.
+  - [ ] **Given** a story file changed in a way the record cannot replay as an action (free text edited in the editor), **then** the record keeps the file's new content with the hash it was based on, and on a conflict names the file and keeps both versions rather than overwriting either.
+  - [ ] Actions made within a short window go out as one commit (`docs: plan US-XXXX, US-YYYY for vX.Y.Z`, or `docs: update US-XXXX` for edits).
+  - [ ] The release list shows each change still waiting, with its stories and where it is going, and a button to push now.
+  - [ ] Tests prove each case: a change made on a story branch, a discarded working tree, a restart, a conflicting edit, and grouped commits.
+  - [ ] End-to-end tests drive the built app (Electron) against a real git repository with a local bare `origin`, through the release list as a person uses it: create a release, assign stories, move one, take one out, see the waiting changes, push, and find the commit on `origin/main`; and the same with a story branch checked out, proving its branch, index and working tree are unchanged. They run in CI in the `verify` job and fail if the flow breaks.
+  - [ ] Every text goes through `t()` in Swedish and English, in the LCARS look.
+- **Notes:** An `express` workflow. Builds on `src/main/planningRecord.js` and `src/main/planningSync.js` (US-0606, US-0607), the editor's writes in `src/main/fileWrite.js` (US-1001), and the release list in `src/renderer/FeaturesView.jsx`. The end-to-end tests are new for this project: Playwright's Electron support (`_electron.launch`) is the likely tool, decided in the design. To find out in the design: how agent writes in a terminal are noticed (a watcher on the three paths), and how a change is told apart as the story's own or not.
+- **Dependencies:** US-0606, US-0607, US-1001

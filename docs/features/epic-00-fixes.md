@@ -8,7 +8,7 @@
 
 **Stories:** US-0001, US-0002, US-0003, US-0004, US-0005, US-0006, US-0007, US-0008, US-0009, US-0010, US-0011, US-0012, US-0013, US-0014, US-0015, US-0016, US-0017, US-0018, US-0019, US-0020, US-0021, US-0022, US-0023, US-0024, US-0025, US-0026, US-0027, US-0028, US-0029, US-0030
 
-**Status (2026-11-18):** ✅ US-0001–US-0020 released (v0.2.3–v0.2.6). ✅ US-0021–US-0023 released in v0.2.7. ✅ US-0024 released in v0.2.8. ✅ US-0025 released in v0.2.9. ✅ US-0026 released in v0.2.9. ✅ US-0027 released in v0.2.9. ✅ US-0028 done, for v0.2.10. ✅ US-0029 done, for v0.2.10. 📋 US-0030 planned. Each story names its release.
+**Status (2026-11-18):** ✅ US-0001–US-0020 released (v0.2.3–v0.2.6). ✅ US-0021–US-0023 released in v0.2.7. ✅ US-0024 released in v0.2.8. ✅ US-0025 released in v0.2.9. ✅ US-0026 released in v0.2.9. ✅ US-0027 released in v0.2.9. ✅ US-0028 done, for v0.2.10. ✅ US-0029 done, for v0.2.10. 📋 US-0030 planned, for v0.2.10. Each story names its release.
 
 ---
 
@@ -472,10 +472,10 @@
 - **Done (2026-11-18, quick-fix, branch `fix/US-0029`):** `setStoryRelease` reads the story's old release, and the new `dropPlanRow` takes its row out of that release's plan file through `removePlanRows` (`src/main/parsers/releases.js`) with the hash check. Removing a story from a release still leaves its row. 1883/1883 tests pass.
 - **Dependencies:** US-0606
 
-**US-0030: Agent progress keeps an old state and is vague about what an agent is doing** 📋 Planned
+**US-0030: Agent progress keeps an old state and is vague about what an agent is doing** 📋 Planned, for v0.2.10
 - As a **developer watching an intent while agents work**, in order to **know what is happening without reading the terminal**, I would like **each agent row in Agent progress to show its task, its step in the plan, and what it is doing right now, and the main row to show its real state**.
 - **Epic:** EPIC-00
-- **Priority:** Medium
+- **Priority:** High
 - **Complexity:** Medium
 - **Background:** Reported 2026-11-18 during US-0215's Code Generation. The token view's Agent progress showed "Main · Claude Code — waiting for your permission (5 min)" while main was waiting for a background agent, with no permission prompt open. The developer row said only "developer — running Bash (0 s)". Claude Code's own status line said more at the same moment: the task "Build US-0215 token history" and the activity "Rerunning view tests after fixing expectation". Earlier runs showed "step n of m" (`tokenDetail.progress.steps`, from the plan's ticked steps, US-0507). This time no step count showed, though the plan (`construction/code-generation/code-generation-plan.md`, a zero-Unit plan at stage level) was being ticked. Hypotheses to check: the step count reads only per-Unit plans, and a permission state from the hook events (US-0214) is never cleared when the wait ends.
 - **Acceptance Criteria:**
