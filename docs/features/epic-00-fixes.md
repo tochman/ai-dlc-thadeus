@@ -486,5 +486,5 @@
   - [ ] A state that has had no new event for a while says how long ago it was seen, so an old state is not shown as current.
   - [ ] Every text goes through `t()` in Swedish and English, in the LCARS look; status is never shown by colour alone.
   - [ ] A test fails without the fix and passes with it; the existing suite stays green.
-- **Notes:** A code fix, so it runs on the `quick-fix` plan, unless finding the cause shows it is larger; then it moves to EPIC-05 (agent dialogs and progress). Likely touches `src/main/parsers/agentProgress.js`, `src/main/agentEvents.js` (the hook event state) and `src/renderer/AgentProgress.jsx`. Screenshot of the report: the token view of `261118-finished-token-history`, 2026-11-18 19:51.
+- **Notes:** Runs on the `express` plan (decided 2026-11-18), not `quick-fix`. Likely touches `src/main/parsers/agentProgress.js`, `src/main/agentEvents.js` (the hook event state) and `src/renderer/AgentProgress.jsx`. Screenshot of the report: the token view of `261118-finished-token-history`, 2026-11-18 19:51.
 - **Dependencies:** US-0507, US-0214
