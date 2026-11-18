@@ -6,9 +6,9 @@
 
 > Many projects describe their product in a feature document: an overview (`docs/FEATURES.md`) listing epics, and one file per epic (`docs/features/epic-XX-*.md`) with user stories, acceptance criteria and status. The format is not part of AI-DLC, but it works well together with it: the feature docs say *what* and *why*, and AI-DLC's records say *how* and *when*. The console should offer this format when a project is set up, and let people read and follow it next to the AI-DLC work.
 
-**Stories:** US-0601, US-0602, US-0603, US-0604, US-0605, US-0606, US-0607, US-0608
+**Stories:** US-0601, US-0602, US-0603, US-0604, US-0605, US-0606, US-0607, US-0608, US-0609
 
-**Status (2026-11-18):** ✅ US-0601–US-0603 released (v0.2.0–v0.2.5). ✅ US-0604 and US-0605 released in v0.2.7. ✅ US-0606 and US-0607 released in v0.2.9. 📋 US-0608 planned, for v0.2.10. Each story names its release.
+**Status (2026-11-18):** ✅ US-0601–US-0603 released (v0.2.0–v0.2.5). ✅ US-0604 and US-0605 released in v0.2.7. ✅ US-0606 and US-0607 released in v0.2.9. 📋 US-0608 planned, for v0.2.10. 📋 US-0609 planned, for v0.2.10. Each story names its release.
 
 **Decisions:**
 - **Q1 (where the view lives):** a switch "Intents | Features" at the top of the project view. Features replaces the sidebar and content area; the terminal stays.
@@ -174,3 +174,21 @@
   - [ ] Every text goes through `t()` in Swedish and English, in the LCARS look.
 - **Notes:** An `express` workflow. Builds on `src/main/planningRecord.js` and `src/main/planningSync.js` (US-0606, US-0607), the editor's writes in `src/main/fileWrite.js` (US-1001), and the release list in `src/renderer/FeaturesView.jsx`. The end-to-end tests are new for this project: Playwright's Electron support (`_electron.launch`) is the likely tool, decided in the design. To find out in the design: how agent writes in a terminal are noticed (a watcher on the three paths), and how a change is told apart as the story's own or not.
 - **Dependencies:** US-0606, US-0607, US-1001
+
+**US-0609: The app's own `.thadeus/` files are kept in sync with `main` at all times** 📋 Planned, for v0.2.10
+- As a **developer using THADEUS on any project**, in order to **never lose the app's own data or find it uncommitted in a story's branch**, I would like **every file the app writes under `.thadeus/` to be committed and pushed to `main` (or the docs branch when `main` is protected) by the app itself, continuously, whatever branch is checked out**.
+- **Epic:** EPIC-06
+- **Priority:** High
+- **Complexity:** Medium
+- **Background:** Asked for on 2026-11-18. The app writes `.thadeus/tokens/<intent>.json` (token readings, US-0208) while it watches a running intent, and `.thadeus/hooks/dialog.sh` (US-0213/US-0214). Nothing commits them: after US-0030 merged, its token log was still uncommitted on `main` and had to be committed by hand (`a16ce31`), and earlier token logs rode along in story commits. The person wants this as an app-wide rule, not only this repo's: all `.thadeus` files synced at all times.
+- **Acceptance Criteria:**
+  - [ ] **Given** the app writes or changes a file under `.thadeus/`, **then** it is committed and pushed to `origin/main`, or to `origin/<docs branch>` when `main` is protected, within the push interval (US-0607) or sooner when the app is idle, using the same record and commit path as US-0608.
+  - [ ] **Given** a story branch is checked out, **then** the `.thadeus/` commit is made on the app's own branch in a temporary worktree, and the story's branch, index and working tree are left untouched; `.thadeus/` changes never end up in a story's commit.
+  - [ ] **Given** a token log that keeps growing while an intent runs, **then** its readings are committed in batches (one commit per push, `chore: sync .thadeus`), not one commit per reading.
+  - [ ] **Given** two machines write the same project's `.thadeus/` files, **then** a push that meets a newer `main` rebases its own commit and merges token readings without losing any (readings are append-only, US-0209); a real conflict keeps the record, names the file and pushes nothing.
+  - [ ] **Given** the app is set up on a project (US-0410 / the rule prompt), **then** the project gets the rule that `.thadeus/` is committed and never ignored, and a `.gitignore` entry that would hide it is reported.
+  - [ ] The release list (or the project's status strip) shows `.thadeus` changes waiting to be pushed, together with US-0608's planning changes.
+  - [ ] Tests prove: a write on a story branch, a discarded working tree, a restart, two machines' readings merged, and batching; the end-to-end tests of US-0608 include a `.thadeus` write.
+  - [ ] Every text goes through `t()` in Swedish and English, in the LCARS look.
+- **Notes:** Builds on US-0608's record and commit path (`src/main/planningRecord.js`, `src/main/planningSync.js`); the writers are `src/main/tokenReadings.js`, `src/main/usageSnapshot.js` and `src/main/agentHooks.js`. Until it ships, the project rule in `aidlc/spaces/default/memory/project.md` (Way of Working, 2026-11-18) asks for the intent's `.thadeus` files to be committed by hand when an intent finishes.
+- **Dependencies:** US-0608, US-0607, US-0208, US-0213
