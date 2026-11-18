@@ -8,7 +8,7 @@
 
 **Stories:** US-0001, US-0002, US-0003, US-0004, US-0005, US-0006, US-0007, US-0008, US-0009, US-0010, US-0011, US-0012, US-0013, US-0014, US-0015, US-0016, US-0017, US-0018, US-0019, US-0020, US-0021, US-0022, US-0023, US-0024, US-0025, US-0026, US-0027
 
-**Status (2026-11-17):** ✅ US-0001–US-0020 released (v0.2.3–v0.2.6). ✅ US-0021–US-0023 released in v0.2.7. ✅ US-0024 released in v0.2.8. ✅ US-0025 done, not yet released, for v0.2.9. ✅ US-0026 done, not yet released, for v0.2.9. ✅ US-0027 done, not yet released, for v0.2.9. Each story names its release.
+**Status (2026-11-17):** ✅ US-0001–US-0020 released (v0.2.3–v0.2.6). ✅ US-0021–US-0023 released in v0.2.7. ✅ US-0024 released in v0.2.8. ✅ US-0025 released in v0.2.9. ✅ US-0026 released in v0.2.9. ✅ US-0027 released in v0.2.9. Each story names its release.
 
 ---
 
@@ -392,7 +392,7 @@
 
 ---
 
-**US-0025: Agent progress shows a running build when the inflight file is empty** ✅ Done, for v0.2.9 (not yet released)
+**US-0025: Agent progress shows a running build when the inflight file is empty** ✅ Released in v0.2.9 (not yet released)
 - As a **developer watching agents work**, in order to **see that a build is running**, I would like **the "Agenternas framsteg" panel and "Arbetar nu" to show a running AI-DLC agent even when AI-DLC's inflight file is missing or empty**.
 - **Epic:** EPIC-00
 - **Priority:** High
@@ -408,7 +408,7 @@
 
 ---
 
-**US-0026: The agent dialog is not left empty at a new session, and offers /clear or /clear + resume** ✅ Done, for v0.2.9 (not yet released)
+**US-0026: The agent dialog is not left empty at a new session, and offers /clear or /clear + resume** ✅ Released in v0.2.9 (not yet released)
 - As a **developer starting a new Claude Code session**, in order to **carry on without a dead dialog in the way**, I would like **the agent dialog to show something I can act on at that moment: start a clean chat with `/clear`, or `/clear` and then `/aidlc --resume`**.
 - **Epic:** EPIC-00
 - **Priority:** High
@@ -425,7 +425,7 @@
 - **Build and Test (2026-11-17, intent `261117-session-handoff-dialog`):** the regression test in `tests/main/agentEventsReply.test.js` fails without the fix and passes with it; 1796/1796 tests. The LCARS look of the page is checked by eye in the running app before the v0.2.9 tag.
 - **Dependencies:** US-0506
 
-**US-0027: The app follows the repository's new name, ai-dlc-thadeus** ✅ Done, for v0.2.9 (not yet released)
+**US-0027: The app follows the repository's new name, ai-dlc-thadeus** ✅ Released in v0.2.9 (not yet released)
 - As a **developer using THADEUS**, in order to **keep getting updates and reach the right GitHub pages**, I would like **the app to use the repository's new name, `tochman/ai-dlc-thadeus`**.
 - **Epic:** EPIC-00
 - **Priority:** High
