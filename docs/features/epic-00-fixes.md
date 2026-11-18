@@ -8,7 +8,7 @@
 
 **Stories:** US-0001, US-0002, US-0003, US-0004, US-0005, US-0006, US-0007, US-0008, US-0009, US-0010, US-0011, US-0012, US-0013, US-0014, US-0015, US-0016, US-0017, US-0018, US-0019, US-0020, US-0021, US-0022, US-0023, US-0024, US-0025, US-0026, US-0027, US-0028, US-0029
 
-**Status (2026-11-18):** ✅ US-0001–US-0020 released (v0.2.3–v0.2.6). ✅ US-0021–US-0023 released in v0.2.7. ✅ US-0024 released in v0.2.8. ✅ US-0025 released in v0.2.9. ✅ US-0026 released in v0.2.9. ✅ US-0027 released in v0.2.9. 📋 US-0028 planned, no release yet, for v0.2.10. 📋 US-0029 planned, no release yet. Each story names its release.
+**Status (2026-11-18):** ✅ US-0001–US-0020 released (v0.2.3–v0.2.6). ✅ US-0021–US-0023 released in v0.2.7. ✅ US-0024 released in v0.2.8. ✅ US-0025 released in v0.2.9. ✅ US-0026 released in v0.2.9. ✅ US-0027 released in v0.2.9. 📋 US-0028 planned, no release yet, for v0.2.10. 📋 US-0029 planned, no release yet, for v0.2.10. Each story names its release.
 
 ---
 
@@ -456,7 +456,7 @@
 - **Notes:** A code fix, so it runs on the `quick-fix` plan. Touches `src/renderer/Pipeline.jsx` and the `pipeline.noGraph` keys in `sv.json` and `en.json`.
 - **Dependencies:** none
 
-**US-0029: Moving a story to another release leaves its row in the old release plan** 📋 Planned
+**US-0029: Moving a story to another release leaves its row in the old release plan** 📋 Planned, for v0.2.10
 - As a **developer planning releases in the app**, in order to **trust the release plan files**, I would like **a story moved to another release to leave the old release's plan file**.
 - **Epic:** EPIC-00
 - **Priority:** Low
