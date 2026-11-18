@@ -8,7 +8,7 @@
 
 **Stories:** US-0001, US-0002, US-0003, US-0004, US-0005, US-0006, US-0007, US-0008, US-0009, US-0010, US-0011, US-0012, US-0013, US-0014, US-0015, US-0016, US-0017, US-0018, US-0019, US-0020, US-0021, US-0022, US-0023, US-0024, US-0025, US-0026, US-0027, US-0028
 
-**Status (2026-11-18):** ✅ US-0001–US-0020 released (v0.2.3–v0.2.6). ✅ US-0021–US-0023 released in v0.2.7. ✅ US-0024 released in v0.2.8. ✅ US-0025 released in v0.2.9. ✅ US-0026 released in v0.2.9. ✅ US-0027 released in v0.2.9. 📋 US-0028 planned, no release yet. Each story names its release.
+**Status (2026-11-18):** ✅ US-0001–US-0020 released (v0.2.3–v0.2.6). ✅ US-0021–US-0023 released in v0.2.7. ✅ US-0024 released in v0.2.8. ✅ US-0025 released in v0.2.9. ✅ US-0026 released in v0.2.9. ✅ US-0027 released in v0.2.9. 📋 US-0028 planned, no release yet, for v0.3.0. Each story names its release.
 
 ---
 
@@ -441,7 +441,7 @@
 - **Done (2026-11-17, without AI-DLC, branch `fix/US-0027`):** `APP_REPO` and `APP_REPO_URL` in `src/shared/appName.js` are the one place the repository is named. The updater (`REPO`), the Issues link, the About links, `package.json` and the README use them. `tests/main/appName.test.js` fails while any `tochman/aidlc-dash` address is left under `src/`, in `package.json` or in the README. The download-by-hand note for v0.2.8 and earlier is on the v0.2.9 release checklist (`docs/releases/0.2.9.md`). 1797/1797 tests pass.
 - **Dependencies:** US-0407, US-0413 (the updater)
 
-**US-0028: The pipeline view does not warn about a missing runtime-graph.json that is expected** 📋 Planned
+**US-0028: The pipeline view does not warn about a missing runtime-graph.json that is expected** 📋 Planned, for v0.3.0
 - As a **developer watching an intent in the pipeline view**, in order to **tell a real problem from a normal state**, I would like **the view to show no warning-like note when runtime-graph.json is simply not there yet, and a calm one when it cannot be there**.
 - **Epic:** EPIC-00
 - **Priority:** Low
