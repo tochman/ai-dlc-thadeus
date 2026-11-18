@@ -8,7 +8,7 @@
 
 **Stories:** US-0801, US-0802, US-0803, US-0804, US-0805, US-0806
 
-**Status (2026-11-18):** ✅ US-0801–US-0803 released (v0.2.1–v0.2.3). 📋 US-0804 and US-0805 planned, for v0.2.10. 📋 US-0806 planned. Each story names its release.
+**Status (2026-11-18):** ✅ US-0801–US-0803 released (v0.2.1–v0.2.3). 📋 US-0804 and US-0805 planned, for v0.2.10. 📋 US-0806 planned, for v0.3.0. Each story names its release.
 
 ---
 
@@ -95,7 +95,7 @@
 
 ---
 
-**US-0806: Run any harness in the agent terminal with a custom command per project** 📋 Planned
+**US-0806: Run any harness in the agent terminal with a custom command per project** 📋 Planned, for v0.3.0
 - As a **developer who uses Codex, Kiro, Cursor or Copilot with AI-DLC**, in order to **work in the app with the harness the project is set up for**, I would like to **choose a custom command for the agent terminal in a project's terminal settings**.
 - **Epic:** EPIC-08
 - **Priority:** Medium
