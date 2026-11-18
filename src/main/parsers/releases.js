@@ -197,6 +197,28 @@ export function addPlanRows(planText, stories) {
   return [...lines.slice(0, end), ...rows, ...lines.slice(end), ''].join('\n');
 }
 
+/**
+ * US-0029 FR1, FR2: `planText` without the slice-table rows (the table `addPlanRows` writes) whose story is in `ids`.
+ * A table left with no rows goes with its header and separator, and the blank line before it, so a heading-plus-table
+ * file comes back as the heading only. Text without such a row comes back unchanged.
+ * @param {string[]} ids
+ */
+export function removePlanRows(planText, ids) {
+  const lines = String(planText).replace(/\n$/, '').split('\n');
+  const head = lines.findIndex((l) => SLICE_HEAD.test(l));
+  if (head === -1) return planText;
+  let end = head + 1;
+  while (end < lines.length && lines[end].trim().startsWith('|')) end++;
+  const drop = new Set(ids);
+  const rows = lines.slice(head + 2, end);
+  const kept = rows.filter((l) => !drop.has(cellsOf(l)[0]?.toUpperCase()));
+  if (kept.length === rows.length) return planText;
+  if (kept.length) return [...lines.slice(0, head + 2), ...kept, ...lines.slice(end), ''].join('\n');
+  const before = lines.slice(0, head);
+  if (before.at(-1)?.trim() === '' && (lines[end] ?? '').trim() === '') before.pop();
+  return [...before, ...lines.slice(end), ''].join('\n');
+}
+
 /** US-0607 FR3.3: the docs branch for a protected `main`, until the project sets one. */
 export const PLANNING_BRANCH_DEFAULT = 'docs/planning';
 

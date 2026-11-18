@@ -1,4 +1,5 @@
 // US-0606 FR2.4: stories added to a release are written into the slice table of docs/releases/X.Y.Z.md.
+// US-0029 FR1, FR2: a story moved to another release leaves the old release's slice table.
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { promises as fs } from 'node:fs';
 import os from 'node:os';
@@ -6,7 +7,7 @@ import path from 'node:path';
 import { openRoot } from '../../src/main/projectAccess.js';
 import { loadFeatures } from '../../src/main/features.js';
 import { setStoryRelease } from '../../src/main/releases.js';
-import { addPlanRows } from '../../src/main/parsers/releases.js';
+import { addPlanRows, planHeading, removePlanRows } from '../../src/main/parsers/releases.js';
 
 const STORY = {
   id: 'US-0607',
@@ -71,6 +72,17 @@ describe('addPlanRows (US-0606 FR2.4)', () => {
   });
 });
 
+describe('removePlanRows (US-0029)', () => {
+  it('drops the story row from the slice table and leaves every other line (FR1)', () => {
+    expect(removePlanRows(addPlanRows(PLAN, [STORY]), ['US-0607'])).toBe(PLAN);
+    expect(removePlanRows(PLAN, ['US-0999'])).toBe(PLAN);
+  });
+
+  it('gives the heading only when the last row of a heading-plus-table file goes (FR2)', () => {
+    expect(removePlanRows(addPlanRows(planHeading('v1.0.0'), [STORY]), ['US-0607'])).toBe(planHeading('v1.0.0'));
+  });
+});
+
 describe('setStoryRelease and the plan file (US-0606 FR2.4)', () => {
   let tmp;
   let root;
@@ -109,5 +121,19 @@ describe('setStoryRelease and the plan file (US-0606 FR2.4)', () => {
     await setStoryRelease(root, 'docs/FEATURES.md', { storyId: 'US-0101', version: null, ...(await hashes()) });
     expect(await get('docs/releases/1.0.0.md')).toBe(plan);
     expect(await get('docs/features/epic-01.md')).toContain('**US-0101: First story** 📋 Planned\n');
+  });
+
+  it('moves the row to the new plan file and leaves the old one as the heading only (US-0029 FR1, FR2)', async () => {
+    await setStoryRelease(root, 'docs/FEATURES.md', { storyId: 'US-0101', version: 'v1.0.0', ...(await hashes()) });
+    await setStoryRelease(root, 'docs/FEATURES.md', { storyId: 'US-0101', version: 'v1.1.0', ...(await hashes()) });
+    expect(await get('docs/releases/1.0.0.md')).toBe('# Release plan v1.0.0\n');
+    expect(await get('docs/releases/1.1.0.md')).toContain('| US-0101 | [01](../features/epic-01.md) | First story |');
+  });
+
+  it('removes only the moved row when the old plan file lists another story (US-0029 FR1)', async () => {
+    await setStoryRelease(root, 'docs/FEATURES.md', { storyId: 'US-0101', version: 'v1.0.0', ...(await hashes()) });
+    await put('docs/releases/1.0.0.md', addPlanRows(await get('docs/releases/1.0.0.md'), [STORY]));
+    await setStoryRelease(root, 'docs/FEATURES.md', { storyId: 'US-0101', version: 'v1.1.0', ...(await hashes()) });
+    expect(await get('docs/releases/1.0.0.md')).toBe(addPlanRows(planHeading('v1.0.0'), [STORY]));
   });
 });
