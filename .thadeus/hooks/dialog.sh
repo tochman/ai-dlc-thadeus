@@ -13,7 +13,14 @@
 # dash exits 2 when such a redirect fails, before `|| exit 0` runs).
 exec 2>/dev/null
 d=${THADEUS_SESSION_DIR:-}; s=${THADEUS_SESSION_SECRET:-}; w=${THADEUS_WAIT_SECONDS:-}
-case ${1:-} in question | permission) waits=1 ;; answered | reply | session | notify | precompact | postcompact) waits=0 ;; *) exit 0 ;; esac
+# US-0214 FR1.1, NFR1: the nine activity kinds are one channel kind, activity; the app reads the event from the payload.
+kind=${1:-}
+case $kind in
+  question | permission) waits=1 ;;
+  answered | reply | session | notify | precompact | postcompact) waits=0 ;;
+  pretool | posttool | toolfail | agentstart | agentstop | prompt | message | stopfail | asking) waits=0 kind=activity ;;
+  *) exit 0 ;;
+esac
 case $w in '' | *[!0-9]*) exit 0 ;; esac
 [ -n "$d" ] && [ -n "$s" ] && read -r last < "$d/alive" || exit 0
 # R-03: probe fractional sleep, and count it as the first of the 20 liveness sleeps, so 20 unchanged polls
@@ -31,10 +38,11 @@ trap 'exit 0' HUP INT TERM
 # group only checks that stdin is open, before anything is written.
 # US-0213 NFR3: session (SessionStart), notify (Notification), precompact (PreCompact) and postcompact (PostCompact)
 # take the same bounded copy. precompact then prints the instruction file the app wrote into the session folder (FR4.2).
-case $1 in reply | session | notify | precompact | postcompact)
+# US-0214 NFR1: so does activity, which prints nothing.
+case $kind in reply | session | notify | precompact | postcompact | activity)
   { true; } 3<&0 || exit 0
   f=$d/events/$n.tmp
-  printf 'THADEUS-EVENT v1 %s %s\n' "$1" "$s" > "$f" || exit 0
+  printf 'THADEUS-EVENT v1 %s %s\n' "$kind" "$s" > "$f" || exit 0
   {
     cat <&3 & c=$!
     ( sleep 2; kill "$c" ) </dev/null >/dev/null 3<&- & k=$!

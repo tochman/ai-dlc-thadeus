@@ -6,6 +6,6 @@
         "hooks": []
       }
     ],
-    "SubagentStop": []
+    "SessionEnd": []
   }
 }

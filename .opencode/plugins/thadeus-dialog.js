@@ -105,6 +105,7 @@ async function onWaiting(ctx, env, kind, event, deliver) {
   try {
     await fs.writeFile(f.wait, '');
     await writeEvent(env.dir, env.secret, kind, event, f);
+    report(ctx, env, 'activity', event); // US-0214 FR3.1: waiting, written after the waiting event so it keeps its name
     await waitForAnswer(ctx, env, event?.properties ?? {}, f, deliver);
   } finally {
     await fs.rm(f.wait, { force: true }).catch(() => {});
@@ -141,14 +142,46 @@ function onIdle(ctx, env, event) {
 }
 
 // US-0213 FR1.2, FR1.5, FR4.2, FR5.1, FR8.1: opencode V2 names, each in one place (checked against opencode 2.1.4's docs).
+// US-0214 FR1.2: the activity names, from the same docs.
 export const OC = {
   created: 'session.created', // FR1.5: a new session; a child session has parentID
   status: 'session.status', // FR5.1: status.type idle | busy | retry
   idle: 'session.idle', // FR5.1 fallback when session.status is not sent
   usage: 'session.usage.updated', // FR1.2: { tokens: { input, output, reasoning, cache: { read, write } }, cost }
   compacted: 'session.compaction.ended', // FR8.1: compaction happened
-  compactionHook: 'compaction' // FR4.2: ctx.session.hook(name, fn), V1 experimental.session.compacting
+  compactionHook: 'compaction', // FR4.2: ctx.session.hook(name, fn), V1 experimental.session.compacting
+  formCreated: 'form.created',
+  formReplied: 'form.replied',
+  formCancelled: 'form.cancelled',
+  permissionAsked: 'permission.asked',
+  permissionReplied: 'permission.replied',
+  toolStarted: 'session.tool.input.started',
+  toolSuccess: 'session.tool.success',
+  toolFailed: 'session.tool.failed',
+  textStarted: 'session.text.started',
+  textDelta: 'session.text.delta',
+  textEnded: 'session.text.ended',
+  reasoningStarted: 'session.reasoning.started',
+  reasoningDelta: 'session.reasoning.delta',
+  reasoningEnded: 'session.reasoning.ended',
+  executionFailed: 'session.execution.failed',
+  executionInterrupted: 'session.execution.interrupted'
 };
+/** US-0214 FR1.2: the events that are only activity; the app reads the event's type and known fields (NFR2). */
+// ponytail: one event file per text or reasoning delta; batch them in the plugin if a long reply floods the folder.
+const ACTIVITY_ONLY = [
+  OC.toolStarted,
+  OC.toolSuccess,
+  OC.toolFailed,
+  OC.textStarted,
+  OC.textDelta,
+  OC.textEnded,
+  OC.reasoningStarted,
+  OC.reasoningDelta,
+  OC.reasoningEnded,
+  OC.executionFailed,
+  OC.executionInterrupted
+];
 
 /** A report-only event: written in its own task, never awaited by opencode; a failure logs its code only (NFR3). */
 function report(ctx, env, kind, event) {
@@ -167,7 +200,8 @@ function subscribeHandoff(ctx, env, on) {
   let statusSeen = false;
   on(OC.created, (event) => {
     const d = dataOf(event);
-    if (!(d?.info?.parentID ?? d?.parentID)) report(ctx, env, 'session', event); // the main chat only
+    // US-0214 FR2.2: a child session is a dispatched agent (activity); the main chat is the US-0213 session event.
+    report(ctx, env, (d?.info?.parentID ?? d?.parentID) ? 'activity' : 'session', event);
   });
   on(OC.usage, (event) => report(ctx, env, 'usage', event));
   on(OC.compacted, (event) => report(ctx, env, 'postcompact', event));
@@ -176,6 +210,7 @@ function subscribeHandoff(ctx, env, on) {
   });
   on(OC.status, (event) => {
     statusSeen = true;
+    report(ctx, env, 'activity', event); // US-0214: busy, retry and idle; idle ends a child session's row
     const type = dataOf(event)?.status?.type;
     if (type === 'idle') return onIdle(ctx, env, event); // u3: the reply is the idle signal
     report(ctx, env, 'status', event); // busy, retry or unknown: not idle
@@ -204,15 +239,16 @@ export default {
       ctx.event.on(type, (event) => {
         void (async () => fn(event))().catch((err) => ctx.log?.error?.(`thadeus-dialog: ${err.message}`));
       });
-    on('form.created', (event) => onWaiting(ctx, env, 'question', event, deliverForm));
-    on('form.replied', (event) => onAnswered(ctx, env, event));
-    on('form.cancelled', (event) => onAnswered(ctx, env, event));
-    on('permission.asked', (event) => onWaiting(ctx, env, 'permission', event, deliverPermission));
-    on('permission.replied', (event) => {
+    on(OC.formCreated, (event) => onWaiting(ctx, env, 'question', event, deliverForm));
+    on(OC.formReplied, (event) => onAnswered(ctx, env, event));
+    on(OC.formCancelled, (event) => onAnswered(ctx, env, event));
+    on(OC.permissionAsked, (event) => onWaiting(ctx, env, 'permission', event, deliverPermission));
+    on(OC.permissionReplied, (event) => {
       const id = event?.properties?.requestID;
       if (typeof id === 'string') env.replied.add(id);
       return onAnswered(ctx, env, event);
     });
+    for (const type of ACTIVITY_ONLY) on(type, (event) => report(ctx, env, 'activity', event)); // US-0214 FR1.2
     subscribeHandoff(ctx, env, on); // u3 idle replies and US-0213 reports
   }
 };

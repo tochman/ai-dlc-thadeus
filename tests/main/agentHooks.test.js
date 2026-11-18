@@ -9,6 +9,7 @@ import SCRIPT from '../../.thadeus/hooks/dialog.sh?raw';
 import PLUGIN from '../../.opencode/plugins/thadeus-dialog.js?raw';
 import { WAIT_SECONDS } from '../../src/main/agentChannel.js';
 import {
+  ACTIVITY_KINDS,
   CANONICAL,
   CURRENT,
   FILES,
@@ -56,9 +57,30 @@ describe('ownership: appKind (RD38, SD34)', () => {
 });
 
 describe('the canonical release (RD41, D2, SD35)', () => {
+  // US-0214 FR1.1, NFR1: nine report-only activity entries, every one async; dialog.sh writes them all as kind activity.
+  it('adds the nine activity entries of US-0214, all async, leaving the dialog entries as they were', () => {
+    expect(ACTIVITY_KINDS).toEqual(['pretool', 'posttool', 'toolfail', 'agentstart', 'agentstop', 'prompt', 'message', 'stopfail', 'asking']);
+    expect(KINDS.slice(-9)).toEqual(ACTIVITY_KINDS);
+    expect(Object.fromEntries(ACTIVITY_KINDS.map((k) => [k, [CANONICAL[k].event, CANONICAL[k].matcher, CANONICAL[k].async, CANONICAL[k].timeout]]))).toEqual({
+      pretool: ['PreToolUse', '*', true, 10],
+      posttool: ['PostToolUse', '*', true, 10],
+      toolfail: ['PostToolUseFailure', '*', true, 10],
+      agentstart: ['SubagentStart', undefined, true, 10],
+      agentstop: ['SubagentStop', undefined, true, 10],
+      prompt: ['UserPromptSubmit', undefined, true, 10],
+      message: ['MessageDisplay', undefined, true, 10],
+      stopfail: ['StopFailure', undefined, true, 10],
+      asking: ['PermissionRequest', '*', true, 10]
+    });
+    expect([CANONICAL.question.async, CANONICAL.permission.async, CANONICAL.question.matcher]).toEqual([undefined, undefined, 'AskUserQuestion']);
+    const bytes = splice(null, 'install').bytes;
+    expect(classify(parse(bytes)).status).toBe('current');
+    expect(parse(bytes).hooks.PermissionRequest).toHaveLength(2); // the waiting entry and the report-only one, apart
+  });
+
   it('holds the four entries of the functional spec and the four of US-0213, with the wait constant imported', () => {
-    expect(KINDS).toEqual(['question', 'answered', 'permission', 'reply', 'session', 'notify', 'precompact', 'postcompact']);
-    expect(Object.fromEntries(KINDS.map((k) => [k, [CANONICAL[k].event, CANONICAL[k].matcher]]))).toEqual({
+    expect(KINDS.slice(0, 8)).toEqual(['question', 'answered', 'permission', 'reply', 'session', 'notify', 'precompact', 'postcompact']);
+    expect(Object.fromEntries(KINDS.slice(0, 8).map((k) => [k, [CANONICAL[k].event, CANONICAL[k].matcher]]))).toEqual({
       question: ['PreToolUse', 'AskUserQuestion'],
       answered: ['PostToolUse', 'AskUserQuestion'],
       permission: ['PermissionRequest', '*'],
@@ -72,7 +94,7 @@ describe('the canonical release (RD41, D2, SD35)', () => {
     // US-0213 NFR3: the new entries never wait.
     expect([CANONICAL.session, CANONICAL.notify, CANONICAL.precompact, CANONICAL.postcompact].map((e) => e.timeout)).toEqual([10, 10, 10, 10]);
     // US-0213 NFR3: every report-only entry is async; the waiting kinds and PreCompact (its output feeds the compaction) are not.
-    expect(Object.fromEntries(KINDS.map((k) => [k, CANONICAL[k].async === true]))).toEqual({
+    expect(Object.fromEntries(KINDS.slice(0, 8).map((k) => [k, CANONICAL[k].async === true]))).toEqual({
       question: false,
       answered: true,
       permission: false,
@@ -123,6 +145,26 @@ describe('the canonical release (RD41, D2, SD35)', () => {
     const out = splice(bytes, 'update');
     expect(classify(parse(out.bytes)).status).toBe('current');
     expect(parse(out.bytes).hooks.Stop[0].hooks[0]).toMatchObject({ async: true });
+  });
+
+  // US-0214 FR1.3: an install from the US-0213 release (its eight entries, its dialog.sh and plugin) reads as out of date.
+  it('reads an install of US-0213 (eight entries) as outOfDate, and update brings every activity entry', () => {
+    const old = RELEASES.find((r) => r.release === 'US-0213');
+    expect(Object.keys(old.entries)).toEqual(KINDS.slice(0, 8));
+    expect([old.scriptDigest, old.pluginDigest]).toEqual([
+      'ddd5f97747b0034319a5743d0f470dd15602fa33f850becc8874fae1a50ebc38',
+      '54cf4f8997629e9e886d9a5433b0de41f51bc298f3dc6e8970eb91b7085e4394'
+    ]);
+    const groups = {};
+    for (const e of Object.values(old.entries))
+      (groups[e.event] ??= []).push({
+        ...(e.matcher ? { matcher: e.matcher } : {}),
+        hooks: [{ type: 'command', command: e.command, timeout: e.timeout, ...(e.async ? { async: true } : {}) }]
+      });
+    const bytes = Buffer.from(JSON.stringify({ hooks: groups }, null, 2));
+    const c = classify(parse(bytes));
+    expect([c.status, c.kinds.reply, c.kinds.pretool]).toEqual(['outOfDate', 'current', 'missing']);
+    expect(classify(parse(splice(bytes, 'update').bytes)).status).toBe('current');
   });
 
   it('ships a dialog.sh with no redirect on the : builtin (RD31, u1 review R-01)', () => {
@@ -303,11 +345,17 @@ describe('splice: install and update (BR7.10, BR7.11, RD36, SD34)', () => {
       'SessionStart',
       'Notification',
       'PreCompact',
-      'PostCompact'
+      'PostCompact',
+      'PostToolUseFailure', // US-0214
+      'SubagentStart',
+      'SubagentStop',
+      'UserPromptSubmit',
+      'MessageDisplay',
+      'StopFailure'
     ]);
     const repo = parse(splice(fixture('aidlc.json'), 'install', releases).bytes).hooks;
-    expect(repo.PreToolUse.at(-1).matcher).toBe('AskUserQuestion'); // appended at the end of an existing event array
-    expect(Object.keys(repo).at(-1)).toBe('PostCompact'); // new event keys go last, in the fixed order
+    expect(repo.PreToolUse.slice(-2).map((g) => g.matcher)).toEqual(['AskUserQuestion', '*']); // appended at the end of an existing event array
+    expect(Object.keys(repo).at(-1)).toBe('StopFailure'); // new event keys go last, in the fixed order
   });
 
   it('creates a missing file with only the app’s entries, two spaces and a final newline (BR7.11)', () => {
@@ -350,8 +398,11 @@ describe('splice: install and update (BR7.10, BR7.11, RD36, SD34)', () => {
     const value = parse(fixture('current.json'));
     value.hooks.PermissionRequest[0].matcher = 'Bash';
     const next = parse(splice(Buffer.from(`${JSON.stringify(value, null, 2)}\n`), 'update', releases).bytes);
-    expect(next.hooks.PermissionRequest).toHaveLength(1);
-    expect(next.hooks.PermissionRequest[0].matcher).toBe('*');
+    // US-0214: the waiting entry and the report-only `asking` entry, each in its own '*' group.
+    expect(next.hooks.PermissionRequest.map((g) => [g.matcher, appKind(g.hooks[0].command)])).toEqual([
+      ['*', 'asking'],
+      ['*', 'permission']
+    ]);
     expect(classify(next, releases).status).toBe('current');
   });
 });
@@ -420,7 +471,7 @@ describe('splice: remove, post-check and diff (BR7.19, RD37, SD34, D5)', () => {
     const noGroup = next.replace(/\{\s*"matcher": "Bash",\s*"hooks": \[\]\s*\},\s*/, '');
     expect(noGroup).not.toBe(next);
     expect(postCheck(old, Buffer.from(noGroup), 'install', releases)).toBe('unexpectedShape');
-    const noEvent = next.replace(/"SubagentStop": \[\],\s*/, ''); // US-0213: Notification is the app's now
+    const noEvent = next.replace(/"SessionEnd": \[\],\s*/, ''); // US-0213: Notification, US-0214: SubagentStop are the app's now
     expect(noEvent).not.toBe(next);
     expect(postCheck(old, Buffer.from(noEvent), 'install', releases)).toBe('unexpectedShape');
     const hooksEmpty = fixture('hooks-empty.json');

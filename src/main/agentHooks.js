@@ -19,7 +19,10 @@ export const HARNESS_FILES = { claude: ['settings', 'script'], opencode: ['plugi
 export const ACTIONS = ['install', 'update', 'remove'];
 // US-0213 FR1.3, FR1.5, FR4.2, FR8.1: session (SessionStart), notify (Notification), precompact (PreCompact) and
 // postcompact (PostCompact) never wait.
-export const KINDS = ['question', 'answered', 'permission', 'reply', 'session', 'notify', 'precompact', 'postcompact'];
+// US-0214 FR1.1: one installer kind per activity hook event (one entry per kind, BR7.6); dialog.sh writes them all as
+// the channel kind `activity`, and the adapter reads the event from `hook_event_name`.
+export const ACTIVITY_KINDS = ['pretool', 'posttool', 'toolfail', 'agentstart', 'agentstop', 'prompt', 'message', 'stopfail', 'asking'];
+export const KINDS = ['question', 'answered', 'permission', 'reply', 'session', 'notify', 'precompact', 'postcompact', ...ACTIVITY_KINDS];
 
 // C6: the one command string; only the kind is filled in, so no project data enters a command (SD35).
 const C6 =
@@ -54,8 +57,8 @@ const DIALOG_ENTRIES = {
   permission: entry('PermissionRequest', '*', WAITING_TIMEOUT, 'permission'),
   reply: entry('Stop', undefined, 10, 'reply')
 };
-/** BR7.2: the current release's entries, one group each; US-0213 FR1.4 adds four that never wait. */
-export const CANONICAL = {
+/** US-0213 FR1.4: the US-0506 entries plus four that never wait, as US-0213 installed them. */
+const HANDOFF_ENTRIES = {
   question: DIALOG_ENTRIES.question,
   answered: report('PostToolUse', 'AskUserQuestion', 'answered'),
   permission: DIALOG_ENTRIES.permission,
@@ -64,6 +67,19 @@ export const CANONICAL = {
   notify: report('Notification', undefined, 'notify'),
   precompact: entry('PreCompact', undefined, 10, 'precompact'),
   postcompact: report('PostCompact', undefined, 'postcompact')
+};
+/** BR7.2: the current release's entries, one group each; US-0214 FR1.1, NFR1 adds nine activity entries, all async. */
+export const CANONICAL = {
+  ...HANDOFF_ENTRIES,
+  pretool: report('PreToolUse', '*', 'pretool'),
+  posttool: report('PostToolUse', '*', 'posttool'),
+  toolfail: report('PostToolUseFailure', '*', 'toolfail'),
+  agentstart: report('SubagentStart', undefined, 'agentstart'),
+  agentstop: report('SubagentStop', undefined, 'agentstop'),
+  prompt: report('UserPromptSubmit', undefined, 'prompt'),
+  message: report('MessageDisplay', undefined, 'message'),
+  stopfail: report('StopFailure', undefined, 'stopfail'),
+  asking: report('PermissionRequest', '*', 'asking')
 };
 
 const sha256 = (buf) => createHash('sha256').update(buf).digest('hex');
@@ -89,6 +105,13 @@ export const RELEASES = [
     entries: DIALOG_ENTRIES,
     scriptDigest: '42236b11e28a709020cf7684068511f3303410b9b85c6f306b549b59eac5ef01',
     pluginDigest: 'b061adbb5f7d64b48906fb48ae294f190156c5b79edc4b529bd46476c5b8d902'
+  },
+  // US-0214 FR1.3: the eight US-0213 entries, dialog.sh and the plugin as US-0213 (#69) shipped them, before activity.
+  {
+    release: 'US-0213',
+    entries: HANDOFF_ENTRIES,
+    scriptDigest: 'ddd5f97747b0034319a5743d0f470dd15602fa33f850becc8874fae1a50ebc38',
+    pluginDigest: '54cf4f8997629e9e886d9a5433b0de41f51bc298f3dc6e8970eb91b7085e4394'
   },
   CURRENT
 ];
@@ -260,6 +283,9 @@ function appHooks(value) {
 
 const canonicalHook = (e) => ({ type: 'command', command: e.command, timeout: e.timeout, ...(e.async ? { async: true } : {}) });
 const canonicalGroup = (e) => ({ ...(e.matcher !== undefined ? { matcher: e.matcher } : {}), hooks: [canonicalHook(e)] });
+/** Every kind's group under its event, in KINDS order; US-0214: one event can hold several kinds (PreToolUse, PermissionRequest). */
+const eventGroups = (entries) =>
+  Object.fromEntries(KINDS.map((k) => entries[k].event).map((ev) => [ev, KINDS.filter((k) => entries[k].event === ev).map((k) => canonicalGroup(entries[k]))]));
 const sameAs = (app, e) => app.event === e.event && app.group.matcher === e.matcher && isDeepStrictEqual(app.hook, canonicalHook(e));
 
 /** The status of one file from its parts' statuses (BR7.5). */
@@ -413,10 +439,7 @@ function plan(read, action, releases) {
       if (newEvents.length) edits.push(appendTo(hooksObj, hooksObj.members, newEvents, 1, st));
     }
   } else if (newEvents.length) {
-    const obj = Object.fromEntries(
-      KINDS.map((k) => entries[k].event).map((ev) => [ev, KINDS.filter((k) => entries[k].event === ev).map((k) => canonicalGroup(entries[k]))])
-    );
-    edits.push(appendTo(root, root.members, [memberText('hooks', obj, 1, st)], 0, st));
+    edits.push(appendTo(root, root.members, [memberText('hooks', eventGroups(entries), 1, st)], 0, st));
   }
   return { edits, replacesHandEdit };
 }
@@ -555,7 +578,7 @@ export function splice(bytes, action, releases = RELEASES) {
   const none = { change: 'none', bytes, diff: '', replacesHandEdit: false };
   if (bytes === null) {
     if (action === 'remove') return none;
-    const obj = Object.fromEntries(KINDS.map((k) => [entries[k].event, [canonicalGroup(entries[k])]]));
+    const obj = eventGroups(entries);
     const next = Buffer.from(`${format({ hooks: obj }, 0, { eol: '\n', unit: '  ' })}\n`, 'utf8');
     const reason = postCheck(null, next, action, releases);
     return reason ? { reason } : { change: 'create', bytes: next, diff: wholeDiff('', next.toString('utf8')), replacesHandEdit: false };

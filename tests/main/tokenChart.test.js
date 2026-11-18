@@ -1,7 +1,7 @@
 // The token detail view's chart numbers (EPIC-02 US-0208 FR3): elapsed labels, the stacked kinds over time, the rate
 // between readings, and the top-12 splits. Pure, so they are tested without visx or the DOM.
 import { describe, expect, it } from 'vitest';
-import { STACK_KINDS, elapsedLabel, rateSeries, splitRows, stackSeries } from '../../src/renderer/tokenChart.js';
+import { STACK_KINDS, elapsedLabel, rateSeries, splitRows, stackSeries, toggleKind } from '../../src/renderer/tokenChart.js';
 
 const MIN = 60_000;
 const reading = (at, n) => ({ at, input: n, output: 2 * n, cacheWrite5m: 3 * n, cacheWrite1h: 4 * n, cacheRead: 5 * n, usd: n / 100 });
@@ -72,5 +72,39 @@ describe('splitRows (US-0208 FR3.3)', () => {
     const stages = [row('requirements', 1, 10), row('code-generation', 5, 50)];
     expect(splitRows(stages, 'tokens', { keepOrder: true }).map((r) => r.name)).toEqual(['requirements', 'code-generation']);
     expect(splitRows([], 'tokens')).toEqual([]);
+  });
+});
+
+// US-0214 FR5.1–FR5.3: a series hidden from the legend leaves the stack, the rate and the split bars.
+describe('shown series (US-0214 FR5)', () => {
+  const readings = [reading(1000, 10), reading(1000 + MIN, 20)];
+
+  it('stacks only the shown kinds, in stack order, so the top is their sum (the y-axis rescales)', () => {
+    const layers = stackSeries(readings, ['input', 'output']);
+    expect(layers.map((l) => l.kind)).toEqual(['output', 'input']);
+    expect(layers.at(-1).points[1].y1).toBe(60); // output 40 + input 20, cache read's 100 gone
+  });
+
+  it('gives the rate of the shown kinds only', () => {
+    expect(rateSeries(readings, ['input'])).toEqual([{ t: MIN, rate: 10 }]);
+  });
+
+  it('sums and draws only the shown kinds of a split row; dollars are not affected', () => {
+    const [r] = splitRows([row('a', 2, 1000)], 'tokens', { kinds: ['input', 'cacheRead'] });
+    expect([r.value, r.parts]).toEqual([
+      625,
+      [
+        { kind: 'input', value: 500 },
+        { kind: 'cacheRead', value: 125 }
+      ]
+    ]);
+    expect(splitRows([row('a', 2, 1000)], 'usd', { kinds: ['input'] })[0].value).toBe(2);
+  });
+
+  it('toggles a kind in the given order and never hides the last one (FR5.2)', () => {
+    const all = ['input', 'output', 'cacheRead'];
+    expect(toggleKind(all, all, 'output')).toEqual(['input', 'cacheRead']);
+    expect(toggleKind(['input', 'cacheRead'], all, 'output')).toEqual(['input', 'output', 'cacheRead']);
+    expect(toggleKind(['cacheRead'], all, 'cacheRead')).toEqual(['cacheRead']);
   });
 });

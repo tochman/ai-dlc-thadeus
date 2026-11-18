@@ -419,6 +419,32 @@ describe.each(SHELLS)('permission argument under %s', (shell) => {
   });
 });
 
+// US-0214 FR1.1, NFR1: the nine activity entries write one kind, activity, with the payload byte for byte, never wait
+// and print nothing (an async hook's output is not read, and a sync one's would reach the agent).
+describe.each(SHELLS)('the activity kinds under %s (US-0214)', (shell) => {
+  it.each(['pretool', 'posttool', 'toolfail', 'agentstart', 'agentstop', 'prompt', 'message', 'stopfail', 'asking'])(
+    '%s writes an activity event, leaves no marker, prints nothing and exits at once',
+    async (kind) => {
+      const dir = session();
+      const payload = `{"hook_event_name":"PreToolUse","tool_name":"Bash","x":"$(touch marker)"}`;
+      const r = await run(shell, [SCRIPT, kind], { env: envFor(dir), input: payload, cwd: dir }).done;
+      quiet(r);
+      expect(r.stdout.length).toBe(0);
+      expect(r.ms).toBeLessThan(500);
+      const [evt] = files(dir, 'events');
+      expect(readFileSync(path.join(dir, 'events', evt), 'utf8')).toBe(`THADEUS-EVENT v1 activity ${SECRET}\n${payload}`);
+      expect(files(dir, 'answers')).toEqual([]);
+      expect(existsSync(path.join(dir, 'marker'))).toBe(false);
+    }
+  );
+
+  it('without a session folder an activity kind exits 0, silent, writing nothing (NFR1)', async () => {
+    const r = await run(shell, [SCRIPT, 'pretool'], { env: envFor(path.join(TMP, 'no-such-folder')) }).done;
+    quiet(r);
+    expect(r.stdout.length).toBe(0);
+  });
+});
+
 // US-0213 FR1.3, FR1.5, FR4.2, NFR3: the SessionStart, Notification and PreCompact kinds never wait.
 describe.each(SHELLS)('session, notify, precompact and postcompact under %s (US-0213)', (shell) => {
   it.each(['session', 'notify', 'precompact', 'postcompact'])('%s writes its event byte for byte, leaves no marker and exits at once', async (kind) => {

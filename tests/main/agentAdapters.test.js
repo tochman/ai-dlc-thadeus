@@ -231,3 +231,107 @@ describe('handoff signals (US-0213)', () => {
     for (const kind of ['session', 'status', 'usage', 'postcompact']) expect(adapters.opencode.parse(kind, Buffer.from('{'))).toMatchObject({ ok: false });
   });
 });
+
+// US-0214 FR1, NFR2: the activity kind. Only the known fields are read (event name, tool name and id, agent id and
+// type, error, notification type, parentID); prompts, tool input and message text never leave the adapter.
+describe('activity (US-0214)', () => {
+  const act = (harness, payload) => adapters[harness].parse('activity', Buffer.from(JSON.stringify(payload)));
+  const base = { session_id: 'cc-1', transcript_path: '/t.jsonl' };
+
+  it('claude: each hook event becomes one activity, with only the known fields', () => {
+    const cases = [
+      [
+        { hook_event_name: 'PreToolUse', tool_name: 'Bash', tool_use_id: 'tu1', tool_input: { command: 'SECRET' } },
+        { name: 'toolStart', tool: 'Bash', toolId: 'tu1' }
+      ],
+      [
+        { hook_event_name: 'PostToolUse', tool_name: 'Bash', tool_use_id: 'tu1', tool_response: 'SECRET' },
+        { name: 'toolEnd', toolId: 'tu1' }
+      ],
+      [
+        { hook_event_name: 'PostToolUseFailure', tool_name: 'Bash', tool_use_id: 'tu1', error: 'SECRET' },
+        { name: 'toolEnd', toolId: 'tu1' }
+      ],
+      [
+        { hook_event_name: 'SubagentStart', agent_id: 'ag1', agent_type: 'aidlc-developer-agent' },
+        { name: 'agentStart', agentId: 'ag1', agentType: 'aidlc-developer-agent' }
+      ],
+      [
+        { hook_event_name: 'SubagentStop', agent_id: 'ag1', agent_type: 'aidlc-developer-agent', last_assistant_message: 'SECRET' },
+        { name: 'agentEnd', agentId: 'ag1', agentType: 'aidlc-developer-agent' }
+      ],
+      [{ hook_event_name: 'UserPromptSubmit', prompt: 'SECRET' }, { name: 'prompt' }],
+      [
+        { hook_event_name: 'MessageDisplay', message_id: 'm1', final: false, text: 'SECRET' },
+        { name: 'text', final: false }
+      ],
+      [
+        { hook_event_name: 'StopFailure', error: 'rate_limit' },
+        { name: 'error', error: 'rate_limit' }
+      ],
+      [
+        { hook_event_name: 'PermissionRequest', tool_name: 'Bash', tool_input: { command: 'SECRET' } },
+        { name: 'waiting', reason: 'permission' }
+      ]
+    ];
+    for (const [payload, activity] of cases) {
+      const out = act('claude', { ...base, ...payload });
+      expect(out).toEqual({ ok: true, kind: 'activity', activity });
+      expect(JSON.stringify(out)).not.toContain('SECRET');
+    }
+  });
+
+  it('claude: a tool event inside a subagent names its agent; an error object gives its type, a free text gives unknown', () => {
+    expect(act('claude', { hook_event_name: 'PreToolUse', tool_name: 'Read', tool_use_id: 'x', agent_id: 'ag1', agent_type: 'Explore' }).activity).toEqual({
+      name: 'toolStart',
+      tool: 'Read',
+      toolId: 'x',
+      agentId: 'ag1',
+      agentType: 'Explore'
+    });
+    expect(act('claude', { hook_event_name: 'StopFailure', error: { type: 'overloaded_error', message: 'SECRET' } }).activity).toEqual({
+      name: 'error',
+      error: 'overloaded_error'
+    });
+    expect(act('claude', { hook_event_name: 'StopFailure', error: 'The server said SECRET things' }).activity).toEqual({ name: 'error', error: 'unknown' });
+  });
+
+  it('refuses an unknown event, a missing event name, a bad tool name and a body that is not JSON', () => {
+    expect(act('claude', { hook_event_name: 'TeammateIdle' })).toMatchObject({ ok: false, reason: 'unknown activity event' });
+    expect(act('claude', {})).toMatchObject({ ok: false });
+    expect(act('claude', { hook_event_name: 'PreToolUse', tool_name: 'rm -rf /; echo', tool_use_id: 'x' })).toMatchObject({
+      ok: false,
+      reason: 'no tool name'
+    });
+    expect(adapters.claude.parse('activity', Buffer.from('{'))).toMatchObject({ ok: false });
+    expect(adapters.opencode.parse('activity', Buffer.from('{'))).toMatchObject({ ok: false });
+  });
+
+  it('opencode: the V2 events become activities, with the session id as ref and parentID making an agent', () => {
+    const oc = (type, data) => act('opencode', { id: 'e1', created: 1, type, data }).activity;
+    expect(oc('session.tool.input.started', { sessionID: 'm', callID: 'c1', tool: 'bash', input: 'SECRET' })).toEqual({
+      name: 'toolStart',
+      ref: 'm',
+      tool: 'bash',
+      toolId: 'c1'
+    });
+    expect(oc('session.tool.success', { sessionID: 'm', callID: 'c1', output: 'SECRET' })).toEqual({ name: 'toolEnd', ref: 'm', toolId: 'c1' });
+    expect(oc('session.tool.failed', { sessionID: 'm', callID: 'c1' })).toEqual({ name: 'toolEnd', ref: 'm', toolId: 'c1' });
+    expect(oc('session.text.delta', { sessionID: 'm', delta: 'SECRET' })).toEqual({ name: 'text', ref: 'm', final: false });
+    expect(oc('session.text.ended', { sessionID: 'm' })).toEqual({ name: 'text', ref: 'm', final: true });
+    expect(oc('session.reasoning.started', { sessionID: 'm' })).toEqual({ name: 'reasoning', ref: 'm', final: false });
+    expect(oc('session.status', { sessionID: 'm', status: { type: 'retry' } })).toEqual({ name: 'busy', ref: 'm' });
+    expect(oc('session.status', { sessionID: 'k', status: { type: 'idle' } })).toEqual({ name: 'idle', ref: 'k' });
+    expect(oc('permission.asked', { sessionID: 'm', requestID: 'r' })).toEqual({ name: 'waiting', ref: 'm', reason: 'permission' });
+    expect(oc('form.created', { sessionID: 'm', formID: 'f' })).toEqual({ name: 'waiting', ref: 'm', reason: 'question' });
+    expect(oc('session.execution.interrupted', { sessionID: 'm', reason: 'user' })).toEqual({ name: 'error', ref: 'm', error: 'user' });
+    expect(oc('session.created', { info: { id: 'k', parentID: 'm', agent: 'general', title: 'SECRET' } })).toEqual({
+      name: 'agentStart',
+      ref: 'm',
+      agentId: 'k',
+      agentType: 'general'
+    });
+    expect(act('opencode', { type: 'session.created', data: { info: { id: 'm' } } })).toMatchObject({ ok: false }); // the main chat is kind session
+    expect(act('opencode', { type: 'message.updated', data: {} })).toMatchObject({ ok: false, reason: 'unknown activity event' });
+  });
+});

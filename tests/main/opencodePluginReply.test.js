@@ -12,12 +12,21 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 mkdirSync(TMP, { recursive: true });
 
 let dir, ctx, handlers;
-const evts = () => readdirSync(path.join(dir, 'events')).filter((f) => f.endsWith('.evt'));
+const kindOf = (f) =>
+  readFileSync(path.join(dir, 'events', f), 'utf8')
+    .split('\n')[0]
+    .split(' ')[2];
+// US-0214 FR1.2: every session.status also writes an activity event; these cases are about reply and status only.
+const evts = () =>
+  readdirSync(path.join(dir, 'events'))
+    .filter((f) => f.endsWith('.evt'))
+    .filter((f) => kindOf(f) !== 'activity');
 const waitForEvts = async (n, ms = 3000) => {
   for (const end = Date.now() + ms; Date.now() < end; await sleep(10)) if (evts().length >= n) return evts();
   throw new Error(`expected ${n} event files, saw ${evts().length}`);
 };
-const logged = () => [...ctx.log.error.mock.calls, ...ctx.log.info.mock.calls].map((c) => String(c[0]));
+const logged = () =>
+  [...ctx.log.error.mock.calls, ...ctx.log.info.mock.calls].map((c) => String(c[0])).filter((l) => !l.startsWith('thadeus-dialog: activity write failed: '));
 
 async function load({ env = true, context } = {}) {
   vi.resetModules();
@@ -76,8 +85,7 @@ describe('opencode idle handler (BR6.2, RD15)', () => {
     await load({ context: vi.fn(async () => fixture('idle-which-name').context) });
     handlers['session.status'](statusEvent(type));
     await sleep(100);
-    const kinds = evts().map((f) => readFileSync(path.join(dir, 'events', f), 'utf8').split(' ')[2]);
-    expect(kinds).toEqual(['status']);
+    expect(evts().map(kindOf)).toEqual(['status']);
     expect(ctx.session.context).not.toHaveBeenCalled();
   });
 

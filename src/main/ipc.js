@@ -451,6 +451,10 @@ function agentWiring() {
     writeInstruction: (sessionId, text) => channel.writeInstruction(sessionId, text)
   });
   store.onSignal((note) => handoff.onSignal(note));
+  // US-0214 FR2.3: the activity rows of a project, pushed to every window within 2 s of a change.
+  store.onActivity((change) => {
+    for (const p of projects.values()) if (!p.sender.isDestroyed()) p.sender.send('agent:activity', change);
+  });
   return agent;
 }
 
@@ -794,6 +798,11 @@ const handlers = {
   'agents:progress': async (_event, projectId, dirName) => {
     const p = project(projectId);
     return loadAgentProgress(p.root, p.space, dirName);
+  },
+  // US-0214 FR2: the project's activity rows now (main chats and their agents), from the hook events; read-only.
+  'agentActivity:list': async (_event, projectId) => {
+    project(projectId); // an unknown project is refused
+    return agentStore?.activity(projectId) ?? [];
   },
   // Changing AI-DLC settings (EPIC-09 US-0902). The renderer sends only {kind, key, value, where}; aidlcWrite
   // checks it against the fixed tables before anything runs, and refuses any other field (NFR4).

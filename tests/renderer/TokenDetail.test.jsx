@@ -40,7 +40,7 @@ function detailProps(readings = READINGS, status = 'in-flight', extra = {}) {
 async function renderDetail(...args) {
   const props = detailProps(...args);
   const view = render(<TokenDetail {...props} />);
-  await waitFor(() => expect(window.bridge.getTokenReadings).toHaveBeenCalledWith('p1', DIR));
+  await waitFor(() => expect(window.bridge.getTokenReadings).toHaveBeenCalledWith(props.projectId, DIR));
   await act(async () => {});
   return { ...view, props };
 }
@@ -133,6 +133,72 @@ describe('live view (US-0208 FR3, FR5, FR7)', () => {
     const { rerender, props } = await renderDetail();
     rerender(<TokenDetail {...props} cost={{ ...cost() }} />);
     await waitFor(() => expect(window.bridge.getTokenReadings).toHaveBeenCalledTimes(2));
+  });
+});
+
+// US-0214 FR5, NFR3: legend entries are buttons that hide or show a series. Each test uses its own project, because the
+// choice is remembered per project and diagram while the app runs.
+describe('legend toggles (US-0214 FR5)', () => {
+  const entry = (legend, name) => within(screen.getByTestId(legend)).getByRole('button', { name });
+  const areas = () => screen.getByTestId('token-detail-over-time').querySelectorAll('.token-detail-area');
+
+  it('hides and shows a series by click, Enter or Space, with aria-pressed and its text label kept (FR5.1, NFR3)', async () => {
+    await renderDetail(READINGS, 'in-flight', { projectId: 'legend-1' });
+    const cacheRead = entry('token-detail-legend', 'Cache read');
+    expect([cacheRead.tagName, cacheRead.getAttribute('aria-pressed')]).toEqual(['BUTTON', 'true']);
+    fireEvent.click(cacheRead);
+    expect(cacheRead.getAttribute('aria-pressed')).toBe('false');
+    expect(cacheRead.textContent).toBe('Cache read');
+    expect(areas()).toHaveLength(4);
+    fireEvent.keyDown(cacheRead, { key: 'Enter' });
+    expect(areas()).toHaveLength(5);
+    fireEvent.keyDown(entry('token-detail-legend', 'Output'), { key: ' ' });
+    expect(entry('token-detail-legend', 'Output').getAttribute('aria-pressed')).toBe('false');
+  });
+
+  it('keeps the last shown series, and the rate follows the shown series (FR5.2)', async () => {
+    await renderDetail(READINGS, 'in-flight', { projectId: 'legend-2' });
+    const before = screen.getByTestId('token-detail-rate').textContent;
+    for (const name of ['Output', 'Cache write 1 h', 'Cache write 5 m', 'Cache read']) fireEvent.click(entry('token-detail-legend', name));
+    expect(screen.getByTestId('token-detail-rate').textContent).not.toBe(before);
+    const input = entry('token-detail-legend', 'Input');
+    fireEvent.click(input);
+    expect(input.getAttribute('aria-pressed')).toBe('true');
+    expect(areas()).toHaveLength(1);
+  });
+
+  it('shows only the shown series in the hover box and the Table (FR5.3)', async () => {
+    await renderDetail(READINGS, 'in-flight', { projectId: 'legend-3' });
+    fireEvent.click(entry('token-detail-legend', 'Cache read'));
+    fireEvent.focus(screen.getByTestId('token-detail-over-time'));
+    expect(screen.getByTestId('token-detail-tooltip').textContent).not.toContain('Cache read');
+    expect(screen.getByTestId('token-detail-tooltip').textContent).toContain('Input');
+    fireEvent.click(screen.getByTestId('token-detail-over-time-table'));
+    expect(screen.getByRole('table').querySelectorAll('th[scope="col"]')).toHaveLength(6);
+    expect(within(screen.getByRole('table')).queryByText('Cache read')).toBeNull();
+  });
+
+  it('remembers the choice per project and diagram while the app runs (FR5.4)', async () => {
+    await renderDetail(READINGS, 'in-flight', { projectId: 'legend-4' });
+    fireEvent.click(entry('token-detail-legend', 'Cache read'));
+    cleanup();
+    await renderDetail(READINGS, 'in-flight', { projectId: 'legend-4' });
+    expect(entry('token-detail-legend', 'Cache read').getAttribute('aria-pressed')).toBe('false');
+    expect(entry('token-detail-split-stage-legend', 'Input').getAttribute('aria-pressed')).toBe('true'); // another diagram
+    cleanup();
+    await renderDetail(READINGS, 'in-flight', { projectId: 'legend-5' });
+    expect(entry('token-detail-legend', 'Cache read').getAttribute('aria-pressed')).toBe('true');
+  });
+
+  it('gives every split card its own legend; hiding a kind there changes only that card (FR5.1)', async () => {
+    await renderDetail(READINGS, 'in-flight', { projectId: 'legend-6' });
+    const values = (id) => [...screen.getByTestId(`token-detail-split-${id}`).querySelectorAll('.token-detail-row-value')].map((n) => n.textContent);
+    const agentsBefore = values('agent');
+    const stageBefore = values('stage');
+    fireEvent.click(entry('token-detail-split-stage-legend', 'Input'));
+    expect(values('stage')).not.toEqual(stageBefore);
+    expect(values('agent')).toEqual(agentsBefore);
+    for (const id of ['agent', 'model']) expect(screen.getByTestId(`token-detail-split-${id}-legend`)).toBeTruthy();
   });
 });
 
