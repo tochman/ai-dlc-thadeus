@@ -1254,6 +1254,7 @@
       "main": "Huvudchatt · {harness}",
       "agent": "Agent",
       "seconds": "{n} s",
+      "seen": "sågs för {ago} sedan",
       "state": {
         "tool": "kör {tool}",
         "writing": "skriver",
@@ -1265,7 +1266,8 @@
           "permission": "väntar på ditt tillstånd",
           "question": "väntar på ditt svar",
           "elicitation": "väntar på din inmatning",
-          "notification": "väntar på dig"
+          "notification": "väntar på dig",
+          "agent": "väntar på {agent}"
         }
       },
       "hooks": {

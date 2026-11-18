@@ -2,18 +2,17 @@
 
 ## Run Record
 
-- Date: 2026-11-17
-- Commit: 2b5d6a47c83532c7e55358c2307043461127f990
-- Intent: model-profile-switch (`261117-model-profile-switch`, EPIC-02 US-0210)
+- Date: 2026-11-18
+- Commit: 0ebb196215457c487f5f95c77406108b5be4d90a
+- Intent: honest-agent-progress (`261118-honest-agent-progress`, EPIC-00 US-0030)
 
-This was a focused scan of the CLI runner, the model commands, the project settings store and UI, and intent watching. It was merged onto the store from the US-0303 scan at `bbfb4c0`. That store was stale, so only this run's coverage is recorded as verified, and its analyzed paths are demoted to shallow. The prose outside the analyzed area is kept from the earlier scans and is marked where it is not re-verified. The developer agent did both the scan and the synthesis, because the architect was switched off for this run.
+This was a focused scan of Agent progress: the hook script, the activity model, the event store's activity feed, the audit progress rows and plan reads, and their views and IPC. It was merged onto the store from the US-0210 scan at `2b5d6a4`. That store was stale, so only this run's coverage is recorded as verified, and the earlier analyzed paths are demoted to shallow. The prose outside the analyzed area is kept from the earlier scans and is marked where it is not re-verified. The developer agent did both the scan and the synthesis, because collaborators were off for this run.
 
 What was read, and how closely:
-- Read line by line: `exec.js`, `modelChoice.js`, `models.js`, `aidlcWrite.js`, `settings.js`, `watcher.js`, `parsers/intents.js`, `ProjectSettingsView.jsx`, `useProject.js`.
-- Read by sections: `projectService.js` (lines 1-200: the intent list, summaries and `inProgress`) and `ipc.js` (the model, config, cost-rules and plans handlers, `watchSpace`, `refreshQuestions`, `project:open`, `projectSettings:*`, `registerIpc`).
-- Skimmed or searched, outside the analyzed paths: `src/preload/index.js`, `aidlcConfig.js`, `ConfigEdit.jsx` (`ModelPicker`), `ConfigView.jsx`, `ProjectView.jsx`, `App.jsx`, `costRules.js`, `CostRulesSection.jsx`, `VelocityView.jsx`, `notify.js`, `src/shared/configTables.js`, `src/shared/harnesses.js`, and the test file names.
-- Read as input contracts only: `intents.json`, this intent's `aidlc-state.md`, and the `config models` flag parsing in AI-DLC's CLI (`--from`, `--save-as`, `ModelProfile`).
-- Not opened: `node_modules/`, `out/`, `dist/`, `coverage/`, `tests/.tmp/`, `.thadeus/`, and the rest of AI-DLC's install and workspace.
+- Read line by line: `agentEvents.js`, `agentProgress.js`, `parsers/agentProgress.js`, `shared/agentActivity.js`, `AgentProgress.jsx`, `dialog.sh`.
+- Read by sections: `TokenDetail.jsx` (the progress fetch and the mount), `ipc.js` (`agents:progress`, `agentActivity:list`, the `agent:activity` push) and `preload/index.js` (the progress members).
+- Skimmed or searched, outside the analyzed paths: `agentAdapters.js` (activity), `agentHooks.js` (the kind table), `projectService.js` (`workingAgents`), `shared/locales/en.json`, and the test files by name and grep.
+- Not opened: `node_modules/`, `out/`, `dist/`, `coverage/`, `tests/.tmp/`, `.claude/`, and the rest of AI-DLC's install and workspace.
 
 Code was read only: no tests, builds or app runs.
 
@@ -22,10 +21,34 @@ Code was read only: no tests, builds or app runs.
 ```yaml
 scope_version: 1
 kind: partial
-intent: model-profile-switch
-fingerprint: 7e27b02192e4dadadc7d421c56c8789c26344ff4
+intent: honest-agent-progress
+fingerprint: 826043724b21f172ab4ca437e5bd9ee4d93ed06e
 analyzed:
   paths:
+    - src/main/agentEvents.js
+    - src/main/agentProgress.js
+    - src/main/parsers/agentProgress.js
+    - src/shared/agentActivity.js
+    - src/renderer/AgentProgress.jsx
+    - src/renderer/TokenDetail.jsx
+    - .thadeus/hooks/dialog.sh
+    - src/main/ipc.js
+    - src/preload/index.js
+  components:
+    - Agent Event Store
+    - Agent Progress Loader
+    - Agent Progress Parser
+    - Agent Activity Model
+    - AgentProgress
+    - TokenDetail
+    - Dialog Hook Script
+    - IPC Router
+    - Preload Bridge
+shallow:
+  paths:
+    - ./
+    - src/main/
+    - src/main/parsers/
     - src/main/exec.js
     - src/main/modelChoice.js
     - src/main/models.js
@@ -34,26 +57,8 @@ analyzed:
     - src/main/watcher.js
     - src/main/projectService.js
     - src/main/parsers/intents.js
-    - src/main/ipc.js
-    - src/renderer/ProjectSettingsView.jsx
-    - src/renderer/useProject.js
-  components:
-    - Exec Runner
-    - Model Choice
-    - Model Config Reader
-    - AI-DLC Config Writer
-    - Settings Store
-    - Watcher
-    - Project Service
-    - Intents Merger
-    - IPC Router
-    - ProjectSettingsView
-    - useProject
-shallow:
-  paths:
-    - ./
-    - src/main/
-    - src/main/parsers/
+    - src/main/agentAdapters.js
+    - src/main/agentHooks.js
     - src/main/features.js
     - src/main/git.js
     - src/main/releases.js
@@ -61,6 +66,8 @@ shallow:
     - src/main/costRules.js
     - src/preload/
     - src/renderer/
+    - src/renderer/ProjectSettingsView.jsx
+    - src/renderer/useProject.js
     - src/renderer/ConfigEdit.jsx
     - src/shared/
     - src/shared/locales/

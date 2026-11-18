@@ -133,3 +133,69 @@ describe('Agent progress from the hook events (US-0214)', () => {
     expect(screen.getByTestId('agent-progress-main')).toBeTruthy();
   });
 });
+
+// US-0030 FR1.2, FR2, FR3, FR4, FR5, NFR3: the task, the activity in words, main waiting for an agent, the step count on
+// hook rows, and "seen N ago" on a row that has been quiet.
+describe('honest agent progress (US-0030)', () => {
+  const dev = (key, extra) => row(key, { kind: 'agent', parent: 'main:s1', agentId: key, agentType: 'aidlc-developer-agent', ...extra });
+  afterEach(() => vi.useRealTimers());
+
+  it('shows the task next to the agent’s name, and only the name when it is unknown (FR2.1, FR2.2)', async () => {
+    setup({ activity: [row('main:s1'), dev('a', { task: 'Code generation for US-0030' }), dev('b')] });
+    await show();
+    const [withTask, without] = screen.getAllByTestId('agent-progress-agent');
+    expect(within(withTask).getByTestId('agent-progress-task').textContent).toBe('Code generation for US-0030');
+    expect(withTask.textContent).toContain('developer');
+    expect(within(without).queryByTestId('agent-progress-task')).toBeNull();
+  });
+
+  it('says the tool call’s description, else “kör <tool>” (FR4.1, FR4.2)', async () => {
+    setup({
+      activity: [
+        row('main:s1', { state: 'tool', tool: 'Bash', detail: 'Rerunning view tests after fixing expectation' }),
+        row('main:s2', { sessionId: 's2', state: 'tool', tool: 'Read' })
+      ]
+    });
+    await show();
+    const [described, plain] = screen.getAllByTestId('agent-progress-state');
+    expect(described.textContent).toBe('Rerunning view tests after fixing expectation');
+    expect(plain.textContent).toBe('kör Read');
+  });
+
+  it('main says it waits for the agent, not for your permission (FR1.2)', async () => {
+    setup({
+      activity: [
+        row('main:s1', { state: 'waiting', reason: 'agent', waitingFor: 'aidlc-developer-agent' }),
+        dev('a', { state: 'waiting', reason: 'permission' })
+      ]
+    });
+    await show();
+    const [mainState, agentState] = screen.getAllByTestId('agent-progress-state');
+    expect(mainState.textContent).toBe('väntar på developer');
+    expect(agentState.textContent).toBe('väntar på ditt tillstånd');
+  });
+
+  it('gives a hook row the step count of its agent’s plan from the audit rows; none without a plan (FR3.1, FR3.2)', async () => {
+    const audit = [{ ...AUDIT[0], steps: { done: 3, total: 10 } }];
+    setup({ activity: [row('main:s1'), dev('a'), row('agent:s1:q', { kind: 'agent', parent: 'main:s1', agentId: 'q', agentType: 'aidlc-quality-agent' })] });
+    await show({ rows: audit });
+    const [build, review] = screen.getAllByTestId('agent-progress-agent');
+    expect(within(build).getByTestId('agent-progress-steps').textContent).toBe('3 av 10 steg');
+    expect(within(review).queryByTestId('agent-progress-steps')).toBeNull();
+    expect(within(screen.getByTestId('agent-progress-main')).queryByTestId('agent-progress-steps')).toBeNull();
+  });
+
+  it('says when a quiet row was last seen, waiting rows included, and keeps it current (FR5.1, NFR3)', async () => {
+    vi.useFakeTimers({ toFake: ['Date', 'setInterval', 'clearInterval'] });
+    const now = Date.now();
+    setup({
+      activity: [row('main:s1', { state: 'waiting', reason: 'permission', lastMs: now - 45_000 }), row('main:s2', { sessionId: 's2', lastMs: now - 1000 })]
+    });
+    await show();
+    const [quiet, fresh] = screen.getAllByTestId('agent-progress-main');
+    expect(within(quiet).getByTestId('agent-progress-seen').textContent).toBe('sågs för 45 s sedan');
+    expect(within(fresh).queryByTestId('agent-progress-seen')).toBeNull();
+    act(() => vi.advanceTimersByTime(10_000));
+    expect(within(quiet).getByTestId('agent-progress-seen').textContent).toBe('sågs för 55 s sedan');
+  });
+});

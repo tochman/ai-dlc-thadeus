@@ -676,4 +676,36 @@ describe('activity (US-0214)', () => {
     vi.advanceTimersByTime(2000);
     expect(activity.at(-1)).toEqual({ projectId: 'p1', rows: [] });
   });
+
+  // US-0030 FR1.1, FR1.3, FR1.4: a subagent's permission is on its own row, and an answer in the app ends the wait.
+  const asks = (extra) =>
+    raw('s1', `p${seq + 1}`, { kind: 'permission', bytes: Buffer.from(JSON.stringify({ ...JSON.parse(body('claude', 'permission-bash')), ...extra })) });
+  const dev = { agent_id: 'ag1', agent_type: 'aidlc-developer-agent' };
+
+  it('feeds a subagent’s permission with its agent id: its row waits, main waits for it (FR1.1, FR1.4)', () => {
+    start();
+    hook('s1', { hook_event_name: 'SubagentStart', ...dev });
+    asks(dev);
+    vi.advanceTimersByTime(2000);
+    expect(latest()).toEqual([
+      ['main', 'waiting', 'agent'],
+      ['agent', 'waiting', 'permission']
+    ]);
+    hook('s1', { hook_event_name: 'Notification', notification_type: 'permission_prompt', message: 'Claude needs your permission' }, 'notify');
+    vi.advanceTimersByTime(2000);
+    expect(latest()[0]).toEqual(['main', 'waiting', 'agent']); // the prompt's Notification is not main's own wait
+  });
+
+  it('an answer given in the app ends the wait on the row that asked (FR1.3)', async () => {
+    start();
+    hook('s1', { hook_event_name: 'SubagentStart', ...dev });
+    const ev = asks(dev);
+    const settled = store.answer(ev.eventId, { permission: { choice: 0 } });
+    await vi.advanceTimersByTimeAsync(3000);
+    await expect(settled).resolves.toMatchObject({ state: 'sent' });
+    expect(latest()).toEqual([
+      ['main', 'working', null],
+      ['agent', 'working', 'aidlc-developer-agent']
+    ]);
+  });
 });

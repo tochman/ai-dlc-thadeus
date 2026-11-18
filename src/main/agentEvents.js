@@ -22,14 +22,18 @@ import { IDLE_MS, activityRows, dropSession, emptyActivity, reduceActivity } fro
 
 // US-0214 FR2.3: activity pushes are gathered for this long, well inside the 2 s the rows may lag.
 const ACTIVITY_PUSH_MS = 250;
-/** US-0214 FR1.1: what the dialog kinds already reported say about activity (a Notification of idle_prompt is not a wait). */
+/**
+ * US-0214 FR1.1: what the dialog kinds already reported say about activity (a Notification of idle_prompt is not a wait).
+ * US-0030 FR1.1, FR1.4: a permission waits on the row of the agent that asked; the permission_prompt Notification that
+ * follows it carries no agent id, so it is not read as main's own wait (the PermissionRequest already put the wait there).
+ */
 const KIND_ACTIVITY = {
   reply: () => ({ name: 'stop' }),
   session: () => ({ name: 'stop' }),
   question: () => ({ name: 'waiting', reason: 'question' }),
-  permission: () => ({ name: 'waiting', reason: 'permission' }),
+  permission: (parsed) => ({ name: 'waiting', reason: 'permission', agentId: parsed.agentId ?? null, agentType: parsed.agentType ?? null }),
   answered: () => ({ name: 'answered' }),
-  notify: (parsed) => (parsed.type === 'idle_prompt' ? null : { name: 'waiting', reason: 'notification' }),
+  notify: (parsed) => (parsed.type === 'idle_prompt' || parsed.type === 'permission_prompt' ? null : { name: 'waiting', reason: 'notification' }),
   activity: (parsed) => parsed.activity
 };
 
@@ -211,7 +215,8 @@ export function createAgentEventStore({
       endedBy: null,
       file: raw.file,
       toolCallId: parsed.toolCallId,
-      input: parsed.input
+      input: parsed.input,
+      agentId: parsed.agentId ?? null // US-0030 FR1.3: whose wait an answer in the app ends; main only, never public
     };
     events.set(ev.eventId, ev);
     if (ev.kind === 'permission') permissions.add(ev, parsed);
@@ -288,9 +293,10 @@ export function createAgentEventStore({
   }
   function feedActivity(raw, session, parsed) {
     const fields = KIND_ACTIVITY[parsed.kind]?.(parsed);
-    if (!fields) return;
-    const atMs = Number.isFinite(raw.arrivedAtMs) ? raw.arrivedAtMs : Date.now();
-    activityState = reduceActivity(activityState, { ...fields, sessionId: raw.sessionId, tabId: session.tabId, harness: session.harness, atMs });
+    if (fields) feedFields(raw.sessionId, session, fields, Number.isFinite(raw.arrivedAtMs) ? raw.arrivedAtMs : Date.now());
+  }
+  function feedFields(sessionId, session, fields, atMs) {
+    activityState = reduceActivity(activityState, { ...fields, sessionId, tabId: session.tabId, harness: session.harness, atMs });
     pushActivity(session.projectId);
     const t = timersOf(session.projectId);
     clearTimeout(t.idle);
@@ -411,7 +417,13 @@ export function createAgentEventStore({
     async answer(eventId, answer) {
       const ev = events.get(eventId);
       if (!ev) throw refuse(null, String(eventId).startsWith('audit-') ? 'fallback' : 'unknownEvent', 'unknown event');
-      if (ev.kind === 'permission') return permissions.answer(ev, answer);
+      if (ev.kind === 'permission') {
+        const result = await permissions.answer(ev, answer);
+        const session = sessions.get(ev.sessionId);
+        // US-0030 FR1.3: the answer ends the wait on the row that asked, before the agent's next hook event arrives
+        if (result?.state === 'sent' && session) feedFields(ev.sessionId, session, { name: 'answered', agentId: ev.agentId }, Date.now());
+        return result;
+      }
       if (ev.kind === 'reply') return replies.answer(ev, answer); // u3 BR6.10–BR6.12
       if (!OPEN.has(ev.state)) throw refuse(ev, 'eventNotOpen', 'event not open');
       if (!channel.isLive(ev.sessionId) || !sessions.has(ev.sessionId)) throw refuse(ev, 'sessionEnded', 'session ended');

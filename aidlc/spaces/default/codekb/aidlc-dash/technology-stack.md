@@ -1,6 +1,6 @@
 # Technology Stack
 
-The versions are the ones locked in `package-lock.json` at `721e051`. The `package.json` ranges were re-checked at `bbfb4c0` and are unchanged; no dependency has been added since (`git diff bbfb4c0 2b5d6a4 -- package.json` is empty).
+The versions are the ones locked in `package-lock.json` at `721e051`. The `package.json` ranges were re-checked at `bbfb4c0` and are unchanged; no dependency had been added by `2b5d6a4`. This run (`0ebb196`) did not re-read the package files.
 
 ## Languages and Runtime
 
@@ -9,7 +9,7 @@ The versions are the ones locked in `package-lock.json` at `721e051`. The `packa
 | JavaScript (ES modules) and JSX | ES latest | no TypeScript; JSDoc types in places |
 | Node.js | 22 (`.nvmrc`) | CI uses `node-version-file` |
 | Electron | 45.3.1 | main, preload, sandboxed renderer (Chromium) |
-| POSIX sh | n/a | `.thadeus/hooks/dialog.sh` |
+| POSIX sh | n/a | `.thadeus/hooks/dialog.sh` (POSIX plus `sleep 0.1` and `head -c`) |
 | CSS | n/a | one stylesheet, `src/renderer/theme.css`, LCARS tokens |
 
 ## Frameworks and Libraries (runtime)
@@ -26,7 +26,7 @@ The versions are the ones locked in `package-lock.json` at `721e051`. The `packa
 | @tanstack/react-virtual | 3.14.24 | the virtualised timeline |
 | @fontsource/antonio | ^5.3 | LCARS font |
 
-No date library is installed; `Date` and `Intl` are used. US-0210 needs no new library: `node:child_process` through `runFixed`, chokidar and the existing settings store cover it.
+No date library is installed; `Date` and `Intl` are used (`Intl.ListFormat` in the Agent progress summary). US-0030 needs no new library.
 
 ## Build and Tooling (dev)
 
@@ -43,6 +43,8 @@ No date library is installed; `Date` and `Intl` are used. US-0210 needs no new l
 ## External Programs Used at Run Time
 
 The app calls `aidlc` (the AI-DLC CLI), `git`, `gh` (updater fallback), the agent CLIs `claude` and `opencode`, and the login shell (`$SHELL`). It calls them only through `runFixed` or the pty, with paths from the Tools Registry. US-0210 depends on `aidlc config models --from <preset|profile>` and `--save-as <name>` in the installed AI-DLC. `git merge-tree --write-tree` (US-1201) needs git 2.38 or later.
+
+Agent progress depends on the hook payloads of Claude Code (`hook_event_name`, `tool_name`, `tool_use_id`, `agent_id`, `agent_type`, `tool_input`) and of opencode 2.1.4's V2 events. The opencode field names are unverified (`agentAdapters.js:320`).
 
 ## Platforms
 

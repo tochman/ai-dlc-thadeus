@@ -10,7 +10,7 @@ T.H.A.D.E.U.S. (package `thadeus`, repository `aidlc-dash`) is a desktop "bridge
 |---|---|---|
 | Intents and pipeline | An intent list with filters, intent detail with phases and stages, an artifact reader, the Unit DAG | EPIC-01, US-0411 |
 | Audit timeline | A virtualised, filtered timeline of audit events with live highlighting; project velocity (US-0303, `VelocityView.jsx`) | EPIC-03 |
-| Cost and tokens | Cost per stage, agent and model from the usage ledger and the audit shards of every machine; live token meters; a token detail view; the THADEUS cost rule pack (US-0212) | EPIC-02 |
+| Cost and tokens | Cost per stage, agent and model from the usage ledger and the audit shards of every machine; live token meters; a token detail view with Agent progress (US-0507, US-0214); the THADEUS cost rule pack (US-0212) | EPIC-02, EPIC-05 |
 | Branding and desktop | The LCARS look, menu, About, splash, settings, the in-app updater, one shared tooltip | EPIC-04 |
 | Workflow control | Resume, Refresh from GitHub, AI-DLC setup, a questions popup, agent dialogs, the AI-DLC update check | EPIC-05 |
 | Feature docs | Epics and stories from `docs/FEATURES.md`, release markers, a Releases tab | EPIC-06 |
@@ -28,21 +28,24 @@ T.H.A.D.E.U.S. (package `thadeus`, repository `aidlc-dash`) is a desktop "bridge
 - **Status is never colour alone, and every text is translated.**
 - **Keyboard parity.** Whatever a pointer can reveal, focus must reveal too.
 - **The LCARS look everywhere**, new views and dialogs included (project rule, 2026-11-16).
+- **No agent text in an activity row** (US-0214 NFR2). Only identifier-shaped hook fields are kept. US-0030 asks for the task and tool descriptions, which breaks this rule on purpose (see `code-quality-assessment.md`, "Brownfield Notes for US-0030").
 
-## Active Intent (US-0210)
+## Active Intent (US-0030)
 
-The story is "Ask to switch to a stronger model profile when a critical intent starts, and switch back when it ends" (EPIC-02, for v0.2.9). The person wants three things:
-- **Project settings**: which plans (scopes) count as critical, which saved model profile is "critical", and which is "economy".
-- **Start**: when a new intent appears on a critical plan, the app asks once. Yes runs `aidlc config models --from <critical> --project --harness <harness> --yes`; No changes nothing.
-- **End**: when that intent is completed or archived, the app switches back to the economy profile, or asks first if the person chose that.
+The story is "Agent progress keeps an old state and is vague about what an agent is doing" (EPIC-00, express plan, for v0.2.10). The person wants Agent progress in the token detail view to:
+- show the main row's real state, so that a permission wait clears once it is answered or the next event arrives;
+- show each agent's task next to its name;
+- show "step n of m" from the plan, Unit-level or stage-level (zero-Unit);
+- describe the current tool call in words when the call has a description, and fall back to "running Bash";
+- show how long ago an old state was seen.
 
-The app shows which profile is active, and the command's output after each switch. A failed command shows its message and changes nothing else. An intent on a plan that is not critical gets no question. Open question from the story: when a critical and a non-critical intent run at the same time, the proposal is that critical wins until the last critical intent ends.
-
-Where this lands, and the limits found, are in `architecture.md` ("US-0210 building blocks") and `code-quality-assessment.md` ("Brownfield Notes for US-0210"). The most important limit is that a saved AI-DLC profile holds only efforts per group, not models.
+Where this lands, and the causes found, are in `architecture.md` ("Agent progress today") and `code-quality-assessment.md` ("Brownfield Notes for US-0030").
 
 ## Previous Intents
 
-- **US-0303** (project velocity, built): `parsers/velocity.js`, `project:velocity`, `VelocityView.jsx` with an intent tab. Its data-source notes are kept in `architecture.md` and `code-quality-assessment.md`.
+- **US-0210** (model profile switch, built). It asks to switch to a stronger model profile when an intent on a critical plan starts, and switches back when it ends. Its building blocks and limits are kept in `architecture.md` and `code-quality-assessment.md`. The main limit: a saved AI-DLC profile holds only efforts per group, not models.
+- **US-0214** (agent activity from hook events, delivered): `src/shared/agentActivity.js`, the activity kinds in `dialog.sh` and `agentAdapters.js`, `agentActivity:list` and `agent:activity`.
+- **US-0303** (project velocity, built): `parsers/velocity.js`, `project:velocity`, `VelocityView.jsx` with an intent tab.
 - **US-0212** (cost rule pack, done): `src/main/costRules.js`, `src/shared/costRules.js`, `CostRulesSection.jsx`. It writes a marked block in the memory files after a diff.
 - **US-0414** (shared tooltip, delivered): `Tooltip.jsx` with `tooltipPlacement.js`. `tests/renderer/noNativeTitle.test.jsx` forbids native `title=`.
-- **US-0507** (agent progress, delivered in #55): `AgentProgress.jsx`, `parsers/agentProgress.js`.
+- **US-0507** (agent progress, delivered in #55): `AgentProgress.jsx`, `parsers/agentProgress.js`, `src/main/agentProgress.js`.
