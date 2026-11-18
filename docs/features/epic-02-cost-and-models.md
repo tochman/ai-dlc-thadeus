@@ -8,7 +8,7 @@
 
 **Stories:** US-0201, US-0202, US-0203, US-0204, US-0205, US-0206, US-0207, US-0208, US-0209, US-0210, US-0211, US-0212, US-0213, US-0214, US-0215
 
-**Status (2026-11-18):** ✅ US-0201–US-0205 and US-0207 released (v0.2.0–v0.2.4; CSV export in US-0203 deferred). ➡️ US-0206 moved to US-0904. ✅ US-0208 released in v0.2.7. ✅ US-0209 released in v0.2.8. ✅ US-0212 released in v0.2.9. ✅ US-0210 released in v0.2.9. ✅ US-0211 released in v0.2.9. ✅ US-0213 released in v0.2.9. ✅ US-0214 released in v0.2.9. 📋 US-0215 planned. Each story names its release.
+**Status (2026-11-18):** ✅ US-0201–US-0205 and US-0207 released (v0.2.0–v0.2.4; CSV export in US-0203 deferred). ➡️ US-0206 moved to US-0904. ✅ US-0208 released in v0.2.7. ✅ US-0209 released in v0.2.8. ✅ US-0212 released in v0.2.9. ✅ US-0210 released in v0.2.9. ✅ US-0211 released in v0.2.9. ✅ US-0213 released in v0.2.9. ✅ US-0214 released in v0.2.9. 📋 US-0215 planned, for v0.3.0. Each story names its release.
 
 ---
 
@@ -288,7 +288,7 @@ The key format of `workflows` was confirmed during requirements analysis (see ab
 - **Implementation (Code Generation, 2026-11-18):** Why the developer agent was missed: the app in the screenshot was v0.2.8, whose `workingAgents` showed nothing while AI-DLC's inflight file was empty, and Claude Code's own helper agents (logged as `Agent Type: unknown`) empty it. US-0025 already removed that gate; the screenshot's audit is now a regression test. Claude Code gets nine async entries (`pretool`, `posttool`, `toolfail`, `agentstart`, `agentstop`, `prompt`, `message`, `stopfail`, `asking`), one installer kind per hook event, which `dialog.sh` writes as the one channel kind `activity`. An install from US-0213 reads as out of date. The adapters keep only identifier-shaped fields. The pure model is `src/shared/agentActivity.js`, with idle after 30 s quiet when no tool runs. The store pushes `agent:activity` within 250 ms. Agent progress shows the hook rows for a live intent when every used harness's hooks are current, and otherwise a notice with Install or Update over the audit rows. The legend entries of Tokens over time and of each split card are toggle buttons; the rate follows the over-time choice, and the choice is kept per project and diagram while the app runs.
 - **Dependencies:** US-0207, US-0208, US-0213 (its hook kinds and channel)
 
-**US-0215: Token diagrams and figures for finished intents** 📋 Planned
+**US-0215: Token diagrams and figures for finished intents** 📋 Planned, for v0.3.0
 - As a **developer looking back at finished work**, in order to **see how a past intent used its tokens and compare it with others**, I would like **the token view of a finished intent to show the same diagrams and figures as a live one: tokens over time, the rate, and the splits by stage, agent and model**.
 - **Epic:** EPIC-02
 - **Priority:** Medium
