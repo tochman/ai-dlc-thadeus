@@ -171,7 +171,7 @@
 - **Notes:** `aidlc engine orchestrate help` (aidlc 2.11.3) lists `intent switch`, `archive` and `unarchive`, but no rename. Find out whether AI-DLC offers one, or whether a display name kept beside the slug is enough.
 - **Dependencies:** US-0501
 
-**US-0509: Change the plan of an intent that has started** 📋 Planned
+**US-0509: Change the plan of an intent that has started** 📋 Planned, for v0.3.0
 - As a **developer whose work turned out bigger or smaller than planned**, in order to **keep the right amount of process without starting over**, I would like to **change the plan AI-DLC follows for a running intent**.
 - **Epic:** EPIC-05
 - **Priority:** Medium
