@@ -7,7 +7,10 @@
 // `permission` (what, detail, cwd, truncated, choices) and `alwaysRules`, which stays in main (SD11). Agent text is
 // cut first, then shown through visibleText, so a control or bidi character is seen as its escape (SCD8, SD9).
 // `permissionAnswer` builds the hook output (Claude Code) or the decision word (opencode) for one choice.
-import { cleanLine, visibleText } from '../shared/agentText.js';
+//
+// US-0030 FR1.1, FR2.1, FR4.1, NFR1: a permission names the agent that asked; an activity tool start carries two bounded
+// texts, a tool call's description (`detail`) and the Agent tool's task (`task`, with `taskType`).
+import { cleanLine, cutGraphemes, stripUnsafe, visibleText } from '../shared/agentText.js';
 import { t } from '../shared/i18n.js';
 import { opencodeContext } from './contextSize.js';
 
@@ -171,6 +174,8 @@ function parseClaudePermission(body) {
     ok: true,
     kind: 'permission',
     toolCallId: p.tool_use_id ?? null,
+    agentId: ident(p.agent_id), // US-0030 FR1.1: a subagent's request; null is the main chat's
+    agentType: ident(p.agent_type),
     permission: permissionOf({ what: p.tool_name, detail, cwd: typeof p.cwd === 'string' ? p.cwd : null, lines, denyKey: 'deny' }),
     alwaysRules: lines ? p.permission_suggestions : null // the parsed value itself, never rebuilt (SD11)
   };
@@ -265,7 +270,8 @@ function opencodeReply(body) {
 
 // --- Activity (US-0214) ----------------------------------------------------------------------------------------------
 // FR1, NFR2: only the event name, tool name and id, agent id and type, error type and opencode's session ids are read.
-// Each must look like an identifier, so no prompt, tool input, message or error text can pass as one.
+// Each must look like an identifier, so no prompt, tool input, message or error text can pass as one. US-0030 NFR1: the
+// one exception is a tool input's `description`, through agentLine below.
 const IDENT = /^[\w.:@/-]{1,128}$/;
 const ERROR_TYPE = /^[\w.-]{1,64}$/;
 const ident = (v) => (typeof v === 'string' && IDENT.test(v) ? v : null);
@@ -276,9 +282,29 @@ const errorType = (v) => {
 const refuseActivity = { ok: false, reason: 'unknown activity event' };
 const activity = (fields) => ({ ok: true, kind: 'activity', activity: Object.fromEntries(Object.entries(fields).filter(([, v]) => v != null)) });
 
+// US-0030 NFR1 (relaxes US-0214 NFR2 on purpose): the only agent text that passes. One line, no unsafe characters, an
+// absolute path inside the project shown relative to it and any other one hidden, at most 80 characters with the cut.
+const MAX_AGENT_TEXT = 80;
+const ABS_PATH = /(?<![\w.~/-])~?\/[^\s'"`]+/gu;
+const AGENT_TOOLS = new Set(['Agent', 'Task']); // Task is the Agent tool's older name
+function agentLine(value, cwd) {
+  if (typeof value !== 'string') return null;
+  const root = typeof cwd === 'string' && cwd.startsWith('/') ? `${cwd.replace(/\/+$/, '')}/` : null;
+  const line = stripUnsafe(value).replace(ABS_PATH, (p) => (root && p.startsWith(root) && p.length > root.length ? p.slice(root.length) : '…'));
+  return line ? cutGraphemes(line, MAX_AGENT_TEXT - 1) : null;
+}
+
+/** US-0030 FR2.1, FR4.1: a tool start with its description; the Agent tool's is also the task of the agent it starts. */
+function claudeToolStart(p) {
+  const input = isObject(p.tool_input) ? p.tool_input : {};
+  const detail = agentLine(input.description, p.cwd);
+  const fields = { name: 'toolStart', tool: ident(p.tool_name), toolId: ident(p.tool_use_id), detail };
+  return AGENT_TOOLS.has(p.tool_name) ? { ...fields, task: detail, taskType: ident(input.subagent_type) } : fields;
+}
+
 /** Claude Code's activity hooks, by hook_event_name. A subagent's own events carry agent_id and agent_type. */
 const CLAUDE_ACTIVITY = {
-  PreToolUse: (p) => ({ name: 'toolStart', tool: ident(p.tool_name), toolId: ident(p.tool_use_id) }),
+  PreToolUse: claudeToolStart,
   PostToolUse: (p) => ({ name: 'toolEnd', toolId: ident(p.tool_use_id) }),
   PostToolUseFailure: (p) => ({ name: 'toolEnd', toolId: ident(p.tool_use_id) }),
   SubagentStart: () => ({ name: 'agentStart' }),

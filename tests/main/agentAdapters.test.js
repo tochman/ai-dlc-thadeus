@@ -233,7 +233,8 @@ describe('handoff signals (US-0213)', () => {
 });
 
 // US-0214 FR1, NFR2: the activity kind. Only the known fields are read (event name, tool name and id, agent id and
-// type, error, notification type, parentID); prompts, tool input and message text never leave the adapter.
+// type, error, notification type, parentID); prompts, tool output and message text never leave the adapter.
+// US-0030 NFR1 changes this on purpose: a tool input's `description` passes, bounded (see "bounded agent text" below).
 describe('activity (US-0214)', () => {
   const act = (harness, payload) => adapters[harness].parse('activity', Buffer.from(JSON.stringify(payload)));
   const base = { session_id: 'cc-1', transcript_path: '/t.jsonl' };
@@ -333,5 +334,48 @@ describe('activity (US-0214)', () => {
     });
     expect(act('opencode', { type: 'session.created', data: { info: { id: 'm' } } })).toMatchObject({ ok: false }); // the main chat is kind session
     expect(act('opencode', { type: 'message.updated', data: {} })).toMatchObject({ ok: false, reason: 'unknown activity event' });
+  });
+});
+
+// US-0030 FR2.1, FR4.1, FR4.2, FR1.1, NFR1: the two bounded texts (a tool call's description, an agent's task) and the
+// agent id on a permission. Relaxes US-0214 NFR2 on purpose: these two texts, cleaned and cut, and nothing else.
+describe('bounded agent text (US-0030)', () => {
+  const act = (payload) => adapters.claude.parse('activity', Buffer.from(JSON.stringify({ session_id: 'cc-1', cwd: '/Users/dev/proj', ...payload })));
+  const pre = (tool, input) => act({ hook_event_name: 'PreToolUse', tool_name: tool, tool_use_id: 'tu1', tool_input: input }).activity;
+
+  it('a tool call with a description gives it as detail; the command itself never passes (FR4.1)', () => {
+    expect(pre('Bash', { command: 'SECRET', description: 'Rerunning view tests after fixing expectation' })).toEqual({
+      name: 'toolStart',
+      tool: 'Bash',
+      toolId: 'tu1',
+      detail: 'Rerunning view tests after fixing expectation'
+    });
+  });
+
+  it('a tool call with no description gives no detail (FR4.2)', () => {
+    expect(pre('Read', { file_path: '/Users/dev/proj/a.js' })).toEqual({ name: 'toolStart', tool: 'Read', toolId: 'tu1' });
+    expect(pre('Bash', { command: 'ls', description: '   ' })).toEqual({ name: 'toolStart', tool: 'Bash', toolId: 'tu1' });
+  });
+
+  it('the Agent tool gives its description as the task, with the agent type it starts (FR2.1)', () => {
+    expect(pre('Agent', { description: 'Code generation for US-0030', prompt: 'SECRET', subagent_type: 'aidlc-developer-agent' })).toMatchObject({
+      task: 'Code generation for US-0030',
+      taskType: 'aidlc-developer-agent'
+    });
+    expect(JSON.stringify(pre('Agent', { description: 'x', prompt: 'SECRET' }))).not.toContain('SECRET');
+  });
+
+  it('cuts the text to one line of at most 80 characters, without control characters or paths outside the project (NFR1)', () => {
+    const { detail } = pre('Bash', { description: `Line one\nline two‮ ${'x'.repeat(200)}` });
+    expect(detail.length).toBeLessThanOrEqual(80);
+    expect(detail).toMatch(/^Line one line two x+…$/);
+    expect(pre('Bash', { description: 'Read /Users/dev/.ssh/id_rsa and /Users/dev/proj/src/a.js' }).detail).toBe('Read … and src/a.js');
+  });
+
+  it('a permission names the agent that asked; the main chat’s has none (FR1.1)', () => {
+    const permission = (extra) =>
+      adapters.claude.parse('permission', Buffer.from(JSON.stringify({ ...JSON.parse(load('claude', 'permission-bash')), ...extra })));
+    expect(permission({ agent_id: 'ag1', agent_type: 'aidlc-developer-agent' })).toMatchObject({ agentId: 'ag1', agentType: 'aidlc-developer-agent' });
+    expect(permission({}).agentId ?? null).toBeNull();
   });
 });

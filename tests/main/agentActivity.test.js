@@ -138,3 +138,62 @@ describe('dispatched agents (US-0214 FR2.2, FR2.3, A2)', () => {
     expect(JSON.stringify(rowsAt(st, 2))).not.toMatch(/secret/);
   });
 });
+
+// US-0030 FR1, FR2, FR4, FR5: true permission state per agent, the task and the activity in words, and old rows that say so.
+describe('honest agent progress (US-0030)', () => {
+  const dev = 'aidlc-developer-agent';
+  const dispatch = (s, toolId, task, taskType = dev) => claude(s, 'toolStart', { tool: 'Agent', toolId, task, taskType, detail: task });
+  const agent = (state, s, id = 'ag1') => rowsAt(state, s).find((r) => r.agentId === id);
+  const started = () =>
+    run([claude(0, 'prompt'), dispatch(1, 'm1', 'Code generation for US-0030'), claude(2, 'agentStart', { agentId: 'ag1', agentType: dev })]);
+
+  it('puts an agent’s permission on its own row; main says it waits for that agent (FR1.1, FR1.2)', () => {
+    const st = reduceActivity(started(), claude(3, 'waiting', { reason: 'permission', agentId: 'ag1', agentType: dev }));
+    expect(agent(st, 3)).toMatchObject({ state: 'waiting', reason: 'permission' });
+    expect(main(st, 3)).toMatchObject({ state: 'waiting', reason: 'agent', waitingFor: dev });
+  });
+
+  it('clears the wait on the answer, and on that agent’s next event (FR1.3)', () => {
+    const waiting = reduceActivity(started(), claude(3, 'waiting', { reason: 'permission', agentId: 'ag1' }));
+    const answered = reduceActivity(waiting, claude(4, 'answered', { agentId: 'ag1' }));
+    expect(agent(answered, 4).state).toBe('working');
+    expect(main(answered, 4)).toMatchObject({ state: 'tool', tool: 'Agent', reason: null, waitingFor: null });
+    const moved = reduceActivity(waiting, claude(4, 'toolEnd', { toolId: 'x', agentId: 'ag1' }));
+    expect(main(moved, 4).state).toBe('tool');
+  });
+
+  it('never says main waits for your permission while it waits for a background agent (FR1.4)', () => {
+    let st = reduceActivity(started(), claude(3, 'stop'));
+    expect(main(st, 3).reason).toBeNull();
+    st = reduceActivity(st, claude(4, 'waiting', { reason: 'permission', agentId: 'ag1' }));
+    expect(main(st, 4)).toMatchObject({ state: 'waiting', reason: 'agent' });
+    expect(rowsAt(st, 4).filter((r) => r.kind === 'main' && r.reason === 'permission')).toEqual([]);
+  });
+
+  it('gives an agent the task of the Agent call that started it, by type and in order; none when unknown (FR2.1, FR2.2)', () => {
+    const st = run([
+      dispatch(0, 'm1', 'Review the plan', 'aidlc-quality-agent'),
+      dispatch(1, 'm2', 'Write the code'),
+      dispatch(2, 'm3', 'Write more code'),
+      claude(3, 'agentStart', { agentId: 'a', agentType: dev }),
+      claude(4, 'agentStart', { agentId: 'b', agentType: 'aidlc-quality-agent' }),
+      claude(5, 'agentStart', { agentId: 'c', agentType: dev }),
+      claude(6, 'agentStart', { agentId: 'd', agentType: 'Explore' })
+    ]);
+    expect(['a', 'b', 'c', 'd'].map((id) => agent(st, 6, id).task)).toEqual(['Write the code', 'Review the plan', 'Write more code', null]);
+  });
+
+  it('shows the open tool call’s description as the detail, none without one (FR4.1, FR4.2)', () => {
+    let st = run([claude(0, 'toolStart', { tool: 'Bash', toolId: 'b', detail: 'Run the view tests' })]);
+    expect(main(st, 0)).toMatchObject({ state: 'tool', tool: 'Bash', detail: 'Run the view tests' });
+    st = reduceActivity(st, claude(1, 'toolStart', { tool: 'Read', toolId: 'r' }));
+    expect(main(st, 1)).toMatchObject({ tool: 'Read', detail: null });
+  });
+
+  it('marks a row quiet for 30 s as stale, waiting rows included, until its next event (FR5.1, FR5.2)', () => {
+    const st = reduceActivity(started(), claude(3, 'waiting', { reason: 'permission', agentId: 'ag1' }));
+    expect(agent(st, 32.999)).toMatchObject({ state: 'waiting', stale: false, lastMs: T0 + 3000 });
+    expect(agent(st, 33)).toMatchObject({ state: 'waiting', stale: true });
+    expect(agent(reduceActivity(st, claude(40, 'answered', { agentId: 'ag1' })), 40).stale).toBe(false);
+  });
+});

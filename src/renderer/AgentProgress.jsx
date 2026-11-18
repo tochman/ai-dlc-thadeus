@@ -5,10 +5,13 @@
 // instead (`agentActivity`): one per main chat, labelled with its harness, and its dispatched agents under it, each with
 // its state in words and the time in that state. Hooks missing or out of date: a notice with the update, then the
 // audit rows, and never "no agents are working" as if that were known.
+// US-0030 FR1.2, FR2, FR3, FR4, FR5, NFR2, NFR3: a hook row shows its agent's task, the tool call's description instead
+// of "running <tool>", main waiting for an agent, the step count from the audit rows, and "seen N ago" once quiet.
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { stageTitle } from './format.js';
 import { agentName } from '../main/parsers/ledger.js';
+import { STALE_MS } from '../shared/agentActivity.js';
 import AgentHooksPreview, { harnessLabel } from './AgentHooksPreview.jsx';
 import { useAgentHooks } from './AgentHooksSection.jsx';
 
@@ -41,12 +44,29 @@ function summaryText(t, language, rows) {
   return t('tokenDetail.progress.summaryBuilds', { list });
 }
 
-/** US-0214 FR3.1: one activity state in words; only the tool name or error type is shown, never agent text (NFR2). */
+/**
+ * US-0214 FR3.1: one activity state in words. US-0030 FR4.1, FR4.2, FR1.2: the tool call's bounded description, else
+ * "running <tool>"; main waiting for an agent names that agent.
+ */
 function stateText(t, row) {
-  if (row.state === 'tool') return t('tokenDetail.progress.state.tool', { tool: row.tool });
+  if (row.state === 'tool') return row.detail || t('tokenDetail.progress.state.tool', { tool: row.tool });
   if (row.state === 'error') return t('tokenDetail.progress.state.error', { error: row.error });
+  if (row.state === 'waiting' && row.reason === 'agent')
+    return t('tokenDetail.progress.state.waiting.agent', { agent: row.waitingFor ? agentName(row.waitingFor) : t('tokenDetail.progress.agent') });
   if (row.state === 'waiting') return t(`tokenDetail.progress.state.waiting.${row.reason ?? 'notification'}`);
   return t(`tokenDetail.progress.state.${row.state}`);
+}
+
+/**
+ * US-0030 FR3.1, FR3.2: an agent row's plan steps, from the one audit build row of the same agent. A Unit build row
+ * names no agent; it is the developer's.
+ * ponytail: matched by agent name only (hook rows carry no stage or Unit); two builds of one agent at once show none.
+ */
+function stepsOf(row, auditRows) {
+  if (row.kind !== 'agent' || !row.agentType) return null;
+  const name = agentName(row.agentType);
+  const builds = auditRows.filter((r) => r.kind === 'build' && r.steps && (r.agent ?? 'developer') === name);
+  return builds.length === 1 ? builds[0].steps : null;
 }
 
 /** US-0214 FR3.2: the time in the current state, in seconds below a minute. */
@@ -113,13 +133,15 @@ function HooksNotice({ projectId, harnesses }) {
   );
 }
 
-function ActivityRows({ rows }) {
+function ActivityRows({ rows, auditRows }) {
   const { t } = useTranslation();
   const now = useNow(rows.length > 0);
   return (
     <ul className="token-detail-rows">
       {rows.map((row) => {
         const main = row.kind === 'main';
+        const steps = stepsOf(row, auditRows);
+        const stale = Number.isFinite(row.lastMs) && now - row.lastMs >= STALE_MS; // FR5.1, on this clock (NFR3)
         return (
           <li
             key={row.key}
@@ -135,9 +157,12 @@ function ActivityRows({ rows }) {
                   : t('tokenDetail.progress.agent')}
             </span>
             <span className="agent-progress-detail">
+              {row.task && <span data-testid="agent-progress-task">{row.task}</span>}
               <span className="agent-progress-status" data-testid="agent-progress-state">
                 {stateText(t, row)}
               </span>
+              {steps && <span data-testid="agent-progress-steps">{t('tokenDetail.progress.steps', steps)}</span>}
+              {stale && <span data-testid="agent-progress-seen">{t('tokenDetail.progress.seen', { ago: sinceText(t, row.lastMs, now) })}</span>}
             </span>
             <span className="token-detail-row-value">{sinceText(t, row.sinceMs, now)}</span>
           </li>
@@ -186,7 +211,7 @@ export default function AgentProgress({ projectId, rows, live = false }) {
   const notice = live && stale.length > 0;
 
   let body;
-  if (fromHooks) body = active ? <ActivityRows rows={activity} /> : null;
+  if (fromHooks) body = active ? <ActivityRows rows={activity} auditRows={rows} /> : null;
   else if (rows.length > 0) body = <AuditRows rows={rows} />;
   else if (notice)
     body = (

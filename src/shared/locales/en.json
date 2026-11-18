@@ -1254,6 +1254,7 @@
       "main": "Main · {harness}",
       "agent": "Agent",
       "seconds": "{n} s",
+      "seen": "seen {ago} ago",
       "state": {
         "tool": "running {tool}",
         "writing": "writing",
@@ -1265,7 +1266,8 @@
           "permission": "waiting for your permission",
           "question": "waiting for your answer",
           "elicitation": "waiting for your input",
-          "notification": "waiting for you"
+          "notification": "waiting for you",
+          "agent": "waiting for {agent}"
         }
       },
       "hooks": {
