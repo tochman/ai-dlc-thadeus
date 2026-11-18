@@ -276,10 +276,12 @@ describe('opencode plugin: permissions', () => {
     await load();
     vi.spyOn(Date, 'now').mockReturnValue(1_700_000_000_000);
     for (let i = 0; i < 3; i++) handlers['permission.asked'](asked());
-    await waitFor(() => evts().length === 3 && files('answers').length === 3);
+    // US-0214: each permission.asked also writes an activity event; this case is about the three waiting ones.
+    const waiting = () => evts().filter((f) => kindOf(f) === 'permission');
+    await waitFor(() => waiting().length === 3 && files('answers').length === 3);
     vi.restoreAllMocks();
-    expect(evts().sort()).toEqual([0, 1, 2].map((n) => `${1_700_000_000_000 + n}-${process.pid}.evt`));
-    for (const f of evts()) answer(f.replace(/\.evt$/, ''), '');
+    expect(waiting().sort()).toEqual([0, 1, 2].map((n) => `${1_700_000_000_000 + n}-${process.pid}.evt`));
+    for (const f of waiting()) answer(f.replace(/\.evt$/, ''), '');
     await waitFor(() => files('answers').length === 0);
   });
 
@@ -320,11 +322,12 @@ describe('opencode plugin: session handoff reports (US-0213)', () => {
   const fire = (type, data, envelope = 'data') => handlers[type]({ id: 'e1', type, [envelope]: data });
   const USAGE = { input: 10, output: 5, reasoning: 0, cache: { read: 90_000, write: 1_000 }, cost: 0.1 };
 
-  it('session.created reports the main chat as kind session, and a child session (parentID) not at all (FR1.5)', async () => {
+  it('session.created reports the main chat as kind session, and a child session (parentID) only as activity (FR1.5, US-0214)', async () => {
     await load();
     expect(fire('session.created', { info: { id: 'ses_child', parentID: 'ses_main' } })).toBeUndefined();
-    await sleep(100);
-    expect(evts()).toEqual([]);
+    const [child] = await waitFor(() => evts().length === 1 && evts());
+    expect(read(child).kind).toBe('activity');
+    rmSync(path.join(dir, 'events', child));
     fire('session.created', { info: { id: 'ses_main' } });
     const [f] = await waitFor(() => evts().length === 1 && evts());
     expect(read(f)).toEqual({ kind: 'session', body: { id: 'e1', type: 'session.created', data: { info: { id: 'ses_main' } } } });
@@ -345,11 +348,11 @@ describe('opencode plugin: session handoff reports (US-0213)', () => {
     expect(read(f).kind).toBe('postcompact');
   });
 
-  it.each(['busy', 'retry'])('a %s session.status reports kind status (FR5.1)', async (type) => {
+  it.each(['busy', 'retry'])('a %s session.status reports kind status, and activity (FR5.1, US-0214)', async (type) => {
     await load({ reply: vi.fn() });
     fire('session.status', { sessionID: 'ses_main', status: { type } });
-    const [f] = await waitFor(() => evts().length === 1 && evts());
-    expect(read(f).kind).toBe('status');
+    const both = await waitFor(() => evts().length === 2 && evts());
+    expect(both.map((f) => read(f).kind).sort()).toEqual(['activity', 'status']);
   });
 
   it('session.idle reports kind status only while no session.status has been seen (FR5.1 fallback)', async () => {
@@ -358,10 +361,10 @@ describe('opencode plugin: session handoff reports (US-0213)', () => {
     const [f] = await waitFor(() => evts().length === 1 && evts());
     expect(read(f).kind).toBe('status');
     fire('session.status', { sessionID: 'ses_main', status: { type: 'busy' } });
-    await waitFor(() => evts().length === 2);
+    await waitFor(() => evts().length === 3); // status and, since US-0214, activity
     fire('session.idle', { sessionID: 'ses_main' });
     await sleep(100);
-    expect(evts()).toHaveLength(2);
+    expect(evts()).toHaveLength(3);
   });
 
   it('the compaction hook adds the instruction the app wrote as a system part, never a result; nothing without the file (FR4.2)', async () => {
@@ -396,5 +399,56 @@ describe('opencode plugin: session handoff reports (US-0213)', () => {
     expect(fire('session.created', { info: { id: 'ses_main' } })).toBeUndefined();
     await sleep(100);
     expect(ctx.log.error.mock.calls.flat().join(' ')).not.toContain(SECRET);
+  });
+});
+
+// US-0214 FR1.2, NFR1: the activity events, each written as one kind activity event with the envelope unchanged, by a
+// fire-and-forget handler. Every name lives in the OC constants.
+describe('opencode plugin: activity (US-0214)', () => {
+  const evts = () => files('events').filter((f) => f.endsWith('.evt'));
+  const kinds = () =>
+    evts().map(
+      (f) =>
+        readFileSync(path.join(dir, 'events', f), 'utf8')
+          .split('\n')[0]
+          .split(' ')[2]
+    );
+  const TYPES = [
+    'session.tool.input.started',
+    'session.tool.success',
+    'session.tool.failed',
+    'session.text.started',
+    'session.text.delta',
+    'session.text.ended',
+    'session.reasoning.started',
+    'session.reasoning.delta',
+    'session.reasoning.ended',
+    'session.execution.failed',
+    'session.execution.interrupted'
+  ];
+
+  it.each(TYPES)('%s writes one activity event with the envelope unchanged, and returns at once', async (type) => {
+    await load();
+    const event = { id: 'e1', created: 1, type, data: { sessionID: 'ses_main', callID: 'c1', tool: 'bash' } };
+    expect(handlers[type](event)).toBeUndefined();
+    const [f] = await waitFor(() => evts().length === 1 && evts());
+    const text = readFileSync(path.join(dir, 'events', f), 'utf8');
+    expect(text).toBe(`THADEUS-EVENT v1 activity ${SECRET}\n${JSON.stringify(event)}`);
+  });
+
+  it('permission.asked and form.created also report activity, beside their waiting event', async () => {
+    await load();
+    handlers['permission.asked'](fixture('permission-asked-always'));
+    await waitFor(() => kinds().includes('activity') && kinds().includes('permission'));
+    expect(kinds().sort()).toEqual(['activity', 'permission']);
+  });
+
+  it('keeps every event name in OC, and every activity name is subscribed', async () => {
+    const { OC } = await import('../../.opencode/plugins/thadeus-dialog.js');
+    await load();
+    for (const name of [...TYPES, 'session.status', 'permission.asked', 'form.created', 'session.created']) {
+      expect(Object.values(OC)).toContain(name);
+      expect(Object.keys(handlers)).toContain(name);
+    }
   });
 });

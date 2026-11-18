@@ -263,6 +263,82 @@ function opencodeReply(body) {
   return { ok: true, kind: 'reply', message: message(text) };
 }
 
+// --- Activity (US-0214) ----------------------------------------------------------------------------------------------
+// FR1, NFR2: only the event name, tool name and id, agent id and type, error type and opencode's session ids are read.
+// Each must look like an identifier, so no prompt, tool input, message or error text can pass as one.
+const IDENT = /^[\w.:@/-]{1,128}$/;
+const ERROR_TYPE = /^[\w.-]{1,64}$/;
+const ident = (v) => (typeof v === 'string' && IDENT.test(v) ? v : null);
+const errorType = (v) => {
+  const type = isObject(v) ? v.type : v;
+  return typeof type === 'string' && ERROR_TYPE.test(type) ? type : 'unknown';
+};
+const refuseActivity = { ok: false, reason: 'unknown activity event' };
+const activity = (fields) => ({ ok: true, kind: 'activity', activity: Object.fromEntries(Object.entries(fields).filter(([, v]) => v != null)) });
+
+/** Claude Code's activity hooks, by hook_event_name. A subagent's own events carry agent_id and agent_type. */
+const CLAUDE_ACTIVITY = {
+  PreToolUse: (p) => ({ name: 'toolStart', tool: ident(p.tool_name), toolId: ident(p.tool_use_id) }),
+  PostToolUse: (p) => ({ name: 'toolEnd', toolId: ident(p.tool_use_id) }),
+  PostToolUseFailure: (p) => ({ name: 'toolEnd', toolId: ident(p.tool_use_id) }),
+  SubagentStart: () => ({ name: 'agentStart' }),
+  SubagentStop: () => ({ name: 'agentEnd' }),
+  UserPromptSubmit: () => ({ name: 'prompt' }),
+  MessageDisplay: (p) => ({ name: 'text', final: p.final === true }),
+  StopFailure: (p) => ({ name: 'error', error: errorType(p.error) }),
+  PermissionRequest: () => ({ name: 'waiting', reason: 'permission' }),
+  Elicitation: () => ({ name: 'waiting', reason: 'elicitation' })
+};
+
+/** US-0214 FR1.1: one Claude Code activity hook payload. */
+function claudeActivity(body) {
+  const p = parseJson(body);
+  if (!isObject(p)) return { ok: false, reason: 'not JSON' };
+  const read = Object.hasOwn(CLAUDE_ACTIVITY, p.hook_event_name) ? CLAUDE_ACTIVITY[p.hook_event_name] : null;
+  if (!read) return refuseActivity;
+  const fields = read(p);
+  if (fields.name === 'toolStart' && !fields.tool) return { ok: false, reason: 'no tool name' };
+  return activity({ ...fields, agentId: ident(p.agent_id), agentType: ident(p.agent_type) });
+}
+
+/** opencode V2 activity events, by type; `final` for the text and reasoning streams comes from the type's last part. */
+const OPENCODE_ACTIVITY = {
+  'session.tool.input.started': (d) => ({ name: 'toolStart', tool: ident(d.tool ?? d.name), toolId: ident(d.callID ?? d.toolCallID ?? d.id) }),
+  'session.tool.success': (d) => ({ name: 'toolEnd', toolId: ident(d.callID ?? d.toolCallID ?? d.id) }),
+  'session.tool.failed': (d) => ({ name: 'toolEnd', toolId: ident(d.callID ?? d.toolCallID ?? d.id) }),
+  'session.status': (d) => ({ name: isObject(d.status) && d.status.type === 'idle' ? 'idle' : 'busy' }),
+  'permission.asked': () => ({ name: 'waiting', reason: 'permission' }),
+  'form.created': () => ({ name: 'waiting', reason: 'question' }),
+  'session.execution.failed': (d) => ({ name: 'error', error: errorType(d.reason ?? d.error) }),
+  'session.execution.interrupted': (d) => ({ name: 'error', error: errorType(d.reason ?? d.error) })
+};
+const STREAM = /^session\.(text|reasoning)\.(\w+)$/;
+
+/**
+ * US-0214 FR1.2: one opencode V2 event ({ type, data } or the older { properties }). `ref` is opencode's session id,
+ * which the activity model uses to tell a child session from the main chat (FR2.2).
+ * ponytail: the field names (callID, tool, info.agent) are from opencode 2.1.4's docs, not a recorded run; the manual
+ * opencode check confirms them or replaces them.
+ */
+function opencodeActivity(body) {
+  const p = parseJson(body);
+  if (!isObject(p)) return { ok: false, reason: 'not JSON' };
+  const d = isObject(p.data) ? p.data : isObject(p.properties) ? p.properties : {};
+  if (p.type === 'session.created') {
+    const info = isObject(d.info) ? d.info : d;
+    const parent = ident(info.parentID);
+    if (!parent) return { ok: false, reason: 'main session' }; // reported as kind session (US-0213)
+    return activity({ name: 'agentStart', ref: parent, agentId: ident(info.id), agentType: ident(info.agent) });
+  }
+  const stream = typeof p.type === 'string' ? STREAM.exec(p.type) : null;
+  const known = typeof p.type === 'string' && Object.hasOwn(OPENCODE_ACTIVITY, p.type) ? OPENCODE_ACTIVITY[p.type] : null;
+  const read = stream ? () => ({ name: stream[1], final: stream[2] === 'ended' }) : known;
+  if (!read) return refuseActivity;
+  const fields = read(d);
+  if (fields.name === 'toolStart' && !fields.tool) return { ok: false, reason: 'no tool name' };
+  return activity({ name: fields.name, ref: ident(d.sessionID), ...fields });
+}
+
 /** US-0213: the report-only kinds; they never open a dialog page (agentEvents keeps them as session signals). */
 export const SIGNAL_KINDS = new Set(['session', 'notify', 'precompact', 'postcompact', 'status', 'usage']);
 const CLAUDE_SIGNALS = new Set(['session', 'notify', 'precompact', 'postcompact']);
@@ -272,6 +348,7 @@ const claude = {
   /** Claude Code hook stdin: PreToolUse (kind question) or PostToolUse (kind answered) for AskUserQuestion. */
   parse(kind, body) {
     if (kind === 'reply') return claudeReply(body);
+    if (kind === 'activity') return claudeActivity(body); // US-0214
     if (CLAUDE_SIGNALS.has(kind)) return claudeSignal(kind, body);
     if (kind === 'answered') return { ok: true, kind, toolCallId: parseJson(body)?.tool_use_id ?? null };
     if (kind === 'permission') return parseClaudePermission(body);
@@ -327,6 +404,7 @@ const opencode = {
     }
     if (kind === 'permission') return parseOpencodePermission(body);
     if (kind === 'reply') return opencodeReply(body);
+    if (kind === 'activity') return opencodeActivity(body); // US-0214
     if (OPENCODE_SIGNALS.has(kind)) return opencodeSignal(kind, body);
     if (kind !== 'question') return null;
     const payload = parseJson(body);

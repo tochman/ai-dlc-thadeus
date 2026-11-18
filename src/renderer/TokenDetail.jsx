@@ -14,7 +14,7 @@ import { ParentSize } from '@visx/responsive';
 import { Bar, Frame } from './Lcars.jsx';
 import { formatCostPair, formatTokens, formatUsd, shortModel, stageTitle } from './format.js';
 import { agentName } from '../main/parsers/ledger.js';
-import { SPLIT_KINDS, STACK_KINDS, elapsedLabel, rateSeries, splitRows, stackSeries } from './tokenChart.js';
+import { SPLIT_KINDS, STACK_KINDS, elapsedLabel, rateSeries, splitRows, stackSeries, toggleKind } from './tokenChart.js';
 import AgentProgress from './AgentProgress.jsx';
 import Tooltip from './Tooltip.jsx';
 
@@ -51,6 +51,48 @@ function Switch({ id, options, value, onChange }) {
   );
 }
 
+// US-0214 FR5.4: the shown series per project and diagram, kept while the app runs.
+// ponytail: module memory only; it is gone at the next start, which FR5.4 asks for. Settings if it should outlive a run.
+const shownMemory = new Map();
+function useShown(projectId, diagram, all) {
+  const key = `${projectId}\0${diagram}`;
+  const [shown, setShown] = useState(() => shownMemory.get(key) ?? all);
+  const toggle = (kind) =>
+    setShown((now) => {
+      const next = toggleKind(now, all, kind);
+      shownMemory.set(key, next);
+      return next;
+    });
+  return [shown, toggle];
+}
+
+/** US-0214 FR5.1, FR5.2, NFR3: one toggle button per series, top of the stack first; the label always stays. */
+function Legend({ kinds, shown, onToggle, testId }) {
+  const { t } = useTranslation();
+  return (
+    <ul className="token-detail-legend" data-testid={testId}>
+      {kinds.map((k) => (
+        <li key={k}>
+          <button
+            type="button"
+            className="token-detail-legend-toggle"
+            aria-pressed={shown.includes(k)}
+            onClick={() => onToggle(k)}
+            onKeyDown={(e) => {
+              if (e.key !== 'Enter' && e.key !== ' ') return;
+              e.preventDefault(); // the toggle runs once, not again as the button's own click
+              onToggle(k);
+            }}
+          >
+            <span className={`token-detail-key token-kind--${k}`} aria-hidden="true" />
+            {t(`tokens.${k}`)}
+          </button>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
 function Empty({ text, testId }) {
   return (
     <p className="token-detail-empty" data-testid={testId}>
@@ -60,12 +102,12 @@ function Empty({ text, testId }) {
 }
 
 /** The stacked areas with grid, axes, a coral marker and the tooltip; arrow keys pick a reading (FR3.1, FR4, NFR3). */
-function OverTimeChart({ width, readings }) {
+function OverTimeChart({ width, readings, shown }) {
   const { t } = useTranslation();
   const tipId = useId();
   const svgRef = useRef(null);
   const { tooltipOpen, tooltipData: at, tooltipLeft, showTooltip, hideTooltip } = useTooltip();
-  const layers = stackSeries(readings);
+  const layers = stackSeries(readings, shown); // US-0214 FR5.2: the y-domain below is the shown series' top
   const points = layers.at(-1).points;
   const iw = Math.max(width - M.left - M.right, 10);
   const ih = CHART_H - M.top - M.bottom;
@@ -148,7 +190,7 @@ function OverTimeChart({ width, readings }) {
           data-testid="token-detail-tooltip"
         >
           <span className="token-detail-tooltip-head">{elapsedLabel(points[at].t)}</span>
-          {LEGEND.map((k) => (
+          {LEGEND.filter((k) => shown.includes(k)).map((k) => (
             <span key={k} className="token-detail-tooltip-row">
               <span>{t(`tokens.${k}`)}</span>
               <span>{formatTokens(r[k])}</span>
@@ -164,11 +206,12 @@ function OverTimeChart({ width, readings }) {
   );
 }
 
-/** Tokens over time with its Diagram / Table switch (FR3.1, FR4, FR6). */
-function OverTime({ readings, live }) {
+/** Tokens over time with its Diagram / Table switch (FR3.1, FR4, FR6); US-0214 FR5: only the shown series. */
+function OverTime({ readings, live, shown, onToggle }) {
   const { t } = useTranslation();
   const [mode, setMode] = useState('diagram');
   const start = readings[0]?.at ?? 0;
+  const columns = LEGEND.filter((k) => shown.includes(k));
   let body;
   if (readings.length === 0) {
     body = <Empty text={t(live ? 'tokenDetail.empty.noReadingsLive' : 'tokenDetail.empty.noReadingsDone')} testId="token-detail-over-time-empty" />;
@@ -180,13 +223,11 @@ function OverTime({ readings, live }) {
           <thead>
             <tr>
               <th scope="col">{t('tokenDetail.elapsed')}</th>
-              {STACK_KINDS.slice()
-                .reverse()
-                .map((k) => (
-                  <th key={k} scope="col">
-                    {t(`tokens.${k}`)}
-                  </th>
-                ))}
+              {columns.map((k) => (
+                <th key={k} scope="col">
+                  {t(`tokens.${k}`)}
+                </th>
+              ))}
               <th scope="col">{t('tokenDetail.cost')}</th>
             </tr>
           </thead>
@@ -194,7 +235,7 @@ function OverTime({ readings, live }) {
             {readings.map((r) => (
               <tr key={r.at}>
                 <td>{elapsedLabel(r.at - start)}</td>
-                {LEGEND.map((k) => (
+                {columns.map((k) => (
                   <td key={k}>{formatTokens(r[k])}</td>
                 ))}
                 <td>{formatUsd(r.usd)}</td>
@@ -211,16 +252,9 @@ function OverTime({ readings, live }) {
       <>
         {/* US-0024 FR1: ParentSize's default box is `height: 100%`, 0 px in this section; give it the chart's height. */}
         <ParentSize className="token-detail-size" parentSizeStyles={{ width: '100%', height: CHART_H }}>
-          {({ width }) => (width > 0 ? <OverTimeChart width={width} readings={readings} /> : null)}
+          {({ width }) => (width > 0 ? <OverTimeChart width={width} readings={readings} shown={shown} /> : null)}
         </ParentSize>
-        <ul className="token-detail-legend" data-testid="token-detail-legend">
-          {LEGEND.map((k) => (
-            <li key={k}>
-              <span className={`token-detail-key token-kind--${k}`} aria-hidden="true" />
-              {t(`tokens.${k}`)}
-            </li>
-          ))}
-        </ul>
+        <Legend kinds={LEGEND} shown={shown} onToggle={onToggle} testId="token-detail-legend" />
       </>
     );
   }
@@ -236,13 +270,15 @@ function OverTime({ readings, live }) {
   );
 }
 
-/** One split card, by stage, agent or model, in tokens by kind or in dollars (FR3.3, FR4, FR6). */
-function SplitCard({ id, rows, keepOrder = false, nameOf, hasEntry }) {
+/** One split card, by stage, agent or model, in tokens by kind or in dollars (FR3.3, FR4, FR6). US-0214 FR5.1: in
+ * tokens, its own legend hides kinds from the bars, the values and the tooltips. */
+function SplitCard({ projectId, id, rows, keepOrder = false, nameOf, hasEntry }) {
   const { t } = useTranslation();
   const [measure, setMeasure] = useState('tokens');
-  const shown = splitRows(rows ?? [], measure, { keepOrder });
+  const [kinds, toggleKind] = useShown(projectId, `split-${id}`, SPLIT_KINDS);
+  const shown = splitRows(rows ?? [], measure, { keepOrder, kinds });
   const max = Math.max(...shown.map((r) => r.value), 0);
-  const valueText = (r) => (measure === 'usd' ? (r.missingPrice ? t('cost.missingPrice') : formatUsd(r.usd)) : formatTokens(r.totalTokens));
+  const valueText = (r) => (measure === 'usd' ? (r.missingPrice ? t('cost.missingPrice') : formatUsd(r.usd)) : formatTokens(r.value));
   return (
     <section className={`token-detail-card token-detail-card--${id}`} data-testid={`token-detail-split-${id}`}>
       <div className="token-detail-section-head">
@@ -260,7 +296,7 @@ function SplitCard({ id, rows, keepOrder = false, nameOf, hasEntry }) {
             <Tooltip
               key={r.name}
               text={[
-                ...SPLIT_KINDS.map((k) => `${t(`tokens.${k}`)} ${formatTokens(r.tokens[k])}`),
+                ...SPLIT_KINDS.filter((k) => kinds.includes(k)).map((k) => `${t(`tokens.${k}`)} ${formatTokens(r.tokens[k])}`),
                 formatCostPair(r) // US-0211 FR3.2: with the current-price figure when it differs
               ].join(' · ')}
             >
@@ -287,14 +323,15 @@ function SplitCard({ id, rows, keepOrder = false, nameOf, hasEntry }) {
           ))}
         </ul>
       )}
+      {hasEntry && measure === 'tokens' && <Legend kinds={SPLIT_KINDS} shown={kinds} onToggle={toggleKind} testId={`token-detail-split-${id}-legend`} />}
     </section>
   );
 }
 
 /** The stepped token rate in the right column, tokens per minute between readings (FR3.2). */
-function RateLine({ readings, live }) {
+function RateLine({ readings, live, shown }) {
   const { t } = useTranslation();
-  const rates = rateSeries(readings);
+  const rates = rateSeries(readings, shown); // US-0214 FR5.1: the rate of the series shown over time
   const now = rates.at(-1)?.rate;
   const steps = rates.flatMap((r, i) => [
     { t: rates[i - 1]?.t ?? 0, rate: r.rate },
@@ -336,6 +373,7 @@ export default function TokenDetail({ projectId, dirName, intent, cost, live, st
   const [readings, setReadings] = useState([]);
   const [progress, setProgress] = useState([]);
   const [recheck, setRecheck] = useState(0);
+  const [overTimeShown, toggleOverTime] = useShown(projectId, 'overTime', STACK_KINDS);
   const headRef = useRef(null);
   const intentCost = cost?.available ? (cost.perIntent?.[dirName] ?? null) : null;
   const refresh = live ? cost : null; // a new cost summary while live asks again; a finished intent asks once
@@ -408,12 +446,12 @@ export default function TokenDetail({ projectId, dirName, intent, cost, live, st
               </div>
             </div>
           </header>
-          <AgentProgress rows={progress} />
-          <OverTime readings={readings} live={live} />
+          <AgentProgress projectId={projectId} rows={progress} live={live} />
+          <OverTime readings={readings} live={live} shown={overTimeShown} onToggle={toggleOverTime} />
           <div className="token-detail-splits">
-            <SplitCard id="stage" rows={byStage} keepOrder nameOf={stageTitle} hasEntry={!!intentCost} />
-            <SplitCard id="agent" rows={intentCost?.byAgent} nameOf={agentName} hasEntry={!!intentCost} />
-            <SplitCard id="model" rows={intentCost?.byModel} nameOf={shortModel} hasEntry={!!intentCost} />
+            <SplitCard projectId={projectId} id="stage" rows={byStage} keepOrder nameOf={stageTitle} hasEntry={!!intentCost} />
+            <SplitCard projectId={projectId} id="agent" rows={intentCost?.byAgent} nameOf={agentName} hasEntry={!!intentCost} />
+            <SplitCard projectId={projectId} id="model" rows={intentCost?.byModel} nameOf={shortModel} hasEntry={!!intentCost} />
           </div>
           <Bar
             className="token-detail-bar"
@@ -457,7 +495,7 @@ export default function TokenDetail({ projectId, dirName, intent, cost, live, st
             {last ? `${elapsedLabel(last.at - readings[0].at)} · ${t('tokenDetail.readings', { n: readings.length })}` : t('tokenDetail.noReadings')}
           </span>
         </div>
-        <RateLine readings={readings} live={live} />
+        <RateLine readings={readings} live={live} shown={overTimeShown} />
         {topModel && (
           <div className="readout">
             <span className="readout-label">{t('intents.readoutModel')}</span>

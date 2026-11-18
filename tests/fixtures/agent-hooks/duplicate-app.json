@@ -20,6 +20,17 @@
             "timeout": 600
           }
         ]
+      },
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "[ -n \"$THADEUS_SESSION_DIR\" ] && [ -f \"$CLAUDE_PROJECT_DIR/.thadeus/hooks/dialog.sh\" ] && sh \"$CLAUDE_PROJECT_DIR/.thadeus/hooks/dialog.sh\" pretool; exit 0",
+            "timeout": 10,
+            "async": true
+          }
+        ]
       }
     ],
     "PostToolUse": [
@@ -29,6 +40,17 @@
           {
             "type": "command",
             "command": "[ -n \"$THADEUS_SESSION_DIR\" ] && [ -f \"$CLAUDE_PROJECT_DIR/.thadeus/hooks/dialog.sh\" ] && sh \"$CLAUDE_PROJECT_DIR/.thadeus/hooks/dialog.sh\" answered; exit 0",
+            "timeout": 10,
+            "async": true
+          }
+        ]
+      },
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "[ -n \"$THADEUS_SESSION_DIR\" ] && [ -f \"$CLAUDE_PROJECT_DIR/.thadeus/hooks/dialog.sh\" ] && sh \"$CLAUDE_PROJECT_DIR/.thadeus/hooks/dialog.sh\" posttool; exit 0",
             "timeout": 10,
             "async": true
           }
@@ -43,6 +65,17 @@
             "type": "command",
             "command": "[ -n \"$THADEUS_SESSION_DIR\" ] && [ -f \"$CLAUDE_PROJECT_DIR/.thadeus/hooks/dialog.sh\" ] && sh \"$CLAUDE_PROJECT_DIR/.thadeus/hooks/dialog.sh\" permission; exit 0",
             "timeout": 600
+          }
+        ]
+      },
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "[ -n \"$THADEUS_SESSION_DIR\" ] && [ -f \"$CLAUDE_PROJECT_DIR/.thadeus/hooks/dialog.sh\" ] && sh \"$CLAUDE_PROJECT_DIR/.thadeus/hooks/dialog.sh\" asking; exit 0",
+            "timeout": 10,
+            "async": true
           }
         ]
       }
@@ -100,6 +133,79 @@
           {
             "type": "command",
             "command": "[ -n \"$THADEUS_SESSION_DIR\" ] && [ -f \"$CLAUDE_PROJECT_DIR/.thadeus/hooks/dialog.sh\" ] && sh \"$CLAUDE_PROJECT_DIR/.thadeus/hooks/dialog.sh\" postcompact; exit 0",
+            "timeout": 10,
+            "async": true
+          }
+        ]
+      }
+    ],
+    "PostToolUseFailure": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "[ -n \"$THADEUS_SESSION_DIR\" ] && [ -f \"$CLAUDE_PROJECT_DIR/.thadeus/hooks/dialog.sh\" ] && sh \"$CLAUDE_PROJECT_DIR/.thadeus/hooks/dialog.sh\" toolfail; exit 0",
+            "timeout": 10,
+            "async": true
+          }
+        ]
+      }
+    ],
+    "SubagentStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "[ -n \"$THADEUS_SESSION_DIR\" ] && [ -f \"$CLAUDE_PROJECT_DIR/.thadeus/hooks/dialog.sh\" ] && sh \"$CLAUDE_PROJECT_DIR/.thadeus/hooks/dialog.sh\" agentstart; exit 0",
+            "timeout": 10,
+            "async": true
+          }
+        ]
+      }
+    ],
+    "SubagentStop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "[ -n \"$THADEUS_SESSION_DIR\" ] && [ -f \"$CLAUDE_PROJECT_DIR/.thadeus/hooks/dialog.sh\" ] && sh \"$CLAUDE_PROJECT_DIR/.thadeus/hooks/dialog.sh\" agentstop; exit 0",
+            "timeout": 10,
+            "async": true
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "[ -n \"$THADEUS_SESSION_DIR\" ] && [ -f \"$CLAUDE_PROJECT_DIR/.thadeus/hooks/dialog.sh\" ] && sh \"$CLAUDE_PROJECT_DIR/.thadeus/hooks/dialog.sh\" prompt; exit 0",
+            "timeout": 10,
+            "async": true
+          }
+        ]
+      }
+    ],
+    "MessageDisplay": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "[ -n \"$THADEUS_SESSION_DIR\" ] && [ -f \"$CLAUDE_PROJECT_DIR/.thadeus/hooks/dialog.sh\" ] && sh \"$CLAUDE_PROJECT_DIR/.thadeus/hooks/dialog.sh\" message; exit 0",
+            "timeout": 10,
+            "async": true
+          }
+        ]
+      }
+    ],
+    "StopFailure": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "[ -n \"$THADEUS_SESSION_DIR\" ] && [ -f \"$CLAUDE_PROJECT_DIR/.thadeus/hooks/dialog.sh\" ] && sh \"$CLAUDE_PROJECT_DIR/.thadeus/hooks/dialog.sh\" stopfail; exit 0",
             "timeout": 10,
             "async": true
           }

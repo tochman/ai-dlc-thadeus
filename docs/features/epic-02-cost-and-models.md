@@ -8,7 +8,7 @@
 
 **Stories:** US-0201, US-0202, US-0203, US-0204, US-0205, US-0206, US-0207, US-0208, US-0209, US-0210, US-0211, US-0212, US-0213, US-0214, US-0215
 
-**Status (2026-11-17):** ✅ US-0201–US-0205 and US-0207 released (v0.2.0–v0.2.4; CSV export in US-0203 deferred). ➡️ US-0206 moved to US-0904. ✅ US-0208 released in v0.2.7. ✅ US-0209 released in v0.2.8. ✅ US-0212 done, for v0.2.9. ✅ US-0210 done, for v0.2.9. ✅ US-0211 done, for v0.2.9. ✅ US-0213 done, for v0.2.9. 📋 US-0214 planned, for v0.2.9. 📋 US-0215 planned. Each story names its release.
+**Status (2026-11-18):** ✅ US-0201–US-0205 and US-0207 released (v0.2.0–v0.2.4; CSV export in US-0203 deferred). ➡️ US-0206 moved to US-0904. ✅ US-0208 released in v0.2.7. ✅ US-0209 released in v0.2.8. ✅ US-0212 done, for v0.2.9. ✅ US-0210 done, for v0.2.9. ✅ US-0211 done, for v0.2.9. ✅ US-0213 done, for v0.2.9. ✅ US-0214 done, for v0.2.9. 📋 US-0215 planned. Each story names its release.
 
 ---
 
@@ -241,26 +241,26 @@ The key format of `workflows` was confirmed during requirements analysis (see ab
 - **Build and Test (2026-11-17, intent `261117-session-handoff-dialog`):** 1796/1796 tests, 92.19% lines. Fresh session sends `/aidlc --resume` (decided at requirements). Three criteria stay open until the manual checks in the running app, owed before the v0.2.9 tag: Fresh session shows a waiting gate again (OQ1), the PreCompact instruction reaches the compaction, and the LCARS look by eye. Real opencode 2.1.4 events are checked by hand too.
 - **Dependencies:** US-0506, US-0207, US-0212
 
-**US-0214: The token view shows the main session's work, and its chart can hide series from the legend** 📋 Planned, for v0.2.9
+**US-0214: The token view shows the main session's work, and its chart can hide series from the legend** ✅ Done, for v0.2.9
 - As a **developer watching an intent in the token view**, in order to **see what is working right now and read the series I care about**, I would like **Agent progress to show the main session's activity too, and the "Tokens over time" chart to let me hide and show series by clicking them in the legend**.
 - **Epic:** EPIC-02
 - **Priority:** Medium
 - **Complexity:** Medium
 - **Background:** Asked for on 2026-11-17, with screenshots of `261117-release-planning-sync`. Agent progress said "No agents are working in this intent right now" while the main session was working through the stages, because only dispatched agents show there. In "Tokens over time", cache reads (about 30 M) dwarf input and output, so the other series are flat lines at the bottom, and the legend (input, output, cache write 1 h, cache write 5 m, cache read) is a label only. Updated 2026-11-17 22:33, with a screenshot of `261117-session-handoff-dialog`: agent activity is very often not shown at all. A dispatched `aidlc-developer-agent` had been running for 18 minutes (Claude Code's own footer: "Running agentHooks tests after fixture updates", 308.2k tokens), while Agent progress said "No agents are working in this intent right now". So the dispatched agents are missed too, not only the main chat. Reading activity from the transcripts is not reliable enough; the hook events Claude Code and opencode send are (checked against both harnesses' docs on 2026-11-17, see Notes).
 - **Acceptance Criteria:**
-  - [ ] **Given** a dispatched agent is working on the intent, **when** I open the token view, **then** Agent progress shows its row (agent type and what it is doing now) within 2 seconds of its start, and removes it within 2 seconds of its end. The screenshot case (a developer agent running while the view says none) is a test.
-  - [ ] **Given** the main Claude chat (the conversation in the agent tab, not a dispatched subagent) is working on the intent, **when** I open the token view, **then** Agent progress shows a "Main" row for that chat with what it is doing now (for example running a tool, writing, or waiting for my answer), next to any dispatched agents. "No agents are working" shows only when neither the main chat nor any agent is.
-  - [ ] Each row shows one of: running a tool (with its name), writing, thinking (opencode), waiting for me, idle, or stopped on an error (with the reason). The state comes from hook events, not from guessing in the transcript.
-  - [ ] Main chat and agents are told apart: Claude Code by `agent_id` on subagent events, opencode by `parentID` on the child session.
-  - [ ] The hooks only report: they never block or slow the agent (Claude Code entries are `async`; the opencode plugin's handlers are fire-and-forget), and they install, update and remove through the US-0506 preview, beside AI-DLC's entries, which are never changed.
-  - [ ] When the app's hooks are not installed or out of date, Agent progress says so and offers the update, and it falls back to today's reading. It never shows "No agents are working" as if that were known.
-  - [ ] **Given** the "Tokens over time" chart, **when** I click a series in the legend (or press Enter or Space on it), **then** that series is hidden or shown again, and its legend entry looks switched off.
-  - [ ] The y-axis rescales to the series still shown, so hiding cache read makes input and output readable.
-  - [ ] At least one series always stays shown: the last one cannot be hidden.
-  - [ ] The hover box and the Table view show only the series that are shown.
-  - [ ] The choice is remembered per project while the app runs.
-  - [ ] Legend entries are buttons with `aria-pressed`, and each series keeps its text label, not colour alone.
-  - [ ] Every text goes through `t()` in Swedish and English, in the LCARS look.
+  - [x] **Given** a dispatched agent is working on the intent, **when** I open the token view, **then** Agent progress shows its row (agent type and what it is doing now) within 2 seconds of its start, and removes it within 2 seconds of its end. The screenshot case (a developer agent running while the view says none) is a test.
+  - [x] **Given** the main Claude chat (the conversation in the agent tab, not a dispatched subagent) is working on the intent, **when** I open the token view, **then** Agent progress shows a "Main" row for that chat with what it is doing now (for example running a tool, writing, or waiting for my answer), next to any dispatched agents. "No agents are working" shows only when neither the main chat nor any agent is.
+  - [x] Each row shows one of: running a tool (with its name), writing, thinking (opencode), waiting for me, idle, or stopped on an error (with the reason). The state comes from hook events, not from guessing in the transcript.
+  - [x] Main chat and agents are told apart: Claude Code by `agent_id` on subagent events, opencode by `parentID` on the child session.
+  - [x] The hooks only report: they never block or slow the agent (Claude Code entries are `async`; the opencode plugin's handlers are fire-and-forget), and they install, update and remove through the US-0506 preview, beside AI-DLC's entries, which are never changed.
+  - [x] When the app's hooks are not installed or out of date, Agent progress says so and offers the update, and it falls back to today's reading. It never shows "No agents are working" as if that were known.
+  - [x] **Given** the "Tokens over time" chart, **when** I click a series in the legend (or press Enter or Space on it), **then** that series is hidden or shown again, and its legend entry looks switched off.
+  - [x] The y-axis rescales to the series still shown, so hiding cache read makes input and output readable.
+  - [x] At least one series always stays shown: the last one cannot be hidden.
+  - [x] The hover box and the Table view show only the series that are shown.
+  - [x] The choice is remembered per project while the app runs.
+  - [x] Legend entries are buttons with `aria-pressed`, and each series keeps its text label, not colour alone.
+  - [x] Every text goes through `t()` in Swedish and English, in the LCARS look.
 - **Notes:** Open: whether the other diagrams (rate, splits by stage, agent and model) get the same legend toggles (proposal: yes, wherever a diagram has more than one series), and how the main chat's activity is read (decided 2026-11-17: "Main" is the main Claude chat; proposal: from its transcript, the same source as US-0207's live view). Built on US-0208's view (`TokenDetail.jsx`, `AgentProgress.jsx`, visx). Updated 2026-11-17: activity is read from hook events, reported through the US-0506 channel that US-0213 extends. Start by finding why today's reading missed the running developer agent.
   - Claude Code (all 33 events confirmed in its hooks reference):
 
@@ -285,6 +285,7 @@ The key format of `workflows` was confirmed during requirements analysis (see ab
     | Error | `session.execution.failed`, `session.execution.interrupted` (with its reason) |
     | Agent or main chat | `session.created`, where `parentID` set means a child session |
     | Tokens | `session.usage.updated` |
+- **Implementation (Code Generation, 2026-11-18):** Why the developer agent was missed: the app in the screenshot was v0.2.8, whose `workingAgents` showed nothing while AI-DLC's inflight file was empty, and Claude Code's own helper agents (logged as `Agent Type: unknown`) empty it. US-0025 already removed that gate; the screenshot's audit is now a regression test. Claude Code gets nine async entries (`pretool`, `posttool`, `toolfail`, `agentstart`, `agentstop`, `prompt`, `message`, `stopfail`, `asking`), one installer kind per hook event, which `dialog.sh` writes as the one channel kind `activity`. An install from US-0213 reads as out of date. The adapters keep only identifier-shaped fields. The pure model is `src/shared/agentActivity.js`, with idle after 30 s quiet when no tool runs. The store pushes `agent:activity` within 250 ms. Agent progress shows the hook rows for a live intent when every used harness's hooks are current, and otherwise a notice with Install or Update over the audit rows. The legend entries of Tokens over time and of each split card are toggle buttons; the rate follows the over-time choice, and the choice is kept per project and diagram while the app runs.
 - **Dependencies:** US-0207, US-0208, US-0213 (its hook kinds and channel)
 
 **US-0215: Token diagrams and figures for finished intents** 📋 Planned

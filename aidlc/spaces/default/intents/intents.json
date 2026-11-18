@@ -310,5 +310,13 @@
     "scope": "ultra-express",
     "status": "complete",
     "request": "92bb6c57"
+  },
+  {
+    "uuid": "01a1eba1-abed-728a-b684-14687a6c5246",
+    "slug": "agent-activity-events",
+    "dirName": "261117-agent-activity-events",
+    "scope": "ultra-express",
+    "status": "complete",
+    "request": "347dd20d"
   }
 ]

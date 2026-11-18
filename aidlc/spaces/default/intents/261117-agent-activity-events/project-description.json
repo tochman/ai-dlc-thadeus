@@ -1,0 +1,1 @@
+"Build US-0214 (docs/features/epic-02-cost-and-models.md): the token view shows the main session's and the dispatched agents' work from hook events (Claude Code and opencode V2, tables in the story Notes), and its \"Tokens over time\" chart can hide series from the legend. Builds on the hook kinds and channel from US-0213."

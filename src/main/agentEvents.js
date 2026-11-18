@@ -18,6 +18,20 @@ import { formatLog, WAITING } from './agentChannel.js';
 import { createPermissions } from './agentPermissions.js';
 import { createReplies } from './agentReplies.js';
 import { SIGNAL_KINDS } from './agentAdapters.js';
+import { IDLE_MS, activityRows, dropSession, emptyActivity, reduceActivity } from '../shared/agentActivity.js';
+
+// US-0214 FR2.3: activity pushes are gathered for this long, well inside the 2 s the rows may lag.
+const ACTIVITY_PUSH_MS = 250;
+/** US-0214 FR1.1: what the dialog kinds already reported say about activity (a Notification of idle_prompt is not a wait). */
+const KIND_ACTIVITY = {
+  reply: () => ({ name: 'stop' }),
+  session: () => ({ name: 'stop' }),
+  question: () => ({ name: 'waiting', reason: 'question' }),
+  permission: () => ({ name: 'waiting', reason: 'permission' }),
+  answered: () => ({ name: 'answered' }),
+  notify: (parsed) => (parsed.type === 'idle_prompt' ? null : { name: 'waiting', reason: 'notification' }),
+  activity: (parsed) => parsed.activity
+};
 
 // "the session ended", "answered in the terminal" (BR2.3, BR5.11) and a typed reply's "sent" line (u3 K6) stay this long
 const ENDED_MS = 3000;
@@ -255,10 +269,40 @@ export function createAgentEventStore({
     for (const fn of signalFns) fn(note);
   }
 
+  // --- US-0214 FR2, FR3: activity rows per project, from the activity kind and the kinds above; never a page ----------
+  let activityState = emptyActivity();
+  const activityFns = new Set();
+  const activityTimers = new Map(); // projectId -> { push, idle }
+  const activityOf = (projectId) => activityRows(activityState, Date.now()).filter((r) => sessions.get(r.sessionId)?.projectId === projectId);
+  const timersOf = (projectId) => {
+    if (!activityTimers.has(projectId)) activityTimers.set(projectId, { push: null, idle: null });
+    return activityTimers.get(projectId);
+  };
+  function pushActivity(projectId) {
+    const t = timersOf(projectId);
+    t.push ??= setTimeout(() => {
+      t.push = null;
+      const change = { projectId, rows: activityOf(projectId) };
+      for (const fn of activityFns) fn(change);
+    }, ACTIVITY_PUSH_MS);
+  }
+  function feedActivity(raw, session, parsed) {
+    const fields = KIND_ACTIVITY[parsed.kind]?.(parsed);
+    if (!fields) return;
+    const atMs = Number.isFinite(raw.arrivedAtMs) ? raw.arrivedAtMs : Date.now();
+    activityState = reduceActivity(activityState, { ...fields, sessionId: raw.sessionId, tabId: session.tabId, harness: session.harness, atMs });
+    pushActivity(session.projectId);
+    const t = timersOf(session.projectId);
+    clearTimeout(t.idle);
+    t.idle = setTimeout(() => pushActivity(session.projectId), IDLE_MS); // A3: the quiet row turns idle
+  }
+
   function onRaw(raw) {
     const session = sessions.get(raw.sessionId);
     const parsed = session && adapters[session.harness]?.parse(raw.kind, raw.body);
     if (!parsed) return; // an unknown session or kind is ignored (C1 ownership rules)
+    if (parsed.ok) feedActivity(raw, session, parsed);
+    if (parsed.ok && parsed.kind === 'activity') return; // US-0214: never a page, never moves a reply on
     if (parsed.ok && (SIGNAL_KINDS.has(parsed.kind) || parsed.kind === 'reply')) recordSignal(raw, session, parsed);
     if (parsed.ok && SIGNAL_KINDS.has(parsed.kind)) return; // US-0213: never a page, never moves a reply on
     if (!parsed.ok) {
@@ -348,7 +392,18 @@ export function createAgentEventStore({
       for (const ev of [...events.values()]) if (ev.kind === 'handoff' && ev.sessionId === sessionId) move(ev, 'ended', { endedBy: 'movedOn' });
       for (const w of readyWaits) if (w.sessionId === sessionId) w.resolve(false);
       for (const ev of openOf(sessionId)) move(ev, 'ended', { endedBy: 'session' });
-      if (s) emit(s.projectId);
+      activityState = dropSession(activityState, sessionId); // US-0214: its tab's rows go
+      if (s) {
+        emit(s.projectId);
+        pushActivity(s.projectId);
+      }
+    },
+    /** US-0214 FR2, FR3: the activity rows of a project now (main chats, their agents). */
+    activity: activityOf,
+    /** US-0214 FR2.3: { projectId, rows } within ACTIVITY_PUSH_MS of a change, and again when a row turns idle. */
+    onActivity(fn) {
+      activityFns.add(fn);
+      return () => activityFns.delete(fn);
     },
     list,
     harnessOf: (eventId) => events.get(eventId)?.harness ?? null,
@@ -489,6 +544,8 @@ export function createAgentEventStore({
     rulesHeld: () => permissions.rulesHeld(),
     dispose() {
       replies.dispose();
+      for (const t of activityTimers.values()) [clearTimeout(t.push), clearTimeout(t.idle)];
+      activityTimers.clear();
       for (const w of readyWaits) w.resolve(false);
       for (const ev of events.values()) {
         clearTimeout(ev.timer);

@@ -1231,7 +1231,29 @@
       "finding": "{n} {severity}",
       "noFindings": "0 findings",
       "commit": "Last commit: {subject}",
-      "unreadable": "Could not read {path}"
+      "unreadable": "Could not read {path}",
+      "main": "Main · {harness}",
+      "agent": "Agent",
+      "seconds": "{n} s",
+      "state": {
+        "tool": "running {tool}",
+        "writing": "writing",
+        "thinking": "thinking",
+        "working": "working",
+        "idle": "idle",
+        "error": "stopped on an error: {error}",
+        "waiting": {
+          "permission": "waiting for your permission",
+          "question": "waiting for your answer",
+          "elicitation": "waiting for your input",
+          "notification": "waiting for you"
+        }
+      },
+      "hooks": {
+        "missing": "{harness}: the app's hooks are missing, so Agent progress reads the audit log and cannot see the main chat.",
+        "outOfDate": "{harness}: the app's hooks are out of date, so Agent progress reads the audit log and cannot see the main chat."
+      },
+      "unknown": "Without the app's hooks it cannot tell who is working right now."
     }
   },
   "aboutDialog": {

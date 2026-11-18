@@ -678,6 +678,12 @@ button.lcars-chip:hover { border-color: var(--steel-text); color: var(--steel-li
 .token-detail-legend li { display: inline-flex; align-items: center; gap: 6px; }
 .token-detail-key { width: 14px; height: 10px; }
 .token-detail-key.token-kind--cacheRead { outline: 1px solid var(--slate-3); }
+/* US-0214 FR5.1, NFR3: each legend entry is a toggle; switched off, its key is hollow and its label struck through. */
+.token-detail-legend-toggle { display: inline-flex; align-items: center; gap: 6px; padding: 2px 4px; border: 0; background: none; color: inherit; font: inherit; letter-spacing: inherit; text-transform: inherit; cursor: pointer; }
+.token-detail-legend-toggle:focus-visible { outline: 2px solid var(--steel-text); outline-offset: 2px; }
+.token-detail-legend-toggle[aria-pressed='false'] { color: var(--text-3, var(--text-2)); text-decoration: line-through; }
+.token-detail-legend-toggle[aria-pressed='false'] .token-detail-key { background: none; outline: 1px solid currentColor; }
+.token-detail-card .token-detail-legend { margin-top: 8px; }
 /* The look is .lcars-tip (US-0414 FR3.2); this keeps the label / value grid. visx positions it absolutely in the chart. */
 .token-detail-tooltip { display: grid; grid-template-columns: auto auto; gap: 2px 18px; }
 .token-detail-tooltip-head { grid-column: 1 / 3; color: var(--coral); font-size: 17px; }
@@ -708,6 +714,8 @@ button.lcars-chip:hover { border-color: var(--steel-text); color: var(--steel-li
 .agent-progress-summary { margin: 0; color: var(--text); font: 15px/1.5 var(--font-read); }
 .agent-progress-detail { display: flex; flex-direction: column; min-width: 0; color: var(--text-2); font-size: 14px; overflow-wrap: anywhere; }
 .agent-progress-status { color: var(--steel-text); }
+/* US-0214 FR2.2: a dispatched agent sits under its main chat, indented behind an LCARS rule. */
+.agent-progress-row--child { margin-left: 24px; border-left: 4px solid var(--steel-deep); padding-left: 12px; }
 /* US-0414 FR1.1, FR1.5: the one LCARS tooltip look, used by Tooltip.jsx and the chart tooltip. It sits above the notices
    (40, 50) and below the dialogs (100). pre-line lets a button show the combined text of its parts, one per line (FR2.3). */
 .lcars-tip { position: fixed; z-index: 60; max-width: min(480px, calc(100vw - 8px)); padding: 6px 10px; border: 2px solid var(--coral); border-radius: 2px 12px 2px 2px; background: var(--bg); color: var(--text); font-size: 13px; font-variant-numeric: tabular-nums; white-space: pre-line; overflow-wrap: anywhere; pointer-events: none; }

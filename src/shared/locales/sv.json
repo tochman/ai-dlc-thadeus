@@ -1231,7 +1231,29 @@
       "finding": "{n} {severity}",
       "noFindings": "0 fynd",
       "commit": "Senaste commit: {subject}",
-      "unreadable": "Kunde inte läsa {path}"
+      "unreadable": "Kunde inte läsa {path}",
+      "main": "Huvudchatt · {harness}",
+      "agent": "Agent",
+      "seconds": "{n} s",
+      "state": {
+        "tool": "kör {tool}",
+        "writing": "skriver",
+        "thinking": "tänker",
+        "working": "arbetar",
+        "idle": "vilar",
+        "error": "stoppad av ett fel: {error}",
+        "waiting": {
+          "permission": "väntar på ditt tillstånd",
+          "question": "väntar på ditt svar",
+          "elicitation": "väntar på din inmatning",
+          "notification": "väntar på dig"
+        }
+      },
+      "hooks": {
+        "missing": "{harness}: appens hooks saknas, så Agenternas framsteg läser audit-loggen och ser inte huvudchatten.",
+        "outOfDate": "{harness}: appens hooks är inaktuella, så Agenternas framsteg läser audit-loggen och ser inte huvudchatten."
+      },
+      "unknown": "Utan appens hooks går det inte att se vem som arbetar just nu."
     }
   },
   "aboutDialog": {

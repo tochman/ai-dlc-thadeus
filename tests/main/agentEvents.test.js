@@ -610,3 +610,70 @@ describe('handoff pages (US-0213)', () => {
     expect(store.list('p1').filter((e) => e.kind === 'handoff')).toEqual([]);
   });
 });
+
+// US-0214 FR1, FR2.3, NFR2: activity events are kept per project as rows, never as a page, and pushed within 2 s.
+describe('activity (US-0214)', () => {
+  const hook = (sessionId, payload, kind = 'activity') => raw(sessionId, `a${seq + 1}`, { kind, bytes: Buffer.from(JSON.stringify(payload)) });
+  let activity;
+  beforeEach(() => {
+    activity = [];
+    store.onActivity((change) => activity.push(change));
+  });
+  const latest = () => activity.at(-1)?.rows.map((r) => [r.kind, r.state, r.tool ?? r.reason ?? r.agentType]);
+
+  it('turns an activity event into a row, never a page, and pushes it within 2 s', () => {
+    start();
+    hook('s1', { hook_event_name: 'PreToolUse', tool_name: 'Bash', tool_use_id: 't1', tool_input: { command: 'npm test' } });
+    expect(store.list('p1')).toEqual([]);
+    expect(pushes).toEqual([expect.objectContaining({ events: [] })]); // only startSession's push
+    vi.advanceTimersByTime(2000);
+    expect(activity.at(-1).projectId).toBe('p1');
+    expect(latest()).toEqual([['main', 'tool', 'Bash']]);
+    expect(store.activity('p1')[0]).toMatchObject({ harness: 'claude', tabId: 'agent:claude' });
+    expect(JSON.stringify(activity)).not.toContain('npm test');
+  });
+
+  it('shows a dispatched agent within 2 s of its start and drops it within 2 s of its end (FR2.3)', () => {
+    start();
+    hook('s1', { hook_event_name: 'SubagentStart', agent_id: 'ag1', agent_type: 'aidlc-developer-agent' });
+    vi.advanceTimersByTime(2000);
+    expect(latest()).toEqual([
+      ['main', 'working', null],
+      ['agent', 'working', 'aidlc-developer-agent']
+    ]);
+    hook('s1', { hook_event_name: 'SubagentStop', agent_id: 'ag1', agent_type: 'aidlc-developer-agent' });
+    vi.advanceTimersByTime(2000);
+    expect(latest()).toEqual([['main', 'working', null]]);
+  });
+
+  it('reads the existing kinds as activity too: a question waits, a Stop is idle', () => {
+    start();
+    raw('s1', 'q1');
+    vi.advanceTimersByTime(2000);
+    expect(latest()).toEqual([['main', 'waiting', 'question']]);
+    hook('s1', { last_assistant_message: 'Done.' }, 'reply');
+    vi.advanceTimersByTime(2000);
+    expect(latest()).toEqual([['main', 'idle', null]]);
+  });
+
+  it('logs a refused activity event without handing anything back, and keeps no row', () => {
+    start();
+    hook('s1', { hook_event_name: 'TeammateIdle' });
+    vi.advanceTimersByTime(2000);
+    expect(logs.join('\n')).toContain('unknown activity event');
+    expect(channel.writeAnswer).not.toHaveBeenCalled();
+    expect(store.activity('p1')).toEqual([]);
+  });
+
+  it('pushes idle 30 s after the last event, and drops the rows when the session ends', () => {
+    start();
+    hook('s1', { hook_event_name: 'MessageDisplay', message_id: 'm', final: false });
+    vi.advanceTimersByTime(2000);
+    expect(latest()).toEqual([['main', 'writing', null]]);
+    vi.advanceTimersByTime(30_000);
+    expect(latest()).toEqual([['main', 'idle', null]]);
+    store.endSession('s1');
+    vi.advanceTimersByTime(2000);
+    expect(activity.at(-1)).toEqual({ projectId: 'p1', rows: [] });
+  });
+});

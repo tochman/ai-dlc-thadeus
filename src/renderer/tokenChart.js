@@ -7,7 +7,16 @@ export const STACK_KINDS = ['cacheRead', 'cacheWrite5m', 'cacheWrite1h', 'output
 export const SPLIT_KINDS = ['input', 'output', 'cacheWrite', 'cacheRead'];
 export const SPLIT_MAX = 12;
 
-const totalOf = (r) => STACK_KINDS.reduce((sum, k) => sum + (r[k] ?? 0), 0);
+const totalOf = (r, kinds = STACK_KINDS) => kinds.reduce((sum, k) => sum + (r[k] ?? 0), 0);
+
+/**
+ * US-0214 FR5.1, FR5.2: the shown kinds after toggling `kind`, in the order of `all`; the last shown one stays.
+ * @param {string[]} shown @param {string[]} all @param {string} kind
+ */
+export function toggleKind(shown, all, kind) {
+  if (shown.includes(kind)) return shown.length > 1 ? shown.filter((k) => k !== kind) : shown;
+  return all.filter((k) => k === kind || shown.includes(k));
+}
 
 /** US-0208 FR3.1: elapsed milliseconds as h:mm; hours keep counting past 24. */
 export function elapsedLabel(ms) {
@@ -17,12 +26,13 @@ export function elapsedLabel(ms) {
 
 /**
  * US-0208 FR3.1: the readings as stacked layers over elapsed time, `t` from the first reading.
+ * US-0214 FR5.2: only the `shown` kinds are stacked, so the top layer (the y-domain) is their sum.
  * @returns {{kind: string, points: {t: number, y0: number, y1: number}[]}[]} bottom layer first
  */
-export function stackSeries(readings) {
+export function stackSeries(readings, shown = STACK_KINDS) {
   const start = readings[0]?.at ?? 0;
   const base = readings.map(() => 0);
-  return STACK_KINDS.map((kind) => ({
+  return STACK_KINDS.filter((k) => shown.includes(k)).map((kind) => ({
     kind,
     points: readings.map((r, i) => {
       const y0 = base[i];
@@ -32,13 +42,13 @@ export function stackSeries(readings) {
   }));
 }
 
-/** US-0208 FR3.2: tokens per minute between consecutive readings; a lower total (a reset) counts as 0. */
-export function rateSeries(readings) {
+/** US-0208 FR3.2: tokens per minute between consecutive readings; a lower total (a reset) counts as 0. US-0214 FR5.1: of the shown kinds. */
+export function rateSeries(readings, shown = STACK_KINDS) {
   const start = readings[0]?.at ?? 0;
   return readings.slice(1).map((r, i) => {
     const prev = readings[i];
     const minutes = Math.max(r.at - prev.at, 1) / 60_000;
-    return { t: r.at - start, rate: Math.max(0, totalOf(r) - totalOf(prev)) / minutes };
+    return { t: r.at - start, rate: Math.max(0, totalOf(r, shown) - totalOf(prev, shown)) / minutes };
   });
 }
 
@@ -58,16 +68,18 @@ function sumRows(rows) {
  * US-0208 FR3.3: ledger rows ready for a split card, in tokens by kind or in dollars. Largest first unless
  * `keepOrder` (stages in pipeline order); past SPLIT_MAX rows the rest are summed as one `other` row.
  * @param {{name: string, usd: number, totalTokens: number, tokens: object, missingPrice?: boolean}[]} rows
+ * US-0214 FR5.1: in tokens, only the `kinds` shown in the card's legend count and draw; dollars are one part.
  * @param {'tokens'|'usd'} measure
  */
-export function splitRows(rows, measure, { keepOrder = false } = {}) {
-  const valueOf = (r) => (measure === 'usd' ? r.usd : r.totalTokens);
+export function splitRows(rows, measure, { keepOrder = false, kinds = SPLIT_KINDS } = {}) {
+  const all = kinds.length === SPLIT_KINDS.length;
+  const valueOf = (r) => (measure === 'usd' ? r.usd : all ? r.totalTokens : kinds.reduce((s, k) => s + (r.tokens[k] ?? 0), 0));
   const sorted = keepOrder ? rows : [...rows].sort((a, b) => valueOf(b) - valueOf(a));
   const shown = sorted.length > SPLIT_MAX + 1 ? [...sorted.slice(0, SPLIT_MAX), sumRows(sorted.slice(SPLIT_MAX))] : sorted;
   return shown.map((r) => ({
     ...r,
     other: r.other === true,
     value: valueOf(r),
-    parts: measure === 'usd' ? [{ kind: 'usd', value: r.usd }] : SPLIT_KINDS.map((kind) => ({ kind, value: r.tokens[kind] }))
+    parts: measure === 'usd' ? [{ kind: 'usd', value: r.usd }] : SPLIT_KINDS.filter((k) => kinds.includes(k)).map((kind) => ({ kind, value: r.tokens[kind] }))
   }));
 }
