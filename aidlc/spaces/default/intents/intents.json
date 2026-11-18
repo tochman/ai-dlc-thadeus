@@ -334,5 +334,13 @@
     "scope": "quick-fix",
     "status": "complete",
     "request": "5985eb99"
+  },
+  {
+    "uuid": "01a1ef5a-4263-76f4-b847-9beae829a9e3",
+    "slug": "release-row-move",
+    "dirName": "261118-release-row-move",
+    "scope": "quick-fix",
+    "status": "complete",
+    "request": "43ff880c"
   }
 ]

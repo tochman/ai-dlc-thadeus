@@ -1,0 +1,10 @@
+{
+  "stage": "code-generation",
+  "upstream_ids": ["FR1", "FR2", "FR3", "FR4"],
+  "coverage": [
+    { "id": "FR1", "status": "OK", "target": "src/main/releases.js" },
+    { "id": "FR2", "status": "OK", "target": "src/main/parsers/releases.js" },
+    { "id": "FR3", "status": "OK", "target": "src/main/releases.js" },
+    { "id": "FR4", "status": "OK", "target": "tests/main/releasesPlan.test.js" }
+  ]
+}

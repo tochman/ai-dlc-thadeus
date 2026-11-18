@@ -1,0 +1,1 @@
+"US-0029: Moving a story to another release leaves its row in the old release plan. writePlanRow in src/main/releases.js adds the row to the new release plan file but never removes it from the old one. Fix: remove the row from the old file (leaving the heading only when empty), keep the hash check, test first."

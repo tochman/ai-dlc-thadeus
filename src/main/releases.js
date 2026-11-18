@@ -1,5 +1,6 @@
 // Releases in the feature docs (EPIC-06 US-0603): the writes the Features view makes, a story's "for vX.Y.Z"
-// marker (FR2.2, FR2.3) and a release plan file in docs/releases/ (US-0605 FR1.3, FR4), and the lifecycle rule check
+// marker (FR2.2, FR2.3) and a release plan file in docs/releases/ (US-0605 FR1.3, FR4; a moved story leaves the old
+// release's file, US-0029), and the lifecycle rule check
 // in the project's AI-DLC memory (FR5.2). The renderer names only a story id, a version and the hashes it read; the
 // files are found here from the project's own overview.
 import { createHash } from 'node:crypto';
@@ -8,7 +9,18 @@ import path from 'node:path';
 import { readText, resolveInRoot } from './projectAccess.js';
 import { writeFileSafe } from './fileWrite.js';
 import { loadFeatures, plansDir } from './features.js';
-import { DELIVERY, addPlanRows, buildReleases, canDelete, newReleaseError, planHeading, releaseOf, ruleStatus, setReleaseMarker } from './parsers/releases.js';
+import {
+  DELIVERY,
+  addPlanRows,
+  buildReleases,
+  canDelete,
+  newReleaseError,
+  planHeading,
+  releaseOf,
+  removePlanRows,
+  ruleStatus,
+  setReleaseMarker
+} from './parsers/releases.js';
 import { t } from '../shared/i18n.js';
 
 const STORY_ID = /^US-\d{4}$/;
@@ -35,7 +47,8 @@ export async function setStoryRelease(root, overviewRel, { storyId, version, epi
   const features = await loadFeatures(root, overviewRel);
   const epic = features.available ? features.epics.find((e) => e.parsed?.stories.some((s) => s.id === storyId)) : null;
   if (!epic) throw new Error(t('features.release.noStory', { id: storyId }));
-  const { released } = releaseOf(epic.parsed.stories.find((s) => s.id === storyId).statusText);
+  const story = epic.parsed.stories.find((s) => s.id === storyId);
+  const { planned, released } = releaseOf(story.statusText);
   if (released) throw new Error(t('features.release.released', { id: storyId, version: released }));
 
   const refused =
@@ -43,14 +56,11 @@ export async function setStoryRelease(root, overviewRel, { storyId, version, epi
     (await writeMarked(root, overviewRel, features.overviewText, overviewHash, storyId, version));
   if (refused) return refused;
   // US-0606 FR2.4: a story added to a release is listed in its plan file too; a removed one leaves the plan file alone.
-  if (version)
-    await writePlanRow(
-      root,
-      overviewRel,
-      epic,
-      epic.parsed.stories.find((s) => s.id === storyId),
-      version
-    );
+  // US-0029 FR1: a story moved from another release leaves that release's plan file.
+  if (version) {
+    await writePlanRow(root, overviewRel, epic, story, version);
+    if (planned && planned !== version) await dropPlanRow(root, overviewRel, storyId, planned);
+  }
   return { ok: true };
 }
 
@@ -79,6 +89,23 @@ async function writePlanRow(root, overviewRel, epic, story, version) {
     return;
   }
   const next = addPlanRows(text, [row]);
+  if (next !== text) await writeFileSafe(root, rel, next, { expectHash: sha256(text) });
+}
+
+/**
+ * US-0029 FR1–FR3: removes the story's row from `docs/releases/X.Y.Z.md` of the release it left; a missing file is left
+ * missing. The write is refused when the file changed since it was read here (the `writeFileSafe` hash check).
+ */
+async function dropPlanRow(root, overviewRel, storyId, version) {
+  const rel = `${plansDir(overviewRel)}/${version.slice(1)}.md`; // the version comes from releaseOf, so it is 'vX.Y.Z'
+  let text;
+  try {
+    text = await readText(root, rel);
+  } catch (err) {
+    if (err.code === 'ENOENT') return;
+    throw err;
+  }
+  const next = removePlanRows(text, [storyId]);
   if (next !== text) await writeFileSafe(root, rel, next, { expectHash: sha256(text) });
 }
 
