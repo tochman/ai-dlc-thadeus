@@ -6,9 +6,9 @@
 
 > Small fixes the person reports while using the app: something looks off, behaves wrongly or is missing a detail. Each fix becomes a story here, so nothing reported in passing gets lost. A fix that grows into a feature moves to its topic's epic.
 
-**Stories:** US-0001, US-0002, US-0003, US-0004, US-0005, US-0006, US-0007, US-0008, US-0009, US-0010, US-0011, US-0012, US-0013, US-0014, US-0015, US-0016, US-0017, US-0018, US-0019, US-0020, US-0021, US-0022, US-0023, US-0024, US-0025, US-0026, US-0027, US-0028
+**Stories:** US-0001, US-0002, US-0003, US-0004, US-0005, US-0006, US-0007, US-0008, US-0009, US-0010, US-0011, US-0012, US-0013, US-0014, US-0015, US-0016, US-0017, US-0018, US-0019, US-0020, US-0021, US-0022, US-0023, US-0024, US-0025, US-0026, US-0027, US-0028, US-0029
 
-**Status (2026-11-18):** ✅ US-0001–US-0020 released (v0.2.3–v0.2.6). ✅ US-0021–US-0023 released in v0.2.7. ✅ US-0024 released in v0.2.8. ✅ US-0025 released in v0.2.9. ✅ US-0026 released in v0.2.9. ✅ US-0027 released in v0.2.9. 📋 US-0028 planned, no release yet, for v0.2.10. Each story names its release.
+**Status (2026-11-18):** ✅ US-0001–US-0020 released (v0.2.3–v0.2.6). ✅ US-0021–US-0023 released in v0.2.7. ✅ US-0024 released in v0.2.8. ✅ US-0025 released in v0.2.9. ✅ US-0026 released in v0.2.9. ✅ US-0027 released in v0.2.9. 📋 US-0028 planned, no release yet, for v0.2.10. 📋 US-0029 planned, no release yet. Each story names its release.
 
 ---
 
@@ -455,3 +455,17 @@
   - [ ] A test fails without the fix and passes with it; the existing suite stays green.
 - **Notes:** A code fix, so it runs on the `quick-fix` plan. Touches `src/renderer/Pipeline.jsx` and the `pipeline.noGraph` keys in `sv.json` and `en.json`.
 - **Dependencies:** none
+
+**US-0029: Moving a story to another release leaves its row in the old release plan** 📋 Planned
+- As a **developer planning releases in the app**, in order to **trust the release plan files**, I would like **a story moved to another release to leave the old release's plan file**.
+- **Epic:** EPIC-00
+- **Priority:** Low
+- **Complexity:** Low
+- **Background:** Reported 2026-11-18. US-0028, US-0215 and US-0805 were moved from v0.3.0 to v0.2.10. The release list showed v0.3.0 as empty, because it reads each story's "for vX.Y.Z" note, but `docs/releases/0.3.0.md` still listed all three. `writePlanRow` in `src/main/releases.js` adds the row to the new release's plan file and never removes it from the old one. The stale rows were removed by hand.
+- **Acceptance Criteria:**
+  - [ ] **Given** a story listed in one release's plan file, **when** I move it to another release, **then** its row is removed from the old file and added to the new one.
+  - [ ] **Given** the old file then holds no rows, **then** it is left as the heading only, as a new release is created.
+  - [ ] A file changed since it was read is not overwritten (the existing hash check).
+  - [ ] A test fails without the fix and passes with it; the existing suite stays green.
+- **Notes:** A code fix, so it runs on the `quick-fix` plan. Touches `writePlanRow` and `addPlanRows` in `src/main/releases.js` and `src/main/parsers/releases.js`.
+- **Dependencies:** US-0606
