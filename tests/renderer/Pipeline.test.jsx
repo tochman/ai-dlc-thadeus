@@ -1,4 +1,5 @@
 // US-0411: pipeline stages as LCARS cards with a unit level bar (FR1–FR3, FR5).
+// US-0028: the runtime-graph note (FR1, FR2, FR4).
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import Pipeline, { levelBar } from '../../src/renderer/Pipeline.jsx';
@@ -108,5 +109,29 @@ describe('Pipeline cards', () => {
     expect(button.getAttribute('aria-expanded')).toBe('true');
     fireEvent.click(screen.getByTestId('pipeline-stage-file'));
     expect(onOpenFile).toHaveBeenCalledWith('construction/code-generation/plan.md');
+  });
+});
+
+describe('runtime-graph note (US-0028)', () => {
+  const notDone = [stageOf('code-generation', 'in-progress', { current: true }), stageOf('build-and-test', 'not-started')];
+  const NEW_INTENT = { phases: [{ name: 'construction', stages: notDone }] };
+  const show = (pipeline, hasGraph) => render(<Pipeline pipeline={pipeline} files={[]} hasGraph={hasGraph} onOpenFile={vi.fn()} cost={null} />);
+
+  it('shows no note about the file when there is no graph and no done stage (FR1)', () => {
+    show(NEW_INTENT, false);
+    expect(screen.queryByTestId('pipeline-timings-note')).toBeNull();
+    expect(screen.queryByText(/runtime-graph\.json/)).toBeNull();
+  });
+
+  it('shows one calm sentence when there is no graph but a stage is done (FR2, FR4)', () => {
+    show(PIPELINE, false);
+    expect(screen.getByTestId('pipeline-timings-note').textContent).toBe(
+      'Tidsuppgifter finns bara på den dator som körde arbetet. Status kommer från aidlc-state.md.'
+    );
+  });
+
+  it('shows no note when the graph is there (FR2)', () => {
+    show(PIPELINE, true);
+    expect(screen.queryByTestId('pipeline-timings-note')).toBeNull();
   });
 });
