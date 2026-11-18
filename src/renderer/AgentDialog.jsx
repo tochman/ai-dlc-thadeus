@@ -2,7 +2,7 @@
 // A native modal <dialog>, like the settings dialog: on top of everything, Esc closes it.
 //
 // Two kinds of page, one pager in arrival order (BR2.1: the page being read never jumps; a new event only raises
-// "+1 new"):
+// "+1 new"; US-0031 FR2: a settled page gives way to a new one):
 // - a hook event (source "hook"): the agent's own question, its Markdown body rendered through FileContent with raw
 //   HTML shown as text (K7), header and option labels through visibleText (K8). Answers go to main as option indexes
 //   only (agentEvents.answer); main checks and delivers them (C4, BR3.1).
@@ -18,6 +18,7 @@ import { Fragment, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { t as translate } from '../shared/i18n.js';
 import { selectableHarness } from '../shared/harnesses.js';
+import { isSettled } from '../shared/agentOrder.js';
 import { cleanBody, visibleText } from '../shared/agentText.js';
 import { FileContent } from './ArtifactReader.jsx';
 import ReplyPage from './ReplyPage.jsx'; // US-0506 u3: the MESSAGE page
@@ -593,6 +594,12 @@ export default function AgentDialog({
   const seen = useRef({ id: null, ids: new Set() });
   if (ev && seen.current.id !== ev.eventId) seen.current = { id: ev.eventId, ids: new Set(events.map((e) => e.eventId)) };
   const newCount = events.filter((e) => !seen.current.ids.has(e.eventId)).length;
+  // US-0031 FR2: a settled page on screen gives way to the first page that arrived after it showed (a live page stays
+  // put, BR2.1).
+  const arrival = isSettled(ev) ? events.find((e) => !seen.current.ids.has(e.eventId)) : null;
+  useEffect(() => {
+    if (arrival) setPageId(arrival.eventId);
+  }, [arrival?.eventId]); // eslint-disable-line react-hooks/exhaustive-deps -- only when another page arrives
 
   // A notification names an event (or the audit question behind it): show that one.
   useEffect(() => {

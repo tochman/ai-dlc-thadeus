@@ -199,7 +199,8 @@ This run (`39a3dbf`, US-0608) re-read these components: Planning Record, Plannin
 - `src/main/agentChannel.js`: per-session folders in userData; event files in, answer files out.
 
 ### Agent Event Store
-- `src/main/agentEvents.js` (557 lines; US-0506, US-0213, US-0214): open agent events per project, the state machine, answers, the session signals and the activity rows (`KIND_ACTIVITY`, `feedActivity`, 250 ms push, 30 s idle push).
+- `src/main/agentEvents.js` (569 lines at `6ec3546`; US-0506, US-0213, US-0214, US-0030): open agent events per project, the state machine, answers, the session signals and the activity rows (`KIND_ACTIVITY`, `feedActivity`, 250 ms push, 30 s idle push).
+  - `move` (`:146-157`) is the one transition and deletes only on `ended` (3 s later for `KEPT` = `session`, `terminal`, `typed`); `list` (`:133-137`) returns every state, sorted by `byPager`. `OPEN` = `shown`, `timedOut`. `addHandoff` (`:493-520`) keeps one handoff per session. Settled pages in the list: see `code-quality-assessment.md`, US-0031 notes.
 
 ### Agent Adapters
 - `src/main/agentAdapters.js`: Claude Code and opencode hook payloads to events and back. Pure. Activity keeps only `IDENT`-shaped values.
@@ -254,7 +255,7 @@ This run (`39a3dbf`, US-0608) re-read these components: Planning Record, Plannin
 - `src/shared/agentText.js`: the one sanitizer for agent text.
 
 ### Agent Order
-- `src/shared/agentOrder.js`: `byPager`.
+- `src/shared/agentOrder.js`: `byPager`, rank question/permission 0, reply 1, handoff 2, then `arrivedAtMs`, `tabId`, `seq` (`:6-10`).
 
 ### Alert Plan
 - `src/shared/alertPlan.js`: one alert decision per kind and setting.
@@ -268,7 +269,7 @@ This run (`39a3dbf`, US-0608) re-read these components: Planning Record, Plannin
 - `main.jsx`, `index.html`: fonts, theme, the language before the first render, the CSP.
 
 ### App Shell
-- `App.jsx`: project tabs, the left arm, settings, menu commands, dialogs.
+- `App.jsx`: project tabs, the left arm, settings, menu commands, dialogs. Agent dialog wiring (`:222-298`): `receiveAgentEvents` opens the dialog on a fresh open event, `dialogEvents`/`popupEvents` feed it, `hasNewQuestion` closes it.
 
 ### ProjectView
 - `ProjectView.jsx`: one `TerminalProvider` per project, with `useProject` and `useFeatures`; the `view === '<id>'` branches.
@@ -286,7 +287,7 @@ This run (`39a3dbf`, US-0608) re-read these components: Planning Record, Plannin
 - `picker.js`: reads Claude Code's picker from the screen rows. Pure.
 
 ### AgentDialog
-- `AgentDialog.jsx`: the LCARS modal pager for questions, permissions and replies.
+- `AgentDialog.jsx` (775 lines): the LCARS modal pager for questions, permissions, replies and the handoff page. Stays mounted while closed; the shown page is `pageId`, else `lastIndex` (`:559-565`); "+n nya" counts ids not seen when the page first showed (`:593-595`); `settled` (`:646`) marks a hook page that is no longer open.
 
 ### ReplyPage
 - `ReplyPage.jsx`: the reply page, sanitised Markdown.

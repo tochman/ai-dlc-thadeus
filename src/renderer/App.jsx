@@ -13,7 +13,7 @@ import { Bar, Frame } from './Lcars.jsx';
 import Tooltip from './Tooltip.jsx';
 import { APP_NAME } from '../shared/appName.js';
 import { selectableHarness } from '../shared/harnesses.js';
-import { byPager } from '../shared/agentOrder.js';
+import { byPager, isSettled } from '../shared/agentOrder.js';
 import { alertPlan } from '../shared/alertPlan.js';
 
 const NOTICE_MS = 5000; // US-0506 u2 K11: how long the hand-back notice stays
@@ -219,13 +219,25 @@ export default function App() {
   // Agent events (US-0506 u1 C4): the list per open project, then main's pushes. Only an event not seen before and
   // not waiting since the start opens the dialog (US-0505 FR1.4), and only when alertPlan says so for its kind
   // (US-0506 u5 D2): questions and permissions follow questionAlerts, replies replyAlerts.
+  // US-0031 FR1, FR1.1, FR3: a closed dialog opens on the first new page in pager order; an open one is never moved.
+  // Pushes from several projects can land before the next render: the first new page across all of them wins.
+  const popupOpenRef = useRef(popupOpen);
+  popupOpenRef.current = popupOpen;
+  const firstNewRef = useRef(null);
+  if (!popupOpen) firstNewRef.current = null;
   const receiveAgentEvents = useCallback((projectId, events) => {
     if (typeof projectId !== 'string' || !Array.isArray(events)) return;
     const seen = seenQuestionsRef.current;
     const fresh = events.filter((e) => !e.early && (e.state === 'shown' || e.state === 'timedOut') && !seen.has(e.eventId));
     for (const e of events) seen.add(e.eventId);
     setAgentEvents((m) => ({ ...m, [projectId]: events }));
-    if (fresh.some((e) => alertPlan(e.kind, alertSettingsRef.current, true).open)) setPopupOpen(true);
+    const opening = fresh.filter((e) => alertPlan(e.kind, alertSettingsRef.current, true).open).sort(byPager);
+    if (!opening.length) return;
+    if (!popupOpenRef.current) {
+      firstNewRef.current = [firstNewRef.current, opening[0]].filter(Boolean).sort(byPager)[0];
+      setPopupFocus({ id: firstNewRef.current.eventId });
+    }
+    setPopupOpen(true);
   }, []);
   useEffect(() => bridge.agentEvents?.onChanged(({ projectId, events }) => receiveAgentEvents(projectId, events)), [receiveAgentEvents]);
   const listedRef = useRef(new Set());
@@ -255,7 +267,7 @@ export default function App() {
     .filter((e) => !(e.kind === 'reply' && (e.state === 'queued' || e.state === 'dismissed')))
     .sort(byPager);
   const popupEvents = [...dialogEvents.filter((e) => !e.early), ...dialogEvents.filter((e) => e.early)];
-  const hasNewQuestion = dialogEvents.some((e) => !e.early);
+  const hasNewQuestion = dialogEvents.some((e) => !e.early && !isSettled(e)); // US-0031 FR4: settled pages hold nothing open
   useEffect(() => {
     if (!hasNewQuestion) setPopupOpen(false);
   }, [hasNewQuestion]);

@@ -184,6 +184,26 @@ sequenceDiagram
 
 Text fallback: the agent writes the files. The watcher debounces and calls the router. The router pushes `project:changed` and recomputes the waiting questions in main, alerting only on ids that are new since the baseline. `useProject` reloads the list and the detail.
 
+### Agent dialog: which page shows (US-0031 area, read at `6ec3546`)
+
+```mermaid
+sequenceDiagram
+  participant SH as sessionHandoff / onRaw
+  participant ES as Agent Event Store
+  participant APP as App.jsx
+  participant AD as AgentDialog
+  SH->>ES: addEvent / replies.add / addHandoff
+  ES->>ES: move(state); delete only on ended
+  ES->>APP: agentEvents onChanged {projectId, events (every state, byPager)}
+  APP->>APP: receiveAgentEvents: fresh shown/timedOut + alertPlan open
+  APP->>AD: open=true, events=popupEvents (no page named)
+  AD->>AD: page = pageId, else lastIndex (kept from the last close)
+  APP->>APP: hasNewQuestion = any non-early page left
+  APP->>AD: open=false only when none is left
+```
+
+Text fallback: every store change pushes the project's whole list, settled pages included, in `byPager` order (handoff last). The app opens the dialog when a fresh open event arrives, but names no page. The dialog, mounted all along, shows the page it was closed on if that page is still listed, else the same index. The app closes the dialog only when no non-early page is left. Details: `code-quality-assessment.md`, US-0031 notes.
+
 ### Agent progress from hook events (US-0214; kept from `0ebb196`, not re-verified)
 
 ```mermaid

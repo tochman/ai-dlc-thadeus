@@ -7,6 +7,7 @@ import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import AgentDialog, { ARRIVAL_MS, GUARD_MS, OVERDUE_MS } from '../../src/renderer/AgentDialog.jsx';
 import { HARNESSES } from '../../src/shared/harnesses.js';
+import { isSettled } from '../../src/shared/agentOrder.js';
 import { adapters } from '../../src/main/agentAdapters.js';
 import { auditEvent, pendingQuestions } from '../../src/main/questions.js';
 import { mergeAudits } from '../../src/main/parsers/audit.js';
@@ -821,5 +822,43 @@ describe('AgentDialog: permission pages', () => {
     expect(dialog().classList.contains('is-overdue')).toBe(false);
     act(() => vi.advanceTimersByTime(OVERDUE_MS));
     expect(dialog().classList.contains('is-overdue')).toBe(true);
+  });
+});
+
+// US-0031 FR2, FR4: one rule for a page that is over, shared by the app shell and the dialog.
+describe('isSettled (US-0031)', () => {
+  it.each(['sent', 'handedBack', 'stale', 'ended'])('a hook page in %s is settled', (state) => {
+    expect(isSettled(hookEvent('gate-2026-11-14', { state }))).toBe(true);
+  });
+  it.each(['shown', 'timedOut', 'sending', 'waiting', 'queued'])('a hook page in %s is live', (state) => {
+    expect(isSettled(hookEvent('gate-2026-11-14', { state }))).toBe(false);
+  });
+  it('an audit page is live, whatever its state; nothing is not settled', () => {
+    expect(isSettled(audit({}))).toBe(false);
+    expect(isSettled(null)).toBe(false);
+  });
+});
+
+describe('AgentDialog: a new page and the page on screen (US-0031)', () => {
+  const second = () => hookEvent('reordered', { eventId: 'h2', sessionId: 's2', arrivedAtMs: 2 });
+
+  it('open on a sent page, a new page takes over (AC1.2.1, FR2)', () => {
+    const props = base();
+    const first = hookEvent('gate-2026-11-14', { state: 'sent' });
+    const { rerender } = show(<AgentDialog {...props} events={[first]} />);
+    expect(screen.getByTestId('agent-dialog-header').textContent).toBe('Stage gate');
+    rerender(<AgentDialog {...props} events={[first, second()]} />);
+    expect(screen.getByTestId('agent-dialog-header').textContent).toBe('Database');
+    fireEvent.click(screen.getByTestId('agent-dialog-prev'));
+    expect(screen.getByTestId('agent-dialog-header').textContent).toBe('Stage gate');
+  });
+
+  it('open on a live page, a new page leaves it shown and counts +1 ny (AC1.3.1, FR3, BR2.1)', () => {
+    const props = base();
+    const first = hookEvent('gate-2026-11-14');
+    const { rerender } = show(<AgentDialog {...props} events={[first]} />);
+    rerender(<AgentDialog {...props} events={[first, second()]} />);
+    expect(screen.getByTestId('agent-dialog-header').textContent).toBe('Stage gate');
+    expect(screen.getByTestId('agent-dialog-new-count').textContent).toBe('+1 ny');
   });
 });
