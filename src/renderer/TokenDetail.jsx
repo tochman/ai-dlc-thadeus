@@ -14,7 +14,7 @@ import { ParentSize } from '@visx/responsive';
 import { Bar, Frame } from './Lcars.jsx';
 import { formatCostPair, formatTokens, formatUsd, shortModel, stageTitle } from './format.js';
 import { agentName } from '../main/parsers/ledger.js';
-import { SPLIT_KINDS, STACK_KINDS, elapsedLabel, rateSeries, splitRows, stackSeries, toggleKind } from './tokenChart.js';
+import { SPLIT_KINDS, STACK_KINDS, elapsedLabel, rateSeries, runFigures, splitRows, stackSeries, toggleKind } from './tokenChart.js';
 import AgentProgress from './AgentProgress.jsx';
 import Tooltip from './Tooltip.jsx';
 
@@ -206,15 +206,39 @@ function OverTimeChart({ width, readings, shown }) {
   );
 }
 
-/** Tokens over time with its Diagram / Table switch (FR3.1, FR4, FR6); US-0214 FR5: only the shown series. */
-function OverTime({ readings, live, shown, onToggle }) {
+/** US-0215 FR5: the rebuilt total against the ledger's, with each reason the gap names. */
+function GapLine({ gap }) {
+  const { t } = useTranslation();
+  const reasons = [];
+  if (gap.missingSessions > 0) reasons.push(t('tokenDetail.gap.missing', { n: gap.missingSessions }));
+  if (gap.outsideTokens > 0) reasons.push(t('tokenDetail.gap.outside', { tokens: formatTokens(gap.outsideTokens) }));
+  // Every session read but still short: calls the main transcripts do not hold (subagents), as the real data showed.
+  if (!reasons.length || (!gap.missingSessions && gap.rebuiltTokens < gap.ledgerTokens)) reasons.push(t('tokenDetail.gap.other'));
+  return (
+    <p className="token-detail-note" data-testid="token-detail-gap">
+      {t('tokenDetail.gap.line', {
+        rebuilt: formatTokens(gap.rebuiltTokens),
+        ledger: formatTokens(gap.ledgerTokens),
+        diff: formatTokens(Math.abs(gap.ledgerTokens - gap.rebuiltTokens)),
+        reasons: reasons.join('; ')
+      })}
+    </p>
+  );
+}
+
+/**
+ * Tokens over time with its Diagram / Table switch (FR3.1, FR4, FR6); US-0214 FR5: only the shown series.
+ * US-0215 FR2.5, FR3, FR5: a rebuilt history says so; with no history here the empty text says the figures come from the ledger.
+ */
+function OverTime({ readings, live, shown, onToggle, source, gap }) {
   const { t } = useTranslation();
   const [mode, setMode] = useState('diagram');
   const start = readings[0]?.at ?? 0;
   const columns = LEGEND.filter((k) => shown.includes(k));
   let body;
   if (readings.length === 0) {
-    body = <Empty text={t(live ? 'tokenDetail.empty.noReadingsLive' : 'tokenDetail.empty.noReadingsDone')} testId="token-detail-over-time-empty" />;
+    const empty = source === 'none' ? 'tokenDetail.source.none' : live ? 'tokenDetail.empty.noReadingsLive' : 'tokenDetail.empty.noReadingsDone';
+    body = <Empty text={t(empty)} testId="token-detail-over-time-empty" />;
   } else if (mode === 'table') {
     body = (
       <div className="token-detail-table-wrap">
@@ -265,7 +289,49 @@ function OverTime({ readings, live, shown, onToggle }) {
         <i className="token-detail-rule" aria-hidden="true" />
         <Switch id="token-detail-over-time" options={['diagram', 'table']} value={mode} onChange={setMode} />
       </div>
+      {source === 'rebuilt' && (
+        <p className="token-detail-note" data-testid="token-detail-source-note">
+          {t('tokenDetail.source.rebuilt')}
+        </p>
+      )}
+      {gap && <GapLine gap={gap} />}
       {body}
+    </section>
+  );
+}
+
+/** US-0215 FR4: the run's figures in one strip; an unknown figure shows as "–", never 0 (FR4.6). */
+function RunFigures({ intentCost, readings, wallMs, shown }) {
+  const { t } = useTranslation();
+  const f = runFigures({ intentCost, readings, wallMs, shown });
+  const time = (ms) => (ms == null ? '–' : elapsedLabel(ms));
+  const items = [
+    ['input', t('tokens.input'), formatTokens(f.input)],
+    ['output', t('tokens.output'), formatTokens(f.output)],
+    ['cache-write', t('tokens.cacheWrite'), formatTokens(f.cacheWrite)],
+    ['cache-read', t('tokens.cacheRead'), formatTokens(f.cacheRead)],
+    ['cost', t('tokenDetail.figures.cost'), formatCostPair(intentCost?.total)],
+    ['working', t('tokenDetail.figures.working'), time(f.workingMs)],
+    ['wall', t('tokenDetail.figures.wall'), time(f.wallMs)],
+    ['peak', t('tokenDetail.figures.peak'), f.peakRate == null ? '–' : t('tokens.rate', { rate: formatTokens(Math.round(f.peakRate)) })],
+    ['share', t('tokenDetail.figures.share'), f.cacheShare == null ? '–' : t('tokenDetail.figures.percent', { pct: Math.round(f.cacheShare * 100) })]
+  ];
+  return (
+    <section className="token-detail-section" data-testid="token-detail-figures">
+      <div className="token-detail-section-head">
+        <h3>{t('tokenDetail.figures.title')}</h3>
+        <i className="token-detail-rule" aria-hidden="true" />
+      </div>
+      <dl className="token-detail-figures">
+        {items.map(([id, label, value]) => (
+          <div key={id} className="token-detail-figure">
+            <dt className="readout-label">{label}</dt>
+            <dd className="readout-value readout-value--xs" data-testid={`token-detail-figure-${id}`}>
+              {value}
+            </dd>
+          </div>
+        ))}
+      </dl>
     </section>
   );
 }
@@ -366,11 +432,14 @@ function RateLine({ readings, live, shown }) {
  * refresh while live (FR5). Back and Esc call `onBack`; focus goes to the h2 on open (FR1, NFR3).
  * US-0507: the agent progress rows come with `agents:progress` on open and whenever `refreshKey` changes (the intent
  * detail was re-read after a change on disk, FR5.1).
- * @param {{projectId: string, dirName: string, intent: object|null, cost: object|null, live: boolean, stageOrder: string[], refreshKey?: unknown, onBack: () => void}} props
+ * US-0215 FR6, NFR1: main answers `{source, readings, wallMs, gap}` (or, older, a bare array); the ledger figures show
+ * at once and the diagrams when the answer comes.
+ * @param {{projectId: string, space?: string, dirName: string, intent: object|null, cost: object|null, live: boolean, stageOrder: string[], refreshKey?: unknown, onBack: () => void}} props
  */
-export default function TokenDetail({ projectId, dirName, intent, cost, live, stageOrder = [], refreshKey, onBack }) {
+export default function TokenDetail({ projectId, space = 'default', dirName, intent, cost, live, stageOrder = [], refreshKey, onBack }) {
   const { t } = useTranslation();
-  const [readings, setReadings] = useState([]);
+  const [history, setHistory] = useState({ source: null, readings: [], wallMs: null, gap: null });
+  const { readings } = history;
   const [progress, setProgress] = useState([]);
   const [recheck, setRecheck] = useState(0);
   const [overTimeShown, toggleOverTime] = useShown(projectId, 'overTime', STACK_KINDS);
@@ -381,14 +450,18 @@ export default function TokenDetail({ projectId, dirName, intent, cost, live, st
   useEffect(() => headRef.current?.focus(), []);
   useEffect(() => {
     let current = true;
-    window.bridge.getTokenReadings(projectId, dirName).then(
-      (list) => current && setReadings(Array.isArray(list) ? list : []),
+    window.bridge.getTokenReadings(projectId, dirName, space).then(
+      (res) => {
+        if (!current) return;
+        const list = Array.isArray(res) ? res : res?.readings;
+        setHistory({ source: res?.source ?? null, readings: Array.isArray(list) ? list : [], wallMs: res?.wallMs ?? null, gap: res?.gap ?? null });
+      },
       (err) => console.error('tokens:readings', err?.message ?? err) // keeps the last readings; the next refresh tries again
     );
     return () => {
       current = false;
     };
-  }, [projectId, dirName, refresh]);
+  }, [projectId, space, dirName, refresh]);
   useEffect(() => {
     let current = true;
     window.bridge.getAgentProgress(projectId, dirName).then(
@@ -447,7 +520,8 @@ export default function TokenDetail({ projectId, dirName, intent, cost, live, st
             </div>
           </header>
           <AgentProgress projectId={projectId} rows={progress} live={live} />
-          <OverTime readings={readings} live={live} shown={overTimeShown} onToggle={toggleOverTime} />
+          <OverTime readings={readings} live={live} shown={overTimeShown} onToggle={toggleOverTime} source={history.source} gap={history.gap} />
+          <RunFigures intentCost={intentCost} readings={readings} wallMs={history.wallMs} shown={overTimeShown} />
           <div className="token-detail-splits">
             <SplitCard projectId={projectId} id="stage" rows={byStage} keepOrder nameOf={stageTitle} hasEntry={!!intentCost} />
             <SplitCard projectId={projectId} id="agent" rows={intentCost?.byAgent} nameOf={agentName} hasEntry={!!intentCost} />

@@ -1,0 +1,24 @@
+{
+  "stage": "code-generation",
+  "upstream_ids": ["FR1.1", "FR2.1", "FR2.2", "FR2.3", "FR2.4", "FR2.5", "FR3", "FR4.1", "FR4.2", "FR4.3", "FR4.4", "FR4.5", "FR4.6", "FR5", "FR6", "NFR1", "NFR2", "NFR3"],
+  "coverage": [
+    { "id": "FR1.1", "status": "OK", "target": "src/main/tokenHistory.js" },
+    { "id": "FR2.1", "status": "OK", "target": "src/main/contextSize.js" },
+    { "id": "FR2.2", "status": "OK", "target": "src/main/tokenHistory.js" },
+    { "id": "FR2.3", "status": "OK", "target": "src/main/tokenHistory.js" },
+    { "id": "FR2.4", "status": "OK", "target": "src/main/tokenHistory.js" },
+    { "id": "FR2.5", "status": "OK", "target": "src/renderer/TokenDetail.jsx" },
+    { "id": "FR3", "status": "OK", "target": "src/renderer/TokenDetail.jsx" },
+    { "id": "FR4.1", "status": "OK", "target": "src/renderer/tokenChart.js" },
+    { "id": "FR4.2", "status": "OK", "target": "src/renderer/TokenDetail.jsx" },
+    { "id": "FR4.3", "status": "OK", "target": "src/main/tokenHistory.js" },
+    { "id": "FR4.4", "status": "OK", "target": "src/renderer/tokenChart.js" },
+    { "id": "FR4.5", "status": "OK", "target": "src/renderer/tokenChart.js" },
+    { "id": "FR4.6", "status": "OK", "target": "src/renderer/tokenChart.js" },
+    { "id": "FR5", "status": "OK", "target": "src/main/tokenHistory.js" },
+    { "id": "FR6", "status": "OK", "target": "src/main/ipc.js" },
+    { "id": "NFR1", "status": "OK", "target": "src/renderer/TokenDetail.jsx" },
+    { "id": "NFR2", "status": "OK", "target": "src/shared/locales/sv.json" },
+    { "id": "NFR3", "status": "OK", "target": "tests/main/tokenHistory.test.js" }
+  ]
+}

@@ -21,7 +21,7 @@ const reading = (s, n) => ({
 async function renderDetail(readings) {
   window.bridge = { getTokenReadings: vi.fn(async () => readings), getAgentProgress: vi.fn(async () => []) };
   render(<TokenDetail projectId="p1" dirName={DIR} intent={null} cost={null} live={false} onBack={() => {}} />);
-  await waitFor(() => expect(window.bridge.getTokenReadings).toHaveBeenCalledWith('p1', DIR));
+  await waitFor(() => expect(window.bridge.getTokenReadings).toHaveBeenCalledWith('p1', DIR, 'default')); // US-0215: the space goes along
   await act(async () => {});
 }
 

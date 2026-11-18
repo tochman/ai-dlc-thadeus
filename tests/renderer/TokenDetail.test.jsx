@@ -40,7 +40,7 @@ function detailProps(readings = READINGS, status = 'in-flight', extra = {}) {
 async function renderDetail(...args) {
   const props = detailProps(...args);
   const view = render(<TokenDetail {...props} />);
-  await waitFor(() => expect(window.bridge.getTokenReadings).toHaveBeenCalledWith(props.projectId, DIR));
+  await waitFor(() => expect(window.bridge.getTokenReadings).toHaveBeenCalledWith(props.projectId, DIR, 'default')); // US-0215: with the space
   await act(async () => {});
   return { ...view, props };
 }
@@ -252,6 +252,72 @@ describe('recorded and missing data (US-0208 FR5, FR6)', () => {
     for (const id of ['stage', 'agent', 'model']) {
       expect(screen.getByTestId(`token-detail-split-${id}`).textContent).toContain('Det finns ingen post i kostnadsloggen för den här intenten än.');
     }
+  });
+});
+
+// US-0215: finished intents get their whole recorded run, a rebuilt history with its note, or the ledger figures with a
+// note when no history exists here; a figures strip; and the difference from the ledger with its reason.
+describe('finished intent history (US-0215)', () => {
+  const answer = (source, readings, extra = {}) => ({ source, readings, wallMs: null, gap: null, ...extra });
+  const ledgerTokens = () => cost().perIntent[DIR].total.tokens;
+
+  it('a finished intent with 300 recorded readings shows all of them in the table (FR1)', async () => {
+    const many = Array.from({ length: 300 }, (_, i) => reading(i * 30, i + 1));
+    await renderDetail(answer('recorded', many), 'complete');
+    fireEvent.click(screen.getByTestId('token-detail-over-time-table'));
+    expect(screen.getByRole('table').querySelectorAll('tbody tr')).toHaveLength(300);
+    expect(screen.queryByTestId('token-detail-source-note')).toBeNull();
+  });
+
+  it('a rebuilt history draws the chart and says so in one sentence (FR2.5)', async () => {
+    await renderDetail(answer('rebuilt', READINGS), 'complete');
+    expect(screen.getByTestId('token-detail-over-time')).toBeTruthy();
+    expect(screen.getByTestId('token-detail-source-note').textContent).toBe('Historiken är återskapad ur Claude Codes transkript på den här datorn.');
+  });
+
+  it('with no history here it shows the ledger figures and one sentence, no empty chart (FR3)', async () => {
+    await renderDetail(answer('none', []), 'complete');
+    expect(screen.queryByTestId('token-detail-over-time')).toBeNull();
+    expect(screen.getByTestId('token-detail-over-time-empty').textContent).toBe(
+      'Det finns ingen tidshistorik för den här intenten på den här datorn; siffrorna kommer från kostnadsloggen.'
+    );
+    const figures = screen.getByTestId('token-detail-figures');
+    expect(within(figures).getByTestId('token-detail-figure-input').textContent).not.toBe('–');
+    expect(within(figures).getByTestId('token-detail-figure-cache-read').textContent).not.toBe('–');
+    expect(ledgerTokens().input).toBeGreaterThan(0);
+    expect(screen.getByTestId('token-detail-tokens').textContent).toBe('9,8 k');
+  });
+
+  it('the strip labels the cost as an estimate and shows an unknown figure as "–" (FR4.2, FR4.6)', async () => {
+    await renderDetail(answer('rebuilt', READINGS), 'complete');
+    const figures = screen.getByTestId('token-detail-figures');
+    expect(figures.textContent).toContain('Uppskattad kostnad');
+    expect(within(figures).getByTestId('token-detail-figure-cost').textContent).toBe('$4.00');
+    expect(within(figures).getByTestId('token-detail-figure-wall').textContent).toBe('–'); // no workflow end in the audit
+    expect(within(figures).getByTestId('token-detail-figure-working').textContent).toBe('0:02');
+    expect(within(figures).getByTestId('token-detail-figure-peak').textContent).toBe('4,4 k tokens/min'); // 2 940 over 40 s
+  });
+
+  it('shows how far the rebuilt total is from the ledger and why (FR5)', async () => {
+    const gap = { ledgerTokens: 9800, rebuiltTokens: 9000, missingSessions: 1, outsideTokens: 500 };
+    await renderDetail(answer('rebuilt', READINGS, { gap }), 'complete');
+    const line = screen.getByTestId('token-detail-gap').textContent;
+    for (const part of [
+      'Återskapat 9,0 k tokens',
+      'kostnadsloggen 9,8 k',
+      '(800 skillnad)',
+      '1 session finns inte på den här datorn',
+      '500 tokens utanför stegens tidsfönster'
+    ])
+      expect(line).toContain(part);
+  });
+
+  it('still takes a bare array of readings, the older answer (FR1)', async () => {
+    await renderDetail(READINGS, 'complete');
+    expect(screen.getByTestId('token-detail-over-time')).toBeTruthy();
+    expect(screen.getByTestId('token-detail-recorded').textContent).toBe('0:02 · 4 avläsningar');
+    expect(screen.queryByTestId('token-detail-source-note')).toBeNull();
+    expect(screen.queryByTestId('token-detail-gap')).toBeNull();
   });
 });
 

@@ -25,11 +25,17 @@ export function contextOfTranscript(text) {
   return null;
 }
 
-/** US-0213 FR1.1: reads the transcript's tail, only inside `allowedDir`; null when absent, outside or unreadable. */
-export async function readTranscriptContext(file, allowedDir) {
+/** US-0213 FR1.1, US-0215 FR2.1: the absolute `file` when it lies inside `allowedDir`, else null. */
+export function insideDir(file, allowedDir) {
   if (typeof file !== 'string' || !path.isAbsolute(file) || typeof allowedDir !== 'string') return null;
   const abs = path.resolve(file);
-  if (!abs.startsWith(path.resolve(allowedDir) + path.sep)) return null;
+  return abs.startsWith(path.resolve(allowedDir) + path.sep) ? abs : null;
+}
+
+/** US-0213 FR1.1: reads the transcript's tail, only inside `allowedDir`; null when absent, outside or unreadable. */
+export async function readTranscriptContext(file, allowedDir) {
+  const abs = insideDir(file, allowedDir);
+  if (!abs) return null;
   let fh;
   try {
     fh = await fs.open(abs, 'r');

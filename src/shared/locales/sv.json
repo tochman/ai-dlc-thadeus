@@ -1214,6 +1214,25 @@
       "noReadingsDone": "Inga avläsningar finns sparade för den här intenten; den blev klar innan de sparades.",
       "oneReading": "Bara en avläsning än; diagrammet börjar med nästa."
     },
+    "source": {
+      "rebuilt": "Historiken är återskapad ur Claude Codes transkript på den här datorn.",
+      "none": "Det finns ingen tidshistorik för den här intenten på den här datorn; siffrorna kommer från kostnadsloggen."
+    },
+    "gap": {
+      "line": "Återskapat {rebuilt} tokens, kostnadsloggen {ledger} ({diff} skillnad): {reasons}.",
+      "missing": "{n, plural, one {# session finns inte på den här datorn} other {# sessioner finns inte på den här datorn}}",
+      "outside": "{tokens} tokens utanför stegens tidsfönster",
+      "other": "anrop som transkripten inte har, till exempel subagenter"
+    },
+    "figures": {
+      "title": "Körningens siffror",
+      "cost": "Uppskattad kostnad",
+      "working": "Arbetstid",
+      "wall": "Kalendertid",
+      "peak": "Högsta takt",
+      "share": "Andel cacheläsning",
+      "percent": "{pct} %"
+    },
     "progress": {
       "title": "Agenternas framsteg",
       "empty": "Inga agenter arbetar i den här intenten just nu.",

@@ -1214,6 +1214,25 @@
       "noReadingsDone": "No readings are stored for this intent; it finished before they were kept.",
       "oneReading": "Only one reading so far; the chart starts with the next one."
     },
+    "source": {
+      "rebuilt": "This history was rebuilt from the Claude Code transcripts on this machine.",
+      "none": "There is no time history for this intent on this machine; the figures come from the cost ledger."
+    },
+    "gap": {
+      "line": "Rebuilt {rebuilt} tokens, cost ledger {ledger} ({diff} apart): {reasons}.",
+      "missing": "{n, plural, one {# session is not on this machine} other {# sessions are not on this machine}}",
+      "outside": "{tokens} tokens outside the stage windows",
+      "other": "calls the transcripts do not hold, such as subagents"
+    },
+    "figures": {
+      "title": "Run figures",
+      "cost": "Estimated cost",
+      "working": "Working time",
+      "wall": "Wall-clock time",
+      "peak": "Peak rate",
+      "share": "Cache-read share",
+      "percent": "{pct}%"
+    },
     "progress": {
       "title": "Agent progress",
       "empty": "No agents are working in this intent right now.",

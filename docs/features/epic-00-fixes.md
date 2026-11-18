@@ -6,9 +6,9 @@
 
 > Small fixes the person reports while using the app: something looks off, behaves wrongly or is missing a detail. Each fix becomes a story here, so nothing reported in passing gets lost. A fix that grows into a feature moves to its topic's epic.
 
-**Stories:** US-0001, US-0002, US-0003, US-0004, US-0005, US-0006, US-0007, US-0008, US-0009, US-0010, US-0011, US-0012, US-0013, US-0014, US-0015, US-0016, US-0017, US-0018, US-0019, US-0020, US-0021, US-0022, US-0023, US-0024, US-0025, US-0026, US-0027, US-0028, US-0029
+**Stories:** US-0001, US-0002, US-0003, US-0004, US-0005, US-0006, US-0007, US-0008, US-0009, US-0010, US-0011, US-0012, US-0013, US-0014, US-0015, US-0016, US-0017, US-0018, US-0019, US-0020, US-0021, US-0022, US-0023, US-0024, US-0025, US-0026, US-0027, US-0028, US-0029, US-0030
 
-**Status (2026-11-18):** ✅ US-0001–US-0020 released (v0.2.3–v0.2.6). ✅ US-0021–US-0023 released in v0.2.7. ✅ US-0024 released in v0.2.8. ✅ US-0025 released in v0.2.9. ✅ US-0026 released in v0.2.9. ✅ US-0027 released in v0.2.9. ✅ US-0028 done, for v0.2.10. ✅ US-0029 done, for v0.2.10. Each story names its release.
+**Status (2026-11-18):** ✅ US-0001–US-0020 released (v0.2.3–v0.2.6). ✅ US-0021–US-0023 released in v0.2.7. ✅ US-0024 released in v0.2.8. ✅ US-0025 released in v0.2.9. ✅ US-0026 released in v0.2.9. ✅ US-0027 released in v0.2.9. ✅ US-0028 done, for v0.2.10. ✅ US-0029 done, for v0.2.10. 📋 US-0030 planned. Each story names its release.
 
 ---
 
@@ -471,3 +471,20 @@
 - **Notes:** A code fix, so it runs on the `quick-fix` plan. Touches `writePlanRow` and `addPlanRows` in `src/main/releases.js` and `src/main/parsers/releases.js`.
 - **Done (2026-11-18, quick-fix, branch `fix/US-0029`):** `setStoryRelease` reads the story's old release, and the new `dropPlanRow` takes its row out of that release's plan file through `removePlanRows` (`src/main/parsers/releases.js`) with the hash check. Removing a story from a release still leaves its row. 1883/1883 tests pass.
 - **Dependencies:** US-0606
+
+**US-0030: Agent progress keeps an old state and is vague about what an agent is doing** 📋 Planned
+- As a **developer watching an intent while agents work**, in order to **know what is happening without reading the terminal**, I would like **each agent row in Agent progress to show its task, its step in the plan, and what it is doing right now, and the main row to show its real state**.
+- **Epic:** EPIC-00
+- **Priority:** Medium
+- **Complexity:** Medium
+- **Background:** Reported 2026-11-18 during US-0215's Code Generation. The token view's Agent progress showed "Main · Claude Code — waiting for your permission (5 min)" while main was waiting for a background agent, with no permission prompt open. The developer row said only "developer — running Bash (0 s)". Claude Code's own status line said more at the same moment: the task "Build US-0215 token history" and the activity "Rerunning view tests after fixing expectation". Earlier runs showed "step n of m" (`tokenDetail.progress.steps`, from the plan's ticked steps, US-0507). This time no step count showed, though the plan (`construction/code-generation/code-generation-plan.md`, a zero-Unit plan at stage level) was being ticked. Hypotheses to check: the step count reads only per-Unit plans, and a permission state from the hook events (US-0214) is never cleared when the wait ends.
+- **Acceptance Criteria:**
+  - [ ] **Given** main is waiting for a background agent or working, with no permission prompt open, **when** I look at Agent progress, **then** the main row does not say it is waiting for my permission; a permission state clears as soon as the permission is answered or the next event arrives.
+  - [ ] **Given** an agent was started with a task description (for example "Build US-0215 token history"), **then** its row shows that task next to the agent's name.
+  - [ ] **Given** the agent works through a plan with checkboxes, Unit or stage level (zero-Unit), **then** its row shows "step n of m" from the ticked steps, as before.
+  - [ ] **Given** the agent is running a tool, **then** the row says what it does in words when that is known (the tool call's description, for example "Rerunning view tests after fixing expectation"), not only the tool's name; with no description it falls back to "running Bash".
+  - [ ] A state that has had no new event for a while says how long ago it was seen, so an old state is not shown as current.
+  - [ ] Every text goes through `t()` in Swedish and English, in the LCARS look; status is never shown by colour alone.
+  - [ ] A test fails without the fix and passes with it; the existing suite stays green.
+- **Notes:** A code fix, so it runs on the `quick-fix` plan, unless finding the cause shows it is larger; then it moves to EPIC-05 (agent dialogs and progress). Likely touches `src/main/parsers/agentProgress.js`, `src/main/agentEvents.js` (the hook event state) and `src/renderer/AgentProgress.jsx`. Screenshot of the report: the token view of `261118-finished-token-history`, 2026-11-18 19:51.
+- **Dependencies:** US-0507, US-0214

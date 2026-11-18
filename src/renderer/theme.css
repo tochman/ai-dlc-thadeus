@@ -699,6 +699,11 @@ button.lcars-chip:hover { border-color: var(--steel-text); color: var(--steel-li
 .token-detail-table th:first-child, .token-detail-table td:first-child { text-align: left; }
 .token-detail-table td:last-child { color: var(--steel-text); }
 .token-detail-empty { margin: 0; padding: 14px 16px; border: 2px dashed var(--slate-3); color: var(--text-2); font: 14px/1.5 var(--font-read); }
+/* US-0215: the source and gap notes, and the run's figures strip as LCARS readouts. */
+.token-detail-note { margin: 0; color: var(--text-2); font: 14px/1.5 var(--font-read); }
+.token-detail-figures { margin: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 8px 16px; }
+.token-detail-figure { display: flex; flex-direction: column; gap: 2px; min-width: 0; padding-left: 8px; border-left: 4px solid var(--slate-3); }
+.token-detail-figure dd { margin: 0; }
 .token-detail-splits { display: flex; flex-wrap: wrap; gap: 16px; }
 .token-detail-card { flex: 1 1 300px; min-width: 0; display: flex; flex-direction: column; gap: 8px; padding: 10px 14px 12px; border: 3px solid var(--slate-3); border-radius: 4px 22px 4px 4px; background: var(--bg); }
 .token-detail-card--model { flex-basis: 100%; }

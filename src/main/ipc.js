@@ -12,6 +12,7 @@ import {
   inProgress,
   intentsDir,
   listSpaces,
+  loadAuditEvents,
   loadCost,
   loadCrossMachineCost,
   loadVelocity,
@@ -23,6 +24,7 @@ import {
 } from './projectService.js';
 import os from 'node:os';
 import { readTranscriptContext } from './contextSize.js';
+import { loadTokenHistory } from './tokenHistory.js';
 import { HANDOFF_DEFAULTS, createHandoffController } from './sessionHandoff.js';
 import { loadAgentProgress } from './agentProgress.js';
 import { notifyEvent, notifyQuestions } from './notify.js';
@@ -83,6 +85,8 @@ import { currentLanguage, setLanguageFromSettings } from './i18n.js';
 import { t } from '../shared/i18n.js';
 import { APP_REPO_URL } from '../shared/appName.js';
 
+// US-0213 FR1.1, US-0215 FR2.1: Claude Code transcripts are read only under this folder.
+const CLAUDE_PROJECTS = path.join(os.homedir(), '.claude', 'projects');
 const OPEN_IN_EDITOR_EXT = new Set(['.md', '.json', '.txt', '.yaml', '.yml']);
 // The Om section's links, by a fixed key: the renderer never names a URL (NFR1, US-0405 FR5.1).
 const REPO_URL = APP_REPO_URL; // US-0027
@@ -441,7 +445,7 @@ function agentWiring() {
   // project, only compact.txt in the app's own session folder (NFR1).
   handoff = createHandoffController({
     store,
-    readContext: (file) => readTranscriptContext(file, path.join(os.homedir(), '.claude', 'projects')),
+    readContext: (file) => readTranscriptContext(file, CLAUDE_PROJECTS),
     ratesOf: async (projectId) => (await costRates(project(projectId).root))?.rates ?? {},
     settingsOf: async (projectId) => ({ ...HANDOFF_DEFAULTS, ...(await getProjectSettings(project(projectId).root)).handoff }),
     inputsOf: async (projectId) => {
@@ -768,7 +772,21 @@ const handlers = {
     return { ...kept, available: true, ...summary, rates: shown };
   },
   // The stored readings of one intent (US-0208 FR2.1); readReadings checks the dir name before it becomes a path.
-  'tokens:readings': async (_event, projectId, dirName) => readReadings(project(projectId).root, dirName),
+  // US-0215 FR6: with a space, `{source, readings, wallMs, gap}`; a finished intent without readings is rebuilt from its
+  // transcripts (read only under ~/.claude/projects). A live or unknown intent keeps its recorded readings only.
+  'tokens:readings': async (_event, projectId, dirName, space) => {
+    const p = project(projectId);
+    if (space == null) return readReadings(p.root, dirName); // the older caller: a bare array
+    const intent = (await loadIntentList(p.root, space, [])).intents.find((i) => i.dirName === dirName); // a real intent folder, never a typed path
+    if (!intent || intent.status === 'in-flight') return { source: 'recorded', readings: await readReadings(p.root, dirName), wallMs: null, gap: null };
+    try {
+      const [cost, events] = await Promise.all([loadCost(p.root), loadAuditEvents(p.root, `${intentsDir(space)}/${dirName}`)]);
+      return await loadTokenHistory({ root: p.root, dirName, uuid: intent.uuid, ledger: cost.ledger ?? null, events, projectsDir: CLAUDE_PROJECTS });
+    } catch (err) {
+      console.error(`Kunde inte bygga tokenhistorik för ${dirName}:`, err.message); // NFR1: the view keeps the ledger figures
+      return { source: 'none', readings: [], wallMs: null, gap: null };
+    }
+  },
   // Cached per opened project (a reopen gets a new projectId); getConfiguredModels never rejects.
   'project:models': async (_event, projectId) => {
     const p = project(projectId);
