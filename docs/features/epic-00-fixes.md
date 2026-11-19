@@ -8,7 +8,7 @@
 
 **Stories:** US-0001, US-0002, US-0003, US-0004, US-0005, US-0006, US-0007, US-0008, US-0009, US-0010, US-0011, US-0012, US-0013, US-0014, US-0015, US-0016, US-0017, US-0018, US-0019, US-0020, US-0021, US-0022, US-0023, US-0024, US-0025, US-0026, US-0027, US-0028, US-0029, US-0030, US-0031
 
-**Status (2026-11-18):** ✅ US-0001–US-0020 released (v0.2.3–v0.2.6). ✅ US-0021–US-0023 released in v0.2.7. ✅ US-0024 released in v0.2.8. ✅ US-0025 released in v0.2.9. ✅ US-0026 released in v0.2.9. ✅ US-0027 released in v0.2.9. ✅ US-0028 done, for v0.2.10. ✅ US-0029 done, for v0.2.10. ✅ US-0030 done, for v0.2.10. ✅ US-0031 done, for v0.2.10. Each story names its release.
+**Status (2026-11-19):** ✅ US-0001–US-0020 released (v0.2.3–v0.2.6). ✅ US-0021–US-0023 released in v0.2.7. ✅ US-0024 released in v0.2.8. ✅ US-0025 released in v0.2.9. ✅ US-0026 released in v0.2.9. ✅ US-0027 released in v0.2.9. ✅ US-0028 released in v0.2.10. ✅ US-0029 released in v0.2.10. ✅ US-0030 released in v0.2.10. ✅ US-0031 released in v0.2.10. Each story names its release.
 
 ---
 
@@ -441,7 +441,7 @@
 - **Done (2026-11-17, without AI-DLC, branch `fix/US-0027`):** `APP_REPO` and `APP_REPO_URL` in `src/shared/appName.js` are the one place the repository is named. The updater (`REPO`), the Issues link, the About links, `package.json` and the README use them. `tests/main/appName.test.js` fails while any `tochman/aidlc-dash` address is left under `src/`, in `package.json` or in the README. The download-by-hand note for v0.2.8 and earlier is on the v0.2.9 release checklist (`docs/releases/0.2.9.md`). 1797/1797 tests pass.
 - **Dependencies:** US-0407, US-0413 (the updater)
 
-**US-0028: The pipeline view does not warn about a missing runtime-graph.json that is expected** ✅ Done, for v0.2.10
+**US-0028: The pipeline view does not warn about a missing runtime-graph.json that is expected** ✅ Released in v0.2.10
 - As a **developer watching an intent in the pipeline view**, in order to **tell a real problem from a normal state**, I would like **the view to show no warning-like note when runtime-graph.json is simply not there yet, and a calm one when it cannot be there**.
 - **Epic:** EPIC-00
 - **Priority:** Low
@@ -457,7 +457,7 @@
 - **Done (2026-11-18, quick-fix workflow `261118-calm-pipeline-note`, branch `fix/US-0028`):** `Pipeline.jsx` shows the `pipeline.noGraph` note only when runtime-graph.json is missing and at least one stage is done (`data-testid="pipeline-timings-note"`), with the new calm text in Swedish and English. The unreadable-file warning from `buildDetail` is unchanged. Three new tests in `tests/renderer/Pipeline.test.jsx`; 1882/1882 tests pass, 92.3% line coverage.
 - **Dependencies:** none
 
-**US-0029: Moving a story to another release leaves its row in the old release plan** ✅ Done, for v0.2.10 (intent `261118-release-row-move`)
+**US-0029: Moving a story to another release leaves its row in the old release plan** ✅ Released in v0.2.10 (intent `261118-release-row-move`)
 - As a **developer planning releases in the app**, in order to **trust the release plan files**, I would like **a story moved to another release to leave the old release's plan file**.
 - **Epic:** EPIC-00
 - **Priority:** Low
@@ -472,7 +472,7 @@
 - **Done (2026-11-18, quick-fix, branch `fix/US-0029`):** `setStoryRelease` reads the story's old release, and the new `dropPlanRow` takes its row out of that release's plan file through `removePlanRows` (`src/main/parsers/releases.js`) with the hash check. Removing a story from a release still leaves its row. 1883/1883 tests pass.
 - **Dependencies:** US-0606
 
-**US-0030: Agent progress keeps an old state and is vague about what an agent is doing** ✅ Done, for v0.2.10 (intent `261118-honest-agent-progress`)
+**US-0030: Agent progress keeps an old state and is vague about what an agent is doing** ✅ Released in v0.2.10 (intent `261118-honest-agent-progress`)
 - As a **developer watching an intent while agents work**, in order to **know what is happening without reading the terminal**, I would like **each agent row in Agent progress to show its task, its step in the plan, and what it is doing right now, and the main row to show its real state**.
 - **Epic:** EPIC-00
 - **Priority:** High
@@ -490,7 +490,7 @@
 - **Done (2026-11-18, express workflow `261118-honest-agent-progress`, branch `fix/US-0030`):** A permission request now lands on the row of the agent that asked (`src/shared/agentActivity.js`, `src/main/agentEvents.js`), and main shows "waiting for <agent>" until that wait ends; an answer in the app clears it. `src/main/agentAdapters.js` lets two bounded texts through `agentLine()` (one line, at most 80 characters, outside paths hidden): the tool call's description and the Agent tool's task, which deliberately relaxes US-0214's identifiers-only rule. Claude Code's SubagentStart carries no task or parent id, so a task is paired with its agent by type and order. Hook rows take "step n of m" from the audit build row of the same agent (`src/renderer/AgentProgress.jsx`), and any row quiet for 30 s shows "seen N ago". 1931/1931 tests pass, 92.32% line coverage. Known limit: two agents of the same type started at the same moment may swap tasks.
 - **Dependencies:** US-0507, US-0214
 
-**US-0031: The agent dialog opens on the page that just arrived, never on the message read last** ✅ Done, for v0.2.10
+**US-0031: The agent dialog opens on the page that just arrived, never on the message read last** ✅ Released in v0.2.10
 - As a **developer answering the app's dialogs**, in order to **trust that what I read and pick belongs to the moment I am in**, I would like **the dialog to open on the page that just arrived, and an old page that is already answered never to show as the current one**.
 - **Epic:** EPIC-00
 - **Priority:** High
