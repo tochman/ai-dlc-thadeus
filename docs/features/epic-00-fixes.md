@@ -8,7 +8,7 @@
 
 **Stories:** US-0001, US-0002, US-0003, US-0004, US-0005, US-0006, US-0007, US-0008, US-0009, US-0010, US-0011, US-0012, US-0013, US-0014, US-0015, US-0016, US-0017, US-0018, US-0019, US-0020, US-0021, US-0022, US-0023, US-0024, US-0025, US-0026, US-0027, US-0028, US-0029, US-0030, US-0031, US-0032, US-0033
 
-**Status (2026-11-19):** ✅ US-0001–US-0020 released (v0.2.3–v0.2.6). ✅ US-0021–US-0023 released in v0.2.7. ✅ US-0024 released in v0.2.8. ✅ US-0025 released in v0.2.9. ✅ US-0026 released in v0.2.9. ✅ US-0027 released in v0.2.9. ✅ US-0028 released in v0.2.10. ✅ US-0029 released in v0.2.10. ✅ US-0030 released in v0.2.10. ✅ US-0031 released in v0.2.10. ✅ US-0032 done, for v0.2.11. ✅ US-0033 done, for v0.2.11. Each story names its release.
+**Status (2026-11-19):** ✅ US-0001–US-0020 released (v0.2.3–v0.2.6). ✅ US-0021–US-0023 released in v0.2.7. ✅ US-0024 released in v0.2.8. ✅ US-0025 released in v0.2.9. ✅ US-0026 released in v0.2.9. ✅ US-0027 released in v0.2.9. ✅ US-0028 released in v0.2.10. ✅ US-0029 released in v0.2.10. ✅ US-0030 released in v0.2.10. ✅ US-0031 released in v0.2.10. ✅ US-0032 released in v0.2.11. ✅ US-0033 released in v0.2.11. Each story names its release.
 
 ---
 
@@ -508,7 +508,7 @@
 - **Done (2026-11-19, express workflow `261118-dialog-newest-page`, branch `fix/US-0031`):** When new pages open a closed dialog, it now opens on the first of them in pager order (`popupFocus` from `receiveAgentEvents` in `src/renderer/App.jsx`); an open dialog is never moved. A page that is over (`isSettled` in `src/shared/agentOrder.js`: a hook page in `sent`, `handedBack`, `stale` or `ended`) gives way to the first page that arrived after it (`src/renderer/AgentDialog.jsx`), and no longer holds the dialog open (`hasNewQuestion`). `src/main/agentEvents.js` is unchanged, so settled pages stay reachable with Previous/Next. 1970/1970 tests pass, 92.4% line coverage. The hook timing test (`tests/main/agentHooksGuard.test.js`, 100 ms) fails while the machine is heavily loaded; it passes otherwise.
 - **Dependencies:** US-0506, US-0213, US-0026
 
-**US-0032: An agent never commits a feature-doc change the app is about to commit** ✅ Done, for v0.2.11 (intent `261119-one-committer-rule`)
+**US-0032: An agent never commits a feature-doc change the app is about to commit** ✅ Released in v0.2.11 (intent `261119-one-committer-rule`)
 - As a **developer working with an agent in the app**, in order to **get one commit per change, made by one committer**, I would like **agents to leave feature-doc changes on `main` to the app, which commits and pushes them (US-0608)**.
 - **Epic:** EPIC-00
 - **Priority:** High
@@ -523,7 +523,7 @@
 - **Notes:** A code fix, so it runs on the `quick-fix` plan. Touches `src/shared/costRules.js` and its tests. The app's commit subject can name a story that is only mentioned (`3349d29` named US-0503, a dependency); that is US-0033.
 - **Dependencies:** US-0212, US-0608
 
-**US-0033: The app's commit subject names only the stories that changed** ✅ Done, for v0.2.11
+**US-0033: The app's commit subject names only the stories that changed** ✅ Released in v0.2.11
 - As a **developer reading the history of `main`**, in order to **see from a commit's subject which stories it changed**, I would like **the app's feature-doc commits to name only the stories whose own text changed**.
 - **Epic:** EPIC-00
 - **Priority:** Medium
