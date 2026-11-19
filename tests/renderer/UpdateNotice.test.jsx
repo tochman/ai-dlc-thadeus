@@ -127,3 +127,51 @@ describe('UpdateNotice (EPIC-04 US-0407)', () => {
     await waitFor(() => expect(screen.getByTestId('update-notice-message').textContent).toMatch(/försöker igen senare/));
   });
 });
+
+describe('UpdateNotice asks for the password on Linux (EPIC-00 US-0034)', () => {
+  const DEB = '/ud/updates/v0.2.4/thadeus_0.2.4_amd64.deb';
+  const NEEDS = { status: 'needs-password', file: DEB };
+
+  async function startUpdate(installUpdate) {
+    mockBridge({ platform: 'linux', installUpdate });
+    render(<UpdateNotice busy={false} />);
+    fireEvent.click(await screen.findByTestId('update-notice-update'));
+    return screen.findByTestId('update-notice-password');
+  }
+
+  it('needs-password shows the password form; Install sends the password and the app restarts', async () => {
+    const installUpdate = vi.fn().mockResolvedValueOnce(NEEDS).mockResolvedValueOnce({ status: 'installed', kept: null });
+    const form = await startUpdate(installUpdate);
+    const input = screen.getByTestId('update-notice-password-input');
+    expect(input.getAttribute('type')).toBe('password');
+    expect(form.textContent).toMatch(/lösenord/i);
+    fireEvent.change(input, { target: { value: 'hunter2' } });
+    fireEvent.click(screen.getByTestId('update-notice-install'));
+    await waitFor(() => expect(window.bridge.relaunchApp).toHaveBeenCalled());
+    expect(installUpdate).toHaveBeenLastCalledWith({ password: 'hunter2' });
+  });
+
+  it('a wrong password says so, clears the field and asks again', async () => {
+    const installUpdate = vi.fn().mockResolvedValueOnce(NEEDS).mockResolvedValueOnce({ ...NEEDS, wrong: true });
+    await startUpdate(installUpdate);
+    fireEvent.change(screen.getByTestId('update-notice-password-input'), { target: { value: 'nope' } });
+    fireEvent.click(screen.getByTestId('update-notice-install'));
+    expect((await screen.findByTestId('update-notice-wrong-password')).textContent).toMatch(/Fel lösenord/);
+    expect(screen.getByTestId('update-notice-password-input').value).toBe('');
+    expect(window.bridge.relaunchApp).not.toHaveBeenCalled();
+  });
+
+  it('Cancel keeps the running version and shows the command to install it by hand', async () => {
+    await startUpdate(vi.fn().mockResolvedValueOnce(NEEDS));
+    fireEvent.click(screen.getByTestId('update-notice-password-cancel'));
+    expect((await screen.findByTestId('update-notice-manual')).textContent).toContain(`sudo apt install ${DEB}`);
+    expect(window.bridge.relaunchApp).not.toHaveBeenCalled();
+  });
+
+  it('an install error with a manual command shows it', async () => {
+    mockBridge({ platform: 'linux', installUpdate: vi.fn(async () => ({ status: 'error', error: 'x', file: DEB, manual: `sudo apt install ${DEB}` })) });
+    render(<UpdateNotice busy={false} />);
+    fireEvent.click(await screen.findByTestId('update-notice-update'));
+    expect((await screen.findByTestId('update-notice-manual')).textContent).toContain(`sudo apt install ${DEB}`);
+  });
+});

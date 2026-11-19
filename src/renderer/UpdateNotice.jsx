@@ -17,11 +17,15 @@ export default function UpdateNotice({ busy, checkRequest = 0 }) {
   const { t } = useTranslation();
   const bridge = window.bridge;
   const [offer, setOffer] = useState(null); // the available update {version, tag, notes, asset}
-  const [phase, setPhase] = useState('hidden'); // hidden | offer | downloading | installing | installed | error | message
+  const [phase, setPhase] = useState('hidden'); // hidden | offer | downloading | installing | password | installed | error | message
   const [progress, setProgress] = useState(null);
   const [message, setMessage] = useState(null);
-  const [failed, setFailed] = useState(null); // {error, file}
+  const [failed, setFailed] = useState(null); // {error, file, manual}
   const [kept, setKept] = useState(null);
+  // US-0034: when pkexec cannot ask on Linux, the notice asks; the password lives only here until sent, then is cleared.
+  const [password, setPassword] = useState('');
+  const [wrongPassword, setWrongPassword] = useState(false);
+  const [pending, setPending] = useState(null); // the .deb waiting for the password
   const phaseRef = useRef(phase);
   phaseRef.current = phase;
 
@@ -65,18 +69,46 @@ export default function UpdateNotice({ busy, checkRequest = 0 }) {
       const got = await bridge.downloadUpdate();
       if (got.status !== 'downloaded') throw Object.assign(new Error(got.error), { file: null });
       setPhase('installing');
-      const done = await bridge.installUpdate();
-      if (done.status !== 'installed') throw Object.assign(new Error(done.error), { file: done.file });
-      if (done.kept) {
-        setKept(done.kept); // cleanup is off: the path stays visible until the restart
-        setPhase('installed');
-        return;
-      }
-      await bridge.relaunchApp();
+      await finishInstall(await bridge.installUpdate());
     } catch (err) {
-      setFailed({ error: errorText(err), file: err.file ?? null });
+      setFailed({ error: errorText(err), file: err.file ?? null, manual: err.manual ?? null });
       setPhase('error');
     }
+  }
+
+  async function finishInstall(done) {
+    if (done.status === 'needs-password') {
+      setPending(done.file);
+      setWrongPassword(done.wrong === true);
+      setPhase('password');
+      return;
+    }
+    if (done.status !== 'installed') throw Object.assign(new Error(done.error), { file: done.file, manual: done.manual });
+    if (done.kept) {
+      setKept(done.kept); // cleanup is off: the path stays visible until the restart
+      setPhase('installed');
+      return;
+    }
+    await bridge.relaunchApp();
+  }
+
+  async function sendPassword(event) {
+    event.preventDefault();
+    const typed = password;
+    setPassword('');
+    setPhase('installing');
+    try {
+      await finishInstall(await bridge.installUpdate({ password: typed }));
+    } catch (err) {
+      setFailed({ error: errorText(err), file: err.file ?? null, manual: err.manual ?? null });
+      setPhase('error');
+    }
+  }
+
+  function cancelPassword() {
+    setPassword('');
+    setFailed({ error: null, file: pending, manual: `sudo apt install ${pending}` });
+    setPhase('error');
   }
 
   async function skip() {
@@ -118,9 +150,35 @@ export default function UpdateNotice({ busy, checkRequest = 0 }) {
               {t('update.kept')} <code>{kept}</code>
             </p>
           )}
-          {phase === 'error' && (
+          {phase === 'password' && (
+            <form id="update-notice-password-form" onSubmit={sendPassword} data-testid="update-notice-password">
+              <p>{t('update.passwordPrompt')}</p>
+              {wrongPassword && (
+                <p className="refresh-error" role="alert" data-testid="update-notice-wrong-password">
+                  {t('update.wrongPassword')}
+                </p>
+              )}
+              <label>
+                {t('update.password')}{' '}
+                <input
+                  type="password"
+                  autoComplete="current-password"
+                  autoFocus
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  data-testid="update-notice-password-input"
+                />
+              </label>
+            </form>
+          )}
+          {phase === 'error' && failed?.error && (
             <p className="refresh-error" role="alert" data-testid="update-notice-error">
-              {failed?.error}
+              {failed.error}
+            </p>
+          )}
+          {phase === 'error' && failed?.manual && (
+            <p data-testid="update-notice-manual">
+              {t('update.manual')} <code>{failed.manual}</code>
             </p>
           )}
         </>
@@ -136,6 +194,16 @@ export default function UpdateNotice({ busy, checkRequest = 0 }) {
             </button>
             <button className="btn btn-quiet" onClick={skip} data-testid="update-notice-skip">
               {t('update.skip')}
+            </button>
+          </>
+        )}
+        {phase === 'password' && (
+          <>
+            <button type="submit" form="update-notice-password-form" className="btn btn-accent" disabled={!password} data-testid="update-notice-install">
+              {t('update.install')}
+            </button>
+            <button className="btn" onClick={cancelPassword} data-testid="update-notice-password-cancel">
+              {t('common.cancel')}
             </button>
           </>
         )}

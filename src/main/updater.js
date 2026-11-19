@@ -143,6 +143,26 @@ const firstLine = (err) =>
         .split('\n')[0];
 
 /**
+ * Why a command failed (US-0034 FR2): execFile's message is "Command failed: <cmd>\n<stderr>", so the reason is the last
+ * line the command printed; with no output, its exit code.
+ */
+function reasonOf(err) {
+  if (err?.killed) return t('errors.timeout');
+  const lines = String(err?.message ?? err)
+    .split('\n')
+    .map((l) => l.trim())
+    .filter(Boolean);
+  if (lines.length > 1) return lines.at(-1);
+  if (/^Command failed/.test(lines[0] ?? '') && typeof err?.code === 'number') return t('update.exitCode', { code: err.code });
+  return lines[0] ?? '';
+}
+
+// pkexec cannot show a password dialog (US-0034 FR3): not setuid root, no polkit agent, not installed, or exit 127
+// ("authorization could not be obtained"). Exit 126 is the person closing the dialog: that is not asked again.
+const pkexecCannotAsk = (err) => err?.code === 'ENOENT' || err?.code === 127 || /must be setuid root|No authentication agent/i.test(String(err?.message ?? ''));
+const WRONG_PASSWORD = /incorrect password|Sorry, try again|no password was provided/i;
+
+/**
  * The updater with its dependencies injected (tests pass fakes; index/ipc use the default instance below).
  * `send(state)` reports download progress to the window.
  */
@@ -306,11 +326,36 @@ export function createUpdater({
     }
   }
 
-  async function step(name, file, args, timeout = INSTALL_TIMEOUT_MS) {
+  /** Runs one install step; a failure names the step and the reason the command printed (US-0034 FR2), with the original on `cause`. */
+  async function step(name, file, args, { timeout = INSTALL_TIMEOUT_MS, input } = {}) {
     try {
-      return await runFixed(file, args, { timeout, exec });
+      return await runFixed(file, args, { timeout, exec, input });
     } catch (err) {
-      throw new Error(t('update.stepFailed', { step: name, error: firstLine(err) }));
+      throw new Error(t('update.stepFailed', { step: name, error: reasonOf(err) }), { cause: err });
+    }
+  }
+
+  /**
+   * Installs the .deb (US-0034). pkexec by full path first; when it cannot ask for the password (not setuid root, no
+   * authentication agent, not installed), returns `needs-password` so the notice asks itself, and the next call installs
+   * with `sudo -S`, the password on stdin only. Returns null once installed; throws on any other failure.
+   */
+  async function installLinux(file, password) {
+    if (password == null) {
+      try {
+        await step('pkexec dpkg', '/usr/bin/pkexec', ['/usr/bin/dpkg', '-i', file]);
+        return null;
+      } catch (err) {
+        if (pkexecCannotAsk(err.cause)) return { status: 'needs-password', file };
+        throw err;
+      }
+    }
+    try {
+      await step('sudo dpkg', '/usr/bin/sudo', ['-S', '-k', '-p', '', '/usr/bin/dpkg', '-i', file], { input: `${password}\n` });
+      return null;
+    } catch (err) {
+      if (WRONG_PASSWORD.test(String(err.cause?.message ?? ''))) return { status: 'needs-password', wrong: true, file };
+      throw err;
     }
   }
 
@@ -347,17 +392,22 @@ export function createUpdater({
    * Installs the downloaded package. Any failed step leaves the running version as it is and returns
    * {status: 'error', error, file}, so the notice can offer to show the file instead.
    */
-  async function install() {
+  async function install({ password } = {}) {
     const file = state.file;
     if (!file) return { status: 'error', error: t('update.notDownloaded'), file: null };
     try {
       if (!app.isPackaged) throw new Error(t('update.notPackaged'));
       if (platform === 'darwin') await installMac(file);
-      else if (platform === 'linux') await step('pkexec dpkg', 'pkexec', ['dpkg', '-i', file]);
-      else throw new Error(t('update.noPackage'));
+      else if (platform === 'linux') {
+        const asks = await installLinux(file, password);
+        if (asks) return asks;
+      } else throw new Error(t('update.noPackage'));
     } catch (err) {
       console.error('Installationen av uppdateringen misslyckades:', err.message);
-      return { status: 'error', error: err.message, file };
+      // US-0034 FR3: on Linux the notice also shows the command to install it by hand.
+      return platform === 'linux' && app.isPackaged
+        ? { status: 'error', error: err.message, file, manual: `sudo apt install ${file}` }
+        : { status: 'error', error: err.message, file };
     }
     const settings = await getSettings().catch(() => ({}));
     const cleanup = settings.updates?.deleteAfterInstall ?? UPDATE_DEFAULTS.deleteAfterInstall;
