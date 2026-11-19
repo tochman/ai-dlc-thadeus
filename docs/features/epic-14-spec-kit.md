@@ -10,13 +10,13 @@
 
 **Stories:** US-1401–US-1410
 
-**Status (2026-11-19):** 📋 US-1401–US-1410 planned, for v0.3.0.
+**Status (2026-11-19):** 🚧 US-1401 in progress, for v0.3.0 · 📋 US-1402–US-1410 planned, for v0.3.0.
 
 ---
 
 ## User Stories
 
-**US-1401: One framework per project, and views that follow it** 📋 Planned, for v0.3.0
+**US-1401: One framework per project, and views that follow it** 🚧 In progress, for v0.3.0
 - As a **developer**, in order to **use THADEUS with the framework my project follows**, I would like **the app to show the views of the project's framework, AI-DLC or Spec Kit, and only those**.
 - **Epic:** EPIC-14
 - **Priority:** High
