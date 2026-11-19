@@ -26,6 +26,7 @@
   - [ ] **Given** a project that follows AI-DLC, **then** it opens exactly as today.
   - [ ] **Given** a project that follows Spec Kit, **then** the left arm shows the Spec Kit views and no AI-DLC views.
   - [ ] The project's framework is kept in its project settings, and the view set follows it.
+  - [ ] **Given** no framework is saved yet (until US-1406), **then** the app follows what it finds: only `.specify/` is Spec Kit, and `aidlc/spaces/` (alone or with `.specify/`) is AI-DLC, as today.
   - [ ] The shared shell (terminal, dialogs and hooks, editor, git, Features view, project settings, token log) works the same for both.
   - [ ] Every text goes through `t()` in Swedish and English, in the LCARS look.
 - **Notes:** One value, `framework: 'aidlc' | 'speckit'`, decides the view set. No general plugin system.
