@@ -17,6 +17,8 @@ import FeaturesView from './FeaturesView.jsx';
 import ConfigView from './ConfigView.jsx';
 import PlansView from './PlansView.jsx';
 import ProjectSettingsView, { AIDLC_SECTIONS, confirmHarnessSwitch } from './ProjectSettingsView.jsx';
+import SpeckitShell from './SpeckitShell.jsx'; // US-1401
+import { sectionsFor, shownViews } from '../shared/frameworkViews.js';
 import CostRulesSection from './CostRulesSection.jsx';
 import ModelProfilesSection from './ModelProfilesSection.jsx'; // US-0210
 import ProfileSwitchDialog from './ProfileSwitchDialog.jsx'; // US-0210
@@ -290,20 +292,22 @@ function ProjectContent({
     if (terminalCommand.action === 'restart') terminal.restart(terminal.view.active);
     else terminal.show(terminalCommand.action);
   }, [terminalCommand]); // runs once per command, not when the terminal state changes
-  const isAidlc = project.detection.isAidlc;
-  const wasAidlc = useRef(isAidlc);
+  // US-1401 FR1.2: the framework and the shared views table decide what shows (AC1.1.5).
+  const { framework, defaultView } = project.detection;
+  const onAidlc = framework === 'aidlc';
+  const wasAidlc = useRef(onAidlc);
   const [justSetUp, setJustSetUp] = useState(false);
 
   useEffect(() => {
-    if (isAidlc && !wasAidlc.current) {
+    if (onAidlc && !wasAidlc.current) {
       setJustSetUp(true);
       terminal.restart('agent');
     }
-    wasAidlc.current = isAidlc;
-  }, [isAidlc]); // only the switch from "not AI-DLC" to AI-DLC matters here
+    wasAidlc.current = onAidlc;
+  }, [onAidlc]); // only the switch from "not AI-DLC" to AI-DLC matters here
 
   // Feature docs (EPIC-06): the view follows the project setting and whether the overview exists (FR2.1, FR3.2).
-  const { features, settings, settingsLoaded, links, ruleStatus } = useFeatures(project.projectId, isAidlc ? project.detection.activeSpace : null);
+  const { features, settings, settingsLoaded, links, ruleStatus } = useFeatures(project.projectId, onAidlc ? project.detection.activeSpace : null);
   const delivery = settings.delivery ?? DELIVERY_DEFAULT; // US-0603 FR1.1
 
   // The agent tab's harness (US-0801 FR2.2): known once the saved choice and the detection are both in.
@@ -355,11 +359,11 @@ function ProjectContent({
   const storiesByIntent = useMemo(() => invertLinks(links), [links]);
   const docsExist = features?.available === true;
   const showFeatures = settings.featureDocs === 'show' || (settings.featureDocs === 'auto' && docsExist);
-  // One view at a time: Features needs the feature docs, the rest AI-DLC; otherwise the intents view shows (US-0901 FR1.1).
-  // Configuration holds the project's own settings for every project, and the AI-DLC configuration in an AI-DLC one (US-0012).
-  const offered = { features: showFeatures, config: true, plans: isAidlc, cost: isAidlc, velocity: isAidlc, github: isAidlc, editor: true };
-  const view = offered[chosenView] ? chosenView : 'intents';
-  const configSection = AIDLC_SECTIONS.includes(section) && !isAidlc ? 'docs' : section;
+  // One view at a time: Features needs the feature docs, the rest the framework; otherwise its default view shows
+  // (US-0901 FR1.1, US-1401 R-01). Configuration holds the project's own settings for every project, and the AI-DLC
+  // configuration in an AI-DLC one (US-0012).
+  const view = shownViews(project.detection.views, showFeatures).includes(chosenView) ? chosenView : defaultView;
+  const configSection = sectionsFor(framework).includes(section) ? section : 'docs';
   const aidlcShown = view === 'config' && configSection === 'aidlc';
   // The AI-DLC configuration mounts the first time it is chosen, so its CLI reads wait until then, and then stays (FR6.1).
   const [configShown, setConfigShown] = useState(false);
@@ -368,8 +372,8 @@ function ProjectContent({
   }, [aidlcShown]);
   const setupDocs = () => terminal?.type('agent', featureDocsPrompt({ exists: docsExist, path: settings.featuresPath, delivery }), { submit: false });
   // US-0603 FR5.2: only a project with AI-DLC and feature docs has stories for the lifecycle rule to keep.
-  const ruleNotice = isAidlc && docsExist && ruleStatus && ruleStatus !== 'current' ? ruleStatus : null;
-  const offerSetup = isAidlc && !docsExist ? setupDocs : undefined; // FR3.6, FR4.5
+  const ruleNotice = onAidlc && docsExist && ruleStatus && ruleStatus !== 'current' ? ruleStatus : null;
+  const offerSetup = onAidlc && !docsExist ? setupDocs : undefined; // FR3.6, FR4.5
 
   useEffect(() => {
     onMeta?.(project.projectId, { showFeatures, delivery }); // the arm offers Epics | Releases with Releases (US-0012)
@@ -410,7 +414,8 @@ function ProjectContent({
           {justSetUp && <SetupDone onClose={() => setJustSetUp(false)} onFeatureDocs={featureDocsChoice ? setupDocs : undefined} />}
           {/* Kept mounted while Features or Configuration is shown, so the intents view keeps its state (FR2.1). */}
           <div className="project-mode" hidden={['features', 'config', 'plans', 'editor'].includes(view)}>
-            {isAidlc ? (
+            {framework === 'speckit' && <SpeckitShell />}
+            {onAidlc && (
               <AidlcProject
                 project={project}
                 view={view}
@@ -422,7 +427,8 @@ function ProjectContent({
                 onMeta={onMeta}
                 onActiveRecord={setActiveRecord}
               />
-            ) : (
+            )}
+            {framework === null && (
               <SetupAidlc {...setupProps} featureDocs={featureDocsChoice} onFeatureDocsChange={setFeatureDocsChoice} featureDocsExist={docsExist} />
             )}
           </div>
@@ -435,7 +441,7 @@ function ProjectContent({
               delivery={delivery}
               tab={featuresTab}
               onTab={(id) => onView?.('features', { featuresTab: id })}
-              onOpenIntent={isAidlc ? openIntent : undefined}
+              onOpenIntent={onAidlc ? openIntent : undefined}
               onSetup={offerSetup}
             />
           )}
@@ -457,10 +463,10 @@ function ProjectContent({
               harness={harnessId}
               harnesses={detected}
               onSetup={offerSetup}
-              onAddHarness={isAidlc ? () => setAddingHarness(true) : undefined}
+              onAddHarness={onAidlc ? () => setAddingHarness(true) : undefined}
             />
           )}
-          {isAidlc && (configShown || aidlcShown) && (
+          {onAidlc && (configShown || aidlcShown) && (
             <div className="project-mode" hidden={!aidlcShown}>
               <ConfigView
                 projectId={project.projectId}
@@ -479,7 +485,7 @@ function ProjectContent({
             </div>
           )}
         </div>
-        {isAidlc && <AddHarnessDialog open={addingHarness} onClose={() => setAddingHarness(false)} setupProps={setupProps} />}
+        {onAidlc && <AddHarnessDialog open={addingHarness} onClose={() => setAddingHarness(false)} setupProps={setupProps} />}
         <LatestMessageStrip projectId={project.projectId} onOpenReply={onOpenReply} />
         <TerminalPanel projectId={project.projectId} visible={visible} onChooseHarness={() => openAgentSettings(false)} />
       </div>

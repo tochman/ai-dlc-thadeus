@@ -35,6 +35,10 @@
       "other": "Other"
     }
   },
+  "speckit": {
+    "title": "Spec Kit",
+    "empty": "No features read yet."
+  },
   "app": {
     "reopenFailed": "Could not reopen: {list}",
     "settingsReadFailed": "Could not read the settings: {error}",
@@ -43,6 +47,7 @@
     "fullscreenFailed": "Full screen could not be toggled: {error}",
     "intents": "Intents",
     "setup": "Setup",
+    "specs": "Specs",
     "features": "Features",
     "branch": "Branch",
     "detached": "No branch (detached HEAD)",
@@ -61,6 +66,7 @@
     "plans": "Plans",
     "editor": "Editor",
     "intentCount": "{n, plural, one {# intent} other {# intents}}",
+    "featureCount": "{n, plural, one {# feature} other {# features}}",
     "emptyTitle": "No project open",
     "emptyText": "Open a project folder that contains {path}.",
     "openProject": "Open project",

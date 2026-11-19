@@ -18,9 +18,16 @@ import { alertPlan } from '../shared/alertPlan.js';
 
 const NOTICE_MS = 5000; // US-0506 u2 K11: how long the hand-back notice stays
 import { dirtyFiles } from './editor/EditorContext.jsx';
-import { AIDLC_SECTIONS, PROJECT_SECTIONS } from './ProjectSettingsView.jsx';
+import { sectionsFor, shownViews } from '../shared/frameworkViews.js';
 
 const bridge = window.bridge;
+
+/** US-1401: the arm's foot, the intent count for AI-DLC and the feature count for Spec Kit (0 until U6 reports it). */
+function footLabel(framework, meta, t) {
+  if (framework === 'aidlc') return t('app.intentCount', { n: meta.intentCount ?? 0 });
+  if (framework === 'speckit') return t('app.featureCount', { n: meta.featureCount ?? 0 });
+  return 'Auctum';
+}
 // The view and, for Features and Configuration, the section chosen in the arm (US-0012).
 const UI_DEFAULT = { view: 'intents', configSection: 'docs', featuresTab: 'epics', teamSection: 'refresh' };
 const TEAM_SECTIONS = ['refresh', 'machines']; // the team view's sections under its arm block (US-1201 AC-3)
@@ -395,12 +402,17 @@ export default function App() {
   const active = tabs.find((t) => t.projectId === activeId) ?? null;
   const activeUi = active ? { ...UI_DEFAULT, ...ui[active.projectId] } : UI_DEFAULT;
   const activeMeta = (active && meta[active.projectId]) || {};
-  const isAidlc = active?.detection.isAidlc === true;
+  // US-1401 FR1.2: one value, the framework, and the shared views table decide the arm (AC1.1.5).
+  const framework = active?.detection.framework ?? null;
   const showFeatures = activeMeta.showFeatures === true;
-  // One view at a time. Features needs the feature docs, the rest AI-DLC (US-0901 FR1.1); else the intents view shows.
-  const offered = { features: showFeatures, config: true, plans: isAidlc, cost: isAidlc, velocity: isAidlc, github: isAidlc, editor: true };
-  const view = offered[activeUi.view] ? activeUi.view : 'intents';
-  const firstLabel = isAidlc ? t('app.intents') : t('app.setup');
+  // One view at a time. Features needs the feature docs (US-0901 FR1.1); a view not offered falls back to the default (R-01).
+  const views = shownViews(active?.detection.views, showFeatures);
+  const offers = (id) => views.includes(id);
+  const defaultView = active?.detection.defaultView ?? 'intents';
+  const view = offers(activeUi.view) ? activeUi.view : defaultView;
+  const firstLabel = { intents: t('app.intents'), specs: t('app.specs') }[defaultView] ?? t('app.setup');
+  // A project with no framework yet shows AI-DLC's views disabled, as before US-1401; a Spec Kit one does not show them.
+  const armShows = (id) => offers(id) || framework === null;
   const viewLabel =
     {
       features: t('app.features'),
@@ -463,7 +475,7 @@ export default function App() {
     projectSettings: () => openProjectSettings(activeId),
     appSettings: () => openAppSettings(),
     view: ({ view: v }) => pick(v, ['intents', 'features', 'config', 'plans', 'editor'], showView),
-    panel: ({ panel }) => isAidlc && pick(panel, ['cost', 'github'], showView), // Kostnad and Github are views too
+    panel: ({ panel }) => pick(panel, ['cost', 'github'].filter(offers), showView), // Kostnad and Github are views too
     terminal: ({ action }) => pick(action, ['agent', 'shell', 'restart'], runTerminal),
     docs: () => openDocs(),
     checkUpdate: () => setUpdateCheck((n) => n + 1),
@@ -476,8 +488,8 @@ export default function App() {
   // Main enables and hides menu items from this (FR2.5).
   const hasProject = active !== null;
   useEffect(() => {
-    bridge.sendMenuState({ hasProject, isAidlc, showFeatures }).catch((err) => console.warn('Menyläget kunde inte skickas:', errorText(err)));
-  }, [hasProject, isAidlc, showFeatures]);
+    bridge.sendMenuState({ hasProject, framework, showFeatures }).catch((err) => console.warn('Menyläget kunde inte skickas:', errorText(err)));
+  }, [hasProject, framework, showFeatures]);
 
   function toggleFullscreen() {
     bridge.toggleFullscreen().catch((err) => setError(t('app.fullscreenFailed', { error: errorText(err) })));
@@ -585,15 +597,15 @@ export default function App() {
         <span className="arm-spacer" aria-hidden="true" />
         {active && (
           <>
-            <ArmBlock current={!settingsView && view === 'intents'} onClick={() => showView('intents')} data-testid="project-view-switch-intents">
+            <ArmBlock current={!settingsView && view === defaultView} onClick={() => showView(defaultView)} data-testid={`project-view-switch-${defaultView}`}>
               {firstLabel}
             </ArmBlock>
-            {showFeatures && (
+            {offers('features') && (
               <ArmBlock current={!settingsView && view === 'features'} onClick={() => showView('features')} data-testid="project-view-switch-features">
                 {t('app.features')}
               </ArmBlock>
             )}
-            {showFeatures && !settingsView && view === 'features' && activeMeta.delivery !== 'continuous' && (
+            {!settingsView && view === 'features' && activeMeta.delivery !== 'continuous' && (
               <ArmSubtabs
                 label={t('features.releases.title')}
                 ids={['epics', 'releases']}
@@ -609,14 +621,14 @@ export default function App() {
             {!settingsView && view === 'config' && (
               <ArmSubtabs
                 label={t('app.config')}
-                ids={PROJECT_SECTIONS.filter((id) => isAidlc || !AIDLC_SECTIONS.includes(id))}
-                current={AIDLC_SECTIONS.includes(activeUi.configSection) && !isAidlc ? 'docs' : activeUi.configSection}
+                ids={sectionsFor(framework)}
+                current={sectionsFor(framework).includes(activeUi.configSection) ? activeUi.configSection : 'docs'}
                 labelOf={(id) => t(`settings.project.sections.${id}`)}
                 onPick={(id) => showView('config', { configSection: id })}
                 testIdPrefix="config-section"
               />
             )}
-            {isAidlc && (
+            {offers('plans') && (
               <ArmBlock current={!settingsView && view === 'plans'} onClick={() => showView('plans')} data-testid="project-view-switch-plans">
                 {t('app.plans')}
               </ArmBlock>
@@ -624,17 +636,34 @@ export default function App() {
             <ArmBlock current={!settingsView && view === 'editor'} onClick={() => showView('editor')} data-testid="project-view-switch-editor">
               {t('app.editor')}
             </ArmBlock>
-            <ArmBlock current={!settingsView && view === 'cost'} disabled={!isAidlc} onClick={() => showView('cost')} data-testid="arm-cost">
-              {t('app.cost')}
-            </ArmBlock>
+            {armShows('cost') && (
+              <ArmBlock current={!settingsView && view === 'cost'} disabled={!offers('cost')} onClick={() => showView('cost')} data-testid="arm-cost">
+                {t('app.cost')}
+              </ArmBlock>
+            )}
             {/* US-0303 FR3.5: the project's velocity, beside Cost. */}
-            <ArmBlock current={!settingsView && view === 'velocity'} disabled={!isAidlc} onClick={() => showView('velocity')} data-testid="arm-velocity">
-              {t('app.velocity')}
-            </ArmBlock>
-            <ArmBlock tone="dark" current={!settingsView && view === 'github'} disabled={!isAidlc} onClick={() => showView('github')} data-testid="arm-github">
-              {t('app.github')}
-            </ArmBlock>
-            {isAidlc && !settingsView && view === 'github' && (
+            {armShows('velocity') && (
+              <ArmBlock
+                current={!settingsView && view === 'velocity'}
+                disabled={!offers('velocity')}
+                onClick={() => showView('velocity')}
+                data-testid="arm-velocity"
+              >
+                {t('app.velocity')}
+              </ArmBlock>
+            )}
+            {armShows('github') && (
+              <ArmBlock
+                tone="dark"
+                current={!settingsView && view === 'github'}
+                disabled={!offers('github')}
+                onClick={() => showView('github')}
+                data-testid="arm-github"
+              >
+                {t('app.github')}
+              </ArmBlock>
+            )}
+            {offers('github') && !settingsView && view === 'github' && (
               <ArmSubtabs
                 label={t('app.github')}
                 ids={TEAM_SECTIONS}
@@ -662,7 +691,7 @@ export default function App() {
         )}
         <div className="arm-foot">
           <AuctumMark size={128} className="arm-foot-mark" decorative />
-          <span className="arm-foot-label">{isAidlc ? t('app.intentCount', { n: activeMeta.intentCount ?? 0 }) : 'Auctum'}</span>
+          <span className="arm-foot-label">{footLabel(framework, activeMeta, t)}</span>
         </div>
       </nav>
 

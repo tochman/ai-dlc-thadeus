@@ -35,6 +35,10 @@
       "other": "Övrigt"
     }
   },
+  "speckit": {
+    "title": "Spec Kit",
+    "empty": "Inga features inlästa än."
+  },
   "app": {
     "reopenFailed": "Kunde inte öppna igen: {list}",
     "settingsReadFailed": "Kunde inte läsa inställningar: {error}",
@@ -43,6 +47,7 @@
     "fullscreenFailed": "Helskärm kunde inte växlas: {error}",
     "intents": "Intents",
     "setup": "Uppsättning",
+    "specs": "Specar",
     "features": "Features",
     "branch": "Gren",
     "detached": "Ingen gren (frånkopplad HEAD)",
@@ -61,6 +66,7 @@
     "plans": "Planer",
     "editor": "Editor",
     "intentCount": "{n} intents",
+    "featureCount": "{n} features",
     "emptyTitle": "Inget projekt öppet",
     "emptyText": "Öppna en projektmapp som innehåller {path}.",
     "openProject": "Öppna projekt",
