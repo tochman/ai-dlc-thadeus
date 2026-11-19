@@ -1,0 +1,13 @@
+{
+  "stage": "code-generation",
+  "upstream_ids": ["US-0034-AC1", "US-0034-AC2", "US-0034-AC3", "US-0034-AC4", "US-0034-AC5", "US-0034-AC6", "US-0034-AC7"],
+  "coverage": [
+    { "id": "US-0034-AC1", "status": "OK", "target": "src/main/updater.js" },
+    { "id": "US-0034-AC2", "status": "OK", "target": "src/main/updater.js" },
+    { "id": "US-0034-AC3", "status": "OK", "target": "src/main/exec.js" },
+    { "id": "US-0034-AC4", "status": "OK", "target": "src/renderer/UpdateNotice.jsx" },
+    { "id": "US-0034-AC5", "status": "OK", "target": "tests/main/updater.test.js" },
+    { "id": "US-0034-AC6", "status": "OK", "target": "src/shared/locales/en.json" },
+    { "id": "US-0034-AC7", "status": "OK", "target": "tests/renderer/UpdateNotice.test.jsx" }
+  ]
+}
