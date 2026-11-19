@@ -227,4 +227,21 @@ describe('watchForAidlc', { retry: 2 }, () => {
     await wait(600);
     expect(found).toBe(1);
   });
+
+  it('US-1401 BR1.9: calls onFound once when .specify/ appears, ignoring other dot folders', async () => {
+    const root = path.join(TMP, 'kit');
+    await fs.mkdir(root, { recursive: true });
+    await wait(300);
+    let found = 0;
+    watcher = watchForAidlc({ root, onFound: () => found++ });
+    await watcher.ready;
+
+    await fs.mkdir(path.join(root, '.git'));
+    await wait(300);
+    expect(found).toBe(0);
+
+    await fs.mkdir(path.join(root, '.specify', 'memory'), { recursive: true });
+    await wait(600);
+    expect(found).toBe(1);
+  });
 });

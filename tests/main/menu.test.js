@@ -6,7 +6,7 @@ const { buildMenuTemplate, parseMenuState } = await import('../../src/main/menu.
 
 afterEach(() => i18n.changeLanguage('sv'));
 
-const ALL_ON = { hasProject: true, isAidlc: true, showFeatures: true };
+const ALL_ON = { hasProject: true, framework: 'aidlc', showFeatures: true };
 
 function build(options = {}) {
   const send = vi.fn();
@@ -36,7 +36,7 @@ describe('app menu (EPIC-04 US-0404)', () => {
   });
 
   it('turns project items off without a project and Kostnad/Github off outside AI-DLC (FR2.5)', () => {
-    const none = build({ state: { hasProject: false, isAidlc: false, showFeatures: false } }).template;
+    const none = build({ state: { hasProject: false, framework: null, showFeatures: false } }).template;
     for (const label of ['Stäng projekt', 'Projektinställningar…', 'Intents', 'Kostnad', 'Github', 'Agent', 'Shell', 'Starta om flik']) {
       expect(byLabel(none, label).enabled, label).toBe(false);
     }
@@ -44,18 +44,32 @@ describe('app menu (EPIC-04 US-0404)', () => {
     expect(byLabel(none, 'Öppna projekt…').enabled).not.toBe(false); // always available
     expect(byLabel(none, 'Helskärm').enabled).not.toBe(false);
 
-    const plain = build({ state: { hasProject: true, isAidlc: false, showFeatures: true } }).template;
+    const plain = build({ state: { hasProject: true, framework: null, showFeatures: true } }).template;
     expect(byLabel(plain, 'Kostnad').enabled).toBe(false);
     expect(byLabel(plain, 'Github').enabled).toBe(false);
     expect(byLabel(plain, 'Stäng projekt').enabled).toBe(true);
     expect(byLabel(plain, 'Features').visible).toBe(true);
 
-    // menu:state accepts exactly three booleans (NFR1).
+    // menu:state accepts two booleans and the framework (NFR1, US-1401 BR1.8).
     expect(parseMenuState(ALL_ON)).toEqual(ALL_ON);
     expect(parseMenuState({ ...ALL_ON, extra: 'x' })).toEqual(ALL_ON);
-    expect(parseMenuState({ hasProject: 'yes', isAidlc: true, showFeatures: true })).toBeNull();
+    expect(parseMenuState({ hasProject: 'yes', framework: 'aidlc', showFeatures: true })).toBeNull();
     expect(parseMenuState(null)).toBeNull();
     expect(parseMenuState([true, true, true])).toBeNull();
+  });
+
+  it('US-1401 BR1.8: carries the framework, and shows Kostnad and Github only for AI-DLC (AC1.1.2, AC1.1.5)', () => {
+    const speckit = build({ state: { hasProject: true, framework: 'speckit', showFeatures: false } }).template;
+    expect(byLabel(speckit, 'Kostnad').enabled).toBe(false);
+    expect(byLabel(speckit, 'Github').enabled).toBe(false);
+    expect(byLabel(speckit, 'Intents').enabled).toBe(true); // goes to the framework's first view
+    expect(byLabel(build().template, 'Kostnad').enabled).toBe(true);
+
+    const state = { hasProject: true, framework: 'speckit', showFeatures: false };
+    expect(parseMenuState(state)).toEqual(state);
+    expect(parseMenuState({ ...state, framework: null })).toEqual({ ...state, framework: null });
+    expect(parseMenuState({ ...state, framework: 'other' })).toBeNull();
+    expect(parseMenuState({ hasProject: true, isAidlc: true, showFeatures: true })).toBeNull(); // the old shape
   });
 
   it('closes the project, not the window, on CmdOrCtrl+W, and sends content commands to the renderer (FR2.4, FR2.6)', () => {
@@ -126,7 +140,7 @@ describe('app menu (EPIC-04 US-0404)', () => {
     macAbout.click();
     expect(mac.send).toHaveBeenLastCalledWith({ command: 'about' });
 
-    const linux = build({ isMac: false, state: { hasProject: false, isAidlc: false, showFeatures: false } });
+    const linux = build({ isMac: false, state: { hasProject: false, framework: null, showFeatures: false } });
     const linuxAbout = byLabel(linux.template, 'Om T.H.A.D.E.U.S.');
     expect(byLabel(linux.template, 'Hjälp').submenu).toContain(linuxAbout);
     expect(linuxAbout.enabled).not.toBe(false); // works without a project
