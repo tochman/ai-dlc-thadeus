@@ -25,9 +25,9 @@
 - **Acceptance Criteria:**
   - [ ] **Given** a project that follows AI-DLC, **then** it opens exactly as today.
   - [ ] **Given** a project that follows Spec Kit, **then** the left arm shows the Spec Kit views and no AI-DLC views.
-  - [ ] The project's framework is kept in its project settings, and the view set follows it.
+  - [ ] The project's framework is kept in the repository (US-1408), and the view set follows it.
   - [ ] **Given** no framework is saved yet (until US-1406), **then** the app follows what it finds: only `.specify/` is Spec Kit, and `aidlc/spaces/` (alone or with `.specify/`) is AI-DLC, as today.
-  - [ ] The shared shell (terminal, dialogs and hooks, editor, git, Features view, project settings, token log) works the same for both.
+  - [ ] The shared shell (terminal, dialogs and hooks, editor, git, Features view, project settings) works the same for both. The token log per feature is US-1409; waiting questions and agent progress are US-1410.
   - [ ] Every text goes through `t()` in Swedish and English, in the LCARS look.
 - **Notes:** One value, `framework: 'aidlc' | 'speckit'`, decides the view set. No general plugin system.
 - **Dependencies:** none
@@ -96,7 +96,7 @@
   - [ ] **Given** exactly one framework, **then** it is proposed, and one click confirms it.
   - [ ] **Given** both, **then** I choose which one the app follows. The other is left alone and not shown.
   - [ ] **Given** neither, **then** I choose AI-DLC or Spec Kit, and the app goes on to that framework's setup (US-0503 or US-1405).
-  - [ ] The choice is kept in the project settings, and the project is not asked again. Nothing in the project is written before I confirm. Every text goes through `t()` in Swedish and English, in the LCARS look.
+  - [ ] The choice is kept in the repository (US-1408), and the project is not asked again on any clone. Nothing in the project is written before I confirm. Every text goes through `t()` in Swedish and English, in the LCARS look.
 - **Dependencies:** US-1401, US-1405
 
 **US-1407: Switch a project from one framework to the other** 📋 Planned, for v0.2.11
