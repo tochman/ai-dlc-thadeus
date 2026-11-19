@@ -1037,6 +1037,8 @@
     "modeLegend": "Kostnadsregler",
     "mode": { "on": "På", "off": "Av" },
     "linesFor": "Regler i {file} (en per rad)",
+    "missingTitle": "Nya regler i paketet som blocket saknar",
+    "addMissing": "Lägg till dem",
     "preview": "Förhandsvisa",
     "noChanges": "Inga filer ändras.",
     "warningsTitle": "Kan krocka med teamets regler",

@@ -1,7 +1,8 @@
 // THADEUS cost rule pack (US-0212). Keeps a marked block of cost rules in each space's project.md and phase files.
 // The app writes only between the markers (FR2.1), only to the files in COST_RULES_FILES (NFR1), after a diff the
 // person confirms (FR5.1), atomically and only when the file still reads as previewed (FR5.2, NFR4). After a save it
-// recompiles AI-DLC and puts every file back when that fails (FR5.3, FR5.4).
+// recompiles AI-DLC and puts every file back when that fails (FR5.3, FR5.4). US-0032: the status names the shipped
+// lines a present block lacks.
 import { promises as fs } from 'node:fs';
 import { defaultExec } from './exec.js';
 import { writeAtomic } from './fileWrite.js';
@@ -134,7 +135,8 @@ const stateOf = (text) => (text === null ? { state: 'broken', problem: 'missing'
 /**
  * US-0212 FR1.2, FR3.2: every space with each target file's state (`absent`, `present`, or `broken` with its problem),
  * whether the pack is on (a block in any file), and the lines to edit: the first block found per target, else the
- * shipped pack.
+ * shipped pack. US-0032 AC1: `missing` holds, per target with a block, the shipped lines that block lacks, so a
+ * project with an older pack is offered the new ones.
  */
 export async function costRulesStatus(root) {
   const { spaces, targets } = await readTargets(root);
@@ -154,7 +156,12 @@ export async function costRulesStatus(root) {
         const { state, problem } = stateOf(text);
         return problem ? { target, file, state, problem } : { target, file, state };
       });
-  return { spaces: spaces.map((space) => ({ space, files: files(space) })), on: seen.size > 0, lines };
+  const missing = {};
+  for (const target of seen) {
+    const lack = COST_RULES_PACK[target].filter((l) => !lines[target].includes(l));
+    if (lack.length) missing[target] = lack;
+  }
+  return { spaces: spaces.map((space) => ({ space, files: files(space) })), on: seen.size > 0, lines, missing };
 }
 
 /** The pack sent by the renderer: exactly one list of lines per target (NFR1). */

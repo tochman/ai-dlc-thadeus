@@ -1037,6 +1037,8 @@
     "modeLegend": "Cost rules",
     "mode": { "on": "On", "off": "Off" },
     "linesFor": "Rules in {file} (one per line)",
+    "missingTitle": "New rules in the pack that the block lacks",
+    "addMissing": "Add them",
     "preview": "Preview",
     "noChanges": "No file changes.",
     "warningsTitle": "May clash with the team's rules",
