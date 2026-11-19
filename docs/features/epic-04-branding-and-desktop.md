@@ -8,7 +8,7 @@
 
 **Stories:** US-0401, US-0402, US-0403, US-0404, US-0405, US-0406, US-0407, US-0408, US-0409, US-0410, US-0411, US-0412, US-0413, US-0414
 
-**Status (2026-11-16):** ✅ US-0401–US-0411 released (v0.1.1–v0.2.5). 📋 US-0412 planned, for v0.3.1. ✅ US-0413 released in v0.2.7. ✅ US-0414 released in v0.2.8. Each story names its release.
+**Status (2026-11-16):** ✅ US-0401–US-0411 released (v0.1.1–v0.2.5). 📋 US-0412 planned, for v0.3.2. ✅ US-0413 released in v0.2.7. ✅ US-0414 released in v0.2.8. Each story names its release.
 
 ---
 
@@ -257,7 +257,7 @@
   - The reference image is not stored in the repository (third-party artwork); this story describes the card instead.
 - **Dependencies:** US-0410
 
-**US-0412: Pipeline cards with more LCARS feeling and motion** 📋 Planned, for v0.3.1
+**US-0412: Pipeline cards with more LCARS feeling and motion** 📋 Planned, for v0.3.2
 - As a **developer following a workflow**, in order to **feel the pipeline is a living console**, I would like to **the stage cards from US-0411 to look and move more like LCARS**.
 - **Epic:** EPIC-04
 - **Priority:** Medium

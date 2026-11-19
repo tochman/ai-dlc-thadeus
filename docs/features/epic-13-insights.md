@@ -8,7 +8,7 @@
 
 **Stories:** US-1301–US-1307
 
-**Status (2026-11-18):** 📋 US-1301–US-1307 planned, for v0.3.1.
+**Status (2026-11-18):** 📋 US-1301–US-1303 planned, for v0.3.1. 📋 US-1304–US-1307 planned, for v0.3.2.
 
 ---
 
@@ -58,7 +58,7 @@
 - **Notes:** CSV export of these figures picks up the export deferred in US-0203.
 - **Dependencies:** US-0201, US-0209, US-0303, US-0604
 
-**US-1304: Delivery metrics from AI-DLC and git: lead time, release frequency, failure rate and recovery time** 📋 Planned, for v0.3.1
+**US-1304: Delivery metrics from AI-DLC and git: lead time, release frequency, failure rate and recovery time** 📋 Planned, for v0.3.2
 - As a **team lead**, in order to **see whether the AI work makes delivery faster and safer**, I would like **the four DORA metrics, worked out from the feature docs, the audit, the tags and the pull requests**.
 - **Epic:** EPIC-13
 - **Priority:** Medium
@@ -73,7 +73,7 @@
   - [ ] Each figure shows its source, and says so when data is missing (for example, no platform connection). Every text goes through `t()` in Swedish and English, in the LCARS look.
 - **Dependencies:** US-0303, US-0605, US-1201
 
-**US-1305: Quality signals next to cost** 📋 Planned, for v0.3.1
+**US-1305: Quality signals next to cost** 📋 Planned, for v0.3.2
 - As a **developer or team lead**, in order to **see whether cheaper or faster work costs quality**, I would like **each intent and release to show its quality signals beside its cost**.
 - **Epic:** EPIC-13
 - **Priority:** Medium
@@ -86,7 +86,7 @@
   - [ ] Every text goes through `t()` in Swedish and English, in the LCARS look.
 - **Dependencies:** US-1301, US-1304
 
-**US-1306: The AI share of delivered code** 📋 Planned, for v0.3.1
+**US-1306: The AI share of delivered code** 📋 Planned, for v0.3.2
 - As a **team lead**, in order to **know how much of what we ship comes from AI-DLC work**, I would like **each merged pull request, story and release to show how much of its changed code came from AI-DLC work and how much was edited by hand**.
 - **Epic:** EPIC-13
 - **Priority:** Medium
@@ -100,7 +100,7 @@
   - [ ] Every text goes through `t()` in Swedish and English, in the LCARS look.
 - **Dependencies:** US-1201, US-1303
 
-**US-1307: Insights for a team: the same figures per person and machine** 📋 Planned, for v0.3.1
+**US-1307: Insights for a team: the same figures per person and machine** 📋 Planned, for v0.3.2
 - As a **team lead**, in order to **share what works and help where it does not**, I would like **the insights broken down by person and by machine, presented as coaching and not as surveillance**.
 - **Epic:** EPIC-13
 - **Priority:** Low
