@@ -44,6 +44,13 @@ describe('detectHarnesses (EPIC-08 US-0801 FR1)', () => {
     expect(again.opencode.installed).toBe(false); // opencode.json without AI-DLC entries
   });
 
+  it('US-1401 BR1.10: a Spec Kit project with only .opencode/ has opencode installed (AC1.1.6)', async () => {
+    const root = await tmpRoot(['.opencode/command', '.specify/memory']);
+    const found = byId(await detectHarnesses(root, { exec: fakeExec({}) }));
+    expect(found.opencode.installed).toBe(true);
+    expect(found.claude.installed).toBe(false); // Claude's marker is still .claude/ only
+  });
+
   it('reads CLI versions and counts a failing probe as not found, without failing (FR1.2, FR1.3)', async () => {
     const root = await tmpRoot();
     const found = byId(await detectHarnesses(root, { exec: fakeExec({ claude: '2.1.0 (Claude Code)\n', opencode: 'opencode v2.1.4' }) }));

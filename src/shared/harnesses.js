@@ -27,8 +27,8 @@ export const HARNESSES = [
     cli: 'opencode',
     selectable: true,
     // AI-DLC for opencode lives in .aidlc/ and adds its entries to opencode.json (its /aidlc command is
-    // .opencode/command/aidlc.md).
-    markers: { dirs: ['.aidlc'], files: ['.opencode/command/aidlc.md'], jsonWithAidlc: ['opencode.json', 'opencode.jsonc'] },
+    // .opencode/command/aidlc.md). `.opencode/` alone is opencode in a Spec Kit project (US-1401 BR1.10, NFR6).
+    markers: { dirs: ['.aidlc', '.opencode'], files:['.opencode/command/aidlc.md'], jsonWithAidlc: ['opencode.json', 'opencode.jsonc'] },
     commands: { aidlc: '/aidlc' },
     // Measured against opencode v2.1.4: after its first quiet period at start it redraws once more 3.0–3.6 s
     // later. A 4 s quiet keeps "ready" from firing before that.
