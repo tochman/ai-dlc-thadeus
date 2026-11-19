@@ -83,24 +83,43 @@ export function checkFeatureDocs({ overview, epics, built, delivered = new Set()
   return problems;
 }
 
-function intentStories() {
+/**
+ * Built and delivered story ids from intents ({description, stateText, complete}). A story is built when its intent
+ * finished Code Generation, and delivered when that intent is also complete: a finished intent that never ran Code
+ * Generation (an Ideation-only check) delivers nothing (v0.2.11 Step 3b).
+ */
+export function storiesFromIntents(intents) {
   const built = new Set();
   const delivered = new Set();
-  if (!existsSync(INTENTS)) return { built, delivered };
+  for (const { description, stateText, complete } of intents) {
+    const codeGen = parseState(stateText)
+      .phases.flatMap((p) => p.stages)
+      .find((st) => st.slug === 'code-generation');
+    if (codeGen?.status !== 'done') continue;
+    const ids = intentStoryIds(description);
+    ids.forEach((id) => built.add(id));
+    if (complete) ids.forEach((id) => delivered.add(id));
+  }
+  return { built, delivered };
+}
+
+function intentStories() {
+  if (!existsSync(INTENTS)) return { built: new Set(), delivered: new Set() };
   const index = existsSync(path.join(INTENTS, 'intents.json')) ? JSON.parse(readFileSync(path.join(INTENTS, 'intents.json'), 'utf8')) : [];
   const complete = new Set(index.filter((e) => e.status === 'complete').map((e) => e.dirName));
+  const intents = [];
   for (const dir of readdirSync(INTENTS, { withFileTypes: true }).filter((d) => d.isDirectory())) {
     const base = path.join(INTENTS, dir.name);
     const stateFile = path.join(base, 'aidlc-state.md');
     const descFile = path.join(base, 'project-description.json');
     if (!existsSync(stateFile) || !existsSync(descFile)) continue;
-    const state = parseState(readFileSync(stateFile, 'utf8'));
-    const codeGen = state.phases.flatMap((p) => p.stages).find((st) => st.slug === 'code-generation');
-    const ids = intentStoryIds(JSON.parse(readFileSync(descFile, 'utf8')));
-    if (codeGen?.status === 'done') ids.forEach((id) => built.add(id));
-    if (complete.has(dir.name)) ids.forEach((id) => delivered.add(id));
+    intents.push({
+      description: JSON.parse(readFileSync(descFile, 'utf8')),
+      stateText: readFileSync(stateFile, 'utf8'),
+      complete: complete.has(dir.name)
+    });
   }
-  return { built, delivered };
+  return storiesFromIntents(intents);
 }
 
 /** The repository's v* tags; none without git or tags, as in a shallow CI checkout (US-0603 FR7). */
@@ -165,6 +184,18 @@ describe('feature docs status', () => {
       'US-0901 is still marked "for v0.2.5", but tag v0.2.5 exists: mark it "Released in v0.2.5"'
     ]);
     expect(checkFeatureDocs(docs)).toEqual([]); // a shallow CI checkout has no tags
+  });
+
+  it('counts a finished intent as delivered only when its Code Generation ran (v0.2.11 Step 3b)', () => {
+    const state = (mark) => `### CONSTRUCTION PHASE\n- [${mark}] code-generation — EXECUTE\n`;
+    const { built, delivered } = storiesFromIntents([
+      { description: 'US-0001: fix', stateText: state('x'), complete: true },
+      { description: 'Ideation check for US-1401–US-1403', stateText: state(' '), complete: true },
+      { description: 'US-0002: skipped build', stateText: state('S'), complete: true },
+      { description: 'US-0003: in flight', stateText: state('x'), complete: false }
+    ]);
+    expect([...delivered]).toEqual(['US-0001']);
+    expect([...built].sort()).toEqual(['US-0001', 'US-0003']);
   });
 
   it('passes ranges and uniform released epics', () => {

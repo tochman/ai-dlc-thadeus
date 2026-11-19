@@ -517,7 +517,7 @@
 - **Acceptance Criteria:**
   - [x] The THADEUS rule pack carries the rule, in `project.md`: "On `main`, NEVER commit `docs/FEATURES.md`, `docs/features/` or `docs/releases/`; THADEUS commits and pushes them." It is written by the pack's existing preview and save (US-0212), so a project that already has the pack is offered the new line.
   - [x] **Given** a story branch, **then** the rule does not apply: the story's own markers and criteria stay with the story and are committed with it, as US-0608 says.
-  - [ ] **Given** an agent on `main` that changes a feature doc and follows the rule, **then** exactly one commit holds the change, the app's.
+  - [x] **Given** an agent on `main` that changes a feature doc and follows the rule, **then** exactly one commit holds the change, the app's.
   - [x] The pack stays within its limits (US-0212 NFR2), and the clash check against `team.md` and `org.md` still runs.
   - [x] A test fails without the fix and passes with it (the shipped pack holds the rule); the existing suite stays green.
 - **Notes:** A code fix, so it runs on the `quick-fix` plan. Touches `src/shared/costRules.js` and its tests. The app's commit subject can name a story that is only mentioned (`3349d29` named US-0503, a dependency); that is US-0033.
