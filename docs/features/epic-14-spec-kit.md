@@ -10,7 +10,7 @@
 
 **Stories:** US-1401–US-1410
 
-**Status (2026-11-24):** ✅ US-1401, US-1402, US-1408 done, for v0.3.0 · 📋 US-1403–US-1407, US-1409–US-1410 planned, for v0.3.0.
+**Status (2026-11-24):** ✅ US-1401, US-1402, US-1405, US-1408 done, for v0.3.0 · 📋 US-1403, US-1404, US-1406, US-1407, US-1409, US-1410 planned, for v0.3.0.
 
 ---
 
@@ -72,17 +72,17 @@
   - [ ] A file that cannot be read is named, with the reason, never hidden. Every text goes through `t()` in Swedish and English, in the LCARS look.
 - **Dependencies:** US-1401
 
-**US-1405: Set up Spec Kit in a project** 📋 Planned, for v0.3.0
+**US-1405: Set up Spec Kit in a project** ✅ Done, for v0.3.0
 - As a **developer**, in order to **start a project on Spec Kit from the app**, I would like **the app to run `specify init` for the project's harness, after a preview**.
 - **Epic:** EPIC-14
 - **Priority:** High
 - **Complexity:** Medium
 - **Background:** Asked for 2026-11-19. Mirrors the AI-DLC setup (US-0503). It is reached from the choice in US-1406 and from a switch in US-1407.
 - **Acceptance Criteria:**
-  - [ ] **Given** Spec Kit is chosen for a project, **then** the app runs `specify init --integration <claude|opencode>` for the project's harness, after a preview of what it will do.
-  - [ ] **Given** no `specify` command on the login shell's `PATH`, **then** the app says so and names how to install it (`uv tool install specify-cli`). It does not install it.
-  - [ ] A failed `specify init` shows its output, and the project stays as it was in the app.
-  - [ ] Every text goes through `t()` in Swedish and English, in the LCARS look.
+  - [x] **Given** Spec Kit is chosen for a project, **then** the app runs `specify init --integration <claude|opencode>` for the project's harness, after a preview of what it will do.
+  - [x] **Given** no `specify` command on the login shell's `PATH`, **then** the app says so and names how to install it (`uv tool install specify-cli`). It does not install it.
+  - [x] A failed `specify init` shows its output, and the project stays as it was in the app.
+  - [x] Every text goes through `t()` in Swedish and English, in the LCARS look.
 - **Dependencies:** US-0503
 
 **US-1406: See what is installed in a new project, and choose its framework** 📋 Planned, for v0.3.0
