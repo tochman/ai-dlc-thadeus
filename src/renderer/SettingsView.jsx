@@ -17,7 +17,7 @@ const ANIMATION_IDS = ['full', 'reduced', 'off'];
 const ALERT_IDS = ['popup-notify', 'popup', 'off'];
 const REPLY_IDS = ['dialog-notify', 'line', 'off']; // US-0506 u5 D1, M9
 const SOUND_IDS = ['on', 'off'];
-const TOOL_IDS = ['aidlc', 'claude', 'opencode', 'gh', 'glab', 'shell']; // US-0410 FR4.1, as main's TOOL_IDS (glab: US-1201)
+const TOOL_IDS = ['aidlc', 'claude', 'opencode', 'gh', 'glab', 'specify', 'shell']; // US-0410 FR4.1, as main's TOOL_IDS (glab: US-1201, specify: US-1405)
 const errorText = (err) => String(err?.message ?? err).replace(/^Error invoking remote method '[^']+': (Error: )?/, '');
 
 /** One tool row before any check has answered: the saved path, or nothing yet (NFR4). */

@@ -856,6 +856,7 @@
       "opencode": "opencode CLI",
       "gh": "GitHub CLI (gh)",
       "glab": "GitLab CLI (glab)",
+      "specify": "Spec Kit CLI (specify)",
       "shell": "Shell",
       "neededFor": {
         "aidlc": "Needed for the AI-DLC views and to run AI-DLC commands.",
@@ -863,6 +864,7 @@
         "opencode": "Needed for the agent tabs with opencode.",
         "gh": "Used for the GitHub features, and as a fallback when app updates cannot be read from GitHub directly.",
         "glab": "Needed to read merge requests, reviews and comments from GitLab.",
+        "specify": "Needed to set up Spec Kit in a project.",
         "shell": "Needed for the terminal tabs."
       },
       "bitbucket": {
