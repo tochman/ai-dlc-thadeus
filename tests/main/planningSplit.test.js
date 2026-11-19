@@ -65,3 +65,68 @@ describe('splitChange and applyChange (US-0608 FR3.2, FR3.3, AC1.3.3)', () => {
     expect(splitChange(EPIC, EPIC, []).changes).toEqual([]);
   });
 });
+
+// US-0033: `named` is what the commit subject names: a story by its heading, a story row by its key, and for any other
+// block only the stories whose own clause changed. The cases are commits 3349d29 and b2ed89e.
+describe('splitChange names only the stories that changed (US-0033)', () => {
+  const namedOf = (head, work, own = []) => [...new Set(splitChange(head, work, own).changes.flatMap((c) => c.named))];
+  const E0 = [
+    '# EPIC-00: Fixes',
+    '',
+    '**Stories:** US-0001, US-0002, US-0031',
+    '',
+    '**Status (2026-11-19):** ✅ US-0001–US-0002 released (v0.2.3). ✅ US-0031 released in v0.2.10. Each story names its release.',
+    '',
+    '## User Stories',
+    '',
+    '**US-0031: The dialog opens on the newest page** ✅ Released in v0.2.10',
+    '- **Dependencies:** US-0506, US-0026',
+    ''
+  ].join('\n');
+  const lines = E0.replace('US-0002, US-0031', 'US-0002, US-0031, US-0032').replace('v0.2.10. Each', 'v0.2.10. 🚧 US-0032 in progress. Each');
+  const added = `${lines}\n**US-0032: The app never commits a change it did not make** 📋 Planned\n- **Dependencies:** US-0608\n`;
+  const ROW = (s) => `| Epic | Topic | Status |\n|---|---|---|\n| [EPIC-00](features/epic-00-fixes.md) | Fixes | ✅ US-0031 released in v0.2.10 · ${s} |\n`;
+
+  it('AC1: a changed story block names its heading, not the stories its Background or Dependencies mention', () => {
+    const head = '**US-1405: Set up Spec Kit** 📋 Planned\n- [ ] AC1\n- **Background:** follows US-1401.\n- **Dependencies:** US-0503\n';
+    expect(namedOf(head, head.replace('- [ ] AC1', '- [x] AC1'))).toEqual(['US-1405']);
+  });
+
+  it('AC1 (3349d29): a new release plan names its story rows, not the stories in their Depends on cell', () => {
+    const plan = [
+      '# Release plan v0.2.11',
+      '',
+      '> Previous release: v0.2.10.',
+      '',
+      '| Story | Epic | Title | Priority | Complexity | Depends on |',
+      '|---|---|---|---|---|---|',
+      '| US-1401 | [14](../features/epic-14-spec-kit.md) | One framework per project | High | Medium | — |',
+      '| US-1405 | [14](../features/epic-14-spec-kit.md) | Set up Spec Kit | Medium | Medium | US-0503 |',
+      ''
+    ].join('\n');
+    expect(namedOf('', plan)).toEqual(['US-1401', 'US-1405']);
+    const row = plan.split('\n')[7];
+    expect(namedOf(plan, plan.replace(row, row.replace('Medium | Medium', 'High | Medium')))).toEqual(['US-1405']);
+  });
+
+  it('AC2, AC3 (b2ed89e): the Stories and Status lines, a FEATURES.md row and a new story name the new story alone', () => {
+    expect(splitChange(E0, lines, []).changes.map((c) => c.named)).toEqual([['US-0032']]);
+    expect(namedOf(ROW('🚧 US-0032 in progress, for v0.2.11'), ROW('✅ US-0032 done, for v0.2.11'))).toEqual(['US-0032']);
+    expect(namedOf(E0, added)).toEqual(['US-0032']);
+  });
+
+  it('AC2: a changed block where no clause with a story changed names nothing', () => {
+    expect(splitChange(E0, E0.replace('(2026-11-19)', '(2026-11-20)'), []).changes.map((c) => c.named)).toEqual([[]]);
+    expect(namedOf(ROW('🚧 US-0032 in progress'), ROW('🚧 US-0032 in progress').replace('| Fixes |', '| Fixes and chores |'))).toEqual([]);
+  });
+
+  it('AC5: the story-branch split keeps deciding by `ids`, as before', () => {
+    expect(splitChange(E0, added, ['US-0032'])).toEqual({ keep: added, changes: [] });
+    const { keep, changes } = splitChange(E0, added, ['US-0999']);
+    expect(keep).toBe(E0);
+    expect(changes.map((c) => [c.key, c.ids])).toEqual([
+      ['~', ['US-0001', 'US-0002', 'US-0031', 'US-0032']],
+      ['US-0032', ['US-0032']]
+    ]);
+  });
+});

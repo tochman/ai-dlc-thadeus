@@ -188,10 +188,30 @@ export function storyBlocks(text) {
   });
 }
 
+// US-0033: a text cut into clauses: on `·`, `|`, line breaks and `, ` `. ` `; ` `: ` (bold markers dropped first, so
+// "**Status (…):**" is a clause of its own).
+const clausesOf = (text) =>
+  String(text ?? '')
+    .replace(/\*\*/g, '')
+    .split(/\s*(?:[·|\n]|[,.;:]\s)\s*/);
+
+/**
+ * US-0033 AC1, AC2: the stories a changed block is about, for the commit subject: a story block's or story row's own id
+ * (from its key), else each id whose clauses differ between `before` and `after`.
+ * ponytail: a clause names every id in it, so a changed range "US-0001–US-0020" names both ends.
+ */
+function namedIn(key, before, after) {
+  const own = key.match(/^(?:row:)?(US-\d{4})/)?.[1];
+  if (own) return [own];
+  const clauses = (text, id) => clausesOf(text).filter((c) => c.includes(id));
+  return storyIdsIn(`${before ?? ''}\n${after ?? ''}`).filter((id) => JSON.stringify(clauses(before, id).sort()) !== JSON.stringify(clauses(after, id).sort()));
+}
+
 /**
  * US-0608 FR3.2, FR3.3, AC1.3.3: a change of one file split by story block. `keep` is `work` with every block that is not
- * about an `own` story put back as it is in `head`; `changes` are those other blocks, each `{key, ids, before, after, prev}`
- * (null `before`: a new block, null `after`: a removed one; `prev`: the key it follows).
+ * about an `own` story put back as it is in `head`; `changes` are those other blocks, each `{key, ids, named, before, after,
+ * prev}` (null `before`: a new block, null `after`: a removed one; `prev`: the key it follows). `ids` decide what is own;
+ * `named` are the stories the change is about, for the commit subject (US-0033 AC1–AC3).
  */
 export function splitChange(head, work, own) {
   const H = storyBlocks(head);
@@ -206,7 +226,8 @@ export function splitChange(head, work, own) {
     const after = w.get(key) ?? null;
     if (before?.text === after?.text || [before, after].some((b) => b && isOwn(b))) continue;
     const ids = [...new Set([...(before?.ids ?? []), ...(after?.ids ?? [])])];
-    changes.push({ key, ids, before: before?.text ?? null, after: after?.text ?? null, prev: (after ?? before).prev });
+    const named = namedIn(key, before?.text, after?.text);
+    changes.push({ key, ids, named, before: before?.text ?? null, after: after?.text ?? null, prev: (after ?? before).prev });
   }
   const other = new Map(changes.map((c) => [c.key, c]));
   const keep = W.flatMap((b) => (!other.has(b.key) ? [b.text] : other.get(b.key).before === null ? [] : [other.get(b.key).before]));

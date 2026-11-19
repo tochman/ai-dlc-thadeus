@@ -194,7 +194,13 @@ async function replayIn(cwd, ctx, entries, tags) {
   return { changed, conflicts };
 }
 
-/** US-0606 FR2.3, US-0608 FR6.2: `docs: plan US-XXXX[, …] for vX.Y.Z` per release and `update US-XXXX[, …]` for edits, joined by "; ". */
+/** US-0033 AC4: ids joined by ", ", cut after five with "and N more". */
+const idList = (ids) => (ids.length > 5 ? `${ids.slice(0, 5).join(', ')} and ${ids.length - 5} more` : ids.join(', '));
+
+/**
+ * US-0606 FR2.3, US-0608 FR6.2: `docs: plan US-XXXX[, …] for vX.Y.Z` per release and `update US-XXXX[, …]` for edits, joined
+ * by "; ". US-0033 AC2, AC4: edits name the stories their changes are about (`named`), and each list stops after five.
+ */
 export function subjectOf(entries) {
   const planned = new Map();
   const parts = [];
@@ -202,15 +208,15 @@ export function subjectOf(entries) {
     if (a.kind === 'setRelease' && a.version) {
       if (!planned.has(a.version)) parts.push(a.version);
       planned.set(a.version, [...(planned.get(a.version) ?? []), ...a.storyIds]);
-    } else if (a.kind === 'setRelease') parts.push(`take ${a.storyIds.join(', ')} out of their release`);
+    } else if (a.kind === 'setRelease') parts.push(`take ${idList(a.storyIds)} out of their release`);
     else parts.push(a.kind === 'createRelease' ? `plan ${a.version}` : `remove the plan for ${a.version}`);
   }
   const edits = entries.filter((e) => e.kind === 'content');
   const edited = [...new Set(edits.flatMap((e) => e.storyIds))];
-  if (edited.length) parts.push(`update ${edited.join(', ')}`);
+  if (edited.length) parts.push(`update ${idList(edited)}`);
   else if (edits.length) parts.push('update the feature docs');
   if (!parts.length) return AGENT_SUBJECT;
-  return `docs: ${parts.map((p) => (planned.has(p) ? `plan ${planned.get(p).join(', ')} for ${p}` : p)).join('; ')}`;
+  return `docs: ${parts.map((p) => (planned.has(p) ? `plan ${idList(planned.get(p))} for ${p}` : p)).join('; ')}`;
 }
 
 /** `git status --porcelain -z` paths; the second path of a rename or copy is skipped. */
@@ -343,7 +349,7 @@ async function recordOnTarget(ctx, record, file, work, { base, by }) {
   const known = contentOf(record, file);
   if (trailOf(ctx.root, file)?.at(-1) === hash || (known && sha256(known.content) === hash)) return null; // the app's own write (D2)
   const head = await showAt(ctx, 'HEAD', file);
-  const storyIds = [...new Set(splitChange(head ?? '', work, []).changes.flatMap((c) => c.ids))];
+  const storyIds = [...new Set(splitChange(head ?? '', work, []).changes.flatMap((c) => c.named))]; // US-0033
   const baseHash = base === undefined ? hashOf(head) : base;
   return addContent(ctx.userData, ctx.root, { file, baseHash, content: work, storyIds, by, earlier: [hashOf(head), trailOf(ctx.root, file)?.at(-1) ?? null] });
 }
@@ -363,7 +369,7 @@ async function recordOnStory(ctx, record, place, file, work, { by, restore }) {
   let entry = null;
   if (known?.content !== text) {
     const state = conflicts.length || known?.state === 'conflict' ? 'conflict' : 'pending';
-    const storyIds = [...new Set(changes.flatMap((c) => c.ids))];
+    const storyIds = [...new Set(changes.flatMap((c) => c.named))]; // US-0033
     entry = await addContent(ctx.userData, ctx.root, { file, baseHash: known ? known.baseHash : hashOf(onto), content: text, storyIds, by, state });
   }
   if (restore && keep !== work) await restoreKeep(ctx, file, head, keep, work);

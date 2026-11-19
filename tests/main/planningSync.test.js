@@ -9,7 +9,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { loadFeatures } from '../../src/main/features.js';
 import { readRecord } from '../../src/main/planningRecord.js';
-import { createScheduler, planAction, reapplyLost, recordContent, recordTree, resolvePlanning, runCycle } from '../../src/main/planningSync.js';
+import { createScheduler, planAction, reapplyLost, recordContent, recordTree, resolvePlanning, runCycle, subjectOf } from '../../src/main/planningSync.js';
 
 const env = { ...process.env, GIT_AUTHOR_NAME: 'T', GIT_AUTHOR_EMAIL: 't@example.com', GIT_COMMITTER_NAME: 'T', GIT_COMMITTER_EMAIL: 't@example.com' };
 const run = (cwd, ...args) => execFileSync('git', ['-c', 'init.defaultBranch=main', ...args], { cwd, env, encoding: 'utf8' }).trim();
@@ -447,5 +447,22 @@ describe('createScheduler (US-0607 FR3.1, FR4.1)', () => {
     const sched = createScheduler({ run: async () => Promise.reject(new Error('git missing')), idle: () => true, intervalMs: () => 1 });
     expect(await sched.pushNow('a')).toEqual({ error: { kind: 'git', reason: 'git missing' } });
     await expect(sched.tick(['a'])).resolves.toBeDefined();
+  });
+});
+
+describe('subjectOf (US-0033 AC2, AC4)', () => {
+  const ids = (n) => Array.from({ length: n }, (_, i) => `US-140${i + 1}`);
+  const edit = (storyIds) => ({ kind: 'content', storyIds });
+
+  it('cuts a long list after five stories with "and N more", and keeps five whole', () => {
+    expect(subjectOf([edit(ids(3)), edit(ids(7))])).toBe('docs: update US-1401, US-1402, US-1403, US-1404, US-1405 and 2 more');
+    expect(subjectOf([edit(ids(5))])).toBe('docs: update US-1401, US-1402, US-1403, US-1404, US-1405');
+    expect(subjectOf([{ kind: 'setRelease', version: 'v1.0.0', storyIds: ids(6) }])).toBe(
+      'docs: plan US-1401, US-1402, US-1403, US-1404, US-1405 and 1 more for v1.0.0'
+    );
+  });
+
+  it('names nothing when no story can be told', () => {
+    expect(subjectOf([edit([]), edit([])])).toBe('docs: update the feature docs');
   });
 });

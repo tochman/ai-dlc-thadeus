@@ -8,7 +8,7 @@
 
 **Stories:** US-0001, US-0002, US-0003, US-0004, US-0005, US-0006, US-0007, US-0008, US-0009, US-0010, US-0011, US-0012, US-0013, US-0014, US-0015, US-0016, US-0017, US-0018, US-0019, US-0020, US-0021, US-0022, US-0023, US-0024, US-0025, US-0026, US-0027, US-0028, US-0029, US-0030, US-0031, US-0032, US-0033
 
-**Status (2026-11-19):** ✅ US-0001–US-0020 released (v0.2.3–v0.2.6). ✅ US-0021–US-0023 released in v0.2.7. ✅ US-0024 released in v0.2.8. ✅ US-0025 released in v0.2.9. ✅ US-0026 released in v0.2.9. ✅ US-0027 released in v0.2.9. ✅ US-0028 released in v0.2.10. ✅ US-0029 released in v0.2.10. ✅ US-0030 released in v0.2.10. ✅ US-0031 released in v0.2.10. ✅ US-0032 done, for v0.2.11. 📋 US-0033 planned, for v0.2.11. Each story names its release.
+**Status (2026-11-19):** ✅ US-0001–US-0020 released (v0.2.3–v0.2.6). ✅ US-0021–US-0023 released in v0.2.7. ✅ US-0024 released in v0.2.8. ✅ US-0025 released in v0.2.9. ✅ US-0026 released in v0.2.9. ✅ US-0027 released in v0.2.9. ✅ US-0028 released in v0.2.10. ✅ US-0029 released in v0.2.10. ✅ US-0030 released in v0.2.10. ✅ US-0031 released in v0.2.10. ✅ US-0032 done, for v0.2.11. ✅ US-0033 done, for v0.2.11. Each story names its release.
 
 ---
 
@@ -523,18 +523,18 @@
 - **Notes:** A code fix, so it runs on the `quick-fix` plan. Touches `src/shared/costRules.js` and its tests. The app's commit subject can name a story that is only mentioned (`3349d29` named US-0503, a dependency); that is US-0033.
 - **Dependencies:** US-0212, US-0608
 
-**US-0033: The app's commit subject names only the stories that changed** 📋 Planned, for v0.2.11
+**US-0033: The app's commit subject names only the stories that changed** ✅ Done, for v0.2.11
 - As a **developer reading the history of `main`**, in order to **see from a commit's subject which stories it changed**, I would like **the app's feature-doc commits to name only the stories whose own text changed**.
 - **Epic:** EPIC-00
 - **Priority:** Medium
 - **Complexity:** Small
 - **Background:** Reported 2026-11-19. `3349d29` named US-0503, which the commit only mentions as a dependency of US-1405. `b2ed89e` added one story to EPIC-00 and named all 32 of its stories, because the epic's "Stories:" line changed. The cause: `splitChange` in `src/main/parsers/features.js` gives each changed block every `US-` id in its text (`storyIdsIn`), and `subjectOf` in `src/main/planningSync.js` puts them all in the subject.
 - **Acceptance Criteria:**
-  - [ ] **Given** a story block changes, **then** the subject names that story, from its heading (`**US-XXXX: …**`), and not the stories its text only mentions (Dependencies, Background, Notes).
-  - [ ] **Given** only an epic's header, "Stories:" line or "Status" line, a `FEATURES.md` row or a release plan row changes, **then** the subject names the stories added, removed or moved there, not every story the line lists. When none can be told, it reads `docs: update the feature docs`.
-  - [ ] **Given** a new story is added, **then** the subject names that story alone (for `b2ed89e`: `docs: update US-0032`).
-  - [ ] A long subject is cut after five stories, with "and N more" (e.g. `docs: update US-1401, US-1402, US-1403, US-1404, US-1405 and 2 more`).
-  - [ ] Telling the story branch's own changes from the rest (US-0608 FR3) still works, and its tests stay green.
-  - [ ] A test fails without the fix and passes with it, with both commits above as cases; the existing suite stays green.
+  - [x] **Given** a story block changes, **then** the subject names that story, from its heading (`**US-XXXX: …**`), and not the stories its text only mentions (Dependencies, Background, Notes).
+  - [x] **Given** only an epic's header, "Stories:" line or "Status" line, a `FEATURES.md` row or a release plan row changes, **then** the subject names the stories added, removed or moved there, not every story the line lists. When none can be told, it reads `docs: update the feature docs`.
+  - [x] **Given** a new story is added, **then** the subject names that story alone (for `b2ed89e`: `docs: update US-0032`).
+  - [x] A long subject is cut after five stories, with "and N more" (e.g. `docs: update US-1401, US-1402, US-1403, US-1404, US-1405 and 2 more`).
+  - [x] Telling the story branch's own changes from the rest (US-0608 FR3) still works, and its tests stay green.
+  - [x] A test fails without the fix and passes with it, with both commits above as cases; the existing suite stays green.
 - **Notes:** A code fix, so it runs on the `quick-fix` plan. `splitChange` decides both the subject and what is the story's own on a story branch. Keep them apart, or check that a block's own id (from its heading) is also right for the story-branch split. Touches `src/main/parsers/features.js`, `src/main/planningSync.js` (`subjectOf`) and their tests.
 - **Dependencies:** US-0608
