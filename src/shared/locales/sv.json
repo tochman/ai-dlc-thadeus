@@ -737,7 +737,29 @@
       "exists": "Projektet har redan feature-beskrivningar i {path} (en översikt och en fil per epic). {rule}"
     }
   },
+  "speckitSetup": {
+    "title": "Sätt upp Spec Kit",
+    "missing": "Kommandot specify hittades inte i inloggningsskalets PATH.",
+    "installHint": "Installera det själv med: {command}",
+    "retry": "Försök igen",
+    "found": "Hittades: {version}",
+    "pickHarness": "Harness",
+    "pickPlaceholder": "Välj en harness",
+    "willRun": "Det här kommandot körs i projektmappen:",
+    "adds": "Spec Kit lägger till: {list}",
+    "existing": "Mappen har redan filer. Befintliga filer ligger kvar; Spec Kit lägger till sina egna.",
+    "run": "Kör specify init",
+    "running": "Kör…",
+    "done": "Spec Kit är uppsatt. Projektet byter till Spec Kit-vyerna.",
+    "failed": "specify init misslyckades. Projektet är som det var i appen.",
+    "timeout": "specify init blev inte klart inom 120 s. Projektet är som det var i appen."
+  },
   "setup": {
+    "chooseFramework": "Ramverk",
+    "framework": {
+      "aidlc": "AI-DLC",
+      "speckit": "Spec Kit"
+    },
     "title": "Inget AI-DLC-projekt",
     "addTitle": "Lägg till harness",
     "harnessLabel": "Harness",
