@@ -7,6 +7,8 @@ import { COST_RULES_END, COST_RULES_PACK, COST_RULES_START } from '../../src/sha
 
 const TMP = path.resolve(__dirname, '../.tmp/cost-rules');
 
+const ONE_COMMITTER = 'On `main`, NEVER commit `docs/FEATURES.md`, `docs/features/` or `docs/releases/`; THADEUS commits and pushes them.';
+
 const PROJECT = ['# Project-Level Rules', '', '## Corrections', '', '- ALWAYS keep stage documents short.', ''].join('\n');
 
 describe('cost rule block (US-0212 FR2)', () => {
@@ -79,6 +81,17 @@ describe('cost rule clashes (US-0212 FR6)', () => {
     expect(findClashes(['ALWAYS be brief.'], rules)).toEqual([]);
   });
 
+  it('the shipped pack carries the one-committer rule for feature docs on main (US-0032 AC1, AC5)', () => {
+    expect(COST_RULES_PACK.project).toContain(ONE_COMMITTER);
+  });
+
+  it("the one-committer rule finds no clash with this repository's team.md (US-0032 AC4)", async () => {
+    const file = 'aidlc/spaces/default/memory/team.md';
+    const team = await fs.readFile(path.resolve(__dirname, '../..', file), 'utf8');
+    expect(team).toContain('Docs and small chores may go straight to `main`');
+    expect(findClashes([ONE_COMMITTER], [{ space: 'default', file, text: team }])).toEqual([]);
+  });
+
   it('the shipped pack is at most 8 lines and 800 characters (NFR2)', () => {
     const lines = Object.values(COST_RULES_PACK).flat();
     expect(lines.length).toBeLessThanOrEqual(8);
@@ -144,6 +157,15 @@ describe('cost rule files (US-0212 FR1.2, FR3, FR5)', () => {
     const status = await costRulesStatus(root);
     expect(status.on).toBe(false);
     expect(status.lines).toEqual(COST_RULES_PACK);
+  });
+
+  it('status offers the shipped lines a present block lacks, and nothing for a full pack or no block (US-0032 AC1)', async () => {
+    expect((await costRulesStatus(root)).missing).toEqual({});
+    const older = COST_RULES_PACK.project.filter((l) => l !== ONE_COMMITTER);
+    await fs.appendFile(path.join(TMP, rel('default', 'project')), withBlock('', older));
+    expect((await costRulesStatus(root)).missing).toEqual({ project: [ONE_COMMITTER] });
+    await fs.writeFile(path.join(TMP, rel('default', 'project')), withBlock(text('default', 'project'), COST_RULES_PACK.project));
+    expect((await costRulesStatus(root)).missing).toEqual({});
   });
 
   it('preview gives one diff per file and space with the clash warnings, and writes nothing (FR5.1, FR6)', async () => {

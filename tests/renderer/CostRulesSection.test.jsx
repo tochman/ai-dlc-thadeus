@@ -116,6 +116,26 @@ describe('CostRulesSection (US-0212)', () => {
     expect(error).toContain('sattes tillbaka');
   });
 
+  it('offers the shipped lines a block lacks and adds them to the text without saving (US-0032 AC1)', async () => {
+    const bridge = mockBridge();
+    const line = 'On `main`, NEVER commit `docs/FEATURES.md`, `docs/features/` or `docs/releases/`; THADEUS commits and pushes them.';
+    bridge.costRulesStatus.mockResolvedValue({ ...STATUS, missing: { project: [line] } });
+    render(<CostRulesSection projectId="p1" />);
+    expect((await screen.findByTestId('cost-rules-missing')).textContent).toContain(line);
+    fireEvent.click(screen.getByTestId('cost-rules-add-missing'));
+    expect(screen.getByTestId('cost-rules-lines-project').value).toBe(`ALWAYS be brief.\nNEVER read node_modules.\n${line}`);
+    expect(screen.queryByTestId('cost-rules-missing')).toBeNull();
+    expect(bridge.previewCostRules).not.toHaveBeenCalled();
+    expect(bridge.applyCostRules).not.toHaveBeenCalled();
+  });
+
+  it('shows no offer when nothing is missing', async () => {
+    mockBridge();
+    render(<CostRulesSection projectId="p1" />);
+    await screen.findByTestId('cost-rules-space-default');
+    expect(screen.queryByTestId('cost-rules-missing')).toBeNull();
+  });
+
   it('shows clash warnings and broken files without blocking the save (FR6.2, FR2.4)', async () => {
     mockBridge();
     await openPreview();

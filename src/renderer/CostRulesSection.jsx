@@ -1,7 +1,8 @@
 // The THADEUS cost rule pack in Configuration (US-0212 FR1). Lists every space and whether its files hold the block
 // (FR1.2), edits the pack's lines per target file (FR1.1), and saves through a diff the person confirms (FR5.1).
 // Clash warnings and broken files show with the diff and never block the save (FR6.2, FR2.4). Main keeps the
-// previewed texts; only {on, lines} cross the bridge.
+// previewed texts; only {on, lines} cross the bridge. US-0032 AC1: shipped lines a block lacks are offered, and adding
+// them only edits the text; the usual preview and save write them.
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { COST_RULES_TARGETS } from '../shared/costRules.js';
@@ -86,6 +87,19 @@ export default function CostRulesSection({ projectId, motion }) {
     load();
   }, [projectId]);
 
+  // US-0032 AC1: the shipped lines a present block lacks and the text does not hold yet.
+  const missing = COST_RULES_TARGETS.flatMap((k) => {
+    const have = toLines(texts[k] ?? '');
+    return (status?.missing?.[k] ?? []).filter((l) => !have.includes(l)).map((line) => [k, line]);
+  });
+  function addMissing() {
+    setTexts((cur) => {
+      const next = { ...cur };
+      for (const [k, line] of missing) next[k] = next[k] ? `${next[k]}\n${line}` : line;
+      return next;
+    });
+  }
+
   function show() {
     const choice = { on, lines: Object.fromEntries(COST_RULES_TARGETS.map((k) => [k, toLines(texts[k] ?? '')])) };
     setCalls({
@@ -148,6 +162,21 @@ export default function CostRulesSection({ projectId, motion }) {
                 testIdPrefix="cost-rules-mode"
               />
             </div>
+            {on && missing.length > 0 && (
+              <div className="field" data-testid="cost-rules-missing">
+                <span className="field-label">{t('costRules.missingTitle')}</span>
+                <ul>
+                  {missing.map(([k, line]) => (
+                    <li key={`${k}:${line}`}>
+                      <span className="tag tag-warn">{`${k}.md`}</span> {line}
+                    </li>
+                  ))}
+                </ul>
+                <button type="button" className="btn" onClick={addMissing} data-testid="cost-rules-add-missing">
+                  {t('costRules.addMissing')}
+                </button>
+              </div>
+            )}
             {COST_RULES_TARGETS.map((target) => (
               <label key={target} className="field">
                 <span className="field-label">{t('costRules.linesFor', { file: `${target}.md` })}</span>
