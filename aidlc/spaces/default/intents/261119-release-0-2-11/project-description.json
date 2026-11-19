@@ -1,0 +1,1 @@
+"Release v0.2.11: a release pull request that bumps package.json to 0.2.11 and marks every story in docs/releases/0.2.11.md \"Released in v0.2.11\" (story markers, epic Status lines, FEATURES.md rows, release-plan table, checklist), the hand check of the built .dmg, green CI, merge, tag v0.2.11, then the smoke test of the published release."

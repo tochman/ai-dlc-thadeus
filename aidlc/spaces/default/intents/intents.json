@@ -406,5 +406,13 @@
     "scope": "bugfix",
     "status": "complete",
     "request": "f97a7d37"
+  },
+  {
+    "uuid": "01a1f2fc-a7de-7057-b14f-8f9c0f702733",
+    "slug": "release-0-2-11",
+    "dirName": "261119-release-0-2-11",
+    "scope": "ultra-express",
+    "status": "in-flight",
+    "request": "19d3643a"
   }
 ]
