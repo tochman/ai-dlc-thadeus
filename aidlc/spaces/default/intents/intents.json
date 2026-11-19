@@ -398,5 +398,13 @@
     "scope": "quick-fix",
     "status": "complete",
     "request": "1aa18e98"
+  },
+  {
+    "uuid": "01a1f2db-a429-7311-bade-f423d1d83e7e",
+    "slug": "spec-kit-ideation",
+    "dirName": "261119-spec-kit-ideation",
+    "scope": "bugfix",
+    "status": "complete",
+    "request": "f97a7d37"
   }
 ]

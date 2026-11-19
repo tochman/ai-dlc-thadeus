@@ -38,6 +38,8 @@
 
 <!-- Project-specific specialisation. -->
 
+- ALWAYS give a large addition (such as a new framework) its own minor release, for example v0.3.0, and number the releases after it v0.3.1, v0.3.2 and so on; keep v1.0.0 for when the product is ready. (learned 2026-11-19) <!-- cid:261119-spec-kit-ideation:scope-definition:40af151d508b03a194cb4d6a6f3ae40a1650a8fd92f9858ac5492d669566dbe5 -->
+
 ## Code Style
 
 <!-- Project-specific specialisation. -->
