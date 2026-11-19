@@ -339,7 +339,7 @@ describe('Linux install when pkexec cannot ask (EPIC-00 US-0034)', () => {
     expect((await missing.updater.install()).status).toBe('needs-password');
   });
 
-  it('closing pkexec\'s own dialog does not ask again, and shows the command to run', async () => {
+  it("closing pkexec's own dialog does not ask again, and shows the command to run", async () => {
     const { updater } = await linux({ '/usr/bin/pkexec': failed(PKEXEC_CMD, 'Error executing command as another user: Not authorized', 126) });
     const res = await updater.install();
     expect(res.status).toBe('error');
@@ -357,7 +357,9 @@ describe('Linux install when pkexec cannot ask (EPIC-00 US-0034)', () => {
   });
 
   it('a wrong password asks again; another sudo failure is an error with the command to run', async () => {
-    const wrong = await linux({ '/usr/bin/sudo': failed('/usr/bin/sudo -S -k -p  /usr/bin/dpkg -i x', 'Sorry, try again.\nsudo: 1 incorrect password attempt', 1) });
+    const wrong = await linux({
+      '/usr/bin/sudo': failed('/usr/bin/sudo -S -k -p  /usr/bin/dpkg -i x', 'Sorry, try again.\nsudo: 1 incorrect password attempt', 1)
+    });
     expect(await wrong.updater.install({ password: 'nope' })).toEqual({ status: 'needs-password', wrong: true, file: FILE });
 
     const other = await linux({ '/usr/bin/sudo': failed('/usr/bin/sudo …', 'dpkg: error: cannot access archive', 2) });

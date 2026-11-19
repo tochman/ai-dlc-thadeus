@@ -152,7 +152,10 @@ describe('UpdateNotice asks for the password on Linux (EPIC-00 US-0034)', () => 
   });
 
   it('a wrong password says so, clears the field and asks again', async () => {
-    const installUpdate = vi.fn().mockResolvedValueOnce(NEEDS).mockResolvedValueOnce({ ...NEEDS, wrong: true });
+    const installUpdate = vi
+      .fn()
+      .mockResolvedValueOnce(NEEDS)
+      .mockResolvedValueOnce({ ...NEEDS, wrong: true });
     await startUpdate(installUpdate);
     fireEvent.change(screen.getByTestId('update-notice-password-input'), { target: { value: 'nope' } });
     fireEvent.click(screen.getByTestId('update-notice-install'));
