@@ -6,9 +6,9 @@
 
 > Small fixes the person reports while using the app: something looks off, behaves wrongly or is missing a detail. Each fix becomes a story here, so nothing reported in passing gets lost. A fix that grows into a feature moves to its topic's epic.
 
-**Stories:** US-0001, US-0002, US-0003, US-0004, US-0005, US-0006, US-0007, US-0008, US-0009, US-0010, US-0011, US-0012, US-0013, US-0014, US-0015, US-0016, US-0017, US-0018, US-0019, US-0020, US-0021, US-0022, US-0023, US-0024, US-0025, US-0026, US-0027, US-0028, US-0029, US-0030, US-0031, US-0032, US-0033
+**Stories:** US-0001, US-0002, US-0003, US-0004, US-0005, US-0006, US-0007, US-0008, US-0009, US-0010, US-0011, US-0012, US-0013, US-0014, US-0015, US-0016, US-0017, US-0018, US-0019, US-0020, US-0021, US-0022, US-0023, US-0024, US-0025, US-0026, US-0027, US-0028, US-0029, US-0030, US-0031, US-0032, US-0033, US-0034
 
-**Status (2026-11-19):** ✅ US-0001–US-0020 released (v0.2.3–v0.2.6). ✅ US-0021–US-0023 released in v0.2.7. ✅ US-0024 released in v0.2.8. ✅ US-0025 released in v0.2.9. ✅ US-0026 released in v0.2.9. ✅ US-0027 released in v0.2.9. ✅ US-0028 released in v0.2.10. ✅ US-0029 released in v0.2.10. ✅ US-0030 released in v0.2.10. ✅ US-0031 released in v0.2.10. ✅ US-0032 released in v0.2.11. ✅ US-0033 released in v0.2.11. Each story names its release.
+**Status (2026-11-19):** ✅ US-0001–US-0020 released (v0.2.3–v0.2.6). ✅ US-0021–US-0023 released in v0.2.7. ✅ US-0024 released in v0.2.8. ✅ US-0025 released in v0.2.9. ✅ US-0026 released in v0.2.9. ✅ US-0027 released in v0.2.9. ✅ US-0028 released in v0.2.10. ✅ US-0029 released in v0.2.10. ✅ US-0030 released in v0.2.10. ✅ US-0031 released in v0.2.10. ✅ US-0032 released in v0.2.11. ✅ US-0033 released in v0.2.11. 📋 US-0034 planned for v0.2.12 (hotfix). Each story names its release.
 
 ---
 
@@ -538,3 +538,18 @@
   - [x] A test fails without the fix and passes with it, with both commits above as cases; the existing suite stays green.
 - **Notes:** A code fix, so it runs on the `quick-fix` plan. `splitChange` decides both the subject and what is the story's own on a story branch. Keep them apart, or check that a block's own id (from its heading) is also right for the story-branch split. Touches `src/main/parsers/features.js`, `src/main/planningSync.js` (`subjectOf`) and their tests.
 - **Dependencies:** US-0608
+
+**US-0034: The Linux update installs, or says why it cannot and what to run** 📋 Planned for v0.2.12 (hotfix)
+- As a **developer updating the app on Linux**, in order to **get the new version without guessing**, I would like **the update to ask for my password as before, and when it cannot, to show the real reason and the command to install it myself**.
+- **Epic:** EPIC-00
+- **Priority:** High
+- **Complexity:** Small
+- **Background:** Reported 2026-11-19 on v0.2.11: the update stopped with "Command failed: pkexec dpkg -i <file>". Run in a shell, the same command says "pkexec must be setuid root"; earlier releases asked for the password. The updater runs `pkexec` by name through the login shell's PATH (`runFixed`), so a `pkexec` without the setuid bit earlier in PATH (Homebrew, Nix, conda, `~/.local/bin`) is the one that runs. `firstLine()` in `src/main/updater.js` keeps only Node's "Command failed" line, so the reason on the next line is lost.
+- **Acceptance Criteria:**
+  - [ ] **Given** an update on Linux, **then** the app runs `/usr/bin/pkexec /usr/bin/dpkg -i <file>` by absolute path, not whatever `pkexec` comes first in PATH.
+  - [ ] **Given** a step fails, **then** the message shows the reason the command printed (its last stderr line, or its exit code), not "Command failed: …".
+  - [ ] **Given** pkexec cannot ask for the password (not setuid, no authentication agent, cancelled, not found), **then** the notice shows the command to install it by hand, `sudo apt install <file>`, with the file's full path.
+  - [ ] Every new text goes through `t()` in `sv.json` and `en.json`.
+  - [ ] A test fails without the fix and passes with it; the existing suite stays green.
+- **Notes:** A code fix, so it runs on the `quick-fix` plan, then ships alone as hotfix v0.2.12. Touches `src/main/updater.js`, the locales and `tests/main/updater.test.js`.
+- **Dependencies:** US-0413
