@@ -765,3 +765,248 @@
 **Event**: WORKFLOW_UNPARKED
 
 ---
+
+## Artifact Created
+**Timestamp**: 2026-11-19T09:06:22Z
+**Event**: ARTIFACT_CREATED
+**Tool**: Write
+**File**: <project-dir>/aidlc/spaces/default/intents/261119-release-0-2-11/construction/build-and-test/build-instructions.md
+**Context**: construction > build-and-test > build-instructions.md
+
+---
+
+## Artifact Created
+**Timestamp**: 2026-11-19T09:06:25Z
+**Event**: ARTIFACT_CREATED
+**Tool**: Write
+**File**: <project-dir>/aidlc/spaces/default/intents/261119-release-0-2-11/construction/build-and-test/integration-test-instructions.md
+**Context**: construction > build-and-test > integration-test-instructions.md
+
+---
+
+## Host Turn
+**Timestamp**: 2026-11-19T09:09:43Z
+**Event**: HOST_TURN
+**Session**: c432e11d-d74d-43d9-adc2-33f8da3b0e39
+**Origin**: host
+**Reason**: claude task notification
+**Source**: template
+
+---
+
+## Host Turn
+**Timestamp**: 2026-11-19T09:16:01Z
+**Event**: HOST_TURN
+**Session**: c432e11d-d74d-43d9-adc2-33f8da3b0e39
+**Origin**: host
+**Reason**: claude task notification
+**Source**: template
+
+---
+
+## Artifact Created
+**Timestamp**: 2026-11-19T09:16:12Z
+**Event**: ARTIFACT_CREATED
+**Tool**: Write
+**File**: <project-dir>/aidlc/spaces/default/intents/261119-release-0-2-11/construction/build-and-test/test-results.md
+**Context**: construction > build-and-test > test-results.md
+
+---
+
+## Artifact Created
+**Timestamp**: 2026-11-19T09:16:16Z
+**Event**: ARTIFACT_CREATED
+**Tool**: Write
+**File**: <project-dir>/aidlc/spaces/default/intents/261119-release-0-2-11/construction/build-and-test/cross-unit-traceability.md
+**Context**: construction > build-and-test > cross-unit-traceability.md
+
+---
+
+## Artifact Created
+**Timestamp**: 2026-11-19T09:16:22Z
+**Event**: ARTIFACT_CREATED
+**Tool**: Write
+**File**: <project-dir>/aidlc/spaces/default/intents/261119-release-0-2-11/construction/build-and-test/build-and-test-summary.md
+**Context**: construction > build-and-test > build-and-test-summary.md
+
+---
+
+## Stage Awaiting Approval
+**Timestamp**: 2026-11-19T09:16:23Z
+**Event**: STAGE_AWAITING_APPROVAL
+**Stage**: build-and-test
+**Next Stage**: deployment-pipeline
+**Brief Digest**: none
+**Sensor State**: required-sections@aidlc/spaces/default/intents/261119-release-0-2-11/construction/build-and-test/build-instructions.md=not-run; required-sections@aidlc/spaces/default/intents/261119-release-0-2-11/construction/build-and-test/build-and-test-summary.md=not-run; required-sections@aidlc/spaces/default/intents/261119-release-0-2-11/construction/build-and-test/test-results.md=not-run; required-sections@aidlc/spaces/default/intents/261119-release-0-2-11/construction/build-and-test/cross-unit-traceability.md=not-run; required-sections@aidlc/spaces/default/intents/261119-release-0-2-11/construction/build-and-test/integration-test-instructions.md=not-run; upstream-coverage@aidlc/spaces/default/intents/261119-release-0-2-11/construction/build-and-test/build-instructions.md=not-run
+**Open Decisions**: 0
+**Question Id**: b5cb959b
+**Question Type**: gate
+**Question Chat**: c432e11d-d74d-43d9-adc2-33f8da3b0e39
+**Question Shows**: sha256:418f939e2efc70258d899ad210b6c6966268d5ba1696bba1bcdfafe28a80ba24
+
+---
+
+## Human Turn
+**Timestamp**: 2026-11-19T09:17:07Z
+**Event**: HUMAN_TURN
+**Session**: c432e11d-d74d-43d9-adc2-33f8da3b0e39
+**Origin**: person
+**Source**: picker
+**Picked**: ["Approve"]
+**Message Id**: 074af5c7
+**Open Questions**: b5cb959b
+
+---
+
+## Question Replied
+**Timestamp**: 2026-11-19T09:17:07Z
+**Event**: QUESTION_REPLIED
+**Session**: c432e11d-d74d-43d9-adc2-33f8da3b0e39
+**Question**: Build and Test for the v0.2.11 release is ready. Approve it and go on to the release?
+**Reply**: Approve
+**Options**: ["Approve","Request Changes"]
+
+---
+
+## Gate Approved
+**Timestamp**: 2026-11-19T09:17:11Z
+**Event**: GATE_APPROVED
+**Stage**: build-and-test
+**User Input**: Approve
+**Person Reply**: ove on with the release now\nApprove
+**Message Id**: 074af5c7
+**Message Ids**: 475011c4,074af5c7
+**Brief Digest**: none
+
+---
+
+## Stage Completion
+**Timestamp**: 2026-11-19T09:17:11Z
+**Event**: STAGE_COMPLETED
+**Stage**: build-and-test
+**Validation Basis**: {"graphContract":"sha256:1aed809bd5f1f235d6ab1b1495c41997dd8cc201478d4991c474c4f1638a2b55","inputs":[{"artifact":"code-generation-plan","contentHash":"sha256:310efaa27579a483be43b7cce48d7886defc2270a7d227efe730620da81af2f1","instanceCount":1,"presentCount":1,"producer":"code-generation","required":true,"structureHash":"sha256:51cab0c9b32977761970934847a80f82b4e68b7c35eae606b306b5b2e8c9b84c"},{"artifact":"code-summary","contentHash":"sha256:a1bd03628e3bbb95433f188ebd94be53e5560cb5738085057713c4f24410f010","instanceCount":1,"presentCount":1,"producer":"code-generation","required":true,"structureHash":"sha256:238f4139a7685af6b6229bd09ec233efb9a6cdf4091fde1f57194206e15a53c9"},{"artifact":"unit-test-instructions","contentHash":"sha256:21a03fdf91910a7676cf64e9a3e22399816b8d636d127338108974c38cd8986c","instanceCount":1,"presentCount":1,"producer":"code-generation","required":true,"structureHash":"sha256:a0947798719502e76ed4b55ffb9f29df11b6c248aaea39fd3e47fbe6f584a366"}],"outputs":[{"artifact":"build-and-test-summary","contentHash":"sha256:10af7c101ed08a7ccd3683dde6f92e9c8e892c6c85c0ca8e2e4d02d5b6de97d3","instanceCount":1,"presentCount":1,"producer":"build-and-test","required":true,"structureHash":"sha256:c1dff6c96b4dde0afd0d735e71fe5e11e346c7ca2f832fd6634096398a4cf5aa"},{"artifact":"build-instructions","contentHash":"sha256:4b0121a8369996103e684202414fcaca17278c5db018e24224a9f5b8bc306092","instanceCount":1,"presentCount":1,"producer":"build-and-test","required":true,"structureHash":"sha256:55779b89553d0da5213db30f061b775fb5d5a7d761503af937d89fe450b7d29a"},{"artifact":"build-test-results","contentHash":"sha256:222d25b4d8d78b4e179d64b38f0c858f0e186dc49f7c0fc6225310a0cbb92dc8","instanceCount":1,"presentCount":1,"producer":"build-and-test","required":true,"structureHash":"sha256:eb63ab509074a22ddb0be803602d7c98918cdf4b369f4dc01a428107239b1436"},{"artifact":"cross-unit-traceability","contentHash":"sha256:209e6fec8f9993ce3295c176fbba0d1a1b82c54976cc88ef0d4768c0912635dc","instanceCount":1,"presentCount":1,"producer":"build-and-test","required":true,"structureHash":"sha256:ba045bf04f1ca9f3af1ad4339e35412f2b6d5db092327f58c5feb077e8281413"},{"artifact":"integration-test-instructions","contentHash":"sha256:321ef336530f819326884b72558ba047164cb986c38626010702d0ec7a686e78","instanceCount":1,"presentCount":1,"producer":"build-and-test","required":false,"structureHash":"sha256:bec190c984f1bdbd88d3792524dc6e87f46846326c5055da57f5e9e11104a461"}],"projectType":"brownfield","schema":3}
+**Details**: Stage Build and Test approved by gate
+**Tokens In**: 58
+**Tokens Out**: 10113
+**Cache Read**: 4444928
+**Cache Write**: 38661
+**Cost USD**: 1.40
+**By Model**: opus-5-5=1.40
+**By Agent**: main=1.40
+**Tokens By Model**: opus-5-5=58/10.1k/4.4M/38.7k
+**Tokens By Agent**: main=58/10.1k/4.4M/38.7k
+
+---
+
+## Phase Completion
+**Timestamp**: 2026-11-19T09:17:11Z
+**Event**: PHASE_COMPLETED
+**From phase**: construction
+**To phase**: operation
+**Stages completed**: 6
+
+---
+
+## Phase Verification
+**Timestamp**: 2026-11-19T09:17:11Z
+**Event**: PHASE_VERIFIED
+**Phase boundary**: construction → operation
+
+---
+
+## Phase Start
+**Timestamp**: 2026-11-19T09:17:11Z
+**Event**: PHASE_STARTED
+**Phase**: operation
+**Scope**: ultra-express
+
+---
+
+## Stage Start
+**Timestamp**: 2026-11-19T09:17:11Z
+**Event**: STAGE_STARTED
+**Stage**: deployment-pipeline
+**Agent**: aidlc-pipeline-deploy-agent
+
+---
+
+## Stage Skip
+**Timestamp**: 2026-11-19T09:17:38Z
+**Event**: STAGE_SKIPPED
+**Stage**: deployment-pipeline
+**Reason**: The approved code plan jumps past it, as for v0.2.10: the release pipeline (.github/workflows/release.yml) already exists and this release does not change it
+**Skip Kind**: conditional-runtime
+
+---
+
+## Stage Start
+**Timestamp**: 2026-11-19T09:17:38Z
+**Event**: STAGE_STARTED
+**Stage**: deployment-execution
+**Agent**: aidlc-pipeline-deploy-agent
+
+---
+
+## Artifact Created
+**Timestamp**: 2026-11-19T09:18:53Z
+**Event**: ARTIFACT_CREATED
+**Tool**: Write
+**File**: <project-dir>/aidlc/spaces/default/intents/261119-release-0-2-11/operation/deployment-execution/deployment-execution-questions.md
+**Context**: operation > deployment-execution > deployment-execution-questions.md
+
+---
+
+## Decision Recorded
+**Timestamp**: 2026-11-19T09:18:54Z
+**Event**: DECISION_RECORDED
+**Stage**: deployment-execution
+**Decision**: Hand checks and the .dmg check for v0.2.11
+**Options**: All pass: merge, tag, publish,Something fails,Skip the hand checks this time
+**Question Id**: 79a23d66
+**Question Type**: stage-question
+**Question Chat**: c432e11d-d74d-43d9-adc2-33f8da3b0e39
+**Question Shows**: sha256:b98970f469d8ecd675302d081c00259d9637713c7207a7ef8a5817238ed14d16
+
+---
+
+## Human Turn
+**Timestamp**: 2026-11-19T09:19:55Z
+**Event**: HUMAN_TURN
+**Session**: c432e11d-d74d-43d9-adc2-33f8da3b0e39
+**Origin**: person
+**Source**: picker
+**Picked**: ["All pass"]
+**Message Id**: 392ff614
+**Open Questions**: 79a23d66
+**Questions Digest**: {"file":"aidlc/spaces/default/intents/261119-release-0-2-11/operation/deployment-execution/deployment-execution-questions.md","entries":{"Q1":"9b7893774f5c9154"}}
+
+---
+
+## Question Replied
+**Timestamp**: 2026-11-19T09:19:55Z
+**Event**: QUESTION_REPLIED
+**Session**: c432e11d-d74d-43d9-adc2-33f8da3b0e39
+**Question**: How did the hand checks of the v0.2.11 .dmg go?
+**Reply**: All pass
+**Options**: ["All pass","Something fails","Skip the hand checks"]
+
+---
+
+## Artifact Updated
+**Timestamp**: 2026-11-19T09:20:07Z
+**Event**: ARTIFACT_UPDATED
+**Tool**: Edit
+**File**: <project-dir>/aidlc/spaces/default/intents/261119-release-0-2-11/operation/deployment-execution/deployment-execution-questions.md
+**Context**: operation > deployment-execution > deployment-execution-questions.md
+
+---
+
+## Question Answered
+**Timestamp**: 2026-11-19T09:20:08Z
+**Event**: QUESTION_ANSWERED
+**Stage**: deployment-execution
+**Details**: All pass
+**Person Reply**: All pass
+**Message Id**: 392ff614
+
+---
