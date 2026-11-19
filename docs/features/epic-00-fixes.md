@@ -6,9 +6,9 @@
 
 > Small fixes the person reports while using the app: something looks off, behaves wrongly or is missing a detail. Each fix becomes a story here, so nothing reported in passing gets lost. A fix that grows into a feature moves to its topic's epic.
 
-**Stories:** US-0001, US-0002, US-0003, US-0004, US-0005, US-0006, US-0007, US-0008, US-0009, US-0010, US-0011, US-0012, US-0013, US-0014, US-0015, US-0016, US-0017, US-0018, US-0019, US-0020, US-0021, US-0022, US-0023, US-0024, US-0025, US-0026, US-0027, US-0028, US-0029, US-0030, US-0031
+**Stories:** US-0001, US-0002, US-0003, US-0004, US-0005, US-0006, US-0007, US-0008, US-0009, US-0010, US-0011, US-0012, US-0013, US-0014, US-0015, US-0016, US-0017, US-0018, US-0019, US-0020, US-0021, US-0022, US-0023, US-0024, US-0025, US-0026, US-0027, US-0028, US-0029, US-0030, US-0031, US-0032
 
-**Status (2026-11-19):** ✅ US-0001–US-0020 released (v0.2.3–v0.2.6). ✅ US-0021–US-0023 released in v0.2.7. ✅ US-0024 released in v0.2.8. ✅ US-0025 released in v0.2.9. ✅ US-0026 released in v0.2.9. ✅ US-0027 released in v0.2.9. ✅ US-0028 released in v0.2.10. ✅ US-0029 released in v0.2.10. ✅ US-0030 released in v0.2.10. ✅ US-0031 released in v0.2.10. Each story names its release.
+**Status (2026-11-19):** ✅ US-0001–US-0020 released (v0.2.3–v0.2.6). ✅ US-0021–US-0023 released in v0.2.7. ✅ US-0024 released in v0.2.8. ✅ US-0025 released in v0.2.9. ✅ US-0026 released in v0.2.9. ✅ US-0027 released in v0.2.9. ✅ US-0028 released in v0.2.10. ✅ US-0029 released in v0.2.10. ✅ US-0030 released in v0.2.10. ✅ US-0031 released in v0.2.10. 📋 US-0032 planned. Each story names its release.
 
 ---
 
@@ -507,3 +507,20 @@
 - **Notes:** A code fix, so it runs on the `quick-fix` plan. Most likely touches `src/renderer/AgentDialog.jsx` (the page it opens on and `lastIndex`), `src/renderer/App.jsx` (`hasNewQuestion`, `receiveAgentEvents`) and, if a settled page should leave the list sooner, `src/main/agentEvents.js` (`move`, `KEPT`, `OPEN`). Existing tests: `tests/renderer/AgentDialog.test.jsx`, `tests/renderer/AgentDialogHandoff.test.jsx`, `tests/main/agentEvents.test.js`. Keep the deliberate rule that a page stays put while it is being read — the fix is about which page is shown when the dialog opens or when the shown page is already finished.
 - **Done (2026-11-19, express workflow `261118-dialog-newest-page`, branch `fix/US-0031`):** When new pages open a closed dialog, it now opens on the first of them in pager order (`popupFocus` from `receiveAgentEvents` in `src/renderer/App.jsx`); an open dialog is never moved. A page that is over (`isSettled` in `src/shared/agentOrder.js`: a hook page in `sent`, `handedBack`, `stale` or `ended`) gives way to the first page that arrived after it (`src/renderer/AgentDialog.jsx`), and no longer holds the dialog open (`hasNewQuestion`). `src/main/agentEvents.js` is unchanged, so settled pages stay reachable with Previous/Next. 1970/1970 tests pass, 92.4% line coverage. The hook timing test (`tests/main/agentHooksGuard.test.js`, 100 ms) fails while the machine is heavily loaded; it passes otherwise.
 - **Dependencies:** US-0506, US-0213, US-0026
+
+**US-0032: The app never commits a change it did not make** 📋 Planned
+- As a **developer working with an agent in the app**, in order to **keep my own commits, with my own messages, and never find my work pushed without my say**, I would like **the app to commit and push only the changes it makes itself, and leave every other change to the person or agent who made it**.
+- **Epic:** EPIC-00
+- **Priority:** High
+- **Complexity:** Medium
+- **Background:** Reported 2026-11-19: "that should never happen." Twice in one session, an agent edited `docs/FEATURES.md`, an epic file and a release plan, and was about to commit them with its own message. Each time the app committed and pushed them first, under its own subject (`de085ed`, `3349d29`, "docs: update US-1401, …, US-0503"), so the agent's commit found nothing left. The subject also named US-0503, which the change only mentions as a dependency. The cause is by design: US-0608 records every change the docs watcher sees under the three feature-doc paths, whoever made it, and commits it 30 seconds after the last change (`recordTree` → `scheduleCommit` → `replayStep` → `commitIn` in `src/main/planningSync.js`). This story changes that rule from US-0608 for changes the app did not make. US-0608's protection against lost changes stays.
+- **Acceptance Criteria:**
+  - [ ] **Given** an agent, a terminal session or another program changes a file under `docs/FEATURES.md`, `docs/features/` or `docs/releases/`, **then** the app never commits or pushes that change by itself, on any branch.
+  - [ ] **Given** such a change, **then** the app still keeps it in its record and applies it again if the working tree is discarded, as US-0608 promises. The release list shows it as waiting, with its files, and with a button to commit and push it. Nothing happens without that click.
+  - [ ] **Given** the person or the agent commits such a change, **then** the app drops it from its record and does not commit it again.
+  - [ ] **Given** a change the app makes itself (a release-list action, or a save in the app's editor), **then** it is committed and pushed as today.
+  - [ ] **Given** a commit the app makes, **then** its subject names only the stories whose own text changed, not stories that are only mentioned (as a dependency, for example).
+  - [ ] Every text goes through `t()` in Swedish and English, in the LCARS look.
+  - [ ] A test fails without the fix and passes with it: an outside write to an epic file, followed by a commit from the outside, leaves exactly one commit with the outside message. The US-0608 end-to-end tests stay green, and the existing suite stays green.
+- **Notes:** A code fix, so it runs on the `quick-fix` plan. Most likely touches `src/main/planningSync.js` (`recordTree`, `recordStep`, `replayStep`, `subjectOf`) and the entry's origin in `src/main/planningRecord.js` (`by`: `'editor'` and the release-list actions are the app's own; a watcher entry is not). To decide while building: on a story branch, an outside change that is not the story's own is today moved to the app's `dash/planning` branch (US-0608). It then waits for the click like any other outside change. US-0609 (the app's own `.thadeus/` files) is not affected: those are the app's own writes.
+- **Dependencies:** US-0608
