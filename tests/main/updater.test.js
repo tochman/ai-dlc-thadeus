@@ -130,7 +130,7 @@ function setup({ answers, files, routes, writeError, settings = {}, platform = '
     now: () => 1_000_000_000_000,
     pollMs: 5
   });
-  return { updater, calls, fetches, fs, app, sent, saved: () => saved };
+  return { updater, calls, exec, fetches, fs, app, sent, saved: () => saved };
 }
 
 describe('update check (EPIC-04 US-0407)', () => {
@@ -277,13 +277,14 @@ describe('download and install', () => {
     expect(failing.app.relaunch).not.toHaveBeenCalled();
   });
 
-  it('installs the .deb through pkexec dpkg on Linux, and refuses to replace an unpackaged dev run', async () => {
+  it('installs the .deb through /usr/bin/pkexec and /usr/bin/dpkg on Linux, and refuses to replace an unpackaged dev run', async () => {
     const DEB = 'thadeus_0.2.4_amd64.deb';
     const linux = setup({ answers: { gh: JSON.stringify(release(TAG)) }, files: { [`${DIR}/${DEB}`]: 'deb' }, platform: 'linux', arch: 'x64' });
     await linux.updater.check({ force: true });
     await linux.updater.download();
     expect((await linux.updater.install()).status).toBe('installed');
-    expect(linux.calls.at(-1)).toEqual(['pkexec', 'dpkg', '-i', `${DIR}/${DEB}`]);
+    // US-0034 FR1: by full path, so a non-setuid pkexec earlier in the login PATH is never the one run.
+    expect(linux.calls.at(-1)).toEqual(['/usr/bin/pkexec', '/usr/bin/dpkg', '-i', `${DIR}/${DEB}`]);
 
     const dev = setup({ answers: { gh: JSON.stringify(release(TAG)) }, files: { [`${DIR}/${DMG}`]: 'dmg' }, packaged: false });
     await dev.updater.check({ force: true });
@@ -298,6 +299,79 @@ describe('download and install', () => {
     expect((await updater.check({ force: true })).status).toBe('none');
     await expect(updater.skip('0.2.4; rm -rf /')).rejects.toThrow();
     expect(checksumFor(`${SHA} *dist/${DMG}\n`, DMG)).toBe(SHA);
+  });
+});
+
+describe('Linux install when pkexec cannot ask (EPIC-00 US-0034)', () => {
+  const TAG = 'v0.2.4';
+  const DEB = 'thadeus_0.2.4_amd64.deb';
+  const FILE = `/ud/updates/${TAG}/${DEB}`;
+  const PASSWORD = 'hunter2';
+  // Shaped like Node's execFile error: "Command failed: <cmd>\n<stderr>", the exit code on `code`.
+  const failed = (cmd, stderr, code) => Object.assign(new Error(`Command failed: ${cmd}\n${stderr}`), { code });
+  const PKEXEC_CMD = `/usr/bin/pkexec /usr/bin/dpkg -i ${FILE}`;
+
+  async function linux(answers) {
+    const s = setup({ answers: { gh: JSON.stringify(release(TAG)), ...answers }, files: { [FILE]: 'deb' }, platform: 'linux', arch: 'x64' });
+    await s.updater.check({ force: true });
+    await s.updater.download();
+    return s;
+  }
+
+  it('shows the reason the command printed, not the "Command failed" line', async () => {
+    const { updater } = await linux({ '/usr/bin/pkexec': failed(PKEXEC_CMD, 'dpkg: error: dpkg frontend lock is locked by another process', 2) });
+    const res = await updater.install();
+    expect(res.status).toBe('error');
+    expect(res.error).toMatch(/dpkg frontend lock is locked/);
+    expect(res.error).not.toMatch(/Command failed/);
+    expect(res.manual).toBe(`sudo apt install ${FILE}`);
+  });
+
+  it('a pkexec without setuid root asks for the password instead of failing', async () => {
+    const { updater } = await linux({ '/usr/bin/pkexec': failed(PKEXEC_CMD, 'pkexec must be setuid root', 127) });
+    expect(await updater.install()).toEqual({ status: 'needs-password', file: FILE });
+  });
+
+  it('no authentication agent, or no pkexec at all, also asks for the password', async () => {
+    const agent = await linux({ '/usr/bin/pkexec': failed(PKEXEC_CMD, 'Error executing command as another user: No authentication agent found.', 127) });
+    expect((await agent.updater.install()).status).toBe('needs-password');
+    const missing = await linux({ '/usr/bin/pkexec': Object.assign(new Error('spawn /usr/bin/pkexec ENOENT'), { code: 'ENOENT' }) });
+    expect((await missing.updater.install()).status).toBe('needs-password');
+  });
+
+  it("closing pkexec's own dialog does not ask again, and shows the command to run", async () => {
+    const { updater } = await linux({ '/usr/bin/pkexec': failed(PKEXEC_CMD, 'Error executing command as another user: Not authorized', 126) });
+    const res = await updater.install();
+    expect(res.status).toBe('error');
+    expect(res.manual).toBe(`sudo apt install ${FILE}`);
+  });
+
+  it('installs with sudo -S, the password on stdin only, never in the args or the result', async () => {
+    const { updater, calls, exec } = await linux({});
+    const res = await updater.install({ password: PASSWORD });
+    expect(res.status).toBe('installed');
+    expect(calls.at(-1)).toEqual(['/usr/bin/sudo', '-S', '-k', '-p', '', '/usr/bin/dpkg', '-i', FILE]);
+    expect(exec.mock.calls.at(-1)[2].input).toBe(`${PASSWORD}\n`);
+    expect(JSON.stringify(calls)).not.toContain(PASSWORD);
+    expect(JSON.stringify(res)).not.toContain(PASSWORD);
+  });
+
+  it('a wrong password asks again; another sudo failure is an error with the command to run', async () => {
+    const wrong = await linux({
+      '/usr/bin/sudo': failed('/usr/bin/sudo -S -k -p  /usr/bin/dpkg -i x', 'Sorry, try again.\nsudo: 1 incorrect password attempt', 1)
+    });
+    expect(await wrong.updater.install({ password: 'nope' })).toEqual({ status: 'needs-password', wrong: true, file: FILE });
+
+    const other = await linux({ '/usr/bin/sudo': failed('/usr/bin/sudo …', 'dpkg: error: cannot access archive', 2) });
+    const res = await other.updater.install({ password: PASSWORD });
+    expect(res).toMatchObject({ status: 'error', manual: `sudo apt install ${FILE}` });
+    expect(res.error).toMatch(/cannot access archive/);
+    expect(res.error).not.toContain(PASSWORD);
+  });
+
+  it('a failed step with no output names its exit code', async () => {
+    const { updater } = await linux({ '/usr/bin/pkexec': failed(PKEXEC_CMD, '', 4) });
+    expect((await updater.install()).error).toBe(t('update.stepFailed', { step: 'pkexec dpkg', error: t('update.exitCode', { code: 4 }) }));
   });
 });
 

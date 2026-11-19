@@ -1053,7 +1053,8 @@ const handlers = {
   // offered release itself, and only its own repository's assets are fetched (NFR3).
   'update:check': async (_event, options) => updater.check({ force: options?.force === true }),
   'update:download': async () => updater.download(),
-  'update:install': async () => updater.install(),
+  // US-0034: the password for sudo, only when the notice asked for it; anything but a string is dropped.
+  'update:install': async (_event, options) => updater.install(typeof options?.password === 'string' ? { password: options.password } : {}),
   'update:relaunch': async () => updater.relaunch(),
   'update:skip': async (_event, version) => updater.skip(version),
   'update:reveal': async () => {

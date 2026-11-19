@@ -10,10 +10,13 @@ const PATH_PROBE = `printf '${PATH_MARKER}%s' "$PATH"`;
 
 let loginPathPromise = null;
 
-export function defaultExec(file, args, options) {
+export function defaultExec(file, args, options = {}) {
+  const { input, ...opts } = options;
   return new Promise((resolve, reject) => {
     // A non-zero exit keeps its stdout on the error: `aidlc update --check` answers with exit 5 (US-0504 FR1.2).
-    execFile(file, args, options, (err, stdout) => (err ? reject(Object.assign(err, { stdout: String(stdout ?? '') })) : resolve(String(stdout))));
+    const child = execFile(file, args, opts, (err, stdout) => (err ? reject(Object.assign(err, { stdout: String(stdout ?? '') })) : resolve(String(stdout))));
+    // US-0034: `input` (the sudo password) goes to stdin only, never into args or the environment.
+    if (input != null) child.stdin.end(input);
   });
 }
 
@@ -41,10 +44,11 @@ export function loginPath(exec = defaultExec) {
  * shell's PATH (US-0021: `AIDLC_HARNESS_DIR` for a compile per harness). `maxBuffer` raises execFile's 1 MB stdout
  * limit for a command with long output (US-0303: the epic files' `git log -p`).
  */
-export async function runFixed(file, args, { cwd, timeout = DEFAULT_TIMEOUT_MS, exec = defaultExec, env: extraEnv = {}, maxBuffer } = {}) {
+export async function runFixed(file, args, { cwd, timeout = DEFAULT_TIMEOUT_MS, exec = defaultExec, env: extraEnv = {}, maxBuffer, input } = {}) {
   if (!Array.isArray(args) || args.some((a) => typeof a !== 'string')) {
     throw new Error(`Ogiltiga argument till ${file}`);
   }
   const env = { ...process.env, PATH: await loginPath(exec), ...extraEnv };
-  return exec(file, args, maxBuffer ? { cwd, timeout, env, maxBuffer } : { cwd, timeout, env });
+  const options = maxBuffer ? { cwd, timeout, env, maxBuffer } : { cwd, timeout, env };
+  return exec(file, args, input == null ? options : { ...options, input });
 }
