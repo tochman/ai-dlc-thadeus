@@ -13,6 +13,7 @@ import { addTree, mergeIntentCosts, shardCosts } from './parsers/auditCost.js';
 import { localClone, readSnapshots } from './usageSnapshot.js';
 import { intentMetrics, parseMarkerHistory, projectMetrics, storyMetrics } from './parsers/velocity.js';
 import { t } from '../shared/i18n.js';
+import { viewFields } from '../shared/frameworkViews.js';
 
 const PHASE_DIRS = ['initialization', 'ideation', 'inception', 'construction', 'operation', 'verification'];
 // ponytail: unbounded per-process cache keyed by root/space/intent; fine for a handful of projects.
@@ -46,15 +47,32 @@ export async function listSpaces(root) {
   return (await listDir(root, 'aidlc/spaces')).filter((e) => e.isDir && !e.name.startsWith('.')).map((e) => e.name);
 }
 
-export async function detectProject(root) {
-  if (!(await exists(root, 'aidlc/spaces'))) {
-    return { isAidlc: false, reason: t('errors.notAidlc') };
-  }
-  const spaces = await listSpaces(root);
-  if (spaces.length === 0) return { isAidlc: false, reason: t('errors.noSpace') };
+/** US-1401 FR1.3: which framework a saved value, the folders found and `askWhenBoth` give (BR1.1–BR1.4). */
+function chooseFramework(found, saved, askWhenBoth) {
+  if (found[saved] === true) return { framework: saved, source: 'file' };
+  if (found.aidlc && found.speckit && askWhenBoth) return { framework: null, source: 'ask' }; // switched on by U4
+  if (found.aidlc) return { framework: 'aidlc', source: 'detected' };
+  if (found.speckit) return { framework: 'speckit', source: 'detected' };
+  return { framework: null, source: 'detected' };
+}
+
+/**
+ * US-1401 FR1.3, FR1.5 (contract C1): the project's Detection. `saved` is the framework kept in the repository (U2);
+ * `askWhenBoth` turns BR1.3 on (U4). Active-space resolution is unchanged.
+ */
+export async function detectProject(root, { saved = null, askWhenBoth = false } = {}) {
+  const hasSpacesDir = await exists(root, 'aidlc/spaces');
+  const spaces = hasSpacesDir ? await listSpaces(root) : [];
+  const speckit = (await listDir(root, '.')).some((e) => e.name === '.specify' && e.isDir);
+  const found = { aidlc: spaces.length > 0, speckit };
+  const { framework, source } = chooseFramework(found, saved, askWhenBoth);
+  let reason = null;
+  if (framework === null && source === 'detected') reason = t(hasSpacesDir ? 'errors.noSpace' : 'errors.notAidlc');
+  const detection = { framework, source, found, reason, ...viewFields(framework), activeSpace: null, spaces: [] };
+  if (framework !== 'aidlc') return detection;
   const named = (await readTextOrNull(root, 'aidlc/active-space'))?.trim();
   const activeSpace = spaces.includes(named) ? named : spaces.includes('default') ? 'default' : spaces[0];
-  return { isAidlc: true, activeSpace, spaces };
+  return { ...detection, activeSpace, spaces };
 }
 
 async function loadDescription(root, base) {
