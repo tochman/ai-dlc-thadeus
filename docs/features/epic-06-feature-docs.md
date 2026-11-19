@@ -8,7 +8,7 @@
 
 **Stories:** US-0601, US-0602, US-0603, US-0604, US-0605, US-0606, US-0607, US-0608, US-0609
 
-**Status (2026-11-18):** ✅ US-0601–US-0603 released (v0.2.0–v0.2.5). ✅ US-0604 and US-0605 released in v0.2.7. ✅ US-0606 and US-0607 released in v0.2.9. ✅ US-0608 done, for v0.2.10. 📋 US-0609 planned, for v0.3.0. Each story names its release.
+**Status (2026-11-19):** ✅ US-0601–US-0603 released (v0.2.0–v0.2.5). ✅ US-0604 and US-0605 released in v0.2.7. ✅ US-0606 and US-0607 released in v0.2.9. ✅ US-0608 released in v0.2.10. 📋 US-0609 planned, for v0.3.0. Each story names its release.
 
 **Decisions:**
 - **Q1 (where the view lives):** a switch "Intents | Features" at the top of the project view. Features replaces the sidebar and content area; the terminal stays.
@@ -154,7 +154,7 @@
 - **Notes:** This changes US-0606's "the app pushes nothing by itself". Decided 2026-11-17 (Q1, Q8, Q10): straight to `origin/main` when `main` is not protected, otherwise through the project's docs branch and a pull request the app squash-merges itself. The record is `<userData>/planning/<sha1 of the project root>.json`. "No agent running" is read from AI-DLC writes in the last five minutes, as the console's workflow check does without a terminal.
 - **Dependencies:** US-0606
 
-**US-0608: Every planning change is kept by the app until it is on `main` or the docs branch** ✅ Done, for v0.2.10
+**US-0608: Every planning change is kept by the app until it is on `main` or the docs branch** ✅ Released in v0.2.10
 - As a **developer planning and describing work in the app**, in order to **never lose a planning change or find it inside an unrelated pull request**, I would like **the app to hold every change to the feature docs until it is on `origin/main`, or on the docs branch when `main` is protected, whatever branch is checked out and whoever made the change**.
 - **Epic:** EPIC-06
 - **Priority:** High
