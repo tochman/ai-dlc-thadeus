@@ -8,7 +8,7 @@
 
 **Stories:** US-0801, US-0802, US-0803, US-0804, US-0805, US-0806
 
-**Status (2026-11-18):** ✅ US-0801–US-0803 released (v0.2.1–v0.2.3). 📋 US-0804, US-0805 and US-0806 planned, for v0.3.0. Each story names its release.
+**Status (2026-11-18):** ✅ US-0801–US-0803 released (v0.2.1–v0.2.3). 📋 US-0804, US-0805 and US-0806 planned, for v0.3.1. Each story names its release.
 
 ---
 
@@ -57,7 +57,7 @@
 - **Notes:** Added 2026-11-14 at the person's request ("I see no reason why not"). Today the agent tab is a single `agent` session whose harness can be switched (US-0801).
 - **Dependencies:** US-0801, US-0802
 
-**US-0804: See whether each tool is signed in, and sign in from the app** 📋 Planned, for v0.3.0
+**US-0804: See whether each tool is signed in, and sign in from the app** 📋 Planned, for v0.3.1
 - As a **developer setting up a project**, in order to **avoid an agent tab or a GitHub feature failing on a missing sign-in**, I would like to **see whether Claude Code, opencode and the GitHub CLI are signed in, and start the sign-in from the app**.
 - **Epic:** EPIC-08
 - **Priority:** Medium
@@ -75,7 +75,7 @@
 
 ---
 
-**US-0805: A health check on the start screen, with install commands for what is missing** 📋 Planned, for v0.3.0
+**US-0805: A health check on the start screen, with install commands for what is missing** 📋 Planned, for v0.3.1
 - As a **new user opening the app for the first time**, in order to **get from install to a working project without guessing**, I would like to **see on the start screen whether the tools the app needs are found and signed in, with a command to copy for each one that is missing**.
 - **Epic:** EPIC-08
 - **Priority:** Medium
@@ -95,7 +95,7 @@
 
 ---
 
-**US-0806: Run any harness in the agent terminal with a custom command per project** 📋 Planned, for v0.3.0
+**US-0806: Run any harness in the agent terminal with a custom command per project** 📋 Planned, for v0.3.1
 - As a **developer who uses Codex, Kiro, Cursor or Copilot with AI-DLC**, in order to **work in the app with the harness the project is set up for**, I would like to **choose a custom command for the agent terminal in a project's terminal settings**.
 - **Epic:** EPIC-08
 - **Priority:** Medium

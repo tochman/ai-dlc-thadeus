@@ -8,13 +8,13 @@
 
 **Stories:** US-1301–US-1307
 
-**Status (2026-11-18):** 📋 US-1301–US-1307 planned, for v1.0.0.
+**Status (2026-11-18):** 📋 US-1301–US-1307 planned, for v0.3.1.
 
 ---
 
 ## User Stories
 
-**US-1301: Rework cost: what was spent on work that was thrown away** 📋 Planned, for v1.0.0
+**US-1301: Rework cost: what was spent on work that was thrown away** 📋 Planned, for v0.3.1
 - As a **developer or team lead**, in order to **see where AI spend produced nothing and cut it**, I would like **every intent, stage and release to show its rework cost: the tokens and estimated cost of attempts that were redone or dropped**.
 - **Epic:** EPIC-13
 - **Priority:** High
@@ -29,7 +29,7 @@
 - **Notes:** Rework is not blame. A rejection the person asked for is the workflow working as intended. The view names the cause, not a person.
 - **Dependencies:** US-0201, US-0202, US-0209
 
-**US-1302: Savings hints: where the same work could cost less** 📋 Planned, for v1.0.0
+**US-1302: Savings hints: where the same work could cost less** 📋 Planned, for v0.3.1
 - As a **developer**, in order to **spend less without losing quality**, I would like **the app to point out spend that could be cut, with what it would save and a link to the setting that changes it**.
 - **Epic:** EPIC-13
 - **Priority:** High
@@ -43,7 +43,7 @@
   - [ ] Every text goes through `t()` in Swedish and English, in the LCARS look.
 - **Dependencies:** US-0204, US-0211, US-0212, US-0904
 
-**US-1303: Cost per story, epic and release** 📋 Planned, for v1.0.0
+**US-1303: Cost per story, epic and release** 📋 Planned, for v0.3.1
 - As a **product owner or team lead**, in order to **know what a feature or a release cost to build**, I would like **intent costs rolled up to the stories, epics and releases they delivered**.
 - **Epic:** EPIC-13
 - **Priority:** High
@@ -58,7 +58,7 @@
 - **Notes:** CSV export of these figures picks up the export deferred in US-0203.
 - **Dependencies:** US-0201, US-0209, US-0303, US-0604
 
-**US-1304: Delivery metrics from AI-DLC and git: lead time, release frequency, failure rate and recovery time** 📋 Planned, for v1.0.0
+**US-1304: Delivery metrics from AI-DLC and git: lead time, release frequency, failure rate and recovery time** 📋 Planned, for v0.3.1
 - As a **team lead**, in order to **see whether the AI work makes delivery faster and safer**, I would like **the four DORA metrics, worked out from the feature docs, the audit, the tags and the pull requests**.
 - **Epic:** EPIC-13
 - **Priority:** Medium
@@ -73,7 +73,7 @@
   - [ ] Each figure shows its source, and says so when data is missing (for example, no platform connection). Every text goes through `t()` in Swedish and English, in the LCARS look.
 - **Dependencies:** US-0303, US-0605, US-1201
 
-**US-1305: Quality signals next to cost** 📋 Planned, for v1.0.0
+**US-1305: Quality signals next to cost** 📋 Planned, for v0.3.1
 - As a **developer or team lead**, in order to **see whether cheaper or faster work costs quality**, I would like **each intent and release to show its quality signals beside its cost**.
 - **Epic:** EPIC-13
 - **Priority:** Medium
@@ -86,7 +86,7 @@
   - [ ] Every text goes through `t()` in Swedish and English, in the LCARS look.
 - **Dependencies:** US-1301, US-1304
 
-**US-1306: The AI share of delivered code** 📋 Planned, for v1.0.0
+**US-1306: The AI share of delivered code** 📋 Planned, for v0.3.1
 - As a **team lead**, in order to **know how much of what we ship comes from AI-DLC work**, I would like **each merged pull request, story and release to show how much of its changed code came from AI-DLC work and how much was edited by hand**.
 - **Epic:** EPIC-13
 - **Priority:** Medium
@@ -100,7 +100,7 @@
   - [ ] Every text goes through `t()` in Swedish and English, in the LCARS look.
 - **Dependencies:** US-1201, US-1303
 
-**US-1307: Insights for a team: the same figures per person and machine** 📋 Planned, for v1.0.0
+**US-1307: Insights for a team: the same figures per person and machine** 📋 Planned, for v0.3.1
 - As a **team lead**, in order to **share what works and help where it does not**, I would like **the insights broken down by person and by machine, presented as coaching and not as surveillance**.
 - **Epic:** EPIC-13
 - **Priority:** Low

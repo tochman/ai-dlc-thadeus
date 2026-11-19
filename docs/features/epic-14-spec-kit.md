@@ -10,13 +10,13 @@
 
 **Stories:** US-1401–US-1410
 
-**Status (2026-11-19):** 📋 US-1401–US-1410 planned, for v0.2.11.
+**Status (2026-11-19):** 📋 US-1401–US-1410 planned, for v0.3.0.
 
 ---
 
 ## User Stories
 
-**US-1401: One framework per project, and views that follow it** 📋 Planned, for v0.2.11
+**US-1401: One framework per project, and views that follow it** 📋 Planned, for v0.3.0
 - As a **developer**, in order to **use THADEUS with the framework my project follows**, I would like **the app to show the views of the project's framework, AI-DLC or Spec Kit, and only those**.
 - **Epic:** EPIC-14
 - **Priority:** High
@@ -32,7 +32,7 @@
 - **Notes:** One value, `framework: 'aidlc' | 'speckit'`, decides the view set. No general plugin system.
 - **Dependencies:** none
 
-**US-1402: Spec Kit features: the list and where each one stands** 📋 Planned, for v0.2.11
+**US-1402: Spec Kit features: the list and where each one stands** 📋 Planned, for v0.3.0
 - As a **developer**, in order to **see my Spec Kit work at a glance**, I would like **a list of the project's features and, for each one, its progress through the Spec Kit flow and its tasks**.
 - **Epic:** EPIC-14
 - **Priority:** High
@@ -47,7 +47,7 @@
 - **Notes:** Before this story starts, a test project made with `specify init` checks how `clarify`, `checklist` and `analyze` record their output.
 - **Dependencies:** US-1401
 
-**US-1403: Run Spec Kit commands from the app** 📋 Planned, for v0.2.11
+**US-1403: Run Spec Kit commands from the app** 📋 Planned, for v0.3.0
 - As a **developer**, in order to **drive Spec Kit without typing every command**, I would like **the app to offer the next `/speckit-*` command for a feature and run it in the agent terminal**.
 - **Epic:** EPIC-14
 - **Priority:** High
@@ -60,7 +60,7 @@
   - [ ] Nothing runs without my click. Every text goes through `t()` in Swedish and English, in the LCARS look.
 - **Dependencies:** US-1401, US-1402
 
-**US-1404: Constitution and extensions** 📋 Planned, for v0.2.11
+**US-1404: Constitution and extensions** 📋 Planned, for v0.3.0
 - As a **developer**, in order to **see and change the rules my agents follow in a Spec Kit project**, I would like **a view of the project's constitution and its installed extensions and hooks**.
 - **Epic:** EPIC-14
 - **Priority:** Medium
@@ -72,7 +72,7 @@
   - [ ] A file that cannot be read is named, with the reason, never hidden. Every text goes through `t()` in Swedish and English, in the LCARS look.
 - **Dependencies:** US-1401
 
-**US-1405: Set up Spec Kit in a project** 📋 Planned, for v0.2.11
+**US-1405: Set up Spec Kit in a project** 📋 Planned, for v0.3.0
 - As a **developer**, in order to **start a project on Spec Kit from the app**, I would like **the app to run `specify init` for the project's harness, after a preview**.
 - **Epic:** EPIC-14
 - **Priority:** High
@@ -85,7 +85,7 @@
   - [ ] Every text goes through `t()` in Swedish and English, in the LCARS look.
 - **Dependencies:** US-0503
 
-**US-1406: See what is installed in a new project, and choose its framework** 📋 Planned, for v0.2.11
+**US-1406: See what is installed in a new project, and choose its framework** 📋 Planned, for v0.3.0
 - As a **developer**, in order to **start right with a project I open for the first time**, I would like **the app to show which framework the project already has, and let me choose the one it follows**.
 - **Epic:** EPIC-14
 - **Priority:** High
@@ -99,7 +99,7 @@
   - [ ] The choice is kept in the repository (US-1408), and the project is not asked again on any clone. Nothing in the project is written before I confirm. Every text goes through `t()` in Swedish and English, in the LCARS look.
 - **Dependencies:** US-1401, US-1405
 
-**US-1407: Switch a project from one framework to the other** 📋 Planned, for v0.2.11
+**US-1407: Switch a project from one framework to the other** 📋 Planned, for v0.3.0
 - As a **developer**, in order to **move a project from AI-DLC to Spec Kit, or back**, I would like **to switch its framework from the project settings**.
 - **Epic:** EPIC-14
 - **Priority:** Medium
@@ -113,7 +113,7 @@
 - **Notes:** Moving work from one framework's format into the other's is out of scope.
 - **Dependencies:** US-1401, US-1405, US-1406
 
-**US-1408: Keep the project's framework in the repository** 📋 Planned, for v0.2.11
+**US-1408: Keep the project's framework in the repository** 📋 Planned, for v0.3.0
 - As a **developer working on a project from more than one clone**, in order to **have every clone follow the same framework**, I would like **the project's framework to be kept in the repository, not only on my machine**.
 - **Epic:** EPIC-14
 - **Priority:** High
@@ -126,7 +126,7 @@
   - [ ] Every text goes through `t()` in Swedish and English, in the LCARS look.
 - **Dependencies:** US-1401
 
-**US-1409: A token log per Spec Kit feature** 📋 Planned, for v0.2.11
+**US-1409: A token log per Spec Kit feature** 📋 Planned, for v0.3.0
 - As a **developer**, in order to **see what each Spec Kit feature cost in tokens**, I would like **the token log to be kept per feature in a Spec Kit project, as it is per intent in an AI-DLC project**.
 - **Epic:** EPIC-14
 - **Priority:** Medium
@@ -138,7 +138,7 @@
   - [ ] The log is never written in `.specify/` or `specs/`. Every text goes through `t()` in Swedish and English, in the LCARS look.
 - **Dependencies:** US-1401, US-1402
 
-**US-1410: Waiting questions and agent progress in a Spec Kit project** 📋 Planned, for v0.2.11
+**US-1410: Waiting questions and agent progress in a Spec Kit project** 📋 Planned, for v0.3.0
 - As a **developer**, in order to **see what the agent waits on in a Spec Kit project**, I would like **the waiting-questions popup and the agent progress to work in a Spec Kit project too**.
 - **Epic:** EPIC-14
 - **Priority:** Medium
