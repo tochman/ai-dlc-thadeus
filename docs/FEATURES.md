@@ -18,6 +18,7 @@ Overview of all epics. Each epic lives in its own file under [features/](feature
 | [EPIC-11](features/epic-11-open-source.md) | Open Source: make the repository public and the app open source | ✅ US-1101 released in v0.2.6 · 📋 US-1102 planned, for v0.3.0 |
 | [EPIC-12](features/epic-12-team-collaboration.md) | Team Collaboration: use git and AI-DLC so a team can work in the app together | ✅ US-1201 and US-1202 released in v0.2.8 |
 | [EPIC-13](features/epic-13-insights.md) | Insights: what the AI work cost, what it delivered, and where it was wasted | 📋 US-1301–US-1307 planned, for v1.0.0 |
+| [EPIC-14](features/epic-14-spec-kit.md) | Spec Kit: follow and drive Spec Kit projects, as an alternative to AI-DLC (one framework per project) | 📋 US-1401–US-1405 planned |
 
 ## Story numbering
 
