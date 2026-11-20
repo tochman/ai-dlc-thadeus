@@ -786,6 +786,7 @@
         "notSet": "Inte sparat"
       },
       "pathLabel": "Sökväg",
+      "pathFallback": "Inloggningsskalets PATH kunde inte läsas; appens egen PATH användes.",
       "versionLabel": "Version",
       "notFound": "hittades inte",
       "notOnPath": "hittades inte i PATH",

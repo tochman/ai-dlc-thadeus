@@ -8,7 +8,7 @@
 
 **Stories:** US-0001, US-0002, US-0003, US-0004, US-0005, US-0006, US-0007, US-0008, US-0009, US-0010, US-0011, US-0012, US-0013, US-0014, US-0015, US-0016, US-0017, US-0018, US-0019, US-0020, US-0021, US-0022, US-0023, US-0024, US-0025, US-0026, US-0027, US-0028, US-0029, US-0030, US-0031, US-0032, US-0033, US-0034, US-0035, US-0036
 
-**Status (2026-11-20):** ✅ US-0001–US-0020 released (v0.2.3–v0.2.6). ✅ US-0021–US-0023 released in v0.2.7. ✅ US-0024 released in v0.2.8. ✅ US-0025 released in v0.2.9. ✅ US-0026 released in v0.2.9. ✅ US-0027 released in v0.2.9. ✅ US-0028 released in v0.2.10. ✅ US-0029 released in v0.2.10. ✅ US-0030 released in v0.2.10. ✅ US-0031 released in v0.2.10. ✅ US-0032 released in v0.2.11. ✅ US-0033 released in v0.2.11. ✅ US-0034 released in v0.2.12. 📋 US-0035 planned, for v0.2.13. ✅ US-0036 done, for v0.2.13. Each story names its release.
+**Status (2026-11-20):** ✅ US-0001–US-0020 released (v0.2.3–v0.2.6). ✅ US-0021–US-0023 released in v0.2.7. ✅ US-0024 released in v0.2.8. ✅ US-0025 released in v0.2.9. ✅ US-0026 released in v0.2.9. ✅ US-0027 released in v0.2.9. ✅ US-0028 released in v0.2.10. ✅ US-0029 released in v0.2.10. ✅ US-0030 released in v0.2.10. ✅ US-0031 released in v0.2.10. ✅ US-0032 released in v0.2.11. ✅ US-0033 released in v0.2.11. ✅ US-0034 released in v0.2.12. ✅ US-0035 and US-0036 done, for v0.2.13. Each story names its release.
 
 ---
 
@@ -556,19 +556,19 @@
 - **Notes:** A code fix, so it runs on the `quick-fix` plan, then ships alone as hotfix v0.2.12. Touches `src/main/exec.js` (stdin `input`), `src/main/updater.js`, `src/main/ipc.js`, `src/renderer/UpdateNotice.jsx`, the locales and their tests.
 - **Dependencies:** US-0413
 
-**US-0035: The app finds the agent CLIs even when the login shell is slow to start** 📋 Planned, for v0.2.13
+**US-0035: The app finds the agent CLIs even when the login shell is slow to start** ✅ Done, for v0.2.13
 - As a **developer who installs Claude Code through nvm**, in order to **use the agent tabs right after I open the app**, I would like **the app to find `claude` on my login shell's PATH, and to look again when I scan, even when the shell took long to start once**.
 - **Epic:** EPIC-00
 - **Priority:** High
 - **Complexity:** Small
 - **Background:** Reported 2026-11-20 on the installed v0.2.12: the app could not find the Claude Code CLI, and scanning in Settings › Tools did not find it either. `claude` was at `~/.nvm/versions/node/v22.14.0/bin/claude`, on PATH only through `~/.bash_profile` (nvm, RVM and several `brew --prefix` calls). `loginPath` in `src/main/exec.js` gives the login shell 5 s, falls back to the app's own PATH (no nvm) when it is slower, and keeps that answer for the whole run, so every later scan uses the same PATH. Likely cause; not yet confirmed from a log.
 - **Acceptance Criteria:**
-  - [ ] **Given** the login shell does not answer in time, **then** the app uses its own PATH for that call and does not keep it: the next lookup asks the login shell again.
-  - [ ] **Given** a scan in Settings › Tools, **then** the PATH is read again from the login shell, so a tool installed or moved while the app runs is found.
-  - [ ] **Given** a slow login shell (around 5–10 s), **then** the lookup still gets its PATH; the time limit is longer than 5 s.
-  - [ ] **Given** the fallback was used, **then** the tool's row says the login shell's PATH could not be read, so the person knows why it is missing.
-  - [ ] Every new text goes through `t()` in `sv.json` and `en.json`.
-  - [ ] A test fails without the fix and passes with it; the existing suite stays green.
+  - [x] **Given** the login shell does not answer in time, **then** the app uses its own PATH for that call and does not keep it: the next lookup asks the login shell again.
+  - [x] **Given** a scan in Settings › Tools, **then** the PATH is read again from the login shell, so a tool installed or moved while the app runs is found.
+  - [x] **Given** a slow login shell (around 5–10 s), **then** the lookup still gets its PATH; the time limit is longer than 5 s.
+  - [x] **Given** the fallback was used, **then** the tool's row says the login shell's PATH could not be read, so the person knows why it is missing.
+  - [x] Every new text goes through `t()` in `sv.json` and `en.json`.
+  - [x] A test fails without the fix and passes with it; the existing suite stays green.
 - **Notes:** A code fix, so it runs on the `quick-fix` plan. Touches `src/main/exec.js` (`loginPath`), `src/main/tools.js`, the Tools view's row and their tests. Workaround until it ships: restart the app, or choose the path in Settings › Tools.
 - **Dependencies:** US-0405, US-0410
 

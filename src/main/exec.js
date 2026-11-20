@@ -1,14 +1,15 @@
 // Runs external commands the app's own process needs (git, aidlc): execFile without a shell,
-// fixed string arguments, a timeout and the login shell's PATH (NFR1, EPIC-05).
+// fixed string arguments, a timeout and the login shell's PATH (NFR1, EPIC-05; read again after a fallback, US-0035).
 import { execFile } from 'node:child_process';
 
 const DEFAULT_TIMEOUT_MS = 10000;
-const PATH_TIMEOUT_MS = 5000;
+const PATH_TIMEOUT_MS = 20000;
 // A marker keeps rc-file output (greetings, nvm notices) from leaking into the PATH value.
 const PATH_MARKER = '__AIDLC_DASH_PATH__';
 const PATH_PROBE = `printf '${PATH_MARKER}%s' "$PATH"`;
 
-let loginPathPromise = null;
+let keptRead = null;
+let readInFlight = null;
 
 export function defaultExec(file, args, options = {}) {
   const { input, ...opts } = options;
@@ -20,35 +21,57 @@ export function defaultExec(file, args, options = {}) {
   });
 }
 
-/** PATH from the login shell (as for the terminal tabs), probed once per process with a fixed command. */
-export function loginPath(exec = defaultExec) {
-  if (!loginPathPromise) {
+/**
+ * PATH from the login shell (as for the terminal tabs), read with a fixed command within 20 s (US-0035 FR1.3).
+ * Resolves `{path, fromFallback}`. A successful read is kept for the process; callers during a read share it
+ * (FR1.4). A timeout, a failed shell or a reply without the marker gives the app's own PATH with
+ * `fromFallback: true` and is never kept, so the next call asks the shell again (FR1.1).
+ */
+export function readLoginPath(exec = defaultExec) {
+  if (keptRead) return Promise.resolve(keptRead);
+  if (!readInFlight) {
     const shell = process.env.SHELL || (process.platform === 'darwin' ? '/bin/zsh' : '/bin/bash');
-    loginPathPromise = exec(shell, ['-l', '-i', '-c', PATH_PROBE], { timeout: PATH_TIMEOUT_MS })
+    readInFlight = exec(shell, ['-l', '-i', '-c', PATH_PROBE], { timeout: PATH_TIMEOUT_MS })
       .then((out) => {
         const i = out.lastIndexOf(PATH_MARKER);
-        if (i === -1) throw new Error('inget PATH i svaret');
-        return out.slice(i + PATH_MARKER.length).trim() || process.env.PATH;
+        const found = i === -1 ? '' : out.slice(i + PATH_MARKER.length).trim();
+        if (!found) throw new Error('inget PATH i svaret');
+        keptRead = { path: found, fromFallback: false };
+        return keptRead;
       })
       .catch((err) => {
         console.warn('Kunde inte läsa PATH från inloggningsskalet, använder appens PATH:', err.message);
-        return process.env.PATH;
+        return { path: process.env.PATH, fromFallback: true };
+      })
+      .finally(() => {
+        readInFlight = null;
       });
   }
-  return loginPathPromise;
+  return readInFlight;
+}
+
+/** Drops a kept read so the next call asks the shell again; a read under way is left alone (US-0035 FR1.2). */
+export function refreshLoginPath() {
+  keptRead = null;
+}
+
+/** The login shell's PATH as a string, for runFixed and the terminal tabs (US-0035: same read as readLoginPath). */
+export async function loginPath(exec = defaultExec) {
+  return (await readLoginPath(exec)).path;
 }
 
 /**
  * Runs `file args` in `cwd` and resolves with stdout. `exec(file, args, options) => Promise<stdout>` is injectable for tests.
  * Rejects before running anything when an argument is not a string. `env` adds fixed variables on top of the login
  * shell's PATH (US-0021: `AIDLC_HARNESS_DIR` for a compile per harness). `maxBuffer` raises execFile's 1 MB stdout
- * limit for a command with long output (US-0303: the epic files' `git log -p`).
+ * limit for a command with long output (US-0303: the epic files' `git log -p`). `path` is a PATH the caller already
+ * read and skips the login-shell read, so one Tools scan reads the shell once (US-0035 FR1.5).
  */
-export async function runFixed(file, args, { cwd, timeout = DEFAULT_TIMEOUT_MS, exec = defaultExec, env: extraEnv = {}, maxBuffer, input } = {}) {
+export async function runFixed(file, args, { cwd, timeout = DEFAULT_TIMEOUT_MS, exec = defaultExec, env: extraEnv = {}, maxBuffer, input, path } = {}) {
   if (!Array.isArray(args) || args.some((a) => typeof a !== 'string')) {
     throw new Error(`Ogiltiga argument till ${file}`);
   }
-  const env = { ...process.env, PATH: await loginPath(exec), ...extraEnv };
+  const env = { ...process.env, PATH: path ?? (await loginPath(exec)), ...extraEnv };
   const options = maxBuffer ? { cwd, timeout, env, maxBuffer } : { cwd, timeout, env };
   return exec(file, args, input == null ? options : { ...options, input });
 }
