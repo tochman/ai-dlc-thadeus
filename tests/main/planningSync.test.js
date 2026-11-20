@@ -8,8 +8,18 @@ import { promises as fs, chmodSync, existsSync, readFileSync, writeFileSync } fr
 import os from 'node:os';
 import path from 'node:path';
 import { loadFeatures } from '../../src/main/features.js';
-import { readRecord } from '../../src/main/planningRecord.js';
-import { createScheduler, planAction, reapplyLost, recordContent, recordTree, resolvePlanning, runCycle, subjectOf } from '../../src/main/planningSync.js';
+import { addContent, readRecord, setProtectedMain } from '../../src/main/planningRecord.js';
+import {
+  createScheduler,
+  planAction,
+  planningSource,
+  reapplyLost,
+  recordContent,
+  recordTree,
+  resolvePlanning,
+  runCycle,
+  subjectOf
+} from '../../src/main/planningSync.js';
 
 const env = { ...process.env, GIT_AUTHOR_NAME: 'T', GIT_AUTHOR_EMAIL: 't@example.com', GIT_COMMITTER_NAME: 'T', GIT_COMMITTER_EMAIL: 't@example.com' };
 const run = (cwd, ...args) => execFileSync('git', ['-c', 'init.defaultBranch=main', ...args], { cwd, env, encoding: 'utf8' }).trim();
@@ -405,6 +415,57 @@ describe('no origin (US-0607 FR3.4)', () => {
     const res = await runCycle(ctx);
     expect(res).toMatchObject({ noRemote: true, pending: 1 });
     expect(run(clone, 'log', '-1', '--format=%s', 'dash/planning')).toBe('docs: plan US-0101 for v1.0.0');
+  });
+
+  it('US-0036 AC2.1.5: on a story branch the planning is read from the local main, and says it is not a remote', async () => {
+    storyBranch('fix/US-9001');
+    expect(await planningSource(ctx)).toEqual({ inPlace: false, branch: 'fix/US-9001', ref: 'main', remote: false });
+  });
+});
+
+describe('where the planning is read from, and stale queued changes (US-0036)', () => {
+  beforeEach(() => setup());
+  const sha = (text) => createHash('sha256').update(text, 'utf8').digest('hex');
+  const newer = EPIC_TEXT.replace('**US-0102: Second story** 📋 Planned', '**US-0102: Second story** 📋 Planned, for v0.2.13');
+
+  it('AC2.1.1: on a story branch it is origin/main', async () => {
+    storyBranch('fix/US-9001');
+    expect(await planningSource(ctx)).toEqual({ inPlace: false, branch: 'fix/US-9001', ref: 'origin/main', remote: true });
+  });
+
+  it('AC2.1.2: with a protected main it is origin/<docs branch>', async () => {
+    run(clone, 'push', '-q', 'origin', 'main:docs/planning');
+    await setProtectedMain(userData, clone, true);
+    storyBranch('fix/US-9001');
+    expect(await planningSource(ctx)).toMatchObject({ inPlace: false, ref: 'origin/docs/planning', remote: true });
+  });
+
+  it('on the target it is read in place', async () => {
+    expect(await planningSource(ctx)).toMatchObject({ inPlace: true, branch: 'main' });
+  });
+
+  it('AC2.1.4: a queued entry that holds an older copy of the file on origin/main is dropped, not marked a conflict', async () => {
+    storyBranch('fix/US-9001');
+    await moveMain(EPIC, newer);
+    run(clone, 'fetch', '-q');
+    await addContent(userData, clone, { file: EPIC, baseHash: sha(`${EPIC_TEXT}base\n`), content: EPIC_TEXT });
+    expect(await runCycle(ctx)).toMatchObject({ conflicts: 0, pending: 0 });
+    expect(run(origin, 'show', `main:${EPIC}`)).toContain('📋 Planned, for v0.2.13');
+  });
+
+  it('a queued entry with text that is on no commit still becomes a conflict', async () => {
+    storyBranch('fix/US-9001');
+    await moveMain(EPIC, newer);
+    run(clone, 'fetch', '-q');
+    await addContent(userData, clone, { file: EPIC, baseHash: sha(`${EPIC_TEXT}base\n`), content: `${EPIC_TEXT}- mine\n` });
+    expect(await runCycle(ctx)).toMatchObject({ conflicts: 1, pending: 1 });
+  });
+
+  it('AC2.1.3: a cycle whose fetch moves origin/main says so with `moved`', async () => {
+    storyBranch('fix/US-9001');
+    await setRelease('US-0101', 'v1.0.0');
+    await moveMain('src.txt', 'changed on main\n');
+    expect(await runCycle(ctx)).toMatchObject({ pushed: true, moved: true });
   });
 });
 

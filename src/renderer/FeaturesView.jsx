@@ -831,8 +831,21 @@ export default function FeaturesView({
     }
   }
 
+  // US-0036 FR2.4, FR2.5: where the planning comes from: the remote ref, the local branch without one, or this checkout.
+  const source = features.source;
+  const sourceText = !source
+    ? null
+    : source.inPlace
+      ? t('features.source.here', { branch: source.branch })
+      : t(source.remote ? 'features.source.remote' : 'features.source.local', { ref: source.ref });
+
   return (
     <div className="features-view" data-testid="features-view">
+      {sourceText && (
+        <p className="muted" data-testid="features-source">
+          {sourceText}
+        </p>
+      )}
       {(features.warnings ?? []).map((w) => (
         <p key={w} className="banner banner-warn" role="status">
           {w}

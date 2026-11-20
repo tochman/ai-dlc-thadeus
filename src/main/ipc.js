@@ -71,7 +71,7 @@ import { setupHarness } from '../shared/harnesses.js';
 import { PLANNING_BRANCH_DEFAULT, PLANNING_PUSH_DEFAULT, getProjectSettings, getSettings, setProjectSettings, setSettings, settingsNow } from './settings.js';
 import { watchFiles, watchForAidlc, watchIntents, watchOpenFiles } from './watcher.js';
 import { listTree, readForEdit, writeFileSafe } from './fileWrite.js';
-import { featureWatchPaths, loadFeatures, loadStoryLinks } from './features.js';
+import { featureWatchPaths, loadFeatures, loadPlanningFeatures, loadStoryLinks } from './features.js';
 import { killAllSessions, killProjectSessions, killSession, resizeSession, spawnSession, tapOutput, writeSession } from './pty.js';
 import { createAgentChannel } from './agentChannel.js';
 import { createHookInstaller, hooksHandlers, statusPusher } from './agentHooks.js';
@@ -625,7 +625,7 @@ const planning = createScheduler({
     } catch (err) {
       res = { error: { kind: 'git', reason: err.message } };
     }
-    if (res.reapplied || res.pushed) sendFeaturesChanged(projectId, p);
+    if (res.reapplied || res.pushed || res.moved) sendFeaturesChanged(projectId, p); // US-0036 FR2.2: a fetch moved the read ref
     await sendPlanningChanged(projectId, res); // FR7.2: after every cycle, a failed one too
     return res;
   },
@@ -1242,7 +1242,10 @@ const handlers = {
   // Feature docs (EPIC-06). The root is always looked up here; the renderer never names one.
   'features:load': async (_event, projectId) => {
     const p = project(projectId);
-    const [features, tags] = await Promise.all([loadFeatures(p.root, (await getProjectSettings(p.root)).featuresPath), listReleaseTags(p.root)]);
+    const settings = await getProjectSettings(p.root);
+    // US-0036 FR2.1: with the planning sync on, a story branch shows the target's planning; without it the checkout's.
+    const load = planningOff(settings) ? loadFeatures(p.root, settings.featuresPath) : planningCtx(projectId).then(loadPlanningFeatures);
+    const [features, tags] = await Promise.all([load, listReleaseTags(p.root)]);
     return { ...features, tags }; // the vX.Y.Z tags for the release picker and the Releases view (US-0603 FR2.1, FR3.2)
   },
   // A story's release marker (US-0603 FR2.2, FR2.3): named fields only; main finds the files from the overview.

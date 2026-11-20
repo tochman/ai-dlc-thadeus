@@ -513,6 +513,11 @@
     "timeout": "Fliken blev inte {target} inom {seconds} s"
   },
   "features": {
+    "source": {
+      "remote": "Planering från {ref}",
+      "local": "Planering från {ref} (lokalt, ingen fjärr hämtad)",
+      "here": "Planering från den här utcheckningen, {branch}"
+    },
     "status": {
       "planned": "Planerad",
       "progress": "Pågår",

@@ -513,6 +513,11 @@
     "timeout": "The tab did not become {target} within {seconds} s"
   },
   "features": {
+    "source": {
+      "remote": "Planning from {ref}",
+      "local": "Planning from {ref} (local, no remote fetched)",
+      "here": "Planning from this checkout, {branch}"
+    },
     "status": {
       "planned": "Planned",
       "progress": "In progress",
