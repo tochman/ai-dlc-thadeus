@@ -282,6 +282,23 @@ const TOOLS5 = [
   TOOLS[2]
 ];
 
+describe('The fallback PATH note on a tool card (US-0035 AC1.1.5)', () => {
+  it('shows the note on a row found on the fallback PATH', async () => {
+    stubBridge({ tools: [{ ...TOOLS[0], pathFallback: true }, TOOLS[1], TOOLS[2]] });
+    renderView();
+    const note = await screen.findByTestId('settings-tool-fallback-aidlc');
+    expect(note.textContent).toBe('Inloggningsskalets PATH kunde inte läsas; appens egen PATH användes.');
+    expect(note.hasAttribute('title')).toBe(false);
+  });
+
+  it('shows no note on a row without it', async () => {
+    stubBridge({ tools: TOOLS });
+    renderView();
+    await waitFor(() => expect(within(screen.getByTestId('settings-tool-claude')).getByText('2.1.0')).toBeTruthy());
+    expect(screen.queryByTestId(/^settings-tool-fallback-/)).toBeNull();
+  });
+});
+
 describe('Settings in LCARS tabs (US-0410)', () => {
   it('shows only the chosen tab: Notifications holds the alerts, replies and sound, and Appearance is gone (FR2.1–FR2.3)', () => {
     stubBridge({ tools: TOOLS5 });
