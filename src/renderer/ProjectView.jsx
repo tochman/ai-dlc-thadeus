@@ -131,7 +131,7 @@ function AidlcProject({ project, view, teamSection = 'refresh', onView, focusInt
               {t('intents.listStale', { warning: p.listWarning })}
             </p>
           )}
-          <IntentList intents={p.intents} selected={p.selected} onSelect={p.setSelected} cost={p.cost} />
+          <IntentList intents={p.intents} selected={p.selected} onSelect={p.setSelected} cost={p.cost} projectId={projectId} />
         </aside>
         <section className="content">
           {p.error && (

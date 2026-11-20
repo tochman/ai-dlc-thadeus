@@ -39,7 +39,6 @@ export default function ResumeButton({ projectId, intent, activeDirName, activeI
   // Only an idle agent can pick up the work. While any agent tab works ("Arbetar"), or one waits on the person's answer,
   // the work is already running: the button waits, with the reason (FR2.4, EPIC-00 US-0005).
   // US-0510 FR4.4: a parked intent is unparked through main first, which needs the project.
-  // ponytail: the intents list is not handed its project yet, so its Resume on a parked intent waits with the mark's text; the detail's works.
   const noProject = intent.parked && !projectId ? t('intents.parked', { stage: intent.parkedStage ? stageTitle(intent.parkedStage) : '–' }) : null;
   const unavailable = missing ?? noProject ?? workingReason();
 
