@@ -48,6 +48,19 @@ afterEach(() => {
 });
 
 describe('SetupAidlc', () => {
+  it('says so when a .gitignore entry hides .thadeus/ (US-0609 AC3.1.7)', async () => {
+    stubBridge({ ...readyInfo, thadeusIgnored: true });
+    render(<SetupAidlc project={project} harnesses={detected} onApplied={vi.fn()} />);
+    fireEvent.click(screen.getByTestId('setup-aidlc-start'));
+    expect((await screen.findByTestId('setup-thadeus-ignored')).textContent).toMatch(/\.thadeus\//);
+    cleanup();
+    stubBridge(readyInfo);
+    render(<SetupAidlc project={project} harnesses={detected} onApplied={vi.fn()} />);
+    fireEvent.click(screen.getByTestId('setup-aidlc-start'));
+    await screen.findByTestId('setup-aidlc-checks');
+    expect(screen.queryByTestId('setup-thadeus-ignored')).toBeNull();
+  });
+
   it('changes nothing until asked, previews Claude Code by default, then Apply runs the setup itself (FR4.1, US-0802 FR1.2, FR2.2)', async () => {
     stubBridge(readyInfo);
     const onApplied = vi.fn();

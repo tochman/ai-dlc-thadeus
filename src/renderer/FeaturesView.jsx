@@ -211,6 +211,8 @@ function planningErrorText(t, error) {
 
 /** US-0608 FR7.1: one line for a waiting change: what it does, then its stories. */
 function entryText(t, e) {
+  // US-0609 FR3.8: a waiting app file (`.thadeus/`, a harness file) by its name.
+  if (e.kind === 'thadeus') return t('features.planning.thadeus', { file: e.file });
   const what =
     e.kind === 'content' ? t('features.planning.entry.content', { file: e.file }) : t(`features.planning.entry.${e.kind}`, { version: e.version ?? 'none' });
   return e.storyIds?.length ? `${what} · ${t('features.planning.entry.stories', { ids: e.storyIds.join(', ') })}` : what;

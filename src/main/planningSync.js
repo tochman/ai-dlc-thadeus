@@ -269,7 +269,7 @@ async function firstRef(ctx, refs) {
 }
 
 /** US-0607 FR3.2: origin's target branch, else origin's main (a docs branch not pushed yet), else null. */
-const remoteBase = (ctx, target) =>
+export const remoteBase = (ctx, target) =>
   firstRef(ctx, [
     [`refs/remotes/origin/${target}`, `origin/${target}`],
     [`refs/remotes/origin/${MAIN}`, `origin/${MAIN}`]
@@ -284,7 +284,7 @@ const targetRef = async (ctx, target) =>
   ]));
 
 /** US-0606 FR2.1, US-0607 FR3.3: `main`, or the docs branch (checked against git's ref rules, NFR3) once `main` is protected. */
-async function targetOf(ctx, record) {
+export async function targetOf(ctx, record) {
   if (!record.protectedMain) return MAIN;
   const branch = ctx.planningBranch || 'docs/planning';
   if (branch === MAIN || branch.startsWith('-') || !(await gitOk(ctx.root, ['check-ref-format', '--branch', branch], ctx))) {
@@ -312,7 +312,7 @@ export async function planningSource(ctx) {
 }
 
 /** US-0606 FR2.1: runs `fn` in a temporary worktree under the app's data folder, removed again whatever happens. */
-async function withWorktree(ctx, spec, fn) {
+export async function withWorktree(ctx, spec, fn) {
   const dir = path.join(ctx.userData, 'planning', `wt-${createHash('sha1').update(String(ctx.root)).digest('hex').slice(0, 12)}`);
   await fs.rm(dir, { recursive: true, force: true }); // left over from a crash
   await git(ctx.root, ['worktree', 'prune'], ctx);
@@ -335,7 +335,7 @@ async function planningSpec(ctx, target) {
 
 // ponytail: one operation at a time per project, in this process; a second app instance could interleave.
 const chains = new Map();
-function serial(key, fn) {
+export function serial(key, fn) {
   const run = (chains.get(key) ?? Promise.resolve()).then(fn);
   chains.set(
     key,
@@ -500,7 +500,7 @@ async function olderCopy(ctx, ref, entry) {
  */
 async function replayStep(ctx) {
   const record = await readRecord(ctx.userData, ctx.root);
-  const live = record.actions.filter((a) => a.state !== 'conflict');
+  const live = record.actions.filter((a) => a.state !== 'conflict' && a.kind !== 'thadeus'); // US-0609: thadeusSync commits those
   const pending = live.filter((a) => a.state === 'pending');
   const quiet = pending.every((a) => Date.now() - Date.parse(a.at) >= windowOf(ctx));
   const place = await placeOf(ctx, record);
@@ -586,7 +586,7 @@ async function sourcesOf(ctx, target) {
 }
 
 /** US-0607 FR3.2, FR3.5: in a worktree, rebases onto origin and pushes; a conflict is aborted and names the files. */
-async function pushFrom(ctx, wt, target) {
+export async function pushFrom(ctx, wt, target) {
   const base = await remoteBase(ctx, target);
   if (base && !(await gitOk(wt, ['rebase', '--quiet', base], ctx))) {
     const files = lines(await git(wt, ['diff', '--name-only', '--diff-filter=U'], ctx).catch(() => ''));
@@ -621,7 +621,7 @@ async function pushAll(ctx, target) {
 }
 
 /** US-0607 FR3.3: true for a protected `main`, false for an unprotected one, undefined when gh cannot say. */
-async function detectProtection(ctx) {
+export async function detectProtection(ctx) {
   try {
     await ctx.gh(['api', `repos/{owner}/{repo}/branches/${MAIN}/protection`], { cwd: ctx.root });
     return true;
@@ -636,7 +636,7 @@ async function detectProtection(ctx) {
  * ponytail: the docs branch is not deleted after the merge, so a later pull request can show earlier, already merged
  * changes again; delete it after each merge if that confuses anyone.
  */
-async function openPull(ctx, target, subjects) {
+export async function openPull(ctx, target, subjects) {
   if (!ctx.gh) return { prOffer: { branch: target } };
   const title = subjects.length === 1 ? subjects[0] : 'docs: release planning';
   try {

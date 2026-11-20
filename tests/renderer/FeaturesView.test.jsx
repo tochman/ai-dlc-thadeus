@@ -421,6 +421,19 @@ describe('FeaturesView: every planning change is kept (US-0608)', () => {
   afterEach(() => window.bridge.getPlanningStatus.mockResolvedValue(NONE));
   const docs = releaseDocs(undefined, PLANS);
 
+  it('shows waiting .thadeus files in the waiting list with their file names, counted in the pending line (US-0609 AC3.1.8)', async () => {
+    const LOG = { id: 't1', kind: 'thadeus', file: '.thadeus/tokens/261120-i.json', state: 'pending', storyIds: [], version: null };
+    const HOOKS = { id: 't2', kind: 'thadeus', file: '.claude/settings.json', state: 'pending', storyIds: [], version: null };
+    waiting(ASSIGN, LOG, HOOKS);
+    render(<WithTab initial="releases" projectId="p1" features={docs} delivery="releases" />);
+    await waitFor(() => expect(screen.getAllByTestId('planning-entry')).toHaveLength(3));
+    const texts = screen.getAllByTestId('planning-entry').map((li) => li.textContent);
+    expect(texts[1]).toContain('.thadeus/tokens/261120-i.json');
+    expect(texts[2]).toContain('.claude/settings.json');
+    expect(texts[1]).not.toMatch(/undefined|features\.planning/);
+    expect(screen.getByTestId('planning-pending').textContent).toMatch(/3/);
+  });
+
   it('keeps the list and the story picker locked until a load with other hashes, and unlocks at once when no reload follows (FR1.2)', async () => {
     window.bridge.setStoryRelease = vi.fn(async () => ({ ok: true, inPlace: true, changed: true }));
     const { rerender } = render(<WithTab initial="releases" projectId="p1" features={docs} delivery="releases" />);

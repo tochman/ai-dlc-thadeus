@@ -1,0 +1,29 @@
+{
+  "stage": "code-generation",
+  "unit": "u2-framework-file",
+  "upstream_ids": ["AC1.2.1", "AC1.2.2", "AC1.2.3", "NFR3.1", "NFR3.2", "NFR3.3", "NFR3.4", "NFR3.5", "NFR3.6", "NFR1.1", "NFR8.1", "BR1.1", "BR1.2", "BR1.3", "BR1.4", "BR1.5", "BR2.1", "BR2.2", "BR2.3", "BR2.4", "BR2.5", "BR2.6"],
+  "coverage": [
+    { "id": "AC1.2.1", "status": "OK", "target": "src/main/projectService.js" },
+    { "id": "AC1.2.2", "status": "OK", "target": "src/main/projectFile.js" },
+    { "id": "AC1.2.3", "status": "OK", "target": "src/main/projectService.js" },
+    { "id": "NFR3.1", "status": "OK", "target": "src/main/projectFile.js" },
+    { "id": "NFR3.2", "status": "OK", "target": "src/main/projectFile.js" },
+    { "id": "NFR3.3", "status": "OK", "target": "src/main/projectFile.js" },
+    { "id": "NFR3.4", "status": "OK", "target": "src/main/projectFile.js" },
+    { "id": "NFR3.5", "status": "OK", "target": "tests/main/projectFile.test.js" },
+    { "id": "NFR3.6", "status": "OK", "target": "tests/main/projectFile.test.js" },
+    { "id": "NFR1.1", "status": "OK", "target": "src/shared/locales/en.json" },
+    { "id": "NFR8.1", "status": "OK", "target": "tests/main/projectFile.test.js" },
+    { "id": "BR1.1", "status": "OK", "target": "src/main/projectFile.js" },
+    { "id": "BR1.2", "status": "OK", "target": "src/main/projectFile.js" },
+    { "id": "BR1.3", "status": "OK", "target": "src/main/projectService.js" },
+    { "id": "BR1.4", "status": "OK", "target": "src/main/projectService.js" },
+    { "id": "BR1.5", "status": "OK", "target": "src/main/projectService.js" },
+    { "id": "BR2.1", "status": "OK", "target": "src/main/projectFile.js" },
+    { "id": "BR2.2", "status": "OK", "target": "src/main/projectFile.js" },
+    { "id": "BR2.3", "status": "OK", "target": "src/main/projectFile.js" },
+    { "id": "BR2.4", "status": "OK", "target": "src/main/projectFile.js" },
+    { "id": "BR2.5", "status": "OK", "target": "src/main/projectFile.js" },
+    { "id": "BR2.6", "status": "OK", "target": "src/main/projectFile.js" }
+  ]
+}
