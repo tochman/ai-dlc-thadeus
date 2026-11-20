@@ -6,9 +6,9 @@
 
 > Small fixes the person reports while using the app: something looks off, behaves wrongly or is missing a detail. Each fix becomes a story here, so nothing reported in passing gets lost. A fix that grows into a feature moves to its topic's epic.
 
-**Stories:** US-0001, US-0002, US-0003, US-0004, US-0005, US-0006, US-0007, US-0008, US-0009, US-0010, US-0011, US-0012, US-0013, US-0014, US-0015, US-0016, US-0017, US-0018, US-0019, US-0020, US-0021, US-0022, US-0023, US-0024, US-0025, US-0026, US-0027, US-0028, US-0029, US-0030, US-0031, US-0032, US-0033, US-0034, US-0035, US-0036, US-0037
+**Stories:** US-0001, US-0002, US-0003, US-0004, US-0005, US-0006, US-0007, US-0008, US-0009, US-0010, US-0011, US-0012, US-0013, US-0014, US-0015, US-0016, US-0017, US-0018, US-0019, US-0020, US-0021, US-0022, US-0023, US-0024, US-0025, US-0026, US-0027, US-0028, US-0029, US-0030, US-0031, US-0032, US-0033, US-0034, US-0035, US-0036, US-0037, US-0038
 
-**Status (2026-11-20):** ✅ US-0001–US-0020 released (v0.2.3–v0.2.6). ✅ US-0021–US-0023 released in v0.2.7. ✅ US-0024 released in v0.2.8. ✅ US-0025 released in v0.2.9. ✅ US-0026 released in v0.2.9. ✅ US-0027 released in v0.2.9. ✅ US-0028 released in v0.2.10. ✅ US-0029 released in v0.2.10. ✅ US-0030 released in v0.2.10. ✅ US-0031 released in v0.2.10. ✅ US-0032 released in v0.2.11. ✅ US-0033 released in v0.2.11. ✅ US-0034 released in v0.2.12. ✅ US-0035 and US-0036 released in v0.2.13. 📋 US-0037 planned for v0.2.14. Each story names its release.
+**Status (2026-11-20):** ✅ US-0001–US-0020 released (v0.2.3–v0.2.6). ✅ US-0021–US-0023 released in v0.2.7. ✅ US-0024 released in v0.2.8. ✅ US-0025 released in v0.2.9. ✅ US-0026 released in v0.2.9. ✅ US-0027 released in v0.2.9. ✅ US-0028 released in v0.2.10. ✅ US-0029 released in v0.2.10. ✅ US-0030 released in v0.2.10. ✅ US-0031 released in v0.2.10. ✅ US-0032 released in v0.2.11. ✅ US-0033 released in v0.2.11. ✅ US-0034 released in v0.2.12. ✅ US-0035 and US-0036 released in v0.2.13. 📋 US-0037 and US-0038 planned for v0.2.14. Each story names its release.
 
 ---
 
@@ -604,3 +604,21 @@
   - [ ] A test fails without the fix and passes with it; the existing suite stays green.
 - **Notes:** A code fix, so it runs on the `quick-fix` plan. Likely touches `src/renderer/IntentDetail.jsx`, `src/renderer/theme.css` and their tests.
 - **Dependencies:** US-0510
+
+---
+
+**US-0038: An old planning commit the target has moved past never blocks the planning sync** 📋 Planned, for v0.2.14
+- As a **developer planning releases in the app**, in order to **trust that what I plan reaches `main`**, I would like **the planning sync to recognise a change that `main` has already moved past, and to keep pushing everything else**.
+- **Epic:** EPIC-00
+- **Priority:** High
+- **Complexity:** Small
+- **Background:** Reported 2026-11-20 after the v0.2.13 release. The app's `dash/planning` branch still held `6502115 docs: update US-0035` from 07:31: the first one-story draft of `docs/releases/0.2.13.md`. The full plan reached `main` later through the story and release pull requests, so every push cycle rebased that commit onto `origin/main`, conflicted on the file and stopped with "The planning conflicts with main … Nothing was pushed". From then on nothing the app recorded was pushed. A content entry from 12:39 held the same file's pre-release text ("📋 Planned") and showed "has changed on the target as well". The older-copy check from US-0036 FR2.3 did not catch either, because neither text was ever committed on `main`. The commit subject also named US-0038 before this story existed: `addContent` (`src/main/planningRecord.js`) merges the story ids of every earlier version of an entry and never drops them.
+- **Acceptance Criteria:**
+  - [ ] **Given** a commit on `dash/planning` conflicts with the target on a file the target changed after that commit was made, **then** the app does not stop every later push: it offers "Keep theirs" for that file (dropping its change), and the push of everything else goes ahead.
+  - [ ] **Given** a waiting entry or app commit for a release plan whose release is tagged on the target, **then** the app drops it by itself and logs why, without offering "Use mine".
+  - [ ] **Given** an entry's text changed several times before its commit, **then** the commit subject names only the stories its final change is about (US-0033 still holds).
+  - [ ] **Given** the push is blocked, **then** the Planning sync row says which commit or entry blocks it and what to choose, instead of only "tries again at the next interval".
+  - [ ] Every new text goes through `t()` in `sv.json` and `en.json`.
+  - [ ] A test fails without the fix and passes with it; the existing suite stays green.
+- **Notes:** A code fix, so it runs on the `quick-fix` plan. Likely touches `src/main/planningSync.js` (`pushFrom`, `pushAll`, `replayStep`), `src/main/planningRecord.js` (`addContent`), the planning sync row in the Releases view and their tests. The 2026-11-20 block was cleared by hand: delete `dash/planning` and choose "Keep theirs" for `docs/releases/0.2.13.md`.
+- **Dependencies:** US-0036, US-0608
