@@ -8,7 +8,7 @@
 
 **Stories:** US-1101, US-1102, US-1103
 
-**Status (2026-11-20):** ✅ US-1101 released in v0.2.6. 📋 US-1102 planned, for v0.3.2. 📋 US-1103 planned, for v0.2.13. Each story names its release.
+**Status (2026-11-20):** ✅ US-1101 released in v0.2.6. 📋 US-1102 and US-1103 planned, for v0.2.13. Each story names its release.
 
 ---
 
@@ -36,7 +36,7 @@
 
 ---
 
-**US-1102: A visual first impression on GitHub, and topics to be found by** 📋 Planned, for v0.3.2
+**US-1102: A visual first impression on GitHub, and topics to be found by** 📋 Planned, for v0.2.13
 - As a **developer who comes across the repository on GitHub**, in order to **see at a glance what the app does and find it by topic**, I would like **a short animated GIF or screenshot gallery at the top of the README, and repository topics**.
 - **Epic:** EPIC-11
 - **Priority:** Low
@@ -65,5 +65,5 @@
   - [ ] **Upcoming.** A section lists the planned features by release, taken from `docs/releases/` and the 📋 stories, and links to `docs/FEATURES.md`; it says plans can change.
   - [ ] Prerequisites, installation, development, testing, security and contributing stay correct for the current version.
   - [ ] Every link and image path in the README works.
-- **Notes:** A documentation story, made directly without an AI-DLC workflow; the screenshot script may need new scenes. US-1102 (v0.3.2) adds the animated GIF and the repository topics on top of this.
+- **Notes:** A documentation story, made directly without an AI-DLC workflow; the screenshot script may need new scenes. US-1102 (also v0.2.13, right after it) adds the animated GIF and the repository topics on top of this.
 - **Dependencies:** US-1101
