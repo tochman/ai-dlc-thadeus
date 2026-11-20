@@ -599,3 +599,19 @@ describe('FeaturesView: story filters (US-0604)', () => {
     expect(texts('features-view-epic')).toHaveLength(2);
   });
 });
+
+describe('FeaturesView: the list folds away (US-0415)', () => {
+  it('folding and opening the epic list keeps the selected story and the filter (AC5.1.2)', () => {
+    render(<FeaturesView projectId="p1" features={twoEpics()} delivery="releases" />);
+    fireEvent.change(screen.getByTestId('features-view-all-filter-text'), { target: { value: 'saved' } });
+    fireEvent.click(screen.getByTestId('features-view-match'));
+    const aside = screen.getByTestId('features-view-all-filters').closest('aside');
+
+    fireEvent.click(within(aside).getByTestId('list-fold-toggle'));
+    expect(aside.classList.contains('is-folded')).toBe(true);
+    fireEvent.click(within(aside).getByTestId('list-fold-toggle')); // the same toggle brings it back
+    expect(aside.classList.contains('is-folded')).toBe(false);
+    expect(screen.getByTestId('features-view-all-filter-text').value).toBe('saved');
+    expect(screen.getByTestId('features-view-story-detail').getAttribute('aria-label')).toBe('US-0703');
+  });
+});

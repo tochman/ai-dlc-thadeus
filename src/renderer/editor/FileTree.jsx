@@ -2,6 +2,7 @@
 // out/, dist/ and .git/ are left out there. A folder's children render only once it is opened.
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useFold } from '../useFold.js'; // US-0415
 
 const errorText = (err) => String(err?.message ?? err).replace(/^Error invoking remote method '[^']+': (Error: )?/, '');
 
@@ -50,6 +51,8 @@ export default function FileTree({ projectId, onOpen }) {
   const { t } = useTranslation();
   const [state, setState] = useState({ files: null, truncated: false, error: null });
   const [opened, setOpened] = useState(() => new Set());
+  // US-0415 FR5.1: the tree folds to a strip; `.editor-view:has(> .file-tree.is-folded)` gives the editor the width.
+  const fold = useFold('editor');
   useEffect(() => {
     let live = true;
     window.bridge
@@ -69,7 +72,13 @@ export default function FileTree({ projectId, onOpen }) {
     });
 
   return (
-    <nav className="file-tree" aria-label={t('editor.tree')} data-testid="file-tree">
+    <nav
+      className={`file-tree${fold.folded ? ' is-folded' : ''}`}
+      aria-label={t('editor.tree')}
+      data-testid="file-tree"
+      onClick={fold.folded ? fold.toggle : undefined}
+    >
+      <button {...fold.toggleProps} />
       {state.error && <p className="refresh-error">{state.error}</p>}
       {!tree && !state.error && <p className="muted">{t('common.reading')}</p>}
       {tree && <Folder node={tree} prefix="" opened={opened} toggle={toggle} onOpen={onOpen} />}

@@ -26,6 +26,7 @@ import { DELIVERY_DEFAULT } from '../main/parsers/releases.js';
 import { TerminalProvider, useTerminal } from './TerminalContext.jsx';
 import { useProject } from './useProject.js';
 import { useFeatures } from './useFeatures.js';
+import { useFold } from './useFold.js'; // US-0415
 import { harnessCommand, resolveHarness, selectableHarness } from '../shared/harnesses.js';
 
 /** Why the chosen harness cannot start, in one sentence, or null (US-0801 FR5.1). */
@@ -72,6 +73,7 @@ function AidlcProject({ project, view, teamSection = 'refresh', onView, focusInt
   const p = useProject(projectId, detection.activeSpace);
   const activeIntent = p.intents.find((i) => i.active) ?? null;
   const activeDirName = activeIntent?.dirName ?? null;
+  const fold = useFold('intents'); // US-0415 FR5.1: the intents list folds to a strip
 
   // The editor's "the agent may change this file too" notice needs the active intent's record (US-1001).
   useEffect(() => {
@@ -113,7 +115,8 @@ function AidlcProject({ project, view, teamSection = 'refresh', onView, focusInt
       {/* Who does what across my machines, the team view's second section in the arm (US-1201 AC-3). */}
       {view === 'github' && teamSection === 'machines' && <MachinesView projectId={projectId} space={p.space} />}
       <div className="project-body" hidden={view !== 'intents'}>
-        <aside className="sidebar" aria-label={t('intents.overview')}>
+        <aside className={`sidebar${fold.folded ? ' is-folded' : ''}`} aria-label={t('intents.overview')} onClick={fold.folded ? fold.toggle : undefined}>
+          <button {...fold.toggleProps} />
           {detection.spaces.length > 1 && (
             <label className="field">
               <span className="field-label">{t('intents.space')}</span>

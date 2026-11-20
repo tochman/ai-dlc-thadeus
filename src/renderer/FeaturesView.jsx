@@ -12,6 +12,7 @@ import { withSlots } from './format.js';
 import { STATUS_MARKER } from '../main/parsers/features.js';
 import { DELIVERY_DEFAULT, buildReleases, canDelete, newReleaseError, nextVersions, releaseOf, releaseOptions } from '../main/parsers/releases.js';
 import { EMPTY_FILTERS, NO_RELEASE, filterOptions, isActive, matches, storyRows } from './storyFilter.js';
+import { useFold } from './useFold.js'; // US-0415
 
 const errorText = (err) => String(err?.message ?? err).replace(/^Error invoking remote method '[^']+': (Error: )?/, '');
 // Pågår is steel (active), Klar and Driftsatt a light slate block, Planerad an outline (FR1.3, US-0603 FR6).
@@ -681,6 +682,7 @@ export default function FeaturesView({
   const [epicId, setEpicId] = useState(null);
   const [storyId, setStoryId] = useState(null);
   const [filters, setFilters] = useState(EMPTY_FILTERS); // never saved: empty each time the view opens (US-0604 FR5)
+  const fold = useFold('features'); // US-0415 FR5.1: the epic list folds to a strip
   const setTab = (id) => id !== tab && onTab?.(id); // Epics | Releases (US-0603 FR3.1)
   const releases = delivery === 'releases';
   const showReleases = releases && tab === 'releases';
@@ -746,7 +748,8 @@ export default function FeaturesView({
     const found = storyRows(epics).filter((row) => matches(row, filters));
     body = (
       <div className="project-body">
-        <aside className="sidebar" aria-label={t('features.epics')}>
+        <aside className={`sidebar${fold.folded ? ' is-folded' : ''}`} aria-label={t('features.epics')} onClick={fold.folded ? fold.toggle : undefined}>
+          <button {...fold.toggleProps} />
           <div className="lcars-heading">
             <h2 className="section-title">{t('features.epics')}</h2>
             <span className="lcars-heading-line" aria-hidden="true" />

@@ -12,6 +12,7 @@ vi.mock('@monaco-editor/react', () => ({
 }));
 const { default: EditorPanel, languageFor, useEditorTabs } = await import('../../src/renderer/editor/EditorPanel.jsx');
 const { dirtyFiles } = await import('../../src/renderer/editor/EditorContext.jsx');
+const { default: FileTree } = await import('../../src/renderer/editor/FileTree.jsx');
 
 // The shape file:read returns (src/main/fileWrite.js readForEdit).
 const opened = (rel, content, extra = {}) => ({ rel, content, mtimeMs: 1000, hash: `hash-${content}`, size: content.length, readOnly: null, ...extra });
@@ -140,5 +141,24 @@ describe('EditorPanel (EPIC-10 US-1001)', () => {
     await act(() => changed({ projectId: 'p1', rel: 'docs/notes.md' }));
     expect(await screen.findByTestId('editor-changed-on-disk')).toBeTruthy();
     expect(screen.getByTestId('monaco').value).toBe('# Mine\n');
+  });
+
+  // US-0415 AC5.1.1: the editor view as ProjectView lays it out, the file tree beside the editor.
+  it('the file tree folds to the strip and the editor takes the width (US-0415 AC5.1.1)', async () => {
+    window.bridge.listTree = vi.fn(async () => ({ files: ['README.md'], truncated: false }));
+    render(
+      <div className="editor-view" data-testid="editor-view">
+        <FileTree projectId="p1" onOpen={() => {}} />
+        <Harness files={[]} />
+      </div>
+    );
+    const tree = screen.getByTestId('file-tree');
+    await screen.findByTestId('file-tree-file');
+    fireEvent.click(screen.getByTestId('list-fold-toggle'));
+    expect(tree.classList.contains('is-folded')).toBe(true);
+    expect(screen.getByTestId('editor-view').matches('.editor-view:has(> .file-tree.is-folded)')).toBe(true); // the 28px grid column
+    fireEvent.click(tree); // the strip brings it back
+    expect(tree.classList.contains('is-folded')).toBe(false);
+    expect(screen.getByTestId('file-tree-file')).toBeTruthy();
   });
 });

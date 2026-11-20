@@ -521,6 +521,26 @@ button.lcars-chip:hover { border-color: var(--steel-text); color: var(--steel-li
 .sidebar .field { margin: 0; }
 .content { flex: 1; min-width: 0; min-height: 0; display: flex; flex-direction: column; gap: 8px; }
 
+/* US-0415 FR5.1–FR5.4: the fold toggle shared by the list columns, an amber elbow tab at the list's edge. Folded,
+   the column is a narrow strip that keeps only the tab; the list stays mounted (hidden), so its state is kept. */
+.list-fold-toggle {
+  flex: 0 0 auto; align-self: flex-end; width: 28px; height: 28px; padding: 0; border: 0; border-radius: 0 14px 14px 0;
+  background: var(--amber); color: var(--on-light); font: 700 14px/1 var(--font-head); cursor: pointer;
+}
+.list-fold-toggle::before { content: '\2039'; } /* ‹ open: fold to the left */
+.list-fold-toggle[aria-expanded='false']::before { content: '\203A'; } /* › folded: bring it back */
+.list-fold-toggle:hover { filter: brightness(1.15); }
+.list-fold-toggle:focus-visible { outline: 2px solid var(--steel-light); outline-offset: 2px; }
+.is-folded { width: 28px; flex: 0 0 28px; min-width: 28px; padding: 0; overflow: hidden; cursor: pointer; background: var(--slate-2); border-radius: 0 14px 14px 0; }
+.is-folded > :not(.list-fold-toggle) { display: none; }
+.is-folded:hover { background: var(--slate-3); }
+.editor-view:has(> .file-tree.is-folded) { grid-template-columns: 28px 1fr; }
+.file-tree > .list-fold-toggle { display: block; margin: 0 0 4px auto; }
+:root[data-motion='full'] .sidebar, :root[data-motion='full'] .editor-view { transition: flex-basis 200ms ease-out, min-width 200ms ease-out, width 200ms ease-out, grid-template-columns 200ms ease-out; }
+@media (prefers-reduced-motion: reduce) {
+  .sidebar, .editor-view, .is-folded { transition: none; }
+}
+
 /* Cost readout (EPIC-02): every figure is an estimate, labelled as such. */
 .cost-panel, .refresh-panel { display: flex; flex-direction: column; gap: 8px; flex-shrink: 0; }
 .cost-panel-toggle { width: 100%; padding: 0; border: 0; background: none; text-align: left; }

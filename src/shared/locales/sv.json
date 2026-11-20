@@ -1603,5 +1603,9 @@
     "notShown": "(nyare meddelande visas inte)",
     "shortened": "(förkortat)",
     "view": "Meddelande från {harness}"
+  },
+  "fold": {
+    "hide": "Fäll ihop listan",
+    "show": "Visa listan"
   }
 }
