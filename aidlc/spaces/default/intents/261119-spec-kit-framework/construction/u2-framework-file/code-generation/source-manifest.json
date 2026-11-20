@@ -1,0 +1,16 @@
+{
+  "stage": "code-generation",
+  "unit": "u2-framework-file",
+  "version": 1,
+  "writes": [
+    { "path": "src/main/projectFile.js" },
+    { "path": "src/main/projectService.js" },
+    { "path": "src/shared/locales/sv.json" },
+    { "path": "src/shared/locales/en.json" },
+    { "path": "tests/main/projectFile.test.js" },
+    { "path": "tests/main/projectService.test.js" },
+    { "path": "tests/main/fileWrite.test.js" },
+    { "path": "docs/features/epic-14-spec-kit.md" },
+    { "path": "docs/FEATURES.md" }
+  ]
+}

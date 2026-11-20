@@ -51,8 +51,28 @@
   - `parsers/releases.js:53`: a segment naming several stories is left alone;
   - `ipc.js:563`: "an agent is running" is read from AI-DLC writes;
   - `fileWrite.js:95`: no fsync before rename;
+  - EPIC-14 area (`90031e2`): `projectService.js:18` (unbounded caches), `tokenReadings.js:66` (no lock), `tokenHistory.js:100`, `:117`, `ipc.js:254` (`.git/HEAD` only at the root), `ResumeButton.jsx:12` (10-minute quiet rule);
   - kept from earlier scans: `parsers/agentProgress.js:69`, `projectService.js:158`, `agentEvents.js:345-347`, `agentAdapters.js:320`, `settings.js` (200 roots), `modelChoice.js` (alias price).
 - `.thadeus/tokens/<intent>.json` is written into the project and shows as untracked (US-0609).
+
+## Brownfield Notes for EPIC-14 (read at `90031e2`)
+
+1. **One boolean, many readers.** `detection.isAidlc` (`projectService.js:49-58`) is read in `ipc.js:766`, `menu.js:35`, `App.jsx:398-665` and `ProjectView.jsx:293-482`. The `offered` table is written twice (`App.jsx:401`, `ProjectView.jsx:360`) and must stay equal. `tests/main/menu.test.js`, `ipc.test.js`, `projectService.test.js` and `tests/renderer/AppShell.test.jsx`, `ProjectView.test.jsx`, `SetupAidlc.test.jsx` name `isAidlc`, so they will change.
+2. **A Spec Kit project today is "not AI-DLC".** It shows the AI-DLC setup screen, and `watchForSetup` waits for `aidlc/spaces/` for ever (`watcher.js:219`). US-1401's fallback ("only `.specify/` is Spec Kit; `aidlc/spaces/` alone or with `.specify/` is AI-DLC") belongs in `detectProject`.
+3. **Intent-keyed paths that break without a space.**
+   - `agents:progress` throws through `assertName(p.space)` (`agentProgress.js:59`).
+   - `agents:working` and `refreshQuestions` return nothing, quietly.
+   - `loadHandoffInputs` gives `[]`, so the handoff's stage boundary never fires.
+   - US-1410 asks for an explicit "cannot tell" in these cases, not an empty state.
+4. **Token readings have no source in Spec Kit.**
+   - They are written only from AI-DLC's usage ledger per in-flight intent (`ipc.js:821-826`).
+   - The history rebuild needs the ledger's transcript list and the audit's stage windows (`tokenHistory.js:127-155`).
+   - US-1409 needs another source, for example the Claude Code transcripts under `~/.claude/projects` (already read there, through `insideDir`) or the hook `usage` signal from opencode (`agentAdapters.js:250`). The file name pattern `^[\w.-]+$` already fits Spec Kit feature folders.
+5. **Settings are per machine.** `projectSettings` is keyed by the real root in `userData` (`settings.js:141`), so US-1408's framework file is new. A new project key has to be added in three places (`sanitizeProject`, `setProjectSettings`, `ipc.js:1298-1310`).
+6. **Commands.** Only `commands.aidlc` exists (`harnesses.js:17`, `:32`), and `harnessCommand` reads only that key. Spec Kit's invocation differs per integration (US-1403 AC3), so the family must be per harness. Resume's intent-switch sequence is AI-DLC-only.
+7. **Harness detection on opencode.** opencode counts as installed only by AI-DLC's files (`harnesses.js:31`). In a Spec Kit project with only opencode, `harnessProblem` can stay silent when nothing at all is detected, but it says "not installed" when Claude Code's `.claude/` exists.
+8. **Editor.** `.claude/` (where Spec Kit's Claude commands land) is engine-owned and read-only in the editor. `.specify/memory/constitution.md` and `specs/` are editable (US-1404 needs that).
+9. **Keep.** The AI-DLC path must open exactly as today (US-1401 AC1). Nothing may be written in `.specify/` or `specs/` (US-1402, US-1409). Every new text goes through `t()` in both locales, in the LCARS look, and through LCARS dialogs rather than `window.confirm` (which `confirmHarnessSwitch` still uses).
 
 ## Brownfield Notes for US-0031 (read at `6ec3546`)
 

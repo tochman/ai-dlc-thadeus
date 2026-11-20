@@ -65,6 +65,8 @@
 
 None. (affirmed 2026-11-14)
 
+None new. (affirmed 2026-11-19)
+
 ## Mandated
 
 <!-- Populated by practices-discovery affirmation gate. -->
@@ -80,6 +82,10 @@ ALWAYS keep line coverage at or above 80%, checked in CI. (affirmed 2026-11-14)
 ALWAYS run ESLint and Prettier in CI; a failure blocks the merge. (affirmed 2026-11-14)
 
 ALWAYS merge each story through its own squash-merged pull request; only docs and small chores may go straight to `main`. (affirmed 2026-11-14)
+
+None new. (affirmed 2026-11-19)
+
+The affirmed rules already in `memory/project.md` stay as they are: feature docs kept current, TDD for new behaviour, 80% line coverage in CI, ESLint and Prettier in CI, and squash-merged story pull requests. (affirmed 2026-11-19)
 
 ## Corrections
 

@@ -13,7 +13,7 @@ Pure modules in `src/shared/` and some parsers in `src/main/parsers/` (`features
 
 ### Architectural Style
 
-A modular monolith on the desktop, split along Electron process lines. Main is organised as service modules behind one IPC router (`ipc.js`, 1300 lines at `39a3dbf`). The renderer is a tree of view components with two data hooks (`useProject`, `useFeatures`) and a per-project terminal context. The evidence:
+A modular monolith on the desktop, split along Electron process lines. Main is organised as service modules behind one IPC router (`ipc.js`, 1379 lines at `90031e2`). The renderer is a tree of view components with two data hooks (`useProject`, `useFeatures`) and a per-project terminal context. The evidence:
 - `ipc.js` imports almost every main module and keeps per-project state in a `projects` map (root, space, watchers, sender, caches, pending previews);
 - `preload/index.js` exposes one `invoke` wrapper per channel and no generic invoke.
 
@@ -86,6 +86,29 @@ The PTY Manager and the agent channel are left out here (see `dependencies.md`).
 8. **Feature docs watch**: `syncFeaturesWatch` (`ipc.js:308`) watches the overview, each epic folder and `docs/releases/` with `watchFiles` (300 ms, max 800 ms). It only sends `features:changed`; nothing is recorded.
 9. **Agent progress** (US-0507, US-0214): see "Agent progress today".
 
+### Where AI-DLC is assumed today (EPIC-14 area, read at `90031e2`)
+
+There is one switch: `detectProject(root)` (`projectService.js:49-58`) returns `{isAidlc, activeSpace, spaces}`. `isAidlc` is true only when `aidlc/spaces/` has a space. `project:open` returns it, and the renderer keeps it per tab as `tabs[].detection`.
+
+| Layer | Where | What `isAidlc` (or an AI-DLC path) decides |
+|---|---|---|
+| Main: open | `ipc.js:759-775` | `watchSpace` (intents watcher, questions, model-profile baseline) or `watchForSetup` |
+| Main: re-detect | `ipc.js:337-355`, `watcher.js:219-238` | waits only for `aidlc/spaces/<space>`, then sends `project:detected` |
+| Main: per-intent data | `projectService.js` | `aidlc/spaces/<s>/intents/…`, `LEDGER_PATH`, `INFLIGHT_PATH`, the phase folders |
+| Main: questions and handoff | `ipc.js:377-397`, `:452-455` | need `p.space`; without one, the list is empty and the handoff has no inputs |
+| Main: agents | `ipc.js:867-878` | `agents:working` needs an active intent; `agents:progress` calls `assertName(p.space)` |
+| Main: token log | `ipc.js:808-832` | readings written only from AI-DLC's ledger, per in-flight intent `dirName` |
+| Main: menu | `menu.js:35` | Cost and other AI-DLC items enabled |
+| Renderer: arm | `App.jsx:398-403`, `:588-646`, `:665` | the `offered` views, the first block's label (Intents or Set up), Plans, Cost, Velocity, Github, the foot count |
+| Renderer: project body | `ProjectView.jsx:293-306`, `:360-372`, `:413-427`, `:463-482` | `AidlcProject` or `SetupAidlc`, the same `offered` table again, `useFeatures`' space, AI-DLC config sections, Add harness |
+| Renderer: commands | `harnesses.js:17`, `:32`, `:109`; `ResumeButton.jsx:35`; `TerminalPanel.jsx:16` | only `commands.aidlc` exists: Resume and the quick commands are `/aidlc …` |
+
+What does not depend on the framework:
+- the pty and the terminal tabs;
+- the hook channel, the agent event store, the agent dialog and the activity rows (keyed on session and project);
+- the editor, git, the Features view, the app settings;
+- `projectSettings[root]` in `userData`.
+
 ### Release planning today (US-0606, US-0607; read at `39a3dbf`)
 
 - **Record** (`planningRecord.js`): `<userData>/planning/<sha1(root)>.json` = `{protectedMain?, actions: [{id, kind, storyIds, version, at, state: pending|committed}]}`. `KINDS` is only `setRelease`, `createRelease` and `deleteRelease`. An action holds the operation, not file text. All projects share one write queue in the process.
@@ -123,12 +146,66 @@ The PTY Manager and the agent channel are left out here (see `dependencies.md`).
 
 ### Improvement Opportunities
 
-- `ipc.js` (1300 lines) and `agentHooks.js` (864) are the largest modules and are candidates for splitting. The planning scheduler and context (`ipc.js:540-603`) could move into `planningSync.js`.
+- One boolean, `isAidlc`, carries every framework decision, and the `offered` views table is written twice (`App.jsx:401`, `ProjectView.jsx:360`). A `framework` value and one shared view table per framework would remove the duplicate (EPIC-14).
+- `ipc.js` (1379 lines) and `agentHooks.js` (920) are the largest modules and are candidates for splitting. The planning scheduler and context (`ipc.js:540-603`) could move into `planningSync.js`.
 - The project-settings field list is repeated in three places (`settings.js` twice, `ipc.js` once).
 - `parsers/agentProgress.js` imports `projectService.js`; moving `workingAgents` into a parser would keep the parsers free of Node imports.
 - The planning scheduler's results never reach the renderer except through `features:changed` on `reapplied || pushed`. A `planning:status` push would make the waiting count live (US-0608).
 
 ## Interaction Diagrams
+
+### Opening a project and choosing its views (today, EPIC-14 area)
+
+```mermaid
+sequenceDiagram
+  participant APP as App.jsx
+  participant IPC as IPC Router
+  participant PS as projectService
+  participant W as watcher
+  participant PV as ProjectView
+  APP->>IPC: project:open(dir)
+  IPC->>PS: detectProject(root)
+  PS-->>IPC: {isAidlc, activeSpace, spaces}
+  alt isAidlc
+    IPC->>W: watchSpace: watchIntents(intents dir, ledger, usage, worktrees)
+  else not AI-DLC
+    IPC->>W: watchForSetup: watchForAidlc(aidlc/spaces)
+  end
+  IPC-->>APP: {projectId, root, name, detection}
+  APP->>APP: offered views and arm blocks from isAidlc
+  APP->>PV: project (with detection), view
+  alt isAidlc
+    PV->>PV: AidlcProject (useProject: intents, detail, cost)
+  else
+    PV->>PV: SetupAidlc
+  end
+  W-->>IPC: aidlc/spaces/<space> appears
+  IPC->>APP: project:detected {detection}
+```
+
+Text fallback: main detects the project once on open and, by `isAidlc`, starts the intents watcher or a watcher that waits for AI-DLC to appear. The renderer gets the detection with the project and derives the arm's views and the project body from it. When AI-DLC appears later, main re-detects and pushes `project:detected`, and the tab switches to the AI-DLC views. A Spec Kit project would stay on the setup screen today.
+
+### A command typed into the agent terminal (today: Resume and the quick commands)
+
+```mermaid
+sequenceDiagram
+  participant RB as ResumeButton / QuickSelect
+  participant HT as harnesses.js
+  participant TC as TerminalContext
+  participant TS as runSequence
+  participant PTY as pty:write
+  RB->>HT: harnessCommand(harness, suffix)
+  HT-->>RB: "/aidlc" + suffix, or null (no command for this harness)
+  alt same intent as active-intent, or quick command
+    RB->>TC: type('agent', cmd, {submit: false})
+  else other intent
+    RB->>TC: sequence('agent', [{"/aidlc intent <dir>", submit}, {"/aidlc", no submit}])
+    TC->>TS: wait for idle, write, wait for echo
+  end
+  TC->>PTY: write(text [+ Enter])
+```
+
+Text fallback: the command text comes only from the harness table's `commands.aidlc`. Resume waits while any agent tab works, asks, runs the active intent, or AI-DLC wrote the audit in the last 10 minutes. It types the command without Enter, or first submits an intent switch for another intent. The quick commands type `/aidlc --status`, `--doctor` or `continue` without Enter. A `/speckit-*` command would take the same `type` path with a second command family in the table.
 
 ### Assigning a story to a release (today, US-0606/US-0607)
 

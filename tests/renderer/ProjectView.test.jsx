@@ -3,6 +3,7 @@ import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testi
 
 // The project data hooks and the terminals have their own tests; here only which view shows matters.
 const intents = [{ dirName: '261113-config-view', slug: 'config-view', active: true }];
+const projectHook = vi.hoisted(() => ({ extra: {} }));
 vi.mock('../../src/renderer/useProject.js', () => ({
   useProject: () => ({
     space: 'default',
@@ -16,7 +17,8 @@ vi.mock('../../src/renderer/useProject.js', () => ({
     error: null,
     cost: { available: false, reason: 'Ingen ledger.' },
     models: null,
-    lastIntentChangeAt: null
+    lastIntentChangeAt: null,
+    ...projectHook.extra
   })
 }));
 const featuresHook = vi.hoisted(() => ({ extra: {} }));
@@ -141,6 +143,30 @@ describe('ProjectView: one view at a time', () => {
     expect(await screen.findByTestId('project-not-aidlc')).toBeTruthy();
     expect(screen.queryByTestId('refresh-panel')).toBeNull();
     expect(screen.queryByTestId('add-harness-dialog')).toBeNull();
+  });
+});
+
+describe('ProjectView: Resume in the intents list on a parked intent (US-0510 AC4.1.4)', () => {
+  afterEach(() => {
+    projectHook.extra = {};
+  });
+
+  it("is available and unparks through the project's id", async () => {
+    const parked = {
+      dirName: '261120-release-0-2-13',
+      slug: 'release-0-2-13',
+      active: true,
+      status: 'in-flight',
+      parked: true,
+      parkedStage: 'code-generation'
+    };
+    projectHook.extra = { intents: [parked], selected: parked.dirName };
+    window.bridge.unparkIntent = vi.fn(async () => ({ ok: true, switched: false }));
+    renderView('intents');
+    const resume = await screen.findByTestId('intent-resume');
+    await waitFor(() => expect(resume.getAttribute('aria-disabled')).toBe('false'));
+    await act(async () => fireEvent.click(resume));
+    expect(window.bridge.unparkIntent).toHaveBeenCalledWith('p1', parked.dirName);
   });
 });
 

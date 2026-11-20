@@ -631,11 +631,20 @@ const summaryOf = (f) => t(`agentHooks.summary.${f.key === 'settings' && f.chang
 /**
  * US-0506 u4 LC30: status, preview, apply and cancel per open project, and isCurrent for the source choice (C5).
  * @param {{log?: (line: string) => void, onStatus?: (s: {projectId, root, harnesses, previous}) => void,
- *   usedOf?: (projectId: string) => string[]|Promise<string[]>, releases?: object[], watch?: typeof watchFiles}} deps
+ *   usedOf?: (projectId: string) => string[]|Promise<string[]>, releases?: object[], watch?: typeof watchFiles,
+ *   record?: ((root: string, entry: {file: string, harness?: string}) => Promise<unknown>) | null}} deps
  *   onStatus: every status change, after open, apply or a change on disk (BR7.17); usedOf: the harnesses the project
- *   uses (BR7.15); watch: the watcher, a fake in tests
+ *   uses (BR7.15); watch: the watcher, a fake in tests; record: `(root, {file, harness?})` for each file an install
+ *   or update wrote (US-0609 FR3.3)
  */
-export function createHookInstaller({ log = console.warn, onStatus = () => {}, usedOf = () => [], releases = RELEASES, watch = watchFiles } = {}) {
+export function createHookInstaller({
+  log = console.warn,
+  onStatus = () => {},
+  usedOf = () => [],
+  releases = RELEASES,
+  watch = watchFiles,
+  record = null
+} = {}) {
   const projects = new Map(); // projectId -> { id, root, previews, chain, watcher, last, lastKey }
   const current = new Map(); // `${root}\0${harness}` -> boolean (PD30)
   const say = (line) => log(`[agent-hooks] ${line}`);
@@ -767,6 +776,14 @@ export function createHookInstaller({ log = console.warn, onStatus = () => {}, u
     for (const dir of dirs) await fs.rmdir(path.join(root, dir)).catch(() => {}); // non-recursive; ENOTEMPTY stays (RD37)
   };
 
+  /** US-0609 FR3.3: an install or update ends in a commit: each written file waits for thadeusSync; a failure is logged. */
+  async function recordWritten(root, pv) {
+    if (!record) return;
+    for (const f of pv.files.filter((x) => x.change !== 'none')) {
+      await record(root, { file: f.rel, ...(f.key === 'script' ? {} : { harness: pv.harness }) }).catch((err) => say(`record failed: ${err.message}`));
+    }
+  }
+
   /** RD40: one apply, its outcome and the preview's end state; the preview always leaves the map. */
   async function run(p, pv) {
     const changed = async (file, result = 'refused') => ({
@@ -847,6 +864,7 @@ export function createHookInstaller({ log = console.warn, onStatus = () => {}, u
       pv.state = 'applying';
       const job = p.chain.then(async () => {
         const out = await run(p, pv);
+        if (out.result === 'written' && pv.action !== 'remove') await recordWritten(p.root, pv);
         say(
           `${pv.harness} ${pv.action}: ${out.result}${out.refusal ? ` ${out.refusal}` : ''}${out.file ? ` ${out.file}` : ''}${out.cause ? ` (${out.cause})` : ''}`
         );
