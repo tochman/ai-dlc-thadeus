@@ -2,7 +2,8 @@
 // `<userData>/planning/`, outside the working tree, so a discarded checkout cannot lose an action. An action holds the
 // operation (kind, stories, version), not file text, so running it again is harmless. US-0608 FR2, FR5: every other
 // feature-doc change (an editor save, an agent's write) is a `content` entry: the file's new text and the hash it was
-// based on. An entry is `pending`, `committed` or, when its file or target moved on, `conflict`.
+// based on. An entry is `pending`, `committed` or, when its file or target moved on, `conflict`. US-0609 FR3: a changed
+// app file (`.thadeus/`, a harness file) is a `thadeus` entry: only its path, committed by thadeusSync.js.
 import { createHash, randomUUID } from 'node:crypto';
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
@@ -20,19 +21,26 @@ export const recordFile = (userData, root) => path.join(userData, 'planning', `$
 
 const validIds = (ids) => Array.isArray(ids) && ids.every((s) => typeof s === 'string' && STORY.test(s));
 const validBase = (h) => h === null || (typeof h === 'string' && HASH.test(h));
+const relPath = (f) =>
+  typeof f === 'string' && !f.startsWith('/') && !f.includes('\\') && !/^[a-zA-Z]:/.test(f) && !f.split('/').some((s) => s === '..' || s === '');
 /** US-0608 FR2.2: a root-relative Markdown path without `..`; planningSync also checks it is under the docs paths. */
-export const validDocFile = (f) =>
-  typeof f === 'string' &&
-  f.endsWith('.md') &&
-  !f.startsWith('/') &&
-  !f.includes('\\') &&
-  !/^[a-zA-Z]:/.test(f) &&
-  !f.split('/').some((s) => s === '..' || s === '');
+export const validDocFile = (f) => relPath(f) && f.endsWith('.md');
 
-const validAction = (a) =>
-  a &&
-  typeof a.id === 'string' &&
-  STATES.includes(a.state) &&
+/**
+ * US-0609 FR3.2: the harness files the app commits, one row each; `splice`: only the app's spans of it are committed
+ * (ADR-003). A later harness joins by one row. Lives here, not in thadeusSync.js (which re-exports it), so the record
+ * can check its paths without a circular import.
+ */
+export const HARNESS_FILES = [
+  { harness: 'claude', path: '.claude/settings.json', splice: true },
+  { harness: 'opencode', path: '.opencode/plugins/thadeus-dialog.js', splice: false }
+];
+const JUNK = /^(\.DS_Store|\.#.*|.*\.swp|.*~)$/;
+/** US-0609 FR3.1: a file under `.thadeus/` the app syncs; editor swap files and `.DS_Store` are not. */
+export const isThadeusPath = (f) => relPath(f) && f.startsWith('.thadeus/') && !JUNK.test(path.posix.basename(f));
+const validThadeus = (a) => (isThadeusPath(a.file) || HARNESS_FILES.some((h) => h.path === a.file)) && typeof a.at === 'string';
+
+const validPlanning = (a) =>
   validIds(a.storyIds) &&
   (a.kind === 'content'
     ? validDocFile(a.file) &&
@@ -40,6 +48,8 @@ const validAction = (a) =>
       typeof a.content === 'string' &&
       (a.earlier === undefined || (Array.isArray(a.earlier) && a.earlier.every(validBase)))
     : KINDS.includes(a.kind) && (a.version === null || (typeof a.version === 'string' && VERSION.test(a.version))));
+
+const validAction = (a) => a && typeof a.id === 'string' && STATES.includes(a.state) && (a.kind === 'thadeus' ? validThadeus(a) : validPlanning(a));
 
 /** US-0607 FR1.1: the project's record; a missing or unreadable file is an empty one, and invalid actions are dropped. */
 export async function readRecord(userData, root) {
@@ -96,6 +106,17 @@ export async function addContent(userData, root, { file, baseHash, content, stor
     return { ...r, actions: r.actions.map((a, j) => (j === i ? merged : a)) };
   });
   return next.actions.find((a) => a.id === entry.id);
+}
+
+/**
+ * US-0609 FR3.1, FR3.2: a changed app file waits to be committed: only its path (the text is read from disk at commit
+ * time). One entry per file; a newer change replaces it with a new id, so a cycle that took the old one leaves it.
+ */
+export async function addThadeus(userData, root, { file, harness }) {
+  const entry = { id: randomUUID(), kind: 'thadeus', file, ...(harness ? { harness } : {}), at: new Date().toISOString(), state: 'pending' };
+  if (!validAction(entry)) throw new Error(`Ogiltig .thadeus-ändring: ${String(file)}`);
+  await update(userData, root, (r) => ({ ...r, actions: [...r.actions.filter((a) => !(a.kind === 'thadeus' && a.file === file)), entry] }));
+  return entry;
 }
 
 /** US-0608 FR5.2: entries whose file or target moved on; the file keeps the target's text, the record keeps the app's. */

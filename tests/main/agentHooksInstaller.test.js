@@ -3,7 +3,9 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createHash } from 'node:crypto';
 import { promises as fs } from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
+import { addThadeus, readRecord } from '../../src/main/planningRecord.js';
 import { CANONICAL, CURRENT, FILES, PLUGIN_BYTES, SCRIPT_BYTES, createHookInstaller } from '../../src/main/agentHooks.js';
 import { fixture, removeProject, tempProject, testEarlier } from '../helpers/agentHooksFixtures.js';
 
@@ -186,6 +188,25 @@ describe('preview (BR7.7, SD31, SD33, RD39)', () => {
     const pv = await installer.preview('p1', 'claude', 'install');
     installer.cancel('p1', pv.previewId);
     expect(await installer.apply('p1', pv.previewId)).toMatchObject({ result: 'refused', refusal: 'previewUnknown' });
+  });
+});
+
+describe('the commit after an apply (US-0609 FR3.3)', () => {
+  it('records a thadeus entry for each harness file an install wrote (AC3.1.3)', async () => {
+    const userData = await fs.mkdtemp(path.join(os.tmpdir(), 'hooks-record-'));
+    try {
+      installer = make({ record: (r, entry) => addThadeus(userData, r, entry) });
+      await installer.openProject('p1', root);
+      const pv = await installer.preview('p1', 'claude', 'install');
+      expect((await installer.apply('p1', pv.previewId)).result).toBe('written');
+      const { actions } = await readRecord(userData, root);
+      expect(actions.map((a) => [a.kind, a.file, a.harness ?? null]).sort()).toEqual([
+        ['thadeus', FILES.settings, 'claude'],
+        ['thadeus', FILES.script, null]
+      ]);
+    } finally {
+      await fs.rm(userData, { recursive: true, force: true });
+    }
   });
 });
 

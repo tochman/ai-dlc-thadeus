@@ -73,7 +73,30 @@ Text fallback:
 | Agent harness hooks | a file channel in userData | Agent Channel, Dialog Hook Script, Agent Adapters, Agent Event Store |
 | App data (`userData/`) | `settings.json`, `planning/*.json`, planning worktrees | Settings Store, Planning Record, Planning Sync |
 
-## US-0608 Blast Radius
+## EPIC-14 Blast Radius (read at `90031e2`)
+
+| File | Likely change | Dependents and tests |
+|---|---|---|
+| `src/main/projectService.js` | `detectProject` finds `.specify/` too and gives the framework; AI-DLC readers unchanged | `ipc.js`, `agentProgress.js`; `projectService.test.js` |
+| new `src/main/speckit*.js`, `src/main/parsers/speckit*.js` | feature list, `tasks.md`, flow from files, `extensions.yml`, the active feature | new tests, fixtures under `tests/fixtures/` |
+| `src/main/watcher.js` | a watch for `specs/` and `.specify/`; `watchForAidlc` also wakes on `.specify/` | `ipc.js`; `watcher.test.js` |
+| `src/main/ipc.js` | `project:open` branches on the framework; new Spec Kit channels; questions, `agents:*` and `tokens:readings` answer for Spec Kit; the framework file read and written | `ipc.test.js` |
+| `src/main/settings.js` | per-machine settings stay; the repo-kept framework is a separate file (US-1408) | `settings.test.js` |
+| `src/main/setup.js`, `src/main/tools.js` | `specify init` preview and run; a `specify` tool id | `setup.test.js` |
+| `src/main/tokenReadings.js`, `tokenHistory.js` | a reading source for a Spec Kit feature (no AI-DLC ledger there) and a project-wide bucket | `tokenReadings.test.js`, `tokenHistory.test.js` |
+| `src/main/menu.js` | the framework in the menu state instead of `isAidlc` | `menu.test.js` |
+| `src/preload/index.js` | new members, one line each | none |
+| `src/shared/harnesses.js` | a Spec Kit command family per harness; maybe Spec Kit markers for opencode | `harness.test.js`; `fileWrite.js` (engine-owned dirs come from the markers) |
+| `src/renderer/App.jsx`, `ProjectView.jsx` | the framework instead of `isAidlc`; one view table; the Spec Kit arm blocks and views; the first-open choice and the switch | `AppShell.test.jsx`, `ProjectView.test.jsx` |
+| `src/renderer/ResumeButton.jsx`, `TerminalPanel.jsx` | commands from the framework's family | `ResumeButton.test.jsx`, `TerminalPanel.test.jsx` |
+| `src/renderer/ProjectSettingsView.jsx`, `SetupAidlc.jsx` | a framework section and switch; Spec Kit setup beside it | `ProjectSettingsView.test.jsx`, `SetupAidlc.test.jsx` |
+| `src/shared/locales/{sv,en}.json` | new keys | `i18nKeys.test.js` |
+
+Unchanged: the hook channel, Agent Adapters, the Agent Event Store, the agent dialog, the pty, Terminal Control, the editor (except that `.claude/` stays engine-owned), git, and the Features view.
+
+Impact: high. Every layer is touched, but the existing AI-DLC path can stay as it is behind the new value.
+
+## US-0608 Blast Radius (kept from `39a3dbf`, not re-verified)
 
 | File | Likely change | Dependents and tests |
 |---|---|---|

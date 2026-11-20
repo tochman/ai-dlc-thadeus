@@ -7,6 +7,7 @@ import path from 'node:path';
 import {
   addAction,
   addContent,
+  addThadeus,
   markCommitted,
   markConflict,
   readRecord,
@@ -119,6 +120,32 @@ describe('planning record (US-0607 FR1.1, FR1.2)', () => {
     expect((await readRecord(userData, '/work/a')).actions[0].state).toBe('conflict');
     await resolveEntry(userData, '/work/a', e.id, { baseHash: 'c'.repeat(64) });
     expect((await readRecord(userData, '/work/a')).actions[0]).toMatchObject({ state: 'pending', baseHash: 'c'.repeat(64), content: 'mine\n' });
+  });
+
+  // US-0609 FR3.1, FR3.2: a `thadeus` entry holds only the path of a changed app file, never its text.
+  it('keeps a thadeus entry under .thadeus/ or on a harness path, one per file: a newer change replaces it', async () => {
+    const one = await addThadeus(userData, '/work/a', { file: '.thadeus/tokens/i.json' });
+    expect(one).toMatchObject({ kind: 'thadeus', file: '.thadeus/tokens/i.json', state: 'pending' });
+    expect(one).not.toHaveProperty('content');
+    const hook = await addThadeus(userData, '/work/a', { file: '.claude/settings.json', harness: 'claude' });
+    const again = await addThadeus(userData, '/work/a', { file: '.thadeus/tokens/i.json' });
+    const { actions } = await readRecord(userData, '/work/a');
+    expect(actions.map((a) => [a.id, a.file])).toEqual([
+      [hook.id, '.claude/settings.json'],
+      [again.id, '.thadeus/tokens/i.json']
+    ]);
+    expect(again.id).not.toBe(one.id);
+    expect(actions[0]).toMatchObject({ harness: 'claude' });
+  });
+
+  it('refuses a thadeus entry outside .thadeus/ and the harness paths, or with `..`, and drops one on read', async () => {
+    for (const file of ['src/x.js', '.thadeus/../src/x.js', '../.thadeus/x', '/abs/.thadeus/x', '.thadeus', '.claude/other.json']) {
+      await expect(addThadeus(userData, '/work/a', { file })).rejects.toThrow();
+    }
+    await fs.mkdir(path.join(userData, 'planning'), { recursive: true });
+    const good = { id: 't', kind: 'thadeus', file: '.thadeus/x.json', at: new Date().toISOString(), state: 'pending' };
+    await fs.writeFile(recordFile(userData, '/work/a'), JSON.stringify({ actions: [good, { ...good, id: 'bad', file: 'README.md' }] }));
+    expect((await readRecord(userData, '/work/a')).actions.map((a) => a.id)).toEqual(['t']);
   });
 
   it('keeps protectedMain across later changes', async () => {

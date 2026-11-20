@@ -48,6 +48,11 @@ The app calls `aidlc` (the AI-DLC CLI), `git`, `gh` (the updater's fallback, plu
 
 Agent progress depends on the hook payloads of Claude Code and of opencode 2.1.4's V2 events (kept from `0ebb196`).
 
+EPIC-14 (read at `90031e2`; `package.json` not re-read):
+- The app does not call `specify` (Spec Kit's Python CLI, `uv tool install specify-cli`) yet. It is not in the Tools Registry. US-1405 adds it beside `aidlc`, through `runFixed` with fixed arguments, as `setup.js` does.
+- No YAML library is installed, and `.specify/extensions.yml` (US-1404) needs either a new dependency or a small reader for the shape Spec Kit writes.
+- `.specify/feature.json` and `specs/<feature>/*.md` can be read with the existing `readJsonSafe`, `readText` and `listDir`.
+
 ## Platforms
 
 macOS universal (unsigned `.dmg`) and Linux x64 `.deb`, built on ubuntu-22.04 to keep the glibc floor at 2.35. Windows is not targeted.

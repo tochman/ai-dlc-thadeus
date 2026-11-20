@@ -1,0 +1,15 @@
+{
+  "stage": "infrastructure-design",
+  "unit": "u2-framework-file",
+  "upstream_ids": ["NFR3.1", "NFR3.6", "NFR1.1", "NFR8.1", "NFR3.2", "NFR3.3", "NFR3.4", "NFR3.5"],
+  "coverage": [
+    { "id": "NFR3.1", "status": "OK", "target": "CI verify job runs the symlink tests on POSIX runners" },
+    { "id": "NFR3.2", "status": "OK", "target": "CI verify job runs the size and nesting tests" },
+    { "id": "NFR3.3", "status": "OK", "target": "CI verify job runs the __proto__ round-trip test" },
+    { "id": "NFR3.4", "status": "OK", "target": "CI verify job runs the failing-rename test" },
+    { "id": "NFR3.5", "status": "OK", "target": "CI verify job runs U2's no-stray-write test" },
+    { "id": "NFR3.6", "status": "OK", "target": "CI verify job runs the read-never-writes test" },
+    { "id": "NFR1.1", "status": "OK", "target": "i18nKeys.test.js in the verify job" },
+    { "id": "NFR8.1", "status": "OK", "target": "existing coverage, ESLint, Prettier and gitleaks gates" }
+  ]
+}
