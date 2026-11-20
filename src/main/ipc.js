@@ -333,7 +333,10 @@ async function syncFeaturesWatch(projectId) {
   }
 }
 
-/** A folder without AI-DLC is watched until a space appears, then it is detected again (FR4.6). */
+/**
+ * A folder with no framework is watched until a space or `.specify/` appears, then it is detected again (FR4.6).
+ * US-1401 BR1.9: it acts when the framework changed, and only an AI-DLC project gets the space watcher.
+ */
 function watchForSetup(projectId) {
   const p = project(projectId);
   p.setupWatcher = watchForAidlc({
@@ -341,10 +344,10 @@ function watchForSetup(projectId) {
     onFound: async () => {
       try {
         const detection = await detectProject(p.root);
-        if (!detection.isAidlc || !projects.has(projectId)) return;
+        if (detection.framework === null || !projects.has(projectId)) return;
         await p.setupWatcher?.close();
         p.setupWatcher = null;
-        await watchSpace(projectId, detection.activeSpace);
+        if (detection.framework === 'aidlc') await watchSpace(projectId, detection.activeSpace);
         if (!p.sender.isDestroyed()) p.sender.send('project:detected', { projectId, detection });
       } catch (err) {
         console.error(`Omdetektering misslyckades för ${p.root}:`, err);
@@ -763,8 +766,9 @@ const handlers = {
     // Harness detection starts now, in the background; harness:detect returns the same promise (US-0801 NFR3).
     const harnesses = detectHarnesses(root);
     projects.set(projectId, { id: projectId, root, space: null, watcher: null, setupWatcher: null, sender: event.sender, harnesses, agentTabs: new Set() });
-    if (detection.isAidlc) await watchSpace(projectId, detection.activeSpace);
-    else watchForSetup(projectId);
+    // US-1401 BR1.9: the space watcher for AI-DLC, the setup watcher for no framework; Spec Kit's comes with U6.
+    if (detection.framework === 'aidlc') await watchSpace(projectId, detection.activeSpace);
+    else if (detection.framework === null) watchForSetup(projectId);
     syncFeaturesWatch(projectId); // not awaited: opening a project never waits on the feature docs
     watchConfig(projectId);
     watchGitHead(projectId);

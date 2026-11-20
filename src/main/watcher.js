@@ -212,23 +212,25 @@ export function watchIntents({ intentsDir, ledgerFile, usageDir, worktreesDir, o
 }
 
 /**
- * Watches a folder that is not an AI-DLC project yet and calls `onFound` once, when the first space
- * folder appears under aidlc/spaces/ (that is when detectProject accepts it, FR4.6). Only root, aidlc/,
- * aidlc/spaces/ and its direct children are let through, so a large project is not scanned.
+ * Watches a folder that has no framework yet and calls `onFound` once, when the first space folder appears
+ * under aidlc/spaces/ or `.specify/` appears (that is when detectProject finds one, FR4.6, US-1401 BR1.9). Only
+ * root, aidlc/, aidlc/spaces/, its direct children and .specify/ are let through, so a large project is not scanned.
  */
 export function watchForAidlc({ root, onFound, onError = console.error }) {
   const base = path.resolve(root);
   const spaces = path.join(base, 'aidlc', 'spaces');
+  const specify = path.join(base, '.specify'); // US-1401 BR1.9: Spec Kit appearing counts too
   const keep = (p) => {
     const abs = path.resolve(p);
-    return abs === base || abs === path.dirname(spaces) || abs === spaces || path.dirname(abs) === spaces;
+    return abs === base || abs === path.dirname(spaces) || abs === spaces || path.dirname(abs) === spaces || abs === specify;
   };
   let found = false;
   // ignoreInitial is off so a space created between detectProject and this watcher still counts.
   const watcher = chokidar.watch(base, { depth: 2, ignored: (p) => !keep(p) });
   watcher.on('addDir', (p) => {
     const abs = path.resolve(p);
-    if (found || path.dirname(abs) !== spaces || path.basename(abs).startsWith('.')) return;
+    const isSpace = path.dirname(abs) === spaces && !path.basename(abs).startsWith('.');
+    if (found || !(isSpace || abs === specify)) return;
     found = true;
     onFound();
   });

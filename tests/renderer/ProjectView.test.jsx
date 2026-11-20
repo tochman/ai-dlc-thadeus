@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { viewFields } from '../../src/shared/frameworkViews.js';
 
 // The project data hooks and the terminals have their own tests; here only which view shows matters.
 const intents = [{ dirName: '261113-config-view', slug: 'config-view', active: true }];
@@ -39,7 +40,17 @@ vi.mock('../../src/renderer/TerminalContext.jsx', async (importOriginal) => {
 });
 const { default: ProjectView } = await import('../../src/renderer/ProjectView.jsx');
 
-const project = { projectId: 'p1', root: '/p/app', name: 'app', detection: { isAidlc: true, activeSpace: 'default', spaces: ['default'] } };
+const detectionOf = (framework) => ({
+  framework,
+  source: 'detected',
+  reason: framework ? null : 'Inget ramverk.',
+  ...viewFields(framework),
+  activeSpace: framework === 'aidlc' ? 'default' : null,
+  spaces: framework === 'aidlc' ? ['default'] : []
+});
+const none = detectionOf(null);
+const speckit = detectionOf('speckit');
+const project = { projectId: 'p1', root: '/p/app', name: 'app', detection: detectionOf('aidlc') };
 const installed = [{ id: 'claude', label: 'Claude Code', selectable: true, installed: true, cli: { found: true, version: '2.1.0' } }];
 
 beforeEach(() => {
@@ -137,10 +148,46 @@ describe('ProjectView: one view at a time', () => {
   });
 
   it('a folder without AI-DLC shows its setup, whatever view was asked for', async () => {
-    renderView('github', { project: { ...project, detection: { isAidlc: false, reason: 'Ingen aidlc/.' } } });
+    renderView('github', { project: { ...project, detection: none } });
     expect(await screen.findByTestId('project-not-aidlc')).toBeTruthy();
     expect(screen.queryByTestId('refresh-panel')).toBeNull();
     expect(screen.queryByTestId('add-harness-dialog')).toBeNull();
+  });
+});
+
+describe('ProjectView: a Spec Kit project (US-1401)', () => {
+  const kit = { ...project, detection: speckit };
+
+  it('shows the Spec Kit shell in the first view, without intents or setup (AC1.1.2)', async () => {
+    renderView('specs', { project: kit });
+    expect(await screen.findByTestId('speckit-shell-root')).toBeTruthy();
+    expect(shown('speckit-shell-root')).toBe(true);
+    expect(screen.queryByTestId('intent-list')).toBeNull();
+    expect(screen.queryByTestId('project-not-aidlc')).toBeNull();
+  });
+
+  it('falls back to the Spec Kit shell for an AI-DLC view (R-01)', async () => {
+    for (const view of ['intents', 'cost', 'github', 'plans']) {
+      renderView(view, { project: kit });
+      expect(shown('speckit-shell-root'), view).toBe(true);
+      expect(screen.queryByTestId('refresh-panel'), view).toBeNull();
+      expect(screen.queryByTestId('cost-panel'), view).toBeNull();
+      cleanup();
+    }
+  });
+
+  it('keeps the shared Configuration, without the AI-DLC sections (BR1.11)', async () => {
+    renderView('config', { project: kit, section: 'aidlc' }); // an AI-DLC section falls back to the project's own
+    expect(await screen.findByTestId('project-settings-view')).toBeTruthy();
+    expect(shown('speckit-shell-root')).toBe(false);
+    expect(screen.queryByTestId('config-view')).toBeNull();
+    expect(window.bridge.getAidlcConfig).not.toHaveBeenCalled();
+    expect(screen.queryByTestId('add-harness-dialog')).toBeNull();
+    cleanup();
+
+    renderView('config', { project: kit, section: 'agent' });
+    expect(await screen.findByTestId('project-settings-view')).toBeTruthy();
+    expect(screen.queryByTestId('project-settings-add-harness')).toBeNull(); // adding a harness is AI-DLC setup
   });
 });
 
@@ -183,7 +230,7 @@ describe('ProjectView: lifecycle rule notice (US-0603 FR5.2, FR5.3)', () => {
     cleanup();
 
     featuresHook.extra = { ...docs, ruleStatus: 'missing' };
-    renderView('intents', { project: { ...project, detection: { isAidlc: false, reason: 'Ingen aidlc/.' } } });
+    renderView('intents', { project: { ...project, detection: none } });
     await screen.findByTestId('project-not-aidlc');
     expect(screen.queryByTestId('lifecycle-rule-notice')).toBeNull();
   });

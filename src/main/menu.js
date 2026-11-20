@@ -8,13 +8,19 @@ import { t } from '../shared/i18n.js';
 export const AIDLC_DOCS_URL = 'https://github.com/awslabs/aidlc-workflows';
 export const ISSUES_URL = `${APP_REPO_URL}/issues`; // US-0027
 
-const STATE_KEYS = ['hasProject', 'isAidlc', 'showFeatures'];
-let menuState = { hasProject: false, isAidlc: false, showFeatures: false };
+// US-1401 BR1.8: the project's framework replaces isAidlc in the menu state.
+const STATE_CHECKS = {
+  hasProject: (v) => typeof v === 'boolean',
+  framework: (v) => v === 'aidlc' || v === 'speckit' || v === null,
+  showFeatures: (v) => typeof v === 'boolean'
+};
+const STATE_KEYS = Object.keys(STATE_CHECKS);
+let menuState = { hasProject: false, framework: null, showFeatures: false };
 
-/** `menu:state` from the renderer: exactly three booleans, anything else is ignored (NFR1). */
+/** `menu:state` from the renderer: two booleans and the framework, anything else is ignored (NFR1). */
 export function parseMenuState(raw) {
   if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return null;
-  if (!STATE_KEYS.every((k) => typeof raw[k] === 'boolean')) return null;
+  if (!STATE_KEYS.every((k) => STATE_CHECKS[k](raw[k]))) return null;
   return Object.fromEntries(STATE_KEYS.map((k) => [k, raw[k]]));
 }
 
@@ -26,13 +32,13 @@ const sep = { type: 'separator' };
 
 /**
  * Pure: the menu template for Menu.buildFromTemplate, testable without Electron.
- * @param {{isMac: boolean, isPackaged: boolean, state: {hasProject: boolean, isAidlc: boolean, showFeatures: boolean},
+ * @param {{isMac: boolean, isPackaged: boolean, state: {hasProject: boolean, framework: 'aidlc'|'speckit'|null, showFeatures: boolean},
  *          fullscreen: boolean, send: (payload: {command: string}) => void,
  *          actions: {toggleFullscreen: () => void, reportIssue: () => void}}} options
  */
 export function buildMenuTemplate({ isMac, isPackaged, state, fullscreen, send, actions }) {
   const hasProject = state?.hasProject === true;
-  const isAidlc = hasProject && state?.isAidlc === true;
+  const aidlcItems = hasProject && state?.framework === 'aidlc'; // Kostnad and Github (US-1401 BR1.8)
   const showFeatures = hasProject && state?.showFeatures === true;
   const cmd =
     (command, args = {}) =>
@@ -88,8 +94,8 @@ export function buildMenuTemplate({ isMac, isPackaged, state, fullscreen, send, 
       submenu: [
         { label: t('menu.intents'), enabled: hasProject, click: cmd('view', { view: 'intents' }) },
         { label: t('menu.features'), visible: showFeatures, enabled: showFeatures, click: cmd('view', { view: 'features' }) },
-        { label: t('menu.cost'), enabled: isAidlc, click: cmd('panel', { panel: 'cost' }) },
-        { label: t('menu.github'), enabled: isAidlc, click: cmd('panel', { panel: 'github' }) },
+        { label: t('menu.cost'), enabled: aidlcItems, click: cmd('panel', { panel: 'cost' }) },
+        { label: t('menu.github'), enabled: aidlcItems, click: cmd('panel', { panel: 'github' }) },
         sep,
         {
           label: t('menu.fullscreen'),
