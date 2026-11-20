@@ -582,6 +582,10 @@ button.lcars-chip:hover { border-color: var(--steel-text); color: var(--steel-li
 .intent-row-top { display: flex; align-items: baseline; gap: 8px; min-width: 0; }
 .intent-slug { font-size: 19px; line-height: 1.15; color: var(--text); overflow-wrap: anywhere; }
 .intent-badge { align-self: center; padding: 1px 6px; background: var(--steel); color: var(--on-light); font-size: 11px; letter-spacing: 0.04em; text-transform: uppercase; }
+/* US-0510: the parked mark, an amber pill-ended LCARS block; Park and Unpark beside it in the detail head. */
+.intent-parked { align-self: center; padding: 1px 10px 1px 8px; border-radius: 0 10px 10px 0; background: var(--amber); color: var(--on-light); font-size: 11px; letter-spacing: 0.04em; text-transform: uppercase; white-space: nowrap; }
+.intent-park { display: flex; align-items: center; gap: var(--gap); flex-wrap: wrap; }
+.intent-park-note { margin: 0; color: var(--steel-text); font-size: 13px; }
 .intent-cost { margin-left: auto; font-size: 16px; color: var(--steel-text); font-variant-numeric: tabular-nums; white-space: nowrap; }
 .intent-row-meta { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 12px; color: var(--muted); text-transform: uppercase; }
 .intent-steps { display: inline-flex; align-items: center; gap: 6px; font-variant-numeric: tabular-nums; }

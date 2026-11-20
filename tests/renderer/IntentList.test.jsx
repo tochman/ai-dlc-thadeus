@@ -184,3 +184,19 @@ describe('IntentList', () => {
     expect(screen.queryByText('Aktiv')).toBeNull();
   });
 });
+
+describe('IntentList parked mark (US-0510)', () => {
+  it("a parked intent's row shows the LCARS mark with its stage (AC4.1.1)", () => {
+    const list = [{ ...intents[0], parked: true, parkedStage: 'code-generation' }, intents[1], intents[2]];
+    render(<IntentList intents={list} selected={null} onSelect={vi.fn()} />);
+    const marks = screen.getAllByTestId('intent-parked');
+    expect(marks).toHaveLength(1);
+    expect(marks[0].textContent).toBe('Parkerad vid Code Generation');
+    expect(marks[0].closest('[data-testid="intent-list-row"]').querySelector('.intent-slug').textContent).toBe('epic29-small-k2-fixes');
+  });
+
+  it('shows no mark on intents that are not parked (AC4.1.6)', () => {
+    render(<IntentList intents={[{ ...intents[0], parked: false, parkedStage: null }, intents[2]]} selected={null} onSelect={vi.fn()} />);
+    expect(screen.queryByTestId('intent-parked')).toBeNull();
+  });
+});

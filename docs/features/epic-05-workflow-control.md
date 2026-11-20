@@ -8,7 +8,7 @@
 
 **Stories:** US-0501, US-0502, US-0503, US-0504, US-0505, US-0506, US-0507, US-0508, US-0509, US-0510
 
-**Status (2026-11-20):** ✅ US-0501–US-0503, US-0505 and US-0506 released (v0.2.0–v0.2.5). ✅ US-0504 released in v0.2.7. ✅ US-0507 released in v0.2.8. 📋 US-0508 and US-0509 planned, for v0.3.1. 📋 US-0510 planned, for v0.2.13. Each story names its release.
+**Status (2026-11-20):** ✅ US-0501–US-0503, US-0505 and US-0506 released (v0.2.0–v0.2.5). ✅ US-0504 released in v0.2.7. ✅ US-0507 released in v0.2.8. 📋 US-0508 and US-0509 planned, for v0.3.1. ✅ US-0510 done, for v0.2.13. Each story names its release.
 
 ---
 
@@ -186,18 +186,18 @@
 - **Notes:** AI-DLC 2.11.3 has `compose "<task>"`, which suggests a plan for the stages not yet run and stops at an approve/edit/reject gate.
 - **Dependencies:** US-0501, US-0901
 
-**US-0510: Park and unpark an intent from the app** 📋 Planned, for v0.2.13
+**US-0510: Park and unpark an intent from the app** ✅ Done, for v0.2.13
 - As a **developer who stops in the middle of an intent**, in order to **leave it cleanly and pick it up later without typing AI-DLC commands**, I would like **to park an intent and unpark it from its row and its detail in the app**.
 - **Epic:** EPIC-05
 - **Priority:** Medium
 - **Complexity:** Small
 - **Background:** Asked for 2026-11-20. A parked intent shows nothing in the app today, and resuming it stops at "This workflow is parked. Run `aidlc engine state unpark` ...", so the person has to know that command and run it first.
 - **Acceptance Criteria:**
-  - [ ] **Given** a parked intent, **then** its row in the intents list and its detail show a "Parked" mark in the LCARS style, with the stage it was parked at.
-  - [ ] **Given** an intent in flight, **then** its detail offers "Park". The app parks it through AI-DLC's own command (`aidlc engine orchestrate park --person-asked`), run with fixed arguments, never by editing AI-DLC's files.
-  - [ ] **Given** a parked intent, **then** "Unpark" clears the mark through `aidlc engine state unpark`, and "Resume" on a parked intent unparks it first, so `/aidlc --resume` carries on without the "workflow is parked" stop.
-  - [ ] **Given** the command fails or AI-DLC refuses (for example in the middle of a stage), **then** the app shows its reason and changes nothing.
-  - [ ] The mark follows the files live, also when an agent parks or unparks the intent.
-  - [ ] Every text goes through `t()` in `sv.json` and `en.json`; the buttons carry `data-testid`s.
+  - [x] **Given** a parked intent, **then** its row in the intents list and its detail show a "Parked" mark in the LCARS style, with the stage it was parked at.
+  - [x] **Given** an intent in flight, **then** its detail offers "Park". The app parks it through AI-DLC's own command (`aidlc engine orchestrate park --person-asked`), run with fixed arguments, never by editing AI-DLC's files.
+  - [x] **Given** a parked intent, **then** "Unpark" clears the mark through `aidlc engine state unpark`, and "Resume" on a parked intent unparks it first, so `/aidlc --resume` carries on without the "workflow is parked" stop.
+  - [x] **Given** the command fails or AI-DLC refuses (for example in the middle of a stage), **then** the app shows its reason and changes nothing.
+  - [x] The mark follows the files live, also when an agent parks or unparks the intent.
+  - [x] Every text goes through `t()` in `sv.json` and `en.json`; the buttons carry `data-testid`s.
 - **Notes:** AI-DLC parks only at a clean stage boundary; the app shows its refusal rather than working around it.
 - **Dependencies:** US-0501

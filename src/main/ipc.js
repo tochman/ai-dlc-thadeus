@@ -64,6 +64,7 @@ import { addThadeus } from './planningRecord.js';
 import { syncCycle, watchThadeus } from './thadeusSync.js';
 import { storyIdsIn } from './parsers/features.js';
 import { runFixed } from './exec.js';
+import { park, readParkStatus, unpark, withParkStatus } from './intentPark.js';
 import { DELIVERY_DEFAULT } from './parsers/releases.js';
 import { getSetupInfo, runSetup } from './setup.js';
 import { detectHarnesses } from './harness.js';
@@ -510,6 +511,19 @@ async function checkProfiles(projectId) {
   }
 }
 
+/**
+ * US-0510 FR4.1: reads `aidlc engine status` for the active intent, keeps it with its read time for project:intents,
+ * and tells the renderer to reload the list (the active intent may have changed too). Never throws.
+ */
+async function refreshParkStatus(projectId) {
+  const p = projects.get(projectId);
+  if (!p) return;
+  p.parkStatus = await readParkStatus(p.root);
+  if (projects.get(projectId) === p && !p.sender.isDestroyed()) {
+    p.sender.send('project:changed', { projectId, space: p.space, dirNames: [], indexChanged: true, costChanged: false });
+  }
+}
+
 /** (Re)starts the watcher when the renderer looks at a different space. */
 async function watchSpace(projectId, space) {
   const p = project(projectId);
@@ -805,8 +819,10 @@ const handlers = {
     // Harness detection starts now, in the background; harness:detect returns the same promise (US-0801 NFR3).
     const harnesses = detectHarnesses(root);
     projects.set(projectId, { id: projectId, root, space: null, watcher: null, setupWatcher: null, sender: event.sender, harnesses, agentTabs: new Set() });
-    if (detection.isAidlc) await watchSpace(projectId, detection.activeSpace);
-    else watchForSetup(projectId);
+    if (detection.isAidlc) {
+      await watchSpace(projectId, detection.activeSpace);
+      refreshParkStatus(projectId); // US-0510 FR4.1: not awaited; opening never waits on AI-DLC
+    } else watchForSetup(projectId);
     syncFeaturesWatch(projectId); // not awaited: opening a project never waits on the feature docs
     watchConfig(projectId);
     watchGitHead(projectId);
@@ -834,9 +850,24 @@ const handlers = {
   'project:intents': async (_event, projectId, space, onlyDirs) => {
     const p = project(projectId);
     await watchSpace(projectId, space);
-    return loadIntentList(p.root, space, Array.isArray(onlyDirs) ? onlyDirs.map(String) : undefined);
+    return withParkStatus(await loadIntentList(p.root, space, Array.isArray(onlyDirs) ? onlyDirs.map(String) : undefined), p.parkStatus);
   },
   'project:intent': async (_event, projectId, space, dirName) => loadIntentDetail(project(projectId).root, space, dirName),
+  // US-0510 FR4.2, FR4.3: park the active intent, or unpark one (switching to it first); the list reloads on project:changed.
+  'intents:park': async (_event, projectId) => {
+    const p = project(projectId);
+    const res = await park(p.root);
+    await refreshParkStatus(projectId);
+    return res;
+  },
+  'intents:unpark': async (_event, projectId, dirName) => {
+    const p = project(projectId);
+    const { intents } = await loadIntentList(p.root, p.space, []);
+    const known = intents.filter((i) => !i.missingOnDisk).map((i) => i.dirName);
+    const res = await unpark(p.root, dirName, { activeDirName: intents.find((i) => i.active)?.dirName ?? null, known });
+    await refreshParkStatus(projectId);
+    return res;
+  },
   // US-0303 FR3.5: the project's velocity from the cached intent list, the feature docs, the release tags and the epic
   // files' git history (the folder of the first epic file; none without epic files).
   'project:velocity': async (_event, projectId, space) => {

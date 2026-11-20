@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { currentTip, formatCost, isInFlight, stagePosition } from './format.js';
+import { currentTip, formatCost, isInFlight, stagePosition, stageTitle } from './format.js';
 import ResumeButton from './ResumeButton.jsx';
 import { Dots, progressStates } from './Lcars.jsx';
 import Tooltip from './Tooltip.jsx';
@@ -60,10 +60,23 @@ function rowTips(t, i, costs) {
     .join('\n');
 }
 
+/** US-0510 FR4.1: the LCARS "Parked at <stage>" mark of a parked intent, in its row and its detail. */
+export function ParkedMark({ stage }) {
+  const { t } = useTranslation();
+  return (
+    <span className="intent-parked" data-testid="intent-parked">
+      {t('intents.parked', { stage: stage ? stageTitle(stage) : '–' })}
+    </span>
+  );
+}
+
 const unique = (values) => [...new Set(values.filter(Boolean))].sort();
 
-/** @param {{cost?: {available: boolean, perIntent?: object}|null}} props cost hidden entirely when unavailable (FR1.5) */
-export default function IntentList({ intents, selected, onSelect, cost }) {
+/**
+ * @param {{cost?: {available: boolean, perIntent?: object}|null, projectId?: string}} props cost hidden entirely when
+ *   unavailable (FR1.5); projectId lets Resume unpark a parked intent (US-0510 FR4.4)
+ */
+export default function IntentList({ intents, selected, onSelect, cost, projectId }) {
   const { t } = useTranslation();
   const [status, setStatus] = useState(ALL);
   const [scope, setScope] = useState(ALL);
@@ -150,6 +163,7 @@ export default function IntentList({ intents, selected, onSelect, cost }) {
                   <span className="intent-slug">{i.slug}</span>
                   {/* active-intent is only the selection cursor; a finished intent stays selected but is not active */}
                   {i.active && i.status !== 'complete' && <span className="intent-badge">{t('intents.active')}</span>}
+                  {i.parked && <ParkedMark stage={i.parkedStage} />}
                   {costs && <RowCost c={costs[i.dirName]} />}
                 </span>
                 <span className="intent-row-meta">
@@ -185,7 +199,13 @@ export default function IntentList({ intents, selected, onSelect, cost }) {
               </button>
             </Tooltip>
             {i.dirName === selected && (
-              <ResumeButton intent={i} activeDirName={activeDirName} activeIntent={activeIntent} position={stagePosition(i.currentStage, i.done, i.executed)} />
+              <ResumeButton
+                projectId={projectId}
+                intent={i}
+                activeDirName={activeDirName}
+                activeIntent={activeIntent}
+                position={stagePosition(i.currentStage, i.done, i.executed)}
+              />
             )}
           </li>
         ))}

@@ -6,6 +6,7 @@ import BoltDag from './BoltDag.jsx';
 import ArtifactReader from './ArtifactReader.jsx';
 import CostTab from './CostTab.jsx';
 import ResumeButton from './ResumeButton.jsx';
+import { ParkedMark } from './IntentList.jsx';
 import TokenView from './TokenView.jsx';
 import TokenDetail from './TokenDetail.jsx';
 import StoryComments from './StoryComments.jsx';
@@ -131,6 +132,71 @@ function ReadoutColumn({ pipeline, intentCost, intent, directive, cost, dirName,
   );
 }
 
+/**
+ * US-0510 FR4.1–FR4.3, FR4.5: the parked mark, Park (the active intent while in flight and not parked) and Unpark (any
+ * parked intent; main switches to it first). A refusal shows AI-DLC's reason; the list follows on project:changed.
+ */
+export function ParkControls({ projectId, intent, activeDirName }) {
+  const { t } = useTranslation();
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState(null);
+  const [nowActive, setNowActive] = useState(false);
+  const canPark = intent.dirName === activeDirName && isInFlight(intent.status) && !intent.parked;
+
+  async function run(call) {
+    setBusy(true);
+    setError(null);
+    setNowActive(false);
+    try {
+      const res = await call();
+      if (!res?.ok) setError(res?.error ?? '');
+      else setNowActive(!!res.switched);
+    } catch (err) {
+      setError(String(err?.message ?? err));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="intent-park">
+      {intent.parked && <ParkedMark stage={intent.parkedStage} />}
+      {canPark && (
+        <button
+          type="button"
+          className="lcars-block lcars-block--sm lcars-block--dark"
+          disabled={busy}
+          onClick={() => run(() => window.bridge.parkIntent(projectId))}
+          data-testid="intent-park"
+        >
+          {t('intents.park')}
+        </button>
+      )}
+      {intent.parked && (
+        <button
+          type="button"
+          className="lcars-block lcars-block--sm lcars-block--dark"
+          disabled={busy}
+          onClick={() => run(() => window.bridge.unparkIntent(projectId, intent.dirName))}
+          data-testid="intent-unpark"
+        >
+          {t('intents.unpark')}
+        </button>
+      )}
+      {nowActive && (
+        <p className="intent-park-note" role="status" data-testid="intent-now-active">
+          {t('intents.nowActive', { name: intent.slug ?? intent.dirName })}
+        </p>
+      )}
+      {error !== null && (
+        <p className="refresh-error" role="alert" data-testid="intent-park-error">
+          {error}
+        </p>
+      )}
+    </div>
+  );
+}
+
 export default function IntentDetail({
   projectId,
   space = 'default',
@@ -218,7 +284,8 @@ export default function IntentDetail({
               {detail.stale && <span className="lcars-chip lcars-chip--warn">{t('intents.stale')}</span>}
             </div>
           </div>
-          {intent && <ResumeButton intent={intent} activeDirName={activeDirName} activeIntent={activeIntent} position={position} />}
+          {intent && <ParkControls key={intent.dirName} projectId={projectId} intent={intent} activeDirName={activeDirName} />}
+          {intent && <ResumeButton projectId={projectId} intent={intent} activeDirName={activeDirName} activeIntent={activeIntent} position={position} />}
           <button
             type="button"
             ref={headTokensRef}
