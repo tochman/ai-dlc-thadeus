@@ -175,6 +175,19 @@ const releaseDocs = (
 });
 const openStory = (id) => fireEvent.click(screen.getAllByTestId('features-view-story').find((el) => el.textContent.startsWith(id)));
 
+// US-0036 AC2.1.5: the view names where its planning comes from, a remote ref or the local branch.
+describe('FeaturesView: planning source (US-0036 FR2.4, FR2.5)', () => {
+  it('names origin/main when the planning is read from the remote', () => {
+    render(<FeaturesView projectId="p1" features={{ ...features, source: { inPlace: false, branch: 'fix/US-9001', ref: 'origin/main', remote: true } }} />);
+    expect(screen.getByTestId('features-source').textContent).toBe('Planering från origin/main');
+  });
+
+  it('says it is the local branch when there is no remote', () => {
+    render(<FeaturesView projectId="p1" features={{ ...features, source: { inPlace: false, branch: 'fix/US-9001', ref: 'main', remote: false } }} />);
+    expect(screen.getByTestId('features-source').textContent).toBe('Planering från main (lokalt, ingen fjärr hämtad)');
+  });
+});
+
 describe('FeaturesView: releases (US-0603)', () => {
   it('a story picks a release among the planned and next versions, or None, through the bridge (FR2.1, FR2.2)', async () => {
     window.bridge.setStoryRelease = vi.fn(async () => ({ ok: true }));
