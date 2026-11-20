@@ -1,0 +1,13 @@
+{
+  "stage": "code-generation",
+  "unit": "u4-park-unpark",
+  "upstream_ids": ["AC4.1.1", "AC4.1.2", "AC4.1.3", "AC4.1.4", "AC4.1.5", "AC4.1.6"],
+  "coverage": [
+    { "id": "AC4.1.1", "status": "OK", "target": "src/renderer/IntentList.jsx" },
+    { "id": "AC4.1.2", "status": "OK", "target": "src/main/intentPark.js" },
+    { "id": "AC4.1.3", "status": "OK", "target": "src/main/intentPark.js" },
+    { "id": "AC4.1.4", "status": "OK", "target": "src/renderer/ResumeButton.jsx" },
+    { "id": "AC4.1.5", "status": "OK", "target": "src/main/intentPark.js" },
+    { "id": "AC4.1.6", "status": "OK", "target": "src/main/projectService.js" }
+  ]
+}
