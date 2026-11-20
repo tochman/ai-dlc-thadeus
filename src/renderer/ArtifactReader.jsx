@@ -63,7 +63,11 @@ export function FileContent({ rel, content, html = 'skip', inline = false }) {
   );
 }
 
-function FileView({ projectId, rel }) {
+/**
+ * One file with its actions. `editable={false}` hides "Redigera" and `html="text"` shows raw HTML as text
+ * (US-1402 NFR3.2, NFR5.2: a Spec Kit file is never saved from the app, and a `<script>` in it is only text).
+ */
+export function FileView({ projectId, rel, editable = true, html = 'skip' }) {
   const { t } = useTranslation();
   const editor = useEditor(); // "Redigera" opens the file in the app's editor (EPIC-10 US-1001)
   const [content, setContent] = useState(null);
@@ -95,7 +99,7 @@ function FileView({ projectId, rel }) {
     <div className="file-view">
       <div className="file-actions">
         <code className="file-path">{rel}</code>
-        {editor && (
+        {editor && editable && (
           <button className="btn btn-accent" onClick={() => editor.open(rel)} data-testid="artifact-reader-edit">
             {t('common.edit')}
           </button>
@@ -113,12 +117,12 @@ function FileView({ projectId, rel }) {
         </p>
       )}
       {content == null && !error && <p className="muted">{t('common.reading')}</p>}
-      {content != null && <FileContent rel={rel} content={content} />}
+      {content != null && <FileContent rel={rel} content={content} html={html} />}
     </div>
   );
 }
 
-export default function ArtifactReader({ projectId, groups, selected, onSelect }) {
+export default function ArtifactReader({ projectId, groups, selected, onSelect, editable = true }) {
   const { t } = useTranslation();
   if (groups.length === 0) return <p className="muted">{t('intents.files.none')}</p>;
   return (
@@ -144,7 +148,7 @@ export default function ArtifactReader({ projectId, groups, selected, onSelect }
           </section>
         ))}
       </nav>
-      {selected ? <FileView projectId={projectId} rel={selected} /> : <p className="muted">{t('intents.files.pick')}</p>}
+      {selected ? <FileView projectId={projectId} rel={selected} editable={editable} /> : <p className="muted">{t('intents.files.pick')}</p>}
     </div>
   );
 }

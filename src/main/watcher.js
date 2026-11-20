@@ -38,25 +38,46 @@ function debounce(flush, debounceMs, maxWaitMs) {
  */
 export const isWatchedFile = (t) => /\.(md|json|sh|js)$/i.test(t) || path.posix.basename(t).startsWith('.');
 
+// US-1402 BR6.7: how far below a `<folder>/**` target files and folders are seen (specs/<feature>/<sub>/<file>).
+// ponytail: chokidar holds one handle per watched folder; move to one recursive fs.watch if a large specs/ is ever measured slow.
+const TREE_DEPTH = 3;
+const TREE = '/**';
+
 /**
- * Watches a few root-relative paths: files (see isWatchedFile) and folders (their direct .md files), and
- * calls `onChange()` debounced (EPIC-06 FR2.7, US-0901 FR6.1). The root itself is watched with everything else ignored, so paths
+ * Watches a few root-relative paths: files (see isWatchedFile), folders (their direct .md files), and trees
+ * (`<folder>/**`: any file or folder up to 3 levels below it, US-1402 BR6.7), and calls `onChange(changed)` debounced
+ * with the burst's changed root-relative paths, sorted (EPIC-06 FR2.7, US-0901 FR6.1). The root itself is watched with everything else ignored, so paths
  * whose folder does not exist yet are still seen once they appear (chokidar v4 misses those otherwise, F-01).
- * @param {{root: string, paths: string[], onChange: () => void, onError?: (err: Error) => void, debounceMs?: number, maxWaitMs?: number}} opts
+ * @param {{root: string, paths: string[], onChange: (changed: string[]) => void, onError?: (err: Error) => void, debounceMs?: number, maxWaitMs?: number}} opts
  */
 export function watchFiles({ root, paths, onChange, onError = console.error, debounceMs = 300, maxWaitMs = 800 }) {
   const base = path.resolve(root);
-  const targets = paths.map((p) => path.posix.normalize(p.split(path.sep).join('/')));
+  const all = paths.map((p) => p.split(path.sep).join('/'));
+  const trees = all.filter((p) => p.endsWith(TREE)).map((p) => path.posix.normalize(p.slice(0, -TREE.length)));
+  const targets = all.filter((p) => !p.endsWith(TREE)).map((p) => path.posix.normalize(p));
   const relOf = (p) => path.relative(base, path.resolve(p)).split(path.sep).join('/');
   const isFile = isWatchedFile;
-  const matches = (rel) => targets.some((t) => (isFile(t) ? rel === t : path.posix.dirname(rel) === t && rel.toLowerCase().endsWith('.md')));
-  const keep = (rel) => rel === '' || targets.some((t) => t === rel || t.startsWith(`${rel}/`)) || matches(rel);
-  const { schedule, cancel } = debounce(onChange, debounceMs, maxWaitMs);
+  const inTree = (rel) => trees.some((t) => rel.startsWith(`${t}/`) && rel.split('/').length - t.split('/').length <= TREE_DEPTH);
+  const matches = (rel) => inTree(rel) || targets.some((t) => (isFile(t) ? rel === t : path.posix.dirname(rel) === t && rel.toLowerCase().endsWith('.md')));
+  const keep = (rel) => rel === '' || [...targets, ...trees].some((t) => t === rel || t.startsWith(`${rel}/`)) || matches(rel);
+  const changed = new Set();
+  const { schedule, cancel } = debounce(
+    () => {
+      const list = [...changed].sort();
+      changed.clear();
+      onChange(list);
+    },
+    debounceMs,
+    maxWaitMs
+  );
 
-  const depth = Math.max(...targets.map((t) => t.split('/').length + (isFile(t) ? 0 : 1)));
+  const depth = Math.max(...targets.map((t) => t.split('/').length + (isFile(t) ? 0 : 1)), ...trees.map((t) => t.split('/').length + TREE_DEPTH));
   const watcher = chokidar.watch(base, { ignoreInitial: true, depth, ignored: (p) => !keep(relOf(p)) });
   watcher.on('all', (_event, p) => {
-    if (matches(relOf(p))) schedule();
+    const rel = relOf(p);
+    if (!matches(rel)) return;
+    changed.add(rel);
+    schedule();
   });
   watcher.on('error', onError);
   const ready = new Promise((resolve) => watcher.once('ready', resolve));

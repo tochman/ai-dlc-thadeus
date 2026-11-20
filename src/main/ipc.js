@@ -72,6 +72,7 @@ import { PLANNING_BRANCH_DEFAULT, PLANNING_PUSH_DEFAULT, getProjectSettings, get
 import { watchFiles, watchForAidlc, watchIntents, watchOpenFiles } from './watcher.js';
 import { listTree, readForEdit, writeFileSafe } from './fileWrite.js';
 import { featureWatchPaths, loadFeatures, loadStoryLinks } from './features.js';
+import { SPECKIT_WATCH_PATHS, loadSpeckitFeatures } from './speckitFeatures.js';
 import { killAllSessions, killProjectSessions, killSession, resizeSession, spawnSession, tapOutput, writeSession } from './pty.js';
 import { createAgentChannel } from './agentChannel.js';
 import { createHookInstaller, hooksHandlers, statusPusher } from './agentHooks.js';
@@ -95,8 +96,8 @@ const EXTERNAL_URLS = {
   features: `${REPO_URL}/tree/main/docs/features`,
   docs: AIDLC_DOCS_URL
 };
-// projectId -> { root, space, watcher, setupWatcher, featuresWatcher, featuresKey, configWatcher, sender, models, setupInfo,
-//   harnesses, modelOptions, guardLock }
+// projectId -> { root, framework, space, watcher, setupWatcher, speckitWatcher, featuresWatcher, featuresKey, configWatcher, sender,
+//   models, setupInfo, harnesses, modelOptions, guardLock }
 const projects = new Map();
 
 // The app updater (EPIC-04 US-0407); download progress reaches every window as `update:state`.
@@ -190,15 +191,38 @@ async function closeWatcher(p) {
   const c = p.configWatcher;
   const e = p.editorWatcher;
   const h = p.headWatcher;
+  const k = p.speckitWatcher;
   p.watcher = null;
   p.setupWatcher = null;
+  p.speckitWatcher = null;
   p.featuresWatcher = null;
   p.featuresKey = null;
   p.configWatcher = null;
   p.editorWatcher = null;
   p.headWatcher = null;
   // US-0506 u4 SCD31: the hooks watcher, previews and isCurrent keys go with the project.
-  await Promise.all([w?.close(), s?.close(), f?.close(), c?.close(), e?.close(), h?.close(), installer?.closeProject(p.id)]);
+  await Promise.all([w?.close(), s?.close(), f?.close(), c?.close(), e?.close(), h?.close(), k?.close(), installer?.closeProject(p.id)]);
+}
+
+/**
+ * US-1402 BR6.7: a Spec Kit project's specs/** and its feature and version files, pushed as `speckit:changed` (C5).
+ * The paths never change, so a new feature folder is seen without a restart. A failure only stops live updates.
+ */
+function watchSpeckit(projectId) {
+  const p = project(projectId);
+  if (p.speckitWatcher) return;
+  try {
+    p.speckitWatcher = watchFiles({
+      root: p.root,
+      paths: SPECKIT_WATCH_PATHS,
+      onChange: (paths) => {
+        if (!p.sender.isDestroyed()) p.sender.send('speckit:changed', { projectId, paths });
+      },
+      onError: (err) => console.error(`Bevakning av Spec Kit-filerna misslyckades för ${p.root}:`, err)
+    });
+  } catch (err) {
+    console.error(`Bevakning av Spec Kit-filerna kunde inte startas för ${p.root}:`, err);
+  }
 }
 
 /** Watches exactly the files open in the editor; each change sends `file:changed` with its relative path (US-1001). */
@@ -347,7 +371,9 @@ function watchForSetup(projectId) {
         if (detection.framework === null || !projects.has(projectId)) return;
         await p.setupWatcher?.close();
         p.setupWatcher = null;
+        p.framework = detection.framework;
         if (detection.framework === 'aidlc') await watchSpace(projectId, detection.activeSpace);
+        else if (detection.framework === 'speckit') watchSpeckit(projectId);
         if (!p.sender.isDestroyed()) p.sender.send('project:detected', { projectId, detection });
       } catch (err) {
         console.error(`Omdetektering misslyckades för ${p.root}:`, err);
@@ -765,9 +791,20 @@ const handlers = {
     const projectId = randomUUID();
     // Harness detection starts now, in the background; harness:detect returns the same promise (US-0801 NFR3).
     const harnesses = detectHarnesses(root);
-    projects.set(projectId, { id: projectId, root, space: null, watcher: null, setupWatcher: null, sender: event.sender, harnesses, agentTabs: new Set() });
-    // US-1401 BR1.9: the space watcher for AI-DLC, the setup watcher for no framework; Spec Kit's comes with U6.
+    projects.set(projectId, {
+      id: projectId,
+      root,
+      framework: detection.framework,
+      space: null,
+      watcher: null,
+      setupWatcher: null,
+      sender: event.sender,
+      harnesses,
+      agentTabs: new Set()
+    });
+    // US-1401 BR1.9: the space watcher for AI-DLC, the setup watcher for no framework; US-1402 BR6.7: Spec Kit's files.
     if (detection.framework === 'aidlc') await watchSpace(projectId, detection.activeSpace);
+    else if (detection.framework === 'speckit') watchSpeckit(projectId);
     else if (detection.framework === null) watchForSetup(projectId);
     syncFeaturesWatch(projectId); // not awaited: opening a project never waits on the feature docs
     watchConfig(projectId);
@@ -1068,7 +1105,13 @@ const handlers = {
   },
   'project:file': async (_event, projectId, rel) => readText(project(projectId).root, rel),
   // Editing files (EPIC-10 US-1001): a relative path, content and the hash it was opened with; never a root.
-  'file:read': async (_event, projectId, rel) => readForEdit(project(projectId).root, rel),
+  // US-1402 NFR3.2: the project's framework decides whether Spec Kit's files open read-only.
+  'file:read': async (_event, projectId, rel) => {
+    const p = project(projectId);
+    return readForEdit(p.root, rel, { framework: p.framework });
+  },
+  // US-1402 FR6 (contract C5): read-only, so it needs no framework check.
+  'speckit:features': async (_event, projectId) => loadSpeckitFeatures(project(projectId).root),
   // US-0608 FR2.2, AC1.2.1: a feature doc is in the planning record before it is written; the watcher records it too, should this fail.
   'file:write': async (_event, projectId, rel, content, expect) => {
     const p = project(projectId);
@@ -1077,7 +1120,7 @@ const handlers = {
     } catch (err) {
       console.warn(`Sparningen av ${rel} kunde inte registreras i planeringen:`, err.message);
     }
-    const res = await writeFileSafe(p.root, rel, content, { expectMtime: expect?.mtimeMs, expectHash: expect?.hash });
+    const res = await writeFileSafe(p.root, rel, content, { expectMtime: expect?.mtimeMs, expectHash: expect?.hash, framework: p.framework });
     if (res?.ok && res.hash) noteAppWrite(p.root, rel, expect?.hash ?? null, res.hash); // D2: not recorded again as seen
     return res;
   },
