@@ -85,6 +85,10 @@ describe('cost rule clashes (US-0212 FR6)', () => {
     expect(COST_RULES_PACK.project).toContain(ONE_COMMITTER);
   });
 
+  it('the shipped pack carries the rule that `.thadeus/` is committed and never ignored (US-0609 AC3.1.7)', () => {
+    expect(COST_RULES_PACK.project).toContain('`.thadeus/` is committed and never git-ignored; THADEUS commits and pushes it.');
+  });
+
   it("the one-committer rule finds no clash with this repository's team.md (US-0032 AC4)", async () => {
     const file = 'aidlc/spaces/default/memory/team.md';
     const team = await fs.readFile(path.resolve(__dirname, '../..', file), 'utf8');

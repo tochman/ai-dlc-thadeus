@@ -1,8 +1,10 @@
-import { describe, expect, it } from 'vitest';
-import { promises as fs } from 'node:fs';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { execFileSync } from 'node:child_process';
+import { promises as fs, writeFileSync } from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import { openRoot } from '../../src/main/projectAccess.js';
-import { loadFeatures, loadStoryLinks } from '../../src/main/features.js';
+import { loadFeatures, loadPlanningFeatures, loadStoryLinks } from '../../src/main/features.js';
 import { epicStatusOf, parseEpic, parseOverview, statusOf, storyIdsIn } from '../../src/main/parsers/features.js';
 
 const FIXTURES = path.resolve(__dirname, '../fixtures');
@@ -115,5 +117,61 @@ describe('feature docs parser', () => {
     expect(links['US-2939']).toEqual(['261112-epic29-small-k2-fixes']);
     expect(links['US-3711']).toEqual(['261110-epic02-finish']);
     expect(Object.values(links).flat()).not.toContain('261105-ghost-intent');
+  });
+});
+
+// US-0036: on a story branch the views read the planning from origin/main with git, with the branch's own story on top.
+// A real bare origin and two clones in os.tmpdir(); the other clone adds a release to main after the branch was cut.
+describe('loadPlanningFeatures (US-0036 FR2.1, FR2.2, FR2.5)', { timeout: 20_000 }, () => {
+  const env = { ...process.env, GIT_AUTHOR_NAME: 'T', GIT_AUTHOR_EMAIL: 't@example.com', GIT_COMMITTER_NAME: 'T', GIT_COMMITTER_EMAIL: 't@example.com' };
+  const git = (cwd, ...args) => execFileSync('git', ['-c', 'init.defaultBranch=main', '-c', 'commit.gpgsign=false', ...args], { cwd, env, encoding: 'utf8' });
+  const EPIC_FILE = 'docs/features/epic-90.md';
+  const EPIC =
+    '# EPIC-90: Test\n\n**Status (2026-11-20):** 📋 planned.\n\n## User Stories\n\n**US-9001: Mine** 📋 Planned\n- [ ] AC1\n\n**US-9002: Other** 📋 Planned\n- [ ] AC1\n';
+  const OVERVIEW = '# Features\n\n| Epic | Topic | Status |\n|---|---|---|\n| [EPIC-90](features/epic-90.md) | Test | 📋 US-9001 and US-9002 planned |\n';
+  let tmp;
+  let ctx;
+
+  beforeEach(async () => {
+    tmp = await fs.realpath(await fs.mkdtemp(path.join(os.tmpdir(), 'planning-read-')));
+    const [origin, clone, other] = ['origin.git', 'clone', 'other'].map((d) => path.join(tmp, d));
+    git(tmp, 'init', '-q', '--bare', origin);
+    git(tmp, 'clone', '-q', origin, clone);
+    await fs.mkdir(path.join(clone, 'docs/features'), { recursive: true });
+    await fs.mkdir(path.join(clone, 'docs/releases'), { recursive: true });
+    writeFileSync(path.join(clone, 'docs/FEATURES.md'), OVERVIEW);
+    writeFileSync(path.join(clone, EPIC_FILE), EPIC);
+    writeFileSync(path.join(clone, 'docs/releases/0.2.12.md'), '# Release plan v0.2.12\n');
+    git(clone, 'add', '.');
+    git(clone, 'commit', '-q', '-m', 'start');
+    git(clone, 'push', '-q', '-u', 'origin', 'main');
+    git(clone, 'checkout', '-q', '-b', 'fix/US-9001');
+    writeFileSync(path.join(clone, EPIC_FILE), EPIC.replace('**US-9001: Mine** 📋 Planned', '**US-9001: Mine** 🚧 In progress'));
+
+    git(tmp, 'clone', '-q', origin, other);
+    writeFileSync(path.join(other, EPIC_FILE), EPIC.replace('**US-9002: Other** 📋 Planned', '**US-9002: Other** 📋 Planned, for v0.2.13'));
+    writeFileSync(path.join(other, 'docs/releases/0.2.13.md'), '# Release plan v0.2.13\n');
+    git(other, 'add', '.');
+    git(other, 'commit', '-q', '-m', 'plan v0.2.13');
+    git(other, 'push', '-q', 'origin', 'main');
+    git(clone, 'fetch', '-q');
+    ctx = { root: await openRoot(clone), userData: path.join(tmp, 'userData'), featuresPath: 'docs/FEATURES.md' };
+  });
+  afterEach(() => fs.rm(tmp, { recursive: true, force: true }));
+
+  it('AC2.1.1, AC2.1.3: shows a release that is only on origin/main, without merging it into the branch', async () => {
+    const f = await loadPlanningFeatures(ctx);
+    expect(f.plans.map((p) => p.version)).toEqual(['v0.2.12', 'v0.2.13']);
+    expect((await loadFeatures(ctx.root, ctx.featuresPath)).plans.map((p) => p.version)).toEqual(['v0.2.12']);
+  });
+
+  it("AC2.1.1: the branch's own story shows its branch text, another story origin/main's", async () => {
+    const [epic] = (await loadPlanningFeatures(ctx)).epics;
+    const byId = Object.fromEntries(epic.parsed.stories.map((s) => [s.id, s.statusText]));
+    expect(byId).toEqual({ 'US-9001': 'In progress', 'US-9002': 'Planned, for v0.2.13' });
+  });
+
+  it('AC2.1.5: the result names where it reads from', async () => {
+    expect((await loadPlanningFeatures(ctx)).source).toEqual({ inPlace: false, branch: 'fix/US-9001', ref: 'origin/main', remote: true });
   });
 });

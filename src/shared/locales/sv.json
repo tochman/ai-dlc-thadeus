@@ -517,6 +517,11 @@
     "timeout": "Fliken blev inte {target} inom {seconds} s"
   },
   "features": {
+    "source": {
+      "remote": "Planering från {ref}",
+      "local": "Planering från {ref} (lokalt, ingen fjärr hämtad)",
+      "here": "Planering från den här utcheckningen, {branch}"
+    },
     "status": {
       "planned": "Planerad",
       "progress": "Pågår",
@@ -576,6 +581,7 @@
     "planning": {
       "title": "Planeringssynk",
       "pending": "{n, plural, one {# planeringsändring väntar på att pushas.} other {# planeringsändringar väntar på att pushas.}}",
+      "thadeus": "Appens fil {file}",
       "pushNow": "Pusha nu",
       "reapplied": "{n, plural, one {# planeringsändring hade gått förlorad och gjordes om.} other {# planeringsändringar hade gått förlorade och gjordes om.}}",
       "noRemote": "Projektet har inget origin, så planeringen committas bara här.",
@@ -678,6 +684,7 @@
     "isRepo": "mappen är ett git-repo",
     "notRepo": "inget git-repo, så git init -b main läggs först",
     "noHarnesses": "inga",
+    "thadeusIgnored": "En rad i .gitignore döljer .thadeus/. THADEUS committar den mappen så att varje klon har appens data: ta bort raden.",
     "conflicts": "Dessa filer krockar med befintliga filer. Lös det innan AI-DLC sätts upp:",
     "fullPreview": "Hela förhandsvisningen",
     "advanced": "Avancerade inställningar",
@@ -785,6 +792,7 @@
         "notSet": "Inte sparat"
       },
       "pathLabel": "Sökväg",
+      "pathFallback": "Inloggningsskalets PATH kunde inte läsas; appens egen PATH användes.",
       "versionLabel": "Version",
       "notFound": "hittades inte",
       "notOnPath": "hittades inte i PATH",

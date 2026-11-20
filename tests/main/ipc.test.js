@@ -284,6 +284,8 @@ vi.mock('../../src/main/fileWrite.js', () => ({ listTree: m.svc.listTree, readFo
 vi.mock('../../src/main/features.js', () => ({
   featureWatchPaths: m.svc.featureWatchPaths,
   loadFeatures: m.svc.loadFeatures,
+  // ponytail: US-0036 reads the planning through loadPlanningFeatures; here it is the loadFeatures stub, so the existing checks hold.
+  loadPlanningFeatures: (ctx) => m.svc.loadFeatures(ctx.root, ctx.featuresPath),
   loadStoryLinks: m.svc.loadStoryLinks
 }));
 vi.mock('../../src/main/releases.js', () => ({ setStoryRelease: m.svc.setStoryRelease, readRuleStatus: m.svc.readRuleStatus }));

@@ -517,6 +517,11 @@
     "timeout": "The tab did not become {target} within {seconds} s"
   },
   "features": {
+    "source": {
+      "remote": "Planning from {ref}",
+      "local": "Planning from {ref} (local, no remote fetched)",
+      "here": "Planning from this checkout, {branch}"
+    },
     "status": {
       "planned": "Planned",
       "progress": "In progress",
@@ -576,6 +581,7 @@
     "planning": {
       "title": "Planning sync",
       "pending": "{n, plural, one {# planning change waiting to be pushed.} other {# planning changes waiting to be pushed.}}",
+      "thadeus": "App file {file}",
       "pushNow": "Push now",
       "reapplied": "{n, plural, one {# planning change had been lost and was made again.} other {# planning changes had been lost and were made again.}}",
       "noRemote": "The project has no origin remote, so the planning is committed here only.",
@@ -678,6 +684,7 @@
     "isRepo": "the folder is a git repository",
     "notRepo": "no git repository, so git init -b main goes first",
     "noHarnesses": "none",
+    "thadeusIgnored": "A .gitignore entry hides .thadeus/. THADEUS commits that folder so every clone has the app's data: remove the entry.",
     "conflicts": "These files clash with existing files. Resolve that before AI-DLC is set up:",
     "fullPreview": "The whole preview",
     "advanced": "Advanced settings",
@@ -785,6 +792,7 @@
         "notSet": "Not saved"
       },
       "pathLabel": "Path",
+      "pathFallback": "The login shell's PATH could not be read; the app's own PATH was used.",
       "versionLabel": "Version",
       "notFound": "not found",
       "notOnPath": "not found on PATH",

@@ -1,0 +1,17 @@
+{
+  "stage": "functional-design",
+  "unit": "u2-framework-file",
+  "upstream_ids": ["AC1.2.1", "AC1.2.2", "AC1.2.3"],
+  "coverage": [
+    { "id": "AC1.2.1", "status": "OK", "target": "BR1.5" },
+    { "id": "AC1.2.2", "status": "OK", "target": "BR2.1, BR2.6" },
+    { "id": "AC1.2.3", "status": "OK", "target": "BR1.2, BR1.3, BR1.4" }
+  ],
+  "reverse": [
+    { "id": "BR1.1", "status": "N/A", "target": "path safety: keeps the file inside the project root and out of .specify/ and specs/ (NFR3)" },
+    { "id": "BR2.2", "status": "N/A", "target": "input validation at the write boundary" },
+    { "id": "BR2.3", "status": "N/A", "target": "contract C2: unknown keys are kept on rewrite" },
+    { "id": "BR2.4", "status": "N/A", "target": "Q1: a broken file is replaced on a confirmed write" },
+    { "id": "BR2.5", "status": "N/A", "target": "contract C2 and Q2: a newer app's file is never downgraded" }
+  ]
+}
