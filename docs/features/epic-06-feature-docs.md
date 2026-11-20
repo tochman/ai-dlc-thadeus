@@ -8,7 +8,7 @@
 
 **Stories:** US-0601, US-0602, US-0603, US-0604, US-0605, US-0606, US-0607, US-0608, US-0609
 
-**Status (2026-11-19):** ✅ US-0601–US-0603 released (v0.2.0–v0.2.5). ✅ US-0604 and US-0605 released in v0.2.7. ✅ US-0606 and US-0607 released in v0.2.9. ✅ US-0608 released in v0.2.10. 📋 US-0609 planned, for v0.3.1. Each story names its release.
+**Status (2026-11-20):** ✅ US-0601–US-0603 released (v0.2.0–v0.2.5). ✅ US-0604 and US-0605 released in v0.2.7. ✅ US-0606 and US-0607 released in v0.2.9. ✅ US-0608 released in v0.2.10. 📋 US-0609 planned, for v0.2.13. Each story names its release.
 
 **Decisions:**
 - **Q1 (where the view lives):** a switch "Intents | Features" at the top of the project view. Features replaces the sidebar and content area; the terminal stays.
@@ -175,7 +175,7 @@
 - **Notes:** An `express` workflow. Builds on `src/main/planningRecord.js` and `src/main/planningSync.js` (US-0606, US-0607), the editor's writes in `src/main/fileWrite.js` (US-1001), and the release list in `src/renderer/FeaturesView.jsx`. The end-to-end tests are new for this project: Playwright's Electron support (`_electron.launch`) is the likely tool, decided in the design. To find out in the design: how agent writes in a terminal are noticed (a watcher on the three paths), and how a change is told apart as the story's own or not.
 - **Dependencies:** US-0606, US-0607, US-1001
 
-**US-0609: The app's own files and harness settings are kept in sync with `main` at all times** 📋 Planned, for v0.3.1
+**US-0609: The app's own files and harness settings are kept in sync with `main` at all times** 📋 Planned, for v0.2.13
 - As a **developer using THADEUS on any project**, in order to **never lose the app's own data, have the app and the coding tool disagree, or find either uncommitted in a story's branch**, I would like **every file the app writes under `.thadeus/`, and the entries it writes into the coding tool's settings (`.claude/settings.json` and the other harnesses' hook settings), to be committed and pushed to `main` (or the docs branch when `main` is protected) by the app itself, continuously, whatever branch is checked out**.
 - **Epic:** EPIC-06
 - **Priority:** High
