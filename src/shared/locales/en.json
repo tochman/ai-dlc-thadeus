@@ -1609,5 +1609,23 @@
     "notShown": "(newer message not shown)",
     "shortened": "(shortened)",
     "view": "Message from {harness}"
+  },
+  "projectFile": {
+    "reason": {
+      "missing": "it is missing",
+      "unreadable": "it cannot be read",
+      "invalid": "it has the wrong shape",
+      "unknownVersion": "it is from a newer version of the app",
+      "unknownFramework": "it names an unknown framework"
+    },
+    "unusable": "{file} could not be used ({reason}), so the framework was found from the project's folders.",
+    "savedNotFound": "The framework saved in {file} is not in the project, so the framework was found from the project's folders.",
+    "notPlain": "it is a symbolic link, or not a plain folder and file",
+    "errors": {
+      "invalidFramework": "Only AI-DLC or Spec Kit can be saved as the project's framework.",
+      "newerVersion": "{file} was written by a newer version of the app (version {version}) and is not changed.",
+      "newerVersionUnknown": "{file} was written by a newer version of the app and is not changed.",
+      "writeFailed": "{file} could not be written: {reason}"
+    }
   }
 }
