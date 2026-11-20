@@ -1609,5 +1609,23 @@
     "notShown": "(nyare meddelande visas inte)",
     "shortened": "(förkortat)",
     "view": "Meddelande från {harness}"
+  },
+  "projectFile": {
+    "reason": {
+      "missing": "den saknas",
+      "unreadable": "den går inte att läsa",
+      "invalid": "den har fel form",
+      "unknownVersion": "den är från en nyare version av appen",
+      "unknownFramework": "den anger ett okänt ramverk"
+    },
+    "unusable": "{file} kunde inte användas ({reason}), så ramverket togs fram ur projektets mappar.",
+    "savedNotFound": "Ramverket som sparats i {file} finns inte i projektet, så ramverket togs fram ur projektets mappar.",
+    "notPlain": "det är en symbolisk länk, eller inte en vanlig mapp och fil",
+    "errors": {
+      "invalidFramework": "Bara AI-DLC eller Spec Kit kan sparas som projektets ramverk.",
+      "newerVersion": "{file} skrevs av en nyare version av appen (version {version}) och ändras inte.",
+      "newerVersionUnknown": "{file} skrevs av en nyare version av appen och ändras inte.",
+      "writeFailed": "{file} kunde inte skrivas: {reason}"
+    }
   }
 }
