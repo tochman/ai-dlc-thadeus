@@ -24,9 +24,9 @@
 > - A change to committed, project-wide settings (`--project`, `aidlc/scopes/`) says "this changes the project's committed settings" next to **Apply**.
 > - Changes to the active work's settings are blocked while the agent tab is busy ("Arbetar").
 
-**Stories:** US-0901, US-0902, US-0903, US-0904
+**Stories:** US-0901, US-0902, US-0903, US-0904, US-0905
 
-**Status (2026-11-15):** ✅ US-0901–US-0904 released (v0.2.2–v0.2.4). Each story names its release.
+**Status (2026-11-20):** ✅ US-0901–US-0904 released (v0.2.2–v0.2.4). 📋 US-0905 planned. Each story names its release.
 
 ---
 
@@ -179,3 +179,18 @@ The CLI refuses a harness that the project hasn't installed.
     - The view reloads after the change.
   - [x] Agents whose run differs from their configuration (US-0204) are marked, with a suggestion to align them. `aidlc config models --check` flags agent files that were edited by hand.
 - **Dependencies:** US-0901, US-0204, US-0801
+
+**US-0905: Plans live under Configuration, beside the AI-DLC settings** 📋 Planned
+- As a **developer setting up how AI-DLC works in a project**, in order to **find the plans where the rest of the AI-DLC setup is**, I would like **Plans to be part of Configuration, in its AI-DLC part, instead of its own block in the left arm**.
+- **Epic:** EPIC-09
+- **Priority:** Medium
+- **Complexity:** Small
+- **Background:** Asked for 2026-11-20 with a screenshot of the left arm: Configuration has the sub-blocks Feature docs, Agent, AI-DLC, Cost rules and Model profiles, and Plans stands on its own right below it, though plans are AI-DLC configuration (US-0903).
+- **Acceptance Criteria:**
+  - [ ] **Given** an AI-DLC project, **then** Plans no longer has its own block in the left arm; it is reached under Configuration, as a sub-block next to AI-DLC (or as a section of the AI-DLC view), in the LCARS arm style.
+  - [ ] Everything the Plans view does today (list, open, compose, save, start with, edit, delete) works the same from its new place.
+  - [ ] **Given** the app was showing Plans when it closed, or a link or menu item opens Plans, **then** it opens at the new place.
+  - [ ] **Given** a Spec Kit project or one with no framework, **then** Plans is not shown, as today (the shared view list, US-1401).
+  - [ ] Every text goes through `t()` in `sv.json` and `en.json`; the sub-block carries a `data-testid`.
+- **Notes:** Moves the view only; nothing about plans changes. The view list per framework lives in `src/shared/frameworkViews.js`.
+- **Dependencies:** US-0903, US-1401
