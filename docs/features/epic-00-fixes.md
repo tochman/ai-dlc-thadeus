@@ -6,9 +6,9 @@
 
 > Small fixes the person reports while using the app: something looks off, behaves wrongly or is missing a detail. Each fix becomes a story here, so nothing reported in passing gets lost. A fix that grows into a feature moves to its topic's epic.
 
-**Stories:** US-0001, US-0002, US-0003, US-0004, US-0005, US-0006, US-0007, US-0008, US-0009, US-0010, US-0011, US-0012, US-0013, US-0014, US-0015, US-0016, US-0017, US-0018, US-0019, US-0020, US-0021, US-0022, US-0023, US-0024, US-0025, US-0026, US-0027, US-0028, US-0029, US-0030, US-0031, US-0032, US-0033, US-0034, US-0035
+**Stories:** US-0001, US-0002, US-0003, US-0004, US-0005, US-0006, US-0007, US-0008, US-0009, US-0010, US-0011, US-0012, US-0013, US-0014, US-0015, US-0016, US-0017, US-0018, US-0019, US-0020, US-0021, US-0022, US-0023, US-0024, US-0025, US-0026, US-0027, US-0028, US-0029, US-0030, US-0031, US-0032, US-0033, US-0034, US-0035, US-0036
 
-**Status (2026-11-20):** ✅ US-0001–US-0020 released (v0.2.3–v0.2.6). ✅ US-0021–US-0023 released in v0.2.7. ✅ US-0024 released in v0.2.8. ✅ US-0025 released in v0.2.9. ✅ US-0026 released in v0.2.9. ✅ US-0027 released in v0.2.9. ✅ US-0028 released in v0.2.10. ✅ US-0029 released in v0.2.10. ✅ US-0030 released in v0.2.10. ✅ US-0031 released in v0.2.10. ✅ US-0032 released in v0.2.11. ✅ US-0033 released in v0.2.11. ✅ US-0034 released in v0.2.12. 📋 US-0035 planned, for v0.2.13. Each story names its release.
+**Status (2026-11-20):** ✅ US-0001–US-0020 released (v0.2.3–v0.2.6). ✅ US-0021–US-0023 released in v0.2.7. ✅ US-0024 released in v0.2.8. ✅ US-0025 released in v0.2.9. ✅ US-0026 released in v0.2.9. ✅ US-0027 released in v0.2.9. ✅ US-0028 released in v0.2.10. ✅ US-0029 released in v0.2.10. ✅ US-0030 released in v0.2.10. ✅ US-0031 released in v0.2.10. ✅ US-0032 released in v0.2.11. ✅ US-0033 released in v0.2.11. ✅ US-0034 released in v0.2.12. 📋 US-0035 and US-0036 planned, for v0.2.13. Each story names its release.
 
 ---
 
@@ -571,3 +571,19 @@
   - [ ] A test fails without the fix and passes with it; the existing suite stays green.
 - **Notes:** A code fix, so it runs on the `quick-fix` plan. Touches `src/main/exec.js` (`loginPath`), `src/main/tools.js`, the Tools view's row and their tests. Workaround until it ships: restart the app, or choose the path in Settings › Tools.
 - **Dependencies:** US-0405, US-0410
+
+**US-0036: On a story branch, the planning views show main's releases** 📋 Planned, for v0.2.13
+- As a **developer planning releases while a story branch is checked out**, in order to **see and use a release as soon as it is on `main`**, I would like **the Releases and Features views to show the planning that is on `main`, not the older copy in my branch**.
+- **Epic:** EPIC-00
+- **Priority:** High
+- **Complexity:** Small
+- **Background:** Reported 2026-11-20 on `feat/US-1408`: release v0.2.13 was pushed to `main` (`81f2107`, `a43f224`), but the app did not show it. The planning views read `docs/releases/` and the epic files from the checkout. On a story branch, `planningSync.js` keeps only the story's own blocks in the checkout and commits everything else to `main` through `dash/planning`, so a release made on `main` after the branch was cut stays out of sight until the branch merges `main`. Edits made in the branch to other stories were also put back, and the queue then showed seven "has changed on the target as well" conflicts against `main`.
+- **Acceptance Criteria:**
+  - [ ] **Given** a story branch is checked out, **then** the Releases view and the epic and story statuses show the planning on `origin/main` (read with git, without changing the checkout), with the story branch's own story blocks on top.
+  - [ ] **Given** a release or story is added on `main` by another clone or straight to `main`, **then** it shows after the next fetch, without merging `main` into the branch.
+  - [ ] **Given** the planning sync queue holds an older copy of a file than `main` has, and nothing in it is newer, **then** the app drops it by itself instead of offering "Use mine", which would overwrite `main` with the older copy.
+  - [ ] The view says which branch its planning comes from.
+  - [ ] Every new text goes through `t()` in `sv.json` and `en.json`.
+  - [ ] A test fails without the fix and passes with it; the existing suite stays green.
+- **Notes:** A code fix, so it runs on the `quick-fix` plan. Likely touches `src/main/planningSync.js`, `src/main/features.js` (where releases are loaded), `src/main/git.js` and their tests. Workaround until it ships: merge `main` into the story branch.
+- **Dependencies:** US-0608, US-0032
