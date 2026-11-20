@@ -134,6 +134,11 @@ function ToolCard({ row: r, error, onChoose, onReset }) {
           </p>
         )}
         {r.error && !error && <p className="muted settings-tool-error">{r.error}</p>}
+        {r.pathFallback && (
+          <p className="muted settings-tool-error" data-testid={`settings-tool-fallback-${r.id}`}>
+            {t('settings.tools.pathFallback')}
+          </p>
+        )}
       </div>
       <div className="lcars-card-foot">
         <span className="settings-tool-source">{t(`settings.tools.source.${r.source}`)}</span>

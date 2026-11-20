@@ -788,6 +788,7 @@
         "notSet": "Not saved"
       },
       "pathLabel": "Path",
+      "pathFallback": "The login shell's PATH could not be read; the app's own PATH was used.",
       "versionLabel": "Version",
       "notFound": "not found",
       "notOnPath": "not found on PATH",
