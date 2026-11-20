@@ -37,7 +37,41 @@
   },
   "speckit": {
     "title": "Spec Kit",
-    "empty": "Inga features inlästa än."
+    "empty": "Inga features inlästa än.",
+    "reason": {
+      "unreadable": "Kunde inte läsas ({code}).",
+      "invalid": "Inte giltig JSON, eller så saknas det väntade fältet.",
+      "missing": "Pekar på en mapp som inte är en feature under specs/.",
+      "link": "En symbolisk länk, så den följs inte.",
+      "outsideRoot": "Pekar utanför projektet.",
+      "tooLarge": "Större än 1 MB, så den läses inte.",
+      "notUtf8": "Inte giltig UTF-8-text."
+    },
+    "features": {
+      "title": "Features",
+      "active": "Aktiv",
+      "empty": "Inga features än. Starta en med /speckit-specify i agentterminalen.",
+      "specify": "Starta en feature (/speckit-specify)",
+      "versionWarning": "Projektet använder Spec Kit {version}. THADEUS är gjord för v1.4.x, så en del kan visas fel.",
+      "versionUnknown": "Spec Kit-versionen gick inte att hitta. THADEUS är gjord för v1.4.x, så en del kan visas fel.",
+      "errors": "Kunde inte läsas",
+      "flowNote": "Räknat fram ur filerna som finns och ur tasks.md, inte sparat av Spec Kit.",
+      "step": {
+        "spec": "Spec",
+        "clarify": "Förtydliga",
+        "plan": "Plan",
+        "tasks": "Uppgifter",
+        "implement": "Bygg",
+        "converge": "Stäm av"
+      },
+      "done": "klart",
+      "notDone": "inte klart",
+      "count": "{done} av {total} uppgifter klara",
+      "skipped": "{count, plural, one {# rad i tasks.md är ingen uppgift och hoppades över} other {# rader i tasks.md är inga uppgifter och hoppades över}}",
+      "round": "Varv {round}",
+      "noPhase": "Före första fasen",
+      "files": "Filer"
+    }
   },
   "app": {
     "reopenFailed": "Kunde inte öppna igen: {list}",
@@ -1411,7 +1445,8 @@
     "planInUse": "{name} används av en pågående intent ({intents}) och kan inte tas bort.",
     "planNotFound": "Ingen plan med namnet {name} hittades.",
     "notAFile": "{rel} är ingen fil.",
-    "engineOwned": "{rel} tillhör AI-DLC:s motor och sparas inte från appen."
+    "engineOwned": "{rel} tillhör AI-DLC:s motor och sparas inte från appen.",
+    "speckitReadOnly": "{rel} tillhör Spec Kit och sparas inte från appen."
   },
   "agentDialog": {
     "title": {
