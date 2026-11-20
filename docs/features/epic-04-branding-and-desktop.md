@@ -6,9 +6,9 @@
 
 > Auctum AIDLC Control should look and behave like a proper Auctum desktop app wherever it shows up: in the Dock, the application menu, the window switcher, the installer and the Linux launcher. Inside the app it should feel like a living bridge console. EPIC-01 added the name, splash screen, in-app logo and the restrained LCARS theme. This epic covers the parts of the operating system that still show Electron defaults, and the motion and light that make the theme come alive without hurting readability.
 
-**Stories:** US-0401, US-0402, US-0403, US-0404, US-0405, US-0406, US-0407, US-0408, US-0409, US-0410, US-0411, US-0412, US-0413, US-0414
+**Stories:** US-0401, US-0402, US-0403, US-0404, US-0405, US-0406, US-0407, US-0408, US-0409, US-0410, US-0411, US-0412, US-0413, US-0414, US-0415
 
-**Status (2026-11-16):** ✅ US-0401–US-0411 released (v0.1.1–v0.2.5). 📋 US-0412 planned, for v0.3.2. ✅ US-0413 released in v0.2.7. ✅ US-0414 released in v0.2.8. Each story names its release.
+**Status (2026-11-20):** ✅ US-0401–US-0411 released (v0.1.1–v0.2.5). 📋 US-0412 planned, for v0.3.2. ✅ US-0413 released in v0.2.7. ✅ US-0414 released in v0.2.8. 📋 US-0415 planned, for v0.2.13. Each story names its release.
 
 ---
 
@@ -308,3 +308,19 @@
 - **Notes:** Start with a list of every place that shows a tooltip today. The chart tooltip on "Tokens over time" (US-0024) should use the same style.
 - **Built (2026-11-16, express intent `261116-shared-tooltip`):** one `Tooltip` component (`src/renderer/Tooltip.jsx`) rendered through a portal with the `.lcars-tip` look, placed by `tooltipPlacement.js` (flips above, shifts to stay 4 px inside the window). All 31 native `title=` tooltips are gone (the scan found 31, not about 39: 8 hits were captions and headings), and `noNativeTitle.test.jsx` keeps them out. Plain-text tooltips are focusable; tooltips on parts of a button stay hover-only and the button shows their combined text on focus; Resume uses `aria-disabled` so its reason shows. The split-bar row tip uses the component and the chart tooltip takes the same look. Exceptions: `StatusBadge` inside a row button is hover-only, and intent rows missing on disk stay natively disabled. Placement near the window edges, hover feel and stacking over dialogs are checked by hand in the built app.
 - **Dependencies:** US-0208
+
+**US-0415: Collapse the list column so the main view gets the room** 📋 Planned, for v0.2.13
+- As a **developer looking at an intent's pipeline or a feature's detail**, in order to **see the whole graph or document without it being cut off**, I would like **to fold away the list column (intents, features and the other views' lists) and bring it back with one click**.
+- **Epic:** EPIC-04
+- **Priority:** Medium
+- **Complexity:** Small
+- **Background:** Asked for 2026-11-20 with a screenshot of the Intents view: the intents list takes about a third of the width, and the Unit graph beside it is cut off on the right (`u10-speckit-agent-…`, `u4-framework-…`).
+- **Acceptance Criteria:**
+  - [ ] **Given** a view with a list column (Intents, Features and the other views that have one), **then** an LCARS toggle at the list's edge folds it to a narrow strip, and the main view takes the freed width.
+  - [ ] **Given** a folded list, **then** the same toggle, or a click on the strip, brings it back with its search, filters, sort and selection as they were.
+  - [ ] The folded or open state is kept per view across restarts.
+  - [ ] The toggle works from the keyboard, has an `aria-expanded` state and an accessible name, and carries a `data-testid`.
+  - [ ] It follows the LCARS look; the motion respects reduced motion.
+  - [ ] Every text goes through `t()` in `sv.json` and `en.json`.
+- **Notes:** One shared toggle for every list column, not one per view.
+- **Dependencies:** US-0414
