@@ -70,4 +70,15 @@ describe('getTools and the login PATH (US-0035)', () => {
     const rows = await tools.getTools({ exec });
     expect(rows.some((r) => 'pathFallback' in r)).toBe(false);
   });
+
+  it('starts exactly one login-shell read per scan when the read falls back, --version checks included (Step 13)', async () => {
+    tools.setToolPaths({ claude: await makeTool(BIN, 'saved-claude') });
+    const exec = vi.fn(async (file, args) => {
+      if (args.includes('-l')) throw Object.assign(new Error('timeout'), { killed: true });
+      return 'v 1.0\n';
+    });
+    await tools.getTools({ exec });
+    expect(exec.mock.calls.filter(([, args]) => args.includes('-l'))).toHaveLength(1);
+    expect(exec.mock.calls.some(([, args]) => args.join(' ') === '--version')).toBe(true);
+  });
 });

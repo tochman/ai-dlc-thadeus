@@ -71,12 +71,13 @@ export async function resolveOnPath(name, { exec, searchPath } = {}) {
 /**
  * `<file> --version` with a fixed argument and no shell, within runFixed's 10 s timeout (FR2.1, C2).
  * Never throws: a tool that cannot answer comes back as not found with its reason (A3).
+ * `path` is the PATH a scan already read, so the check starts no second login-shell read (US-0035 FR1.5).
  * @returns {Promise<{found: boolean, version: string|null, error?: string}>}
  */
-export async function probeTool(file, { exec } = {}) {
+export async function probeTool(file, { exec, path } = {}) {
   let out;
   try {
-    out = String(await runFixed(file, ['--version'], { exec })).trim();
+    out = String(await runFixed(file, ['--version'], { exec, path })).trim();
   } catch (err) {
     return { found: false, version: null, error: t('errors.toolVersionFailed', { error: err.killed ? t('errors.timeout') : err.message }) };
   }
@@ -96,7 +97,7 @@ async function toolRow(id, exec, read) {
     const source = saved ? 'saved' : 'auto';
     const mark = onPath && read.fromFallback ? { pathFallback: true } : {};
     if (!file) return { id, path: null, source, found: false, version: null, error: t('errors.toolNotOnPath', { name: id }), ...mark };
-    return { id, path: file, source, ...(await probeTool(file, { exec })), ...mark };
+    return { id, path: file, source, ...(await probeTool(file, { exec, path: read.path })), ...mark };
   } catch (err) {
     // A row never rejects: the view always gets every row to show (NFR4).
     return { id, path: null, source: 'auto', found: false, version: null, error: err.message };
@@ -106,7 +107,7 @@ async function toolRow(id, exec, read) {
 /**
  * The tools with their path, whether it was chosen or found automatically, and the version they report.
  * All run in parallel and never reject (FR2.1, NFR4; five tools since US-0410 FR4.1). `exec` is injectable for tests.
- * Each scan reads the login shell's PATH again, once, for every row (US-0035 FR1.2, FR1.5).
+ * Each scan reads the login shell's PATH again, once, for every row and its `--version` check (US-0035 FR1.2, FR1.5).
  * @returns {Promise<Array<{id: string, path: string|null, source: 'saved'|'auto', found: boolean,
  *   version: string|null, error?: string, pathFallback?: true}>>}
  */

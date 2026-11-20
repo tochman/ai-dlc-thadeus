@@ -64,13 +64,14 @@ export async function loginPath(exec = defaultExec) {
  * Runs `file args` in `cwd` and resolves with stdout. `exec(file, args, options) => Promise<stdout>` is injectable for tests.
  * Rejects before running anything when an argument is not a string. `env` adds fixed variables on top of the login
  * shell's PATH (US-0021: `AIDLC_HARNESS_DIR` for a compile per harness). `maxBuffer` raises execFile's 1 MB stdout
- * limit for a command with long output (US-0303: the epic files' `git log -p`).
+ * limit for a command with long output (US-0303: the epic files' `git log -p`). `path` is a PATH the caller already
+ * read and skips the login-shell read, so one Tools scan reads the shell once (US-0035 FR1.5).
  */
-export async function runFixed(file, args, { cwd, timeout = DEFAULT_TIMEOUT_MS, exec = defaultExec, env: extraEnv = {}, maxBuffer, input } = {}) {
+export async function runFixed(file, args, { cwd, timeout = DEFAULT_TIMEOUT_MS, exec = defaultExec, env: extraEnv = {}, maxBuffer, input, path } = {}) {
   if (!Array.isArray(args) || args.some((a) => typeof a !== 'string')) {
     throw new Error(`Ogiltiga argument till ${file}`);
   }
-  const env = { ...process.env, PATH: await loginPath(exec), ...extraEnv };
+  const env = { ...process.env, PATH: path ?? (await loginPath(exec)), ...extraEnv };
   const options = maxBuffer ? { cwd, timeout, env, maxBuffer } : { cwd, timeout, env };
   return exec(file, args, input == null ? options : { ...options, input });
 }
