@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 
 // The project data hooks and the terminals have their own tests; here only which view shows matters.
 const intents = [{ dirName: '261113-config-view', slug: 'config-view', active: true }];
@@ -212,6 +212,23 @@ describe('ProjectView: lifecycle rule notice (US-0603 FR5.2, FR5.3)', () => {
     renderView('intents', { project: { ...project, detection: { isAidlc: false, reason: 'Ingen aidlc/.' } } });
     await screen.findByTestId('project-not-aidlc');
     expect(screen.queryByTestId('lifecycle-rule-notice')).toBeNull();
+  });
+});
+
+describe('ProjectView: the Intents list folds away (US-0415)', () => {
+  it('the toggle folds the sidebar to the strip, and the strip brings it back with the search text kept (AC5.1.1, AC5.1.2)', async () => {
+    renderView('intents');
+    const aside = (await screen.findByTestId('intent-list')).closest('aside');
+    fireEvent.change(screen.getByTestId('intent-list-search'), { target: { value: 'config' } });
+    const toggle = within(aside).getByTestId('list-fold-toggle');
+    fireEvent.click(toggle);
+    expect(aside.classList.contains('is-folded')).toBe(true);
+    expect(toggle.getAttribute('aria-expanded')).toBe('false');
+    expect(screen.getByTestId('intent-list-search')).toBeTruthy(); // still mounted, hidden by the strip's CSS
+
+    fireEvent.click(aside);
+    expect(aside.classList.contains('is-folded')).toBe(false);
+    expect(screen.getByTestId('intent-list-search').value).toBe('config');
   });
 });
 

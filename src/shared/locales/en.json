@@ -1615,5 +1615,9 @@
     "notShown": "(newer message not shown)",
     "shortened": "(shortened)",
     "view": "Message from {harness}"
+  },
+  "fold": {
+    "hide": "Fold the list away",
+    "show": "Show the list"
   }
 }

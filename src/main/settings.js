@@ -28,6 +28,15 @@ const file = () => path.join(app.getPath('userData'), 'settings.json');
 
 const stringList = (v) => (Array.isArray(v) ? v.filter((s) => typeof s === 'string').slice(0, 50) : []);
 
+/** The views with a foldable list column (US-0415 FR5.3). */
+const FOLD_VIEWS = ['intents', 'features', 'editor'];
+
+/** US-0415 FR5.3: the folded state per known view id, booleans only. An empty result leaves the key out. */
+function sanitizeListFolded(raw) {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return {};
+  return Object.fromEntries(FOLD_VIEWS.filter((id) => typeof raw[id] === 'boolean').map((id) => [id, raw[id]]));
+}
+
 /** The chosen tool paths, kept per known id (US-0405 FR2.4). An empty result leaves the key out entirely. */
 function sanitizeToolPaths(raw) {
   if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return {};
@@ -112,6 +121,7 @@ function sanitize(raw) {
   const projects = raw?.projectSettings && typeof raw.projectSettings === 'object' ? raw.projectSettings : {};
   const toolPaths = sanitizeToolPaths(raw?.toolPaths);
   const updates = sanitizeUpdates(raw?.updates);
+  const listFolded = sanitizeListFolded(raw?.listFolded);
   return {
     openProjects: stringList(raw?.openProjects),
     recentProjects: stringList(raw?.recentProjects),
@@ -137,6 +147,8 @@ function sanitize(raw) {
     ...(Object.keys(updates).length ? { updates } : {}),
     // Minutes between release planning pushes (US-0607 FR3.1); left out when invalid, so PLANNING_PUSH_DEFAULT applies.
     ...(validPushMinutes(raw?.planningPushMinutes) ? { planningPushMinutes: raw.planningPushMinutes } : {}),
+    // The folded list columns per view (US-0415 FR5.3); left out when empty, so every list starts open.
+    ...(Object.keys(listFolded).length ? { listFolded } : {}),
     // ponytail: capped at 200 projects, oldest kept; prune closed projects if that ever matters.
     projectSettings: Object.fromEntries(
       Object.entries(projects)

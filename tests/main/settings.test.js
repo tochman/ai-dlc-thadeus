@@ -326,6 +326,30 @@ describe('settingsTab and the new tool paths (US-0410)', () => {
   });
 });
 
+// US-0415 FR5.3, AC5.1.3: the folded list column, kept per view.
+describe('listFolded (US-0415)', () => {
+  it('keeps listFolded with known view ids and booleans, on write and on read', async () => {
+    const listFolded = { intents: true, features: false, editor: true };
+    expect((await setSettings({ listFolded })).listFolded).toEqual(listFolded);
+    await setSettings({ openProjects: ['/p/a'] }); // saving the tabs keeps it
+    expect((await getSettings()).listFolded).toEqual(listFolded);
+  });
+
+  it('drops an unknown view id', async () => {
+    expect((await setSettings({ listFolded: { intents: true, pipeline: true, constructor: false } })).listFolded).toEqual({ intents: true });
+    await fs.writeFile(FILE, JSON.stringify({ listFolded: { bogus: true } }));
+    expect(await getSettings()).not.toHaveProperty('listFolded');
+  });
+
+  it('drops a non-boolean value, and a listFolded that is no object', async () => {
+    expect((await setSettings({ listFolded: { intents: 'yes', features: 1, editor: false } })).listFolded).toEqual({ editor: false });
+    for (const bad of ['intents', 42, null, [true], true]) {
+      await fs.writeFile(FILE, JSON.stringify({ listFolded: bad }));
+      expect(await getSettings()).not.toHaveProperty('listFolded');
+    }
+  });
+});
+
 // US-0506 u5 D1, SD55, PD51: the reply alerts setting and the synchronous settings copy.
 describe('replyAlerts and settingsNow (US-0506 u5)', () => {
   it.each(['dialog-notify', 'line', 'off'])('keeps %s on write and on read', async (value) => {
