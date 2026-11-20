@@ -8,7 +8,7 @@
 
 **Stories:** US-1101, US-1102, US-1103
 
-**Status (2026-11-20):** ✅ US-1101 released in v0.2.6. ✅ US-1102 and US-1103 done, for v0.2.13. Each story names its release.
+**Status (2026-11-20):** ✅ US-1101 released in v0.2.6. ✅ US-1102 and US-1103 released in v0.2.13. Each story names its release.
 
 ---
 
@@ -36,7 +36,7 @@
 
 ---
 
-**US-1102: A visual first impression on GitHub, and topics to be found by** ✅ Done, for v0.2.13
+**US-1102: A visual first impression on GitHub, and topics to be found by** ✅ Released in v0.2.13
 - As a **developer who comes across the repository on GitHub**, in order to **see at a glance what the app does and find it by topic**, I would like **a short animated GIF or screenshot gallery at the top of the README, and repository topics**.
 - **Epic:** EPIC-11
 - **Priority:** Low
@@ -46,12 +46,12 @@
   - [x] **Given** the repository page on GitHub, **then** the README opens with a short animated GIF (at most about 15 seconds and 5 MB) of the app at work, above the first heading's text, with alt text.
   - [x] The screenshots below it are a gallery of images with short captions, not text-only references.
   - [x] The GIF and the screenshots show only the demo project (no private paths, names or costs; US-1101 FR3.3), and `npm run screenshots` can retake them.
-  - [ ] The repository has the topics `electron`, `ai-agents`, `developer-tools` and `aidlc`, set only on the person's word (`gh repo edit --add-topic …`).
+  - [x] The repository has the topics `electron`, `ai-agents`, `developer-tools` and `aidlc`, set only on the person's word (`gh repo edit --add-topic …`).
 - **Notes:**
   - **Where.** `README.md`, `docs/screenshots/`, `scripts/screenshots.cjs` (could record frames for the GIF).
 - **Dependencies:** US-1101
 
-**US-1103: A README that shows what the app does today, how to use it, and what is coming** ✅ Done, for v0.2.13
+**US-1103: A README that shows what the app does today, how to use it, and what is coming** ✅ Released in v0.2.13
 - As a **developer or team lead who finds the repository**, in order to **understand what the app gives me and my team and how to start**, I would like **the README rewritten from the delivered stories, with new screenshots, feature descriptions, usage and a section on upcoming features**.
 - **Epic:** EPIC-11
 - **Priority:** High

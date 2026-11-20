@@ -8,7 +8,7 @@
 
 **Stories:** US-0501, US-0502, US-0503, US-0504, US-0505, US-0506, US-0507, US-0508, US-0509, US-0510
 
-**Status (2026-11-20):** ✅ US-0501–US-0503, US-0505 and US-0506 released (v0.2.0–v0.2.5). ✅ US-0504 released in v0.2.7. ✅ US-0507 released in v0.2.8. 📋 US-0508 and US-0509 planned, for v0.3.1. ✅ US-0510 done, for v0.2.13. Each story names its release.
+**Status (2026-11-20):** ✅ US-0501–US-0503, US-0505 and US-0506 released (v0.2.0–v0.2.5). ✅ US-0504 released in v0.2.7. ✅ US-0507 released in v0.2.8. 📋 US-0508 and US-0509 planned, for v0.3.1. ✅ US-0510 released in v0.2.13. Each story names its release.
 
 ---
 
@@ -186,7 +186,7 @@
 - **Notes:** AI-DLC 2.11.3 has `compose "<task>"`, which suggests a plan for the stages not yet run and stops at an approve/edit/reject gate.
 - **Dependencies:** US-0501, US-0901
 
-**US-0510: Park and unpark an intent from the app** ✅ Done, for v0.2.13
+**US-0510: Park and unpark an intent from the app** ✅ Released in v0.2.13
 - As a **developer who stops in the middle of an intent**, in order to **leave it cleanly and pick it up later without typing AI-DLC commands**, I would like **to park an intent and unpark it from its row and its detail in the app**.
 - **Epic:** EPIC-05
 - **Priority:** Medium
