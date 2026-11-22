@@ -6,9 +6,9 @@
 
 > Small fixes the person reports while using the app: something looks off, behaves wrongly or is missing a detail. Each fix becomes a story here, so nothing reported in passing gets lost. A fix that grows into a feature moves to its topic's epic.
 
-**Stories:** US-0001, US-0002, US-0003, US-0004, US-0005, US-0006, US-0007, US-0008, US-0009, US-0010, US-0011, US-0012, US-0013, US-0014, US-0015, US-0016, US-0017, US-0018, US-0019, US-0020, US-0021, US-0022, US-0023, US-0024, US-0025, US-0026, US-0027, US-0028, US-0029, US-0030, US-0031, US-0032, US-0033, US-0034, US-0035, US-0036, US-0037, US-0038
+**Stories:** US-0001, US-0002, US-0003, US-0004, US-0005, US-0006, US-0007, US-0008, US-0009, US-0010, US-0011, US-0012, US-0013, US-0014, US-0015, US-0016, US-0017, US-0018, US-0019, US-0020, US-0021, US-0022, US-0023, US-0024, US-0025, US-0026, US-0027, US-0028, US-0029, US-0030, US-0031, US-0032, US-0033, US-0034, US-0035, US-0036, US-0037, US-0038, US-0039
 
-**Status (2026-11-20):** ✅ US-0001–US-0020 released (v0.2.3–v0.2.6). ✅ US-0021–US-0023 released in v0.2.7. ✅ US-0024 released in v0.2.8. ✅ US-0025 released in v0.2.9. ✅ US-0026 released in v0.2.9. ✅ US-0027 released in v0.2.9. ✅ US-0028 released in v0.2.10. ✅ US-0029 released in v0.2.10. ✅ US-0030 released in v0.2.10. ✅ US-0031 released in v0.2.10. ✅ US-0032 released in v0.2.11. ✅ US-0033 released in v0.2.11. ✅ US-0034 released in v0.2.12. ✅ US-0035 and US-0036 released in v0.2.13. 📋 US-0037 and US-0038 planned for v0.2.14. Each story names its release.
+**Status (2026-11-22):** ✅ US-0001–US-0020 released (v0.2.3–v0.2.6). ✅ US-0021–US-0023 released in v0.2.7. ✅ US-0024 released in v0.2.8. ✅ US-0025 released in v0.2.9. ✅ US-0026 released in v0.2.9. ✅ US-0027 released in v0.2.9. ✅ US-0028 released in v0.2.10. ✅ US-0029 released in v0.2.10. ✅ US-0030 released in v0.2.10. ✅ US-0031 released in v0.2.10. ✅ US-0032 released in v0.2.11. ✅ US-0033 released in v0.2.11. ✅ US-0034 released in v0.2.12. ✅ US-0035 and US-0036 released in v0.2.13. 📋 US-0037, US-0038 and US-0039 planned for v0.2.14. Each story names its release.
 
 ---
 
@@ -595,10 +595,10 @@
 - **Epic:** EPIC-00
 - **Priority:** Medium
 - **Complexity:** Small
-- **Background:** Reported 2026-11-20 on intent `261120-us0311-agi-absence-on`. Park shows as a small, top-aligned 32 px block with its label pressed against the edge, wedged between the title and the tall pill-shaped "Resume at …" button. It does not line up with the resume button or the chips, and pushes the head out of shape. `ParkControls` (`src/renderer/IntentDetail.jsx`) renders `lcars-block--sm` as its own flex item in `.intent-head`, which aligns items to the top (`src/renderer/theme.css`, US-0510).
+- **Background:** Reported 2026-11-20 on intent `261120-us0311-agi-absence-on`. Park shows as a small, top-aligned 32 px block with its label pressed against the edge, wedged between the title and the tall pill-shaped "Resume at …" button. It does not line up with the resume button or the chips, and pushes the head out of shape. Seen again 2026-11-22 on the parked intent `261119-spec-kit-framework`: the orange "Parked at Functional Design" pill and a flat "Unpark" block sit jammed together, top-aligned between the title and the resume button, in neither the LCARS style nor line with them. `ParkControls` (`src/renderer/IntentDetail.jsx`) renders `lcars-block--sm` as its own flex item in `.intent-head`, which aligns items to the top (`src/renderer/theme.css`, US-0510).
 - **Acceptance Criteria:**
   - [ ] **Given** an intent in flight that can be parked, **then** Park has the same height and vertical alignment as the resume button beside it, with padding around its label, and the title, chips and resume button keep their places.
-  - [ ] **Given** a parked intent, **then** Unpark and the parked mark sit the same way.
+  - [ ] **Given** a parked intent, **then** Unpark and the parked mark sit the same way: the mark is an LCARS element, not an orange pill with a plain block pressed against it, and neither overlaps or crowds the title or the resume button.
   - [ ] **Given** a narrow window, **then** the head wraps cleanly, with Park staying next to the resume button.
   - [ ] The look follows the LCARS interface.
   - [ ] A test fails without the fix and passes with it; the existing suite stays green.
