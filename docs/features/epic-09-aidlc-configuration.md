@@ -187,7 +187,7 @@ The CLI refuses a harness that the project hasn't installed.
 - **Complexity:** Small
 - **Background:** Asked for 2026-11-20 with a screenshot of the left arm: Configuration has the sub-blocks Feature docs, Agent, AI-DLC, Cost rules and Model profiles, and Plans stands on its own right below it, though plans are AI-DLC configuration (US-0903).
 - **Acceptance Criteria:**
-  - [ ] **Given** an AI-DLC project, **then** Plans no longer has its own block in the left arm; it is reached under Configuration, as a sub-block next to AI-DLC (or as a section of the AI-DLC view), in the LCARS arm style.
+  - [ ] **Given** an AI-DLC project, **then** Plans no longer has its own block in the left arm; it is a sub-view of Configuration › AI-DLC (a switch inside the AI-DLC section: Settings | Plans), not a sibling sub-block (decided 2026-11-22), in the LCARS style of the app's in-view tabs.
   - [ ] Everything the Plans view does today (list, open, compose, save, start with, edit, delete) works the same from its new place.
   - [ ] **Given** the app was showing Plans when it closed, or a link or menu item opens Plans, **then** it opens at the new place.
   - [ ] **Given** a Spec Kit project or one with no framework, **then** Plans is not shown, as today (the shared view list, US-1401).
