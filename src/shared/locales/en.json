@@ -960,6 +960,7 @@
     "empty": "No file is open. Pick a file in the tree, or Edit in the reader or the Features view.",
     "loading": "Loading the editor…",
     "tree": "The project's files",
+    "files": "Files",
     "treeTruncated": "The tree shows the first 20,000 files.",
     "unsaved": "unsaved changes",
     "close": "Close {file}",
