@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 
 vi.mock('../../src/renderer/TerminalContext.jsx', () => ({ useTerminal: () => ({ state: () => 'idle', type: () => {}, sequence: () => {} }) }));
-const { ParkControls, RequestText } = await import('../../src/renderer/IntentDetail.jsx');
+const { default: IntentDetail, ParkControls, RequestText } = await import('../../src/renderer/IntentDetail.jsx');
 
 // jsdom has no layout: fake the clamped paragraph's heights (two lines visible, `full` px of content).
 function fakeHeights(full) {
@@ -64,18 +64,87 @@ describe('IntentDetail park and unpark (US-0510)', () => {
     expect(screen.queryByTestId('intent-park')).toBeNull();
   });
 
-  it('Unpark on a parked intent calls the bridge and says it is now the active intent when switched; a refusal shows its reason (AC4.1.3, AC4.1.5)', async () => {
-    window.bridge = { unparkIntent: vi.fn(async () => ({ ok: true, switched: true })) };
-    const parked = { ...intent, active: false, parked: true, parkedStage: 'code-generation' };
-    render(<ParkControls projectId="p1" intent={parked} activeDirName="261120-other" />);
-    expect(screen.getByTestId('intent-parked').textContent).toBe('Parkerad vid Code Generation');
-    fireEvent.click(screen.getByTestId('intent-unpark'));
-    expect(window.bridge.unparkIntent).toHaveBeenCalledWith('p1', '261120-a');
-    expect((await screen.findByTestId('intent-now-active')).textContent).toBe('a är nu den aktiva intenten.');
+  it('a refused Park shows its reason (AC4.1.5)', async () => {
+    window.bridge = { parkIntent: vi.fn(async () => ({ ok: false, error: 'Refused: in the middle of a stage' })) };
+    render(<ParkControls projectId="p1" intent={intent} activeDirName="261120-a" />);
+    fireEvent.click(screen.getByTestId('intent-park'));
+    expect((await screen.findByRole('alert')).textContent).toBe('Refused: in the middle of a stage');
+  });
+});
 
-    window.bridge.unparkIntent.mockResolvedValueOnce({ ok: false, error: 'Not parked', switched: false });
-    fireEvent.click(screen.getByTestId('intent-unpark'));
-    expect((await screen.findByRole('alert')).textContent).toBe('Not parked');
-    expect(screen.queryByTestId('intent-now-active')).toBeNull();
+describe('IntentDetail head, one control per state (US-0037)', () => {
+  const DIR = '261119-spec-kit-framework';
+  const base = { dirName: DIR, slug: 'spec-kit-framework', scope: 'feature', status: 'in-flight', active: true, parked: false, parkedStage: null };
+  const parkedIntent = { ...base, parked: true, parkedStage: 'functional-design' };
+  const detailOf = () => ({
+    dirName: DIR,
+    state: { currentStage: 'functional-design' },
+    pipeline: {
+      phases: [
+        {
+          name: 'construction',
+          stages: [
+            { slug: 'requirements-analysis', status: 'done' },
+            { slug: 'functional-design', status: 'in-progress' },
+            { slug: 'code-generation', status: 'pending' }
+          ]
+        }
+      ],
+      done: 1,
+      executed: 3
+    },
+    files: [],
+    warnings: [],
+    events: [],
+    graph: null,
+    units: {}
+  });
+  const cost = { available: true, perIntent: { [DIR]: { total: { usd: 136.12, currentUsd: 134.67 }, byModel: [], stageModels: {} } } };
+  const show = (intent, activeDirName = DIR) =>
+    render(<IntentDetail projectId="p1" detail={detailOf()} intent={intent} activeDirName={activeDirName} cost={cost} models={null} />);
+  afterEach(() => delete window.bridge);
+
+  it('a parked intent shows its parked state once and one "Avparkera och fortsätt vid <stage>", no Unpark or Park (FR3.2)', () => {
+    show(parkedIntent);
+    expect(screen.queryByTestId('intent-unpark')).toBeNull();
+    expect(screen.queryByTestId('intent-park')).toBeNull();
+    expect(screen.getAllByTestId('intent-resume')).toHaveLength(1);
+    expect(screen.getByTestId('intent-resume').textContent).toBe('Avparkera och fortsätt vid Functional Design');
+    expect(screen.getAllByTestId('intent-parked')).toHaveLength(1);
+    expect(screen.getByTestId('intent-parked').textContent).toBe('Parkerad vid Functional Design');
+  });
+
+  it('the progress row says a parked intent is parked at its stage, not "Pågår" (FR3.3)', () => {
+    show(parkedIntent);
+    const row = screen.getByTestId('intent-progress');
+    expect(row.textContent).not.toMatch(/Pågår/);
+    expect(row.contains(screen.getByTestId('intent-parked'))).toBe(true);
+  });
+
+  it('an intent in progress keeps "Pågår · <stage>" in its progress row (FR3.3)', () => {
+    show(base);
+    expect(screen.getByTestId('intent-progress').textContent).toMatch(/Pågår · Functional Design/);
+    expect(screen.queryByTestId('intent-parked')).toBeNull();
+  });
+
+  it('shows the step once, in the progress row; the resume button names only the stage; the sidebar count reads as done stages (FR3.4)', () => {
+    show(base);
+    expect(screen.getByTestId('intent-resume').textContent).toBe('Fortsätt vid Functional Design');
+    expect(screen.getByTestId('intent-detail').textContent.match(/steg 2 av 3/gi)).toHaveLength(1);
+    expect(screen.getByTestId('intent-detail-stages').textContent).toBe('Klara stages1/3');
+  });
+
+  it('puts Park and Resume side by side in one actions group on the active intent in flight (FR3.1, FR3.6)', () => {
+    show(base);
+    const actions = screen.getByTestId('intent-head-actions');
+    expect(actions.contains(screen.getByTestId('intent-park'))).toBe(true);
+    expect(actions.contains(screen.getByTestId('intent-resume'))).toBe(true);
+  });
+
+  it('gives the cost pair the compact readout size so it fits its column (FR3.5)', () => {
+    show(base);
+    const value = screen.getByTestId('intent-detail-cost');
+    expect(value.textContent).toBe('registrerat $136.12 · till dagens priser $134.67');
+    expect(value.classList.contains('readout-value--cost')).toBe(true);
   });
 });

@@ -14,11 +14,14 @@ const SAFE_DIR_NAME = /^[A-Za-z0-9][A-Za-z0-9._-]*$/;
 // The button re-checks on the next refresh, not on a timer.
 export const ELSEWHERE_MS = 10 * 60_000;
 
-/** ["Fortsätt vid <stage>", "(steg n av m)"], or just ["Fortsätt", ""] without pipeline data (FR2.5). */
-export function resumeLabel(position) {
-  if (!position?.stage) return [translate('intents.resume.label'), ''];
-  const main = translate('intents.resume.atStage', { stage: position.stage });
-  return [main, position.total ? translate('intents.resume.step', { step: position.step, total: position.total }) : ''];
+/**
+ * "Fortsätt vid <stage>", or "Fortsätt" without pipeline data (FR2.5). US-0037 FR3.2, FR3.4: a parked intent reads
+ * "Avparkera och fortsätt vid <stage>" (its parked stage when there is no position); the step shows in the progress row only.
+ */
+export function resumeLabel(position, intent) {
+  const stage = position?.stage ?? (intent?.parked && intent.parkedStage ? stageTitle(intent.parkedStage) : null);
+  if (intent?.parked) return stage ? translate('intents.resume.unparkAtStage', { stage }) : translate('intents.resume.unpark');
+  return stage ? translate('intents.resume.atStage', { stage }) : translate('intents.resume.label');
 }
 
 /**
@@ -87,8 +90,7 @@ export default function ResumeButton({ projectId, intent, activeDirName, activeI
     return terminal.type('agent', command, { submit: false });
   }
 
-  // The amber block in two parts (mockup): where it picks up, then the step. The text reads as one label.
-  const [label, step] = resumeLabel(position);
+  const label = resumeLabel(position, intent);
   // With two agent tabs open it goes to the last one used, and says which ("Fortsätt i opencode", US-0803).
   const main = terminal.agentTabs?.length > 1 ? t('intents.resume.inHarness', { label, harness: harnessName }) : label;
   return (
@@ -96,7 +98,6 @@ export default function ResumeButton({ projectId, intent, activeDirName, activeI
       <Tooltip text={unavailable}>
         <button className="resume-button" onClick={resume} aria-disabled={!!unavailable} data-testid="intent-resume">
           <span className="resume-main">{main}</span>
-          <span className="resume-step">{step ? ` ${step}` : ''}</span>
         </button>
       </Tooltip>
       {message && (
