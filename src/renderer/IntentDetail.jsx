@@ -74,7 +74,8 @@ function ReadoutColumn({ pipeline, intentCost, intent, directive, cost, dirName,
   return (
     <aside className="readout-col" aria-label={t('intents.readout')}>
       <Hairlines />
-      <div className="readout">
+      {/* US-0037 FR3.4: labelled as done stages, so it does not read as a second step count. */}
+      <div className="readout" data-testid="intent-detail-stages">
         <span className="readout-label">{t('intents.readoutStages')}</span>
         <span className="readout-value">
           {pipeline.done}/{pipeline.executed}
@@ -83,8 +84,8 @@ function ReadoutColumn({ pipeline, intentCost, intent, directive, cost, dirName,
       {intentCost && (
         <div className="readout">
           <span className="readout-label">{t('intents.readoutCost')}</span>
-          {/* US-0211 FR3.2: recorded, with the current-price figure beside it when they differ. */}
-          <span className="readout-value readout-value--steel" data-testid="intent-detail-cost">
+          {/* US-0211 FR3.2: recorded, with the current-price figure beside it when they differ. US-0037 FR3.5: at the compact size. */}
+          <span className="readout-value readout-value--steel readout-value--cost" data-testid="intent-detail-cost">
             {formatCostPair(intentCost.total)}
           </span>
         </div>
@@ -133,24 +134,22 @@ function ReadoutColumn({ pipeline, intentCost, intent, directive, cost, dirName,
 }
 
 /**
- * US-0510 FR4.1–FR4.3, FR4.5: the parked mark, Park (the active intent while in flight and not parked) and Unpark (any
- * parked intent; main switches to it first). A refusal shows AI-DLC's reason; the list follows on project:changed.
+ * US-0510 FR4.2, FR4.5: Park, on the active intent while in flight and not parked. A refusal shows AI-DLC's reason;
+ * the list follows on project:changed. US-0037 FR3.2: a parked intent has no Unpark here; Resume unparks
+ * ("Avparkera och fortsätt vid …") and the parked mark sits in the progress row.
  */
 export function ParkControls({ projectId, intent, activeDirName }) {
   const { t } = useTranslation();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(null);
-  const [nowActive, setNowActive] = useState(false);
-  const canPark = intent.dirName === activeDirName && isInFlight(intent.status) && !intent.parked;
+  if (intent.dirName !== activeDirName || !isInFlight(intent.status) || intent.parked) return null;
 
-  async function run(call) {
+  async function park() {
     setBusy(true);
     setError(null);
-    setNowActive(false);
     try {
-      const res = await call();
+      const res = await window.bridge.parkIntent(projectId);
       if (!res?.ok) setError(res?.error ?? '');
-      else setNowActive(!!res.switched);
     } catch (err) {
       setError(String(err?.message ?? err));
     } finally {
@@ -160,34 +159,9 @@ export function ParkControls({ projectId, intent, activeDirName }) {
 
   return (
     <div className="intent-park">
-      {intent.parked && <ParkedMark stage={intent.parkedStage} />}
-      {canPark && (
-        <button
-          type="button"
-          className="lcars-block lcars-block--sm lcars-block--dark"
-          disabled={busy}
-          onClick={() => run(() => window.bridge.parkIntent(projectId))}
-          data-testid="intent-park"
-        >
-          {t('intents.park')}
-        </button>
-      )}
-      {intent.parked && (
-        <button
-          type="button"
-          className="lcars-block lcars-block--sm lcars-block--dark"
-          disabled={busy}
-          onClick={() => run(() => window.bridge.unparkIntent(projectId, intent.dirName))}
-          data-testid="intent-unpark"
-        >
-          {t('intents.unpark')}
-        </button>
-      )}
-      {nowActive && (
-        <p className="intent-park-note" role="status" data-testid="intent-now-active">
-          {t('intents.nowActive', { name: intent.slug ?? intent.dirName })}
-        </p>
-      )}
+      <button type="button" className="lcars-block lcars-block--dark" disabled={busy} onClick={park} data-testid="intent-park">
+        {t('intents.park')}
+      </button>
       {error !== null && (
         <p className="refresh-error" role="alert" data-testid="intent-park-error">
           {error}
@@ -284,8 +258,13 @@ export default function IntentDetail({
               {detail.stale && <span className="lcars-chip lcars-chip--warn">{t('intents.stale')}</span>}
             </div>
           </div>
-          {intent && <ParkControls key={intent.dirName} projectId={projectId} intent={intent} activeDirName={activeDirName} />}
-          {intent && <ResumeButton projectId={projectId} intent={intent} activeDirName={activeDirName} activeIntent={activeIntent} position={position} />}
+          {/* US-0037 FR3.1, FR3.6: Park and Resume as one group, the same height, wrapping together. */}
+          {intent && (
+            <div className="intent-head-actions" data-testid="intent-head-actions">
+              <ParkControls key={intent.dirName} projectId={projectId} intent={intent} activeDirName={activeDirName} />
+              <ResumeButton projectId={projectId} intent={intent} activeDirName={activeDirName} activeIntent={activeIntent} position={position} />
+            </div>
+          )}
           <button
             type="button"
             ref={headTokensRef}
@@ -298,10 +277,15 @@ export default function IntentDetail({
         </header>
 
         {steps.length > 0 && (
-          <div className="intent-progress">
+          <div className="intent-progress" data-testid="intent-progress">
             {position && <span className="intent-progress-step">{t('intents.step', { step: position.step, total: position.total })}</span>}
             <Dots states={steps} />
-            {now && <span className={`intent-progress-now ${now.needsYou ? 'is-you' : ''}`}>{now.text}</span>}
+            {/* US-0037 FR3.2, FR3.3: a parked intent shows its parked mark here, once, in place of "Pågår · <stage>". */}
+            {intent?.parked ? (
+              <ParkedMark stage={intent.parkedStage} />
+            ) : (
+              now && <span className={`intent-progress-now ${now.needsYou ? 'is-you' : ''}`}>{now.text}</span>
+            )}
           </div>
         )}
 

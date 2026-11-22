@@ -35,7 +35,7 @@ describe('ResumeButton', () => {
   it('types /aidlc without Enter for the active intent and shows where it picks up (FR2.2, FR2.5, FR2.6)', () => {
     render(<ResumeButton intent={intent} activeDirName="261113-workflow-control" position={position} />);
     const button = screen.getByTestId('intent-resume');
-    expect(button.textContent).toBe('Fortsätt vid Code Generation (steg 3 av 7)');
+    expect(button.textContent).toBe('Fortsätt vid Code Generation'); // US-0037 FR3.4: the step shows in the progress row only
     expect(button.tagName).toBe('BUTTON'); // focusable and keyboard-operable as a native button
 
     fireEvent.click(button);
@@ -207,6 +207,15 @@ describe('ResumeButton on a parked intent (US-0510)', () => {
     expect(terminal.type).not.toHaveBeenCalled();
     await waitFor(() => expect(terminal.type).toHaveBeenCalledWith('agent', '/aidlc', { submit: false }));
     expect(terminal.sequence).not.toHaveBeenCalled(); // the unpark already made it the active intent
+  });
+
+  it('says it unparks: "Avparkera och fortsätt vid <stage>", from the position or else the parked stage (US-0037 FR3.2)', () => {
+    const { rerender } = render(<ResumeButton projectId="p1" intent={parked} activeDirName={parked.dirName} activeIntent={parked} position={position} />);
+    expect(screen.getByTestId('intent-resume').textContent).toBe('Avparkera och fortsätt vid Code Generation');
+    rerender(<ResumeButton projectId="p1" intent={{ ...parked, parkedStage: 'functional-design' }} activeDirName={parked.dirName} activeIntent={parked} />);
+    expect(screen.getByTestId('intent-resume').textContent).toBe('Avparkera och fortsätt vid Functional Design');
+    rerender(<ResumeButton projectId="p1" intent={{ ...parked, parkedStage: null }} activeDirName={parked.dirName} activeIntent={parked} />);
+    expect(screen.getByTestId('intent-resume').textContent).toBe('Avparkera och fortsätt');
   });
 
   it('types nothing and shows the reason when the unpark fails (AC4.1.5)', async () => {
