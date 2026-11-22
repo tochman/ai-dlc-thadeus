@@ -8,7 +8,7 @@ import { withSlots } from './format.js';
 import DocsDialog from './DocsDialog.jsx';
 import AboutDialog from './AboutDialog.jsx';
 import AgentDialog from './AgentDialog.jsx';
-import UpdateNotice from './UpdateNotice.jsx';
+import UpdateNotice, { openUpdateDialog } from './UpdateNotice.jsx';
 import { Block, Frame, Pill, SegBar, useEntrance } from './Lcars.jsx';
 import Tooltip from './Tooltip.jsx';
 import { APP_NAME } from '../shared/appName.js';
@@ -715,6 +715,7 @@ export default function App() {
         {/* One view at a time in the content frame (US-0405 FR1.1); closing it returns to the view that was shown. */}
         {settingsView && (
           <SettingsView
+            onCheckUpdates={openUpdateDialog /* US-0416: Tools' "Check for updates" opens the Update dialog (US-0417) */}
             onClose={() => setSettingsView(false)}
             tab={settingsTab}
             animations={motion}
