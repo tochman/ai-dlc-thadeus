@@ -8,7 +8,7 @@
 
 **Stories:** US-0401, US-0402, US-0403, US-0404, US-0405, US-0406, US-0407, US-0408, US-0409, US-0410, US-0411, US-0412, US-0413, US-0414, US-0415, US-0416, US-0417
 
-**Status (2026-11-22):** ✅ US-0401–US-0411 released (v0.1.1–v0.2.5). 📋 US-0412 planned, for v0.3.2. ✅ US-0413 released in v0.2.7. ✅ US-0414 released in v0.2.8. ✅ US-0415 released in v0.2.13. 📋 US-0416 planned, for v0.2.14. 📋 US-0417 planned. Each story names its release.
+**Status (2026-11-22):** ✅ US-0401–US-0411 released (v0.1.1–v0.2.5). 📋 US-0412 planned, for v0.3.2. ✅ US-0413 released in v0.2.7. ✅ US-0414 released in v0.2.8. ✅ US-0415 released in v0.2.13. 📋 US-0416 planned, for v0.2.14. 📋 US-0417 planned, for v0.2.14. Each story names its release.
 
 ---
 
@@ -342,11 +342,11 @@
   - [ ] Everything the view does today keeps working (choose a path, rescan, update AI-DLC, update the project files, save Bitbucket credentials).
   - [ ] It follows the LCARS interface and works at narrow widths; every text goes through `t()` in `sv.json` and `en.json`; rows and actions carry `data-testid`s.
 - **Notes:** A redesign of one view, so it runs on the `express` plan (or `visual-express` with a mockup first). Not a fix: no behaviour changes. Builds on US-0035 (tool lookup) and US-0504 (AI-DLC update); the wait notice there is US-0041.
-- **Dependencies:** US-0504, US-0035, US-0041
+- **Dependencies:** US-0504, US-0035, US-0041, US-0417
 
 ---
 
-**US-0417: A richer LCARS language across the app: nested frames, quiet colour, dense readouts** 📋 Planned
+**US-0417: A richer LCARS language across the app: nested frames, quiet colour, dense readouts** 📋 Planned, for v0.2.14
 - As a **developer who lives in the console**, in order to **read state at a glance and enjoy the look**, I would like **the app's LCARS look taken further, after the two reference screens the person gave, as shared pieces every view uses**.
 - **Epic:** EPIC-04
 - **Priority:** Medium
@@ -371,6 +371,6 @@
   - [ ] The three mocked views are rebuilt with the shared pieces; other views pick them up as they are touched.
   - [ ] Contrast stays at WCAG AA for text; motion respects reduced motion; works at narrow widths.
   - [ ] Built in our own app's terms only: no ships, insignia, names or other franchise artwork from the references.
-- **Notes:** Runs on the `visual-express` plan (mockup first). US-0416 (Tools) and US-0412 (pipeline cards) should use these pieces; if US-0416 is built first, it adds the pieces it needs (state-strip tile, readout rows) in the shared form this story describes.
+- **Notes:** Runs on the `visual-express` plan (mockup first). Built before US-0416 in v0.2.14, so Settings › Tools is redesigned once, with these pieces; US-0412 (pipeline cards) uses them later.
 - **Dependencies:** US-0414, US-0415
 
