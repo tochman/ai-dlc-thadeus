@@ -264,8 +264,11 @@ export function createAgentEventStore({
     else if (parsed.kind === 'notify') s.notify = parsed.type;
     else if (parsed.kind === 'status') s.busy = parsed.busy;
     else if (parsed.kind === 'usage') s.context = parsed.context;
-    else if (parsed.kind === 'postcompact') s.compactedAtMs = now;
-    else if (parsed.kind === 'session') {
+    else if (parsed.kind === 'postcompact') {
+      s.compactedAtMs = now;
+      // US-0039 FR2.3: opencode reports no SessionStart after a compaction, so the postcompact ends the wait.
+      for (const w of readyWaits) if (w.sessionId === raw.sessionId && w.sources.includes('compact')) w.resolve(true);
+    } else if (parsed.kind === 'session') {
       Object.assign(s, { busy: false, context: null });
       if (parsed.source === 'compact') s.compactedAtMs ??= now; // the fallback when PostCompact is absent
       for (const w of readyWaits) if (w.sessionId === raw.sessionId && w.sources.includes(parsed.source)) w.resolve(true);

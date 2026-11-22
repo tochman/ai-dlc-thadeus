@@ -183,6 +183,7 @@ contextBridge.exposeInMainWorld('bridge', {
   // fixed lines to type, never anything the renderer named (NFR4).
   handoff: {
     commands: call('handoff:commands'),
+    park: call('handoff:park'), // US-0039: main types nothing itself; it answers an open gate or gives the fixed line
     idle: call('handoff:idle'),
     waitReady: call('handoff:waitReady'),
     waiting: call('handoff:waiting'),

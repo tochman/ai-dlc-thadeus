@@ -1,6 +1,6 @@
 // US-0213 FR3.1–FR3.4, FR5.3, NFR2 and US-0026 FR3.3: the handoff page of AgentDialog, Swedish locale.
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
 import AgentDialog, { GUARD_MS } from '../../src/renderer/AgentDialog.jsx';
 import { HARNESSES } from '../../src/shared/harnesses.js';
 import { t } from '../../src/shared/i18n.js';
@@ -90,6 +90,18 @@ describe('AgentDialog: handoff page (US-0213)', () => {
     rerender(<AgentDialog open events={[handoffEvent({ state: 'waiting' })]} onOpenTerminal={vi.fn()} onClose={onClose} onHandoff={onHandoff} />);
     expect(screen.getByTestId('agent-dialog-handoff-status').textContent).toBe(t('agentDialog.handoff.waiting'));
     expect(screen.getByTestId('agent-dialog-handoff-choice-fresh').disabled).toBe(true);
+    wait.resolve({ ok: true });
+  });
+
+  it('US-0039 FR2.2: after a park request the page says it was sent, not that it waits for idle', async () => {
+    let wait;
+    onHandoff.mockImplementation((ev, choice, { onWaiting }) => new Promise((resolve) => (wait = { onWaiting, resolve })));
+    const { rerender } = show(handoffEvent());
+    fireEvent.click(screen.getByTestId('agent-dialog-handoff-choice-fresh'));
+    act(() => wait.onWaiting('park'));
+    rerender(<AgentDialog open events={[handoffEvent({ state: 'waiting' })]} onOpenTerminal={vi.fn()} onClose={onClose} onHandoff={onHandoff} />);
+    expect(screen.getByTestId('agent-dialog-handoff-status').textContent).toBe(t('agentDialog.handoff.parkSent'));
+    expect(t('agentDialog.handoff.parkSent')).not.toBe('agentDialog.handoff.parkSent');
     wait.resolve({ ok: true });
   });
 

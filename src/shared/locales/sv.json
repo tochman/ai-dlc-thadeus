@@ -1504,6 +1504,7 @@
       },
       "gateNote": "AI-DLC visar grinden igen i den nya sessionen.",
       "waiting": "Väntar tills agenten är ledig …",
+      "parkSent": "AI-DLC har ombetts att parkera vid nästa säkra punkt. Valet skickas när agenten stannar …",
       "failed": {
         "notReady": "Den nya sessionen startade inte. Skriv /aidlc --resume i terminalen.",
         "notIdle": "Agenten blev aldrig ledig. Inget skickades.",
