@@ -361,9 +361,9 @@
   - **Two control shapes:** rounded pills are actions (Settings, Auto-idle, Red alert); square blocks are navigation and readouts. Ours mix them (square "Choose…" actions, pill Resume, square Park).
   - **Texture:** stacks of hairlines, code numbers ("70-678") on arm blocks, small dot and notch marks fill the margins with meaning-light detail. Ours have a few hairlines.
 - **Acceptance Criteria:**
-  - [ ] A mockup of three views (Intents with the intent head, Settings › Tools, Configuration) in the new language is approved by the person before code.
+  - [ ] A mockup of four views (Intents with the intent head, Settings › Tools, Configuration, and the Cost view in the diagonal frame) in the new language is approved by the person before code.
   - [ ] Shared pieces in `theme.css` and `Lcars.jsx`: a nested frame (outer, inner and hairline, segmented bars, a title set in a frame break), a tile with a state strip, a readout table (tabular figures, legend squares, three brightness levels), a scale slider/meter and a segmented meter.
-  - [ ] The nested frame also comes in a diagonal form: a 45° elbow with rounded joints, hairlines running parallel outside and inside it, and an outlined tag with a dot cluster in its corner; views use round and diagonal elbows on purpose (for example diagonal for the main content frame, round for side panels), as the mockup sets.
+  - [ ] The nested frame also comes in a diagonal form: a 45° elbow with rounded joints, hairlines running parallel outside and inside it, and an outlined tag with a dot cluster in its corner; views use round and diagonal elbows on purpose: the diagonal frame marks the data sub-views (Cost, Velocity and the like, at app level and in an intent's tabs), the round frame stays for the main views, as the person suggested on 2026-11-22; the mockup confirms which views get which.
   - [ ] Nav blocks can carry a thin state strip at their left edge; a content area can show a faint grid with `+` marks behind readouts and charts.
   - [ ] One colour rule, written down in the theme: structure grey/slate, live values steel, key value white, coral/red for alert and selection only; amber is kept for one meaning (the person's attention) or dropped.
   - [ ] One shape rule: actions are pills, navigation and readouts are square blocks; every view follows it.
