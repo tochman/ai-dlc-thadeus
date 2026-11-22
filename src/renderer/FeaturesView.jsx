@@ -204,19 +204,25 @@ function NewRelease({ tags, locked, onCreate }) {
 /** US-0608 FR1.2: the docs' hashes as one key, to tell the reload that belongs to a write from one that does not. */
 const hashesOf = (f) => JSON.stringify([f?.overviewHash ?? null, (f?.epics ?? []).map((e) => e.hash ?? null), (f?.plans ?? []).map((p) => p.hash ?? null)]);
 
-/** US-0607 FR3.5, US-0606 FR4.2: one sentence for a planning error from main ({kind, reason?, files?}). */
+/**
+ * US-0607 FR3.5, US-0606 FR4.2: one sentence for a planning error from main ({kind, reason?, files?, commit?}). US-0038
+ * FR1.4: a conflict that names its app commit says which one blocks and what to do.
+ */
 function planningErrorText(t, error) {
   const kind = ['offline', 'conflict', 'push', 'commit'].includes(error?.kind) ? error.kind : 'git';
-  return t(`features.planning.error.${kind}`, { reason: error?.reason ?? '', files: (error?.files ?? []).join(', ') });
+  const key = kind === 'conflict' && error.commit ? 'conflictCommit' : kind;
+  return t(`features.planning.error.${key}`, { reason: error?.reason ?? '', files: (error?.files ?? []).join(', '), commit: error?.commit ?? '' });
 }
 
-/** US-0608 FR7.1: one line for a waiting change: what it does, then its stories. */
+/** US-0608 FR7.1: one line for a waiting change: what it does, then its stories (and, US-0038 FR1.4, the app commit it came from). */
 function entryText(t, e) {
   // US-0609 FR3.8: a waiting app file (`.thadeus/`, a harness file) by its name.
   if (e.kind === 'thadeus') return t('features.planning.thadeus', { file: e.file });
   const what =
     e.kind === 'content' ? t('features.planning.entry.content', { file: e.file }) : t(`features.planning.entry.${e.kind}`, { version: e.version ?? 'none' });
-  return e.storyIds?.length ? `${what} · ${t('features.planning.entry.stories', { ids: e.storyIds.join(', ') })}` : what;
+  const parts = [what, ...(e.storyIds?.length ? [t('features.planning.entry.stories', { ids: e.storyIds.join(', ') })] : [])];
+  if (e.from) parts.push(t('features.planning.entry.from', { commit: e.from }));
+  return parts.join(' · ');
 }
 
 /**
@@ -231,6 +237,9 @@ function PlanningConflict({ entry, busy, onResolve }) {
     <>
       <span className="tag-warn" role="note">
         {t('features.planning.conflict', { file: entry.file })}
+      </span>{' '}
+      <span className="muted" data-testid="planning-choose">
+        {t('features.planning.choose')}
       </span>{' '}
       <button className="btn btn-quiet" disabled={busy} onClick={() => onResolve(entry.id, 'mine')} data-testid="planning-use-mine">
         {t('features.planning.useMine')}

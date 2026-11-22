@@ -46,7 +46,8 @@ const validPlanning = (a) =>
     ? validDocFile(a.file) &&
       validBase(a.baseHash) &&
       typeof a.content === 'string' &&
-      (a.earlier === undefined || (Array.isArray(a.earlier) && a.earlier.every(validBase)))
+      (a.earlier === undefined || (Array.isArray(a.earlier) && a.earlier.every(validBase))) &&
+      (a.from === undefined || typeof a.from === 'string')
     : KINDS.includes(a.kind) && (a.version === null || (typeof a.version === 'string' && VERSION.test(a.version))));
 
 const validAction = (a) => a && typeof a.id === 'string' && STATES.includes(a.state) && (a.kind === 'thadeus' ? validThadeus(a) : validPlanning(a));
@@ -90,11 +91,13 @@ export async function addAction(userData, root, { kind, storyIds = [], version =
 /**
  * US-0608 FR2.2, FR5.1: records a file's new content and the hash it was based on (null: the file did not exist), before
  * the file is written. A later change of the same file replaces its entry; the earlier bases stay acceptable, so a replay
- * onto any of them still writes the newest text. Returns the entry; an invalid one throws.
+ * onto any of them still writes the newest text. US-0038 FR1.3: its stories are the newest change's alone. US-0038 FR1.4:
+ * `from` names the app commit an entry was set aside from. Returns the entry; an invalid one throws.
  */
-export async function addContent(userData, root, { file, baseHash, content, storyIds = [], by = 'watcher', state = 'pending', earlier: also = [] }) {
+export async function addContent(userData, root, { file, baseHash, content, storyIds = [], by = 'watcher', state = 'pending', earlier: also = [], from }) {
   const entry = { id: randomUUID(), kind: 'content', file, baseHash, content, storyIds: [...storyIds], by, at: new Date().toISOString(), state };
   if (also.length) entry.earlier = also.filter((h) => h !== baseHash);
+  if (from !== undefined) entry.from = from;
   if (!validAction(entry)) throw new Error(`Ogiltig planeringsändring: ${String(file)}`);
   const next = await update(userData, root, (r) => {
     const i = r.actions.findIndex((a) => a.kind === 'content' && a.file === file);
@@ -102,7 +105,7 @@ export async function addContent(userData, root, { file, baseHash, content, stor
     const old = r.actions[i];
     // The old entry's text is a base too: its commit may already be on the app's branch.
     const earlier = [...new Set([...also, old.baseHash, ...(old.earlier ?? []), sha256(old.content)])].filter((h) => h !== baseHash);
-    const merged = { ...entry, storyIds: [...new Set([...old.storyIds, ...entry.storyIds])], earlier };
+    const merged = { ...entry, earlier };
     return { ...r, actions: r.actions.map((a, j) => (j === i ? merged : a)) };
   });
   return next.actions.find((a) => a.id === entry.id);

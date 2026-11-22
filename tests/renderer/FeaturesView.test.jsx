@@ -508,6 +508,34 @@ describe('FeaturesView: every planning change is kept (US-0608)', () => {
     await waitFor(() => expect(window.bridge.resolvePlanning).toHaveBeenLastCalledWith('p1', 'c1', 'mine'));
     await waitFor(() => expect(screen.queryByTestId('planning-entry')).toBeNull());
   });
+
+  // US-0038 FR1.4: the row names what holds a change back and what to choose.
+  it('a change set aside from an app commit names that commit and what each choice does (US-0038 FR1.4)', async () => {
+    waiting({ ...CONFLICT, from: '6502115 docs: update US-0035' });
+    render(<FeaturesView projectId="p1" features={docs} delivery="releases" tab="releases" />);
+    const text = (await screen.findByTestId('planning-entry')).textContent;
+    expect(text).toContain('Från appens commit 6502115 docs: update US-0035.');
+    expect(screen.getByTestId('planning-choose').textContent).toBe('Behåll deras släpper appens ändring; Använd min skriver den över målets text.');
+  });
+
+  it('a conflict without an app commit still offers the choice, and names no commit (US-0038 FR1.4)', async () => {
+    waiting(CONFLICT);
+    render(<FeaturesView projectId="p1" features={docs} delivery="releases" tab="releases" />);
+    expect((await screen.findByTestId('planning-entry')).textContent).not.toMatch(/Från appens commit|undefined/);
+    expect(screen.getByTestId('planning-choose')).toBeTruthy();
+  });
+
+  it('a push blocked by a commit that could not be set aside names it and what to do (US-0038 FR1.4)', async () => {
+    window.bridge.getPlanningStatus.mockResolvedValue({
+      ...NONE,
+      pending: 1,
+      error: { kind: 'conflict', files: ['docs/releases/0.2.13.md'], commit: '6502115 docs: update US-0035' }
+    });
+    render(<FeaturesView projectId="p1" features={docs} delivery="releases" tab="releases" />);
+    expect((await screen.findByTestId('planning-error')).textContent).toBe(
+      'Appens commit 6502115 docs: update US-0035 krockar med main i docs/releases/0.2.13.md och kunde inte läggas åt sidan. Inget pushades. Ta bort grenen dash/planning för att släppa den.'
+    );
+  });
 });
 
 // US-0604: a second epic next to EPIC-06, with priorities, a complexity and a released story.

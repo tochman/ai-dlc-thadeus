@@ -493,19 +493,44 @@ async function olderCopy(ctx, ref, entry) {
   return false;
 }
 
+/** US-0038 FR1.2: a release counts as tagged when its tag `vX.Y.Z` exists. */
+const isTagged = (tags, version) => tags.some((tag) => tag.name === version);
+/** US-0038 FR1.2: `docs/releases/X.Y.Z.md` of a tagged release. */
+const taggedPlan = (ctx, tags, file) => posix.dirname(file) === plansDir(ctx.featuresPath) && isTagged(tags, `v${posix.basename(file, '.md')}`);
+
+/**
+ * US-0038 FR1.2: a waiting entry for a tagged release's plan (its file, or creating or deleting it) is dropped and
+ * logged, never offered as Use mine. A committed one is in an app commit, which pushFrom handles.
+ */
+async function dropTagged(ctx, record, tags) {
+  const old = record.actions.filter(
+    (a) =>
+      a.state !== 'committed' &&
+      (a.kind === 'content' ? taggedPlan(ctx, tags, a.file) : ['createRelease', 'deleteRelease'].includes(a.kind) && isTagged(tags, a.version))
+  );
+  if (!old.length) return record;
+  for (const a of old) console.info(`Planeringsändringen ${a.kind} ${a.file ?? a.version} släpps: releasen är redan taggad.`);
+  await removeActions(
+    ctx.userData,
+    ctx.root,
+    old.map((a) => a.id)
+  );
+  return { ...record, actions: record.actions.filter((a) => !old.includes(a)) };
+}
+
 /**
  * US-0607 FR1.3, US-0608 FR4, FR5.2, FR6: every waiting change again, where it belongs; once the window has passed since
  * the last change, one commit. A content entry whose file moved on is marked a conflict and left alone, unless it only
  * holds an older copy of the file, which is dropped (US-0036 FR2.3).
  */
 async function replayStep(ctx) {
-  const record = await readRecord(ctx.userData, ctx.root);
+  const tags = await listReleaseTags(ctx.root, { exec: ctx.exec });
+  const record = await dropTagged(ctx, await readRecord(ctx.userData, ctx.root), tags);
   const live = record.actions.filter((a) => a.state !== 'conflict' && a.kind !== 'thadeus'); // US-0609: thadeusSync commits those
   const pending = live.filter((a) => a.state === 'pending');
   const quiet = pending.every((a) => Date.now() - Date.parse(a.at) >= windowOf(ctx));
   const place = await placeOf(ctx, record);
   if (!place.inPlace && !(quiet && pending.length)) return { reapplied: 0 };
-  const tags = await listReleaseTags(ctx.root, { exec: ctx.exec });
   const readRef = await targetRef(ctx, place.target);
   const work = async (cwd) => {
     const { changed, conflicts: clashes } = await replayIn(cwd, ctx, live, tags);
@@ -569,7 +594,8 @@ export async function waitingList(ctx) {
     version: a.version ?? null,
     file: a.file ?? null,
     state: a.state,
-    ...(a.state === 'conflict' ? { content: a.content } : {})
+    ...(a.state === 'conflict' ? { content: a.content } : {}),
+    ...(a.from ? { from: a.from } : {}) // US-0038 FR1.4: the app commit it was set aside from
   }));
   return { target: `origin/${target}`, entries };
 }
@@ -585,13 +611,55 @@ async function sourcesOf(ctx, target) {
   return list;
 }
 
-/** US-0607 FR3.2, FR3.5: in a worktree, rebases onto origin and pushes; a conflict is aborted and names the files. */
+/**
+ * US-0038 FR1.1, FR1.2: an app commit stopped the rebase in `wt` on files the target changed since. Each such file keeps
+ * the target's text and the rebase goes on; the commit's text of it waits as a conflict entry naming the commit (Use
+ * mine / Keep theirs, FR1.4), or, for a tagged release's plan, is dropped with a log line. A file the record still holds
+ * an uncommitted change of keeps that entry: it is newer, and the replay marks it a conflict by itself.
+ * @returns {Promise<{} | {error: {kind: 'conflict', files: string[], commit: string}}>} the error once the rebase is aborted
+ */
+async function setAside(ctx, wt) {
+  const tags = await listReleaseTags(ctx.root, { exec: ctx.exec });
+  const aside = [];
+  let files = [];
+  let commit = '';
+  // ponytail: at most 50 stops in one rebase; a branch with more conflicting app commits stays blocked and says so.
+  for (let stop = 0; stop < 50; stop++) {
+    files = lines(await git(wt, ['diff', '--name-only', '--diff-filter=U'], ctx).catch(() => ''));
+    commit = (await git(wt, ['log', '-1', '--format=%h %s', 'REBASE_HEAD'], ctx).catch(() => '')).trim();
+    if (!files.length || !commit) break; // not a content conflict: nothing to set aside
+    for (const file of files) {
+      const mine = await git(wt, ['show', `REBASE_HEAD:./${file}`], ctx).catch(() => null);
+      if (taggedPlan(ctx, tags, file)) console.info(`Appens commit ${commit} släpper ${file}: releasen är redan taggad.`);
+      else if (mine === null) console.info(`Appens commit ${commit} tog bort ${file}, som målet har ändrat; målets fil behålls.`);
+      else aside.push({ file, content: mine, from: commit });
+      if (!(await gitOk(wt, ['checkout', '--ours', '--', file], ctx))) await gitOk(wt, ['rm', '--quiet', '--', file], ctx); // ours: the target
+    }
+    await gitOk(wt, ['add', '--', ...files], ctx);
+    const empty = await gitOk(wt, ['diff', '--cached', '--quiet'], ctx);
+    if (await gitOk(wt, ['-c', 'core.editor=true', 'rebase', empty ? '--skip' : '--continue'], ctx)) {
+      const { actions } = await readRecord(ctx.userData, ctx.root);
+      const held = new Set(actions.filter((a) => a.kind === 'content' && a.state !== 'committed').map((a) => a.file));
+      for (const e of aside) {
+        if (held.has(e.file)) continue; // a later stop of the same file replaces this entry (addContent), so the newest text wins
+        await addContent(ctx.userData, ctx.root, { ...e, baseHash: null, storyIds: [], by: 'watcher', state: 'conflict' });
+      }
+      return {};
+    }
+  }
+  await gitOk(wt, ['rebase', '--abort'], ctx);
+  return { error: { kind: 'conflict', files, ...(commit ? { commit } : {}) } };
+}
+
+/**
+ * US-0607 FR3.2, FR3.5, US-0038 FR1.1: in a worktree, rebases onto origin and pushes. A conflicting app commit's files
+ * are set aside (setAside); a rebase that still fails is aborted and names the commit and the files.
+ */
 export async function pushFrom(ctx, wt, target) {
   const base = await remoteBase(ctx, target);
   if (base && !(await gitOk(wt, ['rebase', '--quiet', base], ctx))) {
-    const files = lines(await git(wt, ['diff', '--name-only', '--diff-filter=U'], ctx).catch(() => ''));
-    await gitOk(wt, ['rebase', '--abort'], ctx);
-    return { error: { kind: 'conflict', files } };
+    const res = await setAside(ctx, wt);
+    if (res.error) return res;
   }
   const subjects = lines(await git(wt, ['log', '--format=%s', base ? `${base}..HEAD` : 'HEAD'], ctx));
   try {
