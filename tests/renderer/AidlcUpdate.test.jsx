@@ -44,9 +44,9 @@ const show = (props = {}) => render(<AidlcUpdate projectId="p1" terminal={termin
 describe('AidlcUpdate', () => {
   it('shows the program version and the newer release; Update AI-DLC types `aidlc update` without Enter (FR1)', async () => {
     show();
-    const row = screen.getByTestId('aidlc-update-program');
+    const row = screen.getByTestId('settings-tool-aidlc'); // US-0416: the CLI and its update are one row
     await within(row).findByText('aidlc 2.11.3 (runtime 2.11.3)');
-    expect(within(row).getByTestId('aidlc-update-program-status').textContent).toBe('Nyare finns: v2.11.4');
+    expect(within(row).getByTestId('settings-tool-chip-aidlc').textContent).toBe('Nyare finns: v2.11.4');
     expect(window.bridge.getAidlcUpdateStatus).toHaveBeenCalledWith(false); // the start-up result, not a new check
     fireEvent.click(within(row).getByTestId('aidlc-update-program-update'));
     expect(terminal.type).toHaveBeenCalledWith('shell', 'aidlc update', { submit: false });
@@ -66,12 +66,12 @@ describe('AidlcUpdate', () => {
     expect(terminal.type).toHaveBeenCalledWith('shell', 'aidlc config --harness claude --yes', { submit: false });
   });
 
-  it('asks again with force on "Check for updates", and shows why a check is unavailable (FR3, FR5)', async () => {
-    show();
+  it('asks again with force on "Check for updates" (US-0416: the view\'s pill, as checkRequest), and shows why a check is unavailable (FR3, FR5)', async () => {
+    const { rerender } = show();
     await screen.findByTestId('aidlc-update-plan-claude');
     window.bridge.getAidlcUpdateStatus.mockResolvedValueOnce(OFFLINE);
-    fireEvent.click(screen.getByTestId('aidlc-update-check'));
-    await waitFor(() => expect(screen.getByTestId('aidlc-update-program-status').textContent).toBe('update check unavailable while offline'));
+    rerender(<AidlcUpdate projectId="p1" terminal={terminal} lastIntentChangeAt={null} checkRequest={1} />);
+    await waitFor(() => expect(screen.getByTestId('aidlc-update-program-reason').textContent).toBe('update check unavailable while offline'));
     expect(window.bridge.getAidlcUpdateStatus).toHaveBeenLastCalledWith(true);
     expect(window.bridge.getAidlcProjectPlans).toHaveBeenCalledTimes(2);
   });
@@ -80,7 +80,7 @@ describe('AidlcUpdate', () => {
     window.bridge.getAidlcUpdateStatus.mockRejectedValueOnce(new Error("Error invoking remote method 'aidlc:updateStatus': Error: boom"));
     window.bridge.getAidlcProjectPlans.mockRejectedValueOnce(new Error('no project'));
     show();
-    await waitFor(() => expect(screen.getByTestId('aidlc-update-program-status').textContent).toBe('boom'));
+    await waitFor(() => expect(screen.getByTestId('aidlc-update-program-reason').textContent).toBe('boom'));
     expect(await screen.findByText(/no project/)).toBeTruthy();
   });
 

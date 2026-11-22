@@ -710,8 +710,10 @@
     "createFeatureDocs": "Skapa feature-beskrivningar"
   },
   "aidlcUpdate": {
-    "programTitle": "AI-DLC-programmet",
     "projectTitle": "AI-DLC i det här projektet",
+    "unknown": "Okänt",
+    "filesDiffer": "{n} filer skiljer sig",
+    "updateDo": "Uppdatera skriver kommandot i skalfliken; tryck Enter där för att köra det.",
     "newer": "Nyare finns: v{version}",
     "newerUnknown": "En nyare version finns",
     "upToDate": "Aktuell",
@@ -793,18 +795,31 @@
         "save": "Spara",
         "clear": "Ta bort",
         "set": "Sparat i nyckelringen",
-        "notSet": "Inte sparat"
+        "notSet": "Inte sparat",
+        "signIn": "Logga in",
+        "what": "Användarnamn och app-lösenord, i nyckelringen"
       },
-      "pathLabel": "Sökväg",
+      "groups": {
+        "aidlc": "AI-DLC",
+        "agents": "Kodagenter",
+        "git": "Git-värdar",
+        "system": "System"
+      },
+      "chip": {
+        "checking": "Kontrollerar…",
+        "found": "Hittad",
+        "hand": "Vald för hand",
+        "missing": "Saknas",
+        "newer": "Uppdatering finns"
+      },
+      "missingDo": "Installera det, eller välj dess sökväg.",
+      "summary": "{n} verktyg · {missing} saknas",
+      "rescan": "Sök igen",
+      "copyPath": "Kopiera {path}",
+      "copied": "Kopierad",
       "pathFallback": "Inloggningsskalets PATH kunde inte läsas; appens egen PATH användes.",
-      "versionLabel": "Version",
-      "notFound": "hittades inte",
       "notOnPath": "hittades inte i PATH",
       "checking": "Kontrollerar…",
-      "source": {
-        "saved": "Egen sökväg",
-        "auto": "Hittad automatiskt"
-      },
       "pick": "Välj…",
       "pickFor": "Välj sökväg till {tool}",
       "pickTitle": "Välj sökväg till ett verktyg",

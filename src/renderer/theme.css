@@ -1610,19 +1610,65 @@ a.md-link:hover { color: var(--steel-light); }
 /* A segment break in the frame's head bar, as LCARS bars are cut into segments. */
 .settings-frame-elbow { align-self: stretch; width: var(--gap); margin: -5px auto -3px 72px; background: var(--bg); }
 .settings-subhead { margin: 6px 0 0; color: var(--muted); font-size: 12px; letter-spacing: 0.05em; text-transform: uppercase; }
-/* Tool cards (FR4.1): name in the header, path and version in the body, source and buttons in the footer. */
-.settings-tool-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 10px; }
-.settings-tool-name { color: var(--steel-light); }
-.settings-tool-field { min-width: 0; display: flex; flex-direction: column; gap: 2px; }
-.settings-tool-source { color: var(--text-2); font-size: 12px; letter-spacing: 0.04em; text-transform: uppercase; }
-.settings-tool-actions { display: flex; gap: 5px; }
-.settings-tool-needed { margin: 0; color: var(--coral-soft); font-size: 13px; }
-.settings-tool-error { margin: 0; }
-/* The AI-DLC rows under the tool cards (US-0504): one line per harness, its files unfold under it. */
-.aidlc-update { margin-top: 10px; }
-.aidlc-update-plan { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; padding-bottom: 6px; }
+/* US-0416 Settings › Tools: groups as LCARS sections (a tall block on the left, rows beside it); one compact row per
+   tool with its state as a strip at the left: missing coral, an update soft coral, chosen by hand white, else slate. */
+.tools-view { display: flex; flex-direction: column; gap: 18px; }
+.tools-bar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: space-between; }
+.tools-bar-pills { display: flex; gap: 8px; }
+.tools-group { display: grid; grid-template-columns: 128px minmax(0, 1fr); gap: 0 16px; }
+.tools-gh { --strip: transparent; position: relative; margin-left: 10px; min-height: 64px; display: flex; flex-direction: column; justify-content: space-between; align-items: flex-end; text-align: right; padding: 5px 9px 6px; background: var(--slate-3); color: var(--text); }
+.tools-gh::before { content: ''; position: absolute; left: -10px; top: 0; bottom: 0; width: 4px; background: var(--strip); }
+.tools-gh h3 { margin: 0; font-size: 19px; line-height: 1.05; font-weight: 600; letter-spacing: 0.03em; text-transform: uppercase; color: inherit; }
+.tools-gh-fig { align-self: flex-start; font-size: 13px; color: var(--text-2); font-variant-numeric: tabular-nums; }
+.tools-gh--aidlc { background: var(--steel-deep); }
+.tools-gh--git { background: var(--slate-2); color: var(--text-2); }
+.tools-gh--system { background: var(--slate-4); color: var(--on-light); }
+.tools-gh--system .tools-gh-fig { color: var(--slate-1); }
+.tools-gh--missing { --strip: var(--coral); }
+.tools-gh--newer { --strip: var(--coral-soft); }
+.tools-group-rows { min-width: 0; border-top: 1px solid var(--slate-2); }
+.tool-row {
+  --strip: var(--slate-3);
+  position: relative;
+  display: grid;
+  align-items: center;
+  gap: 4px 14px;
+  padding: 7px 0 7px 16px;
+  border-bottom: 1px solid var(--slate-1);
+  grid-template-columns: minmax(150px, 1fr) 96px minmax(120px, 1.3fr) 150px auto;
+}
+.tool-row::before { content: ''; position: absolute; left: 0; top: 7px; bottom: 7px; width: 4px; background: var(--strip); }
+.tool-row--missing { --strip: var(--coral); }
+.tool-row--newer { --strip: var(--coral-soft); }
+.tool-row--hand { --strip: var(--white); }
+.tool-row-name { font-size: 17px; color: var(--text); }
+.tool-row-ver { color: var(--steel-text); font-size: 16px; font-variant-numeric: tabular-nums; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tool-row-ver.is-none { color: var(--muted); }
+.tool-row-path { min-width: 0; border: 0; padding: 0; background: none; color: var(--muted); font-size: 12px; text-align: left; text-transform: none; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tool-row-path code { font-size: 12px; }
+button.tool-row-path:hover { color: var(--steel-text); }
+.tool-row-path.is-empty { font-size: 14px; }
+.tool-row-act { display: flex; flex-wrap: wrap; gap: 8px; justify-content: flex-end; }
+.tool-row .lcars-pill { height: 26px; padding: 0 12px; font-size: 13px; }
+.tool-row-note, .tool-row-fold, .tool-row-files, .tool-row-form { grid-column: 1 / -1; margin: 0; }
+.tool-row-note { font-size: 14px; }
+.tool-row-note.is-alert { color: var(--coral-soft); }
+.tool-row-note.is-alert b { color: var(--text); font-weight: 400; }
+.tool-row-fold { justify-self: start; border: 0; padding: 0; background: none; color: var(--steel-text); font-size: 13px; letter-spacing: 0.05em; text-transform: uppercase; }
+.tool-row-files { padding: 0 0 0 14px; columns: 2; font-size: 12px; color: var(--muted); }
+.tool-row-form { display: flex; flex-direction: column; gap: 8px; max-width: 420px; padding: 6px 0; }
+.tool-row-form-act { display: flex; gap: 8px; }
+.tool-chip { display: inline-flex; align-items: center; padding: 1px 7px; border: 1px solid var(--slate-4); color: var(--text-2); font-size: 13px; line-height: 1.35; text-transform: uppercase; white-space: nowrap; }
+.tool-chip--hand { border-color: var(--white); color: var(--white); }
+.tool-chip--newer { border-color: var(--coral-soft); color: var(--coral-soft); }
+.tool-chip--missing { border-color: var(--coral); background: var(--coral); color: var(--on-light); font-weight: 600; }
+@media (max-width: 900px) {
+  .tools-group { grid-template-columns: minmax(0, 1fr); gap: 6px; }
+  .tool-row { grid-template-columns: minmax(0, 1fr) 80px auto; }
+  .tool-row-path { grid-column: 1 / 3; }
+}
 /* A path wraps only at the <wbr> after each `/`, never mid-word (FR4.4). */
-.settings-tool-field code, .settings-folder code, .settings-list code { overflow-wrap: normal; word-break: normal; hyphens: none; }
+.settings-folder code, .settings-list code { overflow-wrap: normal; word-break: normal; hyphens: none; }
 .settings-folder { display: flex; flex-wrap: wrap; gap: 8px; align-items: baseline; }
 .settings-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
 .settings-list li { display: flex; flex-wrap: wrap; gap: 8px; align-items: baseline; justify-content: space-between; padding: 3px 6px; border-bottom: 1px solid var(--slate-2); }
