@@ -6,9 +6,9 @@
 
 > Small fixes the person reports while using the app: something looks off, behaves wrongly or is missing a detail. Each fix becomes a story here, so nothing reported in passing gets lost. A fix that grows into a feature moves to its topic's epic.
 
-**Stories:** US-0001, US-0002, US-0003, US-0004, US-0005, US-0006, US-0007, US-0008, US-0009, US-0010, US-0011, US-0012, US-0013, US-0014, US-0015, US-0016, US-0017, US-0018, US-0019, US-0020, US-0021, US-0022, US-0023, US-0024, US-0025, US-0026, US-0027, US-0028, US-0029, US-0030, US-0031, US-0032, US-0033, US-0034, US-0035, US-0036, US-0037, US-0038, US-0039, US-0040, US-0041
+**Stories:** US-0001, US-0002, US-0003, US-0004, US-0005, US-0006, US-0007, US-0008, US-0009, US-0010, US-0011, US-0012, US-0013, US-0014, US-0015, US-0016, US-0017, US-0018, US-0019, US-0020, US-0021, US-0022, US-0023, US-0024, US-0025, US-0026, US-0027, US-0028, US-0029, US-0030, US-0031, US-0032, US-0033, US-0034, US-0035, US-0036, US-0037, US-0038, US-0039, US-0040, US-0041, US-0042
 
-**Status (2026-11-22):** ✅ US-0001–US-0020 released (v0.2.3–v0.2.6). ✅ US-0021–US-0023 released in v0.2.7. ✅ US-0024 released in v0.2.8. ✅ US-0025 released in v0.2.9. ✅ US-0026 released in v0.2.9. ✅ US-0027 released in v0.2.9. ✅ US-0028 released in v0.2.10. ✅ US-0029 released in v0.2.10. ✅ US-0030 released in v0.2.10. ✅ US-0031 released in v0.2.10. ✅ US-0032 released in v0.2.11. ✅ US-0033 released in v0.2.11. ✅ US-0034 released in v0.2.12. ✅ US-0035 and US-0036 released in v0.2.13. ✅ US-0037–US-0041 done, for v0.2.14. Each story names its release.
+**Status (2026-11-22):** ✅ US-0001–US-0020 released (v0.2.3–v0.2.6). ✅ US-0021–US-0023 released in v0.2.7. ✅ US-0024 released in v0.2.8. ✅ US-0025 released in v0.2.9. ✅ US-0026 released in v0.2.9. ✅ US-0027 released in v0.2.9. ✅ US-0028 released in v0.2.10. ✅ US-0029 released in v0.2.10. ✅ US-0030 released in v0.2.10. ✅ US-0031 released in v0.2.10. ✅ US-0032 released in v0.2.11. ✅ US-0033 released in v0.2.11. ✅ US-0034 released in v0.2.12. ✅ US-0035 and US-0036 released in v0.2.13. ✅ US-0037–US-0042 done, for v0.2.14. Each story names its release.
 
 ---
 
@@ -678,4 +678,19 @@
   - [x] A test fails without the fix and passes with it; the existing suite stays green.
 - **Notes:** A code fix, so it runs on the `quick-fix` plan. Likely touches `src/renderer/workflowBusy.js`, `src/renderer/useProject.js` (what sets `lastIntentChangeAt`), possibly `src/main/watcher.js` (which changes it reports), `AidlcUpdate.jsx`, `RefreshPanel.jsx` and their tests.
 - **Dependencies:** US-0502, US-0504, US-0510
+
+---
+
+**US-0042: The splash screen stays open long enough to be seen** ✅ Done, for v0.2.14
+- As a **developer starting the app**, in order to **see the splash instead of a flash**, I would like **the start-up splash to stay open longer**.
+- **Epic:** EPIC-00
+- **Priority:** Low
+- **Complexity:** Small
+- **Background:** Asked for 2026-11-22. The splash (`src/renderer/Splash.jsx`) stayed at least 0.9 s and at most 4 s, so on a fast start it only flashed.
+- **Acceptance Criteria:**
+  - [x] **Given** the app is ready at once, **then** the splash still stays open at least 2.5 s, then fades out.
+  - [x] **Given** a slow start, **then** the splash leaves by 6 s at the latest.
+  - [x] A test fails without the change and passes with it; the existing suite stays green.
+- **Notes:** A code fix, built inside the v0.2.14 release intent (`fix/US-0042`).
+- **Dependencies:** none
 
