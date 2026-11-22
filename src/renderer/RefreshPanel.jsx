@@ -5,7 +5,7 @@ import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useTerminal } from './TerminalContext.jsx';
 import { FileContent } from './ArtifactReader.jsx';
-import { useWorkflowRunning } from './workflowBusy.js';
+import { useWorkflowRunning, waitText } from './workflowBusy.js';
 import CollisionPanel from './CollisionPanel.jsx';
 
 export const PULL = { rebase: 'git pull --rebase --autostash', merge: 'git pull --no-rebase --autostash' };
@@ -85,8 +85,9 @@ function usePlatform(projectId) {
 }
 
 /**
- * @param {{projectId: string, space: string, lastIntentChangeAt: number|null, open?: boolean, onToggle?: () => void,
- *   activeDirName?: string|null}} props
+ * @param {{projectId: string, space: string, lastIntentChangeAt: {name: string, stage: string|null, at: number|null}|null,
+ *   open?: boolean, onToggle?: () => void, activeDirName?: string|null}} props
+ *   lastIntentChangeAt is useProject's in-flight intent, null when none (US-0041 AC1, AC4);
  *   open/onToggle let the left arm's "Github" block drive the panel (FR2.2); without them it keeps its own state;
  *   activeDirName is the intent the merge note goes into (US-1201 AC-2)
  */
@@ -229,7 +230,7 @@ export default function RefreshPanel({ projectId, space, lastIntentChangeAt, ope
                 <div className="refresh-actions">
                   {working && (
                     <p className="refresh-wait" role="status">
-                      {t('github.wait')}
+                      {waitText(t, lastIntentChangeAt)}
                     </p>
                   )}
                   {status.tracking && (

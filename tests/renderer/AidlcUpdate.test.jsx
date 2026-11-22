@@ -2,7 +2,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import AidlcUpdate from '../../src/renderer/AidlcUpdate.jsx';
 
-const WAIT_MESSAGE = 'Vänta tills AI-DLC-steget är klart eller parkera arbetet först'; // sv.json github.wait
+// US-0041 AC4: sv.json github.waitFor names the in-flight intent and its stage.
+const FLIGHT = { name: 'release-0-2-14', stage: 'code-generation', at: null };
+const WAIT_MESSAGE = 'Vänta tills AI-DLC är klart med Code Generation i release-0-2-14, eller parkera arbetet först';
 
 // The shapes aidlc:updateStatus and aidlc:projectPlans return (US-0504).
 const NEWER = { version: 'aidlc 2.11.3 (runtime 2.11.3)', status: 'newer', latest: '2.11.4', reason: null, command: 'aidlc update' };
@@ -84,7 +86,7 @@ describe('AidlcUpdate', () => {
 
   it('disables both update buttons while a workflow runs, and hides the project row with no project (FR4, assumption 1)', async () => {
     terminal.anyBusy.mockReturnValue(true);
-    const { unmount } = show();
+    const { unmount } = show({ lastIntentChangeAt: FLIGHT });
     await screen.findByTestId('aidlc-update-plan-claude');
     expect(screen.getByTestId('aidlc-update-program-update').disabled).toBe(true);
     expect(within(screen.getByTestId('aidlc-update-plan-claude')).getByTestId('aidlc-update-plan-update').disabled).toBe(true);
@@ -92,7 +94,7 @@ describe('AidlcUpdate', () => {
     unmount();
 
     terminal.anyBusy.mockReturnValue(false);
-    show({ lastIntentChangeAt: Date.now() - 60 * 1000 }); // an AI-DLC write a minute ago
+    show({ lastIntentChangeAt: { ...FLIGHT, at: Date.now() - 30 * 1000 } }); // a stage write half a minute ago
     await screen.findByTestId('aidlc-update-plan-claude');
     expect(screen.getByTestId('aidlc-update-program-update').disabled).toBe(true);
     cleanup();
@@ -102,5 +104,13 @@ describe('AidlcUpdate', () => {
     expect(screen.queryByTestId('aidlc-update-project')).toBeNull();
     expect(window.bridge.getAidlcProjectPlans).toHaveBeenCalledTimes(2); // only the two renders with a project
     expect(screen.getByTestId('aidlc-update-program-update').disabled).toBe(true); // no shell tab to type into
+  });
+
+  it('keeps the buttons enabled and shows no notice while the active intent is complete or parked, even with a busy tab (US-0041 AC1)', async () => {
+    terminal.anyBusy.mockReturnValue(true);
+    show({ lastIntentChangeAt: null }); // useProject gives null for a complete or parked active intent
+    await screen.findByTestId('aidlc-update-plan-claude');
+    expect(screen.getByTestId('aidlc-update-program-update').disabled).toBe(false);
+    expect(screen.queryByRole('status')).toBeNull();
   });
 });

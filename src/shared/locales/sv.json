@@ -375,6 +375,7 @@
     "newCount": "{n} nya",
     "badge": "{n} nya ändringar i AI-DLC på {ref}",
     "wait": "Vänta tills AI-DLC-steget är klart eller parkera arbetet först",
+    "waitFor": "Vänta tills AI-DLC är klart med {stage} i {intent}, eller parkera arbetet först",
     "rebase": "Rebase",
     "merge": "Merge",
     "rebaseText": "Rebase lägger dina lokala commits ovanpå fjärrens, så historiken blir rak.",
