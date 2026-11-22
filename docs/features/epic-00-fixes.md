@@ -8,7 +8,7 @@
 
 **Stories:** US-0001, US-0002, US-0003, US-0004, US-0005, US-0006, US-0007, US-0008, US-0009, US-0010, US-0011, US-0012, US-0013, US-0014, US-0015, US-0016, US-0017, US-0018, US-0019, US-0020, US-0021, US-0022, US-0023, US-0024, US-0025, US-0026, US-0027, US-0028, US-0029, US-0030, US-0031, US-0032, US-0033, US-0034, US-0035, US-0036, US-0037, US-0038, US-0039, US-0040
 
-**Status (2026-11-22):** ✅ US-0001–US-0020 released (v0.2.3–v0.2.6). ✅ US-0021–US-0023 released in v0.2.7. ✅ US-0024 released in v0.2.8. ✅ US-0025 released in v0.2.9. ✅ US-0026 released in v0.2.9. ✅ US-0027 released in v0.2.9. ✅ US-0028 released in v0.2.10. ✅ US-0029 released in v0.2.10. ✅ US-0030 released in v0.2.10. ✅ US-0031 released in v0.2.10. ✅ US-0032 released in v0.2.11. ✅ US-0033 released in v0.2.11. ✅ US-0034 released in v0.2.12. ✅ US-0035 and US-0036 released in v0.2.13. 📋 US-0037–US-0040 planned for v0.2.14. Each story names its release.
+**Status (2026-11-22):** ✅ US-0001–US-0020 released (v0.2.3–v0.2.6). ✅ US-0021–US-0023 released in v0.2.7. ✅ US-0024 released in v0.2.8. ✅ US-0025 released in v0.2.9. ✅ US-0026 released in v0.2.9. ✅ US-0027 released in v0.2.9. ✅ US-0028 released in v0.2.10. ✅ US-0029 released in v0.2.10. ✅ US-0030 released in v0.2.10. ✅ US-0031 released in v0.2.10. ✅ US-0032 released in v0.2.11. ✅ US-0033 released in v0.2.11. ✅ US-0034 released in v0.2.12. ✅ US-0035 and US-0036 released in v0.2.13. 🚧 US-0037–US-0040 in progress for v0.2.14. Each story names its release.
 
 ---
 
@@ -590,7 +590,7 @@
 
 ---
 
-**US-0037: The intent head shows one clear control per state, in the LCARS look** 📋 Planned, for v0.2.14
+**US-0037: The intent head shows one clear control per state, in the LCARS look** 🚧 In progress, for v0.2.14
 - As a **developer looking at an intent in flight**, in order to **read the intent head at a glance and know which button does what**, I would like **the park and resume controls, the step and the cost to fit the head's LCARS layout, say each thing once, and never offer two buttons for the same action**.
 - **Epic:** EPIC-00
 - **Priority:** Medium
@@ -610,7 +610,7 @@
 
 ---
 
-**US-0038: An old planning commit the target has moved past never blocks the planning sync** 📋 Planned, for v0.2.14
+**US-0038: An old planning commit the target has moved past never blocks the planning sync** 🚧 In progress, for v0.2.14
 - As a **developer planning releases in the app**, in order to **trust that what I plan reaches `main`**, I would like **the planning sync to recognise a change that `main` has already moved past, and to keep pushing everything else**.
 - **Epic:** EPIC-00
 - **Priority:** High
@@ -628,7 +628,7 @@
 
 ---
 
-**US-0039: Fresh session and Compact act now, or ask AI-DLC to park, instead of waiting for an idle that never comes** 📋 Planned, for v0.2.14
+**US-0039: Fresh session and Compact act now, or ask AI-DLC to park, instead of waiting for an idle that never comes** 🚧 In progress, for v0.2.14
 - As a **developer whose AI-DLC session has grown large**, in order to **really get a fresh session when I pick one**, I would like **the handoff dialog to act at once when it is safe, and otherwise to tell AI-DLC to stop at its next safe point so the app can clear and resume**.
 - **Epic:** EPIC-00
 - **Priority:** High
@@ -646,7 +646,7 @@
 
 ---
 
-**US-0040: The intent list puts open work first and orders the rest by when it really happened** 📋 Planned, for v0.2.14
+**US-0040: The intent list puts open work first and orders the rest by when it really happened** 🚧 In progress, for v0.2.14
 - As a **developer opening a project**, in order to **find the work in flight without scrolling**, I would like **in-flight and parked intents at the top, and the finished ones newest first by their real creation time**.
 - **Epic:** EPIC-00
 - **Priority:** Medium
