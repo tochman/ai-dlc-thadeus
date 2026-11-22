@@ -97,8 +97,30 @@ describe('planning record (US-0607 FR1.1, FR1.2)', () => {
       content: 'two\n',
       baseHash: 'b'.repeat(64),
       earlier: expect.arrayContaining([base]),
-      storyIds: ['US-0101']
+      storyIds: [] // US-0038 FR1.3: the newest change names no story, so neither does the entry
     });
+  });
+
+  // US-0038 FR1.3: an entry's stories are those of its final change, never the union of every earlier one.
+  it('keeps only the newest change story ids when a later save replaces an entry (US-0038 FR1.3)', async () => {
+    const file = 'docs/releases/0.2.13.md';
+    await addContent(userData, '/work/a', { file, baseHash: null, content: 'one\n', storyIds: ['US-0035', 'US-0038'] });
+    const two = await addContent(userData, '/work/a', { file, baseHash: null, content: 'two\n', storyIds: ['US-0036'] });
+    expect(two.storyIds).toEqual(['US-0036']);
+    expect((await readRecord(userData, '/work/a')).actions.map((a) => a.storyIds)).toEqual([['US-0036']]);
+  });
+
+  // US-0038 FR1.4: an entry set aside from an app commit says which commit it came from.
+  it('keeps the commit a set-aside entry came from, and refuses a non-string one (US-0038 FR1.4)', async () => {
+    const e = await addContent(userData, '/work/a', {
+      file: 'docs/FEATURES.md',
+      baseHash: null,
+      content: 'x\n',
+      state: 'conflict',
+      from: '6502115 docs: update US-0035'
+    });
+    expect((await readRecord(userData, '/work/a')).actions[0]).toMatchObject({ id: e.id, state: 'conflict', from: '6502115 docs: update US-0035' });
+    await expect(addContent(userData, '/work/a', { file: 'docs/FEATURES.md', baseHash: null, content: 'y\n', from: 42 })).rejects.toThrow();
   });
 
   it('drops a content entry outside the docs or without a base hash, and refuses to add one (FR2.2)', async () => {

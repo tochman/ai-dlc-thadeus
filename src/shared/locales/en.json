@@ -592,9 +592,11 @@
         "createRelease": "New release {version}",
         "deleteRelease": "Delete release {version}",
         "content": "Change in {file}",
-        "stories": "Stories: {ids}"
+        "stories": "Stories: {ids}",
+        "from": "From the app's commit {commit}."
       },
       "conflict": "{file} has changed on the target as well.",
+      "choose": "Keep theirs drops the app's change; Use mine writes it over the target's text.",
       "useMine": "Use mine",
       "keepTheirs": "Keep theirs",
       "openBoth": "Open both in the editor",
@@ -602,6 +604,7 @@
       "error": {
         "offline": "Offline. The planning is kept and pushed when the app is online again.",
         "conflict": "The planning conflicts with main in {files}. Nothing was pushed; the app tries again at the next interval.",
+        "conflictCommit": "The app's commit {commit} conflicts with main in {files} and could not be set aside. Nothing was pushed. Delete the branch dash/planning to drop it.",
         "push": "The push was refused: {reason}. The planning is kept and the app tries again at the next interval.",
         "commit": "The planning could not be committed ({reason}): {files}. The change is kept.",
         "git": "The planning sync failed: {reason}"

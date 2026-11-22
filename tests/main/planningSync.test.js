@@ -18,7 +18,8 @@ import {
   recordTree,
   resolvePlanning,
   runCycle,
-  subjectOf
+  subjectOf,
+  waitingList
 } from '../../src/main/planningSync.js';
 
 const env = { ...process.env, GIT_AUTHOR_NAME: 'T', GIT_AUTHOR_EMAIL: 't@example.com', GIT_COMMITTER_NAME: 'T', GIT_COMMITTER_EMAIL: 't@example.com' };
@@ -188,17 +189,6 @@ describe('push (US-0607 FR3)', () => {
     await moveMain('src.txt', 'changed on main\n');
     await runCycle(ctx);
     expect(originLog()).toEqual(['docs: plan US-0101 for v1.0.0', 'main moves on', 'start']);
-  });
-
-  it('on a rebase conflict pushes nothing, keeps the record and names the files (FR3.5)', async () => {
-    storyBranch();
-    await setRelease('US-0101', 'v1.0.0');
-    await moveMain(EPIC, EPIC_TEXT.replace('**US-0101: First story** 📋 Planned', '**US-0101: First story** 🚧 In progress'));
-    const res = await runCycle(ctx);
-    expect(res.error).toMatchObject({ kind: 'conflict', files: [EPIC] });
-    expect(originLog()).toEqual(['main moves on', 'start']);
-    expect(res.pending).toBe(1);
-    expect(run(clone, 'worktree', 'list').split('\n')).toHaveLength(1);
   });
 
   it('with a protected main and gh, pushes the docs branch, then opens and squash-merges the pull request (FR3.3)', async () => {
@@ -466,6 +456,79 @@ describe('where the planning is read from, and stale queued changes (US-0036)', 
     await setRelease('US-0101', 'v1.0.0');
     await moveMain('src.txt', 'changed on main\n');
     expect(await runCycle(ctx)).toMatchObject({ pushed: true, moved: true });
+  });
+});
+
+// US-0038: on 2026-11-20 an old app commit (a first draft of docs/releases/0.2.13.md) conflicted on every rebase, so
+// nothing was pushed again. These rebuild that: a dash/planning commit made before main moved past its file.
+describe('an old planning commit never blocks the sync (US-0038)', () => {
+  beforeEach(() => setup());
+  const offline = () => runCycle({ ...ctx, online: () => false }); // commits on dash/planning, pushes nothing
+  const inProgress = EPIC_TEXT.replace('**US-0101: First story** 📋 Planned', '**US-0101: First story** 🚧 In progress');
+  let info;
+  beforeEach(() => {
+    info = vi.spyOn(console, 'info').mockImplementation(() => {});
+  });
+  afterEach(() => info.mockRestore());
+
+  it('FR1.1, FR1.4: the conflicting file is set aside as a choice naming the commit, and everything else is pushed', async () => {
+    storyBranch();
+    await setRelease('US-0101', 'v1.0.0'); // the epic and docs/releases/1.0.0.md in one app commit
+    await offline();
+    await moveMain(EPIC, inProgress);
+    await planAction(ctx, { kind: 'createRelease', storyIds: [], version: 'v2.0.0' }); // a later, harmless change
+    const res = await runCycle(ctx);
+
+    expect(res.error).toBeUndefined();
+    expect(res).toMatchObject({ pushed: true, conflicts: 1, pending: 1 });
+    expect(run(origin, 'show', `main:${EPIC}`)).toContain('**US-0101: First story** 🚧 In progress');
+    expect(run(origin, 'show', 'main:docs/releases/1.0.0.md')).toContain('| US-0101 |'); // the same commit's other file
+    expect(run(origin, 'show', 'main:docs/releases/2.0.0.md')).toContain('v2.0.0');
+    const { entries } = await waitingList(ctx);
+    expect(entries).toMatchObject([
+      { kind: 'content', file: EPIC, state: 'conflict', from: expect.stringMatching(/^[0-9a-f]{7,} docs: plan US-0101 for v1.0.0$/) }
+    ]);
+    expect(entries[0].content).toContain('📋 Planned, for v1.0.0');
+    expect(run(clone, 'worktree', 'list').split('\n')).toHaveLength(1);
+
+    await resolvePlanning(ctx, entries[0].id, 'theirs');
+    expect(await runCycle(ctx)).toMatchObject({ pending: 0, conflicts: 0 });
+  });
+
+  it('FR1.1: Use mine on a set-aside file writes the app text onto the target text', async () => {
+    storyBranch();
+    await setRelease('US-0101', 'v1.0.0');
+    await offline();
+    await moveMain(EPIC, inProgress);
+    await runCycle(ctx);
+    const [entry] = (await waitingList(ctx)).entries;
+    await resolvePlanning(ctx, entry.id, 'mine');
+    expect(await runCycle(ctx)).toMatchObject({ pending: 0, conflicts: 0 });
+    expect(run(origin, 'show', `main:${EPIC}`)).toContain('📋 Planned, for v1.0.0');
+  });
+
+  it('FR1.2: an app commit to a tagged release plan that conflicts with main is dropped with a log line, no choice offered', async () => {
+    storyBranch();
+    await setRelease('US-0102', 'v1.0.0');
+    await offline();
+    await moveMain('docs/releases/1.0.0.md', '# Release plan v1.0.0\n\n| US-0101 | released |\n');
+    run(clone, 'fetch', '-q');
+    run(clone, 'tag', 'v1.0.0', 'origin/main');
+    const res = await runCycle(ctx);
+    expect(res).toMatchObject({ pushed: true, conflicts: 0, pending: 0 });
+    expect(run(origin, 'show', 'main:docs/releases/1.0.0.md')).not.toContain('US-0102');
+    expect(info).toHaveBeenCalledWith(expect.stringContaining('docs/releases/1.0.0.md'));
+  });
+
+  it('FR1.2: a waiting entry for a tagged release plan is dropped with a log line; another release plan still goes', async () => {
+    run(clone, 'tag', 'v1.0.0');
+    storyBranch();
+    await addContent(userData, clone, { file: 'docs/releases/1.0.0.md', baseHash: 'a'.repeat(64), content: '# old draft\n', state: 'conflict' });
+    await addContent(userData, clone, { file: 'docs/releases/2.0.0.md', baseHash: null, content: '# Release plan v2.0.0\n' });
+    expect(await runCycle(ctx)).toMatchObject({ pending: 0, conflicts: 0 });
+    expect(info).toHaveBeenCalledWith(expect.stringContaining('docs/releases/1.0.0.md'));
+    expect(run(origin, 'show', 'main:docs/releases/1.0.0.md')).toBe('# Release plan v1.0.0');
+    expect(run(origin, 'show', 'main:docs/releases/2.0.0.md')).toBe('# Release plan v2.0.0');
   });
 });
 
