@@ -10,12 +10,18 @@ const SORTS = ['date', 'cost', 'name'];
 
 const usdOf = (costs, i) => costs?.[i.dirName]?.total.usd ?? null;
 
-/** Date (newest first, the order intents arrive in), cost (highest first, no entry last) or name (FR1.6). */
+/** The active intent first, then open work (in flight, parked or not), then the rest (US-0040 FR4.1). */
+const openRank = (i) => (i.active ? 0 : isInFlight(i.status) ? 1 : 2);
+
+/**
+ * Date (open work first, each group newest first in the order intents arrive in; US-0040 FR4.1), cost (highest
+ * first, no entry last) or name (FR1.6, US-0040 FR4.4).
+ */
 export function sortIntents(intents, sort, costs) {
   const list = [...intents];
   if (sort === 'name') return list.sort((a, b) => a.slug.localeCompare(b.slug));
   if (sort === 'cost') return list.sort((a, b) => (usdOf(costs, b) ?? -1) - (usdOf(costs, a) ?? -1));
-  return list;
+  return list.sort((a, b) => openRank(a) - openRank(b));
 }
 
 /** A custom plan's own name, else its scope: what the row and the filter show. */
