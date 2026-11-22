@@ -6,9 +6,9 @@
 
 > Small fixes the person reports while using the app: something looks off, behaves wrongly or is missing a detail. Each fix becomes a story here, so nothing reported in passing gets lost. A fix that grows into a feature moves to its topic's epic.
 
-**Stories:** US-0001, US-0002, US-0003, US-0004, US-0005, US-0006, US-0007, US-0008, US-0009, US-0010, US-0011, US-0012, US-0013, US-0014, US-0015, US-0016, US-0017, US-0018, US-0019, US-0020, US-0021, US-0022, US-0023, US-0024, US-0025, US-0026, US-0027, US-0028, US-0029, US-0030, US-0031, US-0032, US-0033, US-0034, US-0035, US-0036, US-0037, US-0038, US-0039
+**Stories:** US-0001, US-0002, US-0003, US-0004, US-0005, US-0006, US-0007, US-0008, US-0009, US-0010, US-0011, US-0012, US-0013, US-0014, US-0015, US-0016, US-0017, US-0018, US-0019, US-0020, US-0021, US-0022, US-0023, US-0024, US-0025, US-0026, US-0027, US-0028, US-0029, US-0030, US-0031, US-0032, US-0033, US-0034, US-0035, US-0036, US-0037, US-0038, US-0039, US-0040
 
-**Status (2026-11-22):** ✅ US-0001–US-0020 released (v0.2.3–v0.2.6). ✅ US-0021–US-0023 released in v0.2.7. ✅ US-0024 released in v0.2.8. ✅ US-0025 released in v0.2.9. ✅ US-0026 released in v0.2.9. ✅ US-0027 released in v0.2.9. ✅ US-0028 released in v0.2.10. ✅ US-0029 released in v0.2.10. ✅ US-0030 released in v0.2.10. ✅ US-0031 released in v0.2.10. ✅ US-0032 released in v0.2.11. ✅ US-0033 released in v0.2.11. ✅ US-0034 released in v0.2.12. ✅ US-0035 and US-0036 released in v0.2.13. 📋 US-0037, US-0038 and US-0039 planned for v0.2.14. Each story names its release.
+**Status (2026-11-22):** ✅ US-0001–US-0020 released (v0.2.3–v0.2.6). ✅ US-0021–US-0023 released in v0.2.7. ✅ US-0024 released in v0.2.8. ✅ US-0025 released in v0.2.9. ✅ US-0026 released in v0.2.9. ✅ US-0027 released in v0.2.9. ✅ US-0028 released in v0.2.10. ✅ US-0029 released in v0.2.10. ✅ US-0030 released in v0.2.10. ✅ US-0031 released in v0.2.10. ✅ US-0032 released in v0.2.11. ✅ US-0033 released in v0.2.11. ✅ US-0034 released in v0.2.12. ✅ US-0035 and US-0036 released in v0.2.13. 📋 US-0037–US-0040 planned for v0.2.14. Each story names its release.
 
 ---
 
@@ -643,4 +643,21 @@
   - [ ] A test fails without the fix and passes with it; the existing suite stays green.
 - **Notes:** A code fix, so it runs on the `quick-fix` plan. Likely touches `src/main/sessionHandoff.js` (`isIdle`, `commandsFor`), `src/renderer/terminalControl.js` (`sendHandoff`), `src/renderer/AgentDialog.jsx` (`HandoffPage`) and their tests. A hard interrupt (Esc) mid-turn is left out: it can cut a file write short.
 - **Dependencies:** US-0213, US-0026
+
+---
+
+**US-0040: The intent list puts open work first and orders the rest by when it really happened** 📋 Planned, for v0.2.14
+- As a **developer opening a project**, in order to **find the work in flight without scrolling**, I would like **in-flight and parked intents at the top, and the finished ones newest first by their real creation time**.
+- **Epic:** EPIC-00
+- **Priority:** Medium
+- **Complexity:** Small
+- **Background:** Reported 2026-11-22. "Sort: Date" orders by folder name, descending (`src/main/parsers/intents.js`, `b.dirName.localeCompare(a.dirName)`), and `sortIntents` (`src/renderer/IntentList.jsx`) keeps that order. Folder names carry only the day, so intents from the same day come out in reverse alphabetical order: `spec-kit-ideation` above `spec-kit-framework` above `release-0-2-11`, though `release-0-2-11` was made between them. The only in-flight intent, the parked `spec-kit-framework`, sits third, between finished ones. The real order is known: the `uuid` in `intents.json` is time-ordered (UUID v7), and each intent's last activity is read already (`activityAt`).
+- **Acceptance Criteria:**
+  - [ ] **Given** sort by date, **then** intents in flight or parked come first, the active one at the top, then the finished ones, each group newest first by creation time (the `uuid`'s time, else the folder date).
+  - [ ] **Given** two intents from the same day, **then** the one made later comes first, whatever their names.
+  - [ ] **Given** an intent on disk but not in `intents.json` (no `uuid`), **then** it sorts by its folder date, after the same day's indexed intents.
+  - [ ] Sort by cost and by name are unchanged.
+  - [ ] A test fails without the fix and passes with it; the existing suite stays green.
+- **Notes:** A code fix, so it runs on the `quick-fix` plan. Likely touches `src/main/parsers/intents.js`, `sortIntents` in `src/renderer/IntentList.jsx` and their tests. Open question for the person: a separate "Last activity" sort is left out unless asked for.
+- **Dependencies:** US-0510
 
