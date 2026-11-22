@@ -16,7 +16,7 @@ Overview of all epics. Each epic lives in its own file under [features/](feature
 | [EPIC-09](features/epic-09-aidlc-configuration.md) | AI-DLC Configuration: see and change a project's AI-DLC settings, custom plans and models per agent, per harness | ✅ US-0901–US-0904 released (v0.2.2–v0.2.4) · 📋 US-0905 planned for v0.2.14 |
 | [EPIC-10](features/epic-10-editing.md) | Editing: edit project files, docs and code in the app with the Monaco editor | ✅ US-1001 released in v0.2.4 |
 | [EPIC-11](features/epic-11-open-source.md) | Open Source: make the repository public and the app open source | ✅ US-1101 released in v0.2.6 · ✅ US-1102 and US-1103 released in v0.2.13 |
-| [EPIC-12](features/epic-12-team-collaboration.md) | Team Collaboration: use git and AI-DLC so a team can work in the app together | ✅ US-1201 and US-1202 released in v0.2.8 · 📋 US-1203 planned |
+| [EPIC-12](features/epic-12-team-collaboration.md) | Team Collaboration: use git and AI-DLC so a team can work in the app together | ✅ US-1201 and US-1202 released in v0.2.8 · 📋 US-1203 planned for v0.2.14 |
 | [EPIC-13](features/epic-13-insights.md) | Insights: what the AI work cost, what it delivered, and where it was wasted | 📋 US-1301–US-1303 planned, for v0.3.1 · 📋 US-1304–US-1307 planned, for v0.3.2 |
 | [EPIC-14](features/epic-14-spec-kit.md) | Spec Kit: follow and drive Spec Kit projects, as an alternative to AI-DLC (one framework per project) | 📋 US-1401–US-1410 planned, for v0.3.0 |
 
