@@ -11,6 +11,7 @@ import {
   Meter,
   Pill,
   ReadoutTable,
+  RoundFrame,
   SectionHeading,
   SegBar,
   SegMeter,
@@ -301,5 +302,35 @@ describe('curved diagonal frame', () => {
     expect(blocks[0].className).toContain('lcars-strip--live');
     expect(frame.querySelector('svg').getAttribute('aria-hidden')).toBe('true');
     expect(within(frame).getByTestId('lcars-diagonal-body').textContent).toBe('chart');
+  });
+});
+
+describe('round frame (US-0417: Configuration and the dialogs)', () => {
+  it('heads its top bar with the title, takes circular radii from its arm and bars, and holds its body', () => {
+    render(
+      <RoundFrame title="Feature docs" titleId="t1" sub="Project settings · app" footer="claude" arm={30} top={42} bottom={18}>
+        form
+      </RoundFrame>
+    );
+    const frame = screen.getByTestId('lcars-round-frame');
+    expect(screen.getByRole('heading', { name: 'Feature docs' }).id).toBe('t1');
+    expect(within(frame).getByTestId('lcars-segbar').textContent).toContain('Project settings · app');
+    expect(within(frame).getByTestId('lcars-round-body').textContent).toBe('form');
+    expect(frame.style.getPropertyValue('--rf-ro')).toBe(`${elbowRadii(30, 42).outer}px`);
+    expect(frame.style.getPropertyValue('--rf-ri')).toBe(`${elbowRadii(30, 42).inner}px`);
+    expect(frame.style.getPropertyValue('--rf-rob')).toBe(`${elbowRadii(30, 18).outer}px`);
+    expect(frame.textContent).toContain('claude'); // the bottom bar's label
+  });
+
+  it('an arm with readouts is not filled; a corner block takes the arm column of the top elbow', () => {
+    render(
+      <RoundFrame title="About" corner={<span>brand</span>} arm={150} top={30} bottom={18} armContent={<span>v</span>}>
+        x
+      </RoundFrame>
+    );
+    const frame = screen.getByTestId('lcars-round-frame');
+    expect(frame.className).toContain('has-corner');
+    expect(frame.querySelector('.lcars-rf-arm').textContent).toBe('v');
+    expect(frame.querySelector('.lcars-rf-tl').textContent).toBe('brand');
   });
 });

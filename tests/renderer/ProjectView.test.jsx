@@ -138,6 +138,28 @@ describe('ProjectView: one view at a time', () => {
     expect(shown('intent-list')).toBe(true);
   });
 
+  it('shows Configuration in the round frame, the section title on its bar, the AI-DLC switch as tiles (US-0417)', async () => {
+    window.bridge.listPlans = vi.fn(async () => ({ plans: [], errors: {} }));
+    renderView('config', { section: 'docs' });
+    const frame = screen.getByTestId('lcars-round-frame');
+    expect(frame.className).toContain('config-frame');
+    const bar = within(frame).getByTestId('lcars-segbar');
+    expect(within(bar).getByRole('heading', { level: 2, name: 'Feature-beskrivningar' })).toBeTruthy();
+    expect(bar.textContent).toContain('Projektinställningar · app');
+    expect(within(frame).getByTestId('project-settings-view')).toBeTruthy();
+    cleanup();
+
+    renderView('config', { section: 'aidlc' });
+    const settingsTile = screen.getByTestId('aidlc-view-tab-settings');
+    const plansTile = screen.getByTestId('aidlc-view-tab-plans');
+    expect(settingsTile.className).toContain('lcars-tile');
+    expect(settingsTile.className).toContain('is-sel');
+    expect(plansTile.className).toContain('lcars-tile');
+    expect(plansTile.className).not.toContain('is-sel');
+    expect(settingsTile.closest('[data-testid="lcars-round-body"]')).toBeTruthy();
+    await waitFor(() => expect(shown('config-view')).toBe(true));
+  });
+
   it('splits Configuration › AI-DLC into Settings and Plans tabs, Plans alone when chosen, none without AI-DLC (US-0905)', async () => {
     window.bridge.listPlans = vi.fn(async () => ({ plans: [], errors: {} }));
     const { onView } = renderView('config', { section: 'aidlc' });

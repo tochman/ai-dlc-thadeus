@@ -56,10 +56,14 @@ export function Pill({ tone, className = '', children, ...rest }) {
  * @param {{title?: import('react').ReactNode, as?: string, level?: 'window'|'frame'|'section', sub?: import('react').ReactNode,
  *          trailing?: import('react').ReactNode, className?: string}} props
  */
-export function SegBar({ title, as: Title = 'h2', level = 'frame', sub, trailing, className = '' }) {
+export function SegBar({ title, titleId, as: Title = 'h2', level = 'frame', sub, trailing, className = '' }) {
   return (
     <div className={`lcars-segbar lcars-segbar--${level} ${className}`} data-testid="lcars-segbar">
-      {title != null && <Title className="lcars-title lcars-e-rise">{title}</Title>}
+      {title != null && (
+        <Title id={titleId} className="lcars-title lcars-e-rise">
+          {title}
+        </Title>
+      )}
       {sub != null && <span className="lcars-sseg lcars-seg-lab">{sub}</span>}
       <span className="lcars-sseg lcars-sseg--steel lcars-e-draw" aria-hidden="true" />
       <span className="lcars-sseg lcars-sseg--fix lcars-e-draw" aria-hidden="true" />
@@ -371,6 +375,69 @@ export function DiagonalFrame({ title, as: Title = 'h2', sub, tag, corner, foote
         <div className="lcars-df-body" data-testid="lcars-diagonal-body">
           {children}
         </div>
+      </div>
+    </section>
+  );
+}
+
+const BAR_LEVEL = { [BARS.thin]: 'section', [BARS.medium]: 'window', [BARS.large]: 'frame' };
+
+/**
+ * US-0417: the round frame (Configuration, the dialogs). A top elbow and a bottom elbow with circular arcs only, radii
+ * from elbowRadii (outer 0.7 x arm, inner 1.4 x bar); the title heads the top bar (`top` px: 42 frame, 30 window) with
+ * `sub` and `trailing` pills as its last segments; `footer` labels the bottom bar. The arm is filled, or a column of
+ * readout blocks when `armContent` is given; `corner` (the dialogs' brand block) takes the arm column of the top elbow.
+ * @param {{title: import('react').ReactNode, titleId?: string, as?: string, sub?: import('react').ReactNode,
+ *          trailing?: import('react').ReactNode, footer?: import('react').ReactNode, corner?: import('react').ReactNode,
+ *          armContent?: import('react').ReactNode, arm?: number, top?: number, bottom?: number, className?: string,
+ *          children?: import('react').ReactNode}} props
+ */
+export function RoundFrame({
+  title,
+  titleId,
+  as,
+  sub,
+  trailing,
+  footer,
+  corner,
+  armContent,
+  arm = BARS.medium,
+  top = BARS.large,
+  bottom = BARS.thin,
+  className = '',
+  children
+}) {
+  const upper = elbowRadii(arm, top);
+  const lower = elbowRadii(arm, bottom);
+  const style = {
+    '--rf-arm': `${arm}px`,
+    '--rf-top': `${top}px`,
+    '--rf-bot': `${bottom}px`,
+    '--rf-ro': `${upper.outer}px`,
+    '--rf-ri': `${upper.inner}px`,
+    '--rf-rob': `${lower.outer}px`,
+    '--rf-rib': `${lower.inner}px`
+  };
+  const cls = ['lcars-rf', corner != null && 'has-corner', armContent != null && 'has-readouts', className].filter(Boolean).join(' ');
+  return (
+    <section className={cls} style={style} data-testid="lcars-round-frame">
+      <div className="lcars-rf-tl lcars-e-wipe" aria-hidden={corner == null ? 'true' : undefined}>
+        {corner}
+      </div>
+      <div className="lcars-rf-top lcars-e-slide">
+        <SegBar title={title} titleId={titleId} as={as} level={BAR_LEVEL[top] ?? 'frame'} sub={sub} trailing={trailing} />
+      </div>
+      <div className="lcars-rf-arm" aria-hidden={armContent == null ? 'true' : undefined}>
+        {armContent}
+      </div>
+      <div className="lcars-rf-body" data-testid="lcars-round-body">
+        {children}
+      </div>
+      <div className="lcars-rf-bl lcars-e-wipe" aria-hidden="true" />
+      <div className="lcars-rf-bot">
+        {footer != null && <span className="lcars-sseg lcars-seg-lab">{footer}</span>}
+        <span className="lcars-sseg lcars-sseg--deep lcars-e-draw" aria-hidden="true" />
+        <span className="lcars-sseg lcars-sseg--cap lcars-e-draw" aria-hidden="true" />
       </div>
     </section>
   );
