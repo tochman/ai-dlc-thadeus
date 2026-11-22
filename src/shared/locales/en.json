@@ -1501,6 +1501,7 @@
       },
       "gateNote": "AI-DLC shows the gate again in the new session.",
       "waiting": "Waiting until the agent is idle…",
+      "parkSent": "AI-DLC was asked to park at its next safe point. Your choice goes once the agent stops…",
       "failed": {
         "notReady": "The new session did not start. Type /aidlc --resume in the terminal.",
         "notIdle": "The agent never went idle. Nothing was sent.",

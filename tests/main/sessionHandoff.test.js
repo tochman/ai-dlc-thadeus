@@ -8,6 +8,7 @@ import {
   decideThreshold,
   handoffCommands,
   isIdle,
+  parkRequest,
   turnCost
 } from '../../src/main/sessionHandoff.js';
 
@@ -237,7 +238,7 @@ describe('createHandoffController', () => {
   it('commands only for an offered choice; idle follows the signals; sent logs the size before and the next size after (FR8.1)', async () => {
     make();
     await stop();
-    expect(ctl.commandsFor('h1', 'fresh')).toEqual({ lines: ['/clear', '/aidlc --resume'], waitReady: true });
+    expect(ctl.commandsFor('h1', 'fresh')).toEqual({ lines: ['/clear', '/aidlc --resume'], waitReady: true, mode: 'now' });
     expect(ctl.commandsFor('h1', 'compact').lines[0]).toMatch(/^\/compact Keep for the AI-DLC workflow/);
     expect(ctl.commandsFor('h1', 'clear')).toBeNull();
     expect(ctl.commandsFor('h1', 'rm -rf')).toBeNull();
@@ -250,5 +251,87 @@ describe('createHandoffController', () => {
     size = 40_000;
     await stop();
     expect(logs.at(-1)).toMatch(/compact.*160000.*40000/);
+  });
+
+  // US-0039 FR2.1–FR2.5, NFR4: Fresh session and Compact act now when idle, else ask AI-DLC to park first.
+  const busy = () => store.signalsOf.mockReturnValue({ lastStopMs: 1, lastInputMs: null, busy: true, waiting: false });
+
+  it('idle: mode now, as today (US-0039 FR2.4)', async () => {
+    make();
+    await stop();
+    expect(ctl.commandsFor('h1', 'compact')).toMatchObject({ mode: 'now', waitReady: false });
+    expect(ctl.commandsFor('h1', 'compact').lines).toHaveLength(1);
+  });
+
+  it('busy: mode park; Fresh session is /clear + resume, Compact is /compact + resume after the new context (FR2.2, FR2.3)', async () => {
+    make();
+    await stop();
+    busy();
+    expect(ctl.commandsFor('h1', 'fresh')).toEqual({ lines: ['/clear', '/aidlc --resume'], waitReady: true, mode: 'park' });
+    const c = ctl.commandsFor('h1', 'compact');
+    expect(c).toMatchObject({ mode: 'park', waitReady: true });
+    expect(c.lines[0]).toMatch(/^\/compact Keep for the AI-DLC workflow/);
+    expect(c.lines[1]).toBe('/aidlc --resume');
+  });
+
+  it('a question open (a gate) is park mode too (FR2.1)', async () => {
+    make();
+    await stop();
+    store.signalsOf.mockReturnValue({ lastStopMs: 1, lastInputMs: null, busy: false, waiting: true });
+    expect(ctl.commandsFor('h1', 'fresh').mode).toBe('park');
+  });
+
+  it('the park request is fixed text per harness (NFR4)', () => {
+    expect(parkRequest('claude')).toBe(
+      'THADEUS: the person asked for a fresh session. At your next safe point, run `aidlc engine orchestrate park --person-asked` and end your turn.'
+    );
+    expect(parkRequest('opencode')).toContain('aidlc engine orchestrate park --person-asked');
+    expect(parkRequest('codex')).toBeNull();
+  });
+
+  it('park while working gives the line to type, and idle waits for a stop after it (FR2.2)', async () => {
+    make();
+    await stop();
+    busy();
+    t = 200_000;
+    expect(await ctl.park('h1')).toEqual({ line: parkRequest('claude'), sent: true });
+    store.signalsOf.mockReturnValue({ lastStopMs: 150_000, lastInputMs: null, busy: false, waiting: false });
+    t = 300_000;
+    expect(ctl.idle('h1')).toBe(false); // that stop was before the request
+    store.signalsOf.mockReturnValue({ lastStopMs: 250_000, lastInputMs: null, busy: false, waiting: false });
+    expect(ctl.idle('h1')).toBe(true);
+  });
+
+  it('park at a gate gives the request as the open question’s own answer and types nothing (FR2.1)', async () => {
+    make();
+    await stop();
+    store.signalsOf.mockReturnValue({ lastStopMs: 1, busy: false, waiting: true });
+    store.list = () => [
+      { eventId: 'q0', sessionId: 's1', kind: 'question', state: 'sent', questions: [{ allowOwn: true }] },
+      { eventId: 'q1', sessionId: 's1', kind: 'question', state: 'shown', questions: [{ allowOwn: true }, { allowOwn: true }] },
+      { eventId: 'q2', sessionId: 's9', kind: 'question', state: 'shown', questions: [{ allowOwn: true }] }
+    ];
+    store.answer = vi.fn(async () => ({ state: 'sent' }));
+    expect(await ctl.park('h1')).toEqual({ line: null, sent: true });
+    const text = parkRequest('claude');
+    expect(store.answer).toHaveBeenCalledWith('q1', { question: { picks: [[], []], own: [text, text] } });
+  });
+
+  it('a permission waiting (or a question with no own answer) holds the request: nothing typed, nothing answered', async () => {
+    make();
+    await stop();
+    store.signalsOf.mockReturnValue({ lastStopMs: 1, busy: false, waiting: true });
+    store.list = () => [{ eventId: 'q1', sessionId: 's1', kind: 'question', state: 'shown', questions: [{ allowOwn: false }] }];
+    store.answer = vi.fn();
+    expect(await ctl.park('h1')).toEqual({ line: null, sent: false });
+    expect(store.answer).not.toHaveBeenCalled();
+    expect(await ctl.park('h404')).toBeNull();
+  });
+
+  it('waitReady also takes the session after a compaction (FR2.3)', async () => {
+    make();
+    await stop();
+    await ctl.waitReady('h1');
+    expect(store.waitForSession).toHaveBeenCalledWith('s1', ['clear', 'startup', 'compact'], 30_000);
   });
 });

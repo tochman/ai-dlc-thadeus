@@ -88,21 +88,29 @@ const HANDOFF_WAIT_MS = 30 * 60 * 1000;
  * US-0213 FR3.2, FR3.3, FR5.3, NFR4, US-0026 FR3.3: types one handoff choice. Main gives the fixed lines and says when
  * the agent is idle; nothing is typed before that, and the page is told it waits. For Fresh session the second line
  * goes only after main saw the new session start.
- * @param {{bridge: {commands, idle, waiting, waitReady, sent}, eventId: string, choice: string, write: (text) => void,
- *   onWaiting?: () => void, pollMs?: number}} options
+ * US-0039 FR2.1–FR2.5: in `park` mode main first answers an open gate with the park request, or gives the park line,
+ * which is typed at once; the page is told (`onWaiting('park')`) and the choice's lines follow once the agent stops.
+ * @param {{bridge: {commands, park, idle, waiting, waitReady, sent}, eventId: string, choice: string, write: (text) => void,
+ *   onWaiting?: (how: 'park'|'idle') => void, pollMs?: number}} options
  * @returns {Promise<{ok: true}|{ok: false, reason: 'noCommands'|'notIdle'|'notReady'}>}
  */
 export async function sendHandoff({ bridge, eventId, choice, write, onWaiting = () => {}, pollMs = 500 }) {
   const cmds = await bridge.commands(eventId, choice);
   if (!cmds?.lines?.length) return { ok: false, reason: 'noCommands' };
   let told = false;
+  const tell = async (how) => {
+    told = true;
+    await bridge.waiting(eventId, true);
+    onWaiting(how);
+  };
+  if (cmds.mode === 'park') {
+    const park = await bridge.park(eventId);
+    if (park?.line) write(withEnter(park.line, true));
+    if (park?.sent) await tell('park');
+  }
   for (const end = Date.now() + HANDOFF_WAIT_MS; !(await bridge.idle(eventId)); await sleepMs(pollMs)) {
     if (Date.now() > end) return { ok: false, reason: 'notIdle' };
-    if (!told) {
-      told = true;
-      await bridge.waiting(eventId, true);
-      onWaiting();
-    }
+    if (!told) await tell('idle');
   }
   const [first, ...rest] = cmds.lines;
   write(withEnter(first, true));
