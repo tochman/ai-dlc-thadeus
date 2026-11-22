@@ -3,8 +3,8 @@ import AuctumMark from './AuctumMark.jsx';
 import { Bar } from './Lcars.jsx';
 import { APP_FULL_NAME, APP_NAME, APP_TAGLINE } from '../shared/appName.js';
 
-export const SPLASH_MIN_MS = 900;
-export const SPLASH_MAX_MS = 4000;
+export const SPLASH_MIN_MS = 2500; // US-0042: long enough to be seen (was 900 ms)
+export const SPLASH_MAX_MS = 6000; // US-0042: the cap stays above the minimum with room for a slow start (was 4000 ms)
 export const SPLASH_FADE_MS = 300;
 
 // Startup splash: stays until `ready` (tabs restored), but at least MIN and at most MAX ms, then fades out.

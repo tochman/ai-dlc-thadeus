@@ -35,6 +35,15 @@ describe('Splash', () => {
     expect(screen.queryByTestId('splash')).toBeNull();
   });
 
+  // US-0042: the splash is seen, not flashed: at least 2.5 s, and the cap leaves room for a slow start.
+  it('stays open at least 2.5 s and at most 6 s', () => {
+    expect(SPLASH_MIN_MS).toBeGreaterThanOrEqual(2500);
+    expect(SPLASH_MAX_MS).toBeGreaterThanOrEqual(6000);
+    render(<Splash ready />);
+    advance(2499);
+    expect(screen.getByTestId('splash').className).not.toContain('is-leaving');
+  });
+
   it('waits for ready after the minimum time', () => {
     const { rerender } = render(<Splash ready={false} />);
     advance(SPLASH_MIN_MS + SPLASH_FADE_MS + 100);
