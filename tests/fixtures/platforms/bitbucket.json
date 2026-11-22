@@ -28,6 +28,25 @@
         "created_on": "2026-11-15T11:00:00+00:00",
         "deleted": false,
         "links": { "html": { "href": "https://bitbucket.org/team/dash/pull-requests/7/_/diff#comment-1" } }
+      },
+      {
+        "id": 2,
+        "user": { "display_name": "Bo" },
+        "content": { "raw": "Why fetch here?" },
+        "created_on": "2026-11-15T11:30:00+00:00",
+        "deleted": false,
+        "inline": { "path": "src/main/git.js", "to": 14, "from": null },
+        "links": { "html": { "href": "https://bitbucket.org/team/dash/pull-requests/7/_/diff#comment-2" } }
+      },
+      {
+        "id": 3,
+        "user": { "display_name": "Thomas Ochman" },
+        "content": { "raw": "To spare a round trip." },
+        "created_on": "2026-11-15T11:40:00+00:00",
+        "deleted": false,
+        "parent": { "id": 2 },
+        "inline": { "path": "src/main/git.js", "to": 14, "from": null },
+        "links": { "html": { "href": "https://bitbucket.org/team/dash/pull-requests/7/_/diff#comment-3" } }
       }
     ]
   },

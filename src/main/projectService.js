@@ -12,6 +12,7 @@ import { agentName, summarizeLedger } from './parsers/ledger.js';
 import { addTree, mergeIntentCosts, shardCosts } from './parsers/auditCost.js';
 import { localClone, readSnapshots } from './usageSnapshot.js';
 import { intentMetrics, parseMarkerHistory, projectMetrics, storyMetrics } from './parsers/velocity.js';
+import { parkedFromAudit } from './intentPark.js';
 import { t } from '../shared/i18n.js';
 import { viewFields } from '../shared/frameworkViews.js';
 import { PROJECT_FILE, readProjectFile } from './projectFile.js';
@@ -95,7 +96,12 @@ async function summarizeIntent(root, space, dirName) {
   const stateText = await readTextOrNull(root, `${base}/aidlc-state.md`);
   const state = stateText ? parseState(stateText) : null;
   const pipeline = mergePipeline(state, null);
+  // US-0510 FR4.1, FR4.6: the parked mark follows the audit, which the intents watcher reloads on every write.
+  const parked = parkedFromAudit(await auditEventsOrEmpty(root, base));
   return {
+    parked: parked.parked,
+    parkedStage: parked.stage,
+    parkedAt: parked.at,
     stateScope: state?.scope ?? null,
     plan: state?.plan ?? null,
     request: await loadDescription(root, base),

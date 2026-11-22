@@ -6,9 +6,9 @@
 
 > Small fixes the person reports while using the app: something looks off, behaves wrongly or is missing a detail. Each fix becomes a story here, so nothing reported in passing gets lost. A fix that grows into a feature moves to its topic's epic.
 
-**Stories:** US-0001, US-0002, US-0003, US-0004, US-0005, US-0006, US-0007, US-0008, US-0009, US-0010, US-0011, US-0012, US-0013, US-0014, US-0015, US-0016, US-0017, US-0018, US-0019, US-0020, US-0021, US-0022, US-0023, US-0024, US-0025, US-0026, US-0027, US-0028, US-0029, US-0030, US-0031, US-0032, US-0033, US-0034
+**Stories:** US-0001, US-0002, US-0003, US-0004, US-0005, US-0006, US-0007, US-0008, US-0009, US-0010, US-0011, US-0012, US-0013, US-0014, US-0015, US-0016, US-0017, US-0018, US-0019, US-0020, US-0021, US-0022, US-0023, US-0024, US-0025, US-0026, US-0027, US-0028, US-0029, US-0030, US-0031, US-0032, US-0033, US-0034, US-0035, US-0036, US-0037, US-0038, US-0039, US-0040, US-0041, US-0042, US-0043
 
-**Status (2026-11-19):** ✅ US-0001–US-0020 released (v0.2.3–v0.2.6). ✅ US-0021–US-0023 released in v0.2.7. ✅ US-0024 released in v0.2.8. ✅ US-0025 released in v0.2.9. ✅ US-0026 released in v0.2.9. ✅ US-0027 released in v0.2.9. ✅ US-0028 released in v0.2.10. ✅ US-0029 released in v0.2.10. ✅ US-0030 released in v0.2.10. ✅ US-0031 released in v0.2.10. ✅ US-0032 released in v0.2.11. ✅ US-0033 released in v0.2.11. ✅ US-0034 released in v0.2.12. Each story names its release.
+**Status (2026-11-22):** ✅ US-0001–US-0020 released (v0.2.3–v0.2.6). ✅ US-0021–US-0023 released in v0.2.7. ✅ US-0024 released in v0.2.8. ✅ US-0025 released in v0.2.9. ✅ US-0026 released in v0.2.9. ✅ US-0027 released in v0.2.9. ✅ US-0028 released in v0.2.10. ✅ US-0029 released in v0.2.10. ✅ US-0030 released in v0.2.10. ✅ US-0031 released in v0.2.10. ✅ US-0032 released in v0.2.11. ✅ US-0033 released in v0.2.11. ✅ US-0034 released in v0.2.12. ✅ US-0035 and US-0036 released in v0.2.13. ✅ US-0037, US-0038, US-0039, US-0040, US-0041 and US-0042 released in v0.2.14. Each story names its release.
 
 ---
 
@@ -555,3 +555,158 @@
   - [x] A test fails without the fix and passes with it; the existing suite stays green.
 - **Notes:** A code fix, so it runs on the `quick-fix` plan, then ships alone as hotfix v0.2.12. Touches `src/main/exec.js` (stdin `input`), `src/main/updater.js`, `src/main/ipc.js`, `src/renderer/UpdateNotice.jsx`, the locales and their tests.
 - **Dependencies:** US-0413
+
+**US-0035: The app finds the agent CLIs even when the login shell is slow to start** ✅ Released in v0.2.13
+- As a **developer who installs Claude Code through nvm**, in order to **use the agent tabs right after I open the app**, I would like **the app to find `claude` on my login shell's PATH, and to look again when I scan, even when the shell took long to start once**.
+- **Epic:** EPIC-00
+- **Priority:** High
+- **Complexity:** Small
+- **Background:** Reported 2026-11-20 on the installed v0.2.12: the app could not find the Claude Code CLI, and scanning in Settings › Tools did not find it either. `claude` was at `~/.nvm/versions/node/v22.14.0/bin/claude`, on PATH only through `~/.bash_profile` (nvm, RVM and several `brew --prefix` calls). `loginPath` in `src/main/exec.js` gives the login shell 5 s, falls back to the app's own PATH (no nvm) when it is slower, and keeps that answer for the whole run, so every later scan uses the same PATH. Likely cause; not yet confirmed from a log.
+- **Acceptance Criteria:**
+  - [x] **Given** the login shell does not answer in time, **then** the app uses its own PATH for that call and does not keep it: the next lookup asks the login shell again.
+  - [x] **Given** a scan in Settings › Tools, **then** the PATH is read again from the login shell, so a tool installed or moved while the app runs is found.
+  - [x] **Given** a slow login shell (around 5–10 s), **then** the lookup still gets its PATH; the time limit is longer than 5 s.
+  - [x] **Given** the fallback was used, **then** the tool's row says the login shell's PATH could not be read, so the person knows why it is missing.
+  - [x] Every new text goes through `t()` in `sv.json` and `en.json`.
+  - [x] A test fails without the fix and passes with it; the existing suite stays green.
+- **Notes:** A code fix, so it runs on the `quick-fix` plan. Touches `src/main/exec.js` (`loginPath`), `src/main/tools.js`, the Tools view's row and their tests. Workaround until it ships: restart the app, or choose the path in Settings › Tools.
+- **Dependencies:** US-0405, US-0410
+
+**US-0036: On a story branch, the planning views show main's releases** ✅ Released in v0.2.13
+- As a **developer planning releases while a story branch is checked out**, in order to **see and use a release as soon as it is on `main`**, I would like **the Releases and Features views to show the planning that is on `main`, not the older copy in my branch**.
+- **Epic:** EPIC-00
+- **Priority:** High
+- **Complexity:** Small
+- **Background:** Reported 2026-11-20 on `feat/US-1408`: release v0.2.13 was pushed to `main` (`81f2107`, `a43f224`), but the app did not show it. The planning views read `docs/releases/` and the epic files from the checkout. On a story branch, `planningSync.js` keeps only the story's own blocks in the checkout and commits everything else to `main` through `dash/planning`, so a release made on `main` after the branch was cut stays out of sight until the branch merges `main`. Edits made in the branch to other stories were also put back, and the queue then showed seven "has changed on the target as well" conflicts against `main`.
+- **Acceptance Criteria:**
+  - [x] **Given** a story branch is checked out, **then** the Releases view and the epic and story statuses show the planning on `origin/main` (read with git, without changing the checkout), with the story branch's own story blocks on top.
+  - [x] **Given** a release or story is added on `main` by another clone or straight to `main`, **then** it shows after the next fetch, without merging `main` into the branch.
+  - [x] **Given** the planning sync queue holds an older copy of a file than `main` has, and nothing in it is newer, **then** the app drops it by itself instead of offering "Use mine", which would overwrite `main` with the older copy.
+  - [x] The view says which branch its planning comes from.
+  - [x] Every new text goes through `t()` in `sv.json` and `en.json`.
+  - [x] A test fails without the fix and passes with it; the existing suite stays green.
+- **Notes:** A code fix, so it runs on the `quick-fix` plan. Likely touches `src/main/planningSync.js`, `src/main/features.js` (where releases are loaded), `src/main/git.js` and their tests. Workaround until it ships: merge `main` into the story branch.
+- **Dependencies:** US-0608, US-0032
+
+---
+
+**US-0037: The intent head shows one clear control per state, in the LCARS look** ✅ Released in v0.2.14
+- As a **developer looking at an intent in flight**, in order to **read the intent head at a glance and know which button does what**, I would like **the park and resume controls, the step and the cost to fit the head's LCARS layout, say each thing once, and never offer two buttons for the same action**.
+- **Epic:** EPIC-00
+- **Priority:** Medium
+- **Complexity:** Medium
+- **Background:** Reported 2026-11-20 on intent `261120-us0311-agi-absence-on`. Park shows as a small, top-aligned 32 px block with its label pressed against the edge, wedged between the title and the tall pill-shaped "Resume at …" button. It does not line up with the resume button or the chips, and pushes the head out of shape. `ParkControls` (`src/renderer/IntentDetail.jsx`) renders `lcars-block--sm` as its own flex item in `.intent-head`, which aligns items to the top (`src/renderer/theme.css`, US-0510). Seen again 2026-11-22 on the parked intent `261119-spec-kit-framework`, and the person asked to revisit the logic as well as the look. For a parked intent the head shows three elements for one state: the orange "Parked at Functional Design" pill, an "Unpark" block jammed against it, and "Resume at Functional Design in Claude", which unparks too (`unparkThenResume` in `src/renderer/ResumeButton.jsx`). The step shows twice ("(Step 11 of 16)" on the resume button, "Step 11 of 16" in the progress row) and the sidebar reads "Stages 10/16" beside it. The progress row says "In progress · Functional design" while the intent is parked. The sidebar's cost ("recorded $136.12 · at current prices $134.67") wraps into five large lines.
+- **Acceptance Criteria:**
+  - [x] **Given** the active intent in flight and not parked, **then** the head shows Resume and Park side by side, the same height, aligned, with padding around their labels.
+  - [x] **Given** a parked intent, **then** the head shows the parked state once, as an LCARS element, and one action, "Unpark and resume at <stage>"; there is no separate Unpark button doing half of the same thing.
+  - [x] **Given** a parked intent, **then** the progress row says it is parked at its stage, not "In progress".
+  - [x] The step is shown once, in the progress row; the resume button names only the stage. The sidebar's stage count is labelled so it does not read as a different step.
+  - [x] The sidebar's cost fits its column at its normal size, without wrapping into large lines.
+  - [x] **Given** a narrow window, **then** the head wraps cleanly, with Park staying next to Resume.
+  - [x] The look follows the LCARS interface. Every new text goes through `t()` in `sv.json` and `en.json`.
+  - [x] A test fails without the fix and passes with it; the existing suite stays green.
+- **Notes:** A code fix, so it runs on the `quick-fix` plan. Likely touches `src/renderer/IntentDetail.jsx` (`ParkControls`, the head and progress row, the sidebar), `src/renderer/ResumeButton.jsx`, `src/renderer/theme.css` and their tests.
+- **Dependencies:** US-0510
+
+---
+
+**US-0038: An old planning commit the target has moved past never blocks the planning sync** ✅ Released in v0.2.14
+- As a **developer planning releases in the app**, in order to **trust that what I plan reaches `main`**, I would like **the planning sync to recognise a change that `main` has already moved past, and to keep pushing everything else**.
+- **Epic:** EPIC-00
+- **Priority:** High
+- **Complexity:** Small
+- **Background:** Reported 2026-11-20 after the v0.2.13 release. The app's `dash/planning` branch still held `6502115 docs: update US-0035` from 07:31: the first one-story draft of `docs/releases/0.2.13.md`. The full plan reached `main` later through the story and release pull requests, so every push cycle rebased that commit onto `origin/main`, conflicted on the file and stopped with "The planning conflicts with main … Nothing was pushed". From then on nothing the app recorded was pushed. A content entry from 12:39 held the same file's pre-release text ("📋 Planned") and showed "has changed on the target as well". The older-copy check from US-0036 FR2.3 did not catch either, because neither text was ever committed on `main`. The commit subject also named US-0038 before this story existed: `addContent` (`src/main/planningRecord.js`) merges the story ids of every earlier version of an entry and never drops them.
+- **Acceptance Criteria:**
+  - [x] **Given** a commit on `dash/planning` conflicts with the target on a file the target changed after that commit was made, **then** the app does not stop every later push: it offers "Keep theirs" for that file (dropping its change), and the push of everything else goes ahead.
+  - [x] **Given** a waiting entry or app commit for a release plan whose release is tagged on the target, **then** the app drops it by itself and logs why, without offering "Use mine".
+  - [x] **Given** an entry's text changed several times before its commit, **then** the commit subject names only the stories its final change is about (US-0033 still holds).
+  - [x] **Given** the push is blocked, **then** the Planning sync row says which commit or entry blocks it and what to choose, instead of only "tries again at the next interval".
+  - [x] Every new text goes through `t()` in `sv.json` and `en.json`.
+  - [x] A test fails without the fix and passes with it; the existing suite stays green.
+- **Notes:** A code fix, so it runs on the `quick-fix` plan. Likely touches `src/main/planningSync.js` (`pushFrom`, `pushAll`, `replayStep`), `src/main/planningRecord.js` (`addContent`), the planning sync row in the Releases view and their tests. The 2026-11-20 block was cleared by hand: delete `dash/planning` and choose "Keep theirs" for `docs/releases/0.2.13.md`.
+- **Dependencies:** US-0036, US-0608
+
+---
+
+**US-0039: Fresh session and Compact act now, or ask AI-DLC to park, instead of waiting for an idle that never comes** ✅ Released in v0.2.14
+- As a **developer whose AI-DLC session has grown large**, in order to **really get a fresh session when I pick one**, I would like **the handoff dialog to act at once when it is safe, and otherwise to tell AI-DLC to stop at its next safe point so the app can clear and resume**.
+- **Epic:** EPIC-00
+- **Priority:** High
+- **Complexity:** Small
+- **Background:** Reported 2026-11-22. Choosing Fresh session (or Compact) shows "Waiting until the agent is idle…" and nothing happens. `sendHandoff` (`src/renderer/terminalControl.js`) types nothing until `isIdle` (`src/main/sessionHandoff.js`) is true, for up to 30 minutes. `isIdle` is false while a question is open, which includes the AI-DLC gate the page itself was offered at, and false all through an autonomous run that never stops.
+- **Acceptance Criteria:**
+  - [x] **Given** AI-DLC waits at a gate (its question is open), **when** I pick Fresh session, **then** the app hands the question back, and types `/clear` and `/aidlc --resume` at once; the gate shows again in the new session.
+  - [x] **Given** the agent is working, **when** I pick Fresh session, **then** the app types one line into the session asking AI-DLC to park at its next safe point (`aidlc engine orchestrate park --person-asked`), the page says so, and once the agent stops the app types `/clear` and `/aidlc --resume`.
+  - [x] **Given** the agent is working, **when** I pick Compact, **then** the same park request is sent and `/compact` follows when the agent stops.
+  - [x] **Given** the agent is already idle, **then** the choice is typed at once, as today.
+  - [x] Every new text goes through `t()` in `sv.json` and `en.json`.
+  - [x] A test fails without the fix and passes with it; the existing suite stays green.
+- **Notes:** A code fix, so it runs on the `quick-fix` plan. Likely touches `src/main/sessionHandoff.js` (`isIdle`, `commandsFor`), `src/renderer/terminalControl.js` (`sendHandoff`), `src/renderer/AgentDialog.jsx` (`HandoffPage`) and their tests. A hard interrupt (Esc) mid-turn is left out: it can cut a file write short.
+- **Dependencies:** US-0213, US-0026
+
+---
+
+**US-0040: The intent list puts open work first and orders the rest by when it really happened** ✅ Released in v0.2.14
+- As a **developer opening a project**, in order to **find the work in flight without scrolling**, I would like **in-flight and parked intents at the top, and the finished ones newest first by their real creation time**.
+- **Epic:** EPIC-00
+- **Priority:** Medium
+- **Complexity:** Small
+- **Background:** Reported 2026-11-22. "Sort: Date" orders by folder name, descending (`src/main/parsers/intents.js`, `b.dirName.localeCompare(a.dirName)`), and `sortIntents` (`src/renderer/IntentList.jsx`) keeps that order. Folder names carry only the day, so intents from the same day come out in reverse alphabetical order: `spec-kit-ideation` above `spec-kit-framework` above `release-0-2-11`, though `release-0-2-11` was made between them. The only in-flight intent, the parked `spec-kit-framework`, sits third, between finished ones. The real order is known: the `uuid` in `intents.json` is time-ordered (UUID v7), and each intent's last activity is read already (`activityAt`).
+- **Acceptance Criteria:**
+  - [x] **Given** sort by date, **then** intents in flight or parked come first, the active one at the top, then the finished ones, each group newest first by creation time (the `uuid`'s time, else the folder date).
+  - [x] **Given** two intents from the same day, **then** the one made later comes first, whatever their names.
+  - [x] **Given** an intent on disk but not in `intents.json` (no `uuid`), **then** it sorts by its folder date, after the same day's indexed intents.
+  - [x] Sort by cost and by name are unchanged.
+  - [x] A test fails without the fix and passes with it; the existing suite stays green.
+- **Notes:** A code fix, so it runs on the `quick-fix` plan. Likely touches `src/main/parsers/intents.js`, `sortIntents` in `src/renderer/IntentList.jsx` and their tests. Open question for the person: a separate "Last activity" sort is left out unless asked for.
+- **Dependencies:** US-0510
+
+---
+
+**US-0041: "Wait until the AI-DLC step is done" shows only while a step really runs** ✅ Released in v0.2.14
+- As a **developer updating the AI-DLC tool or pulling from GitHub**, in order to **use those buttons whenever no AI-DLC step runs**, I would like **the "Wait until the AI-DLC step is done, or park the work first" notice to show only while AI-DLC is working on a stage, and to go away by itself when it stops or is parked**.
+- **Epic:** EPIC-00
+- **Priority:** High
+- **Complexity:** Small
+- **Background:** Reported 2026-11-22: the notice (`github.wait`) in Settings › Tools (`src/renderer/AidlcUpdate.jsx`) and the GitHub refresh panel (`src/renderer/RefreshPanel.jsx`) "never disappears, even when AI-DLC is not working", and the buttons stay disabled. Both use `isWorkflowRunning` (`src/renderer/workflowBusy.js`, US-0502 FR3.5, US-0504 FR4): an agent tab is busy, or anything under `intents/` changed in the last 5 minutes (`lastIntentChangeAt`, `src/renderer/useProject.js`). AI-DLC's hooks append a `HUMAN_TURN` entry to the active intent's audit shard on every message typed to the agent, also when the intent is parked or complete (the finished `261120-release-0-2-13` shard changed this way on 2026-11-22). So any chat with the agent keeps the window open, parking does not clear it, and a busy agent tab counts as an AI-DLC step even when it only answers a question.
+- **Acceptance Criteria:**
+  - [x] **Given** the active intent is complete or parked, **then** the notice does not show and the buttons are enabled, whatever the agent tab is doing.
+  - [x] **Given** the active intent is in flight and the only recent changes under `intents/` are audit entries that are not stage work (`HUMAN_TURN` and similar) or the engine's runtime files, **then** those changes do not count as AI-DLC working.
+  - [x] **Given** a stage is running (its state or artifacts change, or an agent tab is busy with the in-flight intent), **then** the notice shows as today, and it goes away by itself within a minute of the step stopping or the work being parked.
+  - [x] **Given** the notice shows, **then** it says why (which intent and stage), so the person knows what to wait for or park.
+  - [x] Every text goes through `t()` in `sv.json` and `en.json`.
+  - [x] A test fails without the fix and passes with it; the existing suite stays green.
+- **Notes:** A code fix, so it runs on the `quick-fix` plan. Likely touches `src/renderer/workflowBusy.js`, `src/renderer/useProject.js` (what sets `lastIntentChangeAt`), possibly `src/main/watcher.js` (which changes it reports), `AidlcUpdate.jsx`, `RefreshPanel.jsx` and their tests.
+- **Dependencies:** US-0502, US-0504, US-0510
+
+---
+
+**US-0042: The splash screen stays open long enough to be seen** ✅ Released in v0.2.14
+- As a **developer starting the app**, in order to **see the splash instead of a flash**, I would like **the start-up splash to stay open longer**.
+- **Epic:** EPIC-00
+- **Priority:** Low
+- **Complexity:** Small
+- **Background:** Asked for 2026-11-22. The splash (`src/renderer/Splash.jsx`) stayed at least 0.9 s and at most 4 s, so on a fast start it only flashed.
+- **Acceptance Criteria:**
+  - [x] **Given** the app is ready at once, **then** the splash still stays open at least 2.5 s, then fades out.
+  - [x] **Given** a slow start, **then** the splash leaves by 6 s at the latest.
+  - [x] A test fails without the change and passes with it; the existing suite stays green.
+- **Notes:** A code fix, built inside the v0.2.14 release intent (`fix/US-0042`).
+- **Dependencies:** none
+
+---
+
+**US-0043: A cleaning pass: no ESLint warnings, simpler code** 📋 Planned, for v0.3.0
+- As a **developer working on the app**, in order to **see real problems in the lint output instead of 30 familiar warnings**, I would like **a cleaning pass that clears the ESLint warnings and simplifies the code they point at, using the `/simplify` skill**.
+- **Epic:** EPIC-00
+- **Priority:** Medium
+- **Complexity:** Medium
+- **Background:** Asked for 2026-11-22 after the v0.2.14 release. `npx eslint .` (and CI's `verify` job) reports 30 warnings and 0 errors, nearly all `react-hooks/exhaustive-deps` on `useEffect`, `useCallback` and `useMemo`: missing dependencies (`load`, `t`, `bridge`, `terminal`, `project.projectId`, `onMeta`, `onActiveRecord`, `checkNow`, `now`, …) and complex expressions in dependency arrays. They sit in `App.jsx`, `CostRulesSection.jsx`, `FeaturesView.jsx`, `ModelProfilesSection.jsx`, `ProfileSwitchDialog.jsx`, `ProjectSettingsView.jsx`, `ProjectView.jsx`, `RefreshPanel.jsx`, `TerminalContext.jsx`, `TokenView.jsx`, `UpdateNotice.jsx`, `useFeatures.js` and `tests/renderer/EditorPanel.test.jsx`. Some hide real stale-closure bugs; others are effects that should run once and need a clearer shape.
+- **Acceptance Criteria:**
+  - [ ] The `/simplify` skill is run over the code the warnings point at (and the files it touches), and its fixes are applied where they keep behaviour the same.
+  - [ ] Each warning is fixed for its cause: a stable callback (`useCallback`, a ref), a dependency added where the effect must rerun, an effect split or moved into an event handler, or a value extracted from a complex dependency expression. A rule is never switched off to silence a warning, and an `eslint-disable` line is used only with a comment that says why.
+  - [ ] `npx eslint .` reports 0 errors and 0 warnings, and CI keeps it that way (the lint step fails on warnings, `--max-warnings 0`).
+  - [ ] No behaviour changes: a test fails first wherever a warning hid a real bug (a stale value, a missed rerun), and the full suite, coverage (80%), the built-app end-to-end tests and Prettier stay green.
+- **Notes:** A code chore, so it runs on the `quick-fix` plan. Built last in v0.3.0, after the Spec Kit stories, because it touches the same files (`App.jsx`, `ProjectView.jsx`, `ProjectSettingsView.jsx`) and would otherwise clash with their branches.
+- **Dependencies:** none
+

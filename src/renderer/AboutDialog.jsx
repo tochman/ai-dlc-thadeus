@@ -1,17 +1,17 @@
-// "Om T.H.A.D.E.U.S." from the app menu (macOS) or Hjälp (Linux) (EPIC-04 US-0408), in the LCARS panel design
-// of US-0409: a rounded elbow frame (left arm, top and bottom bars) with small code labels, the name top right, the
-// full name, tagline and version in light bars with coloured end tabs, an EXIT block in the arm and a status row.
-// Layout and colour only follow the person's reference; every text is the app's own (NFR3), the code labels come
-// from the version and platform. A native modal <dialog>; closes on Esc, EXIT or a click on the backdrop, and gives
-// focus back. A LICENSES block under EXIT opens the bundled third-party licence list (US-1101 FR6.2).
-import { useEffect, useRef, useState } from 'react';
+// "Om T.H.A.D.E.U.S." from the app menu (macOS) or Hjälp (Linux) (EPIC-04 US-0408), in the shared LCARS dialog frame
+// of US-0417 (LcarsDialog): the brand corner, the title on its bar with Close as the last pill, readout blocks in the
+// arm made from the app's own version and platform (NFR3), the mark with the name, full name and tagline, readout rows
+// for version and platform, and a Licences pill that opens the bundled third-party licence list (US-1101 FR6.2).
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import AuctumMark from './AuctumMark.jsx';
-import { APP_FULL_NAME, APP_NAME, APP_TAGLINE } from '../shared/appName.js';
+import LcarsDialog from './LcarsDialog.jsx';
+import { Pill } from './Lcars.jsx';
+import { APP_FULL_NAME, APP_NAME, APP_REPO, APP_TAGLINE, APP_VENDOR } from '../shared/appName.js';
 
 const OS = { darwin: 'macOS', linux: 'Linux', win32: 'Windows' };
 
-/** The frame's code labels, from the app's own version and platform ("00-02", "04", "DAR", "000204"). */
+/** The arm's code readouts, from the app's own version and platform ("00-02", "04", "DAR", "000204"). */
 export function codeLabels(version, platform) {
   const [a = 0, b = 0, c = 0] = String(version ?? '')
     .split('.')
@@ -27,8 +27,6 @@ export function codeLabels(version, platform) {
 /** @param {{open: boolean, onClose: () => void}} props */
 export default function AboutDialog({ open, onClose }) {
   const { t } = useTranslation();
-  const ref = useRef(null);
-  const returnFocus = useRef(null);
   const [version, setVersion] = useState(null);
   const [licensesError, setLicensesError] = useState(null);
   const platform = window.bridge?.platform ?? null;
@@ -41,20 +39,6 @@ export default function AboutDialog({ open, onClose }) {
       .then((err) => err && setLicensesError(err))
       .catch((err) => setLicensesError(err?.message ?? String(err)));
   };
-
-  useEffect(() => {
-    const d = ref.current;
-    if (!d) return;
-    if (open && !d.open) {
-      returnFocus.current = document.activeElement;
-      d.showModal ? d.showModal() : d.setAttribute('open', '');
-    }
-    if (!open && d.open) {
-      d.close ? d.close() : d.removeAttribute('open');
-      if (returnFocus.current?.isConnected) returnFocus.current.focus();
-      returnFocus.current = null;
-    }
-  }, [open]);
 
   useEffect(() => {
     if (!open) return;
@@ -70,87 +54,60 @@ export default function AboutDialog({ open, onClose }) {
   }, [open]);
 
   const codes = codeLabels(version, platform);
-  const bars = [
-    ['amber', APP_FULL_NAME, 'about-dialog-fullname'],
-    ['steel-light', APP_TAGLINE, 'about-dialog-tagline'],
-    ['coral-soft', `v${version ?? '–'}`, 'about-dialog-version-bar']
+  const os = OS[platform] ?? platform ?? '–';
+  const shown = `v${version ?? '–'}`;
+  const readouts = [
+    { k: t('aboutDialog.version'), v: codes[0] },
+    { k: t('aboutDialog.patch'), v: codes[1] },
+    { k: t('aboutDialog.platform'), v: codes[2], key: true },
+    { k: t('aboutDialog.build'), v: codes[3] }
   ];
 
   return (
-    <dialog
-      ref={ref}
-      className="settings-dialog about-dialog"
-      aria-labelledby="about-dialog-title"
-      onCancel={(e) => {
-        e.preventDefault();
-        onClose();
-      }}
-      onKeyDown={(e) => e.key === 'Escape' && onClose()}
-      // The content div fills the dialog, so a click on the dialog element itself is a click on the backdrop.
-      onClick={(e) => e.target === e.currentTarget && onClose()}
-      data-testid="about-dialog"
+    <LcarsDialog
+      open={open}
+      onClose={onClose}
+      title={t('aboutDialog.title')}
+      sub={`${shown} · ${os}`}
+      readouts={readouts}
+      footer={`${APP_VENDOR} · ${APP_REPO}`}
+      testId="about-dialog"
+      className="about-dialog"
     >
-      {open && (
-        <div className="about-lcars">
-          <h2 id="about-dialog-title" className="sr-only">
-            {t('menu.about', { app: APP_NAME })}
-          </h2>
-          <div className="about-lcars-arm">
-            <span className="about-lcars-code" aria-hidden="true">
-              {codes[0]}
-            </span>
-            <span className="about-lcars-code" aria-hidden="true">
-              {codes[1]}
-            </span>
-            <button type="button" className="about-lcars-exit" onClick={onClose} data-testid="about-dialog-close">
-              {t('aboutDialog.exit')}
-            </button>
-            <button type="button" className="about-lcars-exit about-lcars-licenses" onClick={openLicenses} data-testid="about-dialog-licenses">
-              {t('aboutDialog.licenses')}
-            </button>
-            <span className="about-lcars-code" aria-hidden="true">
-              {codes[2]}
-            </span>
-          </div>
-          <div className="about-lcars-top" aria-hidden="true">
-            <span className="about-lcars-code about-lcars-code--bar">{codes[3]}</span>
-          </div>
-          <div className="about-lcars-main">
-            <p className="about-lcars-title">{APP_NAME}</p>
-            <div className="about-lcars-content">
-              <AuctumMark size={120} className="splash-mark" />
-              <div className="about-lcars-bars">
-                {bars.map(([tone, text, testId]) => (
-                  <div key={testId} className="about-lcars-row">
-                    <div className="about-lcars-bar">
-                      <span className="about-lcars-bar-text" data-testid={testId}>
-                        {text}
-                      </span>
-                      <span className={`about-lcars-tab about-lcars-tone--${tone}`} aria-hidden="true" />
-                      <span className={`about-lcars-line about-lcars-tone--${tone}`} aria-hidden="true" />
-                    </div>
-                    <span className="about-lcars-bullet" aria-hidden="true">
-                      <span className={`about-lcars-dot about-lcars-tone--${tone}`} />
-                      <span className={`about-lcars-hair about-lcars-tone--${tone}`} />
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
-            {licensesError && (
-              <p className="about-lcars-error" role="alert" data-testid="about-dialog-licenses-error">
-                {t('aboutDialog.licensesFailed', { error: licensesError })}
-              </p>
-            )}
-          </div>
-          <div className="about-lcars-foot" aria-hidden="true" />
-          <p className="about-lcars-status">
-            <span data-testid="about-dialog-version">{t('settings.about.version', { version: version ?? '–' })}</span>
-            <span aria-hidden="true"> · </span>
-            <span data-testid="about-dialog-platform">{OS[platform] ?? platform ?? '–'}</span>
+      <div className="about-head lcars-e-rise">
+        <AuctumMark size={96} className="about-mark" />
+        <div>
+          <p className="about-name">{APP_NAME}</p>
+          <p className="about-full" data-testid="about-dialog-fullname">
+            {APP_FULL_NAME}
+          </p>
+          <p className="about-tag" data-testid="about-dialog-tagline">
+            {APP_TAGLINE}
           </p>
         </div>
+      </div>
+      <dl className="lcars-kv lcars-e-rise">
+        <dt>{t('aboutDialog.version')}</dt>
+        <dd className="is-key" data-testid="about-dialog-version">
+          {shown}
+        </dd>
+        <dt>{t('aboutDialog.platform')}</dt>
+        <dd data-testid="about-dialog-platform">{os}</dd>
+        <dt>{t('aboutDialog.madeBy')}</dt>
+        <dd>{APP_VENDOR}</dd>
+        <dt>{t('aboutDialog.repository')}</dt>
+        <dd className="is-mono">{APP_REPO}</dd>
+      </dl>
+      <div className="lcars-pills">
+        <Pill tone="quiet" onClick={openLicenses} data-testid="about-dialog-licenses">
+          {t('aboutDialog.licenses')}
+        </Pill>
+      </div>
+      {licensesError && (
+        <p className="lcars-dlg-error" role="alert" data-testid="about-dialog-licenses-error">
+          {t('aboutDialog.licensesFailed', { error: licensesError })}
+        </p>
       )}
-    </dialog>
+    </LcarsDialog>
   );
 }

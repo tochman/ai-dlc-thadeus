@@ -1,0 +1,18 @@
+{
+  "stage": "nfr-design",
+  "unit": "u6-speckit-features",
+  "upstream_ids": ["NFR7.1", "NFR7.2", "NFR7.3", "NFR7.4", "NFR3.1", "NFR3.2", "NFR3.3", "NFR3.4", "NFR5.1", "NFR5.2", "NFR5.3"],
+  "coverage": [
+    { "id": "NFR7.1", "status": "OK", "target": "watchFiles /** target on specs/ plus the two .specify files (performance-design: Watching)" },
+    { "id": "NFR7.2", "status": "OK", "target": "debounce 300 ms, ceiling 800 ms, one push per burst (performance-design: Watching)" },
+    { "id": "NFR7.3", "status": "OK", "target": "Promise.all per feature, single-pass parser, timed fixture test (performance-design: Reading)" },
+    { "id": "NFR7.4", "status": "OK", "target": "one call on mount and per push (performance-design: Renderer)" },
+    { "id": "NFR3.1", "status": "OK", "target": "read-only fs calls in U6, write-spy test (security-design 1)" },
+    { "id": "NFR3.2", "status": "OK", "target": "speckit read-only case in fileWrite.js; reader hides Edit; constitution.md stays editable per Q1 (security-design 1)" },
+    { "id": "NFR3.3", "status": "OK", "target": "realpath checks on specs/, feature folders and feature_directory; links skipped (security-design 2)" },
+    { "id": "NFR3.4", "status": "OK", "target": "files open through file:read, which resolves inside the root (security-design 2)" },
+    { "id": "NFR5.1", "status": "OK", "target": "reader without raw HTML, renderer test (security-design 3)" },
+    { "id": "NFR5.2", "status": "OK", "target": "stat size check before reading, 1 MB, UTF-8 check (security-design 3)" },
+    { "id": "NFR5.3", "status": "OK", "target": "version warning outside 1.4.x, reading goes on (security-design 3)" }
+  ]
+}

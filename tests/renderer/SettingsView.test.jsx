@@ -153,8 +153,7 @@ describe('Inställningar as a view in the content frame (EPIC-04 US-0405)', () =
     const row = screen.getByTestId('settings-tool-claude');
     await waitFor(() => expect(within(row).getByText('Claude Code CLI')).toBeTruthy());
     await waitFor(() => expect(row.querySelector('code').textContent).toBe('/opt/claude'));
-    expect(within(row).getByText('Kontrollerar…')).toBeTruthy(); // the version is still being read
-    expect(within(row).getByText('Egen sökväg')).toBeTruthy();
+    expect(within(row).getByText('Kontrollerar…')).toBeTruthy(); // the version is still being read (US-0416: on the chip)
     await waitFor(() => expect(bridge.getTools).toHaveBeenCalledTimes(1));
 
     cleanup();
@@ -163,7 +162,8 @@ describe('Inställningar as a view in the content frame (EPIC-04 US-0405)', () =
     const filled = await screen.findByTestId('settings-tool-aidlc');
     await waitFor(() => expect(within(filled).getByText('0.9.1')).toBeTruthy());
     expect(within(filled).getByText('/usr/local/bin/aidlc')).toBeTruthy();
-    expect(within(filled).getByText('Hittad automatiskt')).toBeTruthy();
+    expect(within(filled).getByText('Aktuell')).toBeTruthy(); // US-0416: the CLI's chip carries its update check
+    expect(within(screen.getByTestId('settings-tool-claude')).getByText('Hittad')).toBeTruthy();
     expect(screen.getByText(/En ändrad sökväg gäller nästa gång verktyget startas/)).toBeTruthy();
   });
 
@@ -282,6 +282,23 @@ const TOOLS5 = [
   TOOLS[2]
 ];
 
+describe('The fallback PATH note on a tool card (US-0035 AC1.1.5)', () => {
+  it('shows the note on a row found on the fallback PATH', async () => {
+    stubBridge({ tools: [{ ...TOOLS[0], pathFallback: true }, TOOLS[1], TOOLS[2]] });
+    renderView();
+    const note = await screen.findByTestId('settings-tool-fallback-aidlc');
+    expect(note.textContent).toBe('Inloggningsskalets PATH kunde inte läsas; appens egen PATH användes.');
+    expect(note.hasAttribute('title')).toBe(false);
+  });
+
+  it('shows no note on a row without it', async () => {
+    stubBridge({ tools: TOOLS });
+    renderView();
+    await waitFor(() => expect(within(screen.getByTestId('settings-tool-claude')).getByText('2.1.0')).toBeTruthy());
+    expect(screen.queryByTestId(/^settings-tool-fallback-/)).toBeNull();
+  });
+});
+
 describe('Settings in LCARS tabs (US-0410)', () => {
   it('shows only the chosen tab: Notifications holds the alerts, replies and sound, and Appearance is gone (FR2.1–FR2.3)', () => {
     stubBridge({ tools: TOOLS5 });
@@ -307,14 +324,14 @@ describe('Settings in LCARS tabs (US-0410)', () => {
     expect(within(screen.getByTestId('settings-view-notifications')).getByRole('heading', { level: 2 }).textContent).toBe('Notiser');
   });
 
-  it('shows a card for each of the five tools, and a missing one says not found and what it is needed for (FR4.1, FR4.3)', async () => {
+  it('shows a row for each of the five tools, and a missing one says not found and what it is needed for (FR4.1, FR4.3, US-0416)', async () => {
     stubBridge({ tools: TOOLS5 });
     renderView();
     for (const id of ['aidlc', 'claude', 'opencode', 'gh', 'shell']) {
-      expect(screen.getByTestId(`settings-tool-${id}`).classList.contains('lcars-card')).toBe(true);
+      expect(screen.getByTestId(`settings-tool-${id}`).classList.contains('tool-row')).toBe(true);
     }
     const gh = screen.getByTestId('settings-tool-gh');
-    await waitFor(() => expect(within(gh).getByText('hittades inte')).toBeTruthy());
+    await waitFor(() => expect(within(gh).getByText('hittades inte i PATH')).toBeTruthy());
     expect(within(gh).getByText('GitHub CLI (gh)')).toBeTruthy();
     expect(within(gh).getByText(/som reserv när appens uppdateringar/)).toBeTruthy();
     expect(within(gh).getByTestId('settings-tool-pick-gh')).toBeTruthy();
@@ -327,8 +344,8 @@ describe('Settings in LCARS tabs (US-0410)', () => {
     const { bridge } = stubBridge({ tools: TOOLS5 });
     renderView();
     const card = screen.getByTestId('settings-bitbucket');
-    expect(card.classList.contains('lcars-card')).toBe(true);
     await waitFor(() => expect(within(card).getByTestId('settings-bitbucket-status').textContent).toBe('Inte sparat'));
+    fireEvent.click(within(card).getByTestId('settings-bitbucket-signin')); // US-0416: the form opens from its row
     const password = within(card).getByTestId('settings-bitbucket-password');
     expect(password.getAttribute('type')).toBe('password');
     fireEvent.change(within(card).getByTestId('settings-bitbucket-username'), { target: { value: 'thomas' } });
@@ -349,21 +366,12 @@ describe('Settings in LCARS tabs (US-0410)', () => {
     bridge.bitbucket.save.mockRejectedValueOnce(new Error("Error invoking remote method 'credentials:bitbucket': Error: Datorns nyckelring kan inte kryptera"));
     renderView();
     const card = screen.getByTestId('settings-bitbucket');
+    fireEvent.click(within(card).getByTestId('settings-bitbucket-signin'));
     fireEvent.change(within(card).getByTestId('settings-bitbucket-username'), { target: { value: 'thomas' } });
     fireEvent.change(within(card).getByTestId('settings-bitbucket-password'), { target: { value: 'pw' } });
     fireEvent.click(within(card).getByTestId('settings-bitbucket-save'));
     expect((await within(card).findByRole('alert')).textContent).toBe('Datorns nyckelring kan inte kryptera');
     expect(within(card).getByTestId('settings-bitbucket-password').value).toBe('');
-  });
-
-  it('lets a path break after each / and nowhere else (FR4.4)', async () => {
-    stubBridge({ tools: TOOLS5 });
-    renderView();
-    const code = screen.getByTestId('settings-tool-opencode').querySelector('code');
-    await waitFor(() => expect(code.textContent).toBe('/opt/homebrew/bin/opencode'));
-    const breaks = [...code.querySelectorAll('wbr')];
-    expect(breaks).toHaveLength(4);
-    for (const wbr of breaks) expect(wbr.previousSibling.textContent.endsWith('/')).toBe(true);
   });
 
   it('carries the sweep and cascade on Full, and no motion classes on Reduced or Off (FR3.2, FR3.3, NFR2)', () => {
@@ -377,6 +385,148 @@ describe('Settings in LCARS tabs (US-0410)', () => {
       const cl = screen.getByTestId('settings-view-appearance').classList;
       expect(cl.contains('settings-frame--sweep') || cl.contains('settings-cascade')).toBe(false);
     }
+  });
+});
+
+// US-0416: Settings › Tools grouped by purpose, one row per tool with a state chip and its actions as pills.
+describe('Settings › Tools as one grouped LCARS view (US-0416)', () => {
+  const NEWER = { version: 'aidlc 2.11.3', status: 'newer', latest: '2.11.4', reason: null, command: 'aidlc update' };
+  const PLAN = {
+    harness: 'claude',
+    label: 'Claude Code',
+    command: 'plan-command',
+    counts: { create: 1, update: 1, merge: 0, remove: 0 },
+    files: [
+      { path: 'agents/one.md', action: 'update' },
+      { path: 'knowledge/new.md', action: 'create' }
+    ],
+    conflicts: []
+  };
+  const ALL = [
+    { id: 'aidlc', path: '/Users/anna/.local/bin/aidlc', source: 'auto', found: true, version: '2.11.3' },
+    { id: 'claude', path: '/opt/homebrew/bin/claude', source: 'auto', found: true, version: '2.8.1' },
+    { id: 'opencode', path: '/Users/anna/.opencode/bin/opencode', source: 'saved', found: true, version: '1.4.0' },
+    { id: 'gh', path: '/opt/homebrew/bin/gh', source: 'auto', found: true, version: '2.83.0' },
+    { id: 'glab', path: null, source: 'auto', found: false, version: null },
+    { id: 'shell', path: '/bin/zsh', source: 'auto', found: true, version: 'zsh 5.9' }
+  ];
+  const terminal = () => ({ type: vi.fn(async () => true), anyBusy: vi.fn(() => false) });
+  function setup({ status = NEWER, plans = [PLAN], props = {} } = {}) {
+    const stub = stubBridge({ tools: ALL });
+    stub.bridge.getAidlcUpdateStatus.mockResolvedValue(status);
+    stub.bridge.getAidlcProjectPlans.mockResolvedValue(plans);
+    const term = terminal();
+    renderView({ activeProjectId: 'p1', terminal: term, ...props });
+    return { ...stub, term };
+  }
+  it('groups the tools into AI-DLC, Coding agents, Git hosts and System, and shows AI-DLC once', async () => {
+    setup();
+    const groups = ['aidlc', 'agents', 'git', 'system'].map((id) => screen.getByTestId(`settings-tools-group-${id}`));
+    expect(groups.map((g) => within(g).getByRole('heading', { level: 3 }).textContent)).toEqual(['AI-DLC', 'Kodagenter', 'Git-värdar', 'System']);
+    const [aidlc, agents, git, system] = groups;
+    expect(within(aidlc).getByTestId('settings-tool-aidlc')).toBeTruthy();
+    expect(await within(aidlc).findByTestId('aidlc-update-plan-claude')).toBeTruthy();
+    expect(within(agents).getByTestId('settings-tool-claude')).toBeTruthy();
+    expect(within(agents).getByTestId('settings-tool-opencode')).toBeTruthy();
+    expect(within(git).getByTestId('settings-tool-gh')).toBeTruthy();
+    expect(within(git).getByTestId('settings-tool-glab')).toBeTruthy();
+    expect(within(git).getByTestId('settings-bitbucket')).toBeTruthy();
+    expect(within(system).getByTestId('settings-tool-shell')).toBeTruthy();
+    expect(screen.getAllByText('AI-DLC CLI')).toHaveLength(1);
+    expect(screen.queryByTestId('aidlc-update-program')).toBeNull();
+  });
+  it("folds the project's changed AI-DLC files to a count and opens them on request", async () => {
+    setup();
+    const plan = await screen.findByTestId('aidlc-update-plan-claude');
+    expect(within(plan).queryByText('knowledge/new.md')).toBeNull();
+    const toggle = within(plan).getByTestId('aidlc-update-plan-files');
+    expect(toggle.textContent).toBe('Visa filer (2)');
+    expect(toggle.getAttribute('aria-expanded')).toBe('false');
+    fireEvent.click(toggle);
+    expect(within(plan).getByText('knowledge/new.md')).toBeTruthy();
+  });
+  it('gives each row a chip and strip: found, chosen by hand, missing with what to do, newer', async () => {
+    setup();
+    const chip = (id) => screen.getByTestId(`settings-tool-chip-${id}`);
+    const kind = (id) => chip(id).getAttribute('data-kind');
+    await waitFor(() => expect(kind('claude')).toBe('found'));
+    expect(chip('claude').textContent).toBe('Hittad');
+    expect(kind('opencode')).toBe('hand');
+    expect(chip('opencode').textContent).toBe('Vald för hand');
+    const glab = screen.getByTestId('settings-tool-glab');
+    expect(kind('glab')).toBe('missing');
+    expect(chip('glab').textContent).toBe('Saknas');
+    expect(glab.classList.contains('tool-row--missing')).toBe(true);
+    expect(within(glab).getByText(/Behövs för att läsa merge requests/).textContent).toMatch('Installera det, eller välj dess sökväg.');
+    expect(within(screen.getByTestId('settings-tool-claude')).queryByText(/Behövs för/)).toBeNull();
+    const cli = screen.getByTestId('settings-tool-aidlc');
+    await waitFor(() => expect(cli.classList.contains('tool-row--newer')).toBe(true));
+    expect(screen.getByTestId('settings-tools-group-git').querySelector('.tools-gh--missing')).toBeTruthy();
+    expect(within(cli).getByTestId('settings-tool-chip-aidlc').textContent).toBe('Nyare finns: v2.11.4');
+  });
+  it('shows a path shortened on one line, in full on hover, and copies the full path on click', async () => {
+    const writeText = vi.fn(async () => {});
+    Object.defineProperty(navigator, 'clipboard', { value: { writeText }, configurable: true });
+    setup();
+    const path = await within(screen.getByTestId('settings-tool-opencode')).findByTestId('tool-row-path');
+    await waitFor(() => expect(path.textContent).toBe('~/.opencode/bin/opencode'));
+    fireEvent.focus(path); // the shared tooltip, as on hover (US-0414)
+    expect(screen.getByRole('tooltip').textContent).toBe('/Users/anna/.opencode/bin/opencode');
+    fireEvent.click(path);
+    await waitFor(() => expect(writeText).toHaveBeenCalledWith('/Users/anna/.opencode/bin/opencode'));
+  });
+
+  it('opens the existing Bitbucket form from the Sign in pill on its row', async () => {
+    const { bridge } = setup();
+    const row = screen.getByTestId('settings-bitbucket');
+    expect(within(row).queryByTestId('settings-bitbucket-username')).toBeNull();
+    fireEvent.click(within(row).getByTestId('settings-bitbucket-signin'));
+    fireEvent.change(within(row).getByTestId('settings-bitbucket-username'), { target: { value: 'thomas' } });
+    fireEvent.change(within(row).getByTestId('settings-bitbucket-password'), { target: { value: 'pw' } });
+    fireEvent.click(within(row).getByTestId('settings-bitbucket-save'));
+    await waitFor(() => expect(bridge.bitbucket.save).toHaveBeenCalledWith('thomas', 'pw'));
+  });
+  it('keeps Choose, Update and Rescan on the same bridge calls, and Check for updates calls onCheckUpdates and checks AI-DLC again', async () => {
+    const onCheckUpdates = vi.fn();
+    const { bridge, term } = setup({ props: { onCheckUpdates } });
+    fireEvent.click(await screen.findByTestId('settings-tool-pick-glab'));
+    await waitFor(() => expect(bridge.pickTool).toHaveBeenCalledWith('glab'));
+    fireEvent.click(await screen.findByTestId('aidlc-update-program-update'));
+    expect(term.type).toHaveBeenCalledWith('shell', 'aidlc update', { submit: false });
+    fireEvent.click(within(await screen.findByTestId('aidlc-update-plan-claude')).getByTestId('aidlc-update-plan-update'));
+    expect(term.type).toHaveBeenCalledWith('shell', 'plan-command', { submit: false });
+    const scans = bridge.getTools.mock.calls.length;
+    fireEvent.click(screen.getByTestId('settings-tools-rescan'));
+    await waitFor(() => expect(bridge.getTools.mock.calls.length).toBe(scans + 1));
+    fireEvent.click(screen.getByTestId('settings-tools-check-updates'));
+    expect(onCheckUpdates).toHaveBeenCalledTimes(1);
+    await waitFor(() => expect(bridge.getAidlcUpdateStatus).toHaveBeenLastCalledWith(true));
+  });
+
+  it('checks AI-DLC again from Check for updates when the shell passes no onCheckUpdates', async () => {
+    const { bridge } = setup();
+    await screen.findByTestId('aidlc-update-plan-claude');
+    fireEvent.click(screen.getByTestId('settings-tools-check-updates'));
+    await waitFor(() => expect(bridge.getAidlcUpdateStatus).toHaveBeenLastCalledWith(true));
+  });
+  it('still shows the wait notice in the AI-DLC group while a workflow runs (US-0041)', async () => {
+    const term = terminal();
+    term.anyBusy.mockReturnValue(true);
+    setup({ props: { terminal: term, lastIntentChangeAt: { name: 'demo-intent', stage: null, at: null } } });
+    const group = screen.getByTestId('settings-tools-group-aidlc');
+    expect((await within(group).findByRole('status')).textContent).toMatch(/^Vänta tills AI-DLC/);
+    expect((await screen.findByTestId('aidlc-update-program-update')).disabled).toBe(true);
+  });
+
+  it('runs the shared entrance on entry with full motion only', () => {
+    document.documentElement.dataset.motion = 'full';
+    setup();
+    expect(screen.getByTestId('settings-tools').classList.contains('is-entering')).toBe(true);
+    cleanup();
+    document.documentElement.dataset.motion = 'off';
+    setup();
+    expect(screen.getByTestId('settings-tools').classList.contains('is-entering')).toBe(false);
+    delete document.documentElement.dataset.motion;
   });
 });
 

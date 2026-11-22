@@ -51,12 +51,12 @@ function bitbucketApi({ fetch = globalThis.fetch, credentials }) {
   };
 }
 
-/** `api(endpoint)` for one platform: parsed JSON from its CLI or its REST API. */
+/** `api(endpoint, args)` for one platform: parsed JSON from its CLI (with `args` as its flags, US-1203) or its REST API. */
 function client(platform, deps) {
   if (platform.id === 'bitbucket') return bitbucketApi(deps);
   const host = platform.id === 'gitlab' ? ['--hostname', platform.host] : [];
-  return async (endpoint) =>
-    JSON.parse(await runFixed(toolPath(CLI[platform.id]), ['api', ...host, endpoint], { timeout: PLATFORM_TIMEOUT_MS, exec: deps.exec }));
+  return async (endpoint, args = []) =>
+    JSON.parse(await runFixed(toolPath(CLI[platform.id]), ['api', ...host, ...args, endpoint], { timeout: PLATFORM_TIMEOUT_MS, exec: deps.exec }));
 }
 
 async function run(platform, deps, fn) {
@@ -82,7 +82,10 @@ export async function listPulls(platform, deps = {}) {
   return run(platform, deps, (m, api) => m.pulls(api, platform));
 }
 
-/** US-1201 AC-1: one pull request's comments as {author, body, time, url}. */
+/**
+ * US-1201 AC-1: one pull request's comments as {author, body, time, url}; US-1203: a review-thread comment also has
+ * `thread: {id, path, line, resolved}` (`resolved` null where the platform cannot resolve that thread).
+ */
 export async function listComments(platform, number, deps = {}) {
   checkNumber(number);
   return run(platform, deps, (m, api) => m.comments(api, platform, number));

@@ -1,5 +1,7 @@
 # T.H.A.D.E.U.S.
 
+![T.H.A.D.E.U.S. at work: an intent's pipeline and timeline, the cost panel, the features and releases views, and the configuration](docs/screenshots/demo.gif)
+
 **Transformative Human-AI Development Environment for Ubiquitous Systems**
 
 *AI-driven software development, under human direction.*
@@ -7,8 +9,6 @@
 T.H.A.D.E.U.S. is a desktop bridge console for [AI-DLC](https://github.com/awslabs/aidlc-workflows) projects. It shows what the AI agents are doing as it happens: the work in progress, every stage and decision, cost, and the feature roadmap. An embedded agent terminal lets you steer the work from the same window. It is built by Auctum Solutions AB (repository: `aidlc-dash`).
 
 **[Download the latest release →](https://github.com/tochman/ai-dlc-thadeus/releases/latest)** · [All releases](https://github.com/tochman/ai-dlc-thadeus/releases)
-
-![Project view: intents, pipeline, cost and terminal](docs/screenshots/intents.png)
 
 ## Why I built this
 
@@ -38,28 +38,62 @@ That isn't AI's fault. An AI coding agent is an incredibly capable tool, and lik
 
 ## Features
 
-- **Intents and pipeline:** every piece of AI-DLC work in a project, with its plan, status and stage-by-stage progress. Custom plans are shown by their own name.
-- **Live timeline:** stages, agent dispatches, approval gates, questions and decisions, streamed from the AI-DLC audit log.
-- **Units and artifacts:** the unit/bolt graph, and every stage artifact rendered inline.
-- **Cost:** estimated cost per model, agent and intent, from AI-DLC's usage ledger. These figures are estimates at API prices, not invoices.
-- **Feature docs:** the project's epics and user stories from `docs/FEATURES.md` and `docs/features/`.
-- **Agent terminal:** a terminal for the project's agent harness (Claude Code or opencode, chosen per project) and a shell. It also offers one-click resume and quick commands.
-- **Questions as pop-ups:** when AI-DLC waits for an answer or an approval, you get a pop-up and a system notification.
-- **AI-DLC setup:** set up AI-DLC in a project for any of its six harnesses (Claude Code, opencode, Codex, Kiro, Cursor, GitHub Copilot), or add a harness to an existing project. You see a preview before anything changes.
+### For you, the developer
+
+**Follow the work as it happens**
+- **Intents and pipeline:** every piece of AI-DLC work in a project, with its plan and where each stage stands, as LCARS cards. Open several projects side by side as tabs.
+- **Timeline:** every stage, agent, approval, question and decision from AI-DLC's audit log, fast even for long histories, live as agents write.
+- **Units and artifacts:** how Construction is split into units and batches, and every document a stage produced, read inside the app.
+- **Fold the list away** (intents, epics, releases, files) to give a wide view, like the unit graph, the whole window.
+- **Activity:** an intent's agents at work and its tokens over time, by stage, agent or model.
+
+**Talk to the agents without living in the terminal**
+- **Agent terminal:** Claude Code, opencode, Codex or Kiro, chosen per project, plus a shell. Claude Code and opencode can run side by side. The app finds the agent tools even when your login shell is slow to start.
+- **Questions as dialogs:** when AI-DLC or the coding tool asks something, or wants permission, you answer in a pop-up, with a system notification.
+- **Agent progress:** plain progress lines per running agent ("6 of 27 steps done").
+
+**Steer AI-DLC from the console**
+- **Resume** an intent where it stopped with one click, and **park** it; resuming a parked intent unparks it.
+- **Set up AI-DLC** in a folder, for any of its harnesses, with a preview before anything changes, and update the framework later.
+- **Configuration:** see and change a project's AI-DLC settings, make your own plans (Configuration → AI-DLC → Plans), and pick a model and effort per agent.
+- **Editor:** edit project files, docs and code in the app.
+
+**Know what it costs, and spend less**
+- **Cost** per intent, stage, agent and model, live while a workflow runs, with token charts. These are estimates at API prices, not invoices; recorded tokens can be repriced with a current price table.
+- **Spend less:** a cost rule pack on top of AI-DLC, a prompt to compact or start fresh when the context grows (it asks AI-DLC to park at its next safe point, then clears and resumes), and a stronger model profile only for the intents that need it.
+
+### For your team
+
+- **Shared records:** requirements, designs, decisions and test results live in the repository next to the code. **Refresh from GitHub** brings in what a teammate or another machine pushed, safely, even with local work in progress. Cost counts every machine that worked on an intent.
+- **Feature docs:** the app offers `docs/FEATURES.md` and epic files at setup and shows your epics and user stories with their status. Every agent keeps them current through a rule in AI-DLC's memory.
+- **Release planning:** plan stories into releases, or ship continuously. Planning changes are committed on their own branch, pushed when there is time and never lost. A story branch still shows `main`'s releases. The app's own files and hook settings stay in sync with `main`.
+- **Pull requests and reviews:** a panel for GitHub, GitLab and Bitbucket shows who works on what and warns when a branch is behind `main` or overlaps another open pull request. Each intent's **Review** tab leads with what needs you (questions, NOT-READY findings, change requests, open threads), then the pull request's review threads.
+- **Velocity:** metrics per intent, story and project, from the records AI-DLC already keeps.
+
+### Everywhere
+
+- **In-app updates** from the public GitHub releases, on macOS and Linux, in one update dialog (**Settings → Tools → Check for updates**).
+- **An LCARS interface** with one set of rules: nested and diagonal frames, quiet colour, readouts that never look like controls, and a short entrance animation that respects reduced motion.
 - **English and Swedish:** the interface language follows the operating system, or you choose it in Settings.
+
+### Screenshots
 
 | | |
 |---|---|
-| ![Timeline from the audit log](docs/screenshots/timeline.png) | ![Cost per model and intent](docs/screenshots/cost.png) |
-| **Timeline:** everything that happened in an intent, live from the audit log | **Cost:** estimated cost per model, agent and intent |
-| ![Features: epics and user stories](docs/screenshots/features.png) | ![Start screen](docs/screenshots/splash.png) |
-| **Features:** the project's epics and stories | **Start screen** |
+| ![An intent's pipeline: stages as LCARS cards, with the intent list beside it](docs/screenshots/intents.png) | ![The timeline: stages, agents, approvals and decisions from the audit log](docs/screenshots/timeline.png) |
+| **Pipeline:** where every stage of an intent stands | **Timeline:** everything that happened, live from the audit log |
+| ![The cost panel: cost per model, agent and stage, with live tokens](docs/screenshots/cost.png) | ![The features view: epics and their user stories with status](docs/screenshots/features.png) |
+| **Cost:** estimated cost per model, agent and intent | **Features:** the project's epics and stories |
+| ![The releases view: planned releases and the stories in each](docs/screenshots/releases.png) | ![Configuration: feature docs, delivery and the other project settings](docs/screenshots/configuration.png) |
+| **Releases:** stories planned per release | **Configuration:** the project's settings and AI-DLC |
+
+The screenshots and the animation show an invented demo project. `npm run screenshots` takes them again from the current app.
 
 ## Prerequisites
 
 - **[AI-DLC](https://github.com/awslabs/aidlc-workflows)** with its `aidlc` command on your login shell's `PATH`. The app reads AI-DLC projects and runs the `aidlc` CLI; it does not install it.
-- **An agent CLI** for the terminal: [Claude Code](https://docs.claude.com/en/docs/claude-code) (`claude`) or [opencode](https://opencode.ai) (`opencode`).
-- **[GitHub CLI](https://cli.github.com)** (`gh`), signed in, for the in-app update check. The rest of the app works without it.
+- **An agent CLI** for the terminal: [Claude Code](https://docs.claude.com/en/docs/claude-code) (`claude`), [opencode](https://opencode.ai) (`opencode`), Codex or Kiro.
+- **[GitHub CLI](https://cli.github.com)** (`gh`), signed in, for Refresh from GitHub and the pull request panel on GitHub. Updates do not need it.
 - **To build from source:** macOS or Linux, Node.js in the version named in [`.nvmrc`](.nvmrc), npm and git.
 
 ## Installation
@@ -69,16 +103,27 @@ Download the build for your platform from the [releases page](https://github.com
 - **macOS** (universal `.dmg`): open the disk image and drag `THADEUS.app` to Applications. The build is unsigned, so the first time, right-click the app and choose **Open**.
 - **Linux** (`.deb`, x64, Ubuntu 22.04 or later): `sudo apt install ./thadeus_<version>_amd64.deb`.
 
-The app expects the tools under [Prerequisites](#prerequisites) to be available in your login shell. It does not install them.
+The app expects the tools under [Prerequisites](#prerequisites) to be available in your login shell. It does not install them. **Settings → Tools** shows which ones it found, grouped by purpose, and what to do about a missing one.
 
 ## Usage
 
-1. Open a project with **+ Open** in the left arm, or **File → Open project…** (`Cmd/Ctrl+O`). Any folder that contains `aidlc/spaces/` works, and so does a folder where you want to set AI-DLC up.
-2. Pick a view in the left arm (Intents, Features), and expand Cost and GitHub as needed.
-3. Use the agent terminal at the bottom to run `/aidlc`, or click **Resume** on an intent.
-4. Choose the project's agent harness under **Project settings → Agent terminal**.
+1. **Open a project** with **+ Open** in the left arm, or **File → Open project…** (`Cmd/Ctrl+O`). Any folder that contains `aidlc/spaces/` works, and so does a folder where you want to set AI-DLC up.
+2. **Set up AI-DLC** if the folder has none: choose the harness, look at the preview, and click **Apply**. The project's harness for the agent terminal is under **Configuration → Agent**.
+3. **Start an intent** by describing what you want in the agent terminal (`/aidlc <what to build>`), or **Resume** one from the Intents view. Follow it in the pipeline and the timeline.
+4. **Answer the agent** in the pop-up when it asks a question or waits for your approval.
+5. **See the cost** under **Cost** in the left arm, per intent, stage, agent and model.
+6. **Plan a release** under **Features → Releases**: create a release and add stories to it. The app commits and pushes the planning for you.
 
 Open projects are restored on the next start. **Full screen:** `Ctrl+Cmd+F` on macOS, `F11` on Linux.
+
+## Coming next
+
+Plans can change; [docs/FEATURES.md](docs/FEATURES.md) and [docs/releases/](docs/releases/) always have the current state.
+
+- **v0.3.0, Spec Kit:** use [Spec Kit](https://github.com/github/spec-kit) instead of AI-DLC in a project. Set it up, switch a project between the two, see its features and their status, run its commands, and keep its constitution and extensions, with cost, questions and agent progress as for AI-DLC.
+- **v0.3.1, steer the work and see what it costs:** rename an intent or change the plan of one that has started; see whether your tools are signed in and sign in from the app; a start-screen health check; cost per story, epic and release, with hints on where to save.
+- **v0.3.2, what the work delivered:** delivery metrics (lead time, release frequency, failure rate, recovery time), quality next to cost, the AI's share of delivered code, insights per person and machine, any harness in the agent terminal, and more motion in the pipeline cards.
+- **Later:** add your own language with a translation file.
 
 ## Development
 
@@ -100,12 +145,15 @@ The builds also write `build/THIRD_PARTY_LICENSES.txt`, the licences of everythi
 
 ## Testing
 
-The test suite uses [Vitest](https://vitest.dev/) and [Testing Library](https://testing-library.com/), and is split into two projects:
+The test suite uses [Vitest](https://vitest.dev/) and [Testing Library](https://testing-library.com/), and is split into three projects:
 
 - **main** (`tests/main/`) covers the Electron main process (parsers for the AI-DLC records, file access, git, settings, the terminal and the harness setup) in a Node environment.
+- **scripts** covers the timed hook scripts, run after the others.
 - **renderer** (`tests/renderer/`) covers the React components in jsdom, rendered in Swedish so the translations are exercised too.
 
-Both run against small sample AI-DLC projects, audit logs and ledgers in `tests/fixtures/`, never against your real projects.
+End-to-end tests (`tests/e2e/`) drive the built app with Playwright.
+
+The unit tests run against small sample AI-DLC projects, audit logs and ledgers in `tests/fixtures/`, never against your real projects.
 
 ```bash
 npm test                                  # run everything once
@@ -114,14 +162,15 @@ npx vitest run --project main             # only the main-process tests
 npx vitest run tests/renderer/Timeline.test.jsx   # a single file
 ```
 
-Every pull request runs a secret scan (gitleaks), the full suite with an 80% line-coverage floor, ESLint and Prettier in GitHub Actions before the macOS and Linux builds, and a release is only built from a green run. The tests need the Node version in `.nvmrc`; on older versions some of them fail to start.
+Every pull request runs a secret scan (gitleaks), the full suite with an 80% line-coverage floor, ESLint, Prettier and end-to-end tests of the built app (Playwright) in GitHub Actions before the macOS and Linux builds, and a release is only built from a green run. The tests need the Node version in `.nvmrc`; on older versions some of them fail to start.
 
 ## Security
 
 - **File access:** all file access goes through the main process and is limited to the project roots you have opened. Paths with `..`, absolute paths, and symlinks pointing out of the root are refused.
 - **What the app writes:**
-  - The app only writes its own settings: `~/Library/Application Support/aidlc-dash/settings.json` on macOS, `~/.config/aidlc-dash/settings.json` on Linux.
-  - It never edits AI-DLC files directly. Setting up or adding a harness runs the official `aidlc` CLI with fixed arguments and no shell, only after a preview and your explicit **Apply**.
+  - Its own settings: `~/Library/Application Support/aidlc-dash/settings.json` on macOS, `~/.config/aidlc-dash/settings.json` on Linux.
+  - In a project, only what you ask for or turn on: files you save in the editor, the feature docs and release plans, its own files under `.thadeus/`, and its hook entries in the coding tool's settings, shown before they are installed. Planning and `.thadeus/` changes are committed from a separate worktree, so the branch you work on is never touched.
+  - AI-DLC itself is changed through the official `aidlc` CLI, with fixed arguments and no shell, after a preview and your explicit **Apply**. The app edits only a few AI-DLC settings files directly, never the files the AI-DLC engine owns.
 - **Renderer:** the renderer runs sandboxed with `contextIsolation` and without `nodeIntegration`. It reaches only a narrow preload API of named functions.
 - **Artifacts:** Markdown is rendered without raw HTML, so no script in an artifact can run. "Open in editor" is limited to document files (`.md`, `.json`, `.txt`, `.yaml`, `.yml`).
 - **Terminal:** the terminal tabs run with your normal environment and permissions, like a terminal you start yourself.

@@ -91,8 +91,17 @@ describe('listPulls, listComments, listReviews (US-1201 AC-1)', () => {
         body: 'Looks good, one question on the snapshot.',
         time: '2026-11-15T11:00:00Z',
         url: 'https://github.com/tochman/ai-dlc-thadeus/pull/58#issuecomment-1'
+      },
+      {
+        author: 'bo',
+        body: 'Why fetch here?',
+        time: '2026-11-15T11:30:00Z',
+        url: 'https://github.com/tochman/ai-dlc-thadeus/pull/58#discussion_r3',
+        thread: { id: 'PRRT_1', path: 'src/main/git.js', line: 14, resolved: false } // US-1203: review threads by GraphQL
       }
     ]);
+    const graphql = calls.find((c) => c.args.at(-1) === 'graphql').args;
+    expect(graphql).toEqual(expect.arrayContaining(['-f', 'owner=tochman', '-f', 'name=ai-dlc-thadeus', '-F', 'n=58']));
     expect(await listReviews(github, 58, { exec })).toEqual([
       {
         author: 'anna',
@@ -119,7 +128,15 @@ describe('listPulls, listComments, listReviews (US-1201 AC-1)', () => {
       files: FILES
     });
     expect(await listComments(gitlab, 12, { exec })).toEqual([
-      { author: 'anna', body: 'Looks good, one question on the snapshot.', time: '2026-11-15T11:00:00Z', url: null }
+      { author: 'anna', body: 'Looks good, one question on the snapshot.', time: '2026-11-15T11:00:00Z', url: null },
+      // US-1203: a diff discussion is a thread with its file, line and resolved state
+      {
+        author: 'bo',
+        body: 'Why fetch here?',
+        time: '2026-11-15T11:30:00Z',
+        url: null,
+        thread: { id: 'd2', path: 'src/main/git.js', line: 14, resolved: true }
+      }
     ]);
     expect(await listReviews(gitlab, 12, { exec })).toEqual([{ author: 'anna', state: 'approved', time: '2026-11-15T12:00:00Z', body: '', url: null }]);
     expect(calls[0].args.slice(0, 3)).toEqual(['api', '--hostname', 'gitlab.example.com']);
@@ -144,7 +161,18 @@ describe('listPulls, listComments, listReviews (US-1201 AC-1)', () => {
         body: 'Looks good, one question on the snapshot.',
         time: '2026-11-15T11:00:00+00:00',
         url: 'https://bitbucket.org/team/dash/pull-requests/7/_/diff#comment-1'
-      }
+      },
+      // US-1203: inline comments are a thread under their first comment, with its file and line
+      ...[
+        ['Bo', 'Why fetch here?', '2026-11-15T11:30:00+00:00', 2],
+        ['Thomas Ochman', 'To spare a round trip.', '2026-11-15T11:40:00+00:00', 3]
+      ].map(([author, body, time, id]) => ({
+        author,
+        body,
+        time,
+        url: `https://bitbucket.org/team/dash/pull-requests/7/_/diff#comment-${id}`,
+        thread: { id: 2, path: 'src/main/git.js', line: 14, resolved: false }
+      }))
     ]);
     expect(await listReviews(bitbucket, 7, deps)).toEqual([{ author: 'Anna', state: 'approved', time: '2026-11-15T12:00:00+00:00', body: '', url: null }]);
     expect(fetch.mock.calls[0][1].signal).toBeInstanceOf(AbortSignal);

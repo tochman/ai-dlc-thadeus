@@ -7,6 +7,7 @@ import path from 'node:path';
 import {
   addAction,
   addContent,
+  addThadeus,
   markCommitted,
   markConflict,
   readRecord,
@@ -96,8 +97,30 @@ describe('planning record (US-0607 FR1.1, FR1.2)', () => {
       content: 'two\n',
       baseHash: 'b'.repeat(64),
       earlier: expect.arrayContaining([base]),
-      storyIds: ['US-0101']
+      storyIds: [] // US-0038 FR1.3: the newest change names no story, so neither does the entry
     });
+  });
+
+  // US-0038 FR1.3: an entry's stories are those of its final change, never the union of every earlier one.
+  it('keeps only the newest change story ids when a later save replaces an entry (US-0038 FR1.3)', async () => {
+    const file = 'docs/releases/0.2.13.md';
+    await addContent(userData, '/work/a', { file, baseHash: null, content: 'one\n', storyIds: ['US-0035', 'US-0038'] });
+    const two = await addContent(userData, '/work/a', { file, baseHash: null, content: 'two\n', storyIds: ['US-0036'] });
+    expect(two.storyIds).toEqual(['US-0036']);
+    expect((await readRecord(userData, '/work/a')).actions.map((a) => a.storyIds)).toEqual([['US-0036']]);
+  });
+
+  // US-0038 FR1.4: an entry set aside from an app commit says which commit it came from.
+  it('keeps the commit a set-aside entry came from, and refuses a non-string one (US-0038 FR1.4)', async () => {
+    const e = await addContent(userData, '/work/a', {
+      file: 'docs/FEATURES.md',
+      baseHash: null,
+      content: 'x\n',
+      state: 'conflict',
+      from: '6502115 docs: update US-0035'
+    });
+    expect((await readRecord(userData, '/work/a')).actions[0]).toMatchObject({ id: e.id, state: 'conflict', from: '6502115 docs: update US-0035' });
+    await expect(addContent(userData, '/work/a', { file: 'docs/FEATURES.md', baseHash: null, content: 'y\n', from: 42 })).rejects.toThrow();
   });
 
   it('drops a content entry outside the docs or without a base hash, and refuses to add one (FR2.2)', async () => {
@@ -119,6 +142,32 @@ describe('planning record (US-0607 FR1.1, FR1.2)', () => {
     expect((await readRecord(userData, '/work/a')).actions[0].state).toBe('conflict');
     await resolveEntry(userData, '/work/a', e.id, { baseHash: 'c'.repeat(64) });
     expect((await readRecord(userData, '/work/a')).actions[0]).toMatchObject({ state: 'pending', baseHash: 'c'.repeat(64), content: 'mine\n' });
+  });
+
+  // US-0609 FR3.1, FR3.2: a `thadeus` entry holds only the path of a changed app file, never its text.
+  it('keeps a thadeus entry under .thadeus/ or on a harness path, one per file: a newer change replaces it', async () => {
+    const one = await addThadeus(userData, '/work/a', { file: '.thadeus/tokens/i.json' });
+    expect(one).toMatchObject({ kind: 'thadeus', file: '.thadeus/tokens/i.json', state: 'pending' });
+    expect(one).not.toHaveProperty('content');
+    const hook = await addThadeus(userData, '/work/a', { file: '.claude/settings.json', harness: 'claude' });
+    const again = await addThadeus(userData, '/work/a', { file: '.thadeus/tokens/i.json' });
+    const { actions } = await readRecord(userData, '/work/a');
+    expect(actions.map((a) => [a.id, a.file])).toEqual([
+      [hook.id, '.claude/settings.json'],
+      [again.id, '.thadeus/tokens/i.json']
+    ]);
+    expect(again.id).not.toBe(one.id);
+    expect(actions[0]).toMatchObject({ harness: 'claude' });
+  });
+
+  it('refuses a thadeus entry outside .thadeus/ and the harness paths, or with `..`, and drops one on read', async () => {
+    for (const file of ['src/x.js', '.thadeus/../src/x.js', '../.thadeus/x', '/abs/.thadeus/x', '.thadeus', '.claude/other.json']) {
+      await expect(addThadeus(userData, '/work/a', { file })).rejects.toThrow();
+    }
+    await fs.mkdir(path.join(userData, 'planning'), { recursive: true });
+    const good = { id: 't', kind: 'thadeus', file: '.thadeus/x.json', at: new Date().toISOString(), state: 'pending' };
+    await fs.writeFile(recordFile(userData, '/work/a'), JSON.stringify({ actions: [good, { ...good, id: 'bad', file: 'README.md' }] }));
+    expect((await readRecord(userData, '/work/a')).actions.map((a) => a.id)).toEqual(['t']);
   });
 
   it('keeps protectedMain across later changes', async () => {

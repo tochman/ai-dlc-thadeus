@@ -1,0 +1,15 @@
+{
+  "stage": "code-generation",
+  "unit": "u3-thadeus-sync",
+  "upstream_ids": ["AC3.1.1", "AC3.1.2", "AC3.1.3", "AC3.1.4", "AC3.1.5", "AC3.1.6", "AC3.1.7", "AC3.1.8"],
+  "coverage": [
+    { "id": "AC3.1.1", "status": "OK", "target": "tests/main/thadeusSync.test.js" },
+    { "id": "AC3.1.2", "status": "OK", "target": "tests/main/thadeusSync.test.js" },
+    { "id": "AC3.1.3", "status": "OK", "target": "tests/main/agentHooksInstaller.test.js" },
+    { "id": "AC3.1.4", "status": "OK", "target": "tests/main/thadeusSync.test.js" },
+    { "id": "AC3.1.5", "status": "OK", "target": "tests/main/thadeusSync.test.js" },
+    { "id": "AC3.1.6", "status": "OK", "target": "tests/main/thadeusSync.test.js" },
+    { "id": "AC3.1.7", "status": "OK", "target": "tests/main/setup.test.js" },
+    { "id": "AC3.1.8", "status": "OK", "target": "tests/renderer/FeaturesView.test.jsx" }
+  ]
+}

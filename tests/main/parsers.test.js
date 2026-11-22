@@ -28,6 +28,39 @@ describe('mergeIntents', () => {
     expect(by['261112-epic29-small-k2-fixes']).toMatchObject({ active: true, date: '2026-11-12', scope: 'express' });
     expect(by['261110-epic02-finish'].active).toBe(false);
   });
+
+  // UUID v7: the first 48 bits are the creation time in Unix ms.
+  const v7 = (ms) =>
+    `${ms
+      .toString(16)
+      .padStart(12, '0')
+      .replace(/^(.{8})/, '$1-')}-7000-8000-000000000000`;
+  const day = Date.UTC(2026, 10, 19);
+
+  it('orders same-day intents by the time in their uuid, whatever their names (US-0040 FR4.2)', () => {
+    const index = [
+      { uuid: v7(day + 1000), dirName: '261119-zeta-first' },
+      { uuid: v7(day + 3000), dirName: '261119-alpha-last' },
+      { uuid: v7(day + 2000), dirName: '261119-mid' }
+    ];
+    const list = mergeIntents(
+      index,
+      index.map((e) => e.dirName),
+      null
+    );
+    expect(list.map((i) => i.dirName)).toEqual(['261119-alpha-last', '261119-mid', '261119-zeta-first']);
+  });
+
+  it('puts an intent without a uuid after the same day indexed ones, still by folder date (US-0040 FR4.3)', () => {
+    const index = [
+      { uuid: v7(day + 1000), dirName: '261119-alpha' },
+      { uuid: v7(day - 86_400_000), dirName: '261118-older' },
+      { uuid: 'not-a-uuid', dirName: '261119-bad-uuid' }
+    ];
+    const disk = ['261119-alpha', '261118-older', '261119-zz-orphan', '261120-newer-orphan', '261119-bad-uuid'];
+    const list = mergeIntents(index, disk, null);
+    expect(list.map((i) => i.dirName)).toEqual(['261120-newer-orphan', '261119-alpha', '261119-zz-orphan', '261119-bad-uuid', '261118-older']);
+  });
 });
 
 describe('parseState', () => {

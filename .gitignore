@@ -37,3 +37,5 @@ build/THIRD_PARTY_LICENSES.txt
 
 # AI-DLC's running-agent marker (machine-local)
 aidlc/.aidlc-subagent-inflight
+
+.DS_Store

@@ -85,9 +85,9 @@ describe('one LCARS select everywhere (hotfix)', () => {
   it('styles the closed control, the open list and its options with customizable select', () => {
     expect(css).toMatch(/\.lcars-select, \.lcars-select::picker\(select\) \{ appearance: base-select; \}/);
     expect(css).toMatch(/\n\.lcars-select::picker\(select\) \{[^}]*background: var\(--bg\);/);
-    expect(rule('.lcars-select::picker-icon')).toMatch(/background: var\(--amber\);/);
+    expect(rule('.lcars-select::picker-icon')).toMatch(/background: var\(--slate-5\);/); // US-0417: amber is the mark and focus only
     expect(css).toMatch(/\.lcars-select option \{[^}]*padding:/);
-    expect(css).toMatch(/\.lcars-select option:checked \{ background: var\(--amber\); color: var\(--on-light\); \}/);
+    expect(css).toMatch(/\.lcars-select option:checked \{ background: var\(--slate-5\); color: var\(--on-light\); \}/);
     expect(css).toMatch(/\.lcars-select option::checkmark \{/);
     expect(css).not.toMatch(/(^|[\s,])select(:hover)?\s*\{/); // no bare select rule left beside the shared one
   });
@@ -101,13 +101,12 @@ describe('one LCARS select everywhere (hotfix)', () => {
 });
 
 describe('terminal elbow', () => {
-  it('sizes the faded mark from the block, with equal margins, and puts the label at the bottom', () => {
+  it('sizes the faded mark from the block, with equal margins (US-0417: the label moved to the foot bar)', () => {
     const mark = rule('.terminal-elbow-mark');
     expect(mark).toMatch(/width: calc\(100% - 2 \* var\(--gap\)\);/);
     expect(mark).toMatch(/left: var\(--gap\);/);
     expect(mark).not.toMatch(/width: \d+px/);
-    expect(rule('.terminal-elbow-label')).toMatch(/margin-top: auto;/);
-    expect(rule('.terminal-elbow')).toMatch(/align-items: flex-end;/);
+    expect(rule('.terminal-elbow-label')).toBe('');
   });
 });
 
@@ -156,9 +155,9 @@ describe('the agent dialog (US-0020)', () => {
 });
 
 describe('the token detail view (US-0208 FR7)', () => {
-  it('US-0022: shows the header Tokens button only where the readout column is hidden', () => {
+  it('US-0022: shows the header Activity button only where the frame arm is hidden (US-0417)', () => {
     expect(css).toMatch(/\.intent-tokens-open\s*\{[^}]*display:\s*none/);
-    expect(css).toMatch(/@media \(max-width: 1280px\) \{[^}]*\.readout-col \{ display: none; \}[^}]*\.intent-tokens-open \{ display: inline-flex; \}/);
+    expect(css).toMatch(/@container \(max-width: 560px\) \{ \.intent-tokens-open \{ display: flex; \} \}/);
   });
 
   it('adds the cache write 5 m steel to the palette', () => {
@@ -171,5 +170,82 @@ describe('the token detail view (US-0208 FR7)', () => {
     // No easing outside full motion: the transitions live only under the full-motion selector.
     const unguarded = css.split('\n').filter((line) => /^\.token-detail[^{]*\{[^}]*(transition|animation):/.test(line));
     expect(unguarded).toEqual([]);
+  });
+});
+
+// US-0417: the written rules, the one scale and the colour rule (the approved mockup's rules panel).
+describe('the US-0417 LCARS language', () => {
+  const raw = readFileSync(path.join(RENDERER, 'theme.css'), 'utf8');
+
+  it('writes the rules down in the theme', () => {
+    for (const name of [
+      'Containment',
+      'No local bulges',
+      'Gaps',
+      'Curves follow curves',
+      'Titles',
+      'Readouts never look like controls',
+      'Colour rule',
+      'Shape rule',
+      'Entrance'
+    ])
+      expect(raw).toContain(name);
+  });
+
+  it('defines one spacing scale, one set of bar thicknesses, the elbow ratios, the title sizes and the motion tokens', () => {
+    const root = css.match(ROOT)?.[0] ?? '';
+    for (const token of [
+      '--gap: 6px;',
+      '--gap-m: 12px;',
+      '--gap-l: 18px;',
+      '--bar-thin: 18px;',
+      '--bar-med: 30px;',
+      '--bar-large: 42px;',
+      '--bar-wide: 60px;',
+      '--bar-thick: 150px;',
+      '--elbow-outer: 0.7;',
+      '--elbow-inner: 1.4;',
+      '--title-window: 35px;',
+      '--title-frame: 49px;',
+      '--title-section: 21px;',
+      '--e-dur: 300ms;',
+      '--e-stagger: 25ms;'
+    ])
+      expect(root).toContain(token);
+  });
+
+  it('keeps amber for the mark and the focus ring only', () => {
+    const uses = [...css.matchAll(/([^{}]+)\{[^}]*var\(--amber\)[^}]*\}/g)].map((m) => m[1].trim());
+    expect(uses.length).toBeGreaterThan(0);
+    expect(uses.filter((selector) => !/focus|mark/.test(selector))).toEqual([]);
+    expect(rule('.app-brand')).toMatch(/background: var\(--slate-4\);/); // the brand corner is slate, its mark amber
+    expect(css).toMatch(/\.app-brand \.app-mark\s*\{[^}]*color: var\(--amber\);/);
+  });
+
+  it('animates the drawer and the entrance only with full motion, with transform and opacity only', () => {
+    const lines = css.split('\n');
+    const unguarded = lines.filter((line) => /^\.(lcars-drawer|is-entering)[^{]*\{[^}]*(transition|animation):/.test(line));
+    expect(unguarded).toEqual([]);
+    expect(css).toMatch(/:root\[data-motion='full'\] \.lcars-drawer[^{]*\{[^}]*transition:/);
+    expect(css).toMatch(/:root\[data-motion='full'\] \.is-entering \.lcars-e-block\s*\{[^}]*animation:/);
+    for (const frames of css.matchAll(/@keyframes lcars-e-[a-z]+\s*\{([\s\S]*?)\n\}/g)) expect(frames[1]).not.toMatch(/(width|height|left|top|margin):/);
+  });
+
+  it('keeps the window clear of the macOS menu bar in full screen', () => {
+    expect(css).toMatch(/\.app\.is-fullscreen\s*\{[^}]*padding-top: 28px;/);
+  });
+
+  it('gives a read-only meter no knob, hover or pointer', () => {
+    expect(rule('.lcars-meter')).toMatch(/cursor: default;/);
+    expect(css).not.toMatch(/\.lcars-(meter|segmeter)[^{]*:hover/);
+  });
+});
+
+// US-0417: the intent tabs stay one row of tiles, so the tab content never draws over a wrapped second row.
+describe('intent tab tiles (US-0417)', () => {
+  it('keeps the tab row on one line, unshrunk, with tiles that may narrow', () => {
+    expect(css).toMatch(/\.detail-tabs\s*\{[^}]*flex-wrap:\s*nowrap[^}]*\}/);
+    expect(css).toMatch(/\.detail-tabs\s*\{[^}]*flex:\s*none[^}]*\}/);
+    expect(css).toMatch(/\.detail-tabs \.lcars-tile\s*\{[^}]*min-width:\s*0[^}]*\}/);
   });
 });

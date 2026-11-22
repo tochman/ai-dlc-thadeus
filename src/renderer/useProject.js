@@ -1,5 +1,6 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { t } from '../shared/i18n.js';
+import { inFlightIntent } from './workflowBusy.js';
 
 const bridge = window.bridge;
 const HIGHLIGHT_MS = 4000;
@@ -21,8 +22,8 @@ export function useProject(projectId, initialSpace) {
   const [error, setError] = useState(null);
   const [cost, setCost] = useState(null); // null while loading, then {available, ...}
   const [models, setModels] = useState(null);
-  // When AI-DLC last wrote under intents/ (active-directive.json included); "AI-DLC arbetar" in RefreshPanel (FR3.5).
-  const [lastIntentChangeAt, setLastIntentChangeAt] = useState(null);
+  // When AI-DLC last did stage work under intents/, not audit or runtime files (US-0041 AC2); "AI-DLC arbetar" (FR3.5).
+  const [workAt, setWorkAt] = useState(null);
   const selectedRef = useRef(selected);
   const detailRef = useRef(detail);
   selectedRef.current = selected;
@@ -117,7 +118,7 @@ export function useProject(projectId, initialSpace) {
   useEffect(() => {
     const offChange = bridge.onProjectChanged((c) => {
       if (c.projectId !== projectId || c.space !== space) return;
-      if (c.dirNames.length > 0) setLastIntentChangeAt(Date.now());
+      if (c.workDirNames?.length > 0) setWorkAt(Date.now());
       loadList(c.indexChanged ? undefined : c.dirNames);
       if (c.costChanged || c.indexChanged) loadCost(); // a new intent can claim an existing ledger entry
       if (c.indexChanged || c.dirNames.includes(selectedRef.current)) {
@@ -132,6 +133,13 @@ export function useProject(projectId, initialSpace) {
       offError();
     };
   }, [projectId, space, loadList, loadDetail, loadCost]);
+
+  // US-0041 AC1–AC4: the in-flight intent `{name, stage, at}`, null while the active intent is complete or parked.
+  // ponytail: still named lastIntentChangeAt so ProjectView and App pass it on unchanged; rename to `workflow` with them.
+  const lastIntentChangeAt = useMemo(() => {
+    const flight = inFlightIntent(intents);
+    return flight && { ...flight, at: workAt };
+  }, [intents, workAt]);
 
   return { space, setSpace, intents, listWarning, selected, setSelected, detail, newKeys, error, cost, models, lastIntentChangeAt };
 }

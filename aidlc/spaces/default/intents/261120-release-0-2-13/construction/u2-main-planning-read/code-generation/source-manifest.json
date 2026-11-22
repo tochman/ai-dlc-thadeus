@@ -1,0 +1,21 @@
+{
+  "stage": "code-generation",
+  "unit": "u2-main-planning-read",
+  "version": 1,
+  "writes": [
+    { "path": "src/main/parsers/features.js" },
+    { "path": "src/main/planningSync.js" },
+    { "path": "src/main/features.js" },
+    { "path": "src/main/ipc.js" },
+    { "path": "src/renderer/FeaturesView.jsx" },
+    { "path": "src/shared/locales/sv.json" },
+    { "path": "src/shared/locales/en.json" },
+    { "path": "tests/main/planningSplit.test.js" },
+    { "path": "tests/main/planningSync.test.js" },
+    { "path": "tests/main/features.test.js" },
+    { "path": "tests/main/ipc.test.js" },
+    { "path": "tests/renderer/FeaturesView.test.jsx" },
+    { "path": "docs/FEATURES.md" },
+    { "path": "docs/features/epic-00-fixes.md" }
+  ]
+}

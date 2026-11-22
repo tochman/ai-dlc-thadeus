@@ -14,9 +14,36 @@
     { "old_path": "src/main/git.js", "new_path": "src/main/git.js" },
     { "old_path": "aidlc/spaces/default/intents/intents.json", "new_path": "aidlc/spaces/default/intents/intents.json" }
   ],
-  "projects/team%2Fapps%2Fdash/merge_requests/12/notes?per_page=100": [
-    { "id": 1, "author": { "username": "anna" }, "body": "Looks good, one question on the snapshot.", "created_at": "2026-11-15T11:00:00Z", "system": false },
-    { "id": 3, "author": { "username": "anna" }, "body": "approved this merge request", "created_at": "2026-11-15T12:00:00Z", "system": true }
+  "projects/team%2Fapps%2Fdash/merge_requests/12/discussions?per_page=100": [
+    {
+      "id": "d1",
+      "individual_note": true,
+      "notes": [
+        { "id": 1, "author": { "username": "anna" }, "body": "Looks good, one question on the snapshot.", "created_at": "2026-11-15T11:00:00Z", "system": false }
+      ]
+    },
+    {
+      "id": "d2",
+      "individual_note": false,
+      "notes": [
+        {
+          "id": 2,
+          "type": "DiffNote",
+          "author": { "username": "bo" },
+          "body": "Why fetch here?",
+          "created_at": "2026-11-15T11:30:00Z",
+          "system": false,
+          "resolvable": true,
+          "resolved": true,
+          "position": { "new_path": "src/main/git.js", "new_line": 14 }
+        }
+      ]
+    },
+    {
+      "id": "d3",
+      "individual_note": true,
+      "notes": [{ "id": 3, "author": { "username": "anna" }, "body": "approved this merge request", "created_at": "2026-11-15T12:00:00Z", "system": true }]
+    }
   ],
   "projects/team%2Fapps%2Fdash/merge_requests/12/approvals": {
     "approved": true,

@@ -63,7 +63,6 @@
     "github": "Github",
     "settings": "Settings",
     "config": "Configuration",
-    "plans": "Plans",
     "editor": "Editor",
     "intentCount": "{n, plural, one {# intent} other {# intents}}",
     "featureCount": "{n, plural, one {# feature} other {# features}}",
@@ -71,6 +70,8 @@
     "emptyText": "Open a project folder that contains {path}.",
     "openProject": "Open project",
     "pickFolder": "Open project folder",
+    "backTo": "‹ Back to {view}",
+    "back": "‹ Back",
     "question": {
       "waiting": "AI-DLC is waiting for your answer",
       "stillWaiting": "Still waiting for your answer",
@@ -125,6 +126,8 @@
     "basedOn": "Custom plan based on {scope}",
     "allScopes": "All scopes",
     "active": "Active",
+    "parked": "Parked at {stage}",
+    "park": "Park",
     "unknownStatus": "unknown status",
     "doneOfExecuted": "Done of executed stages",
     "missingInIndex": "Missing in intents.json",
@@ -137,7 +140,7 @@
       "units": "Units",
       "cost": "Cost",
       "velocity": "Velocity",
-      "comments": "Comments",
+      "comments": "Review",
       "files": "Files"
     },
     "tabsLabel": "Intent views",
@@ -148,7 +151,7 @@
     "showMore": "Show more",
     "showLess": "Show less",
     "readout": "Readout",
-    "readoutStages": "Stages",
+    "readoutStages": "Stages done",
     "readoutCost": "Cost",
     "readoutModel": "Model",
     "readoutMode": "Mode",
@@ -167,8 +170,9 @@
     "resume": {
       "label": "Resume",
       "atStage": "Resume at {stage}",
+      "unpark": "Unpark and resume",
+      "unparkAtStage": "Unpark and resume at {stage}",
       "inHarness": "{label} in {harness}",
-      "step": "(step {step} of {total})",
       "busy": "{harness} is working — wait or interrupt it first",
       "asking": "{harness} is waiting for your answer — answer in the terminal first",
       "running": "{harness} is running {intent} — continue in the terminal",
@@ -334,6 +338,11 @@
     "usd": "USD",
     "share": "Share",
     "tokensHeader": "Tokens",
+    "scopes": "Scopes",
+    "corner": "Total · {n, plural, one {# intent} other {# intents}}",
+    "tokenMix": "Token mix",
+    "shareScope": "Share per scope",
+    "shareScopeLabel": "Share per scope: {list}",
     "sessionModel": "The session's model",
     "sessionModelOf": "The session's model ({model})",
     "readingModels": "Reading the model configuration …",
@@ -377,6 +386,7 @@
     "newCount": "{n} new",
     "badge": "{n, plural, one {# new change} other {# new changes}} in AI-DLC on {ref}",
     "wait": "Wait until the AI-DLC step is done, or park the work first",
+    "waitFor": "Wait until AI-DLC is done with {stage} in {intent}, or park the work first",
     "rebase": "Rebase",
     "merge": "Merge",
     "rebaseText": "Rebase puts your local commits on top of the remote ones, so the history stays straight.",
@@ -461,26 +471,49 @@
       "onBranches": "{story} is on {n} branches: {where}",
       "loadFailed": "The machines could not be read: {error}"
     },
-    "comments": {
-      "source": {
-        "pull": "Pull request",
-        "review": "Review",
-        "question": "Open question",
-        "approval": "Approval",
-        "finding": "Review finding"
+    "review": {
+      "title": "Review",
+      "description": "What waits on you, and what reviewers said on the story's pull request.",
+      "needsTitle": "Needs you",
+      "nothing": "Nothing waits on you.",
+      "needs": {
+        "question": "AI-DLC waits for your answer: {text}",
+        "finding": "The reviewer said NOT-READY on {stage}. Read the review and revise.",
+        "changes": "{author} asked for changes. Reply or push a fix.",
+        "thread": "Unresolved thread in {where} by {author}: reply or resolve it."
+      },
+      "action": {
+        "answer": "Answer in the file",
+        "readReview": "Read the review",
+        "open": "Open on {platform}"
+      },
+      "pullTitle": "Pull request",
+      "pullCaption": "Pull request #{number}: {title}",
+      "columns": {
+        "number": "Number",
+        "state": "State",
+        "reviewers": "Reviewers"
+      },
+      "state": {
+        "changes": "Open · changes requested",
+        "approved": "Open · approved",
+        "waiting": "Open · waiting for review"
       },
       "reviewState": {
         "approved": "Approved",
         "changes": "Asked for changes",
         "commented": "Commented"
       },
-      "pull": "Pull request #{number}: {title}",
-      "noPull": "No open pull request has the story number in its branch or title. The rows below are AI-DLC's.",
-      "approvedStage": "Approved {stage}",
-      "verdict": "{stage}: {verdict}",
-      "empty": "No comments, questions or approvals for the intent yet.",
+      "reviewer": "{author} ({state})",
+      "noReviewers": "None yet",
+      "conversation": "Conversation",
+      "where": "{path}:{line}",
+      "resolved": "{n, plural, one {# resolved thread} other {# resolved threads}}",
+      "noThreads": "No comments on the pull request yet.",
+      "noPull": "No open pull request has {stories} in its branch or title. Link one by putting the story number in the branch name (for example feat/{first}) or in the title.",
+      "noStory": "The intent is not linked to a story, so no pull request can be found.",
       "loading": "Reading…",
-      "loadFailed": "The comments could not be read: {error}"
+      "loadFailed": "The review could not be read: {error}"
     }
   },
   "terminal": {
@@ -519,6 +552,11 @@
     "timeout": "The tab did not become {target} within {seconds} s"
   },
   "features": {
+    "source": {
+      "remote": "Planning from {ref}",
+      "local": "Planning from {ref} (local, no remote fetched)",
+      "here": "Planning from this checkout, {branch}"
+    },
     "status": {
       "planned": "Planned",
       "progress": "In progress",
@@ -578,6 +616,7 @@
     "planning": {
       "title": "Planning sync",
       "pending": "{n, plural, one {# planning change waiting to be pushed.} other {# planning changes waiting to be pushed.}}",
+      "thadeus": "App file {file}",
       "pushNow": "Push now",
       "reapplied": "{n, plural, one {# planning change had been lost and was made again.} other {# planning changes had been lost and were made again.}}",
       "noRemote": "The project has no origin remote, so the planning is committed here only.",
@@ -588,9 +627,11 @@
         "createRelease": "New release {version}",
         "deleteRelease": "Delete release {version}",
         "content": "Change in {file}",
-        "stories": "Stories: {ids}"
+        "stories": "Stories: {ids}",
+        "from": "From the app's commit {commit}."
       },
       "conflict": "{file} has changed on the target as well.",
+      "choose": "Keep theirs drops the app's change; Use mine writes it over the target's text.",
       "useMine": "Use mine",
       "keepTheirs": "Keep theirs",
       "openBoth": "Open both in the editor",
@@ -598,6 +639,7 @@
       "error": {
         "offline": "Offline. The planning is kept and pushed when the app is online again.",
         "conflict": "The planning conflicts with main in {files}. Nothing was pushed; the app tries again at the next interval.",
+        "conflictCommit": "The app's commit {commit} conflicts with main in {files} and could not be set aside. Nothing was pushed. Delete the branch dash/planning to drop it.",
         "push": "The push was refused: {reason}. The planning is kept and the app tries again at the next interval.",
         "commit": "The planning could not be committed ({reason}): {files}. The change is kept.",
         "git": "The planning sync failed: {reason}"
@@ -680,6 +722,7 @@
     "isRepo": "the folder is a git repository",
     "notRepo": "no git repository, so git init -b main goes first",
     "noHarnesses": "none",
+    "thadeusIgnored": "A .gitignore entry hides .thadeus/. THADEUS commits that folder so every clone has the app's data: remove the entry.",
     "conflicts": "These files clash with existing files. Resolve that before AI-DLC is set up:",
     "fullPreview": "The whole preview",
     "advanced": "Advanced settings",
@@ -701,8 +744,10 @@
     "createFeatureDocs": "Create feature docs"
   },
   "aidlcUpdate": {
-    "programTitle": "AI-DLC program",
     "projectTitle": "AI-DLC in this project",
+    "unknown": "Unknown",
+    "filesDiffer": "{n} files differ",
+    "updateDo": "Update types the command into the shell tab; press Enter there to run it.",
     "newer": "Newer: v{version}",
     "newerUnknown": "A newer version exists",
     "upToDate": "Up to date",
@@ -784,17 +829,31 @@
         "save": "Save",
         "clear": "Remove",
         "set": "Saved in the keychain",
-        "notSet": "Not saved"
+        "notSet": "Not saved",
+        "signIn": "Sign in",
+        "what": "Username and app password, kept in the keychain"
       },
-      "pathLabel": "Path",
-      "versionLabel": "Version",
-      "notFound": "not found",
+      "groups": {
+        "aidlc": "AI-DLC",
+        "agents": "Coding agents",
+        "git": "Git hosts",
+        "system": "System"
+      },
+      "chip": {
+        "checking": "Checking…",
+        "found": "Found",
+        "hand": "Chosen by hand",
+        "missing": "Missing",
+        "newer": "Update available"
+      },
+      "missingDo": "Install it, or choose its path.",
+      "summary": "{n} tools · {missing} missing",
+      "rescan": "Rescan",
+      "copyPath": "Copy {path}",
+      "copied": "Copied",
+      "pathFallback": "The login shell's PATH could not be read; the app's own PATH was used.",
       "notOnPath": "not found on PATH",
       "checking": "Checking…",
-      "source": {
-        "saved": "Chosen path",
-        "auto": "Found automatically"
-      },
       "pick": "Choose…",
       "pickFor": "Choose the path to {tool}",
       "pickTitle": "Choose the path to a tool",
@@ -892,6 +951,7 @@
         "docs": "Feature docs",
         "agent": "Agent",
         "aidlc": "AI-DLC",
+        "plans": "Plans",
         "costRules": "Cost rules",
         "modelProfiles": "Model profiles"
       },
@@ -901,6 +961,9 @@
   },
   "config": {
     "loading": "Reading the AI-DLC configuration…",
+    "tabsLabel": "AI-DLC views",
+    "tabSettings": "Settings",
+    "frameSub": "Project settings · {project}",
     "harnessLabel": "Harness",
     "section": {
       "models": "Models and effort",
@@ -942,6 +1005,7 @@
     "empty": "No file is open. Pick a file in the tree, or Edit in the reader or the Features view.",
     "loading": "Loading the editor…",
     "tree": "The project's files",
+    "files": "Files",
     "treeTruncated": "The tree shows the first 20,000 files.",
     "unsaved": "unsaved changes",
     "close": "Close {file}",
@@ -1194,7 +1258,24 @@
     "kept": "Installed. The downloaded package is kept at",
     "relaunch": "Restart now",
     "upToDate": "You have the latest version.",
-    "confirmRestart": "An agent tab is working. Updating restarts the app and ends its terminal sessions. Update anyway?"
+    "confirmRestart": "An agent tab is working. Updating restarts the app and ends its terminal sessions. Update anyway?",
+    "dialogTitle": "Update",
+    "show": "Show",
+    "checking": "Checking for an update",
+    "checkingText": "Asking GitHub for the latest release of {repo}…",
+    "upToDateTitle": "Up to date",
+    "downloadTitle": "Downloading",
+    "passwordTitle": "Installing needs your password",
+    "readyTitle": "Ready to restart",
+    "errorTitle": "The update was stopped",
+    "whatToDo": "Try again in a while. If that does not help, download the release from GitHub and install it yourself.",
+    "retry": "Try again",
+    "busyWarn": "An agent tab is working. Updating restarts the app and ends its terminal.",
+    "installed": "Installed",
+    "latest": "Latest",
+    "checked": "Checked",
+    "source": "Source",
+    "footer": "{repo} · releases"
   },
   "tokens": {
     "title": "Live tokens",
@@ -1209,9 +1290,10 @@
     "open": "Live tokens, open the token detail"
   },
   "tokenDetail": {
-    "title": "Tokens · {name}",
+    "title": "Activity · {name}",
+    "activity": "Activity",
     "back": "‹ Back",
-    "openShort": "Tokens ›",
+    "openShort": "Activity ›",
     "overTime": "Tokens over time",
     "overTimeLabel": "Tokens over time, {elapsed}, {tokens} tokens, stacked by kind",
     "chartKeys": "Tokens over time. The arrow keys pick a reading, Esc hides it.",
@@ -1305,9 +1387,15 @@
     }
   },
   "aboutDialog": {
-    "exit": "EXIT",
-    "licenses": "LICENSES",
-    "licensesFailed": "The licences could not be opened: {error}"
+    "title": "About",
+    "licenses": "Licences",
+    "licensesFailed": "The licences could not be opened: {error}",
+    "version": "Version",
+    "patch": "Patch",
+    "platform": "Platform",
+    "build": "Build",
+    "madeBy": "Made by",
+    "repository": "Repository"
   },
   "menu": {
     "about": "About {app}",
@@ -1495,6 +1583,7 @@
       },
       "gateNote": "AI-DLC shows the gate again in the new session.",
       "waiting": "Waiting until the agent is idle…",
+      "parkSent": "AI-DLC was asked to park at its next safe point. Your choice goes once the agent stops…",
       "failed": {
         "notReady": "The new session did not start. Type /aidlc --resume in the terminal.",
         "notIdle": "The agent never went idle. Nothing was sent.",
@@ -1627,5 +1716,10 @@
       "newerVersionUnknown": "{file} was written by a newer version of the app and is not changed.",
       "writeFailed": "{file} could not be written: {reason}"
     }
+  },
+  "fold": {
+    "hide": "Fold the list away",
+    "show": "Show the list",
+    "showN": "Show the list ({n})"
   }
 }

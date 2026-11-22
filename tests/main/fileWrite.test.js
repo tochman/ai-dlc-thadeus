@@ -165,8 +165,8 @@ describe('writeAtomic (US-0506 u4 RD33)', () => {
   // US-0212 NFR1 adds costRules.js: it validates the space name, takes the file only from its target table and resolves it in the root.
   // US-0607 FR1.1 adds planningRecord.js: one file per project in the app's own userData folder, named by a hash of the root.
   // US-0608 D5 adds planningSync.js: it writes only feature-doc paths that validDocFile checked, its folder resolved in the root.
-  // US-1408 NFR3.4 adds projectFile.js: one fixed path, .thadeus/project.json, with lstat checks on both parts before the rename.
-  it('is imported only by fileWrite.js, agentHooks.js, tokenReadings.js, usageSnapshot.js, credentials.js, costRules.js, planningRecord.js, planningSync.js and projectFile.js (SD36)', () => {
+  // US-1408 NFR3.4 adds projectFile.js (.thadeus/project.json, lstat checks before the rename); US-0609 FR3.5 adds thadeusSync.js.
+  it('is imported only by fileWrite.js, agentHooks.js, tokenReadings.js, usageSnapshot.js, credentials.js, costRules.js, planningRecord.js, planningSync.js, projectFile.js and thadeusSync.js (SD36)', () => {
     const src = path.resolve(__dirname, '../../src');
     const users = readdirSync(src, { recursive: true })
       .filter((f) => /\.jsx?$/.test(f))
@@ -181,6 +181,7 @@ describe('writeAtomic (US-0506 u4 RD33)', () => {
       'main/planningRecord.js',
       'main/planningSync.js',
       'main/projectFile.js',
+      'main/thadeusSync.js',
       'main/tokenReadings.js',
       'main/usageSnapshot.js'
     ]);

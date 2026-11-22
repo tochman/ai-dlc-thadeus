@@ -3,7 +3,7 @@
 // No import of electron here: the terminal tabs and the settings view both use this module without the app.
 import { constants, promises as fs } from 'node:fs';
 import path from 'node:path';
-import { loginPath, runFixed } from './exec.js';
+import { loginPath, readLoginPath, refreshLoginPath, runFixed } from './exec.js';
 import { t } from '../shared/i18n.js';
 
 // opencode for its agent tabs, gh for the updater (US-0410 FR4.1, FR4.2), glab for GitLab merge requests (US-1201 AC-1).
@@ -56,10 +56,11 @@ async function isExecutable(file) {
 
 /**
  * The first executable named `name` in the login shell's PATH, or null (FR2.1). `exec` is injectable for tests;
- * loginPath falls back to the app's own PATH when the login shell cannot be read.
+ * loginPath falls back to the app's own PATH when the login shell cannot be read. `searchPath` is a PATH already
+ * read for this scan (US-0035 FR1.5).
  */
-export async function resolveOnPath(name, { exec } = {}) {
-  const dirs = (await loginPath(exec)).split(path.delimiter).filter(Boolean);
+export async function resolveOnPath(name, { exec, searchPath } = {}) {
+  const dirs = (searchPath ?? (await loginPath(exec))).split(path.delimiter).filter(Boolean);
   for (const dir of dirs) {
     const file = path.join(dir, name);
     if (await isExecutable(file)) return file;
@@ -70,12 +71,13 @@ export async function resolveOnPath(name, { exec } = {}) {
 /**
  * `<file> --version` with a fixed argument and no shell, within runFixed's 10 s timeout (FR2.1, C2).
  * Never throws: a tool that cannot answer comes back as not found with its reason (A3).
+ * `path` is the PATH a scan already read, so the check starts no second login-shell read (US-0035 FR1.5).
  * @returns {Promise<{found: boolean, version: string|null, error?: string}>}
  */
-export async function probeTool(file, { exec } = {}) {
+export async function probeTool(file, { exec, path } = {}) {
   let out;
   try {
-    out = String(await runFixed(file, ['--version'], { exec })).trim();
+    out = String(await runFixed(file, ['--version'], { exec, path })).trim();
   } catch (err) {
     return { found: false, version: null, error: t('errors.toolVersionFailed', { error: err.killed ? t('errors.timeout') : err.message }) };
   }
@@ -83,14 +85,19 @@ export async function probeTool(file, { exec } = {}) {
   return version ? { found: true, version } : { found: false, version: null, error: t('errors.toolNoVersion') };
 }
 
-/** One row of the Verktyg section: the saved path wins, the shell falls back to $SHELL, the rest to PATH (FR2.1). */
-async function toolRow(id, exec) {
+/**
+ * One row of the Verktyg section: the saved path wins, the shell falls back to $SHELL, the rest to PATH (FR2.1).
+ * A row looked up on a fallback PATH carries `pathFallback: true` (US-0035 FR1.5).
+ */
+async function toolRow(id, exec, read) {
   try {
     const saved = toolPaths[id];
-    const file = saved ?? (id === 'shell' ? defaultShell() : await resolveOnPath(id, { exec }));
+    const onPath = !saved && id !== 'shell';
+    const file = saved ?? (onPath ? await resolveOnPath(id, { exec, searchPath: read.path }) : defaultShell());
     const source = saved ? 'saved' : 'auto';
-    if (!file) return { id, path: null, source, found: false, version: null, error: t('errors.toolNotOnPath', { name: id }) };
-    return { id, path: file, source, ...(await probeTool(file, { exec })) };
+    const mark = onPath && read.fromFallback ? { pathFallback: true } : {};
+    if (!file) return { id, path: null, source, found: false, version: null, error: t('errors.toolNotOnPath', { name: id }), ...mark };
+    return { id, path: file, source, ...(await probeTool(file, { exec, path: read.path })), ...mark };
   } catch (err) {
     // A row never rejects: the view always gets every row to show (NFR4).
     return { id, path: null, source: 'auto', found: false, version: null, error: err.message };
@@ -100,11 +107,14 @@ async function toolRow(id, exec) {
 /**
  * The tools with their path, whether it was chosen or found automatically, and the version they report.
  * All run in parallel and never reject (FR2.1, NFR4; five tools since US-0410 FR4.1). `exec` is injectable for tests.
+ * Each scan reads the login shell's PATH again, once, for every row and its `--version` check (US-0035 FR1.2, FR1.5).
  * @returns {Promise<Array<{id: string, path: string|null, source: 'saved'|'auto', found: boolean,
- *   version: string|null, error?: string}>>}
+ *   version: string|null, error?: string, pathFallback?: true}>>}
  */
-export function getTools({ exec } = {}) {
-  return Promise.all(TOOL_IDS.map((id) => toolRow(id, exec)));
+export async function getTools({ exec } = {}) {
+  refreshLoginPath();
+  const read = await readLoginPath(exec);
+  return Promise.all(TOOL_IDS.map((id) => toolRow(id, exec, read)));
 }
 
 /**

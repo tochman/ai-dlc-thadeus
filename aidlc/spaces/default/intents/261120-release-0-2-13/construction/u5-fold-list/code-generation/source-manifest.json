@@ -1,0 +1,22 @@
+{
+  "stage": "code-generation",
+  "unit": "u5-fold-list",
+  "version": 1,
+  "writes": [
+    { "path": "src/renderer/useFold.js" },
+    { "path": "src/main/settings.js" },
+    { "path": "src/renderer/ProjectView.jsx" },
+    { "path": "src/renderer/FeaturesView.jsx" },
+    { "path": "src/renderer/editor/FileTree.jsx" },
+    { "path": "src/renderer/theme.css" },
+    { "path": "src/shared/locales/sv.json" },
+    { "path": "src/shared/locales/en.json" },
+    { "path": "tests/renderer/useFold.test.jsx" },
+    { "path": "tests/main/settings.test.js" },
+    { "path": "tests/renderer/ProjectView.test.jsx" },
+    { "path": "tests/renderer/FeaturesView.test.jsx" },
+    { "path": "tests/renderer/EditorPanel.test.jsx" },
+    { "path": "docs/FEATURES.md" },
+    { "path": "docs/features/epic-04-branding-and-desktop.md" }
+  ]
+}

@@ -19,7 +19,9 @@ export const COST_RULES_PACK = {
     'ALWAYS report back from an agent in a few lines, without file dumps.',
     'NEVER read `node_modules`, lock files, `dist`/`build` output or large logs.',
     // US-0032 AC1: one committer for feature docs on main (the app, US-0608); story branches commit their own.
-    'On `main`, NEVER commit `docs/FEATURES.md`, `docs/features/` or `docs/releases/`; THADEUS commits and pushes them.'
+    'On `main`, NEVER commit `docs/FEATURES.md`, `docs/features/` or `docs/releases/`; THADEUS commits and pushes them.',
+    // US-0609 FR3.7: the app's own data reaches every clone.
+    '`.thadeus/` is committed and never git-ignored; THADEUS commits and pushes it.'
   ],
   'phases/construction': ['ALWAYS run only the test being worked on during the TDD loop; run the full suite once before Build and Test is approved.']
 };
