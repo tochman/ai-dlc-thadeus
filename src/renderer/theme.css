@@ -815,11 +815,10 @@ button.lcars-nb:hover:not(:disabled), a.lcars-nb:hover { filter: brightness(1.15
 .list-fold-toggle[aria-expanded='false']::before { content: '\203A'; } /* › folded: bring it back */
 .list-fold-toggle:hover { filter: brightness(1.15); }
 .list-fold-toggle:focus-visible { outline: 2px solid var(--steel-light); outline-offset: 2px; }
-.is-folded { width: 28px; flex: 0 0 28px; min-width: 28px; padding: 0; overflow: hidden; cursor: pointer; background: var(--slate-2); border-radius: 0 14px 14px 0; }
-.is-folded > :not(.list-fold-toggle) { display: none; }
-.is-folded:hover { background: var(--slate-3); }
-.editor-view:has(> .file-tree.is-folded) { grid-template-columns: 28px 1fr; }
-.file-tree > .list-fold-toggle { display: block; margin: 0 0 4px auto; }
+/* The old strip, for a column not yet on ListDrawer; never for the drawer, which has its own folded stack. */
+.is-folded:not(.lcars-drawer) { width: 28px; flex: 0 0 28px; min-width: 28px; padding: 0; overflow: hidden; cursor: pointer; background: var(--slate-2); border-radius: 0 14px 14px 0; }
+.is-folded:not(.lcars-drawer) > :not(.list-fold-toggle) { display: none; }
+.is-folded:not(.lcars-drawer):hover { background: var(--slate-3); }
 :root[data-motion='full'] .sidebar, :root[data-motion='full'] .editor-view { transition: flex-basis 200ms ease-out, min-width 200ms ease-out, width 200ms ease-out, grid-template-columns 200ms ease-out; }
 @media (prefers-reduced-motion: reduce) {
   .sidebar, .editor-view, .is-folded { transition: none; }
@@ -1407,8 +1406,11 @@ a.md-link:hover { color: var(--steel-light); }
 .plans-list p { margin: 2px 0; }
 .plans-stage-list ul { margin: 0; padding-left: 18px; columns: 2; }
 /* The editor (EPIC-10 US-1001): the file tree beside the editor tabs. */
-.editor-view { flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(180px, 260px) 1fr; gap: var(--gap); }
-.file-tree { overflow: auto; background: var(--slate-1); padding: 6px 4px; font-size: 13px; }
+/* US-0417: the tree is a list drawer (FILES) on plain black; the column follows the drawer (260 px open, the 30 px
+   stack folded). */
+.editor-view { flex: 1; min-height: 0; display: grid; grid-template-columns: auto minmax(0, 1fr); gap: var(--gap-l); }
+.editor-view > .file-tree { min-height: 0; display: flex; overflow: hidden; padding: 0; background: none; border: 0; font-size: 13px; }
+.editor-view > .file-tree > .lcars-drawer { --lw: 260px; }
 .file-tree-list { list-style: none; margin: 0; padding-left: 12px; }
 .file-tree > .file-tree-list { padding-left: 0; }
 .file-tree-dir, .file-tree-file { background: none; border: 0; color: var(--text-2); font: inherit; text-align: left; padding: 1px 2px; cursor: pointer; width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -1434,6 +1436,35 @@ a.md-link:hover { color: var(--steel-light); }
 /* Releases (US-0603): the Epics | Releases switch, the story's release picker and the stories under a release. */
 .features-release { display: flex; flex-wrap: wrap; gap: var(--gap); align-items: center; margin: 0 0 8px; }
 .features-release-stories { list-style: none; margin: 6px 0 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+
+/* US-0417 Features › Epics and Releases: each list column is a ListDrawer (EPICS, RELEASES) in an aside; rows are square
+   blocks with the state strip (Shape rule), selected by brightness; filters are square bars, not pills. */
+.features-list { display: flex; min-height: 0; flex: none; }
+.features-releases { flex: 1 1 auto; min-width: 0; }
+.features-releases > .lcars-drawer:not(.is-folded) { flex: 1 1 auto; width: auto; }
+.features-releases .lcars-drawer-content { width: 100%; }
+.lcars-sect-meta { align-self: flex-end; font-size: 13px; line-height: 1; color: var(--muted); text-transform: uppercase; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.features-list .filters { margin-bottom: var(--gap-m); }
+.features-list .filters .field { flex: 1 1 120px; margin: 0; }
+.features-list .filters .field:has(input[type='search']) { flex-basis: 100%; }
+.features-view .filters .field-label { font-size: 11px; }
+.features-view input[type='search'] { border-left-color: var(--slate-4); }
+.features-view .lcars-select { width: 100%; min-height: 32px; border-radius: 0; border-left-color: var(--slate-4); }
+.features-view .lcars-select::picker-icon { border-radius: 0; background: var(--slate-3); color: var(--text); }
+.features-view .lcars-select::picker(select) { border-radius: 0; }
+.filters-count { font-size: 13px; color: var(--steel-text); text-transform: uppercase; font-variant-numeric: tabular-nums; }
+.features-row { width: calc(100% - 11px); min-height: 52px; padding: 6px 10px 5px; text-align: left; text-transform: none; justify-content: stretch; }
+.features-row > .lcars-nb-label { width: 100%; display: flex; flex-direction: column; gap: 2px; }
+.features-row .intent-slug { font-size: 17px; }
+.features-row .intent-row-meta { color: var(--text-2); }
+.features-row.is-sel .intent-slug, .features-row.is-sel .intent-row-meta, .features-row.is-sel .muted { color: var(--on-light); }
+.features-row.is-sel .tag { color: var(--on-light); background: none; border-color: var(--on-light); }
+.features-rel-row { position: relative; margin-left: 11px; padding: 8px 12px; display: flex; flex-direction: column; gap: 4px; background: var(--slate-1); }
+.features-rel-row::before { content: ''; position: absolute; left: -11px; top: 0; bottom: 0; width: 5px; background: var(--strip, transparent); }
+.features-rel-row .intent-slug { font-variant-numeric: tabular-nums; }
+.features-planning { flex-direction: column; align-items: stretch; margin-bottom: var(--gap-l); }
+.features-planning > .lcars-sect { margin-bottom: 0; }
+.features-planning .lcars-pill { align-self: flex-start; }
 
 .settings-dialog {
   min-width: min(520px, 90vw);

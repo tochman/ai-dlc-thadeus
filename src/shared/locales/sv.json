@@ -955,6 +955,7 @@
     "empty": "Ingen fil är öppen. Välj en fil i trädet, eller Redigera i läsaren eller Features-vyn.",
     "loading": "Laddar editorn…",
     "tree": "Projektets filer",
+    "files": "Filer",
     "treeTruncated": "Trädet visar de första 20 000 filerna.",
     "unsaved": "osparade ändringar",
     "close": "Stäng {file}",
