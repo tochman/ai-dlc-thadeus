@@ -45,7 +45,7 @@ const GAP = 4;
 const GROUP_W = 2 * BAR_W + 3 * GAP;
 const CHART_H = 90;
 
-/** Finished intents (steel) and stories (amber) per period as plain SVG bars, the average intent length as a step line. */
+/** Finished intents (steel) and stories (light steel) per period as plain SVG bars, the average intent length as a step line. */
 function VelocityChart({ buckets }) {
   const { t, dur } = useText();
   const maxCount = Math.max(1, ...buckets.flatMap((b) => [b.intents, b.stories]));

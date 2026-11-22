@@ -9,7 +9,7 @@ import DocsDialog from './DocsDialog.jsx';
 import AboutDialog from './AboutDialog.jsx';
 import AgentDialog from './AgentDialog.jsx';
 import UpdateNotice from './UpdateNotice.jsx';
-import { Bar, Frame } from './Lcars.jsx';
+import { Block, Frame, Pill, SegBar, useEntrance } from './Lcars.jsx';
 import Tooltip from './Tooltip.jsx';
 import { APP_NAME } from '../shared/appName.js';
 import { selectableHarness } from '../shared/harnesses.js';
@@ -37,19 +37,24 @@ export function motionMode(saved) {
   return window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches ? 'reduced' : 'full';
 }
 
-/** A labelled block in the left arm. The current one is light with a steel tab, as in the mockup. */
-function ArmBlock({ current = false, tone = 'mid', children, ...rest }) {
-  const block = (
-    <button className={`lcars-block lcars-block--${current ? 'light' : tone}`} aria-current={current ? 'page' : undefined} {...rest}>
-      {children}
-    </button>
-  );
-  if (!current) return block;
+/**
+ * A labelled block in the left arm (US-0417): a square block with its state strip at the left edge and a figure top
+ * left. The current one is light with black text (selection is brightness).
+ */
+function ArmBlock({ current = false, tone = 'mid', size, figure, strip, children, ...rest }) {
   return (
-    <div className="lcars-tabbed">
-      <span className="lcars-tab" aria-hidden="true" />
-      {block}
-    </div>
+    <Block
+      as="button"
+      tone={current || tone === 'mid' ? undefined : tone}
+      size={size}
+      selected={current}
+      figure={figure}
+      strip={strip}
+      aria-current={current ? 'page' : undefined}
+      {...rest}
+    >
+      {children}
+    </Block>
   );
 }
 
@@ -57,8 +62,8 @@ function ArmBlock({ current = false, tone = 'mid', children, ...rest }) {
 function ArmSubtabs({ label, ids, current, labelOf, onPick, testIdPrefix }) {
   return (
     <div className="arm-subtabs" role="group" aria-label={label}>
-      {ids.map((id) => (
-        <ArmBlock key={id} current={current === id} onClick={() => onPick(id)} data-testid={`${testIdPrefix}-${id}`}>
+      {ids.map((id, i) => (
+        <ArmBlock key={id} size="sub" tone={i % 2 ? 'dark' : 'mid'} current={current === id} onClick={() => onPick(id)} data-testid={`${testIdPrefix}-${id}`}>
           {labelOf(id)}
         </ArmBlock>
       ))}
@@ -484,41 +489,38 @@ export default function App() {
     bridge.toggleFullscreen().catch((err) => setError(t('app.fullscreenFailed', { error: errorText(err) })));
   }
 
+  // US-0417: Esc leaves Settings wherever the focus is, back to the view shown before; an open dialog keeps its Esc.
+  useEffect(() => {
+    if (!settingsView) return undefined;
+    const onKey = (e) => {
+      if (e.key !== 'Escape' || e.defaultPrevented || document.querySelector('dialog[open]')) return;
+      setSettingsView(false);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [settingsView]);
+
+  // US-0417: the shared entrance runs each time a view is entered (a project, a view or Settings), never on a refresh.
+  const entering = useEntrance(settingsView ? 'settings' : `${activeId}:${view}`);
+  const backLabel = active ? t('app.backTo', { view: viewLabel }) : t('app.back');
+
   return (
-    <div className="app">
+    <div className={`app${fullscreen ? ' is-fullscreen' : ''}`}>
       <Splash ready={restored} />
       <header className="app-header">
-        <div className="app-brand">
+        {/* US-0417: today's corner block in slate, the amber mark and the name (the mark's one home). */}
+        <div className="app-brand" data-testid="app-brand">
           <AuctumMark size={46} className="app-mark" />
           <span className="app-brand-text">{APP_NAME}</span>
         </div>
         <div className="app-header-main">
-          {/* The fullscreen toggle sits in the bar's light segment, as the quick commands sit in the terminal's bar (US-0012). */}
-          <Bar
-            segs={[
-              ['slate-4', 3],
-              ['steel-deep', 90],
-              ['slate-3', 1],
-              [
-                fullscreen ? 'steel' : 'slate-5',
-                54,
-                <button className="lcars-bar-btn" aria-pressed={fullscreen} onClick={toggleFullscreen} data-testid="fullscreen-toggle">
-                  {fullscreen ? t('app.leaveFullscreen') : t('app.fullscreen')}
-                </button>
-              ]
-            ]}
-          />
-          <div className="app-header-row">
-            {branch && (
-              <>
-                <span className="app-meta-label">{t('app.branch')}</span>
-                <Tooltip text={branch} focusable>
-                  <span className="app-branch">{branch === 'HEAD' ? t('app.detached') : branch}</span>
-                </Tooltip>
-              </>
-            )}
-            <h1 className="app-title">
-              {settingsView ? (
+          {/* US-0417: the window title heads the 30 px bar, the branch is its sub-label, Full screen its last segment;
+              while Settings is open its way back sits before it (US-0012: controls live in the bar). */}
+          <SegBar
+            as="h1"
+            level="window"
+            title={
+              settingsView ? (
                 t('app.settings')
               ) : active ? (
                 <>
@@ -530,13 +532,32 @@ export default function App() {
                 </>
               ) : (
                 t('app.noProject')
-              )}
-            </h1>
-            <span className="app-header-deco" aria-hidden="true">
-              <span />
-              <span />
-            </span>
-          </div>
+              )
+            }
+            sub={
+              branch && (
+                <>
+                  <span className="app-meta-label">{t('app.branch')}</span>{' '}
+                  <Tooltip text={branch} focusable>
+                    <span className="app-branch">{branch === 'HEAD' ? t('app.detached') : branch}</span>
+                  </Tooltip>
+                </>
+              )
+            }
+            trailing={
+              <>
+                {settingsView && (
+                  <Pill onClick={() => setSettingsView(false)} data-testid="settings-back">
+                    {backLabel}
+                  </Pill>
+                )}
+                <Pill tone={fullscreen ? 'notice' : undefined} aria-pressed={fullscreen} onClick={toggleFullscreen} data-testid="fullscreen-toggle">
+                  {fullscreen ? t('app.leaveFullscreen') : t('app.fullscreen')}
+                </Pill>
+              </>
+            }
+          />
+          <span className="app-title-rule" aria-hidden="true" />
         </div>
       </header>
 
@@ -547,7 +568,7 @@ export default function App() {
             <div key={tab.projectId} className={`arm-project ${on ? 'is-active' : ''}`}>
               <Tooltip text={tab.root}>
                 <button
-                  className={`lcars-block ${on ? 'lcars-block--active' : 'lcars-block--dark'}`}
+                  className={`lcars-block ${on ? 'lcars-block--light' : 'lcars-block--dark'}`}
                   aria-current={on ? 'true' : undefined}
                   onClick={() => setActiveId(tab.projectId)}
                   data-testid="project-tabs-tab"
@@ -586,7 +607,14 @@ export default function App() {
         <span className="arm-spacer" aria-hidden="true" />
         {active && (
           <>
-            <ArmBlock current={!settingsView && view === 'intents'} onClick={() => showView('intents')} data-testid="project-view-switch-intents">
+            {/* US-0417: the intent count as the block's figure, a live strip while an agent works. */}
+            <ArmBlock
+              current={!settingsView && view === 'intents'}
+              figure={isAidlc ? activeMeta.intentCount : undefined}
+              strip={activeMeta.busy ? 'live' : undefined}
+              onClick={() => showView('intents')}
+              data-testid="project-view-switch-intents"
+            >
               {firstLabel}
             </ArmBlock>
             {showFeatures && (
@@ -656,8 +684,8 @@ export default function App() {
             testIdPrefix="app-settings-tab"
           />
         )}
+        {/* US-0417: the mark has one home (the brand corner), so the arm's foot block carries only its label. */}
         <div className="arm-foot">
-          <AuctumMark size={128} className="arm-foot-mark" decorative />
           <span className="arm-foot-label">{isAidlc ? t('app.intentCount', { n: activeMeta.intentCount ?? 0 }) : 'Auctum'}</span>
         </div>
       </nav>
@@ -671,7 +699,7 @@ export default function App() {
         </div>
       )}
 
-      <main className="app-main">
+      <main className={`app-main${entering ? ' is-entering' : ''}`}>
         {tabs.length === 0 && restored && !settingsView && (
           <div className="empty-state">
             <Frame>

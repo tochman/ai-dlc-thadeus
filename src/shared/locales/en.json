@@ -64,6 +64,8 @@
     "emptyText": "Open a project folder that contains {path}.",
     "openProject": "Open project",
     "pickFolder": "Open project folder",
+    "backTo": "‹ Back to {view}",
+    "back": "‹ Back",
     "question": {
       "waiting": "AI-DLC is waiting for your answer",
       "stillWaiting": "Still waiting for your answer",
@@ -1624,6 +1626,7 @@
   },
   "fold": {
     "hide": "Fold the list away",
-    "show": "Show the list"
+    "show": "Show the list",
+    "showN": "Show the list ({n})"
   }
 }

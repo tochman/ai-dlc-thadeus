@@ -1,9 +1,36 @@
 /* Living LCARS (EPIC-04 US-0402, US-0403). The tokens are the approved mockup's (Designsystem), and every
    colour in this file and in the components comes from them (FR1.2). Inspired by the style only: no ships,
    names, logos or sounds from Star Trek (NFR4); the only mark is the owner's Auctum mark (AuctumMark.jsx).
-   Slate carries the structure, steel blue means active or in progress, coral means "needs you" or failed,
-   amber is the Auctum mark, the primary action and the cursor (FR1.3). Light blocks have black text and
-   dark blocks light text; every pair meets WCAG AA (NFR1). */
+   Light blocks have black text and dark blocks light text; every pair meets WCAG AA (NFR1).
+
+   US-0417: the LCARS language, as approved in the mockup's rules panel. Every view follows these rules.
+   - Containment: a child never extends past its parent's outline. A segment takes its bar's thickness; a block takes
+     its column's width; nothing overlaps or touches a frame line, hairline, elbow curve or another element. Text stays
+     inside its own element.
+   - No local bulges: a control that needs more room makes the whole bar that thick along its length, or it lives
+     outside the bar as its own block.
+   - Gaps, not overlaps: small 6 px (--gap) between segments, blocks and strips; medium 12 px (--gap-m) for data-frame
+     hairlines; large 18 px (--gap-l) between columns and panels.
+   - One scale of bars: thin 18, medium 30, large 42 (frame title bars), wide 60, thick 150 (--bar-*).
+   - Curves follow curves: a round elbow uses circular arcs only, scaled from the reference elbow: outer radius =
+     0.7 x arm width (--elbow-outer), inner radius = 1.4 x bar thickness (--elbow-inner), at most half the arm width.
+     Hairlines are concentric at a constant offset (6 px on the window, 12 px on data frames) and never fade: full
+     opacity end to end, ending at another frame element or with a small square cap. No ellipses.
+   - Titles: a title's cap height equals the bar it heads, flush with its top and bottom, the standard gap after the
+     elbow. Hierarchy: frame title 49 px on a 42 px bar > window title 35 px on a 30 px bar > section heading 21 px on
+     an 18 px row (--title-*; Antonio's cap height is 0.859 em). No title is larger than its level allows.
+   - Readouts never look like controls: a read-only meter is a filled bar ending flat with a thin end tick at most; no
+     knob, thumb or handle, no hover or pointer change; the tick scale stays faint.
+   - Colour rule: structure is slate and grey (frames, bars, nav blocks, labels); live values are steel (figures, the
+     running stage, the live dot); the key value is white (one per readout: the total, the top row); coral is for
+     alert only (missing solid, update needed soft); selection is brightness (a selected block turns light slate with
+     black text); amber is the Auctum mark and the keyboard focus ring, nothing else.
+   - Shape rule: pills are actions; square blocks are navigation and readouts. A thin strip at a block's left edge
+     carries its state: steel live, coral alert, outline parked, grey done. No boxed cards: content floats on black
+     inside the frames.
+   - Entrance: one shared sequence for every view (useEntrance in Lcars.jsx puts .is-entering on the view's root):
+     frame slides in, the elbow band wipes, bars draw out, blocks slide in in turn, content rises, meters grow. It
+     ends by ~0.8 s, animates transform and opacity only, runs only when a view is entered, and only with full motion. */
 :root {
   --bg: #05060a;
   --slate-0: #1a1f2d; /* disabled block */
@@ -51,6 +78,22 @@
   --bar: 18px;
   --frame: 14px;
   --gap: 6px;
+  /* US-0417: one spacing scale, one set of bar thicknesses, the elbow ratios, the title sizes, the motion. */
+  --gap-m: 12px;
+  --gap-l: 18px;
+  --bar-thin: 18px;
+  --bar-med: 30px;
+  --bar-large: 42px;
+  --bar-wide: 60px;
+  --bar-thick: 150px;
+  --elbow-outer: 0.7;
+  --elbow-inner: 1.4;
+  --title-window: 35px;
+  --title-frame: 49px;
+  --title-section: 21px;
+  --e-dur: 300ms;
+  --e-ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --e-stagger: 25ms;
   --font-head: 'Antonio', 'Arial Narrow', sans-serif;
   --font-read: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif;
   --font-mono: ui-monospace, 'SF Mono', Menlo, monospace;
@@ -114,7 +157,7 @@ button:disabled { cursor: default; }
 }
 .btn:hover:not(:disabled) { filter: brightness(1.15); }
 .btn:disabled { background: var(--slate-0); color: var(--slate-4); }
-.btn-accent { background: var(--amber); font-weight: 600; border-radius: 16px 0 0 16px; padding-left: 16px; }
+.btn-accent { background: var(--slate-5); font-weight: 600; border-radius: 16px 0 0 16px; padding-left: 16px; }
 .btn-quiet { background: var(--slate-2); color: var(--text); } /* a dark LCARS block, not an outline (US-0012) */
 .link { background: none; border: 0; padding: 2px 0; color: var(--steel-text); text-align: left; text-transform: none; }
 .link:hover { color: var(--steel-light); text-decoration: underline; }
@@ -136,7 +179,7 @@ input[type='search']:focus-visible, input[type='text']:focus-visible, input[type
 /* The cost rule lines (US-0212): one rule per line, full width. */
 .cost-rules-lines { width: 100%; resize: vertical; font-family: var(--mono, monospace); }
 input[type='text'][aria-invalid='true'] { border-left-color: var(--coral); }
-/* Every <select> carries .lcars-select: an LCARS bar with an amber arrow cap. Customizable select (appearance:
+/* Every <select> carries .lcars-select: an LCARS bar with a light arrow cap (US-0417). Customizable select (appearance:
    base-select, Chromium 135+) styles the open list too; an older engine keeps its native popup. Amber with black
    text is about 11:1 (AA). */
 .lcars-select, .lcars-select::picker(select) { appearance: base-select; }
@@ -159,7 +202,7 @@ input[type='text'][aria-invalid='true'] { border-left-color: var(--coral); }
 }
 .lcars-select:hover:not(:disabled) { background: var(--slate-2); }
 .lcars-select:focus-visible { outline: 2px solid var(--amber); outline-offset: 2px; }
-.lcars-select:open { border-left-color: var(--amber); }
+.lcars-select:open { border-left-color: var(--steel); }
 .lcars-select:disabled { background: var(--slate-0); color: var(--slate-4); border-left-color: var(--slate-3); cursor: default; }
 .lcars-select::picker-icon {
   content: '▾';
@@ -168,7 +211,7 @@ input[type='text'][aria-invalid='true'] { border-left-color: var(--coral); }
   width: 22px;
   height: 22px;
   border-radius: 0 11px 11px 0;
-  background: var(--amber);
+  background: var(--slate-5);
   color: var(--on-light);
   font-size: 12px;
   transition: rotate 150ms ease-out;
@@ -188,7 +231,7 @@ input[type='text'][aria-invalid='true'] { border-left-color: var(--coral); }
 }
 .lcars-select option { display: flex; gap: 8px; align-items: center; padding: 6px 14px 6px 10px; font: 14px var(--font-head); letter-spacing: 0.03em; text-transform: uppercase; }
 .lcars-select option:hover, .lcars-select option:focus-visible { background: var(--steel-deep); outline: none; }
-.lcars-select option:checked { background: var(--amber); color: var(--on-light); }
+.lcars-select option:checked { background: var(--slate-5); color: var(--on-light); }
 .lcars-select option:disabled { color: var(--slate-4); }
 .lcars-select option::checkmark { content: '●'; font-size: 10px; }
 input[type='search']::placeholder { color: var(--muted); }
@@ -254,11 +297,6 @@ button.lcars-block:hover:not(:disabled), label.lcars-block:hover { filter: brigh
 .lcars-block:disabled, .lcars-block--disabled { background: var(--slate-0); color: var(--slate-4); filter: none; }
 .lcars-label { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; overflow-wrap: anywhere; }
 
-/* A block with its 6 px status tab on the left. */
-.lcars-tabbed { display: flex; gap: 5px; flex-shrink: 0; }
-.lcars-tabbed > .lcars-block { flex: 1; }
-.lcars-tab { width: var(--gap); flex-shrink: 0; background: var(--steel); }
-.lcars-tab--attn { background: var(--coral); }
 
 /* Segmented bar: the gaps are 6 px of background. Segments draw out when they mount (FR4.1, ≤ 600 ms). */
 .lcars-bar { display: flex; gap: var(--gap); height: var(--bar); flex-shrink: 0; }
@@ -272,7 +310,6 @@ button.lcars-block:hover:not(:disabled), label.lcars-block:hover { filter: brigh
 .lcars-seg--slate-5 { background: var(--slate-5); }
 .lcars-seg--steel-deep { background: var(--steel-deep); }
 .lcars-seg--steel { background: var(--steel); }
-.lcars-seg--amber { background: var(--amber); }
 
 /* Inner nested elbow frame around the content: the inner radius follows from the border technique. */
 .lcars-frame {
@@ -361,6 +398,251 @@ button.lcars-chip:hover { border-color: var(--steel-text); color: var(--steel-li
 .lcars-heading .lcars-select { min-height: 24px; font-size: 12px; }
 .toggle-arrow { color: var(--muted); font-size: 12px; }
 
+/* ---------- US-0417 shared pieces (Lcars.jsx); the rules are at the top of this file ---------- */
+
+/* Round elbow: one element, the outer arc from --elbow-ro, the inner black cut by ::after with --elbow-ri. */
+.lcars-elbow {
+  position: relative;
+  width: calc(var(--elbow-arm) + var(--elbow-ri));
+  height: calc(var(--elbow-bar) + max(var(--elbow-ri), var(--elbow-ro) - var(--elbow-bar)));
+  flex-shrink: 0;
+  background: var(--slate-4);
+}
+.lcars-elbow::after { content: ''; position: absolute; left: var(--elbow-arm); right: 0; background: var(--bg); }
+.lcars-elbow--top { border-top-left-radius: var(--elbow-ro); }
+.lcars-elbow--top::after { top: var(--elbow-bar); bottom: 0; border-top-left-radius: var(--elbow-ri); }
+.lcars-elbow--bottom { border-bottom-left-radius: var(--elbow-ro); }
+.lcars-elbow--bottom::after { top: 0; bottom: var(--elbow-bar); border-bottom-left-radius: var(--elbow-ri); }
+
+/* Pills: actions only. As tall as the bar they end, or 30 px on their own. */
+.lcars-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  flex-shrink: 0;
+  height: var(--bar-med);
+  padding: 0 16px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--slate-4);
+  color: var(--on-light);
+  font: 600 14px/1 var(--font-head);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.lcars-pill:hover:not(:disabled) { filter: brightness(1.15); }
+.lcars-pill:disabled { background: var(--slate-0); color: var(--slate-4); }
+.lcars-pill--primary { background: var(--slate-5); }
+.lcars-pill--quiet { background: none; border: 1px solid var(--slate-4); color: var(--text-2); font-weight: 400; }
+.lcars-pill--alert { background: var(--coral); }
+.lcars-pill--notice { background: var(--steel); }
+
+/* Segmented title bar: the title's cap height is the bar's thickness, flush with its segments (text-box trims the
+   line box to cap height and baseline). */
+.lcars-segbar { display: flex; gap: var(--gap); align-items: stretch; min-width: 0; height: var(--bar-large); flex-shrink: 0; }
+.lcars-segbar--window { height: var(--bar-med); }
+.lcars-segbar--section { height: var(--bar-thin); }
+.lcars-title {
+  flex: 0 1 auto;
+  min-width: 0;
+  margin: 0;
+  padding: 0 var(--gap) 0 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-box: trim-both cap alphabetic;
+  font: 600 var(--title-frame) / 1 var(--font-head);
+  letter-spacing: 0.02em;
+  color: var(--steel);
+  text-transform: uppercase;
+}
+.lcars-segbar--window .lcars-title { font-size: var(--title-window); }
+.lcars-segbar--section .lcars-title, .lcars-title--section { font-size: var(--title-section); letter-spacing: 0.04em; }
+.lcars-sseg { display: block; flex: 1 1 24px; min-width: 12px; background: var(--slate-4); }
+.lcars-sseg--fix { flex: 0 0 40px; }
+.lcars-sseg--steel { background: var(--steel-deep); }
+.lcars-sseg--deep { background: var(--slate-2); }
+.lcars-sseg--cap { flex: 0 0 30px; border-radius: 0 999px 999px 0; background: var(--steel-deep); }
+/* A dark sub-label inside the bar, never taller than it. */
+.lcars-seg-lab {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 0 1 auto;
+  min-width: 0;
+  padding: 0 10px;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  background: var(--slate-3);
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.lcars-segbar .lcars-pill { height: auto; padding: 0 16px; font-size: 13px; }
+.lcars-segbar--frame .lcars-pill { font-size: 15px; padding: 0 18px; }
+
+/* Hairlines: 1 px, full opacity end to end. */
+.lcars-hairline { display: block; height: 1px; background: var(--slate-3); }
+.lcars-hairline--v { width: 1px; height: auto; align-self: stretch; }
+
+/* Square block: navigation and readouts. Label bottom right, figure top left, state strip in the 11 px lane on the
+   left (5 px strip, one small gap). Selection is brightness. */
+.lcars-nb {
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  justify-content: flex-end;
+  flex-shrink: 0;
+  min-width: 0;
+  min-height: 42px;
+  margin-left: 11px;
+  padding: 0 10px 5px;
+  border: 0;
+  border-radius: 0;
+  background: var(--slate-3);
+  color: var(--text);
+  font: 400 16px/1.1 var(--font-head);
+  letter-spacing: 0.03em;
+  text-align: right;
+  text-transform: uppercase;
+  text-decoration: none;
+  overflow-wrap: anywhere;
+  hyphens: auto;
+}
+.lcars-nb::before { content: ''; position: absolute; left: -11px; top: 0; bottom: 0; width: 5px; background: var(--strip, transparent); }
+button.lcars-nb:hover:not(:disabled), a.lcars-nb:hover { filter: brightness(1.15); }
+.lcars-nb--dark, .lcars-nb--deep { background: var(--slate-2); color: var(--text-2); }
+.lcars-nb--mid { background: var(--slate-4); color: var(--on-light); }
+.lcars-nb--steel { background: var(--steel-deep); color: var(--text); }
+.lcars-nb.is-sel, .lcars-nb[aria-current='page'] { background: var(--slate-5); color: var(--on-light); font-weight: 600; }
+.lcars-nb:disabled { background: var(--slate-0); color: var(--slate-4); filter: none; }
+.lcars-nb--sm { min-height: 32px; padding-bottom: 4px; font-size: 14px; }
+.lcars-nb--sub { min-height: 32px; margin-left: 27px; padding-bottom: 4px; font-size: 13px; }
+.lcars-nb--sub::before { left: -11px; }
+.lcars-nb-fig { position: absolute; left: 8px; top: 4px; font-size: 13px; font-weight: 400; color: var(--steel-text); font-variant-numeric: tabular-nums; }
+.lcars-nb.is-sel .lcars-nb-fig, .lcars-nb[aria-current='page'] .lcars-nb-fig { color: var(--slate-1); }
+.lcars-nb-label { min-width: 0; overflow-wrap: anywhere; }
+.lcars-strip--live { --strip: var(--steel); }
+.lcars-strip--alert { --strip: var(--coral); }
+.lcars-strip--quiet { --strip: var(--slate-3); }
+.lcars-strip--done { --strip: var(--slate-5); }
+.lcars-strip--parked::before { background: none; border: 1px solid var(--slate-5); }
+
+/* Readout table: tabular figures, a square legend key, three brightness levels (white key / steel live / grey). */
+.lcars-rt { width: 100%; border-collapse: collapse; font-size: 15px; font-variant-numeric: tabular-nums; }
+.lcars-rt th { padding: 0 8px 4px 0; text-align: left; font-weight: 400; font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+.lcars-rt td { padding: 3px 8px 3px 0; color: var(--text-2); white-space: nowrap; }
+.lcars-rt .is-right { text-align: right; }
+.lcars-rt td.is-value { color: var(--steel-text); }
+.lcars-rt tr.is-top td.is-value, .lcars-rt tr.is-total td { color: var(--white); }
+.lcars-rt tr.is-total td { padding-top: 6px; border-top: 1px solid var(--slate-3); font-weight: 600; }
+.lcars-key { display: inline-block; width: 10px; height: 10px; margin-right: 8px; background: var(--steel); }
+.lcars-key--white { background: var(--white); }
+.lcars-key--light { background: var(--steel-light); }
+.lcars-key--mid { background: var(--steel-mid); }
+.lcars-key--deep { background: var(--steel-deep); }
+.lcars-key--slate { background: var(--slate-4); }
+.lcars-key--outline { background: none; border: 1px solid var(--slate-4); }
+
+/* Read-only meters: a fill that ends flat with a thin tick; no knob, no hover, no pointer. */
+.lcars-meter { position: relative; height: 14px; cursor: default; }
+.lcars-meter-rail { position: absolute; left: 0; right: 0; top: 3px; height: 8px; background: var(--slate-1); }
+.lcars-meter-fill { position: absolute; left: 0; top: 3px; height: 8px; background: var(--steel-mid); }
+.lcars-meter-tick { position: absolute; top: 0; width: 2px; height: 14px; margin-left: -1px; background: var(--steel-light); }
+.lcars-segmeter { display: flex; gap: 3px; height: 14px; cursor: default; }
+.lcars-segmeter span { flex: 1; background: var(--slate-1); }
+.lcars-segmeter .is-live { background: var(--steel); }
+.lcars-segmeter .is-mid { background: var(--steel-mid); }
+.lcars-segmeter .is-deep { background: var(--steel-deep); }
+.lcars-segmeter .is-key { background: var(--white); }
+.lcars-segmeter .is-done { background: var(--slate-5); }
+
+/* Section heading row: the title on the 18 px row, a rule to the controls, the drawer toggle last. Wraps rather
+   than crossing the frame edge. */
+.lcars-sect { display: flex; flex-wrap: wrap; align-items: flex-end; gap: var(--gap); row-gap: var(--gap); margin: 0 0 var(--gap-m); min-height: var(--bar-thin); }
+.lcars-sect .lcars-title { padding-right: 0; }
+.lcars-sect-rule { flex: 1 1 24px; height: 1px; background: var(--slate-2); align-self: flex-end; }
+.lcars-sect .lcars-nb { margin-left: 0; min-height: 0; height: var(--bar-thin); padding: 0 8px 2px; font-size: 12px; }
+.lcars-sect .lcars-nb::before { display: none; }
+
+/* The list drawer (US-0415 in the US-0417 look): open, the column has its width and the toggle ends its heading row;
+   folded, the column is the 30 px stack. The width and the content move together; under reduced motion they jump. */
+.lcars-drawer { --lw: 310px; position: relative; flex: 0 0 var(--lw); width: var(--lw); min-width: 0; min-height: 0; display: flex; flex-direction: column; overflow: hidden; }
+.lcars-drawer.is-folded { flex-basis: var(--bar-med); width: var(--bar-med); }
+.lcars-drawer-content { width: var(--lw); flex: 1; min-height: 0; display: flex; flex-direction: column; overflow: auto; }
+.lcars-drawer.is-folded .lcars-drawer-content { opacity: 0; transform: translateX(-18px); visibility: hidden; }
+.lcars-drawer-toggle.list-fold-toggle { align-self: flex-end; width: var(--bar-thin); height: var(--bar-thin); font-size: 14px; line-height: 20px; }
+.lcars-drawer-stack { position: absolute; left: 0; top: 0; bottom: 0; width: var(--bar-med); display: flex; flex-direction: column; gap: var(--gap); opacity: 0; transform: translateY(-12px); pointer-events: none; cursor: pointer; }
+.lcars-drawer.is-folded .lcars-drawer-stack { opacity: 1; transform: none; pointer-events: auto; }
+.lcars-drawer-stack > * { display: block; flex: none; background: var(--slate-3); }
+.lcars-drawer-stack:hover > * { filter: brightness(1.15); }
+.lcars-drawer-open { height: var(--bar-med); padding: 0; border: 0; background: var(--slate-5); box-shadow: inset 0 4px 0 var(--steel); color: var(--on-light); font: 700 18px/34px var(--font-head); text-align: center; }
+.lcars-drawer-count { height: 40px; padding-top: 4px; background: var(--slate-2); color: var(--steel-light); font-size: 13px; text-align: center; font-variant-numeric: tabular-nums; }
+.lcars-drawer-live { height: 6px; background: var(--steel); }
+.lcars-drawer-label { height: 132px; display: flex; align-items: flex-end; justify-content: center; padding-bottom: 8px; background: var(--slate-4); }
+.lcars-drawer-label b { writing-mode: vertical-rl; transform: rotate(180deg); font-size: 15px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--on-light); white-space: nowrap; }
+.lcars-drawer-fill { flex: 1 1 auto; min-height: 10px; }
+.lcars-drawer-end { height: 22px; background: var(--slate-2); }
+:root[data-motion='full'] .lcars-drawer { transition: flex-basis 280ms var(--e-ease) 110ms, width 280ms var(--e-ease) 110ms; }
+:root[data-motion='full'] .lcars-drawer:not(.is-folded) { transition-delay: 0ms; }
+:root[data-motion='full'] .lcars-drawer-content { transition: opacity 160ms ease-out 250ms, transform 220ms ease-out 250ms, visibility 0s linear 0s; }
+:root[data-motion='full'] .lcars-drawer.is-folded .lcars-drawer-content { transition: opacity 110ms ease-in, transform 110ms ease-in, visibility 0s linear 110ms; }
+:root[data-motion='full'] .lcars-drawer-stack { transition: opacity 100ms ease-in, transform 100ms ease-in; }
+:root[data-motion='full'] .lcars-drawer.is-folded .lcars-drawer-stack { transition: opacity 200ms ease-out 360ms, transform 260ms ease-out 360ms; }
+
+/* Curved diagonal frame for the data sub-views. One filled band, wide where it leaves the arm and thin where it joins
+   the 42 px top bar, circular bends; the hairlines follow at 12 px. Geometry fixed in px (the SVG is 360 x 280). */
+.lcars-df { min-width: 0; container-type: inline-size; }
+.lcars-df-in { position: relative; min-height: 560px; padding: 176px 22px 70px 206px; }
+.lcars-df-corner { position: absolute; left: 0; top: 0; overflow: visible; }
+.lcars-df-band { fill: var(--slate-4); }
+.lcars-df-hair { fill: none; stroke: var(--slate-3); stroke-width: 1; }
+.lcars-df-corner-label { font: 12px var(--font-head); letter-spacing: 1px; fill: var(--on-light); text-transform: uppercase; }
+.lcars-df-corner-value { font: 600 30px var(--font-head); fill: var(--on-light); }
+.lcars-df-x { position: absolute; }
+.lcars-df-top { left: 366px; right: 0; top: 40px; height: var(--bar-large); display: flex; gap: var(--gap); align-items: stretch; min-width: 0; }
+.lcars-df-top .lcars-title { flex-shrink: 0; }
+.lcars-df-tag { flex: none; display: flex; align-items: center; gap: 8px; padding: 0 8px; }
+.lcars-tagbox { height: var(--bar-large); padding: 0 12px; border: 1px solid var(--slate-5); background: var(--bg); color: var(--text-2); font-size: 18px; line-height: 40px; letter-spacing: 0.06em; text-transform: uppercase; white-space: nowrap; }
+.lcars-dotc { display: grid; grid-template-columns: repeat(3, 4px); gap: 3px; }
+.lcars-dotc i { width: 4px; height: 4px; background: var(--slate-4); }
+.lcars-dotc i:nth-child(2), .lcars-dotc i:nth-child(6) { background: var(--slate-2); }
+.lcars-df-hl-o { left: 360px; right: 0; top: 28px; height: 1px; background: var(--slate-3); }
+.lcars-df-hl-i { left: 360px; right: 0; top: 94px; height: 1px; background: var(--slate-3); }
+.lcars-df-hl-left { left: 12px; right: 0; top: 280px; bottom: 3px; border-left: 1px solid var(--slate-3); border-bottom: 1px solid var(--slate-3); border-bottom-left-radius: 117px; }
+.lcars-df-hl-in { left: 186px; top: 280px; bottom: 156px; width: 1px; background: var(--slate-3); }
+.lcars-df-hl-in::after { content: ''; position: absolute; left: -2px; bottom: 0; width: 5px; height: 5px; background: var(--slate-3); } /* a square cap */
+.lcars-df-low { left: 24px; bottom: 16px; width: 180px; height: 120px; background: var(--slate-4); border-bottom-left-radius: 105px; }
+.lcars-df-low::after { content: ''; position: absolute; left: 150px; top: 0; right: 0; bottom: 16px; background: var(--bg); border-bottom-left-radius: 22px; }
+.lcars-df-bot { left: 210px; right: 0; bottom: 16px; height: 16px; display: flex; gap: var(--gap); align-items: stretch; }
+.lcars-df-bot .lcars-seg-lab { font-size: 11px; }
+.lcars-df-arm { position: absolute; left: 24px; top: 286px; width: var(--bar-thick); display: grid; gap: var(--gap); }
+.lcars-dblk { position: relative; display: flex; flex-direction: column; justify-content: space-between; align-items: flex-end; min-height: 52px; padding: 4px 8px 5px 14px; background: var(--slate-4); color: var(--on-light); text-align: right; cursor: default; }
+.lcars-dblk::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: var(--strip, transparent); }
+.lcars-dblk-k { align-self: flex-start; font-size: 12px; letter-spacing: 0.06em; text-transform: uppercase; }
+.lcars-dblk-v { font-size: 22px; line-height: 1; font-variant-numeric: tabular-nums; }
+.lcars-dblk--steel { background: var(--steel-deep); color: var(--text); }
+.lcars-dblk--steel .lcars-dblk-v { color: var(--steel-light); }
+.lcars-dblk--deep { background: var(--slate-2); color: var(--text-2); }
+.lcars-dblk--deep .lcars-dblk-v { color: var(--steel-text); }
+.lcars-df-arm-close { height: 10px; background: var(--slate-5); }
+.lcars-df-body { position: relative; z-index: 1; min-width: 0; }
+@container (max-width: 1000px) { .lcars-df-tag { display: none; } }
+@container (max-width: 600px) { .lcars-df-corner { clip-path: inset(0 80px 0 0); } .lcars-df-top { left: 286px; } .lcars-df-hl-o, .lcars-df-hl-i { left: 280px; } }
+@container (max-width: 560px) {
+  .lcars-df-in { padding: 110px 0 40px; }
+  .lcars-df-corner, .lcars-df-low, .lcars-df-hl-left, .lcars-df-hl-in { display: none; }
+  .lcars-df-top, .lcars-df-hl-o, .lcars-df-hl-i, .lcars-df-bot { left: 0; }
+  .lcars-df-arm { position: relative; left: auto; top: auto; width: auto; display: flex; flex-wrap: wrap; margin: 0 0 16px; }
+  .lcars-df-arm .lcars-dblk { flex: 1 1 110px; min-height: 48px; }
+  .lcars-df-arm-close { display: none; }
+}
+
 /* Effects. Static versions under Dämpad and Av follow at the end of the file. */
 .is-breathing { animation: lcars-breathe 2.4s ease-in-out infinite; }
 .is-attn { animation: lcars-attn 1.6s ease-in-out infinite; }
@@ -392,7 +674,7 @@ button.lcars-chip:hover { border-color: var(--steel-text); color: var(--steel-li
   text-overflow: ellipsis;
 }
 .latest-message-line { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
-.latest-message-tab { color: var(--amber); font-family: var(--font-head); text-transform: uppercase; letter-spacing: 0.06em; }
+.latest-message-tab { color: var(--steel-text); font-family: var(--font-head); text-transform: uppercase; letter-spacing: 0.06em; }
 
 .app-header { grid-area: head; display: flex; gap: var(--gap); min-width: 0; height: 64px; }
 .app-brand {
@@ -404,22 +686,22 @@ button.lcars-chip:hover { border-color: var(--steel-text); color: var(--steel-li
   justify-content: flex-end;
   gap: 8px;
   padding-right: 12px;
-  background: var(--amber);
+  background: var(--slate-4); /* US-0417: today's corner block in slate; only its mark is amber */
   border-radius: 40px 0 0 0;
   color: var(--on-light);
 }
-.app-mark { display: block; color: var(--on-light); flex-shrink: 0; }
+.app-mark { display: block; flex-shrink: 0; }
+.app-brand .app-mark { color: var(--amber); } /* amber: the Auctum mark */
 /* "T.H.A.D.E.U.S." on one line in the ~84 px beside the mark (US-0406 FR2.1). */
 .app-brand-text { line-height: 1; font-size: 14px; font-weight: 700; letter-spacing: 0.02em; text-transform: uppercase; white-space: nowrap; }
-.app-header-main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
-.app-header-row { flex: 1; min-width: 0; display: flex; align-items: center; gap: 18px; padding-left: 44px; }
-.app-meta-label { font-size: 13px; color: var(--muted); letter-spacing: 0.06em; text-transform: uppercase; white-space: nowrap; }
-.app-branch { font-size: 15px; color: var(--text); border: 1px solid var(--slate-3); padding: 2px 8px; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 360px; }
-.app-title { margin: 0 0 0 auto; font-size: 38px; font-weight: 600; color: var(--steel); letter-spacing: 0.02em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+/* US-0417: the window title heads the 30 px bar; the title rule is the hairline 6 px under it. */
+.app-header-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: var(--gap); }
+.app-title-rule { display: block; height: 1px; background: var(--slate-3); }
+.app-meta-label { color: var(--text-2); }
+.app-branch { color: var(--steel-light); text-transform: none; }
 .app-title-sep { color: var(--slate-4); }
-.app-header-deco { display: flex; gap: 4px; align-items: center; flex-shrink: 0; }
-.app-header-deco span { width: 26px; height: 10px; background: var(--slate-3); }
-.app-header-deco span + span { width: 10px; background: var(--slate-2); }
+/* US-0417: the window keeps a 28 px safe inset in full screen, where the macOS menu bar slides over it. */
+.app.is-fullscreen { padding-top: 28px; }
 /* Helskärm / Lämna helskärm: the last block of the header row, as tall as the row (US-0404 FR1.2, NFR3). */
 /* A control inside a bar segment (US-0012): the segment's own colour, small dark caps, like the quick commands. */
 .lcars-bar-btn {
@@ -439,7 +721,10 @@ button.lcars-chip:hover { border-color: var(--steel-text); color: var(--steel-li
 .docs-dialog { width: min(860px, 90vw); max-height: 85vh; overflow-y: auto; }
 
 /* Left arm: projects and views as labelled blocks (FR2.2). */
-.app-arm { grid-area: arm; display: flex; flex-direction: column; gap: 5px; min-height: 0; overflow-y: auto; overflow-x: hidden; scrollbar-width: none; }
+.app-arm { grid-area: arm; display: flex; flex-direction: column; gap: var(--gap); min-height: 0; overflow-y: auto; overflow-x: hidden; scrollbar-width: none; }
+/* US-0417: every arm block keeps an 11 px lane at its left edge for its state strip (5 px strip, 6 px gap). */
+.app-arm > .arm-project, .app-arm > .lcars-block, .app-arm > .arm-foot { margin-left: 11px; }
+.arm-project.is-active::before { content: ''; position: absolute; left: -11px; top: 0; bottom: 0; width: 5px; background: var(--steel); }
 .arm-project { position: relative; display: flex; height: 44px; flex-shrink: 0; color: var(--text); }
 .arm-project.is-active { height: 56px; color: var(--on-light); }
 .arm-project > .lcars-block { flex: 1; height: auto; padding-left: 58px; }
@@ -449,8 +734,7 @@ button.lcars-chip:hover { border-color: var(--steel-text); color: var(--steel-li
 .arm-tool:hover { opacity: 1; outline: 1px solid currentColor; outline-offset: -1px; }
 .arm-spacer { height: 14px; flex-shrink: 0; }
 /* With a view's sections open the arm can outgrow the window: the view blocks give up height before anything hides (US-0012). */
-.app-arm > .lcars-block, .app-arm > .lcars-tabbed { flex-shrink: 1; height: 48px; min-height: 34px; }
-.app-arm > .lcars-tabbed > .lcars-block { height: 100%; }
+.app-arm > .lcars-block, .app-arm > .lcars-nb { flex-shrink: 1; height: 48px; min-height: 34px; }
 .arm-foot {
   position: relative;
   flex: 1 0 40px;
@@ -464,7 +748,6 @@ button.lcars-chip:hover { border-color: var(--steel-text); color: var(--steel-li
   font-size: 13px;
   text-transform: uppercase;
 }
-.arm-foot-mark { position: absolute; left: 11px; top: 16px; color: var(--slate-3); }
 .arm-foot-label { position: relative; }
 
 .app-main { display: contents; }
@@ -521,11 +804,12 @@ button.lcars-chip:hover { border-color: var(--steel-text); color: var(--steel-li
 .sidebar .field { margin: 0; }
 .content { flex: 1; min-width: 0; min-height: 0; display: flex; flex-direction: column; gap: 8px; }
 
-/* US-0415 FR5.1–FR5.4: the fold toggle shared by the list columns, an amber elbow tab at the list's edge. Folded,
-   the column is a narrow strip that keeps only the tab; the list stays mounted (hidden), so its state is kept. */
+/* US-0415 FR5.1–FR5.4: the fold toggle shared by the list columns, a light square block with a steel strip (US-0417:
+   no amber). Folded, the column is a narrow strip that keeps only the tab; the list stays mounted (hidden), so its
+   state is kept. ListDrawer (Lcars.jsx) is the US-0417 drawer the views move to. */
 .list-fold-toggle {
-  flex: 0 0 auto; align-self: flex-end; width: 28px; height: 28px; padding: 0; border: 0; border-radius: 0 14px 14px 0;
-  background: var(--amber); color: var(--on-light); font: 700 14px/1 var(--font-head); cursor: pointer;
+  flex: 0 0 auto; align-self: flex-end; width: 28px; height: 28px; padding: 0; border: 0; border-radius: 0;
+  background: var(--slate-5); box-shadow: inset 0 3px 0 var(--steel); color: var(--on-light); font: 700 14px/1 var(--font-head); cursor: pointer;
 }
 .list-fold-toggle::before { content: '\2039'; } /* ‹ open: fold to the left */
 .list-fold-toggle[aria-expanded='false']::before { content: '\203A'; } /* › folded: bring it back */
@@ -602,8 +886,9 @@ button.lcars-chip:hover { border-color: var(--steel-text); color: var(--steel-li
 .intent-row-top { display: flex; align-items: baseline; gap: 8px; min-width: 0; }
 .intent-slug { font-size: 19px; line-height: 1.15; color: var(--text); overflow-wrap: anywhere; }
 .intent-badge { align-self: center; padding: 1px 6px; background: var(--steel); color: var(--on-light); font-size: 11px; letter-spacing: 0.04em; text-transform: uppercase; }
-/* US-0510: the parked mark, an amber pill-ended LCARS block, in its row and in the detail's progress row (US-0037 FR3.3). */
-.intent-parked { align-self: center; padding: 1px 10px 1px 8px; border-radius: 0 10px 10px 0; background: var(--amber); color: var(--on-light); font-size: 11px; letter-spacing: 0.04em; text-transform: uppercase; white-space: nowrap; }
+/* US-0510: the parked mark, in its row and in the detail's progress row (US-0037 FR3.3). US-0417: a square outlined
+   readout (parked is an outline, not a colour). */
+.intent-parked { align-self: center; padding: 0 8px; border: 1px solid var(--slate-5); border-radius: 0; background: none; color: var(--text-2); font-size: 11px; letter-spacing: 0.04em; text-transform: uppercase; white-space: nowrap; }
 /* US-0037 FR3.1, FR3.6: Park beside Resume in one group that wraps as one piece; Park takes Resume's height, with room around its label. */
 .intent-head-actions { display: flex; align-items: flex-start; gap: var(--gap); }
 .intent-park { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }
@@ -645,7 +930,7 @@ button.lcars-chip:hover { border-color: var(--steel-text); color: var(--steel-li
 /* US-0022: below 1280 px the readout column hides, so the header carries the way into the token detail instead. */
 .intent-tokens-open { display: none; align-self: flex-start; }
 @media (max-width: 1280px) { .readout-col { display: none; } .intent-tokens-open { display: inline-flex; } }
-/* Live tokens (EPIC-02 US-0207): segmented bar meters lit from the bottom, amber to soft coral, with a slow glow,
+/* Live tokens (EPIC-02 US-0207): segmented bar meters lit from the bottom, steel to soft coral (US-0417), with a slow glow,
    and a steel line waveform that flows. The data-motion rules below stop both (NFR4). */
 .token-view { display: flex; flex-direction: column; gap: 6px; }
 .token-view-title { margin: 0; color: var(--muted); font-size: 12px; letter-spacing: 0.06em; }
@@ -654,7 +939,7 @@ button.lcars-chip:hover { border-color: var(--steel-text); color: var(--steel-li
 .token-meter-scale { grid-row: 1; display: flex; flex-direction: column; justify-content: space-between; font-size: 8px; color: var(--muted); font-variant-numeric: tabular-nums; writing-mode: vertical-rl; transform: rotate(180deg); }
 .token-meter-bar { grid-row: 1; display: flex; flex-direction: column; gap: 2px; height: 70px; }
 .token-seg { flex: 1; background: var(--slate-2); }
-.token-seg.is-lit { background: var(--amber); box-shadow: 0 0 6px var(--amber-a45); animation: lcars-glow-steel 2.4s ease-in-out infinite; }
+.token-seg.is-lit { background: var(--steel); box-shadow: 0 0 6px var(--steel-a55); animation: lcars-glow-steel 2.4s ease-in-out infinite; }
 .token-seg.is-lit:nth-child(-n + 3) { background: var(--coral-soft); }
 .token-meter-label, .token-meter-value { grid-column: 1 / 3; font-size: 10px; line-height: 1.1; overflow-wrap: anywhere; min-width: 0; }
 .token-meter-label { color: var(--text-2); }
@@ -670,7 +955,7 @@ button.lcars-chip:hover { border-color: var(--steel-text); color: var(--steel-li
 .token-view:hover { filter: brightness(1.15); }
 .token-view:focus-visible { outline: 2px solid var(--steel); outline-offset: 3px; }
 
-/* ---------- Token detail (EPIC-02 US-0208, the approved visual mockups): steel on slate, amber for output, coral only
+/* ---------- Token detail (EPIC-02 US-0208, the approved visual mockups): steel on slate, light slate for output (US-0417), coral only
    for the marker and the tooltip. visx draws plain SVG; every fill comes from a token-kind class here (FR7). ---------- */
 .token-detail .lcars-frame-body { gap: 16px; }
 .token-detail-view { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
@@ -698,7 +983,7 @@ button.lcars-chip:hover { border-color: var(--steel-text); color: var(--steel-li
 .token-detail-areas { filter: drop-shadow(0 0 6px var(--steel-a55)); }
 .token-detail-area { stroke: var(--bg); stroke-width: 1; } /* a 1 px gap between the stacks, never an outline */
 .token-kind--input, .token-kind--usd { fill: var(--steel); background: var(--steel); }
-.token-kind--output { fill: var(--amber); background: var(--amber); }
+.token-kind--output { fill: var(--slate-5); background: var(--slate-5); } /* US-0417: no amber band */
 .token-kind--cacheWrite5m, .token-kind--cacheWrite { fill: var(--steel-mid); background: var(--steel-mid); }
 .token-kind--cacheWrite1h { fill: var(--steel-light); background: var(--steel-light); }
 .token-kind--cacheRead { fill: var(--steel-deep); background: var(--steel-deep); }
@@ -784,10 +1069,10 @@ button.lcars-chip:hover { border-color: var(--steel-text); color: var(--steel-li
 :root[data-motion='full'] .token-detail-rate-line.is-live { animation: lcars-glow-steel 2.4s ease-in-out infinite; }
 @keyframes token-detail-grow { from { transform: scaleX(0); } }
 
-/* Workflow control (EPIC-05): Fortsätt is the amber primary block, pill-ended on the left; the step is in the progress row (US-0037 FR3.4). */
+/* Workflow control (EPIC-05): Fortsätt is the light primary block, pill-ended on the left (US-0417: no amber); the step is in the progress row (US-0037 FR3.4). */
 .resume { display: inline-flex; flex-direction: column; align-items: flex-end; gap: 4px; }
 .resume-button { display: flex; height: 56px; padding: 0; border: 0; background: none; color: var(--on-light); text-transform: uppercase; }
-.resume-main { display: flex; align-items: flex-end; padding: 0 18px 8px; background: var(--amber); font-size: 19px; font-weight: 600; white-space: nowrap; border-radius: 28px 0 0 28px; transition: filter 150ms ease-out; }
+.resume-main { display: flex; align-items: flex-end; padding: 0 18px 8px; background: var(--slate-5); font-size: 19px; font-weight: 600; white-space: nowrap; border-radius: 28px 0 0 28px; transition: filter 150ms ease-out; }
 .resume-button:hover:not([aria-disabled='true']) .resume-main { filter: brightness(1.1); }
 /* Waiting while an agent runs the work (US-0007, US-0009): greyed like every other disabled block. aria-disabled keeps
    it focusable so its tooltip gives the reason (US-0414 FR2.4). */
@@ -832,7 +1117,7 @@ button.lcars-chip:hover { border-color: var(--steel-text); color: var(--steel-li
 .stage-grid { flex: 1; min-width: 0; list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--gap); }
 /* US-0411: each stage is an .lcars-card (FR1). Head: name; body: "NN · Status"; foot: agent, duration, level bar (FR2).
    Colour by state on the <li> (FR3): current steel fill, awaiting approval coral fill, done grey outline, skipped muted,
-   mismatch or failure amber outline and flag. Black text on steel (7.6:1) and coral (7.0:1) keeps AA (NFR2).
+   mismatch or failure soft coral outline and flag (US-0417). Black text on steel (7.6:1) and coral (7.0:1) keeps AA (NFR2).
    The glow is the shared is-breathing / is-attn, so Dämpad and Av apply through data-motion (FR4, NFR1). */
 .stage-card { width: 100%; min-height: 76px; padding: 0; color: var(--muted); text-align: left; transition: filter 150ms ease-out; }
 .stage-card:hover { filter: brightness(1.15); }
@@ -843,7 +1128,7 @@ button.lcars-chip:hover { border-color: var(--steel-text); color: var(--steel-li
 .stage-top { display: flex; flex-direction: row; justify-content: space-between; gap: 8px; min-width: 0; font-size: 12px; font-variant-numeric: tabular-nums; text-transform: uppercase; white-space: nowrap; overflow: hidden; }
 .stage-top > span:first-child { overflow: hidden; text-overflow: ellipsis; }
 .stage-cost { text-transform: none; }
-.stage-flag { color: var(--amber); }
+.stage-flag { color: var(--coral-soft); }
 .stage-name { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 14px; letter-spacing: 0.05em; color: var(--steel-light); }
 .stage-code { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 11px; text-transform: uppercase; color: var(--text-2); }
 .stage-level { display: flex; gap: 2px; flex-shrink: 0; }
@@ -868,7 +1153,7 @@ button.lcars-chip:hover { border-color: var(--steel-text); color: var(--steel-li
 .stage.is-muted .stage-card > :is(.lcars-card-head, .lcars-card-body, .lcars-card-foot) { background: transparent; }
 .stage.is-muted :is(.stage-name, .stage-code) { color: var(--muted); }
 
-.stage:is(.is-mismatch, .is-failed, .status-failed) .stage-card { border: 2px solid var(--amber); }
+.stage:is(.is-mismatch, .is-failed, .status-failed) .stage-card { border: 2px solid var(--coral-soft); }
 .stage-files { margin: 0 0 4px calc(var(--arm) + var(--gap)); padding: 8px 12px; background: var(--slate-1); display: flex; flex-direction: column; gap: 4px; }
 .stage-files-meta { margin: 0; color: var(--muted); font-size: 13px; }
 .stage-file-list { list-style: none; margin: 0; padding: 0; }
@@ -972,28 +1257,26 @@ a.md-link:hover { color: var(--steel-light); }
 .term-tab:first-child { height: 64px; border-radius: 32px 0 0 0; }
 .term-tab-name { font-size: 18px; font-weight: 700; }
 .term-state { font-size: 11px; letter-spacing: 0.05em; }
+/* US-0417: the bottom elbow keeps only the faded mark; its outer arc follows the round-elbow rule (0.7 x the arm),
+   its inner corner meets the foot bar (1.4 x the 18 px bar). Hide / Show terminal moved to the foot bar. */
 .terminal-elbow {
   position: relative;
   flex: 1;
   min-height: 56px;
   overflow: hidden;
-  display: flex;
-  align-items: flex-end;
-  justify-content: flex-end;
-  /* The label's bottom lines up with the terminal body's: under it are the body's 6px margin and the bottom bar. */
-  padding: 0 10px calc(var(--bar) + 6px) 0;
-  border: 0;
-  border-radius: 0 0 0 44px;
+  border-radius: 0 0 0 calc(var(--arm) * var(--elbow-outer));
   background: var(--slate-3);
-  color: var(--text);
-  font-size: 13px;
-  text-transform: uppercase;
-  transition: filter 150ms ease-out;
 }
-.terminal-elbow:hover { filter: brightness(1.15); }
 /* Sized from the block so the left and right margins stay equal at any arm width. */
 .terminal-elbow-mark { position: absolute; left: var(--gap); top: 14px; width: calc(100% - 2 * var(--gap)); height: auto; color: var(--slate-mark); }
-.terminal-elbow-label { position: relative; margin-top: auto; }
+/* The window's foot bar: thin, segmented, Hide / Show terminal as its last segment, a pill like Full screen. Hidden,
+   the terminal is only this bar, and its first segment takes the arm's width with a rounded end. */
+.terminal-footbar { display: flex; gap: var(--gap); align-items: stretch; height: var(--bar-thin); flex-shrink: 0; }
+.terminal-footbar-head { display: none; flex: 0 0 var(--arm); border-radius: calc(var(--bar-thin) / 2) 0 0 calc(var(--bar-thin) / 2); }
+.terminal-footbar-a { width: 120px; }
+.terminal-footbar-b { flex: 0 1 220px; }
+.terminal-toggle { height: var(--bar-thin); padding: 0 14px; font-size: 12px; }
+.terminal-panel.is-collapsed .terminal-footbar-head { display: block; }
 .terminal-main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
 .terminal-body { position: relative; flex: 1; min-height: 0; margin: 10px 0 6px 24px; }
 /* Default height relative to the window (F-01); a dragged height is set inline on the panel and wins. */
@@ -1026,14 +1309,8 @@ a.md-link:hover { color: var(--steel-light); }
 .term-pending { border: 1px solid var(--coral); padding: 2px 10px; color: var(--coral-soft); font-size: 13px; text-transform: uppercase; white-space: nowrap; }
 .term-pending-hint { font-size: 13px; color: var(--muted); }
 .term-error { color: var(--coral-soft); font-size: 14px; }
-.terminal-panel.is-collapsed .terminal-arm { width: auto; flex-direction: row; }
-.terminal-panel.is-collapsed .terminal-tabs { flex-direction: row; }
-.terminal-panel.is-collapsed .term-tab { width: 120px; height: 40px; border-radius: 0; padding: 4px 10px; }
-.terminal-panel.is-collapsed .term-tab-name { font-size: 15px; }
-.terminal-panel.is-collapsed .terminal-elbow { order: -1; flex: 0 0 var(--arm); min-height: 40px; padding-bottom: 10px; border-radius: 0 0 0 20px; }
-.terminal-panel.is-collapsed .terminal-elbow-mark { display: none; }
 .terminal-panel.is-collapsed .terminal-main { justify-content: flex-end; }
-.terminal-panel.is-collapsed .terminal-foot { padding-left: 16px; }
+.terminal-panel.is-collapsed .terminal-foot { padding-left: calc(var(--arm) + var(--gap-l)); }
 
 /* ---------- Sidebar panels, setup and dialogs (FR3.8) ---------- */
 .refresh-body { display: flex; flex-direction: column; gap: 8px; align-items: flex-start; }
@@ -1126,7 +1403,7 @@ a.md-link:hover { color: var(--steel-light); }
 .config-change-actions { display: flex; flex-wrap: wrap; gap: var(--gap); align-items: center; }
 .plans-list li { flex-direction: column; align-items: stretch; padding: 8px 6px; }
 .plans-head { display: flex; flex-wrap: wrap; gap: 8px; align-items: baseline; }
-.plans-head .btn-link { background: none; border: 0; padding: 0; color: var(--amber); font: inherit; cursor: pointer; text-transform: none; }
+.plans-head .btn-link { background: none; border: 0; padding: 0; color: var(--steel-text); font: inherit; cursor: pointer; text-transform: none; }
 .plans-list p { margin: 2px 0; }
 .plans-stage-list ul { margin: 0; padding-left: 18px; columns: 2; }
 /* The editor (EPIC-10 US-1001): the file tree beside the editor tabs. */
@@ -1136,14 +1413,14 @@ a.md-link:hover { color: var(--steel-light); }
 .file-tree > .file-tree-list { padding-left: 0; }
 .file-tree-dir, .file-tree-file { background: none; border: 0; color: var(--text-2); font: inherit; text-align: left; padding: 1px 2px; cursor: pointer; width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .file-tree-dir { color: var(--steel-text); }
-.file-tree-dir:hover, .file-tree-file:hover { color: var(--amber); }
+.file-tree-dir:hover, .file-tree-file:hover { color: var(--steel-light); }
 .editor-panel { min-width: 0; min-height: 0; display: flex; flex-direction: column; gap: 6px; }
 .editor-empty { padding: 12px; }
 .editor-tabs { display: flex; flex-wrap: wrap; gap: 2px; }
 .editor-tab { display: inline-flex; background: var(--slate-2); }
-.editor-tab.is-active { background: var(--steel-deep); border-bottom: 2px solid var(--amber); }
+.editor-tab.is-active { background: var(--steel-deep); border-bottom: 2px solid var(--steel); }
 .editor-tab button { background: none; border: 0; color: var(--text); font: inherit; font-size: 13px; padding: 4px 8px; cursor: pointer; }
-.editor-dirty { color: var(--amber); }
+.editor-dirty { color: var(--white); }
 .editor-body { flex: 1; min-height: 320px; display: grid; grid-template-columns: 1fr; gap: var(--gap); }
 .editor-body.has-preview { grid-template-columns: 1fr 1fr; }
 .editor-monaco { min-height: 320px; border-left: var(--gap) solid var(--steel-deep); }
@@ -1208,11 +1485,11 @@ a.md-link:hover { color: var(--steel-light); }
 }
 .about-lcars-exit::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 5px; background: var(--alert); }
 .about-lcars-exit:focus-visible { outline: 2px solid var(--amber); outline-offset: 2px; }
-/* US-1101 FR6.2: LICENSES, an arm block like EXIT with an amber tab instead of the alert one. */
+/* US-1101 FR6.2: LICENSES, an arm block like EXIT with a light tab instead of the alert one (US-0417). */
 .about-lcars-licenses { margin-top: 0; }
-.about-lcars-licenses::before { background: var(--amber); }
+.about-lcars-licenses::before { background: var(--slate-5); }
 .about-lcars-error { margin: 12px 0 0; color: var(--alert); font-size: 14px; letter-spacing: 0.04em; overflow-wrap: anywhere; }
-.about-lcars-title { margin: 0; align-self: flex-end; color: var(--amber); font: 700 44px/1 var(--font-head); letter-spacing: 0.08em; text-transform: uppercase; white-space: nowrap; }
+.about-lcars-title { margin: 0; align-self: flex-end; color: var(--steel); font: 700 44px/1 var(--font-head); letter-spacing: 0.08em; text-transform: uppercase; white-space: nowrap; }
 .about-lcars-content { display: flex; align-items: center; gap: 20px; }
 .about-lcars-content .splash-mark { flex-shrink: 0; }
 .about-lcars-bars { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 12px; }
@@ -1230,7 +1507,7 @@ a.md-link:hover { color: var(--steel-light); }
 .about-lcars-bullet { display: flex; align-items: center; gap: var(--gap); padding-left: 10px; }
 .about-lcars-dot { width: 8px; height: 8px; border-radius: 50%; }
 .about-lcars-hair { flex: 1; height: 1px; opacity: 0.6; }
-.about-lcars-tone--amber { background: var(--amber); }
+.about-lcars-tone--slate { background: var(--slate-4); }
 .about-lcars-tone--steel-light { background: var(--steel-light); }
 .about-lcars-tone--coral-soft { background: var(--coral-soft); }
 .about-lcars-status { grid-column: 2; grid-row: 4; margin: 6px 0 0; text-align: right; color: var(--text-2); font-size: 12px; letter-spacing: 0.1em; text-transform: uppercase; font-variant-numeric: tabular-nums; }
@@ -1246,9 +1523,9 @@ a.md-link:hover { color: var(--steel-light); }
 .question-popup.is-calm { border-left-color: var(--steel-deep); border-top-color: var(--steel-deep); border-bottom-color: var(--slate-2); }
 .question-popup-head { margin: 0 0 10px; padding: 6px 16px; background: var(--steel); color: var(--on-light); border-radius: 0 22px 22px 0; transition: background-color 1.2s ease-out, box-shadow 1.2s ease-out; }
 .question-popup .question-popup-head h2 { margin: 0; font-size: 24px; color: inherit; }
-/* US-0506 u2 BR5.13: a permission page (M3) has an amber header, the command in a monospaced block of its own, and the
+/* US-0506 u2 BR5.13: a permission page (M3) has a soft coral header (US-0417), the command in a monospaced block of its own, and the
    refusing choice below a rule with a coral edge. Choice labels wrap whole: never an ellipsis (SD11). */
-.question-popup .question-popup-head.is-permission { background: var(--amber); }
+.question-popup .question-popup-head.is-permission { background: var(--coral-soft); }
 .agent-dialog-what { margin: 0 0 6px; font-weight: 600; }
 .agent-dialog-detail { margin: 0 0 8px; padding: 8px 10px; max-height: 40vh; overflow: auto; font-family: ui-monospace, Menlo, monospace; font-size: 13px; white-space: pre-wrap; overflow-wrap: anywhere; background: var(--slate-2); border-radius: 6px; }
 .agent-dialog-rule { width: 100%; margin: 4px 0; border: 0; border-top: 1px solid var(--slate-2); }
@@ -1405,7 +1682,7 @@ a.md-link:hover { color: var(--steel-light); }
 .splash-name-sub { font-size: 22px; font-weight: 600; line-height: 1.25; color: var(--steel); letter-spacing: 0.12em; }
 .splash-name-tagline { font-size: 16px; font-weight: 600; line-height: 1.3; color: var(--text-2); letter-spacing: 0.1em; }
 .splash-line { display: flex; gap: var(--gap); width: 360px; height: 6px; }
-.splash-line span { flex: 1; background: var(--amber); transform-origin: left; animation: lcars-draw 600ms 200ms ease-out both; }
+.splash-line span { flex: 1; background: var(--steel); transform-origin: left; animation: lcars-draw 600ms 200ms ease-out both; }
 .splash-line span + span { flex: 0 0 40px; background: var(--slate-3); animation: none; }
 .splash-bottom { height: 20px; margin-left: 186px; }
 
@@ -1441,6 +1718,24 @@ a.md-link:hover { color: var(--steel-light); }
   50% { filter: drop-shadow(0 0 10px var(--steel-a60)); }
 }
 
+/* US-0417 Entrance: the one shared sequence, defined once. useEntrance (Lcars.jsx) puts .is-entering on the view's root
+   for a second after the view is entered; the pieces carry the lcars-e-* roles, and --i staggers blocks (capped at
+   12). Transform and opacity only, done by ~0.8 s, never blocking clicks, and with full motion only. */
+@keyframes lcars-e-slide { from { opacity: 0; transform: translateX(80px); } to { opacity: 1; transform: none; } }
+@keyframes lcars-e-wipe { from { opacity: 0; transform: scaleY(0); } to { opacity: 1; transform: none; } }
+@keyframes lcars-e-draw { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+@keyframes lcars-e-block { from { opacity: 0; transform: translateX(-28px); } to { opacity: 1; transform: none; } }
+@keyframes lcars-e-rise { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+@keyframes lcars-e-grow { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+@keyframes lcars-e-fade { from { opacity: 0; } to { opacity: 1; } }
+:root[data-motion='full'] .is-entering .lcars-e-slide { animation: lcars-e-slide 340ms var(--e-ease) both; }
+:root[data-motion='full'] .is-entering .lcars-e-wipe { transform-origin: 50% 100%; animation: lcars-e-wipe 340ms var(--e-ease) 80ms both; }
+:root[data-motion='full'] .is-entering .lcars-e-draw { transform-origin: left; animation: lcars-e-draw var(--e-dur) ease-out calc(120ms + var(--i, 0) * var(--e-stagger)) both; }
+:root[data-motion='full'] .is-entering .lcars-e-block { animation: lcars-e-block var(--e-dur) var(--e-ease) calc(160ms + var(--i, 0) * var(--e-stagger)) both; }
+:root[data-motion='full'] .is-entering .lcars-e-rise { animation: lcars-e-rise var(--e-dur) ease-out calc(180ms + var(--i, 0) * var(--e-stagger)) both; }
+:root[data-motion='full'] .is-entering .lcars-e-growx { transform-origin: 0 50%; animation: lcars-e-grow 420ms var(--e-ease) 300ms both; }
+:root[data-motion='full'] .is-entering .lcars-e-fade { animation: lcars-e-fade var(--e-dur) ease-out 420ms both; }
+
 /* Animationer: Dämpad = static glow, no loops, no sweep; Av = no animations or transitions. App.jsx sets
    data-motion from the saved choice, or Dämpad under prefers-reduced-motion (FR4.2). */
 :root[data-motion='reduced'] *, :root[data-motion='reduced'] *::before, :root[data-motion='reduced'] *::after { animation: none !important; }
@@ -1463,19 +1758,19 @@ a.md-link:hover { color: var(--steel-light); }
 .machines-table { width: 100%; border-collapse: collapse; font-size: 14px; }
 .machines-table th, .machines-table td { text-align: left; padding: 2px 10px 2px 0; }
 .machines-table th { color: var(--text-2); font-size: 12px; letter-spacing: 0.04em; text-transform: uppercase; }
-/* US-0303: the Velocity view and the intent's Velocity tab: readouts in a row, steel intents, amber stories, a soft coral average line. */
+/* US-0303: the Velocity view and the intent's Velocity tab: readouts in a row, steel intents, light steel stories (US-0417), a soft coral average line. */
 .velocity-view { display: flex; flex-direction: column; gap: 12px; padding: 12px; overflow: auto; }
 .velocity-intent { display: flex; flex-direction: column; gap: 12px; }
 .velocity-readouts { display: flex; gap: 24px; flex-wrap: wrap; }
 .velocity-units { display: flex; gap: 5px; }
 .velocity-chart { margin: 0; }
 .velocity-chart rect.is-intents { fill: var(--steel); }
-.velocity-chart rect.is-stories { fill: var(--amber); }
+.velocity-chart rect.is-stories { fill: var(--steel-light); }
 .velocity-chart-average { fill: none; stroke: var(--coral-soft); stroke-width: 2; vector-effect: non-scaling-stroke; }
 .velocity-legend { display: flex; gap: 6px; align-items: center; font-size: 12px; color: var(--muted); }
 .velocity-key { display: inline-block; width: 10px; height: 10px; margin-left: 8px; }
 .velocity-key--intents { background: var(--steel); }
-.velocity-key--stories { background: var(--amber); }
+.velocity-key--stories { background: var(--steel-light); }
 .velocity-key--average { height: 2px; background: var(--coral-soft); }
 .velocity-sources { display: flex; flex-direction: column; gap: 4px; font-size: 13px; }
 .velocity-sources code { overflow-wrap: anywhere; }

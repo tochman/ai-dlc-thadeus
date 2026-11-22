@@ -7,12 +7,13 @@ export function token(name) {
   return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
 }
 
-/** xterm's theme from the tokens: --bg, --text-2, amber cursor, --steel-deep selection. Unset keys keep xterm's default. */
+/** xterm's theme from the tokens: --bg, --text-2, a live steel cursor (US-0417: amber is the mark and focus only),
+ *  --steel-deep selection. Unset keys keep xterm's default. */
 export function xtermTheme() {
   const theme = {
     background: token('--bg'),
     foreground: token('--text-2'),
-    cursor: token('--amber'),
+    cursor: token('--steel-text'),
     cursorAccent: token('--bg'),
     selectionBackground: token('--steel-deep')
   };

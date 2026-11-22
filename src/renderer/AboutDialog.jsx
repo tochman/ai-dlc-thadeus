@@ -71,7 +71,7 @@ export default function AboutDialog({ open, onClose }) {
 
   const codes = codeLabels(version, platform);
   const bars = [
-    ['amber', APP_FULL_NAME, 'about-dialog-fullname'],
+    ['slate', APP_FULL_NAME, 'about-dialog-fullname'], // US-0417: amber is the mark and focus only
     ['steel-light', APP_TAGLINE, 'about-dialog-tagline'],
     ['coral-soft', `v${version ?? '–'}`, 'about-dialog-version-bar']
   ];

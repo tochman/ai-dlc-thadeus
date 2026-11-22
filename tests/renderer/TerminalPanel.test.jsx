@@ -163,7 +163,6 @@ describe('TerminalPanel', () => {
 
   it('hides the quick commands on the shell tab, when collapsed and for a harness without commands', async () => {
     await renderPanel();
-    expect(screen.getByTestId('terminal-panel-toggle').querySelector('svg.terminal-elbow-mark')).toBeTruthy();
     fireEvent.click(screen.getByTestId('terminal-panel-tab-shell'));
     expect(screen.queryByTestId('terminal-panel-quick-select')).toBeNull();
     fireEvent.click(screen.getByTestId('terminal-panel-tab-agent'));
@@ -277,6 +276,38 @@ describe('Claude Code and opencode side by side (EPIC-08 US-0803)', () => {
     act(() => terminal.input('agent:claude')); // the person types in the Claude tab
     await act(() => terminal.type('agent', 'x'));
     expect(window.bridge.ptyWrite).toHaveBeenLastCalledWith('pty-claude', 'x');
+  });
+
+  it('US-0417: Hide / Show terminal is the last segment of the foot bar, a pill like Full screen; the elbow keeps only the mark', async () => {
+    await renderPanel();
+    const elbow = screen.getByTestId('terminal-panel-elbow');
+    expect(elbow.querySelector('svg.terminal-elbow-mark')).toBeTruthy();
+    expect(elbow.textContent).toBe(''); // the elbow lost its label
+    expect(elbow.tagName).not.toBe('BUTTON');
+
+    const foot = screen.getByTestId('terminal-panel-footbar');
+    const toggle = screen.getByTestId('terminal-panel-toggle');
+    expect(foot.lastElementChild).toBe(toggle);
+    expect(toggle.className).toContain('lcars-pill');
+    expect(toggle.textContent).toBe('Dölj terminal');
+    expect(toggle.getAttribute('aria-expanded')).toBe('true');
+    expect(document.getElementById(toggle.getAttribute('aria-controls'))).toBeTruthy();
+
+    fireEvent.click(toggle);
+    // Hidden: one merged foot bar along the window's foot, the toggle still its last segment, focus kept on it.
+    const panel = screen.getByRole('region', { name: 'Terminal' });
+    expect(panel.className).toContain('is-collapsed');
+    expect(screen.getAllByTestId('terminal-panel-footbar')).toHaveLength(1);
+    const hidden = screen.getByTestId('terminal-panel-toggle');
+    expect(screen.getByTestId('terminal-panel-footbar').lastElementChild).toBe(hidden);
+    expect(hidden.textContent).toBe('Visa terminal');
+    expect(hidden.getAttribute('aria-expanded')).toBe('false');
+    expect(document.activeElement).toBe(hidden);
+    expect(screen.queryByTestId('terminal-panel-elbow')).toBeNull();
+
+    fireEvent.click(hidden);
+    expect(panel.className).not.toContain('is-collapsed');
+    expect(screen.getByTestId('terminal-panel-toggle').textContent).toBe('Dölj terminal');
   });
 
   it('anyBusy() is true when only the second tab is busy; two busy tabs show no notice (US-0019)', async () => {

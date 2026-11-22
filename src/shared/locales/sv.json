@@ -64,6 +64,8 @@
     "emptyText": "Öppna en projektmapp som innehåller {path}.",
     "openProject": "Öppna projekt",
     "pickFolder": "Öppna projektmapp",
+    "backTo": "‹ Tillbaka till {view}",
+    "back": "‹ Tillbaka",
     "question": {
       "waiting": "AI-DLC väntar på ditt svar",
       "stillWaiting": "Väntar fortfarande på ditt svar",
@@ -1624,6 +1626,7 @@
   },
   "fold": {
     "hide": "Fäll ihop listan",
-    "show": "Visa listan"
+    "show": "Visa listan",
+    "showN": "Visa listan ({n})"
   }
 }
