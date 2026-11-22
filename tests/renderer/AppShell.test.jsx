@@ -8,10 +8,10 @@ import { t } from '../../src/shared/i18n.js';
 vi.mock('../../src/renderer/ProjectView.jsx', async () => {
   const { default: LatestMessageStrip } = await import('../../src/renderer/LatestMessageStrip.jsx');
   return {
-    default: function ProjectViewStub({ project, view, onMeta, onOpenReply }) {
+    default: function ProjectViewStub({ project, view, section, aidlcTab, onMeta, onOpenReply }) {
       useEffect(() => onMeta(project.projectId, { showFeatures: true, intentCount: 7 }), [project.projectId, onMeta]);
       return (
-        <div data-testid={`project-view-${project.projectId}`} data-view={view}>
+        <div data-testid={`project-view-${project.projectId}`} data-view={view} data-section={section} data-aidlc-tab={aidlcTab}>
           <LatestMessageStrip projectId={project.projectId} onOpenReply={onOpenReply} />
         </div>
       );
@@ -337,6 +337,40 @@ describe('App shell', () => {
     act(() => push.fullscreen(false));
     expect(button.textContent).toBe('Helskärm');
     expect(button.getAttribute('aria-pressed')).toBe('false');
+  });
+
+  it('has no Plans block in the arm; the old Plans view opens Configuration › AI-DLC › Plans (US-0905)', async () => {
+    await renderApp({ openProjects: ['/p/aidlc-dash-a'], activeProject: '/p/aidlc-dash-a' });
+    await screen.findByTestId('project-view-switch-config');
+    expect(screen.queryByTestId('project-view-switch-plans')).toBeNull();
+    fireEvent.click(screen.getByTestId('project-view-switch-config'));
+    // The arm's Configuration sub-blocks are as before: Plans is a sub-view inside AI-DLC, not a sub-block.
+    expect(screen.getAllByTestId(/^config-section-/).map((el) => el.dataset.testid)).toEqual([
+      'config-section-docs',
+      'config-section-agent',
+      'config-section-aidlc',
+      'config-section-costRules',
+      'config-section-modelProfiles'
+    ]);
+
+    // A link or menu item that still asks for the old Plans view opens it at its new place.
+    act(() => push.menuCommand({ command: 'view', view: 'intents' }));
+    act(() => push.menuCommand({ command: 'view', view: 'plans' }));
+    expect(screen.getByTestId('project-view-switch-config').getAttribute('aria-current')).toBe('page');
+    expect(screen.getByTestId('config-section-aidlc').getAttribute('aria-current')).toBe('page');
+    const pane = screen.getByTestId('project-view-p1');
+    expect([pane.dataset.view, pane.dataset.section, pane.dataset.aidlcTab]).toEqual(['config', 'aidlc', 'plans']);
+    cleanup();
+
+    // Without AI-DLC there is no AI-DLC section, so no plans, as before.
+    mockBridge({ openProjects: ['/p/plain-a'], activeProject: '/p/plain-a' });
+    window.bridge.openProject = vi.fn(async (dir) => ({ ...projectInfo(dir, 'p1'), detection: { isAidlc: false } }));
+    render(<App />);
+    fireEvent.click(await screen.findByTestId('project-view-switch-config'));
+    expect(screen.queryByTestId('config-section-aidlc')).toBeNull();
+    expect(screen.queryByTestId('project-view-switch-plans')).toBeNull();
+    act(() => push.menuCommand({ command: 'view', view: 'plans' }));
+    expect(screen.getByTestId('config-section-docs').getAttribute('aria-current')).toBe('page');
   });
 
   it('runs a menu command through the same function as the arm button, reports the menu state and ignores unknown ones (US-0404 FR2.4–FR2.6)', async () => {

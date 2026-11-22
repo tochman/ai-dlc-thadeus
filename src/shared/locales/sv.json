@@ -58,7 +58,6 @@
     "github": "Github",
     "settings": "Inställningar",
     "config": "Konfiguration",
-    "plans": "Planer",
     "editor": "Editor",
     "intentCount": "{n} intents",
     "emptyTitle": "Inget projekt öppet",
@@ -898,6 +897,7 @@
         "docs": "Feature-beskrivningar",
         "agent": "Agent",
         "aidlc": "AI-DLC",
+        "plans": "Planer",
         "costRules": "Kostnadsregler",
         "modelProfiles": "Modellprofiler"
       },
@@ -907,6 +907,8 @@
   },
   "config": {
     "loading": "Läser AI-DLC:s konfiguration…",
+    "tabsLabel": "AI-DLC-vyer",
+    "tabSettings": "Inställningar",
     "harnessLabel": "Harness",
     "section": {
       "models": "Modeller och effort",
