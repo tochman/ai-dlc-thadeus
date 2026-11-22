@@ -44,7 +44,8 @@ That isn't AI's fault. An AI coding agent is an incredibly capable tool, and lik
 - **Intents and pipeline:** every piece of AI-DLC work in a project, with its plan and where each stage stands, as LCARS cards. Open several projects side by side as tabs.
 - **Timeline:** every stage, agent, approval, question and decision from AI-DLC's audit log, fast even for long histories, live as agents write.
 - **Units and artifacts:** how Construction is split into units and batches, and every document a stage produced, read inside the app.
-- **Fold the list away** to give a wide view, like the unit graph, the whole window.
+- **Fold the list away** (intents, epics, releases, files) to give a wide view, like the unit graph, the whole window.
+- **Activity:** an intent's agents at work and its tokens over time, by stage, agent or model.
 
 **Talk to the agents without living in the terminal**
 - **Agent terminal:** Claude Code, opencode, Codex or Kiro, chosen per project, plus a shell. Claude Code and opencode can run side by side. The app finds the agent tools even when your login shell is slow to start.
@@ -52,26 +53,27 @@ That isn't AI's fault. An AI coding agent is an incredibly capable tool, and lik
 - **Agent progress:** plain progress lines per running agent ("6 of 27 steps done").
 
 **Steer AI-DLC from the console**
-- **Resume** an intent where it stopped with one click. **Park and unpark** it from its row.
+- **Resume** an intent where it stopped with one click, and **park** it; resuming a parked intent unparks it.
 - **Set up AI-DLC** in a folder, for any of its harnesses, with a preview before anything changes, and update the framework later.
-- **Configuration:** see and change a project's AI-DLC settings, make your own plans, and pick a model and effort per agent.
+- **Configuration:** see and change a project's AI-DLC settings, make your own plans (Configuration → AI-DLC → Plans), and pick a model and effort per agent.
 - **Editor:** edit project files, docs and code in the app.
 
 **Know what it costs, and spend less**
 - **Cost** per intent, stage, agent and model, live while a workflow runs, with token charts. These are estimates at API prices, not invoices; recorded tokens can be repriced with a current price table.
-- **Spend less:** a cost rule pack on top of AI-DLC, a prompt to compact or start fresh when the context grows, and a stronger model profile only for the intents that need it.
+- **Spend less:** a cost rule pack on top of AI-DLC, a prompt to compact or start fresh when the context grows (it asks AI-DLC to park at its next safe point, then clears and resumes), and a stronger model profile only for the intents that need it.
 
 ### For your team
 
 - **Shared records:** requirements, designs, decisions and test results live in the repository next to the code. **Refresh from GitHub** brings in what a teammate or another machine pushed, safely, even with local work in progress. Cost counts every machine that worked on an intent.
 - **Feature docs:** the app offers `docs/FEATURES.md` and epic files at setup and shows your epics and user stories with their status. Every agent keeps them current through a rule in AI-DLC's memory.
 - **Release planning:** plan stories into releases, or ship continuously. Planning changes are committed on their own branch, pushed when there is time and never lost. A story branch still shows `main`'s releases. The app's own files and hook settings stay in sync with `main`.
-- **Pull requests and reviews:** a panel for GitHub, GitLab and Bitbucket joins pull requests, reviews and comments with AI-DLC's questions and approvals per story, shows who works on what, and warns when a branch is behind `main` or overlaps another open pull request.
+- **Pull requests and reviews:** a panel for GitHub, GitLab and Bitbucket shows who works on what and warns when a branch is behind `main` or overlaps another open pull request. Each intent's **Review** tab leads with what needs you (questions, NOT-READY findings, change requests, open threads), then the pull request's review threads.
 - **Velocity:** metrics per intent, story and project, from the records AI-DLC already keeps.
 
 ### Everywhere
 
-- **In-app updates** from the public GitHub releases, on macOS and Linux.
+- **In-app updates** from the public GitHub releases, on macOS and Linux, in one update dialog (**Settings → Tools → Check for updates**).
+- **An LCARS interface** with one set of rules: nested and diagonal frames, quiet colour, readouts that never look like controls, and a short entrance animation that respects reduced motion.
 - **English and Swedish:** the interface language follows the operating system, or you choose it in Settings.
 
 ### Screenshots
@@ -101,7 +103,7 @@ Download the build for your platform from the [releases page](https://github.com
 - **macOS** (universal `.dmg`): open the disk image and drag `THADEUS.app` to Applications. The build is unsigned, so the first time, right-click the app and choose **Open**.
 - **Linux** (`.deb`, x64, Ubuntu 22.04 or later): `sudo apt install ./thadeus_<version>_amd64.deb`.
 
-The app expects the tools under [Prerequisites](#prerequisites) to be available in your login shell. It does not install them. **Settings → Tools** shows which ones it found.
+The app expects the tools under [Prerequisites](#prerequisites) to be available in your login shell. It does not install them. **Settings → Tools** shows which ones it found, grouped by purpose, and what to do about a missing one.
 
 ## Usage
 
@@ -121,7 +123,7 @@ Plans can change; [docs/FEATURES.md](docs/FEATURES.md) and [docs/releases/](docs
 - **v0.3.0, Spec Kit:** use [Spec Kit](https://github.com/github/spec-kit) instead of AI-DLC in a project. Set it up, switch a project between the two, see its features and their status, run its commands, and keep its constitution and extensions, with cost, questions and agent progress as for AI-DLC.
 - **v0.3.1, steer the work and see what it costs:** rename an intent or change the plan of one that has started; see whether your tools are signed in and sign in from the app; a start-screen health check; cost per story, epic and release, with hints on where to save.
 - **v0.3.2, what the work delivered:** delivery metrics (lead time, release frequency, failure rate, recovery time), quality next to cost, the AI's share of delivered code, insights per person and machine, any harness in the agent terminal, and more motion in the pipeline cards.
-- **Later:** add your own language with a translation file; plans under Configuration beside the AI-DLC settings.
+- **Later:** add your own language with a translation file.
 
 ## Development
 
