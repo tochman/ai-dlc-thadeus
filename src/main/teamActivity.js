@@ -123,21 +123,57 @@ export async function loadOpenQuestions(root, groups) {
 
 const iso = (ms) => (Number.isFinite(ms) ? new Date(ms).toISOString() : null);
 
-/** AI-DLC's approvals (by the machine whose shard has them) and review findings (by the reviewer). */
-function auditRows(events) {
-  return (events ?? []).flatMap((e) => {
-    if (e.event === 'GATE_APPROVED') return [{ source: 'approval', author: shardName(e.source).host, time: iso(e.timeMs), stage: e.fields?.Stage ?? null }];
-    if (e.event === 'REVIEW_COMPLETED') {
-      return [{ source: 'finding', author: e.fields?.Reviewer ?? null, time: iso(e.timeMs), stage: e.fields?.Stage ?? null, text: e.fields?.Verdict ?? '' }];
-    }
-    return [];
+const at = (time) => (time ? Date.parse(time) : -Infinity);
+const byTime = (a, b) => at(a.time) - at(b.time) || 0; // two rows without a time give NaN: keep their order
+
+/**
+ * US-1203: the review findings still standing at NOT-READY: the last verdict per stage (and unit), unless that stage
+ * was approved after it. Approvals themselves are not shown here; they stay in Timeline.
+ */
+function standingFindings(events) {
+  const last = new Map();
+  const approved = new Map();
+  for (const e of events ?? []) {
+    const stage = e.fields?.Stage ?? null;
+    if (e.event === 'GATE_APPROVED') approved.set(stage, Math.max(approved.get(stage) ?? -Infinity, e.timeMs));
+    if (e.event === 'REVIEW_COMPLETED') last.set(`${stage}|${e.fields?.Unit ?? ''}`, e);
+  }
+  return [...last.values()]
+    .filter((e) => e.fields?.Verdict === 'NOT-READY' && !(approved.get(e.fields.Stage ?? null) > e.timeMs))
+    .map((e) => ({
+      kind: 'finding',
+      stage: e.fields.Stage ?? null,
+      iteration: Number(e.fields.Iteration) || null,
+      author: e.fields.Reviewer ?? null,
+      time: iso(e.timeMs)
+    }));
+}
+
+/** US-1203: each reviewer at their latest verdict; a later plain comment does not undo an approval or a change request. */
+function reviewersOf(reviews) {
+  const by = new Map();
+  for (const r of [...(reviews ?? [])].sort(byTime)) if (!by.has(r.author) || r.state !== 'commented') by.set(r.author, r);
+  return [...by.values()];
+}
+
+/** US-1203: comments grouped by review thread (a comment or review body outside one is its own), newest thread first. */
+function threadsOf(pull) {
+  const map = new Map();
+  const reviewBodies = (pull?.reviews ?? []).filter((r) => r.body).map((r) => ({ author: r.author, body: r.body, time: r.time, url: r.url, state: r.state }));
+  [...(pull?.comments ?? []), ...reviewBodies].forEach((c, i) => {
+    const key = c.thread ? `t:${c.thread.id}` : `c:${i}`;
+    if (!map.has(key))
+      map.set(key, { id: key, path: c.thread?.path ?? null, line: c.thread?.line ?? null, resolved: c.thread?.resolved ?? null, comments: [] });
+    map.get(key).comments.push({ author: c.author, body: c.body, time: c.time, url: c.url, ...(c.state ? { state: c.state } : {}) });
   });
+  const latest = (th) => Math.max(...th.comments.map((c) => at(c.time)));
+  return [...map.values()].map((th) => ({ ...th, comments: th.comments.sort(byTime), url: th.comments[0].url ?? null })).sort((a, b) => latest(b) - latest(a));
 }
 
 /**
- * US-1201 AC-4: the story's pull request (matched on the intent's story ids, carrying its `comments` and `reviews`) and
- * one list of rows: its comments and reviews, the intent's open questions, approvals and review findings, oldest first
- * and rows without a time last. Each row has `source` (pull, review, question, approval, finding), `author` and `time`.
+ * US-1201 AC-4, US-1203: the story's pull request (matched on the intent's story ids, carrying its `comments` and
+ * `reviews`) with its reviewers; what needs you (open questions, NOT-READY findings still standing, change requests,
+ * unresolved threads, in that order); and its review threads, newest first.
  * @param {{stories?: string[]}} intent
  * @param {Array<object>} pulls from listPulls; the matched one with `comments` and `reviews` from the platform
  * @param {Array<object>} events the intent's audit events
@@ -145,15 +181,29 @@ function auditRows(events) {
  */
 export function storyComments(intent, pulls, events, questions) {
   const pull = matchPull(pulls, intent?.stories);
-  const rows = [
-    ...(pull?.comments ?? []).map((c) => ({ source: 'pull', author: c.author, time: c.time, text: c.body, url: c.url })),
-    ...(pull?.reviews ?? []).map((r) => ({ source: 'review', author: r.author, time: r.time, text: r.body, state: r.state, url: r.url })),
-    ...(questions ?? []).map((q) => ({ source: 'question', author: 'AI-DLC', time: q.time ?? null, text: q.text, file: q.file })),
-    ...auditRows(events)
+  const reviewers = reviewersOf(pull?.reviews);
+  const threads = pull ? threadsOf(pull) : [];
+  const needs = [
+    ...(questions ?? []).map((q) => ({ kind: 'question', text: q.text, file: q.file, time: q.time ?? null })),
+    ...standingFindings(events),
+    ...reviewers.filter((r) => r.state === 'changes').map((r) => ({ kind: 'changes', author: r.author, time: r.time ?? null, url: r.url ?? null })),
+    ...threads
+      .filter((th) => th.resolved === false)
+      .map((th) => ({
+        kind: 'thread',
+        path: th.path,
+        line: th.line,
+        author: th.comments[0].author,
+        text: th.comments[0].body,
+        time: th.comments.at(-1).time,
+        url: th.url
+      }))
   ];
-  const at = (r) => (r.time ? Date.parse(r.time) : Infinity);
-  rows.sort((a, b) => at(a) - at(b) || 0); // two rows without a time give NaN: keep their order
-  return { pull: pull && { number: pull.number, title: pull.title, url: pull.url ?? null }, rows };
+  return {
+    pull: pull && { number: pull.number, title: pull.title, url: pull.url ?? null, reviewers: reviewers.map((r) => ({ author: r.author, state: r.state })) },
+    needs,
+    threads
+  };
 }
 
 /**

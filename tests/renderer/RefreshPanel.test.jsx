@@ -4,7 +4,9 @@ import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/re
 const terminal = { state: vi.fn(() => 'idle'), type: vi.fn() };
 vi.mock('../../src/renderer/TerminalContext.jsx', () => ({ useTerminal: () => terminal }));
 const { default: RefreshPanel } = await import('../../src/renderer/RefreshPanel.jsx');
-const WAIT_MESSAGE = 'Vänta tills AI-DLC-steget är klart eller parkera arbetet först'; // sv.json github.wait (EPIC-07)
+// US-0041 AC4: sv.json github.waitFor names the in-flight intent and its stage (EPIC-07 github.wait before).
+const FLIGHT = { name: 'release-0-2-14', stage: 'code-generation', at: null };
+const WAIT_MESSAGE = 'Vänta tills AI-DLC är klart med Code Generation i release-0-2-14, eller parkera arbetet först';
 
 // Same shapes git:status and git:remoteChanges return.
 const status = { isRepo: true, branch: 'feature/x', upstream: 'origin/feature/x', tracking: true, ahead: 1, behind: 4, dirtyAidlc: 1, dirtyOther: 2 };
@@ -75,17 +77,29 @@ describe('RefreshPanel', () => {
   });
 
   it('disables Hämta in and Uppdatera från main while AI-DLC works: Claude busy or a recent write (FR3.7)', async () => {
-    await openAndRefresh({ lastIntentChangeAt: Date.now() - 60 * 1000 });
+    await openAndRefresh({ lastIntentChangeAt: { ...FLIGHT, at: Date.now() - 30 * 1000 } });
     expect(screen.getByTestId('refresh-panel-pull').disabled).toBe(true);
     expect(screen.getByTestId('refresh-panel-from-main').disabled).toBe(true);
     expect(screen.getByRole('status').textContent).toBe(WAIT_MESSAGE);
     cleanup();
 
     terminal.state.mockImplementation(() => 'busy');
-    await openAndRefresh({ lastIntentChangeAt: Date.now() - 10 * 60 * 1000 });
+    await openAndRefresh({ lastIntentChangeAt: { ...FLIGHT, at: Date.now() - 10 * 60 * 1000 } });
     expect(screen.getByTestId('refresh-panel-pull').disabled).toBe(true);
     await waitFor(() => expect(screen.getByTestId('refresh-panel-status').textContent).toMatch(/arbetar/));
     expect(terminal.type).not.toHaveBeenCalled();
+  });
+
+  it('lets the commands run while the active intent is complete or parked, even with Claude busy (US-0041 AC1)', async () => {
+    terminal.state.mockImplementation(() => 'busy');
+    await openAndRefresh({ lastIntentChangeAt: null }); // useProject gives null for a complete or parked active intent
+    expect(screen.getByTestId('refresh-panel-pull').disabled).toBe(false);
+    expect(screen.queryByRole('status')).toBeNull();
+  });
+
+  it('stops counting a write as work after a minute (US-0041 AC3)', async () => {
+    await openAndRefresh({ lastIntentChangeAt: { ...FLIGHT, at: Date.now() - 61 * 1000 } });
+    expect(screen.getByTestId('refresh-panel-pull').disabled).toBe(false);
   });
 
   it("is named after origin's platform, and after git when origin is on none of them (US-1201 AC-5)", async () => {

@@ -20,14 +20,15 @@ import ProjectSettingsView, { AIDLC_SECTIONS, confirmHarnessSwitch } from './Pro
 import CostRulesSection from './CostRulesSection.jsx';
 import ModelProfilesSection from './ModelProfilesSection.jsx'; // US-0210
 import ProfileSwitchDialog from './ProfileSwitchDialog.jsx'; // US-0210
-import { Frame } from './Lcars.jsx';
+import { Frame, RoundFrame } from './Lcars.jsx';
 import { featureDocsPrompt, lifecycleRulePrompt } from './featureDocsPrompt.js';
 import { DELIVERY_DEFAULT } from '../main/parsers/releases.js';
 import { TerminalProvider, useTerminal } from './TerminalContext.jsx';
 import { useProject } from './useProject.js';
 import { useFeatures } from './useFeatures.js';
-import { useFold } from './useFold.js'; // US-0415
 import { harnessCommand, resolveHarness, selectableHarness } from '../shared/harnesses.js';
+
+const AIDLC_TABS = ['settings', 'plans']; // US-0905: the sub-views of Configuration › AI-DLC
 
 /** Why the chosen harness cannot start, in one sentence, or null (US-0801 FR5.1). */
 function harnessProblem(entry, detected, t) {
@@ -73,7 +74,6 @@ function AidlcProject({ project, view, teamSection = 'refresh', onView, focusInt
   const p = useProject(projectId, detection.activeSpace);
   const activeIntent = p.intents.find((i) => i.active) ?? null;
   const activeDirName = activeIntent?.dirName ?? null;
-  const fold = useFold('intents'); // US-0415 FR5.1: the intents list folds to a strip
 
   // The editor's "the agent may change this file too" notice needs the active intent's record (US-1001).
   useEffect(() => {
@@ -115,26 +115,27 @@ function AidlcProject({ project, view, teamSection = 'refresh', onView, focusInt
       {/* Who does what across my machines, the team view's second section in the arm (US-1201 AC-3). */}
       {view === 'github' && teamSection === 'machines' && <MachinesView projectId={projectId} space={p.space} />}
       <div className="project-body" hidden={view !== 'intents'}>
-        <aside className={`sidebar${fold.folded ? ' is-folded' : ''}`} aria-label={t('intents.overview')} onClick={fold.folded ? fold.toggle : undefined}>
-          <button {...fold.toggleProps} />
-          {detection.spaces.length > 1 && (
-            <label className="field">
-              <span className="field-label">{t('intents.space')}</span>
-              <select className="lcars-select" value={p.space} onChange={(e) => p.setSpace(e.target.value)} data-testid="project-space-select">
-                {detection.spaces.map((s) => (
-                  <option key={s} value={s}>
-                    {s}
-                  </option>
-                ))}
-              </select>
-            </label>
-          )}
-          {p.listWarning && (
-            <p className="banner banner-warn" role="status">
-              {t('intents.listStale', { warning: p.listWarning })}
-            </p>
-          )}
-          <IntentList intents={p.intents} selected={p.selected} onSelect={p.setSelected} cost={p.cost} projectId={projectId} />
+        {/* US-0417 with US-0415: the list column is the shared drawer (IntentList), folding to its slim stack. */}
+        <aside className="intents-col" aria-label={t('intents.overview')}>
+          <IntentList intents={p.intents} selected={p.selected} onSelect={p.setSelected} cost={p.cost} projectId={projectId}>
+            {detection.spaces.length > 1 && (
+              <label className="field">
+                <span className="field-label">{t('intents.space')}</span>
+                <select className="lcars-select" value={p.space} onChange={(e) => p.setSpace(e.target.value)} data-testid="project-space-select">
+                  {detection.spaces.map((s) => (
+                    <option key={s} value={s}>
+                      {s}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            )}
+            {p.listWarning && (
+              <p className="banner banner-warn" role="status">
+                {t('intents.listStale', { warning: p.listWarning })}
+              </p>
+            )}
+          </IntentList>
         </aside>
         <section className="content">
           {p.error && (
@@ -238,6 +239,7 @@ function ProjectContent({
   visible,
   view: chosenView = 'intents',
   section = 'docs',
+  aidlcTab = 'settings',
   teamSection = 'refresh',
   featuresTab = 'epics',
   onView,
@@ -360,15 +362,18 @@ function ProjectContent({
   const showFeatures = settings.featureDocs === 'show' || (settings.featureDocs === 'auto' && docsExist);
   // One view at a time: Features needs the feature docs, the rest AI-DLC; otherwise the intents view shows (US-0901 FR1.1).
   // Configuration holds the project's own settings for every project, and the AI-DLC configuration in an AI-DLC one (US-0012).
-  const offered = { features: showFeatures, config: true, plans: isAidlc, cost: isAidlc, velocity: isAidlc, github: isAidlc, editor: true };
+  const offered = { features: showFeatures, config: true, cost: isAidlc, velocity: isAidlc, github: isAidlc, editor: true };
   const view = offered[chosenView] ? chosenView : 'intents';
   const configSection = AIDLC_SECTIONS.includes(section) && !isAidlc ? 'docs' : section;
   const aidlcShown = view === 'config' && configSection === 'aidlc';
+  // US-0905: Configuration › AI-DLC has two sub-views, its settings and the plans.
+  const plansShown = aidlcShown && aidlcTab === 'plans';
+  const settingsShown = aidlcShown && !plansShown;
   // The AI-DLC configuration mounts the first time it is chosen, so its CLI reads wait until then, and then stays (FR6.1).
   const [configShown, setConfigShown] = useState(false);
   useEffect(() => {
-    if (aidlcShown) setConfigShown(true);
-  }, [aidlcShown]);
+    if (settingsShown) setConfigShown(true);
+  }, [settingsShown]);
   const setupDocs = () => terminal?.type('agent', featureDocsPrompt({ exists: docsExist, path: settings.featuresPath, delivery }), { submit: false });
   // US-0603 FR5.2: only a project with AI-DLC and feature docs has stories for the lifecycle rule to keep.
   const ruleNotice = isAidlc && docsExist && ruleStatus && ruleStatus !== 'current' ? ruleStatus : null;
@@ -412,7 +417,7 @@ function ProjectContent({
           )}
           {justSetUp && <SetupDone onClose={() => setJustSetUp(false)} onFeatureDocs={featureDocsChoice ? setupDocs : undefined} />}
           {/* Kept mounted while Features or Configuration is shown, so the intents view keeps its state (FR2.1). */}
-          <div className="project-mode" hidden={['features', 'config', 'plans', 'editor'].includes(view)}>
+          <div className="project-mode" hidden={['features', 'config', 'editor'].includes(view)}>
             {isAidlc ? (
               <AidlcProject
                 project={project}
@@ -442,39 +447,70 @@ function ProjectContent({
               onSetup={offerSetup}
             />
           )}
-          {view === 'config' && configSection === 'costRules' && <CostRulesSection projectId={project.projectId} />}
-          {view === 'config' && configSection === 'modelProfiles' && (
-            <ModelProfilesSection projectId={project.projectId} harness={harnessId} settings={settings} />
-          )}
           <ProfileSwitchDialog
             ask={profileAsk}
             answer={(yes) => window.bridge.answerModelProfile(project.projectId, profileAsk.kind, yes, harnessId)}
             onClose={() => setProfileAsk(null)}
           />
-          {view === 'config' && !AIDLC_SECTIONS.includes(configSection) && (
-            <ProjectSettingsView
-              section={configSection}
-              agentHooksFocus={hooksFocus}
-              projectId={project.projectId}
-              settings={settings}
-              harness={harnessId}
-              harnesses={detected}
-              onSetup={offerSetup}
-              onAddHarness={isAidlc ? () => setAddingHarness(true) : undefined}
-            />
-          )}
-          {isAidlc && (configShown || aidlcShown) && (
-            <div className="project-mode" hidden={!aidlcShown}>
-              <ConfigView
-                projectId={project.projectId}
-                visible={visible && view === 'config'}
-                harnesses={detected}
-                defaultHarness={harnessId}
-                onSetup={() => setAddingHarness(true)}
-              />
+          {/* US-0417: Configuration in the round frame, the section's title on its bar. The frame stays mounted while
+              another view shows, so the AI-DLC configuration keeps its reads (FR6.1). */}
+          {(view === 'config' || configShown) && (
+            <div className="config-pane" hidden={view !== 'config'}>
+              <RoundFrame
+                className="config-frame"
+                title={t(`settings.project.sections.${configSection}`)}
+                sub={t('config.frameSub', { project: project.name })}
+                footer={selectableHarness(harnessId)?.label}
+              >
+                {view === 'config' && configSection === 'costRules' && <CostRulesSection projectId={project.projectId} />}
+                {view === 'config' && configSection === 'modelProfiles' && (
+                  <ModelProfilesSection projectId={project.projectId} harness={harnessId} settings={settings} />
+                )}
+                {view === 'config' && !AIDLC_SECTIONS.includes(configSection) && (
+                  <ProjectSettingsView
+                    section={configSection}
+                    agentHooksFocus={hooksFocus}
+                    projectId={project.projectId}
+                    settings={settings}
+                    harness={harnessId}
+                    harnesses={detected}
+                    onSetup={offerSetup}
+                    onAddHarness={isAidlc ? () => setAddingHarness(true) : undefined}
+                  />
+                )}
+                {isAidlc && aidlcShown && (
+                  // US-0417: the Settings | Plans switch as tiles with a top strip; the chosen one is brighter.
+                  <div className="lcars-tiles" role="tablist" aria-label={t('config.tabsLabel')}>
+                    {AIDLC_TABS.map((id) => (
+                      <button
+                        key={id}
+                        type="button"
+                        role="tab"
+                        aria-selected={(id === 'plans') === plansShown}
+                        className={`lcars-tile lcars-e-block${(id === 'plans') === plansShown ? ' is-sel' : ''}`}
+                        onClick={() => onView?.('config', { configSection: 'aidlc', aidlcTab: id })}
+                        data-testid={`aidlc-view-tab-${id}`}
+                      >
+                        {id === 'plans' ? t('settings.project.sections.plans') : t('config.tabSettings')}
+                      </button>
+                    ))}
+                  </div>
+                )}
+                {isAidlc && (configShown || settingsShown) && (
+                  <div className="project-mode" hidden={!settingsShown}>
+                    <ConfigView
+                      projectId={project.projectId}
+                      visible={visible && view === 'config'}
+                      harnesses={detected}
+                      defaultHarness={harnessId}
+                      onSetup={() => setAddingHarness(true)}
+                    />
+                  </div>
+                )}
+                {isAidlc && plansShown && <PlansView projectId={project.projectId} visible={visible} harness={harnessId} />}
+              </RoundFrame>
             </div>
           )}
-          {view === 'plans' && <PlansView projectId={project.projectId} visible={visible} harness={harnessId} />}
           {view === 'editor' && (
             <div className="editor-view" data-testid="editor-view">
               <FileTree projectId={project.projectId} onOpen={editor.open} />
@@ -495,6 +531,7 @@ export default function ProjectView({
   visible,
   view,
   section,
+  aidlcTab,
   teamSection,
   featuresTab,
   onView,
@@ -511,6 +548,7 @@ export default function ProjectView({
         visible={visible}
         view={view}
         section={section}
+        aidlcTab={aidlcTab}
         teamSection={teamSection}
         featuresTab={featuresTab}
         onView={onView}

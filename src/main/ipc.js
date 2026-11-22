@@ -481,6 +481,7 @@ const handoffChoice = (c) => {
 };
 const handoffHandlers = {
   'handoff:commands': async (_event, id, choice) => handoff?.commandsFor(handoffId(id), handoffChoice(choice)) ?? null,
+  'handoff:park': async (_event, id) => handoff?.park(handoffId(id)) ?? null, // US-0039 FR2.1, FR2.2
   'handoff:idle': async (_event, id) => handoff?.idle(handoffId(id)) ?? false,
   'handoff:waitReady': async (_event, id) => handoff?.waitReady(handoffId(id)) ?? false,
   'handoff:waiting': async (_event, id, on) => agentStore?.setHandoff(handoffId(id), on === true ? 'waiting' : 'shown'),

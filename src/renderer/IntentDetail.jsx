@@ -11,18 +11,19 @@ import TokenView from './TokenView.jsx';
 import TokenDetail from './TokenDetail.jsx';
 import StoryComments from './StoryComments.jsx';
 import { IntentVelocity } from './VelocityView.jsx';
-import { Dots, Frame, Hairlines } from './Lcars.jsx';
+import { Block, DiagonalFrame, Dots, Pill, useEntrance } from './Lcars.jsx';
 import Tooltip from './Tooltip.jsx';
 import { formatCostPair, isInFlight, shortModel, stagePosition, stageStatusLabel, stageTitle } from './format.js';
 
+// US-0417: the tiles' tones vary as in the mockup (Block tones; none is the plain slate block).
 const TABS = [
-  { id: 'pipeline', tone: 'mid' },
-  { id: 'timeline', tone: 'mid' },
-  { id: 'units', tone: 'mid' },
-  { id: 'cost', tone: 'mid' },
-  { id: 'velocity', tone: 'mid' }, // US-0303 FR1.5
-  { id: 'comments', tone: 'mid' }, // US-1201 AC-4
-  { id: 'files', tone: 'dark' }
+  { id: 'pipeline' },
+  { id: 'timeline', tone: 'dark' },
+  { id: 'units', tone: 'steel' },
+  { id: 'cost' },
+  { id: 'velocity', tone: 'dark' }, // US-0303 FR1.5
+  { id: 'comments' }, // US-1201 AC-4
+  { id: 'files', tone: 'steel' }
 ];
 const MODE_KEY = { 'in-flight': 'live', complete: 'complete' };
 
@@ -65,92 +66,63 @@ export function RequestText({ text }) {
   );
 }
 
-/** The readout column to the right of the frame: Stages, Kostnad, Modell, Läge (FR3.5). */
-function ReadoutColumn({ pipeline, intentCost, intent, directive, cost, dirName, onOpenTokens, tokensRef }) {
-  const { t } = useTranslation();
+/**
+ * US-0417: the readouts that drop out of the diagonal frame's arm: Kostnad, Modell, Läge and the directive (FR3.5).
+ * The done stages are the corner's figure and the foot bar's text (US-0037 FR3.4).
+ */
+function headReadouts(t, { intentCost, intent, directive }) {
   const live = isInFlight(intent?.status);
   const topModel = [...(intentCost?.byModel ?? [])].sort((a, b) => b.usd - a.usd)[0]?.name;
   const mode = MODE_KEY[intent?.status];
-  return (
-    <aside className="readout-col" aria-label={t('intents.readout')}>
-      <Hairlines />
-      <div className="readout">
-        <span className="readout-label">{t('intents.readoutStages')}</span>
-        <span className="readout-value">
-          {pipeline.done}/{pipeline.executed}
-        </span>
-      </div>
-      {intentCost && (
-        <div className="readout">
-          <span className="readout-label">{t('intents.readoutCost')}</span>
-          {/* US-0211 FR3.2: recorded, with the current-price figure beside it when they differ. */}
-          <span className="readout-value readout-value--steel" data-testid="intent-detail-cost">
-            {formatCostPair(intentCost.total)}
-          </span>
-        </div>
-      )}
-      {/* Live tokens beside the cost while the work runs (EPIC-02 US-0207). */}
-      <TokenView cost={cost} dirName={dirName} live={live} onOpen={onOpenTokens} ref={tokensRef} />
-      {/* A finished intent has no live view; its token detail opens from here (US-0208 FR5). */}
-      {!live && intentCost && (
-        <button type="button" ref={tokensRef} className="lcars-block lcars-block--sm lcars-block--dark" onClick={onOpenTokens} data-testid="token-view-open">
-          {t('tokenDetail.openShort')}
-        </button>
-      )}
-      {topModel && (
-        <div className="readout">
-          <span className="readout-label">{t('intents.readoutModel')}</span>
-          <span className="readout-value readout-value--sm">{shortModel(topModel)}</span>
-        </div>
-      )}
-      <div className="readout">
-        <span className="readout-label">{t('intents.readoutMode')}</span>
-        <span className={`readout-value readout-value--sm ${live ? 'readout-value--steel' : ''}`}>
-          {live ? (
-            <span className="readout-live">
-              <span className="lcars-live-dot" aria-hidden="true" />
-              {t('intents.mode.live')}
-            </span>
-          ) : mode ? (
-            t(`intents.mode.${mode}`)
-          ) : (
-            (intent?.status ?? '–')
-          )}
-        </span>
-      </div>
-      {directive?.stage && (
-        <div className="readout">
-          <span className="readout-label">{t('intents.readoutDirective')}</span>
-          <span className="readout-value readout-value--xs">
-            {directive.kind} · {directive.stage} · {directive.delivery}
-          </span>
-        </div>
-      )}
-      <span className="readout-spacer" aria-hidden="true" />
-      <Hairlines widths={[100, 100, 100, 100, 100, 100]} lit={[]} tone="steel" />
-    </aside>
+  const modeValue = live ? (
+    <span className="readout-live">
+      <span className="lcars-live-dot" aria-hidden="true" />
+      {t('intents.mode.live')}
+    </span>
+  ) : mode ? (
+    t(`intents.mode.${mode}`)
+  ) : (
+    (intent?.status ?? '–')
   );
+  return [
+    // US-0211 FR3.2: recorded, with the current-price figure beside it when they differ. US-0037 FR3.5: at the compact size.
+    intentCost && {
+      k: t('intents.readoutCost'),
+      v: (
+        <span className="readout-value--cost" data-testid="intent-detail-cost">
+          {formatCostPair(intentCost.total)}
+        </span>
+      ),
+      tone: 'steel',
+      strip: 'live'
+    },
+    topModel && { k: t('intents.readoutModel'), v: shortModel(topModel), strip: 'quiet' },
+    { k: t('intents.readoutMode'), v: modeValue, tone: 'deep', strip: live ? 'live' : undefined },
+    directive?.stage && {
+      k: t('intents.readoutDirective'),
+      v: <span className="lcars-dblk-small">{[directive.kind, directive.stage, directive.delivery].join(' · ')}</span>,
+      tone: 'deep'
+    }
+  ].filter(Boolean);
 }
 
 /**
- * US-0510 FR4.1–FR4.3, FR4.5: the parked mark, Park (the active intent while in flight and not parked) and Unpark (any
- * parked intent; main switches to it first). A refusal shows AI-DLC's reason; the list follows on project:changed.
+ * US-0510 FR4.2, FR4.5: Park, on the active intent while in flight and not parked. A refusal shows AI-DLC's reason;
+ * the list follows on project:changed. US-0037 FR3.2: a parked intent has no Unpark here; Resume unparks
+ * ("Avparkera och fortsätt vid …") and the parked mark sits in the progress row.
  */
 export function ParkControls({ projectId, intent, activeDirName }) {
   const { t } = useTranslation();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(null);
-  const [nowActive, setNowActive] = useState(false);
-  const canPark = intent.dirName === activeDirName && isInFlight(intent.status) && !intent.parked;
+  if (intent.dirName !== activeDirName || !isInFlight(intent.status) || intent.parked) return null;
 
-  async function run(call) {
+  async function park() {
     setBusy(true);
     setError(null);
-    setNowActive(false);
     try {
-      const res = await call();
+      const res = await window.bridge.parkIntent(projectId);
       if (!res?.ok) setError(res?.error ?? '');
-      else setNowActive(!!res.switched);
     } catch (err) {
       setError(String(err?.message ?? err));
     } finally {
@@ -160,34 +132,10 @@ export function ParkControls({ projectId, intent, activeDirName }) {
 
   return (
     <div className="intent-park">
-      {intent.parked && <ParkedMark stage={intent.parkedStage} />}
-      {canPark && (
-        <button
-          type="button"
-          className="lcars-block lcars-block--sm lcars-block--dark"
-          disabled={busy}
-          onClick={() => run(() => window.bridge.parkIntent(projectId))}
-          data-testid="intent-park"
-        >
-          {t('intents.park')}
-        </button>
-      )}
-      {intent.parked && (
-        <button
-          type="button"
-          className="lcars-block lcars-block--sm lcars-block--dark"
-          disabled={busy}
-          onClick={() => run(() => window.bridge.unparkIntent(projectId, intent.dirName))}
-          data-testid="intent-unpark"
-        >
-          {t('intents.unpark')}
-        </button>
-      )}
-      {nowActive && (
-        <p className="intent-park-note" role="status" data-testid="intent-now-active">
-          {t('intents.nowActive', { name: intent.slug ?? intent.dirName })}
-        </p>
-      )}
+      {/* US-0417 (Shape rule): Park is an action, so a pill. */}
+      <Pill tone="quiet" disabled={busy} onClick={park} data-testid="intent-park">
+        {t('intents.park')}
+      </Pill>
       {error !== null && (
         <p className="refresh-error" role="alert" data-testid="intent-park-error">
           {error}
@@ -240,6 +188,9 @@ export default function IntentDetail({
     setTab('files');
   }
 
+  const entering = useEntrance(`intent:${detail.dirName}`); // US-0417: the shared entrance, each time an intent is shown
+  const live = isInFlight(intent?.status);
+
   // A re-read detail (a change on disk) is the token detail's refreshKey: it asks for the agent progress again (US-0507 FR5.1).
   if (showTokens) {
     return (
@@ -259,12 +210,32 @@ export default function IntentDetail({
     );
   }
 
+  const plan = state?.plan ?? intent?.scope ?? state?.scope ?? '–';
+  // Live tokens under the readouts while the work runs (EPIC-02 US-0207); a finished intent opens Activity from a block (US-0208 FR5).
+  const arm = live ? (
+    <TokenView cost={cost} dirName={detail.dirName} live onOpen={openTokens('side')} ref={tokensRef} />
+  ) : (
+    intentCost && (
+      <Block as="button" ref={tokensRef} tone="dark" size="sm" onClick={openTokens('side')} data-testid="token-view-open">
+        {t('tokenDetail.openShort')}
+      </Block>
+    )
+  );
+
   return (
-    <article className="intent-detail" data-testid="intent-detail">
-      <Frame>
+    <article className={`intent-detail${entering ? ' is-entering' : ''}`} data-testid="intent-detail">
+      <DiagonalFrame
+        className="intent-df"
+        title={intent?.slug ?? detail.dirName}
+        sub={plan /* the step stays once, in the progress row (US-0037 FR3.4) */}
+        tag={detail.dirName}
+        corner={{ label: t('intents.readoutStages'), value: `${pipeline.done} / ${pipeline.executed}` }}
+        footer={<span data-testid="intent-detail-stages">{`${t('intents.readoutStages')} ${pipeline.done}/${pipeline.executed}`}</span>}
+        readouts={headReadouts(t, { intentCost, intent, directive: detail.directive })}
+        arm={arm}
+      >
         <header className="intent-head">
           <div className="intent-head-main">
-            <h2 className="intent-title">{intent?.slug ?? detail.dirName}</h2>
             <div className="lcars-chips">
               <Tooltip text={state?.plan ? t('intents.basedOn', { scope: intent?.scope ?? state?.scope ?? '–' }) : t('intents.scopeLabel')} focusable>
                 <span className="lcars-chip">{state?.plan ?? intent?.scope ?? state?.scope ?? '–'}</span>
@@ -280,28 +251,40 @@ export default function IntentDetail({
                     </button>
                   </Tooltip>
                 ))}
-              <span className="lcars-chip lcars-chip--quiet">{detail.dirName}</span>
               {detail.stale && <span className="lcars-chip lcars-chip--warn">{t('intents.stale')}</span>}
             </div>
           </div>
-          {intent && <ParkControls key={intent.dirName} projectId={projectId} intent={intent} activeDirName={activeDirName} />}
-          {intent && <ResumeButton projectId={projectId} intent={intent} activeDirName={activeDirName} activeIntent={activeIntent} position={position} />}
-          <button
-            type="button"
+          {/* US-0037 FR3.1, FR3.6: Park and Resume as one group, the same height, wrapping together. */}
+          {intent && (
+            <div className="intent-head-actions" data-testid="intent-head-actions">
+              <ParkControls key={intent.dirName} projectId={projectId} intent={intent} activeDirName={activeDirName} />
+              <ResumeButton projectId={projectId} intent={intent} activeDirName={activeDirName} activeIntent={activeIntent} position={position} />
+            </div>
+          )}
+          {/* US-0022: the way into Activity where the frame's arm is hidden (narrow windows). */}
+          <Block
+            as="button"
             ref={headTokensRef}
-            className="lcars-block lcars-block--sm lcars-block--dark intent-tokens-open"
+            tone="dark"
+            size="sm"
+            className="intent-tokens-open"
             onClick={openTokens('head')}
             data-testid="intent-detail-tokens"
           >
-            {t('tokenDetail.tokens')}
-          </button>
+            {t('tokenDetail.activity')}
+          </Block>
         </header>
 
         {steps.length > 0 && (
-          <div className="intent-progress">
+          <div className="intent-progress" data-testid="intent-progress">
             {position && <span className="intent-progress-step">{t('intents.step', { step: position.step, total: position.total })}</span>}
             <Dots states={steps} />
-            {now && <span className={`intent-progress-now ${now.needsYou ? 'is-you' : ''}`}>{now.text}</span>}
+            {/* US-0037 FR3.2, FR3.3: a parked intent shows its parked mark here, once, in place of "Pågår · <stage>". */}
+            {intent?.parked ? (
+              <ParkedMark stage={intent.parkedStage} />
+            ) : (
+              now && <span className={`intent-progress-now ${now.needsYou ? 'is-you' : ''}`}>{now.text}</span>
+            )}
           </div>
         )}
 
@@ -313,17 +296,23 @@ export default function IntentDetail({
         ))}
 
         <div className="detail-tabs" role="tablist" aria-label={t('intents.tabsLabel')}>
-          {TABS.map((x) => (
-            <button
+          {/* US-0417: the tabs are tiles, their state in a strip on top; selection is brightness. */}
+          {TABS.map((x, i) => (
+            <Block
               key={x.id}
+              as="button"
               role="tab"
               aria-selected={tab === x.id}
-              className={`lcars-block lcars-block--tab lcars-block--${tab === x.id ? 'active' : x.tone}`}
+              selected={tab === x.id}
+              strip={tab === x.id ? 'live' : undefined}
+              tone={x.tone}
+              index={i}
+              className="lcars-tile"
               onClick={() => setTab(x.id)}
               data-testid={`intent-detail-tab-${x.id}`}
             >
               {t(`intents.tabs.${x.id}`)}
-            </button>
+            </Block>
           ))}
         </div>
 
@@ -335,20 +324,10 @@ export default function IntentDetail({
           )}
           {tab === 'timeline' && <Timeline events={detail.events} newKeys={newKeys} />}
           {tab === 'units' && <BoltDag dag={detail.graph?.boltDag ?? null} statuses={detail.units} />}
-          {tab === 'comments' && <StoryComments projectId={projectId} space={space} dirName={detail.dirName} />}
+          {tab === 'comments' && <StoryComments projectId={projectId} space={space} dirName={detail.dirName} files={detail.files} onOpenFile={showFile} />}
           {tab === 'files' && <ArtifactReader projectId={projectId} groups={detail.files} selected={openFile} onSelect={setOpenFile} />}
         </div>
-      </Frame>
-      <ReadoutColumn
-        pipeline={pipeline}
-        intentCost={intentCost}
-        intent={intent}
-        directive={detail.directive}
-        cost={cost}
-        dirName={detail.dirName}
-        onOpenTokens={openTokens('side')}
-        tokensRef={tokensRef}
-      />
+      </DiagonalFrame>
     </article>
   );
 }

@@ -508,6 +508,34 @@ describe('FeaturesView: every planning change is kept (US-0608)', () => {
     await waitFor(() => expect(window.bridge.resolvePlanning).toHaveBeenLastCalledWith('p1', 'c1', 'mine'));
     await waitFor(() => expect(screen.queryByTestId('planning-entry')).toBeNull());
   });
+
+  // US-0038 FR1.4: the row names what holds a change back and what to choose.
+  it('a change set aside from an app commit names that commit and what each choice does (US-0038 FR1.4)', async () => {
+    waiting({ ...CONFLICT, from: '6502115 docs: update US-0035' });
+    render(<FeaturesView projectId="p1" features={docs} delivery="releases" tab="releases" />);
+    const text = (await screen.findByTestId('planning-entry')).textContent;
+    expect(text).toContain('Från appens commit 6502115 docs: update US-0035.');
+    expect(screen.getByTestId('planning-choose').textContent).toBe('Behåll deras släpper appens ändring; Använd min skriver den över målets text.');
+  });
+
+  it('a conflict without an app commit still offers the choice, and names no commit (US-0038 FR1.4)', async () => {
+    waiting(CONFLICT);
+    render(<FeaturesView projectId="p1" features={docs} delivery="releases" tab="releases" />);
+    expect((await screen.findByTestId('planning-entry')).textContent).not.toMatch(/Från appens commit|undefined/);
+    expect(screen.getByTestId('planning-choose')).toBeTruthy();
+  });
+
+  it('a push blocked by a commit that could not be set aside names it and what to do (US-0038 FR1.4)', async () => {
+    window.bridge.getPlanningStatus.mockResolvedValue({
+      ...NONE,
+      pending: 1,
+      error: { kind: 'conflict', files: ['docs/releases/0.2.13.md'], commit: '6502115 docs: update US-0035' }
+    });
+    render(<FeaturesView projectId="p1" features={docs} delivery="releases" tab="releases" />);
+    expect((await screen.findByTestId('planning-error')).textContent).toBe(
+      'Appens commit 6502115 docs: update US-0035 krockar med main i docs/releases/0.2.13.md och kunde inte läggas åt sidan. Inget pushades. Ta bort grenen dash/planning för att släppa den.'
+    );
+  });
 });
 
 // US-0604: a second epic next to EPIC-06, with priorities, a complexity and a released story.
@@ -626,18 +654,103 @@ describe('FeaturesView: story filters (US-0604)', () => {
   });
 });
 
-describe('FeaturesView: the list folds away (US-0415)', () => {
-  it('folding and opening the epic list keeps the selected story and the filter (AC5.1.2)', () => {
+describe('FeaturesView: the list folds away (US-0415, US-0417 drawer)', () => {
+  afterEach(() => {
+    delete window.bridge.getSettings;
+    delete window.bridge.setSettings;
+    delete document.documentElement.dataset.motion;
+  });
+
+  it('the epic list is a drawer: toggle last in its heading row, folded to the stack, and the stack opens it with the story and filter kept (AC5.1.2)', () => {
     render(<FeaturesView projectId="p1" features={twoEpics()} delivery="releases" />);
     fireEvent.change(screen.getByTestId('features-view-all-filter-text'), { target: { value: 'saved' } });
     fireEvent.click(screen.getByTestId('features-view-match'));
-    const aside = screen.getByTestId('features-view-all-filters').closest('aside');
+    const drawer = screen.getByTestId('features-view-all-filters').closest('[data-testid="list-drawer"]');
+    expect(drawer.closest('aside').getAttribute('aria-label')).toBe('Epics');
+    const heading = within(drawer).getByTestId('section-heading');
+    expect(heading.textContent).toMatch(/^Epics.*2 st/);
+    const toggle = within(drawer).getByTestId('list-fold-toggle');
+    expect(heading.lastElementChild).toBe(toggle);
+    expect(document.getElementById(toggle.getAttribute('aria-controls')).contains(screen.getByTestId('features-view-all-filters'))).toBe(true);
 
-    fireEvent.click(within(aside).getByTestId('list-fold-toggle'));
-    expect(aside.classList.contains('is-folded')).toBe(true);
-    fireEvent.click(within(aside).getByTestId('list-fold-toggle')); // the same toggle brings it back
-    expect(aside.classList.contains('is-folded')).toBe(false);
+    fireEvent.click(toggle);
+    expect(drawer.className).toContain('is-folded');
+    const stack = within(drawer).getByTestId('list-drawer-stack');
+    expect(stack.textContent).toBe('›2Epics');
+    expect(within(drawer).getByTestId('list-drawer-open').getAttribute('aria-expanded')).toBe('false');
+    fireEvent.click(stack); // the stack brings it back
+    expect(drawer.className).not.toContain('is-folded');
     expect(screen.getByTestId('features-view-all-filter-text').value).toBe('saved');
     expect(screen.getByTestId('features-view-story-detail').getAttribute('aria-label')).toBe('US-0703');
+  });
+
+  it('the release list is its own drawer, and each list keeps its folded state per view', async () => {
+    window.bridge.getSettings = vi.fn(async () => ({ listFolded: { features: true } }));
+    window.bridge.setSettings = vi.fn(async () => {});
+    render(<WithTab initial="releases" projectId="p1" features={releaseDocs()} delivery="releases" />);
+    const drawer = screen.getAllByTestId('features-view-release')[0].closest('[data-testid="list-drawer"]');
+    expect(within(drawer).getByTestId('section-heading').textContent).toMatch(/^Releaser.*3 st/);
+    await waitFor(() => expect(window.bridge.getSettings).toHaveBeenCalled());
+    expect(drawer.className).not.toContain('is-folded'); // the epics' saved fold is not the releases'
+
+    fireEvent.click(within(drawer).getByTestId('list-fold-toggle'));
+    expect(drawer.className).toContain('is-folded');
+    expect(within(drawer).getByTestId('list-drawer-stack').textContent).toBe('›3Releaser');
+    await waitFor(() => expect(window.bridge.setSettings).toHaveBeenCalledWith({ listFolded: { features: true, releases: true } }));
+  });
+
+  it('opens folded when the epic list was folded last time', async () => {
+    window.bridge.getSettings = vi.fn(async () => ({ listFolded: { features: true } }));
+    render(<FeaturesView projectId="p1" features={twoEpics()} delivery="releases" />);
+    const drawer = screen.getByTestId('features-view-all-filters').closest('[data-testid="list-drawer"]');
+    await waitFor(() => expect(drawer.className).toContain('is-folded'));
+  });
+});
+
+describe('FeaturesView: the US-0417 look', () => {
+  afterEach(() => delete document.documentElement.dataset.motion);
+
+  it('epic rows are square blocks with a state strip, selected by brightness', () => {
+    render(<FeaturesView projectId="p1" features={twoEpics()} delivery="releases" />);
+    const [first, second] = screen.getAllByTestId('features-view-epic');
+    expect(first.classList.contains('lcars-nb')).toBe(true);
+    expect(first.classList.contains('lcars-strip--live')).toBe(true); // in progress
+    expect(first.classList.contains('is-sel')).toBe(true);
+    expect(second.classList.contains('is-sel')).toBe(false);
+    fireEvent.click(second);
+    expect(screen.getAllByTestId('features-view-epic')[1].classList.contains('is-sel')).toBe(true);
+    expect(screen.getAllByTestId('features-view-epic')[0].classList.contains('is-sel')).toBe(false);
+  });
+
+  it('release rows carry their state as a strip: planned live, released done', () => {
+    render(<FeaturesView projectId="p1" features={releaseDocs()} delivery="releases" tab="releases" />);
+    const strips = screen.getAllByTestId('features-view-release').map((el) => [...el.classList].find((c) => c.startsWith('lcars-strip--')));
+    expect(strips).toEqual(['lcars-strip--live', 'lcars-strip--done', 'lcars-strip--done']);
+  });
+
+  it('runs the entrance when the view is entered and again on a switch to Releases, only with full motion', () => {
+    vi.useFakeTimers();
+    try {
+      document.documentElement.dataset.motion = 'full';
+      const root = () => screen.getByTestId('features-view');
+      const { rerender } = render(<FeaturesView projectId="p1" features={releaseDocs()} delivery="releases" tab="epics" />);
+      expect(root().classList.contains('is-entering')).toBe(true);
+      act(() => vi.advanceTimersByTime(1000));
+      expect(root().classList.contains('is-entering')).toBe(false);
+      rerender(<FeaturesView projectId="p1" features={releaseDocs()} delivery="releases" tab="releases" />);
+      expect(root().classList.contains('is-entering')).toBe(true);
+      cleanup();
+      document.documentElement.dataset.motion = 'reduced';
+      render(<FeaturesView projectId="p1" features={releaseDocs()} delivery="releases" tab="releases" />);
+      expect(root().classList.contains('is-entering')).toBe(false);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('filters have no rounded select caps: square blocks per the shape rule', async () => {
+    const css = (await import('node:fs')).readFileSync(path.resolve(__dirname, '../../src/renderer/theme.css'), 'utf8');
+    expect(css).toMatch(/\.features-view \.lcars-select\s*\{[^}]*border-radius: 0/);
+    expect(css).toMatch(/\.features-view \.lcars-select::picker-icon\s*\{[^}]*border-radius: 0/);
   });
 });
