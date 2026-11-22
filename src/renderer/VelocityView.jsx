@@ -8,6 +8,7 @@ import { useTranslation } from 'react-i18next';
 import { intentMetrics } from '../main/parsers/velocity.js';
 import { locale } from '../shared/i18n.js';
 import Tooltip from './Tooltip.jsx';
+import { Block, DiagonalFrame, useEntrance } from './Lcars.jsx';
 import { formatDuration, stageTitle } from './format.js';
 
 const errorText = (err) => String(err?.message ?? err).replace(/^Error invoking remote method '[^']+': (Error: )?/, '');
@@ -201,6 +202,7 @@ export default function VelocityView({ projectId, space }) {
   const [data, setData] = useState(null);
   const [error, setError] = useState(null);
   const [unit, setUnit] = useState('week');
+  const entering = useEntrance(`velocity:${projectId}`); // US-0417: the shared entrance on entering Velocity
 
   const load = useCallback(async () => {
     try {
@@ -222,59 +224,61 @@ export default function VelocityView({ projectId, space }) {
   }, [projectId, space, load]);
 
   const p = data?.project;
+  // US-0417: the four figures drop out of the diagonal frame's arm as readout blocks.
+  const readouts = p
+    ? [
+        { k: t('velocity.readout.finished'), v: <span data-testid="velocity-readout-finished">{p.finished}</span>, tone: 'steel', strip: 'live' },
+        { k: t('velocity.readout.running'), v: <span data-testid="velocity-readout-running">{p.running}</span>, strip: 'quiet' },
+        { k: t('velocity.readout.average'), v: <span data-testid="velocity-readout-average">{dur(p.avgActiveMs)}</span>, tone: 'deep' },
+        { k: t('velocity.readout.stories'), v: <span data-testid="velocity-readout-stories">{p.storiesDone}</span>, tone: 'deep' }
+      ]
+    : [];
   return (
-    <section className="velocity-view" data-testid="velocity-view">
-      <div className="lcars-heading">
-        <span className="section-title">{t('velocity.title')}</span>
-        <span className="lcars-heading-line" aria-hidden="true" />
-        <span className="lcars-heading-meta">{t('velocity.meta')}</span>
-      </div>
-      {error && (
-        <p className="banner banner-error" role="alert">
-          {error}
-        </p>
-      )}
-      {!data && !error && <p className="muted">{t('velocity.loading')}</p>}
-      {data && (
-        <>
-          <div className="velocity-readouts">
-            <Readout label={t('velocity.readout.finished')} value={p.finished} testId="velocity-readout-finished" />
-            <Readout label={t('velocity.readout.running')} value={p.running} testId="velocity-readout-running" />
-            <Readout label={t('velocity.readout.average')} value={dur(p.avgActiveMs)} testId="velocity-readout-average" />
-            <Readout label={t('velocity.readout.stories')} value={p.storiesDone} testId="velocity-readout-stories" />
-          </div>
-          <div className="velocity-units" role="group" aria-label={t('velocity.unit.label')}>
-            {['week', 'month'].map((u) => (
-              <button
-                key={u}
-                type="button"
-                className={`lcars-block lcars-block--tab lcars-block--${unit === u ? 'active' : 'mid'}`}
-                aria-pressed={unit === u}
-                onClick={() => setUnit(u)}
-                data-testid={`velocity-unit-${u}`}
-              >
-                {t(`velocity.unit.${u}`)}
-              </button>
-            ))}
-          </div>
-          <VelocityChart buckets={p[unit]} />
-          <IntentTable rows={data.intents} />
-          <StoryTable stories={data.stories} />
-          {data.releases.length > 0 && (
-            <>
-              <h3 className="section-title">{t('velocity.releases')}</h3>
-              <ul className="refresh-list">
-                {data.releases.map((r) => (
-                  <li key={r.release} data-testid="velocity-release">
-                    {t('velocity.releaseLine', { release: r.release, n: r.stories.length, stories: r.stories.join(', ') })}
-                  </li>
-                ))}
-              </ul>
-            </>
-          )}
-          <Sources sources={data.sources} />
-        </>
-      )}
+    <section className={`velocity-view${entering ? ' is-entering' : ''}`} data-testid="velocity-view">
+      <DiagonalFrame title={t('velocity.title')} sub={t('velocity.meta')} tag={space} readouts={readouts}>
+        {error && (
+          <p className="banner banner-error" role="alert">
+            {error}
+          </p>
+        )}
+        {!data && !error && <p className="muted">{t('velocity.loading')}</p>}
+        {data && (
+          <>
+            <div className="velocity-units" role="group" aria-label={t('velocity.unit.label')}>
+              {['week', 'month'].map((u) => (
+                <Block
+                  key={u}
+                  as="button"
+                  selected={unit === u}
+                  tone={unit === u ? undefined : 'dark'}
+                  size="sm"
+                  aria-pressed={unit === u}
+                  onClick={() => setUnit(u)}
+                  data-testid={`velocity-unit-${u}`}
+                >
+                  {t(`velocity.unit.${u}`)}
+                </Block>
+              ))}
+            </div>
+            <VelocityChart buckets={p[unit]} />
+            <IntentTable rows={data.intents} />
+            <StoryTable stories={data.stories} />
+            {data.releases.length > 0 && (
+              <>
+                <h3 className="section-title">{t('velocity.releases')}</h3>
+                <ul className="refresh-list">
+                  {data.releases.map((r) => (
+                    <li key={r.release} data-testid="velocity-release">
+                      {t('velocity.releaseLine', { release: r.release, n: r.stories.length, stories: r.stories.join(', ') })}
+                    </li>
+                  ))}
+                </ul>
+              </>
+            )}
+            <Sources sources={data.sources} />
+          </>
+        )}
+      </DiagonalFrame>
     </section>
   );
 }

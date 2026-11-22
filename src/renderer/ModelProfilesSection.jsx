@@ -20,8 +20,11 @@ function draftOf(saved) {
   };
 }
 
-/** One profile's pickers: the AI-DLC saved profile and a model per agent, empty meaning unchanged (AC1.1.2, AC1.1.3). */
-function ProfileFields({ kind, profile, saved, onChange }) {
+/**
+ * One profile's pickers: the AI-DLC saved profile and a model per agent, empty meaning unchanged (AC1.1.2, AC1.1.3).
+ * US-0417: an outlined card, the active profile's brighter (selection is brightness).
+ */
+function ProfileFields({ kind, profile, saved, chosen, onChange }) {
   const { t } = useTranslation();
   const setModel = (agent, model) => {
     const models = { ...profile.models, [agent]: model };
@@ -29,8 +32,12 @@ function ProfileFields({ kind, profile, saved, onChange }) {
     onChange({ ...profile, models });
   };
   return (
-    <fieldset className="settings-group" data-testid={`model-profiles-${kind}`}>
-      <legend className="field-label">{t(`modelProfiles.kindLegend.${kind}`)}</legend>
+    <fieldset
+      className={`settings-group lcars-pcard${chosen ? ' is-chosen' : ''}`}
+      aria-current={chosen ? 'true' : undefined}
+      data-testid={`model-profiles-${kind}`}
+    >
+      <legend className="field-label lcars-pcard-title">{t(`modelProfiles.kindLegend.${kind}`)}</legend>
       {saved.names.length > 0 && (
         <label className="field">
           <span className="field-label">{t('modelProfiles.from')}</span>
@@ -155,7 +162,14 @@ export default function ModelProfilesSection({ projectId, harness, settings, mot
                 </p>
               )}
               {KINDS.map((kind) => (
-                <ProfileFields key={kind} kind={kind} profile={draft[kind]} saved={saved} onChange={(p) => setDraft((d) => ({ ...d, [kind]: p }))} />
+                <ProfileFields
+                  key={kind}
+                  kind={kind}
+                  profile={draft[kind]}
+                  saved={saved}
+                  chosen={active === kind}
+                  onChange={(p) => setDraft((d) => ({ ...d, [kind]: p }))}
+                />
               ))}
               <label className="check">
                 <input

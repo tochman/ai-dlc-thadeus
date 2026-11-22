@@ -332,6 +332,11 @@
     "usd": "USD",
     "share": "Andel",
     "tokensHeader": "Tokens",
+    "scopes": "Scopes",
+    "corner": "Totalt · {n, plural, one {# intent} other {# intents}}",
+    "tokenMix": "Tokenmix",
+    "shareScope": "Andel per scope",
+    "shareScopeLabel": "Andel per scope: {list}",
     "sessionModel": "Sessionens modell",
     "sessionModelOf": "Sessionens modell ({model})",
     "readingModels": "Läser modellkonfigurationen …",
@@ -929,6 +934,7 @@
     "loading": "Läser AI-DLC:s konfiguration…",
     "tabsLabel": "AI-DLC-vyer",
     "tabSettings": "Inställningar",
+    "frameSub": "Projektinställningar · {project}",
     "harnessLabel": "Harness",
     "section": {
       "models": "Modeller och effort",
@@ -970,6 +976,7 @@
     "empty": "Ingen fil är öppen. Välj en fil i trädet, eller Redigera i läsaren eller Features-vyn.",
     "loading": "Laddar editorn…",
     "tree": "Projektets filer",
+    "files": "Filer",
     "treeTruncated": "Trädet visar de första 20 000 filerna.",
     "unsaved": "osparade ändringar",
     "close": "Stäng {file}",
@@ -1222,7 +1229,24 @@
     "kept": "Installerad. Det hämtade paketet finns kvar i",
     "relaunch": "Starta om nu",
     "upToDate": "Du har den senaste versionen.",
-    "confirmRestart": "En agentflik arbetar. Uppdateringen startar om appen och avslutar dess terminalsessioner. Uppdatera ändå?"
+    "confirmRestart": "En agentflik arbetar. Uppdateringen startar om appen och avslutar dess terminalsessioner. Uppdatera ändå?",
+    "dialogTitle": "Uppdatering",
+    "show": "Visa",
+    "checking": "Söker efter en uppdatering",
+    "checkingText": "Frågar GitHub efter den senaste releasen av {repo}…",
+    "upToDateTitle": "Senaste versionen",
+    "downloadTitle": "Hämtar",
+    "passwordTitle": "Installationen behöver ditt lösenord",
+    "readyTitle": "Klar att starta om",
+    "errorTitle": "Uppdateringen stoppades",
+    "whatToDo": "Försök igen om en stund. Hjälper det inte, hämta releasen från GitHub och installera den själv.",
+    "retry": "Försök igen",
+    "busyWarn": "En agentflik arbetar. Uppdateringen startar om appen och avslutar dess terminal.",
+    "installed": "Installerad",
+    "latest": "Senaste",
+    "checked": "Kontrollerad",
+    "source": "Källa",
+    "footer": "{repo} · releaser"
   },
   "tokens": {
     "title": "Tokens live",
@@ -1237,9 +1261,10 @@
     "open": "Tokens live, öppna tokendetaljerna"
   },
   "tokenDetail": {
-    "title": "Tokens · {name}",
+    "title": "Aktivitet · {name}",
+    "activity": "Aktivitet",
     "back": "‹ Tillbaka",
-    "openShort": "Tokens ›",
+    "openShort": "Aktivitet ›",
     "overTime": "Tokens över tid",
     "overTimeLabel": "Tokens över tid, {elapsed}, {tokens} tokens, staplade per slag",
     "chartKeys": "Tokens över tid. Piltangenterna väljer en avläsning, Esc döljer den.",
@@ -1333,9 +1358,15 @@
     }
   },
   "aboutDialog": {
-    "exit": "STÄNG",
-    "licenses": "LICENSER",
-    "licensesFailed": "Licenserna kunde inte öppnas: {error}"
+    "title": "Om",
+    "licenses": "Licenser",
+    "licensesFailed": "Licenserna kunde inte öppnas: {error}",
+    "version": "Version",
+    "patch": "Patch",
+    "platform": "Plattform",
+    "build": "Bygge",
+    "madeBy": "Gjord av",
+    "repository": "Källkod"
   },
   "menu": {
     "about": "Om {app}",

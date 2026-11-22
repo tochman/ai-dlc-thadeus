@@ -13,7 +13,7 @@ export function useFold(viewId) {
 
   useEffect(() => {
     let live = true;
-    Promise.resolve(window.bridge.getSettings?.()) // a bridge without settings (a test) leaves the list open
+    Promise.resolve(window.bridge?.getSettings?.()) // no bridge or no settings (a test) leaves the list open
       .then((s) => live && setFolded(s?.listFolded?.[viewId] === true))
       .catch((err) => console.error('Listans läge kunde inte läsas:', err));
     return () => {
@@ -26,8 +26,8 @@ export function useFold(viewId) {
     setFolded(next);
     // Read again before saving: listFolded is saved whole, and another view may have changed its own entry.
     const bridge = window.bridge;
-    Promise.resolve(bridge.getSettings?.())
-      .then((s) => bridge.setSettings?.({ listFolded: { ...s?.listFolded, [viewId]: next } }))
+    Promise.resolve(bridge?.getSettings?.())
+      .then((s) => bridge?.setSettings?.({ listFolded: { ...s?.listFolded, [viewId]: next } }))
       .catch((err) => console.error('Listans läge kunde inte sparas:', err));
   }, [folded, viewId]);
 

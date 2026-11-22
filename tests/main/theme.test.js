@@ -155,9 +155,9 @@ describe('the agent dialog (US-0020)', () => {
 });
 
 describe('the token detail view (US-0208 FR7)', () => {
-  it('US-0022: shows the header Tokens button only where the readout column is hidden', () => {
+  it('US-0022: shows the header Activity button only where the frame arm is hidden (US-0417)', () => {
     expect(css).toMatch(/\.intent-tokens-open\s*\{[^}]*display:\s*none/);
-    expect(css).toMatch(/@media \(max-width: 1280px\) \{[^}]*\.readout-col \{ display: none; \}[^}]*\.intent-tokens-open \{ display: inline-flex; \}/);
+    expect(css).toMatch(/@container \(max-width: 560px\) \{ \.intent-tokens-open \{ display: flex; \} \}/);
   });
 
   it('adds the cache write 5 m steel to the palette', () => {

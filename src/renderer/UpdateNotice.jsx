@@ -1,63 +1,131 @@
-// The update notice (EPIC-04 US-0407): a calm LCARS notice, not a modal. Main checks GitHub through `gh`, at most
-// once a day on start and whenever the menu asks; this shows the offer, the download progress and the outcome.
-// No URL, file or version to download ever leaves the renderer: main keeps the offered release itself (NFR3).
+// The updater's face (EPIC-04 US-0407, in the US-0417 look). Main checks GitHub through `gh`, at most once a day on
+// start and whenever the menu asks; this shows the offer, the download, the Linux password (EPIC-00 US-0034) and the
+// outcome. US-0417: one LCARS Update dialog (LcarsDialog) with the states checking, up to date, available,
+// downloading, password, ready to restart and error. A start-up find stays a calm notice, not a modal, and that
+// notice is the way into the dialog; the menu's check, and openUpdateDialog() (Settings › Tools), open the dialog
+// at once. What the updater does is unchanged. No URL, file or version to download ever leaves the renderer: main
+// keeps the offered release itself (NFR3).
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { FileContent } from './ArtifactReader.jsx';
+import LcarsDialog from './LcarsDialog.jsx';
+import { Pill, SectionHeading, SegMeter } from './Lcars.jsx';
+import { APP_REPO } from '../shared/appName.js';
 
 const errorText = (err) => String(err?.message ?? err).replace(/^Error invoking remote method '[^']+': (Error: )?/, '');
 const percent = (p) => (p?.total > 0 ? Math.min(100, Math.round((p.received / p.total) * 100)) : null);
+const CELLS = 20;
+const cells = (pct) => Array.from({ length: CELLS }, (_, i) => (pct == null ? 'deep' : i < Math.round((pct / 100) * CELLS) ? 'live' : 'off'));
+// Phases that belong to an update under way: the menu's check just shows them again instead of asking GitHub.
+const UNDER_WAY = ['downloading', 'installing', 'password', 'installed'];
+// Phases the small notice stands for while the dialog is closed.
+const NOTICE = ['offer', ...UNDER_WAY];
+
+/** US-0417: the event openUpdateDialog() sends; UpdateNotice, mounted once in App, opens the dialog on it. */
+export const UPDATE_OPEN_EVENT = 'thadeus:open-update-dialog';
+
+/** US-0417: opens the Update dialog and checks now, as the menu's "Sök efter uppdatering…" does (Settings › Tools). */
+export function openUpdateDialog() {
+  window.dispatchEvent(new CustomEvent(UPDATE_OPEN_EVENT));
+}
 
 /**
  * @param {{busy: boolean, checkRequest?: number}} props
  *   busy: an agent tab in any project is "Arbetar", so a restart asks first; checkRequest: bumped by the menu's
- *   "Sök efter uppdatering…", which checks now and also reports "no update" and why a check could not run
+ *   "Sök efter uppdatering…", which opens the dialog, checks now and also says "no update" and why a check could not run
  */
 export default function UpdateNotice({ busy, checkRequest = 0 }) {
   const { t } = useTranslation();
   const bridge = window.bridge;
   const [offer, setOffer] = useState(null); // the available update {version, tag, notes, asset}
-  const [phase, setPhase] = useState('hidden'); // hidden | offer | downloading | installing | password | installed | error | message
+  const [phase, setPhase] = useState('hidden'); // hidden | checking | uptodate | offer | downloading | installing | password | installed | error
+  const [open, setOpen] = useState(false);
   const [progress, setProgress] = useState(null);
-  const [message, setMessage] = useState(null);
   const [failed, setFailed] = useState(null); // {error, file, manual}
   const [kept, setKept] = useState(null);
-  // US-0034: when pkexec cannot ask on Linux, the notice asks; the password lives only here until sent, then is cleared.
+  const [current, setCurrent] = useState(null);
+  const [checkedAt, setCheckedAt] = useState(null);
+  // US-0034: when pkexec cannot ask on Linux, the dialog asks; the password lives only here until sent, then is cleared.
   const [password, setPassword] = useState('');
   const [wrongPassword, setWrongPassword] = useState(false);
   const [pending, setPending] = useState(null); // the .deb waiting for the password
   const phaseRef = useRef(phase);
   phaseRef.current = phase;
+  const openRef = useRef(open);
+  openRef.current = open;
 
-  function show(state, { forced = false } = {}) {
-    if (state?.status === 'available') {
-      setOffer(state);
-      setPhase((p) => (p === 'hidden' || p === 'message' ? 'offer' : p));
-    } else if (forced) {
-      setMessage(state?.status === 'unavailable' ? state.reason : t('update.upToDate'));
-      setPhase('message');
-    }
+  function offerFrom(state) {
+    setOffer(state);
+    setPhase((p) => (p === 'hidden' || p === 'checking' || p === 'uptodate' ? 'offer' : p));
   }
 
   // The start-up check (main limits it to once a day) and main's own pushes: an offer and download progress.
   useEffect(() => {
     bridge
       .checkUpdate?.({ force: false })
-      .then((state) => show(state))
+      .then((state) => {
+        setCheckedAt(new Date());
+        if (state?.status === 'available') offerFrom(state);
+      })
       .catch((err) => console.warn('Uppdateringskontrollen misslyckades:', errorText(err)));
     return bridge.onUpdateState?.((state) => {
       if (state?.status === 'downloading') setProgress(state);
-      else if (phaseRef.current === 'hidden') show(state);
+      else if (phaseRef.current === 'hidden' && state?.status === 'available') offerFrom(state);
     });
   }, []);
 
+  // The installed version, for the arm and the "current → new" line; read once, when the dialog first opens.
   useEffect(() => {
-    if (!checkRequest) return;
+    if (!open || current) return;
+    bridge
+      .getAppInfo?.()
+      .then((info) => setCurrent(info?.version ?? null))
+      .catch((err) => console.warn('Appversionen kunde inte läsas:', errorText(err)));
+  }, [open]);
+
+  function checkNow() {
+    setOpen(true);
+    if (UNDER_WAY.includes(phaseRef.current)) return; // an update under way is shown, not checked again
+    setFailed(null);
+    setPhase('checking');
     bridge
       .checkUpdate({ force: true })
-      .then((state) => show(state, { forced: true }))
-      .catch((err) => show({ status: 'unavailable', reason: errorText(err) }, { forced: true }));
+      .then((state) => {
+        setCheckedAt(new Date());
+        if (state?.status === 'available') offerFrom(state);
+        else if (!openRef.current) setPhase('hidden');
+        else if (state?.status === 'unavailable') fail({ error: state.reason });
+        else setPhase('uptodate');
+      })
+      .catch((err) => fail({ error: errorText(err) }));
+  }
+  const checkRef = useRef(checkNow);
+  checkRef.current = checkNow;
+
+  useEffect(() => {
+    if (checkRequest) checkNow();
   }, [checkRequest]);
+  useEffect(() => {
+    const onOpen = () => checkRef.current();
+    window.addEventListener(UPDATE_OPEN_EVENT, onOpen);
+    return () => window.removeEventListener(UPDATE_OPEN_EVENT, onOpen);
+  }, []);
+
+  function fail({ error = null, file = null, manual = null }) {
+    setFailed({ error, file, manual });
+    setPhase('error');
+  }
+
+  /** Close the dialog; an offer or an update under way stays as the notice, anything else is done. */
+  function close() {
+    setOpen(false);
+    if (!NOTICE.includes(phaseRef.current)) setPhase('hidden');
+  }
+
+  function later() {
+    setOpen(false);
+    setPhase('hidden');
+  }
 
   async function update() {
     // A restart ends the terminal sessions, so a working agent tab is asked about first.
@@ -71,8 +139,7 @@ export default function UpdateNotice({ busy, checkRequest = 0 }) {
       setPhase('installing');
       await finishInstall(await bridge.installUpdate());
     } catch (err) {
-      setFailed({ error: errorText(err), file: err.file ?? null, manual: err.manual ?? null });
-      setPhase('error');
+      fail({ error: errorText(err), file: err.file ?? null, manual: err.manual ?? null });
     }
   }
 
@@ -100,133 +167,208 @@ export default function UpdateNotice({ busy, checkRequest = 0 }) {
     try {
       await finishInstall(await bridge.installUpdate({ password: typed }));
     } catch (err) {
-      setFailed({ error: errorText(err), file: err.file ?? null, manual: err.manual ?? null });
-      setPhase('error');
+      fail({ error: errorText(err), file: err.file ?? null, manual: err.manual ?? null });
     }
   }
 
   function cancelPassword() {
     setPassword('');
-    setFailed({ error: null, file: pending, manual: `sudo apt install ${pending}` });
-    setPhase('error');
+    fail({ file: pending, manual: `sudo apt install ${pending}` });
   }
 
   async function skip() {
     try {
       await bridge.skipUpdate(offer.version);
-      setPhase('hidden');
+      later();
     } catch (err) {
-      setFailed({ error: errorText(err), file: null });
-      setPhase('error');
+      fail({ error: errorText(err) });
     }
   }
 
-  if (phase === 'hidden') return null;
   const pct = percent(progress);
+  const progressText = pct == null ? t('update.downloading') : t('update.downloadingPct', { pct });
   const reveal = bridge.platform === 'darwin' ? t('common.revealFinder') : t('common.revealFiles');
+  const stateTitle = {
+    checking: t('update.checking'),
+    uptodate: t('update.upToDateTitle'),
+    offer: t('update.title', { version: offer?.version ?? '' }),
+    downloading: progressText,
+    installing: t('update.installing'),
+    password: t('update.passwordTitle'),
+    installed: t('update.readyTitle'),
+    error: t('update.errorTitle')
+  }[phase];
+  const cur = `v${current ?? '–'}`;
+  const busyWarning = busy && (
+    <p className="update-dialog-warn" data-testid="update-dialog-busy">
+      {t('update.busyWarn')}
+    </p>
+  );
+
   return (
-    <aside className="panel update-notice" role="status" aria-live="polite" data-testid="update-notice">
-      {phase === 'message' ? (
-        <p data-testid="update-notice-message">{message}</p>
-      ) : (
-        <>
-          <h2>{t('update.title', { version: offer?.version ?? '' })}</h2>
-          {phase === 'offer' && (
-            <>
-              {offer?.notes ? (
-                <div className="update-notice-notes" data-testid="update-notice-notes">
-                  <FileContent rel="release-notes.md" content={offer.notes} />
-                </div>
-              ) : (
-                <p className="muted">{t('update.noNotes')}</p>
-              )}
-              {!offer?.asset && <p className="refresh-error">{t('update.noPackage')}</p>}
-            </>
-          )}
-          {phase === 'downloading' && <p data-testid="update-notice-progress">{pct == null ? t('update.downloading') : t('update.downloadingPct', { pct })}</p>}
-          {phase === 'installing' && <p>{t('update.installing')}</p>}
-          {phase === 'installed' && (
-            <p data-testid="update-notice-kept">
-              {t('update.kept')} <code>{kept}</code>
-            </p>
-          )}
-          {phase === 'password' && (
-            <form id="update-notice-password-form" onSubmit={sendPassword} data-testid="update-notice-password">
-              <p>{t('update.passwordPrompt')}</p>
-              {wrongPassword && (
-                <p className="refresh-error" role="alert" data-testid="update-notice-wrong-password">
-                  {t('update.wrongPassword')}
-                </p>
-              )}
-              <label>
-                {t('update.password')}{' '}
-                <input
-                  type="password"
-                  autoComplete="current-password"
-                  autoFocus
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  data-testid="update-notice-password-input"
-                />
-              </label>
-            </form>
-          )}
-          {phase === 'error' && failed?.error && (
-            <p className="refresh-error" role="alert" data-testid="update-notice-error">
-              {failed.error}
-            </p>
-          )}
-          {phase === 'error' && failed?.manual && (
-            <p data-testid="update-notice-manual">
-              {t('update.manual')} <code>{failed.manual}</code>
-            </p>
-          )}
-        </>
+    <>
+      {!open && NOTICE.includes(phase) && (
+        <aside className="update-notice" role="status" aria-live="polite" data-testid="update-notice">
+          <h2>{stateTitle}</h2>
+          <div className="lcars-pills">
+            <Pill tone="notice" onClick={() => setOpen(true)} data-testid="update-notice-open">
+              {t('update.show')}
+            </Pill>
+            {phase === 'offer' && (
+              <Pill tone="quiet" onClick={later} data-testid="update-notice-later">
+                {t('update.later')}
+              </Pill>
+            )}
+          </div>
+        </aside>
       )}
-      <div className="setup-actions">
+      <LcarsDialog
+        open={open}
+        onClose={close}
+        title={t('update.dialogTitle')}
+        sub={stateTitle}
+        readouts={[
+          { k: t('update.installed'), v: cur },
+          { k: t('update.latest'), v: offer ? `v${offer.version}` : '–', key: true },
+          { k: t('update.checked'), v: checkedAt ? checkedAt.toTimeString().slice(0, 5) : '–' },
+          { k: t('update.source'), v: 'GitHub · gh' }
+        ]}
+        footer={t('update.footer', { repo: APP_REPO })}
+        testId="update-dialog"
+        className="update-dialog"
+      >
+        {phase === 'checking' && (
+          <section data-testid="update-dialog-checking">
+            <SectionHeading as="h3" title={t('update.checking')} />
+            <p className="update-dialog-text">{t('update.checkingText', { repo: APP_REPO })}</p>
+            <SegMeter label={t('update.checking')} segments={cells(null)} className="update-dialog-run" />
+          </section>
+        )}
+        {phase === 'uptodate' && (
+          <section data-testid="update-dialog-uptodate">
+            <SectionHeading as="h3" title={t('update.upToDateTitle')} />
+            <p className="update-dialog-big">
+              <span className="is-key">{cur}</span>
+            </p>
+            <p className="update-dialog-text">{t('update.upToDate')}</p>
+          </section>
+        )}
         {phase === 'offer' && (
-          <>
-            <button className="btn btn-accent" disabled={!offer?.asset} onClick={update} data-testid="update-notice-update">
-              {t('update.now')}
-            </button>
-            <button className="btn" onClick={() => setPhase('hidden')} data-testid="update-notice-later">
-              {t('update.later')}
-            </button>
-            <button className="btn btn-quiet" onClick={skip} data-testid="update-notice-skip">
-              {t('update.skip')}
-            </button>
-          </>
+          <section data-testid="update-dialog-available">
+            <SectionHeading as="h3" title={stateTitle} />
+            <p className="update-dialog-big" data-testid="update-dialog-versions">
+              <span className="is-dim">{cur}</span> <span className="is-dim">→</span> <span className="is-key">{`v${offer?.version ?? ''}`}</span>
+            </p>
+            {offer?.notes ? (
+              <div className="update-dialog-notes" data-testid="update-dialog-notes">
+                <FileContent rel="release-notes.md" content={offer.notes} />
+              </div>
+            ) : (
+              <p className="update-dialog-text">{t('update.noNotes')}</p>
+            )}
+            {!offer?.asset && <p className="update-dialog-warn">{t('update.noPackage')}</p>}
+            {busyWarning}
+            <div className="lcars-pills">
+              <Pill tone="primary" disabled={!offer?.asset} onClick={update} data-testid="update-dialog-update">
+                {t('update.now')}
+              </Pill>
+              <Pill onClick={later} data-testid="update-dialog-later">
+                {t('update.later')}
+              </Pill>
+              <Pill tone="quiet" onClick={skip} data-testid="update-dialog-skip">
+                {t('update.skip')}
+              </Pill>
+            </div>
+          </section>
+        )}
+        {(phase === 'downloading' || phase === 'installing') && (
+          <section data-testid="update-dialog-downloading">
+            <SectionHeading as="h3" title={t('update.downloadTitle')} />
+            <SegMeter label={progressText} segments={cells(phase === 'installing' ? 100 : pct)} />
+            <p className="update-dialog-text">{phase === 'installing' ? t('update.installing') : progressText}</p>
+          </section>
         )}
         {phase === 'password' && (
-          <>
-            <button type="submit" form="update-notice-password-form" className="btn btn-accent" disabled={!password} data-testid="update-notice-install">
-              {t('update.install')}
-            </button>
-            <button className="btn" onClick={cancelPassword} data-testid="update-notice-password-cancel">
-              {t('common.cancel')}
-            </button>
-          </>
+          <form onSubmit={sendPassword} data-testid="update-dialog-password">
+            <SectionHeading as="h3" title={t('update.passwordTitle')} />
+            <p className="update-dialog-text">{t('update.passwordPrompt')}</p>
+            {wrongPassword && (
+              <p className="update-dialog-warn" role="alert" data-testid="update-dialog-wrong-password">
+                {t('update.wrongPassword')}
+              </p>
+            )}
+            <div className="lcars-pills">
+              <label className="sr-only" htmlFor="update-dialog-password-input">
+                {t('update.password')}
+              </label>
+              <input
+                id="update-dialog-password-input"
+                type="password"
+                autoComplete="current-password"
+                autoFocus
+                placeholder={t('update.password')}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                data-testid="update-dialog-password-input"
+              />
+              <Pill type="submit" tone="primary" disabled={!password} data-testid="update-dialog-install">
+                {t('update.install')}
+              </Pill>
+              <Pill tone="quiet" onClick={cancelPassword} data-testid="update-dialog-password-cancel">
+                {t('common.cancel')}
+              </Pill>
+            </div>
+          </form>
         )}
         {phase === 'installed' && (
-          <button className="btn btn-accent" onClick={() => bridge.relaunchApp()} data-testid="update-notice-relaunch">
-            {t('update.relaunch')}
-          </button>
+          <section data-testid="update-dialog-ready">
+            <SectionHeading as="h3" title={t('update.readyTitle')} />
+            <p className="update-dialog-big">
+              <span className="is-key">{offer ? `v${offer.version}` : ''}</span>
+            </p>
+            <p className="update-dialog-text">
+              {t('update.kept')} <code>{kept}</code>
+            </p>
+            {busyWarning}
+            <div className="lcars-pills">
+              <Pill tone="primary" onClick={() => bridge.relaunchApp()} data-testid="update-dialog-relaunch">
+                {t('update.relaunch')}
+              </Pill>
+              <Pill onClick={close} data-testid="update-dialog-ready-later">
+                {t('update.later')}
+              </Pill>
+            </div>
+          </section>
         )}
-        {phase === 'error' && failed?.file && (
-          <button
-            className="btn"
-            onClick={() => bridge.revealUpdate().catch((err) => setFailed({ error: errorText(err), file: null }))}
-            data-testid="update-notice-reveal"
-          >
-            {reveal}
-          </button>
+        {phase === 'error' && (
+          <section data-testid="update-dialog-error">
+            <SectionHeading as="h3" title={t('update.errorTitle')} />
+            <div className="update-dialog-err">
+              {failed?.error && (
+                <p role="alert" data-testid="update-dialog-error-text">
+                  {failed.error}
+                </p>
+              )}
+              {failed?.manual && (
+                <p data-testid="update-dialog-manual">
+                  {t('update.manual')} <code>{failed.manual}</code>
+                </p>
+              )}
+              {!failed?.manual && <p className="update-dialog-text">{t('update.whatToDo')}</p>}
+            </div>
+            <div className="lcars-pills">
+              <Pill tone="primary" onClick={checkNow} data-testid="update-dialog-retry">
+                {t('update.retry')}
+              </Pill>
+              {failed?.file && (
+                <Pill tone="quiet" onClick={() => bridge.revealUpdate().catch((err) => fail({ error: errorText(err) }))} data-testid="update-dialog-reveal">
+                  {reveal}
+                </Pill>
+              )}
+            </div>
+          </section>
         )}
-        {(phase === 'error' || phase === 'message') && (
-          <button className="btn" onClick={() => setPhase('hidden')} data-testid="update-notice-close">
-            {t('common.close')}
-          </button>
-        )}
-      </div>
-    </aside>
+      </LcarsDialog>
+    </>
   );
 }

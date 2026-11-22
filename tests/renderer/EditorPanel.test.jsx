@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { useEffect } from 'react';
-import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 
 // Monaco is mocked in jsdom: the setup (workers, loader) is skipped and the editor is a textarea.
 vi.mock('../../src/renderer/editor/monacoSetup.js', () => ({ default: {} }));
@@ -152,13 +152,31 @@ describe('EditorPanel (EPIC-10 US-1001)', () => {
         <Harness files={[]} />
       </div>
     );
-    const tree = screen.getByTestId('file-tree');
     await screen.findByTestId('file-tree-file');
-    fireEvent.click(screen.getByTestId('list-fold-toggle'));
-    expect(tree.classList.contains('is-folded')).toBe(true);
-    expect(screen.getByTestId('editor-view').matches('.editor-view:has(> .file-tree.is-folded)')).toBe(true); // the 28px grid column
-    fireEvent.click(tree); // the strip brings it back
-    expect(tree.classList.contains('is-folded')).toBe(false);
+    const drawer = within(screen.getByTestId('file-tree')).getByTestId('list-drawer');
+    const heading = within(drawer).getByTestId('section-heading');
+    expect(heading.textContent).toMatch(/^Filer/);
+    const toggle = within(drawer).getByTestId('list-fold-toggle');
+    expect(heading.lastElementChild).toBe(toggle); // US-0417: the toggle ends the heading row
+    expect(toggle.getAttribute('aria-expanded')).toBe('true');
+    fireEvent.click(toggle);
+    expect(drawer.className).toContain('is-folded');
+    expect(screen.getByTestId('editor-view').matches('.editor-view:has(> .file-tree .lcars-drawer.is-folded)')).toBe(true); // the 30px column
+    expect(within(drawer).getByTestId('list-drawer-stack').textContent).toBe('›Filer');
+    fireEvent.click(within(drawer).getByTestId('list-drawer-stack')); // the stack brings it back
+    expect(drawer.className).not.toContain('is-folded');
     expect(screen.getByTestId('file-tree-file')).toBeTruthy();
+  });
+
+  it('the file tree keeps its folded state as the editor view (US-0415, US-0417)', async () => {
+    window.bridge.listTree = vi.fn(async () => ({ files: ['README.md'], truncated: false }));
+    window.bridge.getSettings = vi.fn(async () => ({ listFolded: { features: true } }));
+    window.bridge.setSettings = vi.fn(async () => {});
+    render(<FileTree projectId="p1" onOpen={() => {}} />);
+    await screen.findByTestId('file-tree-file');
+    const drawer = screen.getByTestId('list-drawer');
+    expect(drawer.className).not.toContain('is-folded');
+    fireEvent.click(screen.getByTestId('list-fold-toggle'));
+    await waitFor(() => expect(window.bridge.setSettings).toHaveBeenCalledWith({ listFolded: { features: true, editor: true } }));
   });
 });
