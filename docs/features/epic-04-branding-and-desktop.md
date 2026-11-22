@@ -6,9 +6,9 @@
 
 > Auctum AIDLC Control should look and behave like a proper Auctum desktop app wherever it shows up: in the Dock, the application menu, the window switcher, the installer and the Linux launcher. Inside the app it should feel like a living bridge console. EPIC-01 added the name, splash screen, in-app logo and the restrained LCARS theme. This epic covers the parts of the operating system that still show Electron defaults, and the motion and light that make the theme come alive without hurting readability.
 
-**Stories:** US-0401, US-0402, US-0403, US-0404, US-0405, US-0406, US-0407, US-0408, US-0409, US-0410, US-0411, US-0412, US-0413, US-0414, US-0415, US-0416
+**Stories:** US-0401, US-0402, US-0403, US-0404, US-0405, US-0406, US-0407, US-0408, US-0409, US-0410, US-0411, US-0412, US-0413, US-0414, US-0415, US-0416, US-0417
 
-**Status (2026-11-22):** ✅ US-0401–US-0411 released (v0.1.1–v0.2.5). 📋 US-0412 planned, for v0.3.2. ✅ US-0413 released in v0.2.7. ✅ US-0414 released in v0.2.8. ✅ US-0415 released in v0.2.13. 📋 US-0416 planned. Each story names its release.
+**Status (2026-11-22):** ✅ US-0401–US-0411 released (v0.1.1–v0.2.5). 📋 US-0412 planned, for v0.3.2. ✅ US-0413 released in v0.2.7. ✅ US-0414 released in v0.2.8. ✅ US-0415 released in v0.2.13. 📋 US-0416 planned, for v0.2.14. 📋 US-0417 planned. Each story names its release.
 
 ---
 
@@ -327,7 +327,7 @@
 
 ---
 
-**US-0416: Settings › Tools is one clear, grouped LCARS view** 📋 Planned
+**US-0416: Settings › Tools is one clear, grouped LCARS view** 📋 Planned, for v0.2.14
 - As a **developer checking that my tools are set up**, in order to **see at a glance what is found, what is missing and what needs updating**, I would like **Settings › Tools grouped by purpose, with one row per tool, its state as a chip, and its actions in one place**.
 - **Epic:** EPIC-04
 - **Priority:** Medium
@@ -343,4 +343,31 @@
   - [ ] It follows the LCARS interface and works at narrow widths; every text goes through `t()` in `sv.json` and `en.json`; rows and actions carry `data-testid`s.
 - **Notes:** A redesign of one view, so it runs on the `express` plan (or `visual-express` with a mockup first). Not a fix: no behaviour changes. Builds on US-0035 (tool lookup) and US-0504 (AI-DLC update); the wait notice there is US-0041.
 - **Dependencies:** US-0504, US-0035, US-0041
+
+---
+
+**US-0417: A richer LCARS language across the app: nested frames, quiet colour, dense readouts** 📋 Planned
+- As a **developer who lives in the console**, in order to **read state at a glance and enjoy the look**, I would like **the app's LCARS look taken further, after the two reference screens the person gave, as shared pieces every view uses**.
+- **Epic:** EPIC-04
+- **Priority:** Medium
+- **Complexity:** Large
+- **Background:** Asked for 2026-11-22 with two reference screens (`~/Desktop/Screenshot 2026-11-13 at 11.32.07.png` and `11.32.22.png`): "analyze them carefully and compare to our designs. We can do better." Our palette already matches them (`--slate-*`, `--steel*`, `--coral*` in `src/renderer/theme.css`); the gap is composition. Compared with our views (Intents, the intent head, Settings › Tools, Configuration):
+  - **Frames:** the references nest two or three elbow frames inside each other (a thick outer frame, a thinner inner one with its own rounded inner corner, a hairline frame), with bars broken into segments by small gaps and notches. Ours use one elbow per view, and Settings › Tools uses boxed, bordered cards, which the references never do: content floats on black inside the frames.
+  - **Titles at frame breaks:** section titles sit in a gap of the frame line ("ZONE OPTIMIZATION • J.138" in the bottom bar, the ship name in the top bar), tall, condensed, steel blue. Ours sit above the content or in a corner.
+  - **Colour discipline:** greys and slate for structure, steel blue for live values, white for the key number, coral/red only for alert and a selected item. Ours use amber (`--amber`) widely (the app block, sort and filter toggles, the parked pill, wait notices), so it no longer signals anything.
+  - **State strips:** each tile has a thin coloured strip on top that carries its state (grey, white, coral); a selected card gets a bright outline and a filled icon. Ours change the whole block's fill.
+  - **Dense readouts:** tables of numbers with tabular figures, a tiny coloured square as legend, three levels of brightness; sliders with tick scales; segmented bar meters; dot strips. Ours show label/value pairs with much empty space, and few scales.
+  - **Two control shapes:** rounded pills are actions (Settings, Auto-idle, Red alert); square blocks are navigation and readouts. Ours mix them (square "Choose…" actions, pill Resume, square Park).
+  - **Texture:** stacks of hairlines, code numbers ("70-678") on arm blocks, small dot and notch marks fill the margins with meaning-light detail. Ours have a few hairlines.
+- **Acceptance Criteria:**
+  - [ ] A mockup of three views (Intents with the intent head, Settings › Tools, Configuration) in the new language is approved by the person before code.
+  - [ ] Shared pieces in `theme.css` and `Lcars.jsx`: a nested frame (outer, inner and hairline, segmented bars, a title set in a frame break), a tile with a state strip, a readout table (tabular figures, legend squares, three brightness levels), a scale slider/meter and a segmented meter.
+  - [ ] One colour rule, written down in the theme: structure grey/slate, live values steel, key value white, coral/red for alert and selection only; amber is kept for one meaning (the person's attention) or dropped.
+  - [ ] One shape rule: actions are pills, navigation and readouts are square blocks; every view follows it.
+  - [ ] No boxed cards with borders remain; panels sit inside frames.
+  - [ ] The three mocked views are rebuilt with the shared pieces; other views pick them up as they are touched.
+  - [ ] Contrast stays at WCAG AA for text; motion respects reduced motion; works at narrow widths.
+  - [ ] Built in our own app's terms only: no ships, insignia, names or other franchise artwork from the references.
+- **Notes:** Runs on the `visual-express` plan (mockup first). US-0416 (Tools) and US-0412 (pipeline cards) should use these pieces; if US-0416 is built first, it adds the pieces it needs (state-strip tile, readout rows) in the shared form this story describes.
+- **Dependencies:** US-0414, US-0415
 
