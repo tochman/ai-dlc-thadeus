@@ -138,6 +138,36 @@ describe('ProjectView: one view at a time', () => {
     expect(shown('intent-list')).toBe(true);
   });
 
+  it('splits Configuration › AI-DLC into Settings and Plans tabs, Plans alone when chosen, none without AI-DLC (US-0905)', async () => {
+    window.bridge.listPlans = vi.fn(async () => ({ plans: [], errors: {} }));
+    const { onView } = renderView('config', { section: 'aidlc' });
+    await waitFor(() => expect(shown('config-view')).toBe(true)); // Settings is the first tab: today's AI-DLC content
+    expect(screen.getByTestId('aidlc-view-tab-settings').getAttribute('aria-selected')).toBe('true');
+    expect(screen.getByTestId('aidlc-view-tab-settings').textContent).toBe('Inställningar');
+    expect(screen.getByTestId('aidlc-view-tab-plans').textContent).toBe('Planer');
+    expect(screen.queryByTestId('plans-view')).toBeNull();
+    fireEvent.click(screen.getByTestId('aidlc-view-tab-plans'));
+    expect(onView).toHaveBeenCalledWith('config', { configSection: 'aidlc', aidlcTab: 'plans' });
+    cleanup();
+
+    renderView('config', { section: 'aidlc', aidlcTab: 'plans' });
+    expect(await screen.findByTestId('plans-view')).toBeTruthy();
+    expect(shown('plans-view')).toBe(true);
+    expect(shown('config-view')).toBe(false);
+    expect(shown('intent-list')).toBe(false);
+    expect(screen.getByTestId('aidlc-view-tab-plans').getAttribute('aria-selected')).toBe('true');
+    cleanup();
+
+    // Another section shows no AI-DLC tabs; a project without AI-DLC has no AI-DLC section at all.
+    renderView('config', { section: 'docs', aidlcTab: 'plans' });
+    expect(screen.queryByTestId('aidlc-view-tab-plans')).toBeNull();
+    expect(screen.queryByTestId('plans-view')).toBeNull();
+    cleanup();
+    renderView('config', { section: 'aidlc', aidlcTab: 'plans', project: { ...project, detection: { isAidlc: false, reason: 'Ingen aidlc/.' } } });
+    expect(await screen.findByTestId('project-not-aidlc')).toBeTruthy();
+    expect(screen.queryByTestId('plans-view')).toBeNull();
+  });
+
   it('a folder without AI-DLC shows its setup, whatever view was asked for', async () => {
     renderView('github', { project: { ...project, detection: { isAidlc: false, reason: 'Ingen aidlc/.' } } });
     expect(await screen.findByTestId('project-not-aidlc')).toBeTruthy();

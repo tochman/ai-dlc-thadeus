@@ -22,8 +22,10 @@ import { AIDLC_SECTIONS, PROJECT_SECTIONS } from './ProjectSettingsView.jsx';
 
 const bridge = window.bridge;
 // The view and, for Features and Configuration, the section chosen in the arm (US-0012).
-const UI_DEFAULT = { view: 'intents', configSection: 'docs', featuresTab: 'epics', teamSection: 'refresh' };
+const UI_DEFAULT = { view: 'intents', configSection: 'docs', aidlcTab: 'settings', featuresTab: 'epics', teamSection: 'refresh' };
 const TEAM_SECTIONS = ['refresh', 'machines']; // the team view's sections under its arm block (US-1201 AC-3)
+/** US-0905: Plans is a sub-view of Configuration › AI-DLC, so a link or menu item asking for the old Plans view lands there. */
+const movePlans = (change) => (change.view === 'plans' ? { ...change, view: 'config', configSection: 'aidlc', aidlcTab: 'plans' } : change);
 
 function errorText(err) {
   return String(err?.message ?? err).replace(/^Error invoking remote method '[^']+': (Error: )?/, '');
@@ -192,7 +194,7 @@ export default function App() {
   }, [activeId]);
 
   const reportMeta = useCallback((projectId, partial) => setMeta((m) => ({ ...m, [projectId]: { ...m[projectId], ...partial } })), []);
-  const setUiOf = useCallback((projectId, change) => setUi((u) => ({ ...u, [projectId]: { ...UI_DEFAULT, ...u[projectId], ...change } })), []);
+  const setUiOf = useCallback((projectId, change) => setUi((u) => ({ ...u, [projectId]: { ...UI_DEFAULT, ...u[projectId], ...movePlans(change) } })), []);
 
   // The label follows the real mode, also when it changes from the menu, the shortcut or macOS' green button.
   useEffect(() => {
@@ -398,14 +400,13 @@ export default function App() {
   const isAidlc = active?.detection.isAidlc === true;
   const showFeatures = activeMeta.showFeatures === true;
   // One view at a time. Features needs the feature docs, the rest AI-DLC (US-0901 FR1.1); else the intents view shows.
-  const offered = { features: showFeatures, config: true, plans: isAidlc, cost: isAidlc, velocity: isAidlc, github: isAidlc, editor: true };
+  const offered = { features: showFeatures, config: true, cost: isAidlc, velocity: isAidlc, github: isAidlc, editor: true };
   const view = offered[activeUi.view] ? activeUi.view : 'intents';
   const firstLabel = isAidlc ? t('app.intents') : t('app.setup');
   const viewLabel =
     {
       features: t('app.features'),
       config: t('app.config'),
-      plans: t('app.plans'),
       editor: t('app.editor'),
       cost: t('app.cost'),
       velocity: t('app.velocity'),
@@ -616,11 +617,6 @@ export default function App() {
                 testIdPrefix="config-section"
               />
             )}
-            {isAidlc && (
-              <ArmBlock current={!settingsView && view === 'plans'} onClick={() => showView('plans')} data-testid="project-view-switch-plans">
-                {t('app.plans')}
-              </ArmBlock>
-            )}
             <ArmBlock current={!settingsView && view === 'editor'} onClick={() => showView('editor')} data-testid="project-view-switch-editor">
               {t('app.editor')}
             </ArmBlock>
@@ -722,6 +718,7 @@ export default function App() {
                 visible={!settingsView && tab.projectId === activeId}
                 view={tabUi.view}
                 section={tabUi.configSection}
+                aidlcTab={tabUi.aidlcTab}
                 teamSection={tabUi.teamSection}
                 featuresTab={tabUi.featuresTab}
                 onView={(v, extra) => setUiOf(tab.projectId, { view: v, ...extra })}

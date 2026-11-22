@@ -58,7 +58,6 @@
     "github": "Github",
     "settings": "Settings",
     "config": "Configuration",
-    "plans": "Plans",
     "editor": "Editor",
     "intentCount": "{n, plural, one {# intent} other {# intents}}",
     "emptyTitle": "No project open",
@@ -901,6 +900,7 @@
         "docs": "Feature docs",
         "agent": "Agent",
         "aidlc": "AI-DLC",
+        "plans": "Plans",
         "costRules": "Cost rules",
         "modelProfiles": "Model profiles"
       },
@@ -910,6 +910,8 @@
   },
   "config": {
     "loading": "Reading the AI-DLC configuration…",
+    "tabsLabel": "AI-DLC views",
+    "tabSettings": "Settings",
     "harnessLabel": "Harness",
     "section": {
       "models": "Models and effort",

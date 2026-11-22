@@ -29,6 +29,8 @@ import { useFeatures } from './useFeatures.js';
 import { useFold } from './useFold.js'; // US-0415
 import { harnessCommand, resolveHarness, selectableHarness } from '../shared/harnesses.js';
 
+const AIDLC_TABS = ['settings', 'plans']; // US-0905: the sub-views of Configuration › AI-DLC
+
 /** Why the chosen harness cannot start, in one sentence, or null (US-0801 FR5.1). */
 function harnessProblem(entry, detected, t) {
   const found = detected.find((d) => d.id === entry.id);
@@ -238,6 +240,7 @@ function ProjectContent({
   visible,
   view: chosenView = 'intents',
   section = 'docs',
+  aidlcTab = 'settings',
   teamSection = 'refresh',
   featuresTab = 'epics',
   onView,
@@ -360,15 +363,18 @@ function ProjectContent({
   const showFeatures = settings.featureDocs === 'show' || (settings.featureDocs === 'auto' && docsExist);
   // One view at a time: Features needs the feature docs, the rest AI-DLC; otherwise the intents view shows (US-0901 FR1.1).
   // Configuration holds the project's own settings for every project, and the AI-DLC configuration in an AI-DLC one (US-0012).
-  const offered = { features: showFeatures, config: true, plans: isAidlc, cost: isAidlc, velocity: isAidlc, github: isAidlc, editor: true };
+  const offered = { features: showFeatures, config: true, cost: isAidlc, velocity: isAidlc, github: isAidlc, editor: true };
   const view = offered[chosenView] ? chosenView : 'intents';
   const configSection = AIDLC_SECTIONS.includes(section) && !isAidlc ? 'docs' : section;
   const aidlcShown = view === 'config' && configSection === 'aidlc';
+  // US-0905: Configuration › AI-DLC has two sub-views, its settings and the plans.
+  const plansShown = aidlcShown && aidlcTab === 'plans';
+  const settingsShown = aidlcShown && !plansShown;
   // The AI-DLC configuration mounts the first time it is chosen, so its CLI reads wait until then, and then stays (FR6.1).
   const [configShown, setConfigShown] = useState(false);
   useEffect(() => {
-    if (aidlcShown) setConfigShown(true);
-  }, [aidlcShown]);
+    if (settingsShown) setConfigShown(true);
+  }, [settingsShown]);
   const setupDocs = () => terminal?.type('agent', featureDocsPrompt({ exists: docsExist, path: settings.featuresPath, delivery }), { submit: false });
   // US-0603 FR5.2: only a project with AI-DLC and feature docs has stories for the lifecycle rule to keep.
   const ruleNotice = isAidlc && docsExist && ruleStatus && ruleStatus !== 'current' ? ruleStatus : null;
@@ -412,7 +418,7 @@ function ProjectContent({
           )}
           {justSetUp && <SetupDone onClose={() => setJustSetUp(false)} onFeatureDocs={featureDocsChoice ? setupDocs : undefined} />}
           {/* Kept mounted while Features or Configuration is shown, so the intents view keeps its state (FR2.1). */}
-          <div className="project-mode" hidden={['features', 'config', 'plans', 'editor'].includes(view)}>
+          <div className="project-mode" hidden={['features', 'config', 'editor'].includes(view)}>
             {isAidlc ? (
               <AidlcProject
                 project={project}
@@ -463,8 +469,24 @@ function ProjectContent({
               onAddHarness={isAidlc ? () => setAddingHarness(true) : undefined}
             />
           )}
-          {isAidlc && (configShown || aidlcShown) && (
-            <div className="project-mode" hidden={!aidlcShown}>
+          {isAidlc && aidlcShown && (
+            <div className="detail-tabs" role="tablist" aria-label={t('config.tabsLabel')}>
+              {AIDLC_TABS.map((id) => (
+                <button
+                  key={id}
+                  role="tab"
+                  aria-selected={(id === 'plans') === plansShown}
+                  className={`lcars-block lcars-block--tab lcars-block--${(id === 'plans') === plansShown ? 'active' : 'mid'}`}
+                  onClick={() => onView?.('config', { configSection: 'aidlc', aidlcTab: id })}
+                  data-testid={`aidlc-view-tab-${id}`}
+                >
+                  {id === 'plans' ? t('settings.project.sections.plans') : t('config.tabSettings')}
+                </button>
+              ))}
+            </div>
+          )}
+          {isAidlc && (configShown || settingsShown) && (
+            <div className="project-mode" hidden={!settingsShown}>
               <ConfigView
                 projectId={project.projectId}
                 visible={visible && view === 'config'}
@@ -474,7 +496,7 @@ function ProjectContent({
               />
             </div>
           )}
-          {view === 'plans' && <PlansView projectId={project.projectId} visible={visible} harness={harnessId} />}
+          {isAidlc && plansShown && <PlansView projectId={project.projectId} visible={visible} harness={harnessId} />}
           {view === 'editor' && (
             <div className="editor-view" data-testid="editor-view">
               <FileTree projectId={project.projectId} onOpen={editor.open} />
@@ -495,6 +517,7 @@ export default function ProjectView({
   visible,
   view,
   section,
+  aidlcTab,
   teamSection,
   featuresTab,
   onView,
@@ -511,6 +534,7 @@ export default function ProjectView({
         visible={visible}
         view={view}
         section={section}
+        aidlcTab={aidlcTab}
         teamSection={teamSection}
         featuresTab={featuresTab}
         onView={onView}
