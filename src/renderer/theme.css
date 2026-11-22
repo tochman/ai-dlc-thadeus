@@ -1936,8 +1936,9 @@ button.tool-row-path:hover { color: var(--steel-text); }
 .lcars-df-arm > .lcars-nb { margin-left: 0; }
 .lcars-df-arm > .lcars-nb::before { display: none; }
 /* The intent tabs as tiles: the state strip on top (steel when selected), selection is brightness. */
-.detail-tabs { gap: var(--gap); }
-.detail-tabs .lcars-tile { flex: 1 1 96px; max-width: 150px; min-height: 52px; margin-left: 0; padding-top: 10px; }
+/* One row, never shrunk by its column, so the tab content starts below it; the tiles narrow instead of wrapping. */
+.detail-tabs { gap: var(--gap); flex-wrap: nowrap; flex: none; }
+.detail-tabs .lcars-tile { flex: 1 1 0; min-width: 0; max-width: 150px; min-height: 52px; margin-left: 0; padding-top: 10px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .lcars-tile::before { left: 0; right: 0; top: 0; bottom: auto; width: auto; height: 4px; background: var(--strip, var(--slate-2)); }
 .intent-head-actions { align-items: center; }
 /* Section switches (Diagram | Table, Tokens | $, Week | Month): square blocks side by side. */
