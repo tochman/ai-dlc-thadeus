@@ -6,9 +6,9 @@
 
 > Auctum AIDLC Control should look and behave like a proper Auctum desktop app wherever it shows up: in the Dock, the application menu, the window switcher, the installer and the Linux launcher. Inside the app it should feel like a living bridge console. EPIC-01 added the name, splash screen, in-app logo and the restrained LCARS theme. This epic covers the parts of the operating system that still show Electron defaults, and the motion and light that make the theme come alive without hurting readability.
 
-**Stories:** US-0401, US-0402, US-0403, US-0404, US-0405, US-0406, US-0407, US-0408, US-0409, US-0410, US-0411, US-0412, US-0413, US-0414, US-0415
+**Stories:** US-0401, US-0402, US-0403, US-0404, US-0405, US-0406, US-0407, US-0408, US-0409, US-0410, US-0411, US-0412, US-0413, US-0414, US-0415, US-0416
 
-**Status (2026-11-20):** ✅ US-0401–US-0411 released (v0.1.1–v0.2.5). 📋 US-0412 planned, for v0.3.2. ✅ US-0413 released in v0.2.7. ✅ US-0414 released in v0.2.8. ✅ US-0415 released in v0.2.13. Each story names its release.
+**Status (2026-11-22):** ✅ US-0401–US-0411 released (v0.1.1–v0.2.5). 📋 US-0412 planned, for v0.3.2. ✅ US-0413 released in v0.2.7. ✅ US-0414 released in v0.2.8. ✅ US-0415 released in v0.2.13. 📋 US-0416 planned. Each story names its release.
 
 ---
 
@@ -324,3 +324,23 @@
   - [x] Every text goes through `t()` in `sv.json` and `en.json`.
 - **Notes:** One shared toggle for every list column, not one per view.
 - **Dependencies:** US-0414
+
+---
+
+**US-0416: Settings › Tools is one clear, grouped LCARS view** 📋 Planned
+- As a **developer checking that my tools are set up**, in order to **see at a glance what is found, what is missing and what needs updating**, I would like **Settings › Tools grouped by purpose, with one row per tool, its state as a chip, and its actions in one place**.
+- **Epic:** EPIC-04
+- **Priority:** Medium
+- **Complexity:** Medium
+- **Background:** Asked for 2026-11-22 with a screenshot: "rather messy and not very intuitive". The view is a grid of same-size cards of uneven height with large empty areas. AI-DLC shows up three times (the AI-DLC CLI card, the AI-DLC Program card with "Newer: v2.11.4", and AI-DLC in this project with long file lists that run off the bottom). Long paths wrap over three lines. Every card repeats "Found automatically" and "Choose…". Bitbucket's username and app-password form sits among tool paths. A missing tool (GitLab CLI) looks like the others apart from small orange text. Built in `src/renderer/SettingsView.jsx` (`Tools`) and `src/renderer/AidlcUpdate.jsx`.
+- **Acceptance Criteria:**
+  - [ ] The view is grouped by purpose, each group an LCARS section: AI-DLC (the CLI, its update and this project's AI-DLC files together, once), Coding agents (Claude Code, opencode, …), Git hosts (GitHub CLI, GitLab CLI, Bitbucket sign-in), System (shell).
+  - [ ] Each tool is one compact row: name, version, a state chip (found, missing, update available, chosen by hand), and its actions (Choose…, Update) at the row's end; the path shows shortened, in full on hover and copyable.
+  - [ ] A missing or outdated tool stands out by its chip and colour, with what it is needed for and what to do in one line.
+  - [ ] Long lists (the project's changed AI-DLC files) are folded to a count, open on request, and never push the rest of the view out of sight.
+  - [ ] Bitbucket's sign-in sits in the Git hosts group as its own row with a Sign in action, not as an always-open form.
+  - [ ] Everything the view does today keeps working (choose a path, rescan, update AI-DLC, update the project files, save Bitbucket credentials).
+  - [ ] It follows the LCARS interface and works at narrow widths; every text goes through `t()` in `sv.json` and `en.json`; rows and actions carry `data-testid`s.
+- **Notes:** A redesign of one view, so it runs on the `express` plan (or `visual-express` with a mockup first). Not a fix: no behaviour changes. Builds on US-0035 (tool lookup) and US-0504 (AI-DLC update); the wait notice there is US-0041.
+- **Dependencies:** US-0504, US-0035, US-0041
+
