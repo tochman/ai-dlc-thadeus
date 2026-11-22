@@ -78,10 +78,25 @@ describe('useProject', () => {
     const { result } = renderHook(() => useProject('p1', 'default'));
     await waitFor(() => expect(result.current.detail?.dirName).toBe('b'));
     bridge.getIntent.mockResolvedValueOnce(detailOf('b', ['e1', 'e2']));
-    await act(async () => listeners.change({ projectId: 'p1', space: 'default', dirNames: ['b'], indexChanged: false }));
+    await act(async () => listeners.change({ projectId: 'p1', space: 'default', dirNames: ['b'], workDirNames: ['b'], indexChanged: false }));
     await waitFor(() => expect(result.current.newKeys).toEqual(new Set(['e2'])));
     expect(bridge.getIntents).toHaveBeenLastCalledWith('p1', 'default', ['b']);
-    expect(result.current.lastIntentChangeAt).toEqual(expect.any(Number));
+    expect(result.current.lastIntentChangeAt).toEqual({ name: 'b', stage: null, at: expect.any(Number) });
+  });
+
+  it('does not count an audit-only or runtime change as stage work (US-0041 AC2)', async () => {
+    const { result } = renderHook(() => useProject('p1', 'default'));
+    await waitFor(() => expect(result.current.detail?.dirName).toBe('b'));
+    await act(async () => listeners.change({ projectId: 'p1', space: 'default', dirNames: ['b'], workDirNames: [], indexChanged: false }));
+    expect(result.current.lastIntentChangeAt).toEqual({ name: 'b', stage: null, at: null });
+  });
+
+  it('has no in-flight work while the active intent is parked or complete (US-0041 AC1)', async () => {
+    bridge.getIntents.mockResolvedValue({ intents: [{ dirName: 'b', slug: 'b', active: true, parked: true }], warning: null });
+    const { result } = renderHook(() => useProject('p1', 'default'));
+    await waitFor(() => expect(result.current.detail?.dirName).toBe('b'));
+    await act(async () => listeners.change({ projectId: 'p1', space: 'default', dirNames: ['b'], workDirNames: ['b'], indexChanged: false }));
+    expect(result.current.lastIntentChangeAt).toBeNull();
   });
 
   it('clears the highlight after four seconds', async () => {
@@ -102,7 +117,7 @@ describe('useProject', () => {
     await act(async () => listeners.change({ projectId: 'p1', space: 'default', dirNames: [], indexChanged: true }));
     expect(bridge.getIntents).toHaveBeenLastCalledWith('p1', 'default', undefined);
     expect(bridge.getCost.mock.calls.length).toBe(costCalls + 1);
-    expect(result.current.lastIntentChangeAt).toBeNull();
+    expect(result.current.lastIntentChangeAt?.at).toBeNull();
   });
 
   it('ignores changes for another project or space, and shows a watch error for its own project', async () => {

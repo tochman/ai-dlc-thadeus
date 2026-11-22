@@ -374,6 +374,7 @@
     "newCount": "{n} new",
     "badge": "{n, plural, one {# new change} other {# new changes}} in AI-DLC on {ref}",
     "wait": "Wait until the AI-DLC step is done, or park the work first",
+    "waitFor": "Wait until AI-DLC is done with {stage} in {intent}, or park the work first",
     "rebase": "Rebase",
     "merge": "Merge",
     "rebaseText": "Rebase puts your local commits on top of the remote ones, so the history stays straight.",

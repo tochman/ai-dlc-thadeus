@@ -2,7 +2,7 @@
 // project. The app only checks; an update is typed into the shell tab without Enter (FR1.3, FR2.3).
 import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useWorkflowRunning } from './workflowBusy.js';
+import { useWorkflowRunning, waitText } from './workflowBusy.js';
 
 const errorText = (err) => String(err?.message ?? err).replace(/^Error invoking remote method '[^']+': (Error: )?/, '');
 
@@ -68,7 +68,8 @@ function PlanLine({ plan, disabled, onType }) {
 /**
  * US-0504 FR1–FR5: the program row (version, newer or up to date, Update AI-DLC) and, for an active project, one line per
  * installed harness. `terminal` is the active project's terminal ({type, anyBusy}) or null with no project open.
- * @param {{projectId: string|null, terminal: object|null, lastIntentChangeAt: number|null}} props
+ * `lastIntentChangeAt` is useProject's in-flight intent `{name, stage, at}`, null when none (US-0041).
+ * @param {{projectId: string|null, terminal: object|null, lastIntentChangeAt: {name: string, stage: string|null, at: number|null}|null}} props
  */
 export default function AidlcUpdate({ projectId = null, terminal = null, lastIntentChangeAt = null }) {
   const { t } = useTranslation();
@@ -105,7 +106,7 @@ export default function AidlcUpdate({ projectId = null, terminal = null, lastInt
   const type = (cmd) => terminal?.type('shell', cmd, { submit: false });
   const wait = working && (
     <p className="refresh-wait" role="status">
-      {t('github.wait')}
+      {waitText(t, lastIntentChangeAt)}
     </p>
   );
 
