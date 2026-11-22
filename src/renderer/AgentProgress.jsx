@@ -14,6 +14,7 @@ import { agentName } from '../main/parsers/ledger.js';
 import { STALE_MS } from '../shared/agentActivity.js';
 import AgentHooksPreview, { harnessLabel } from './AgentHooksPreview.jsx';
 import { useAgentHooks } from './AgentHooksSection.jsx';
+import { ReadoutTable, SectionHeading } from './Lcars.jsx';
 
 const nameOf = (row) => row.unit ?? stageTitle(row.stage);
 const TICK_MS = 1000;
@@ -133,42 +134,54 @@ function HooksNotice({ projectId, harnesses }) {
   );
 }
 
+// US-0417: the rows are a readout table; each row's state is a strip at its left edge, and also in words.
+const activityStrip = (row) => (row.state === 'error' ? 'alert' : row.state === 'idle' ? 'quiet' : 'live');
+const auditStrip = (row) => (row.unreadable || row.status === 'failed' ? 'alert' : row.status === 'done' ? 'done' : 'live');
+
+function ProgressTable({ rows }) {
+  const { t } = useTranslation();
+  const columns = [{ label: t('cost.agent') }, { label: t('intents.statusLabel') }, { label: t('velocity.time'), align: 'right', value: true }];
+  return <ReadoutTable caption={t('tokenDetail.progress.title')} columns={columns} rows={rows} className="agent-progress-table" />;
+}
+
 function ActivityRows({ rows, auditRows }) {
   const { t } = useTranslation();
   const now = useNow(rows.length > 0);
   return (
-    <ul className="token-detail-rows">
-      {rows.map((row) => {
+    <ProgressTable
+      rows={rows.map((row) => {
         const main = row.kind === 'main';
         const steps = stepsOf(row, auditRows);
         const stale = Number.isFinite(row.lastMs) && now - row.lastMs >= STALE_MS; // FR5.1, on this clock (NFR3)
-        return (
-          <li
-            key={row.key}
-            className={`token-detail-row${main ? '' : ' agent-progress-row--child'}`}
-            tabIndex={0}
-            data-testid={main ? 'agent-progress-main' : 'agent-progress-agent'}
-          >
-            <span className="token-detail-row-name">
+        return {
+          id: row.key,
+          strip: activityStrip(row),
+          attrs: {
+            className: `token-detail-row${main ? '' : ' agent-progress-row--child'}`,
+            tabIndex: 0,
+            'data-testid': main ? 'agent-progress-main' : 'agent-progress-agent'
+          },
+          cells: [
+            <span key="n" className="token-detail-row-name">
               {main
                 ? t('tokenDetail.progress.main', { harness: harnessLabel(row.harness) })
                 : row.agentType
                   ? agentName(row.agentType)
                   : t('tokenDetail.progress.agent')}
-            </span>
-            <span className="agent-progress-detail">
+            </span>,
+            <span key="d" className="agent-progress-detail">
               {row.task && <span data-testid="agent-progress-task">{row.task}</span>}
               <span className="agent-progress-status" data-testid="agent-progress-state">
                 {stateText(t, row)}
               </span>
               {steps && <span data-testid="agent-progress-steps">{t('tokenDetail.progress.steps', steps)}</span>}
               {stale && <span data-testid="agent-progress-seen">{t('tokenDetail.progress.seen', { ago: sinceText(t, row.lastMs, now) })}</span>}
-            </span>
-            <span className="token-detail-row-value">{sinceText(t, row.sinceMs, now)}</span>
-          </li>
-        );
+            </span>,
+            sinceText(t, row.sinceMs, now)
+          ]
+        };
       })}
-    </ul>
+    />
   );
 }
 
@@ -179,19 +192,24 @@ function AuditRows({ rows }) {
       <p className="agent-progress-summary" data-testid="agent-progress-summary">
         {summaryText(t, i18n.language, rows)}
       </p>
-      <ul className="token-detail-rows">
-        {rows.map((row) => (
-          <li key={row.key} className="token-detail-row" tabIndex={0} data-testid="agent-progress-row">
-            <span className="token-detail-row-name">{nameOf(row)}</span>
-            <span className="agent-progress-detail">
+      <ProgressTable
+        rows={rows.map((row) => ({
+          id: row.key,
+          strip: auditStrip(row),
+          attrs: { className: 'token-detail-row', tabIndex: 0, 'data-testid': 'agent-progress-row' },
+          cells: [
+            <span key="n" className="token-detail-row-name">
+              {nameOf(row)}
+            </span>,
+            <span key="d" className="agent-progress-detail">
               <span>{[stageTitle(row.stage), row.agent].filter(Boolean).join(' · ')}</span>
               <span className="agent-progress-status">{statusText(t, row)}</span>
               {row.commit && <span>{t('tokenDetail.progress.commit', { subject: row.commit })}</span>}
-            </span>
-            <span className="token-detail-row-value">{t('tokenDetail.progress.minutes', { n: row.minutes })}</span>
-          </li>
-        ))}
-      </ul>
+            </span>,
+            t('tokenDetail.progress.minutes', { n: row.minutes })
+          ]
+        }))}
+      />
     </>
   );
 }
@@ -221,10 +239,7 @@ export default function AgentProgress({ projectId, rows, live = false }) {
     );
   return (
     <section className="token-detail-section" data-testid="agent-progress">
-      <div className="token-detail-section-head">
-        <h3>{t('tokenDetail.progress.title')}</h3>
-        <i className="token-detail-rule" aria-hidden="true" />
-      </div>
+      <SectionHeading as="h3" title={t('tokenDetail.progress.title')} />
       {notice && <HooksNotice projectId={projectId} harnesses={stale} />}
       {body ?? (
         <p className="token-detail-empty" data-testid="agent-progress-empty">

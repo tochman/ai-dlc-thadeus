@@ -11,8 +11,8 @@ import { AxisBottom, AxisLeft } from '@visx/axis';
 import { GridColumns, GridRows } from '@visx/grid';
 import { Tooltip as ChartTooltip, useTooltip } from '@visx/tooltip';
 import { ParentSize } from '@visx/responsive';
-import { Bar, Frame } from './Lcars.jsx';
-import { formatCostPair, formatTokens, formatUsd, shortModel, stageTitle } from './format.js';
+import { Block, DiagonalFrame, Pill, SectionHeading, useEntrance } from './Lcars.jsx';
+import { formatCost, formatCostPair, formatTokens, formatUsd, shortModel, stageTitle } from './format.js';
 import { agentName } from '../main/parsers/ledger.js';
 import { SPLIT_KINDS, STACK_KINDS, elapsedLabel, rateSeries, runFigures, splitRows, stackSeries, toggleKind } from './tokenChart.js';
 import AgentProgress from './AgentProgress.jsx';
@@ -30,22 +30,24 @@ const CHART_TIP_W = 220;
 /** The chart tooltip's left edge: right of the marker, inside the chart on both sides (US-0414 FR3.2). */
 export const chartTipLeft = (left, width) => Math.max(0, Math.min(left + 12, width - CHART_TIP_W));
 
-/** Two LCARS switch blocks; the pressed one is steel (design-system-mapping). A switch never moves focus. */
+/** Two square switch blocks in a section's heading row; the pressed one is light (US-0417: selection is brightness). A switch never moves focus. */
 function Switch({ id, options, value, onChange }) {
   const { t } = useTranslation();
   return (
     <span className="token-detail-switch">
       {options.map((o) => (
-        <button
+        <Block
           key={o}
-          type="button"
+          as="button"
           aria-pressed={value === o}
-          className={`lcars-block lcars-block--sm lcars-block--${value === o ? 'active' : 'dark'}`}
+          selected={value === o}
+          tone={value === o ? undefined : 'dark'}
+          size="sm"
           onClick={() => onChange(o)}
           data-testid={`${id}-${o}`}
         >
           {t(`tokenDetail.${o}`)}
-        </button>
+        </Block>
       ))}
     </span>
   );
@@ -174,8 +176,26 @@ function OverTimeChart({ width, readings, shown }) {
           </g>
           <line className="token-detail-baseline" x1={0} x2={iw} y1={ih} y2={ih} />
           {r && <line className="token-detail-marker" x1={x(points[at].t)} x2={x(points[at].t)} y1={0} y2={ih} />}
-          <AxisLeft scale={y} numTicks={3} tickFormat={formatTokens} hideAxisLine hideTicks tickLabelProps={{ className: 'token-detail-axis' }} />
-          <AxisBottom top={ih} scale={x} numTicks={5} tickFormat={elapsedLabel} hideAxisLine hideTicks tickLabelProps={{ className: 'token-detail-axis' }} />
+          {/* US-0417: tick scales, faint, on both axes. */}
+          <AxisLeft
+            scale={y}
+            numTicks={3}
+            tickFormat={formatTokens}
+            hideAxisLine
+            tickLength={4}
+            tickClassName="token-detail-tick"
+            tickLabelProps={{ className: 'token-detail-axis' }}
+          />
+          <AxisBottom
+            top={ih}
+            scale={x}
+            numTicks={5}
+            tickFormat={elapsedLabel}
+            hideAxisLine
+            tickLength={4}
+            tickClassName="token-detail-tick"
+            tickLabelProps={{ className: 'token-detail-axis' }}
+          />
         </Group>
       </svg>
       {r && (
@@ -242,7 +262,7 @@ function OverTime({ readings, live, shown, onToggle, source, gap }) {
   } else if (mode === 'table') {
     body = (
       <div className="token-detail-table-wrap">
-        <table className="token-detail-table">
+        <table className="token-detail-table lcars-rt">
           <caption>{t('tokenDetail.tableCaption')}</caption>
           <thead>
             <tr>
@@ -284,11 +304,11 @@ function OverTime({ readings, live, shown, onToggle, source, gap }) {
   }
   return (
     <section className="token-detail-section">
-      <div className="token-detail-section-head">
-        <h3>{t('tokenDetail.overTime')}</h3>
-        <i className="token-detail-rule" aria-hidden="true" />
-        <Switch id="token-detail-over-time" options={['diagram', 'table']} value={mode} onChange={setMode} />
-      </div>
+      <SectionHeading
+        as="h3"
+        title={t('tokenDetail.overTime')}
+        controls={<Switch id="token-detail-over-time" options={['diagram', 'table']} value={mode} onChange={setMode} />}
+      />
       {source === 'rebuilt' && (
         <p className="token-detail-note" data-testid="token-detail-source-note">
           {t('tokenDetail.source.rebuilt')}
@@ -318,10 +338,7 @@ function RunFigures({ intentCost, readings, wallMs, shown }) {
   ];
   return (
     <section className="token-detail-section" data-testid="token-detail-figures">
-      <div className="token-detail-section-head">
-        <h3>{t('tokenDetail.figures.title')}</h3>
-        <i className="token-detail-rule" aria-hidden="true" />
-      </div>
+      <SectionHeading as="h3" title={t('tokenDetail.figures.title')} />
       <dl className="token-detail-figures">
         {items.map(([id, label, value]) => (
           <div key={id} className="token-detail-figure">
@@ -347,10 +364,11 @@ function SplitCard({ projectId, id, rows, keepOrder = false, nameOf, hasEntry })
   const valueText = (r) => (measure === 'usd' ? (r.missingPrice ? t('cost.missingPrice') : formatUsd(r.usd)) : formatTokens(r.value));
   return (
     <section className={`token-detail-card token-detail-card--${id}`} data-testid={`token-detail-split-${id}`}>
-      <div className="token-detail-section-head">
-        <h3>{t(`tokenDetail.by.${id}`)}</h3>
-        <Switch id={`token-detail-split-${id}`} options={['tokens', 'usd']} value={measure} onChange={setMeasure} />
-      </div>
+      <SectionHeading
+        as="h3"
+        title={t(`tokenDetail.by.${id}`)}
+        controls={<Switch id={`token-detail-split-${id}`} options={['tokens', 'usd']} value={measure} onChange={setMeasure} />}
+      />
       {!hasEntry ? (
         <Empty text={t('tokenDetail.empty.noEntry')} />
       ) : shown.length === 0 ? (
@@ -394,7 +412,7 @@ function SplitCard({ projectId, id, rows, keepOrder = false, nameOf, hasEntry })
   );
 }
 
-/** The stepped token rate in the right column, tokens per minute between readings (FR3.2). */
+/** The stepped token rate in its readout block, tokens per minute between readings (FR3.2). */
 function RateLine({ readings, live, shown }) {
   const { t } = useTranslation();
   const rates = rateSeries(readings, shown); // US-0214 FR5.1: the rate of the series shown over time
@@ -406,8 +424,7 @@ function RateLine({ readings, live, shown }) {
   const x = scaleLinear({ domain: [0, rates.at(-1)?.t || 1], range: [0, 200] });
   const y = scaleLinear({ domain: [0, Math.max(...rates.map((r) => r.rate), 1)], range: [42, 4] });
   return (
-    <div className="readout">
-      <span className="readout-label">{t('tokenDetail.rateNow')}</span>
+    <>
       {steps.length > 0 && (
         <svg
           className="token-detail-rate"
@@ -420,10 +437,10 @@ function RateLine({ readings, live, shown }) {
           <line className="token-detail-rate-base" x1={0} x2={200} y1={46} y2={46} />
         </svg>
       )}
-      <span className="readout-value readout-value--xs" data-testid="token-detail-rate">
+      <span className="lcars-dblk-small" data-testid="token-detail-rate">
         {t('tokens.rate', { rate: now == null ? '–' : formatTokens(Math.round(now)) })}
       </span>
-    </div>
+    </>
   );
 }
 
@@ -484,39 +501,71 @@ export default function TokenDetail({ projectId, space = 'default', dirName, int
   const topModel = [...(intentCost?.byModel ?? [])].sort((a, b) => b.usd - a.usd)[0]?.name;
   const last = readings.at(-1);
   const modeText = live ? t('intents.mode.live') : t('tokenDetail.recorded');
+  const entering = useEntrance(`activity:${dirName}`); // US-0417: Activity enters with the shared sequence
+  // US-0417: the run's readouts drop out of the diagonal frame's arm, each with its state strip.
+  const readouts = [
+    {
+      k: t('intents.readoutMode'),
+      v: (
+        <span className={live ? 'readout-live' : undefined} data-testid="token-detail-mode">
+          {live && <span className="lcars-live-dot" aria-hidden="true" />}
+          {modeText}
+        </span>
+      ),
+      tone: 'deep',
+      strip: live ? 'live' : 'done'
+    },
+    { k: t('tokenDetail.tokens'), v: <span data-testid="token-detail-tokens">{formatTokens(intentCost?.total.totalTokens)}</span>, strip: 'quiet' },
+    {
+      k: t('tokenDetail.cost'),
+      v: (
+        <span className="readout-value--cost" data-testid="token-detail-cost">
+          {formatCostPair(intentCost?.total)}
+        </span>
+      ),
+      tone: 'steel',
+      strip: 'live'
+    },
+    {
+      k: t('tokenDetail.recordedLabel'),
+      v: (
+        <span className="lcars-dblk-small" data-testid="token-detail-recorded">
+          {last ? `${elapsedLabel(last.at - readings[0].at)} · ${t('tokenDetail.readings', { n: readings.length })}` : t('tokenDetail.noReadings')}
+        </span>
+      ),
+      tone: 'deep'
+    },
+    { k: t('tokenDetail.rateNow'), v: <RateLine readings={readings} live={live} shown={overTimeShown} />, tone: 'deep' },
+    topModel && { k: t('intents.readoutModel'), v: <span data-testid="token-detail-model">{shortModel(topModel)}</span>, strip: 'quiet' }
+  ].filter(Boolean);
 
   return (
-    <>
-      <Frame className="token-detail">
-        <div
-          className="token-detail-view"
-          data-testid="token-detail"
-          onKeyDown={(e) => {
-            if (e.key === 'Escape') onBack();
-          }}
-        >
-          <Bar
-            className="token-detail-bar"
-            segs={[
-              ['slate-3', 5],
-              ['slate-3', 1],
-              ['slate-3', 4],
-              ['slate-2', 2]
-            ]}
-          />
+    <div
+      className={`token-detail${entering ? ' is-entering' : ''}`}
+      data-testid="token-detail"
+      onKeyDown={(e) => {
+        if (e.key === 'Escape') onBack();
+      }}
+    >
+      <DiagonalFrame
+        title={t('tokenDetail.title', { name: intent?.slug ?? dirName })}
+        titleRef={headRef}
+        tag={dirName}
+        corner={{
+          label: `${t('tokenDetail.tokens')} · ${t('tokenDetail.readings', { n: readings.length })}`,
+          value: formatTokens(intentCost?.total.totalTokens)
+        }}
+        footer={`${t('tokenDetail.figures.title')} · ${formatCost(intentCost?.total)}`}
+        readouts={readouts}
+      >
+        <div className="token-detail-view">
           <header className="token-detail-head">
-            <button type="button" className="lcars-block lcars-block--sm lcars-block--dark token-detail-back" onClick={onBack} data-testid="token-detail-back">
+            <Pill tone="quiet" onClick={onBack} data-testid="token-detail-back">
               {t('tokenDetail.back')}
-            </button>
-            <div className="token-detail-titles">
-              <h2 ref={headRef} tabIndex={-1} className="token-detail-title">
-                {t('tokenDetail.title', { name: intent?.slug ?? dirName })}
-              </h2>
-              <div className="lcars-chips">
-                {intent?.scope && <span className="lcars-chip">{intent.scope}</span>}
-                <span className="lcars-chip">{modeText}</span>
-                <span className="lcars-chip lcars-chip--active">{dirName}</span>
-              </div>
+            </Pill>
+            <div className="lcars-chips">
+              {intent?.scope && <span className="lcars-chip">{intent.scope}</span>}
+              <span className={`lcars-chip${live ? ' lcars-chip--active' : ''}`}>{modeText}</span>
             </div>
           </header>
           <AgentProgress projectId={projectId} rows={progress} live={live} />
@@ -527,58 +576,8 @@ export default function TokenDetail({ projectId, space = 'default', dirName, int
             <SplitCard projectId={projectId} id="agent" rows={intentCost?.byAgent} nameOf={agentName} hasEntry={!!intentCost} />
             <SplitCard projectId={projectId} id="model" rows={intentCost?.byModel} nameOf={shortModel} hasEntry={!!intentCost} />
           </div>
-          <Bar
-            className="token-detail-bar"
-            segs={[
-              ['slate-3', 3],
-              ['steel-deep', 1],
-              ['slate-3', 5]
-            ]}
-          />
         </div>
-      </Frame>
-      <aside className="token-detail-side" aria-label={t('intents.readout')} data-testid="token-detail-side">
-        <div className="readout">
-          <span className="readout-label">{t('intents.readoutMode')}</span>
-          <span className={`readout-value readout-value--sm ${live ? 'readout-value--steel' : ''}`} data-testid="token-detail-mode">
-            {live ? (
-              <span className="readout-live">
-                <span className="lcars-live-dot" aria-hidden="true" />
-                {modeText}
-              </span>
-            ) : (
-              modeText
-            )}
-          </span>
-        </div>
-        <div className="readout">
-          <span className="readout-label">{t('tokenDetail.tokens')}</span>
-          <span className="readout-value token-detail-big" data-testid="token-detail-tokens">
-            {formatTokens(intentCost?.total.totalTokens)}
-          </span>
-        </div>
-        <div className="readout">
-          <span className="readout-label">{t('tokenDetail.cost')}</span>
-          <span className="readout-value readout-value--steel token-detail-big" data-testid="token-detail-cost">
-            {formatCostPair(intentCost?.total)}
-          </span>
-        </div>
-        <div className="readout">
-          <span className="readout-label">{t('tokenDetail.recordedLabel')}</span>
-          <span className={`readout-value readout-value--sm${last ? '' : ' muted'}`} data-testid="token-detail-recorded">
-            {last ? `${elapsedLabel(last.at - readings[0].at)} · ${t('tokenDetail.readings', { n: readings.length })}` : t('tokenDetail.noReadings')}
-          </span>
-        </div>
-        <RateLine readings={readings} live={live} shown={overTimeShown} />
-        {topModel && (
-          <div className="readout">
-            <span className="readout-label">{t('intents.readoutModel')}</span>
-            <span className="readout-value readout-value--sm" data-testid="token-detail-model">
-              {shortModel(topModel)}
-            </span>
-          </div>
-        )}
-      </aside>
-    </>
+      </DiagonalFrame>
+    </div>
   );
 }

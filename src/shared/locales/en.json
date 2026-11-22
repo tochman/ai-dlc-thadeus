@@ -332,6 +332,11 @@
     "usd": "USD",
     "share": "Share",
     "tokensHeader": "Tokens",
+    "scopes": "Scopes",
+    "corner": "Total · {n, plural, one {# intent} other {# intents}}",
+    "tokenMix": "Token mix",
+    "shareScope": "Share per scope",
+    "shareScopeLabel": "Share per scope: {list}",
     "sessionModel": "The session's model",
     "sessionModelOf": "The session's model ({model})",
     "readingModels": "Reading the model configuration …",
@@ -733,8 +738,10 @@
     "createFeatureDocs": "Create feature docs"
   },
   "aidlcUpdate": {
-    "programTitle": "AI-DLC program",
     "projectTitle": "AI-DLC in this project",
+    "unknown": "Unknown",
+    "filesDiffer": "{n} files differ",
+    "updateDo": "Update types the command into the shell tab; press Enter there to run it.",
     "newer": "Newer: v{version}",
     "newerUnknown": "A newer version exists",
     "upToDate": "Up to date",
@@ -816,18 +823,31 @@
         "save": "Save",
         "clear": "Remove",
         "set": "Saved in the keychain",
-        "notSet": "Not saved"
+        "notSet": "Not saved",
+        "signIn": "Sign in",
+        "what": "Username and app password, kept in the keychain"
       },
-      "pathLabel": "Path",
+      "groups": {
+        "aidlc": "AI-DLC",
+        "agents": "Coding agents",
+        "git": "Git hosts",
+        "system": "System"
+      },
+      "chip": {
+        "checking": "Checking…",
+        "found": "Found",
+        "hand": "Chosen by hand",
+        "missing": "Missing",
+        "newer": "Update available"
+      },
+      "missingDo": "Install it, or choose its path.",
+      "summary": "{n} tools · {missing} missing",
+      "rescan": "Rescan",
+      "copyPath": "Copy {path}",
+      "copied": "Copied",
       "pathFallback": "The login shell's PATH could not be read; the app's own PATH was used.",
-      "versionLabel": "Version",
-      "notFound": "not found",
       "notOnPath": "not found on PATH",
       "checking": "Checking…",
-      "source": {
-        "saved": "Chosen path",
-        "auto": "Found automatically"
-      },
       "pick": "Choose…",
       "pickFor": "Choose the path to {tool}",
       "pickTitle": "Choose the path to a tool",
@@ -937,6 +957,7 @@
     "loading": "Reading the AI-DLC configuration…",
     "tabsLabel": "AI-DLC views",
     "tabSettings": "Settings",
+    "frameSub": "Project settings · {project}",
     "harnessLabel": "Harness",
     "section": {
       "models": "Models and effort",
@@ -978,6 +999,7 @@
     "empty": "No file is open. Pick a file in the tree, or Edit in the reader or the Features view.",
     "loading": "Loading the editor…",
     "tree": "The project's files",
+    "files": "Files",
     "treeTruncated": "The tree shows the first 20,000 files.",
     "unsaved": "unsaved changes",
     "close": "Close {file}",
@@ -1230,7 +1252,24 @@
     "kept": "Installed. The downloaded package is kept at",
     "relaunch": "Restart now",
     "upToDate": "You have the latest version.",
-    "confirmRestart": "An agent tab is working. Updating restarts the app and ends its terminal sessions. Update anyway?"
+    "confirmRestart": "An agent tab is working. Updating restarts the app and ends its terminal sessions. Update anyway?",
+    "dialogTitle": "Update",
+    "show": "Show",
+    "checking": "Checking for an update",
+    "checkingText": "Asking GitHub for the latest release of {repo}…",
+    "upToDateTitle": "Up to date",
+    "downloadTitle": "Downloading",
+    "passwordTitle": "Installing needs your password",
+    "readyTitle": "Ready to restart",
+    "errorTitle": "The update was stopped",
+    "whatToDo": "Try again in a while. If that does not help, download the release from GitHub and install it yourself.",
+    "retry": "Try again",
+    "busyWarn": "An agent tab is working. Updating restarts the app and ends its terminal.",
+    "installed": "Installed",
+    "latest": "Latest",
+    "checked": "Checked",
+    "source": "Source",
+    "footer": "{repo} · releases"
   },
   "tokens": {
     "title": "Live tokens",
@@ -1245,9 +1284,10 @@
     "open": "Live tokens, open the token detail"
   },
   "tokenDetail": {
-    "title": "Tokens · {name}",
+    "title": "Activity · {name}",
+    "activity": "Activity",
     "back": "‹ Back",
-    "openShort": "Tokens ›",
+    "openShort": "Activity ›",
     "overTime": "Tokens over time",
     "overTimeLabel": "Tokens over time, {elapsed}, {tokens} tokens, stacked by kind",
     "chartKeys": "Tokens over time. The arrow keys pick a reading, Esc hides it.",
@@ -1341,9 +1381,15 @@
     }
   },
   "aboutDialog": {
-    "exit": "EXIT",
-    "licenses": "LICENSES",
-    "licensesFailed": "The licences could not be opened: {error}"
+    "title": "About",
+    "licenses": "Licences",
+    "licensesFailed": "The licences could not be opened: {error}",
+    "version": "Version",
+    "patch": "Patch",
+    "platform": "Platform",
+    "build": "Build",
+    "madeBy": "Made by",
+    "repository": "Repository"
   },
   "menu": {
     "about": "About {app}",
