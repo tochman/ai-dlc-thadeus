@@ -28,6 +28,13 @@ async function tmpRoot() {
 afterEach(() => fs.rm(TMP, { recursive: true, force: true }));
 
 describe('getSetupInfo', () => {
+  it('reports a .gitignore that hides .thadeus/ (US-0609 AC3.1.7)', async () => {
+    const root = await tmpRoot();
+    const exec = fakeExec({ 'git rev-parse --is-inside-work-tree': 'true\n', 'git check-ignore -q .thadeus/x': '' }); // exit 0: ignored
+    expect((await getSetupInfo(root, { exec })).thadeusIgnored).toBe(true);
+    expect((await getSetupInfo(root, { exec: fakeExec({ 'git rev-parse --is-inside-work-tree': 'true\n' }) })).thadeusIgnored).toBe(false); // exit 1
+  });
+
   it('stops at "not installed" when aidlc is missing, still reporting git and other harnesses (FR4.2)', async () => {
     const root = await tmpRoot();
     const info = await getSetupInfo(root, { exec: fakeExec({}) });

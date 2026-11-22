@@ -12,6 +12,12 @@ function isIgnored(p) {
   return i !== -1 && i < parts.length - 1 && parts[parts.length - 1] !== KEEP_IN_ENGINE;
 }
 
+/**
+ * US-0041 AC2: whether a change at `<intent>/<top>/…` is stage work. The audit shards (a HUMAN_TURN on every message
+ * typed to the agent), runtime-graph.json and the dot-named engine files (.aidlc-engine/ and the like) are not.
+ */
+const isStageWork = (top) => top !== 'audit' && top !== 'runtime-graph.json' && !top.startsWith('.');
+
 /** Debounce, but never hold a change longer than maxWaitMs while an agent writes continuously (NFR1). */
 function debounce(flush, debounceMs, maxWaitMs) {
   let timer = null;
@@ -153,15 +159,17 @@ function watchFilesIn(dir, accept, onHit) {
 
 /**
  * @param {{intentsDir: string, ledgerFile?: string, usageDir?: string, worktreesDir?: string,
- *          onChange: (c: {dirNames: string[], indexChanged: boolean, costChanged: boolean}) => void,
+ *          onChange: (c: {dirNames: string[], workDirNames: string[], indexChanged: boolean, costChanged: boolean}) => void,
  *          onError?: (err: Error) => void, debounceMs?: number, maxWaitMs?: number}} opts
  *   ledgerFile: absolute path to usage-ledger.json; a change there sets costChanged (FR5.1)
  *   usageDir: absolute path to `<root>/.thadeus/usage`; a snapshot change there sets costChanged (US-0209 FR5.1),
  *   as does a change to an intent's audit/*.md shard
  *   worktreesDir: absolute path to `<root>/.aidlc/worktrees`; a Unit plan written there reports its intent (US-0507 FR5.1)
+ *   workDirNames: the changed intents with stage work, see isStageWork (US-0041 AC2)
  */
 export function watchIntents({ intentsDir, ledgerFile, usageDir, worktreesDir, onChange, onError = console.error, debounceMs = 300, maxWaitMs = 800 }) {
   const pending = new Set();
+  const work = new Set(); // US-0041 AC2: the intents in `pending` with stage work, not only audit or runtime files
   let indexChanged = false;
   let costChanged = false;
   let timer = null;
@@ -169,8 +177,9 @@ export function watchIntents({ intentsDir, ledgerFile, usageDir, worktreesDir, o
 
   const flush = () => {
     timer = null;
-    const change = { dirNames: [...pending], indexChanged, costChanged };
+    const change = { dirNames: [...pending], workDirNames: [...work], indexChanged, costChanged };
     pending.clear();
+    work.clear();
     indexChanged = false;
     costChanged = false;
     onChange(change);
@@ -198,6 +207,7 @@ export function watchIntents({ intentsDir, ledgerFile, usageDir, worktreesDir, o
     watchers.push(
       watchWorktreePlans(worktreesDir, intentsDir, (dir) => {
         pending.add(dir);
+        work.add(dir);
         schedule();
       })
     );
@@ -215,6 +225,7 @@ export function watchIntents({ intentsDir, ledgerFile, usageDir, worktreesDir, o
     } else if (!parts[0].startsWith('.')) {
       pending.add(parts[0]);
       if (parts.length === 3 && parts[1] === 'audit' && parts[2].endsWith('.md')) costChanged = true; // US-0209 FR5.1
+      if (isStageWork(parts[1])) work.add(parts[0]);
     } else {
       return;
     }

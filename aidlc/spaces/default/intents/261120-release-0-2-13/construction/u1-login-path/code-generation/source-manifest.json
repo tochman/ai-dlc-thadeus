@@ -1,0 +1,17 @@
+{
+  "stage": "code-generation",
+  "unit": "u1-login-path",
+  "version": 1,
+  "writes": [
+    { "path": "src/main/exec.js" },
+    { "path": "src/main/tools.js" },
+    { "path": "src/renderer/SettingsView.jsx" },
+    { "path": "src/shared/locales/sv.json" },
+    { "path": "src/shared/locales/en.json" },
+    { "path": "tests/main/exec.test.js" },
+    { "path": "tests/main/toolsLoginPath.test.js" },
+    { "path": "tests/renderer/SettingsView.test.jsx" },
+    { "path": "docs/FEATURES.md" },
+    { "path": "docs/features/epic-00-fixes.md" }
+  ]
+}

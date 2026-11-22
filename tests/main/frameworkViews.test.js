@@ -2,12 +2,12 @@
 import { describe, expect, it } from 'vitest';
 import { AIDLC_SECTIONS, PROJECT_SECTIONS, sectionsFor, shownViews, viewFields, viewsFor } from '../../src/shared/frameworkViews.js';
 
-// The views an AI-DLC project offered in v0.2.12 (the old `offered` maps in App.jsx and ProjectView.jsx).
-const V0212_AIDLC = ['intents', 'features', 'config', 'plans', 'cost', 'velocity', 'github', 'editor'];
+// The views an AI-DLC project offers since v0.2.14 (the old `offered` maps; US-0905 moved Plans under Configuration).
+const V0212_AIDLC = ['intents', 'features', 'config', 'cost', 'velocity', 'github', 'editor'];
 const AIDLC_ONLY = ['intents', 'plans', 'cost', 'velocity', 'github'];
 
 describe('frameworkViews', () => {
-  it('gives an AI-DLC project exactly the views it had in v0.2.12 (AC1.1.1)', () => {
+  it('gives an AI-DLC project exactly the views it had in v0.2.14 (AC1.1.1)', () => {
     expect([...viewsFor('aidlc')].sort()).toEqual([...V0212_AIDLC].sort());
   });
 

@@ -555,6 +555,13 @@ describe('handoff signals (US-0213)', () => {
     await expect(late).resolves.toBe(false);
   });
 
+  it('US-0039 FR2.3: a postcompact counts as the session after a compaction (opencode has no SessionStart for it)', async () => {
+    start('s2', { harness: 'opencode' });
+    const ready = store.waitForSession('s2', ['compact'], 5000);
+    sig('s2', 'postcompact', {}, 'opencode');
+    await expect(ready).resolves.toBe(true);
+  });
+
   it('onSignal tells every signal with its session, and a compaction is stamped (FR8.1)', () => {
     const seen = [];
     store.onSignal((s) => seen.push(s));

@@ -10,7 +10,7 @@ src/
     agent*.js      agent dialogs (US-0506), the handoff signals (US-0213), activity (US-0214) and agent progress (US-0507)
     planning*.js   the release planning record and its commit and push cycle (US-0606, US-0607)
     costRules.js   the THADEUS cost rule pack (US-0212)
-  preload/index.js window.bridge (185 lines)
+  preload/index.js window.bridge (188 lines at `90031e2`)
   renderer/        React views and helpers, editor/ subfolder, theme.css, pure helpers (*.js)
   shared/          pure modules for both sides (incl. configTables.js, costRules.js, agentActivity.js); locales/sv.json, en.json
 scripts/           build and CI helpers
@@ -20,7 +20,7 @@ docs/              FEATURES.md, features/epic-*.md, releases/, screenshots/
 build/             icon sources
 ```
 
-The module and test counts are from `2b5d6a4`. This run (`39a3dbf`) read the release planning area (see `reverse-engineering-timestamp.md`); everything else is from earlier scans.
+The module and test counts are from `2b5d6a4`. The `90031e2` run (EPIC-14) read the detection, watcher, settings, IPC, terminal-command and token-log area (see `reverse-engineering-timestamp.md`); everything else is from earlier scans.
 
 ## File Classification
 
@@ -61,7 +61,21 @@ The module and test counts are from `2b5d6a4`. This run (`39a3dbf`) read the rel
   - A settings section is a `<form>` with `Section`, `RadioBlocks` and `useSectionSave`.
 - **LCARS primitives** live in `Lcars.jsx`. Tooltips go only through `Tooltip.jsx`.
 
-## Where US-0608 Lands
+## Where EPIC-14 Lands (read at `90031e2`)
+
+The assumption map is in `architecture.md`; the blast radius per file is in `dependencies.md`. By layer:
+- **Detection and the value**: `projectService.detectProject` gains `.specify/` (and `.specify/feature.json`). The app's framework value is kept in a repo file the app writes after a confirm (US-1408). The app's own files already live in `.thadeus/`, written with `resolveInRoot` and `writeAtomic` as `tokenReadings.recordReading` does. `settings.sanitizeProject` keeps the per-machine settings.
+- **Main wiring**: `ipc.js` `project:open` chooses a Spec Kit watcher (`specs/`, `.specify/`) beside `watchSpace` and `watchForSetup`, and gives it a push such as `project:changed`. `watchForAidlc` learns `.specify/`. `refreshQuestions`, `agents:*` and `tokens:readings` get a Spec Kit branch or an explicit "nothing known" answer.
+- **New pure parsers** (the pattern of `parsers/state.js` and `audit.js`):
+  - `specs/<n>-<name>/` folders, with `feature.json` naming the active one;
+  - `tasks.md` (phase headings, `- [ ] T001 [P] [US1] …`), and flow steps worked out from which files exist;
+  - `extensions.yml`, for which no YAML library is installed.
+- **Setup**: `setup.js` has the preview, then apply, pattern (`getSetupInfo`, `runSetup` with `runFixed` and fixed arrays). `specify init --integration <claude|opencode>` follows it. `tools.js` needs a `specify` tool id.
+- **Commands**: `shared/harnesses.js` `commands` gains a Spec Kit family per harness beside `aidlc`, plus a helper like `harnessCommand`. `ResumeButton.jsx` and `TerminalPanel.jsx` `QUICK_COMMANDS` pick the family from the framework.
+- **Renderer**: `App.jsx` and `ProjectView.jsx` swap `isAidlc` for the framework, with one shared view table. They add Spec Kit blocks (features, constitution) as `ArmBlock`s and `view === '<id>'` branches, a `useSpecKit` hook like `useProject`, and a framework choice and switch (US-1406, US-1407) as LCARS dialogs, not `window.confirm`.
+- **Locales**: new keys in both `sv.json` and `en.json` (`i18nKeys.test.js`).
+
+## Where US-0608 Landed (kept from `39a3dbf`, not re-verified)
 
 - `src/main/planningRecord.js`: a new kind for a file change that cannot be replayed (`{rel, baseHash, content}`), or kinds for the other edits (markers, criteria, new story). It needs a write queue per project, and a way to tell a story's own change from another one.
 - `src/main/planningSync.js`:

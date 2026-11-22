@@ -11,6 +11,25 @@ function slugFromDirName(dirName) {
   return dirName.replace(DATE_PREFIX, '');
 }
 
+const UUID_V7 = /^([0-9a-f]{8})-([0-9a-f]{4})-7[0-9a-f]{3}-/i;
+
+/** The creation time in a UUID v7 (its first 48 bits, Unix ms), or null for anything else (US-0040 FR4.2). */
+export function createdMsFromUuid(uuid) {
+  const m = UUID_V7.exec(typeof uuid === 'string' ? uuid : '');
+  return m ? parseInt(m[1] + m[2], 16) : null;
+}
+
+/**
+ * Newest first: by folder date, then within a day by the uuid's creation time, then the intents without one
+ * by folder name (US-0040 FR4.2, FR4.3).
+ */
+function newestFirst(a, b) {
+  if (a.date !== b.date) return (b.date ?? '').localeCompare(a.date ?? '');
+  if (a.createdMs !== null && b.createdMs !== null) return b.createdMs - a.createdMs;
+  if (a.createdMs !== b.createdMs) return a.createdMs === null ? 1 : -1;
+  return b.dirName.localeCompare(a.dirName);
+}
+
 /**
  * @param {unknown} index parsed intents.json (anything that is not an array counts as empty)
  * @param {string[]} diskDirs intent folder names found on disk
@@ -43,6 +62,6 @@ export function mergeIntents(index, diskDirs, activeDirName) {
     }));
 
   return [...fromIndex, ...diskOnly]
-    .map((i) => ({ ...i, date: dateFromDirName(i.dirName), active: i.dirName === activeDirName }))
-    .sort((a, b) => b.dirName.localeCompare(a.dirName));
+    .map((i) => ({ ...i, date: dateFromDirName(i.dirName), createdMs: createdMsFromUuid(i.uuid), active: i.dirName === activeDirName }))
+    .sort(newestFirst);
 }

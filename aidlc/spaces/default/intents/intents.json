@@ -422,5 +422,29 @@
     "scope": "quick-fix",
     "status": "complete",
     "request": "ae8da37b"
+  },
+  {
+    "uuid": "01a1f4a0-d897-7748-a104-9efdc7374e5f",
+    "slug": "spec-kit-framework",
+    "dirName": "261119-spec-kit-framework",
+    "scope": "classic",
+    "status": "in-flight",
+    "request": "d17f21c7"
+  },
+  {
+    "uuid": "01a1f7d6-0c2e-71f1-bc15-0b80593f0146",
+    "slug": "release-0-2-13",
+    "dirName": "261120-release-0-2-13",
+    "scope": "ultra-express",
+    "status": "complete",
+    "request": "ae36b0ab"
+  },
+  {
+    "uuid": "01a201d6-111b-7f99-9c5f-e7de94cdf5ef",
+    "slug": "release-0-2-14",
+    "dirName": "261122-release-0-2-14",
+    "scope": "ultra-express",
+    "status": "complete",
+    "request": "3cfbbc4a"
   }
 ]

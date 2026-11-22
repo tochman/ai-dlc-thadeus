@@ -7,6 +7,8 @@ import { useTranslation } from 'react-i18next';
 import i18n, { LANGUAGE_SETTINGS } from '../shared/i18n.js';
 import AuctumMark from './AuctumMark.jsx';
 import AidlcUpdate from './AidlcUpdate.jsx';
+import { Pill, useEntrance } from './Lcars.jsx';
+import { ToolGroup, ToolLine, ToolRow, groupStrip, toolState } from './ToolRows.jsx';
 
 /** The tabs in rail order (US-0410 FR1.1); main keeps the same list as SETTINGS_TABS. */
 export const SETTINGS_TABS = ['tools', 'appearance', 'notifications', 'project', 'about'];
@@ -106,71 +108,14 @@ export function PathText({ path }) {
 }
 
 /**
- * One tool as an LCARS card (US-0410 FR4.1, FR4.3): the name in the header strip, path and version in the body, where
- * the path came from and Välj… / Återställ in the footer. A tool that is not found says what the app needs it for.
+ * US-1201 AC-1: the Bitbucket username and app password. They go to main, which keeps them encrypted in the keychain;
+ * the view only learns whether they are set, and the password field is emptied after every save. US-0416: a row in Git
+ * hosts whose Sign in pill opens the form under it.
  */
-function ToolCard({ row: r, error, onChoose, onReset }) {
-  const { t } = useTranslation();
-  const label = t(`settings.tools.${r.id}`);
-  const path = r.path ? <PathText path={r.path} /> : r.found === false ? '–' : t('settings.tools.checking');
-  return (
-    <div className="lcars-card settings-tool" data-testid={`settings-tool-${r.id}`}>
-      <div className="lcars-card-head">
-        <h3 className="settings-tool-name">{label}</h3>
-      </div>
-      <div className="lcars-card-body">
-        <span className="settings-tool-field">
-          <span className="field-label">{t('settings.tools.pathLabel')}</span>
-          <code>{path}</code>
-        </span>
-        <span className="settings-tool-field">
-          <span className="field-label">{t('settings.tools.versionLabel')}</span>
-          <span>{r.found === null ? t('settings.tools.checking') : r.found ? r.version : t('settings.tools.notFound')}</span>
-        </span>
-        {r.found === false && <p className="settings-tool-needed">{t(`settings.tools.neededFor.${r.id}`)}</p>}
-        {error && (
-          <p className="refresh-error settings-tool-error" role="alert" data-testid={`settings-tool-error-${r.id}`}>
-            {error}
-          </p>
-        )}
-        {r.error && !error && <p className="muted settings-tool-error">{r.error}</p>}
-      </div>
-      <div className="lcars-card-foot">
-        <span className="settings-tool-source">{t(`settings.tools.source.${r.source}`)}</span>
-        <span className="settings-tool-actions">
-          <button
-            type="button"
-            className="btn"
-            aria-label={t('settings.tools.pickFor', { tool: label })}
-            onClick={() => onChoose(r.id)}
-            data-testid={`settings-tool-pick-${r.id}`}
-          >
-            {t('settings.tools.pick')}
-          </button>
-          {r.source === 'saved' && (
-            <button
-              type="button"
-              className="btn btn-quiet"
-              aria-label={t('settings.tools.resetFor', { tool: label })}
-              onClick={() => onReset(r.id)}
-              data-testid={`settings-tool-reset-${r.id}`}
-            >
-              {t('settings.tools.reset')}
-            </button>
-          )}
-        </span>
-      </div>
-    </div>
-  );
-}
-
-/**
- * US-1201 AC-1: the Bitbucket username and app password as an LCARS card. They go to main, which keeps them encrypted
- * in the keychain; the view only learns whether they are set, and the password field is emptied after every save.
- */
-function BitbucketCard() {
+function BitbucketRow() {
   const { t } = useTranslation();
   const [set, setSet] = useState(null);
+  const [open, setOpen] = useState(false);
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState(null);
@@ -199,57 +144,81 @@ function BitbucketCard() {
   }
 
   return (
-    <div className="lcars-card settings-tool" data-testid="settings-bitbucket">
-      <div className="lcars-card-head">
-        <h3 className="settings-tool-name">{t('settings.tools.bitbucket.title')}</h3>
-      </div>
-      <div className="lcars-card-body">
-        <p className="muted settings-help">{t('settings.tools.bitbucket.help')}</p>
-        <label className="field">
-          <span className="field-label">{t('settings.tools.bitbucket.username')}</span>
-          <input type="text" autoComplete="off" value={username} onChange={(e) => setUsername(e.target.value)} data-testid="settings-bitbucket-username" />
-        </label>
-        <label className="field">
-          <span className="field-label">{t('settings.tools.bitbucket.appPassword')}</span>
-          <input type="password" autoComplete="off" value={password} onChange={(e) => setPassword(e.target.value)} data-testid="settings-bitbucket-password" />
-        </label>
-        {error && (
-          <p className="refresh-error settings-tool-error" role="alert">
-            {error}
-          </p>
-        )}
-      </div>
-      <div className="lcars-card-foot">
-        <span className="settings-tool-source" data-testid="settings-bitbucket-status">
-          {set === null ? t('settings.tools.checking') : set ? t('settings.tools.bitbucket.set') : t('settings.tools.bitbucket.notSet')}
-        </span>
-        <span className="settings-tool-actions">
-          <button
-            type="button"
-            className="btn"
-            disabled={!username || !password}
-            onClick={() => run(() => window.bridge.bitbucket.save(username, password))}
-            data-testid="settings-bitbucket-save"
-          >
-            {t('settings.tools.bitbucket.save')}
-          </button>
-          {set && (
-            <button type="button" className="btn btn-quiet" onClick={() => run(() => window.bridge.bitbucket.clear())} data-testid="settings-bitbucket-clear">
-              {t('settings.tools.bitbucket.clear')}
-            </button>
-          )}
-        </span>
-      </div>
-    </div>
+    <ToolRow
+      testId="settings-bitbucket"
+      state={set ? 'found' : 'quiet'}
+      name={t('settings.tools.bitbucket.title')}
+      empty={t('settings.tools.bitbucket.what')}
+      chip={set === null ? t('settings.tools.checking') : set ? t('settings.tools.bitbucket.set') : t('settings.tools.bitbucket.notSet')}
+      chipTestId="settings-bitbucket-status"
+      actions={
+        <Pill tone={open ? 'quiet' : undefined} aria-expanded={open} onClick={() => setOpen((o) => !o)} data-testid="settings-bitbucket-signin">
+          {t('settings.tools.bitbucket.signIn')}
+        </Pill>
+      }
+    >
+      {open && (
+        <div className="tool-row-form">
+          <p className="muted settings-help">{t('settings.tools.bitbucket.help')}</p>
+          <label className="field">
+            <span className="field-label">{t('settings.tools.bitbucket.username')}</span>
+            <input type="text" autoComplete="off" value={username} onChange={(e) => setUsername(e.target.value)} data-testid="settings-bitbucket-username" />
+          </label>
+          <label className="field">
+            <span className="field-label">{t('settings.tools.bitbucket.appPassword')}</span>
+            <input
+              type="password"
+              autoComplete="off"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              data-testid="settings-bitbucket-password"
+            />
+          </label>
+          <span className="tool-row-form-act">
+            <Pill
+              tone="primary"
+              disabled={!username || !password}
+              onClick={() => run(() => window.bridge.bitbucket.save(username, password))}
+              data-testid="settings-bitbucket-save"
+            >
+              {t('settings.tools.bitbucket.save')}
+            </Pill>
+            {set && (
+              <Pill tone="quiet" onClick={() => run(() => window.bridge.bitbucket.clear())} data-testid="settings-bitbucket-clear">
+                {t('settings.tools.bitbucket.clear')}
+              </Pill>
+            )}
+          </span>
+        </div>
+      )}
+      {error && (
+        <p className="refresh-error tool-row-note" role="alert">
+          {error}
+        </p>
+      )}
+    </ToolRow>
   );
 }
 
-/** Verktyg: the five tools with their path, where that path came from, and the version each reports (FR2.1). */
-function Tools({ settings, onReload, motion, activeProjectId = null, terminal = null, lastIntentChangeAt = null }) {
+/** US-0416 AC1: the groups after AI-DLC (which AidlcUpdate draws), with the tools each holds. */
+const TOOL_GROUPS = [
+  ['agents', ['claude', 'opencode']],
+  ['git', ['gh', 'glab']],
+  ['system', ['shell']]
+];
+
+/**
+ * Verktyg: every tool with its path, where that path came from and the version it reports (FR2.1), grouped by purpose
+ * since US-0416. "Check for updates" calls the shell's `onCheckUpdates` (the Update dialog) when given, and always checks
+ * AI-DLC again; Rescan reads the tools again.
+ */
+function Tools({ settings, onReload, motion, activeProjectId = null, terminal = null, lastIntentChangeAt = null, onCheckUpdates }) {
   const { t } = useTranslation();
   const [rows, setRows] = useState(() => TOOL_IDS.map((id) => emptyRow(id, null)));
   const [error, setError] = useState(null);
   const [rowError, setRowError] = useState({});
+  const [checkRequest, setCheckRequest] = useState(0);
+  const entering = useEntrance('settings-tools');
 
   const refresh = useCallback(async () => {
     try {
@@ -287,23 +256,60 @@ function Tools({ settings, onReload, motion, activeProjectId = null, terminal = 
       await onReload();
     });
 
+  const byId = Object.fromEntries(rows.map((r) => [r.id, r]));
+  const missing = rows.filter((r) => r.found === false).length;
+  function checkUpdates() {
+    setCheckRequest((n) => n + 1);
+    onCheckUpdates?.();
+  }
+
   return (
     <Section id="tools" motion={motion}>
-      <div className="settings-tool-grid">
-        {rows.map((r) => (
-          <ToolCard key={r.id} row={r} error={rowError[r.id]} onChoose={choose} onReset={reset} />
+      <div className={`tools-view${entering ? ' is-entering' : ''}`} data-testid="settings-tools">
+        <div className="tools-bar lcars-e-rise">
+          <span className="muted" data-testid="settings-tools-summary">
+            {t('settings.tools.summary', { n: rows.length, missing })}
+          </span>
+          <span className="tools-bar-pills">
+            <Pill tone="quiet" onClick={checkUpdates} data-testid="settings-tools-check-updates">
+              {t('aidlcUpdate.check')}
+            </Pill>
+            <Pill tone="quiet" onClick={refresh} data-testid="settings-tools-rescan">
+              {t('settings.tools.rescan')}
+            </Pill>
+          </span>
+        </div>
+        {/* US-0504, US-0416: the AI-DLC CLI, its update and the active project's AI-DLC files, as one group. */}
+        <AidlcUpdate
+          projectId={activeProjectId}
+          terminal={terminal}
+          lastIntentChangeAt={lastIntentChangeAt}
+          tool={byId.aidlc}
+          error={rowError.aidlc}
+          onChoose={choose}
+          onReset={reset}
+          checkRequest={checkRequest}
+        />
+        {TOOL_GROUPS.map(([group, ids]) => (
+          <ToolGroup
+            key={group}
+            id={group}
+            title={t(`settings.tools.groups.${group}`)}
+            count={ids.length + (group === 'git' ? 1 : 0)}
+            strip={groupStrip(ids.map((id) => (byId[id] ? toolState(byId[id]) : 'checking')))}
+          >
+            {ids.map((id) => byId[id] && <ToolLine key={id} row={byId[id]} error={rowError[id]} onChoose={choose} onReset={reset} />)}
+            {group === 'git' && <BitbucketRow />}
+          </ToolGroup>
         ))}
-        <BitbucketCard />
+        {/* FR2.5: running sessions are left alone. */}
+        <p className="muted settings-help">{t('settings.tools.nextStart')}</p>
+        {error && (
+          <p className="refresh-error" role="alert">
+            {error}
+          </p>
+        )}
       </div>
-      {/* US-0504: the AI-DLC program and the active project's AI-DLC files, under the tool cards. */}
-      <AidlcUpdate projectId={activeProjectId} terminal={terminal} lastIntentChangeAt={lastIntentChangeAt} />
-      {/* FR2.5: running sessions are left alone. */}
-      <p className="muted settings-help">{t('settings.tools.nextStart')}</p>
-      {error && (
-        <p className="refresh-error" role="alert">
-          {error}
-        </p>
-      )}
     </Section>
   );
 }

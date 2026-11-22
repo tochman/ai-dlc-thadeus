@@ -97,7 +97,6 @@
     "github": "Github",
     "settings": "Inställningar",
     "config": "Konfiguration",
-    "plans": "Planer",
     "editor": "Editor",
     "intentCount": "{n} intents",
     "featureCount": "{n} features",
@@ -105,6 +104,8 @@
     "emptyText": "Öppna en projektmapp som innehåller {path}.",
     "openProject": "Öppna projekt",
     "pickFolder": "Öppna projektmapp",
+    "backTo": "‹ Tillbaka till {view}",
+    "back": "‹ Tillbaka",
     "question": {
       "waiting": "AI-DLC väntar på ditt svar",
       "stillWaiting": "Väntar fortfarande på ditt svar",
@@ -159,6 +160,8 @@
     "basedOn": "Egen plan som bygger på {scope}",
     "allScopes": "Alla scopes",
     "active": "Aktiv",
+    "parked": "Parkerad vid {stage}",
+    "park": "Parkera",
     "unknownStatus": "okänd status",
     "doneOfExecuted": "Klara av körda stages",
     "missingInIndex": "Saknas i intents.json",
@@ -171,7 +174,7 @@
       "units": "Units",
       "cost": "Kostnad",
       "velocity": "Takt",
-      "comments": "Kommentarer",
+      "comments": "Granskning",
       "files": "Filer"
     },
     "tabsLabel": "Intent-vyer",
@@ -182,7 +185,7 @@
     "showMore": "Visa mer",
     "showLess": "Visa mindre",
     "readout": "Avläsning",
-    "readoutStages": "Stages",
+    "readoutStages": "Klara stages",
     "readoutCost": "Kostnad",
     "readoutModel": "Modell",
     "readoutMode": "Läge",
@@ -201,8 +204,9 @@
     "resume": {
       "label": "Fortsätt",
       "atStage": "Fortsätt vid {stage}",
+      "unpark": "Avparkera och fortsätt",
+      "unparkAtStage": "Avparkera och fortsätt vid {stage}",
       "inHarness": "{label} i {harness}",
-      "step": "(steg {step} av {total})",
       "busy": "{harness} arbetar — vänta eller avbryt först",
       "asking": "{harness} väntar på ditt svar — svara i terminalen först",
       "running": "{harness} kör {intent} — fortsätt i terminalen",
@@ -368,6 +372,11 @@
     "usd": "USD",
     "share": "Andel",
     "tokensHeader": "Tokens",
+    "scopes": "Scopes",
+    "corner": "Totalt · {n, plural, one {# intent} other {# intents}}",
+    "tokenMix": "Tokenmix",
+    "shareScope": "Andel per scope",
+    "shareScopeLabel": "Andel per scope: {list}",
     "sessionModel": "Sessionens modell",
     "sessionModelOf": "Sessionens modell ({model})",
     "readingModels": "Läser modellkonfigurationen …",
@@ -411,6 +420,7 @@
     "newCount": "{n} nya",
     "badge": "{n} nya ändringar i AI-DLC på {ref}",
     "wait": "Vänta tills AI-DLC-steget är klart eller parkera arbetet först",
+    "waitFor": "Vänta tills AI-DLC är klart med {stage} i {intent}, eller parkera arbetet först",
     "rebase": "Rebase",
     "merge": "Merge",
     "rebaseText": "Rebase lägger dina lokala commits ovanpå fjärrens, så historiken blir rak.",
@@ -495,26 +505,49 @@
       "onBranches": "{story} finns på {n} grenar: {where}",
       "loadFailed": "Datorerna kunde inte läsas: {error}"
     },
-    "comments": {
-      "source": {
-        "pull": "Pull request",
-        "review": "Granskning",
-        "question": "Öppen fråga",
-        "approval": "Godkännande",
-        "finding": "Granskningsfynd"
+    "review": {
+      "title": "Granskning",
+      "description": "Det som väntar på dig, och vad granskarna sa i storyns pull request.",
+      "needsTitle": "Väntar på dig",
+      "nothing": "Inget väntar på dig.",
+      "needs": {
+        "question": "AI-DLC väntar på ditt svar: {text}",
+        "finding": "Granskaren sa NOT-READY om {stage}. Läs granskningen och ändra.",
+        "changes": "{author} bad om ändringar. Svara eller skicka en rättelse.",
+        "thread": "Olöst tråd i {where} av {author}: svara eller lös den."
+      },
+      "action": {
+        "answer": "Svara i filen",
+        "readReview": "Läs granskningen",
+        "open": "Öppna på {platform}"
+      },
+      "pullTitle": "Pull request",
+      "pullCaption": "Pull request #{number}: {title}",
+      "columns": {
+        "number": "Nummer",
+        "state": "Läge",
+        "reviewers": "Granskare"
+      },
+      "state": {
+        "changes": "Öppen · ändringar begärda",
+        "approved": "Öppen · godkänd",
+        "waiting": "Öppen · väntar på granskning"
       },
       "reviewState": {
         "approved": "Godkände",
         "changes": "Bad om ändringar",
         "commented": "Kommenterade"
       },
-      "pull": "Pull request #{number}: {title}",
-      "noPull": "Ingen öppen pull request har storynumret i grenen eller titeln. Raderna nedan är AI-DLC:s.",
-      "approvedStage": "Godkände {stage}",
-      "verdict": "{stage}: {verdict}",
-      "empty": "Inga kommentarer, frågor eller godkännanden för intenten ännu.",
+      "reviewer": "{author} ({state})",
+      "noReviewers": "Ingen ännu",
+      "conversation": "Samtal",
+      "where": "{path}:{line}",
+      "resolved": "{n, plural, one {# löst tråd} other {# lösta trådar}}",
+      "noThreads": "Inga kommentarer i pull requesten ännu.",
+      "noPull": "Ingen öppen pull request har {stories} i grenen eller titeln. Länka en genom att sätta storynumret i grenens namn (till exempel feat/{first}) eller i titeln.",
+      "noStory": "Intenten är inte kopplad till någon story, så ingen pull request kan hittas.",
       "loading": "Läser…",
-      "loadFailed": "Kommentarerna kunde inte läsas: {error}"
+      "loadFailed": "Granskningen kunde inte läsas: {error}"
     }
   },
   "terminal": {
@@ -553,6 +586,11 @@
     "timeout": "Fliken blev inte {target} inom {seconds} s"
   },
   "features": {
+    "source": {
+      "remote": "Planering från {ref}",
+      "local": "Planering från {ref} (lokalt, ingen fjärr hämtad)",
+      "here": "Planering från den här utcheckningen, {branch}"
+    },
     "status": {
       "planned": "Planerad",
       "progress": "Pågår",
@@ -612,6 +650,7 @@
     "planning": {
       "title": "Planeringssynk",
       "pending": "{n, plural, one {# planeringsändring väntar på att pushas.} other {# planeringsändringar väntar på att pushas.}}",
+      "thadeus": "Appens fil {file}",
       "pushNow": "Pusha nu",
       "reapplied": "{n, plural, one {# planeringsändring hade gått förlorad och gjordes om.} other {# planeringsändringar hade gått förlorade och gjordes om.}}",
       "noRemote": "Projektet har inget origin, så planeringen committas bara här.",
@@ -622,9 +661,11 @@
         "createRelease": "Ny release {version}",
         "deleteRelease": "Ta bort release {version}",
         "content": "Ändring i {file}",
-        "stories": "Storys: {ids}"
+        "stories": "Storys: {ids}",
+        "from": "Från appens commit {commit}."
       },
       "conflict": "{file} har ändrats även på målet.",
+      "choose": "Behåll deras släpper appens ändring; Använd min skriver den över målets text.",
       "useMine": "Använd min",
       "keepTheirs": "Behåll deras",
       "openBoth": "Öppna båda i editorn",
@@ -632,6 +673,7 @@
       "error": {
         "offline": "Offline. Planeringen sparas och pushas när appen är online igen.",
         "conflict": "Planeringen krockar med main i {files}. Inget pushades; appen försöker igen vid nästa intervall.",
+        "conflictCommit": "Appens commit {commit} krockar med main i {files} och kunde inte läggas åt sidan. Inget pushades. Ta bort grenen dash/planning för att släppa den.",
         "push": "Pushen nekades: {reason}. Planeringen sparas och appen försöker igen vid nästa intervall.",
         "commit": "Planeringen kunde inte committas ({reason}): {files}. Ändringen finns kvar.",
         "git": "Planeringssynken misslyckades: {reason}"
@@ -714,6 +756,7 @@
     "isRepo": "mappen är ett git-repo",
     "notRepo": "inget git-repo, så git init -b main läggs först",
     "noHarnesses": "inga",
+    "thadeusIgnored": "En rad i .gitignore döljer .thadeus/. THADEUS committar den mappen så att varje klon har appens data: ta bort raden.",
     "conflicts": "Dessa filer krockar med befintliga filer. Lös det innan AI-DLC sätts upp:",
     "fullPreview": "Hela förhandsvisningen",
     "advanced": "Avancerade inställningar",
@@ -735,8 +778,10 @@
     "createFeatureDocs": "Skapa feature-beskrivningar"
   },
   "aidlcUpdate": {
-    "programTitle": "AI-DLC-programmet",
     "projectTitle": "AI-DLC i det här projektet",
+    "unknown": "Okänt",
+    "filesDiffer": "{n} filer skiljer sig",
+    "updateDo": "Uppdatera skriver kommandot i skalfliken; tryck Enter där för att köra det.",
     "newer": "Nyare finns: v{version}",
     "newerUnknown": "En nyare version finns",
     "upToDate": "Aktuell",
@@ -818,17 +863,31 @@
         "save": "Spara",
         "clear": "Ta bort",
         "set": "Sparat i nyckelringen",
-        "notSet": "Inte sparat"
+        "notSet": "Inte sparat",
+        "signIn": "Logga in",
+        "what": "Användarnamn och app-lösenord, i nyckelringen"
       },
-      "pathLabel": "Sökväg",
-      "versionLabel": "Version",
-      "notFound": "hittades inte",
+      "groups": {
+        "aidlc": "AI-DLC",
+        "agents": "Kodagenter",
+        "git": "Git-värdar",
+        "system": "System"
+      },
+      "chip": {
+        "checking": "Kontrollerar…",
+        "found": "Hittad",
+        "hand": "Vald för hand",
+        "missing": "Saknas",
+        "newer": "Uppdatering finns"
+      },
+      "missingDo": "Installera det, eller välj dess sökväg.",
+      "summary": "{n} verktyg · {missing} saknas",
+      "rescan": "Sök igen",
+      "copyPath": "Kopiera {path}",
+      "copied": "Kopierad",
+      "pathFallback": "Inloggningsskalets PATH kunde inte läsas; appens egen PATH användes.",
       "notOnPath": "hittades inte i PATH",
       "checking": "Kontrollerar…",
-      "source": {
-        "saved": "Egen sökväg",
-        "auto": "Hittad automatiskt"
-      },
       "pick": "Välj…",
       "pickFor": "Välj sökväg till {tool}",
       "pickTitle": "Välj sökväg till ett verktyg",
@@ -926,6 +985,7 @@
         "docs": "Feature-beskrivningar",
         "agent": "Agent",
         "aidlc": "AI-DLC",
+        "plans": "Planer",
         "costRules": "Kostnadsregler",
         "modelProfiles": "Modellprofiler"
       },
@@ -935,6 +995,9 @@
   },
   "config": {
     "loading": "Läser AI-DLC:s konfiguration…",
+    "tabsLabel": "AI-DLC-vyer",
+    "tabSettings": "Inställningar",
+    "frameSub": "Projektinställningar · {project}",
     "harnessLabel": "Harness",
     "section": {
       "models": "Modeller och effort",
@@ -976,6 +1039,7 @@
     "empty": "Ingen fil är öppen. Välj en fil i trädet, eller Redigera i läsaren eller Features-vyn.",
     "loading": "Laddar editorn…",
     "tree": "Projektets filer",
+    "files": "Filer",
     "treeTruncated": "Trädet visar de första 20 000 filerna.",
     "unsaved": "osparade ändringar",
     "close": "Stäng {file}",
@@ -1228,7 +1292,24 @@
     "kept": "Installerad. Det hämtade paketet finns kvar i",
     "relaunch": "Starta om nu",
     "upToDate": "Du har den senaste versionen.",
-    "confirmRestart": "En agentflik arbetar. Uppdateringen startar om appen och avslutar dess terminalsessioner. Uppdatera ändå?"
+    "confirmRestart": "En agentflik arbetar. Uppdateringen startar om appen och avslutar dess terminalsessioner. Uppdatera ändå?",
+    "dialogTitle": "Uppdatering",
+    "show": "Visa",
+    "checking": "Söker efter en uppdatering",
+    "checkingText": "Frågar GitHub efter den senaste releasen av {repo}…",
+    "upToDateTitle": "Senaste versionen",
+    "downloadTitle": "Hämtar",
+    "passwordTitle": "Installationen behöver ditt lösenord",
+    "readyTitle": "Klar att starta om",
+    "errorTitle": "Uppdateringen stoppades",
+    "whatToDo": "Försök igen om en stund. Hjälper det inte, hämta releasen från GitHub och installera den själv.",
+    "retry": "Försök igen",
+    "busyWarn": "En agentflik arbetar. Uppdateringen startar om appen och avslutar dess terminal.",
+    "installed": "Installerad",
+    "latest": "Senaste",
+    "checked": "Kontrollerad",
+    "source": "Källa",
+    "footer": "{repo} · releaser"
   },
   "tokens": {
     "title": "Tokens live",
@@ -1243,9 +1324,10 @@
     "open": "Tokens live, öppna tokendetaljerna"
   },
   "tokenDetail": {
-    "title": "Tokens · {name}",
+    "title": "Aktivitet · {name}",
+    "activity": "Aktivitet",
     "back": "‹ Tillbaka",
-    "openShort": "Tokens ›",
+    "openShort": "Aktivitet ›",
     "overTime": "Tokens över tid",
     "overTimeLabel": "Tokens över tid, {elapsed}, {tokens} tokens, staplade per slag",
     "chartKeys": "Tokens över tid. Piltangenterna väljer en avläsning, Esc döljer den.",
@@ -1339,9 +1421,15 @@
     }
   },
   "aboutDialog": {
-    "exit": "STÄNG",
-    "licenses": "LICENSER",
-    "licensesFailed": "Licenserna kunde inte öppnas: {error}"
+    "title": "Om",
+    "licenses": "Licenser",
+    "licensesFailed": "Licenserna kunde inte öppnas: {error}",
+    "version": "Version",
+    "patch": "Patch",
+    "platform": "Plattform",
+    "build": "Bygge",
+    "madeBy": "Gjord av",
+    "repository": "Källkod"
   },
   "menu": {
     "about": "Om {app}",
@@ -1530,6 +1618,7 @@
       },
       "gateNote": "AI-DLC visar grinden igen i den nya sessionen.",
       "waiting": "Väntar tills agenten är ledig …",
+      "parkSent": "AI-DLC har ombetts att parkera vid nästa säkra punkt. Valet skickas när agenten stannar …",
       "failed": {
         "notReady": "Den nya sessionen startade inte. Skriv /aidlc --resume i terminalen.",
         "notIdle": "Agenten blev aldrig ledig. Inget skickades.",
@@ -1644,5 +1733,10 @@
     "notShown": "(nyare meddelande visas inte)",
     "shortened": "(förkortat)",
     "view": "Meddelande från {harness}"
+  },
+  "fold": {
+    "hide": "Fäll ihop listan",
+    "show": "Visa listan",
+    "showN": "Visa listan ({n})"
   }
 }

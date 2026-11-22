@@ -1,6 +1,6 @@
 # API Documentation
 
-The app has no network API. Its surfaces are listed below. US-0608 changes the planning channels and the planning record (section 7 has the current contract).
+The app has no network API. Its surfaces are listed below. The EPIC-14 contracts (detection, settings, token log, terminal commands) are in section 8.
 
 ## 1. Preload Bridge (`window.bridge`, `src/preload/index.js`)
 
@@ -23,7 +23,7 @@ Every member is named; no generic `invoke` or `send` is exposed. The groups:
 | Updates | `checkUpdate`, `downloadUpdate`, `installUpdate`, `relaunchApp`, `skipUpdate`, `revealUpdate`, `onUpdateState` |
 | Questions, agent dialogs | `listQuestions`, `onQuestions`, `setActiveProject`; `agentEvents.*`, `agentHooks.*` |
 
-There is no subscription for the planning status: the renderer learns it only by calling `getPlanningStatus`.
+Since US-0608 there is a planning push, `onPlanningChanged` (`features:planningChanged`), and `resolvePlanning` (`features:resolvePlanning`) (re-read at `90031e2`).
 
 ## 2. IPC Channels (`src/main/ipc.js`)
 
@@ -135,3 +135,34 @@ Invalid actions are dropped on read; an unreadable file reads as empty (and warn
 ### Commit subjects
 
 `subjectOf`: `docs: plan US-A, US-B for vX.Y.Z; plan vX.Y.Z; remove the plan for vX.Y.Z; take US-C out of their release`. With no actions (agent edits only) it is `docs: update the feature docs`. The pull request title is the single subject or `docs: release planning`.
+
+## 8. Framework-dependent Contracts (EPIC-14 area, read at `90031e2`)
+
+### Detection (`project:open`, `project:detected`)
+
+- `project:open(dir)` returns `{projectId, root, name, detection}`.
+- `detection` is `{isAidlc: true, activeSpace, spaces[]}`, or `{isAidlc: false, reason}`. `reason` is `errors.notAidlc` (no `aidlc/spaces/`) or `errors.noSpace`.
+- `activeSpace` is `aidlc/active-space` when it names a space, else `default`, else the first.
+- `project:detected {projectId, detection}` is pushed once, when `aidlc/spaces/<space>` appears in a folder opened without AI-DLC.
+- No other field exists. A `framework` must be added to this payload, or sent beside it.
+
+### Project settings (`projectSettings:get|set`)
+
+- They are stored in `userData/settings.json` → `projectSettings[<real root path>]`, capped at 200 roots. Nothing is stored in the repository.
+- `get` returns the saved object or `PROJECT_DEFAULTS`.
+- `set` validates each known key and throws on a bad value. `ipc.js:1298-1310` passes only the nine known keys, so a new key (for example `framework`) must be added in three places: `sanitizeProject`, the checks in `setProjectSettings`, and the `ipc.js` pass-through.
+
+### Token log (`tokens:readings`, `.thadeus/tokens/`)
+
+- The file is `.thadeus/tokens/<dirName>.json`, an array of `{at, input, output, cacheWrite5m, cacheWrite1h, cacheRead, usd}`, at most 2000 readings, 30 s apart.
+- `dirName` must match `^[\w.-]+$` (`tokenReadings.fileOf`), which Spec Kit names such as `001-photo-albums` do.
+- Writer: only `project:cost`, from AI-DLC's `aidlc/.aidlc-sessions/usage-ledger.json`, for intents with `status === 'in-flight'`.
+- Reader: `tokens:readings(projectId, dirName, space)`. It looks the name up in the intent list; a finished intent without readings is rebuilt from the ledger's transcript sessions inside its audit stage windows (`tokenHistory.js`).
+- A Spec Kit project has neither a ledger nor an audit log, so both the writer and the rebuild need a new source.
+
+### Terminal commands (renderer only)
+
+- `HARNESSES[].commands` is `{aidlc: '/aidlc'}` for `claude` and `opencode`, and `{}` for the others. `harnessCommand(entry, suffix)` returns `commands.aidlc + suffix`, or null.
+- Resume types `"/aidlc"` (no Enter) for the active intent. For another one it runs `sequence`: `"/aidlc intent <dir>"` with Enter, then `"/aidlc"` without. The folder name must match `^[A-Za-z0-9][A-Za-z0-9._-]*$`.
+- Quick commands: `QUICK_COMMANDS = [' --status', ' --doctor', ' continue']`, typed without Enter.
+- All of them go through `TerminalContext.type(tab, text, {submit})` or `sequence(tab, steps)`, then `pty:write`. No main channel builds commands; the text never crosses into main except as pty input.

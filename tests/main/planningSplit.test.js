@@ -1,7 +1,7 @@
 // US-0608 FR3.2, FR3.3: a feature-doc file is cut into story blocks (and table rows), so a story branch keeps only its own
 // stories' changes and every other change goes to the app's branch, applied onto the target's text.
 import { describe, expect, it } from 'vitest';
-import { applyChange, splitChange, storyBlocks } from '../../src/main/parsers/features.js';
+import { applyChange, overlayOwn, splitChange, storyBlocks } from '../../src/main/parsers/features.js';
 
 const EPIC = [
   '# EPIC-06: Feature docs',
@@ -63,6 +63,36 @@ describe('splitChange and applyChange (US-0608 FR3.2, FR3.3, AC1.3.3)', () => {
     expect(applyChange(EPIC, changes).text).toBe(added);
     expect(applyChange(null, splitChange('', '# Release plan v1.0.0\n', []).changes).text).toBe('# Release plan v1.0.0\n');
     expect(splitChange(EPIC, EPIC, []).changes).toEqual([]);
+  });
+});
+
+// US-0036 FR2.1: on a story branch the view shows the target's text with the branch's own story blocks on top.
+describe('overlayOwn (US-0036 FR2.1)', () => {
+  const target = EPIC.replace('**Status (2026-11-18):** 🚧 US-0608 in progress.', '**Status (2026-11-20):** moved on.').replace(
+    '**US-0999: Another story** 📋 Planned',
+    '**US-0999: Another story** 📋 Planned, for v0.2.13'
+  );
+
+  it('an own block that differs replaces the target block', () => {
+    const work = EPIC.replace('- [ ] AC1\n\n**US-0999', '- [x] AC1\n\n**US-0999');
+    expect(overlayOwn(target, work, ['US-0608'])).toBe(target.replace('- [ ] AC1\n\n**US-0999', '- [x] AC1\n\n**US-0999'));
+  });
+
+  it('an own block the target lacks is inserted after the block it follows', () => {
+    const work = EPIC.replace('**US-0999', '**US-1000: Mine** 🚧 In progress\n- [ ] AC1\n\n**US-0999');
+    expect(overlayOwn(target, work, ['US-1000'])).toBe(target.replace('**US-0999', '**US-1000: Mine** 🚧 In progress\n- [ ] AC1\n\n**US-0999'));
+  });
+
+  it("other stories' blocks and the text between them keep the target's text", () => {
+    const work = EPIC.replace('- [ ] AC1\n\n**US-0999', '- [x] AC1\n\n**US-0999');
+    const out = overlayOwn(target, work, ['US-0608']);
+    expect(out).toContain('**Status (2026-11-20):** moved on.');
+    expect(out).toContain('**US-0999: Another story** 📋 Planned, for v0.2.13');
+  });
+
+  it('with no own ids the target comes back unchanged', () => {
+    expect(overlayOwn(target, EPIC, [])).toBe(target);
+    expect(overlayOwn(target, null, ['US-0608'])).toBe(target);
   });
 });
 

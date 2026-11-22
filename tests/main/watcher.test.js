@@ -46,11 +46,12 @@ describe('watchIntents', { retry: 2 }, () => {
     await wait(30);
     await fs.appendFile(state, '\n');
     await wait(600);
-    expect(calls).toEqual([{ dirNames: [DIR], indexChanged: false, costChanged: false }]);
+    expect(calls).toEqual([{ dirNames: [DIR], workDirNames: [DIR], indexChanged: false, costChanged: false }]);
 
+    // US-0041 AC2: the engine's runtime file reloads the intent but is not stage work.
     await fs.writeFile(path.join(INTENTS, DIR, '.aidlc-engine', 'active-directive.json'), '{"kind":"run-stage"}');
     await wait(600);
-    expect(calls[1]).toEqual({ dirNames: [DIR], indexChanged: false, costChanged: false });
+    expect(calls[1]).toEqual({ dirNames: [DIR], workDirNames: [], indexChanged: false, costChanged: false });
   });
 
   it('reports a usage-ledger.json write as costChanged in the same debounced event (FR5.1)', async () => {
@@ -61,7 +62,7 @@ describe('watchIntents', { retry: 2 }, () => {
 
     await fs.writeFile(ledgerFile, '{"schemaVersion":3,"totals":{}}');
     await wait(600);
-    expect(calls).toEqual([{ dirNames: [], indexChanged: false, costChanged: true }]);
+    expect(calls).toEqual([{ dirNames: [], workDirNames: [], indexChanged: false, costChanged: true }]);
   });
 
   it('reports a ledger created after watching started, folder included, as costChanged (F-01, FR5.1)', async () => {
@@ -77,7 +78,7 @@ describe('watchIntents', { retry: 2 }, () => {
     await fs.writeFile(path.join(sessionsDir, 'other.json'), '{}');
     await fs.writeFile(ledgerFile, '{"schemaVersion":3,"totals":{}}');
     await wait(600);
-    expect(calls).toEqual([{ dirNames: [], indexChanged: false, costChanged: true }]);
+    expect(calls).toEqual([{ dirNames: [], workDirNames: [], indexChanged: false, costChanged: true }]);
   });
 
   it("reports a Unit plan written in a worktree created after watching started as that intent's change (US-0507 FR5.1, NFR3)", async () => {
@@ -99,17 +100,17 @@ describe('watchIntents', { retry: 2 }, () => {
     await fs.mkdir(planDir, { recursive: true });
     await fs.writeFile(path.join(planDir, 'code-generation-plan.md'), '- [x] Step 1\n- [ ] Step 2\n');
     await wait(900);
-    expect(calls).toEqual([{ dirNames: [DIR], indexChanged: false, costChanged: false }]);
+    expect(calls).toEqual([{ dirNames: [DIR], workDirNames: [DIR], indexChanged: false, costChanged: false }]);
   });
 
-  it('reports an audit shard write as that intent and costChanged (US-0209 FR5.1)', async () => {
+  it('reports an audit shard write as that intent and costChanged, but not as stage work (US-0209 FR5.1, US-0041 AC2)', async () => {
     const calls = [];
     watcher = watchIntents({ intentsDir: INTENTS, onChange: (c) => calls.push(c), debounceMs: 150 });
     await watcher.ready;
     await fs.mkdir(path.join(INTENTS, DIR, 'audit'), { recursive: true });
     await fs.writeFile(path.join(INTENTS, DIR, 'audit', 'hostb-bbbbbbbbbbbb.md'), '## Stage Completion\n');
     await wait(900);
-    expect(calls.at(-1)).toEqual({ dirNames: [DIR], indexChanged: false, costChanged: true });
+    expect(calls.at(-1)).toEqual({ dirNames: [DIR], workDirNames: [], indexChanged: false, costChanged: true });
   });
 
   it('reports a snapshot in .thadeus/usage/, the folder created after watching started, as costChanged (US-0209 FR5.1)', async () => {
@@ -123,7 +124,7 @@ describe('watchIntents', { retry: 2 }, () => {
     expect(calls).toEqual([]);
     await fs.writeFile(path.join(usageDir, 'hostb-bbbbbbbbbbbb.json'), '{}');
     await wait(900);
-    expect(calls).toEqual([{ dirNames: [], indexChanged: false, costChanged: true }]);
+    expect(calls).toEqual([{ dirNames: [], workDirNames: [], indexChanged: false, costChanged: true }]);
   });
 });
 

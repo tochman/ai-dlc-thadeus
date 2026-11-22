@@ -70,7 +70,7 @@ describe('opening and closing (US-0208 FR1)', () => {
     expect(small().getAttribute('role')).toBe('button');
 
     fireEvent.click(small());
-    const heading = await screen.findByRole('heading', { level: 2, name: 'Tokens · live' });
+    const heading = await screen.findByRole('heading', { level: 2, name: 'Aktivitet · live' }); // US-0417: renamed Activity
     expect(document.activeElement).toBe(heading);
     expect(screen.queryByTestId('intent-detail-tab-pipeline')).toBeNull();
     fireEvent.click(screen.getByTestId('token-detail-back'));
@@ -84,12 +84,12 @@ describe('opening and closing (US-0208 FR1)', () => {
     expect(await screen.findByTestId('token-detail')).toBeTruthy();
   });
 
-  it('US-0022: the intent header has its own Tokens button, which opens the detail and gets focus back', async () => {
+  it('US-0022: the intent header has its own Activity button, which opens the detail and gets focus back', async () => {
     window.bridge = bridge(READINGS);
     render(<IntentDetail projectId="p1" detail={detail} intent={intentOf('in-flight')} activeDirName={DIR} cost={cost()} models={null} />);
     const head = () => screen.getByTestId('intent-detail-tokens');
     expect(head().tagName).toBe('BUTTON');
-    expect(head().textContent).toBe('Tokens');
+    expect(head().textContent).toBe('Aktivitet'); // US-0417: renamed from Tokens
     fireEvent.click(head());
     expect(await screen.findByTestId('token-detail')).toBeTruthy();
     fireEvent.click(screen.getByTestId('token-detail-back'));
@@ -110,7 +110,7 @@ describe('opening and closing (US-0208 FR1)', () => {
 describe('live view (US-0208 FR3, FR5, FR7)', () => {
   it('shows Mode Live, tokens, cost and readings, and charts with a text label for every kind', async () => {
     await renderDetail();
-    const side = screen.getByTestId('token-detail-side');
+    const side = screen.getByTestId('lcars-diagonal-frame'); // US-0417: the readouts sit in the frame's arm
     expect(within(side).getByTestId('token-detail-mode').textContent).toBe('Live');
     expect(within(side).getByTestId('token-detail-tokens').textContent).toBe('9,8 k');
     expect(within(side).getByTestId('token-detail-cost').textContent).toBe('$4.00');

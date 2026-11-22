@@ -21,10 +21,25 @@ export async function pulls(api, p) {
 }
 
 /** US-1201 AC-1, AC-4: the comments of one pull request; deleted ones are left out. */
+// US-1203: an inline comment is a thread under its first comment (followed up the `parent` links), with that comment's
+// file, line and `resolution`.
 export async function comments(api, p, number) {
-  return values(await api(`${repo(p)}/pullrequests/${number}/comments?pagelen=100`))
+  const list = values(await api(`${repo(p)}/pullrequests/${number}/comments?pagelen=100`));
+  const byId = new Map(list.map((c) => [c.id, c]));
+  const rootOf = (c) => {
+    for (let seen = 0; c.parent && byId.has(c.parent.id) && seen < list.length; seen++) c = byId.get(c.parent.id);
+    return c;
+  };
+  return list
     .filter((c) => !c.deleted)
-    .map((c) => ({ author: c.user?.display_name ?? null, body: c.content?.raw ?? '', time: c.created_on ?? null, url: c.links?.html?.href ?? null }));
+    .map((c) => {
+      const root = rootOf(c);
+      const thread = root.inline
+        ? { id: root.id, path: root.inline.path ?? null, line: root.inline.to ?? root.inline.from ?? null, resolved: !!root.resolution }
+        : null;
+      const row = { author: c.user?.display_name ?? null, body: c.content?.raw ?? '', time: c.created_on ?? null, url: c.links?.html?.href ?? null };
+      return thread ? { ...row, thread } : row;
+    });
 }
 
 /** US-1201 AC-1, AC-4: the participants who approved or asked for changes. */

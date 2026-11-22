@@ -1,9 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { viewFields } from '../../src/shared/frameworkViews.js';
 
 // The project data hooks and the terminals have their own tests; here only which view shows matters.
 const intents = [{ dirName: '261113-config-view', slug: 'config-view', active: true }];
+const projectHook = vi.hoisted(() => ({ extra: {} }));
 vi.mock('../../src/renderer/useProject.js', () => ({
   useProject: () => ({
     space: 'default',
@@ -17,7 +18,8 @@ vi.mock('../../src/renderer/useProject.js', () => ({
     error: null,
     cost: { available: false, reason: 'Ingen ledger.' },
     models: null,
-    lastIntentChangeAt: null
+    lastIntentChangeAt: null,
+    ...projectHook.extra
   })
 }));
 const featuresHook = vi.hoisted(() => ({ extra: {} }));
@@ -150,6 +152,58 @@ describe('ProjectView: one view at a time', () => {
     expect(shown('intent-list')).toBe(true);
   });
 
+  it('shows Configuration in the round frame, the section title on its bar, the AI-DLC switch as tiles (US-0417)', async () => {
+    window.bridge.listPlans = vi.fn(async () => ({ plans: [], errors: {} }));
+    renderView('config', { section: 'docs' });
+    const frame = screen.getByTestId('lcars-round-frame');
+    expect(frame.className).toContain('config-frame');
+    const bar = within(frame).getByTestId('lcars-segbar');
+    expect(within(bar).getByRole('heading', { level: 2, name: 'Feature-beskrivningar' })).toBeTruthy();
+    expect(bar.textContent).toContain('Projektinställningar · app');
+    expect(within(frame).getByTestId('project-settings-view')).toBeTruthy();
+    cleanup();
+
+    renderView('config', { section: 'aidlc' });
+    const settingsTile = screen.getByTestId('aidlc-view-tab-settings');
+    const plansTile = screen.getByTestId('aidlc-view-tab-plans');
+    expect(settingsTile.className).toContain('lcars-tile');
+    expect(settingsTile.className).toContain('is-sel');
+    expect(plansTile.className).toContain('lcars-tile');
+    expect(plansTile.className).not.toContain('is-sel');
+    expect(settingsTile.closest('[data-testid="lcars-round-body"]')).toBeTruthy();
+    await waitFor(() => expect(shown('config-view')).toBe(true));
+  });
+
+  it('splits Configuration › AI-DLC into Settings and Plans tabs, Plans alone when chosen, none without AI-DLC (US-0905)', async () => {
+    window.bridge.listPlans = vi.fn(async () => ({ plans: [], errors: {} }));
+    const { onView } = renderView('config', { section: 'aidlc' });
+    await waitFor(() => expect(shown('config-view')).toBe(true)); // Settings is the first tab: today's AI-DLC content
+    expect(screen.getByTestId('aidlc-view-tab-settings').getAttribute('aria-selected')).toBe('true');
+    expect(screen.getByTestId('aidlc-view-tab-settings').textContent).toBe('Inställningar');
+    expect(screen.getByTestId('aidlc-view-tab-plans').textContent).toBe('Planer');
+    expect(screen.queryByTestId('plans-view')).toBeNull();
+    fireEvent.click(screen.getByTestId('aidlc-view-tab-plans'));
+    expect(onView).toHaveBeenCalledWith('config', { configSection: 'aidlc', aidlcTab: 'plans' });
+    cleanup();
+
+    renderView('config', { section: 'aidlc', aidlcTab: 'plans' });
+    expect(await screen.findByTestId('plans-view')).toBeTruthy();
+    expect(shown('plans-view')).toBe(true);
+    expect(shown('config-view')).toBe(false);
+    expect(shown('intent-list')).toBe(false);
+    expect(screen.getByTestId('aidlc-view-tab-plans').getAttribute('aria-selected')).toBe('true');
+    cleanup();
+
+    // Another section shows no AI-DLC tabs; a project without AI-DLC has no AI-DLC section at all.
+    renderView('config', { section: 'docs', aidlcTab: 'plans' });
+    expect(screen.queryByTestId('aidlc-view-tab-plans')).toBeNull();
+    expect(screen.queryByTestId('plans-view')).toBeNull();
+    cleanup();
+    renderView('config', { section: 'aidlc', aidlcTab: 'plans', project: { ...project, detection: detectionOf(null) } });
+    expect(await screen.findByTestId('project-not-aidlc')).toBeTruthy();
+    expect(screen.queryByTestId('plans-view')).toBeNull();
+  });
+
   it('a folder without AI-DLC shows its setup, whatever view was asked for', async () => {
     renderView('github', { project: { ...project, detection: none } });
     expect(await screen.findByTestId('project-not-aidlc')).toBeTruthy();
@@ -191,6 +245,30 @@ describe('ProjectView: a Spec Kit project (US-1401)', () => {
     renderView('config', { project: kit, section: 'agent' });
     expect(await screen.findByTestId('project-settings-view')).toBeTruthy();
     expect(screen.queryByTestId('project-settings-add-harness')).toBeNull(); // adding a harness is AI-DLC setup
+  });
+});
+
+describe('ProjectView: Resume in the intents list on a parked intent (US-0510 AC4.1.4)', () => {
+  afterEach(() => {
+    projectHook.extra = {};
+  });
+
+  it("is available and unparks through the project's id", async () => {
+    const parked = {
+      dirName: '261120-release-0-2-13',
+      slug: 'release-0-2-13',
+      active: true,
+      status: 'in-flight',
+      parked: true,
+      parkedStage: 'code-generation'
+    };
+    projectHook.extra = { intents: [parked], selected: parked.dirName };
+    window.bridge.unparkIntent = vi.fn(async () => ({ ok: true, switched: false }));
+    renderView('intents');
+    const resume = await screen.findByTestId('intent-resume');
+    await waitFor(() => expect(resume.getAttribute('aria-disabled')).toBe('false'));
+    await act(async () => fireEvent.click(resume));
+    expect(window.bridge.unparkIntent).toHaveBeenCalledWith('p1', parked.dirName);
   });
 });
 
@@ -236,6 +314,24 @@ describe('ProjectView: lifecycle rule notice (US-0603 FR5.2, FR5.3)', () => {
     renderView('intents', { project: { ...project, detection: none } });
     await screen.findByTestId('project-not-aidlc');
     expect(screen.queryByTestId('lifecycle-rule-notice')).toBeNull();
+  });
+});
+
+describe('ProjectView: the Intents list folds away (US-0415)', () => {
+  it('the toggle folds the list to the drawer stack, and the stack brings it back with the search text kept (AC5.1.1, AC5.1.2)', async () => {
+    renderView('intents');
+    const drawer = (await screen.findByTestId('intent-list')).closest('[data-testid="list-drawer"]');
+    expect(drawer.closest('aside')).toBeTruthy(); // US-0417: the drawer is the Intents column
+    fireEvent.change(screen.getByTestId('intent-list-search'), { target: { value: 'config' } });
+    const toggle = within(drawer).getByTestId('list-fold-toggle');
+    fireEvent.click(toggle);
+    expect(drawer.classList.contains('is-folded')).toBe(true);
+    expect(toggle.getAttribute('aria-expanded')).toBe('false');
+    expect(screen.getByTestId('intent-list-search')).toBeTruthy(); // still mounted, inert while folded
+
+    fireEvent.click(within(drawer).getByTestId('list-drawer-stack'));
+    expect(drawer.classList.contains('is-folded')).toBe(false);
+    expect(screen.getByTestId('intent-list-search').value).toBe('config');
   });
 });
 

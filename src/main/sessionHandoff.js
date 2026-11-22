@@ -108,6 +108,14 @@ export function handoffCommands(harness, action, instruction = '') {
   return fn ? fn(one(instruction)) : null;
 }
 
+// US-0039 FR2.2, NFR4: the one line that asks a working AI-DLC to stop at its next safe point; fixed per harness.
+const PARK = 'THADEUS: the person asked for a fresh session. At your next safe point, run `aidlc engine orchestrate park --person-asked` and end your turn.';
+const PARK_REQUEST = { claude: PARK, opencode: PARK };
+const RESUME = '/aidlc --resume';
+
+/** US-0039 FR2.2, NFR4: the park request for `harness`, or null for a harness with no commands. */
+export const parkRequest = (harness) => (Object.hasOwn(PARK_REQUEST, harness) ? PARK_REQUEST[harness] : null);
+
 const BOUNDARY_CHOICES = ['compact', 'fresh', 'notNow'];
 const NEW_SESSION_CHOICES = ['clear', 'clearResume']; // US-0026 FR3.3: the context is still small, so no Compact
 const ACTION = { compact: 'compact', fresh: 'fresh', clear: 'clear', clearResume: 'fresh' };
@@ -127,6 +135,7 @@ export function createHandoffController({ store, readContext, ratesOf, settingsO
     return projects.get(projectId);
   };
   const say = (line) => log(`[handoff] ${line}`);
+  const parks = new Map(); // US-0039: eventId -> when its park request went out
 
   async function offer(projectId, sessionId, harness, moment) {
     if (!handoffCommands(harness, 'fresh')) return null; // FR3.5, FR7.1: no commands, so no page with nothing to choose
@@ -190,22 +199,59 @@ export function createHandoffController({ store, readContext, ratesOf, settingsO
       p.boundary = d.state;
       if (d.offer) p.pendingBoundary = await offer(projectId, session.sessionId, session.harness, d.offer);
     },
-    /** FR3.2, FR3.3, NFR4: the fixed lines for an offered choice, and whether to wait for the new session in between. */
+    /**
+     * FR3.2, FR3.3, NFR4: the fixed lines for an offered choice, and whether to wait for the new session in between.
+     * US-0039 FR2.1–FR2.4: `mode` is `now` when the agent is idle (as before) and `park` otherwise: the park request
+     * goes first (see park), the lines once the agent stops. A parked Compact resumes the workflow after compacting.
+     */
     commandsFor(eventId, choice) {
       const h = store.handoffOf(eventId);
       if (!h || choice === 'notNow' || !h.handoff.choices.includes(choice)) return null;
-      const lines = handoffCommands(h.harness, ACTION[choice], h.handoff.instruction);
-      return lines ? { lines, waitReady: lines.length > 1 } : null;
+      const base = handoffCommands(h.harness, ACTION[choice], h.handoff.instruction);
+      if (!base) return null;
+      const mode = isIdle(store.signalsOf(h.sessionId), now()) ? 'now' : 'park';
+      const lines = mode === 'park' && ACTION[choice] === 'compact' ? [...base, RESUME] : base;
+      return { lines, waitReady: lines.length > 1, mode };
     },
-    /** FR5.1: whether the page's agent is idle now. */
+    /**
+     * US-0039 FR2.1, FR2.2: asks a working agent to park. At an open question (an AI-DLC gate) the request is that
+     * question's own answer, so nothing is typed into the agent's picker; otherwise it gives the line to type.
+     * ponytail: while only a permission waits (or a question takes no own answer) the request is held, as typing would
+     * land in that picker; the choice then waits for the stop as before US-0039.
+     * @returns {Promise<{line: string|null, sent: boolean}|null>}
+     */
+    async park(eventId) {
+      const h = store.handoffOf(eventId);
+      const text = h && parkRequest(h.harness);
+      if (!text) return null;
+      parks.set(eventId, now());
+      if (!store.signalsOf(h.sessionId)?.waiting) {
+        say('park request typed');
+        return { line: text, sent: true };
+      }
+      const q = store
+        .list(h.projectId)
+        .filter((e) => e.sessionId === h.sessionId && e.kind === 'question' && (e.state === 'shown' || e.state === 'timedOut'))
+        .at(-1);
+      if (!q || !q.questions.every((x) => x.allowOwn)) {
+        say('park request held: a picker waits');
+        return { line: null, sent: false };
+      }
+      await store.answer(q.eventId, { question: { picks: q.questions.map(() => []), own: q.questions.map(() => text) } });
+      say('park request given as the open question’s answer');
+      return { line: null, sent: true };
+    },
+    /** FR5.1: whether the page's agent is idle now; US-0039 FR2.2: after a park request, only after a stop since it. */
     idle(eventId) {
       const h = store.handoffOf(eventId);
-      return Boolean(h) && isIdle(store.signalsOf(h.sessionId), now());
+      const sig = h && store.signalsOf(h.sessionId);
+      const since = parks.get(eventId);
+      return Boolean(sig) && (since == null || sig.lastStopMs > since) && isIdle(sig, now());
     },
-    /** FR3.2: resolves once the session after /clear (or /new) is ready, false after `ms`. */
+    /** FR3.2: resolves once the session after /clear (or /new, or US-0039 FR2.3 a compaction) is ready, false after `ms`. */
     waitReady(eventId, ms = 30_000) {
       const h = store.handoffOf(eventId);
-      return h ? store.waitForSession(h.sessionId, ['clear', 'startup'], ms) : Promise.resolve(false);
+      return h ? store.waitForSession(h.sessionId, ['clear', 'startup', 'compact'], ms) : Promise.resolve(false);
     },
     /** FR8.1: the choice was typed; the size before is logged now, the size after with the next reading. */
     sent(eventId, choice) {

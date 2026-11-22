@@ -1,0 +1,28 @@
+{
+  "stage": "code-generation",
+  "unit": "u3-thadeus-sync",
+  "version": 1,
+  "writes": [
+    { "path": "src/main/thadeusSync.js" },
+    { "path": "src/main/planningRecord.js" },
+    { "path": "src/main/planningSync.js" },
+    { "path": "src/main/agentHooks.js" },
+    { "path": "src/main/setup.js" },
+    { "path": "src/main/ipc.js" },
+    { "path": "src/shared/costRules.js" },
+    { "path": "src/renderer/FeaturesView.jsx" },
+    { "path": "src/renderer/SetupAidlc.jsx" },
+    { "path": "src/shared/locales/en.json" },
+    { "path": "src/shared/locales/sv.json" },
+    { "path": "tests/main/thadeusSync.test.js" },
+    { "path": "tests/main/planningRecord.test.js" },
+    { "path": "tests/main/agentHooksInstaller.test.js" },
+    { "path": "tests/main/setup.test.js" },
+    { "path": "tests/main/costRules.test.js" },
+    { "path": "tests/renderer/FeaturesView.test.jsx" },
+    { "path": "tests/renderer/SetupAidlc.test.jsx" },
+    { "path": "tests/main/fileWrite.test.js" },
+    { "path": "docs/FEATURES.md" },
+    { "path": "docs/features/epic-06-feature-docs.md" }
+  ]
+}

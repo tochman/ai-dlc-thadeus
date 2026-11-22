@@ -44,6 +44,19 @@ describe('ModelProfilesSection (US-0210 US1.1)', () => {
     });
   });
 
+  it('shows each profile as an outlined card, the active one brighter (US-0417)', async () => {
+    mockBridge();
+    show();
+    const critical = await screen.findByTestId('model-profiles-critical');
+    expect(critical.className).toContain('lcars-pcard');
+    expect(critical.className).toContain('is-chosen');
+    expect(critical.getAttribute('aria-current')).toBe('true');
+    const economy = screen.getByTestId('model-profiles-economy');
+    expect(economy.className).toContain('lcars-pcard');
+    expect(economy.className).not.toContain('is-chosen');
+    expect(economy.hasAttribute('aria-current')).toBe(false);
+  });
+
   it('says how to save an AI-DLC profile with --save-as when none is reported (AC1.1.2)', async () => {
     mockBridge({ saved: { ...SAVED, names: [] } });
     show();

@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { HARNESSES } from '../../src/shared/harnesses.js';
 
 const CLAUDE = HARNESSES.find((h) => h.id === 'claude');
@@ -35,7 +35,7 @@ describe('ResumeButton', () => {
   it('types /aidlc without Enter for the active intent and shows where it picks up (FR2.2, FR2.5, FR2.6)', () => {
     render(<ResumeButton intent={intent} activeDirName="261113-workflow-control" position={position} />);
     const button = screen.getByTestId('intent-resume');
-    expect(button.textContent).toBe('Fortsätt vid Code Generation (steg 3 av 7)');
+    expect(button.textContent).toBe('Fortsätt vid Code Generation'); // US-0037 FR3.4: the step shows in the progress row only
     expect(button.tagName).toBe('BUTTON'); // focusable and keyboard-operable as a native button
 
     fireEvent.click(button);
@@ -189,5 +189,41 @@ describe('ResumeButton while an agent outside the app runs the work (EPIC-00 US-
     expect(unavailable(button())).toBe(false);
     rerender(<ResumeButton intent={intent} activeDirName={intent.dirName} activeIntent={{ ...intent, status: 'parked', activityAt: Date.now() }} />);
     expect(unavailable(button())).toBe(false);
+  });
+});
+
+describe('ResumeButton on a parked intent (US-0510)', () => {
+  // Just parked: its audit was written a moment ago, which must not read as an agent working elsewhere.
+  const parked = { ...intent, parked: true, parkedStage: 'code-generation', activityAt: Date.now() };
+  afterEach(() => delete window.bridge);
+
+  it('unparks first and types /aidlc only after it succeeds (AC4.1.4)', async () => {
+    window.bridge = { unparkIntent: vi.fn(async () => ({ ok: true, switched: true })) };
+    const other = { ...parked, dirName: '261112-other' };
+    render(<ResumeButton projectId="p1" intent={{ ...parked, active: false }} activeDirName="261112-other" activeIntent={other} />);
+    expect(unavailable(screen.getByTestId('intent-resume'))).toBe(false);
+    fireEvent.click(screen.getByTestId('intent-resume'));
+    expect(window.bridge.unparkIntent).toHaveBeenCalledWith('p1', '261113-workflow-control');
+    expect(terminal.type).not.toHaveBeenCalled();
+    await waitFor(() => expect(terminal.type).toHaveBeenCalledWith('agent', '/aidlc', { submit: false }));
+    expect(terminal.sequence).not.toHaveBeenCalled(); // the unpark already made it the active intent
+  });
+
+  it('says it unparks: "Avparkera och fortsätt vid <stage>", from the position or else the parked stage (US-0037 FR3.2)', () => {
+    const { rerender } = render(<ResumeButton projectId="p1" intent={parked} activeDirName={parked.dirName} activeIntent={parked} position={position} />);
+    expect(screen.getByTestId('intent-resume').textContent).toBe('Avparkera och fortsätt vid Code Generation');
+    rerender(<ResumeButton projectId="p1" intent={{ ...parked, parkedStage: 'functional-design' }} activeDirName={parked.dirName} activeIntent={parked} />);
+    expect(screen.getByTestId('intent-resume').textContent).toBe('Avparkera och fortsätt vid Functional Design');
+    rerender(<ResumeButton projectId="p1" intent={{ ...parked, parkedStage: null }} activeDirName={parked.dirName} activeIntent={parked} />);
+    expect(screen.getByTestId('intent-resume').textContent).toBe('Avparkera och fortsätt');
+  });
+
+  it('types nothing and shows the reason when the unpark fails (AC4.1.5)', async () => {
+    window.bridge = { unparkIntent: vi.fn(async () => ({ ok: false, error: 'Refused: in the middle of a stage', switched: false })) };
+    render(<ResumeButton projectId="p1" intent={parked} activeDirName={parked.dirName} activeIntent={parked} />);
+    fireEvent.click(screen.getByTestId('intent-resume'));
+    expect((await screen.findByRole('status')).textContent).toBe('Refused: in the middle of a stage');
+    expect(terminal.type).not.toHaveBeenCalled();
+    expect(terminal.sequence).not.toHaveBeenCalled();
   });
 });

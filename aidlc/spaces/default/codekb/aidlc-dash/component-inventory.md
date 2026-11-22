@@ -2,7 +2,7 @@
 
 One heading per component; the heading text is the component's name in the Scope of Analysis block. Paths are repo-relative. The external packages are in `dependencies.md`.
 
-This run (`39a3dbf`, US-0608) re-read these components: Planning Record, Planning Sync, File Editor Service, Releases Service, Releases Parser, FeaturesView, IPC Router (the planning, features, file and watcher parts), Preload Bridge, Release Workflow and Packaging Config (`package.json` only). The other entries are from earlier scans (`721e051`, `f46cb71`, `bbfb4c0`, `2b5d6a4`, `0ebb196`), or were only listed, which is marked.
+The `90031e2` run (EPIC-14) re-read these components: Project Service, Project Access, Watcher, Settings Store, IPC Router (the project, cost, token, agents, setup, settings and pty parts), Preload Bridge, Setup Helper, Harness Detection, Token Readings, Token History, Questions Parser, Agent Progress Loader, Audit Parser, Intents Merger, State Parser, Pipeline Merger, Units Status, App Shell (the arm and view routing), ProjectView, ResumeButton, useProject, Terminal Control and Harness Table. The `39a3dbf` run (US-0608) read the planning components. The other entries are from earlier scans (`721e051`, `f46cb71`, `bbfb4c0`, `2b5d6a4`, `0ebb196`, `6ec3546`), or were only listed, which is marked.
 
 ## Main process (`src/main/`)
 
@@ -10,7 +10,8 @@ This run (`39a3dbf`, US-0608) re-read these components: Planning Record, Plannin
 - `src/main/index.js`: the app lifecycle, single instance, `windowOptions()` (sandbox, contextIsolation), the navigation block, the close guard, the update check and shutdown.
 
 ### IPC Router
-- `src/main/ipc.js` (1300 lines at `39a3dbf`): the invoke handlers in one table, wrapped by `registerIpc` (log, then rethrow).
+- `src/main/ipc.js` (1379 lines at `90031e2`): the invoke handlers in one table (`:748-1353`), wrapped by `registerIpc` (log, then rethrow).
+- `project:open` (`:759-775`): `openRoot`, `detectProject`, `detectHarnesses` in the background, then `watchSpace` when `isAidlc`, else `watchForSetup` (`:337-355`, sends `project:detected`), plus the features, config and `.git/HEAD` watchers and the hooks status.
 - Per-project state in `projects`: root, space, watchers, sender, `intentChangedAt`, `harnesses`, `models`, `modelOptions`, pending previews and `questions`.
 - `watchSpace` starts `watchIntents`. Its `onChange` sets `intentChangedAt`, sends `project:changed` and calls `refreshQuestions` (with a `startedWith` baseline).
 - `syncFeaturesWatch` (`:308`) watches the overview, the epic folders and the plans folder, and sends `features:changed` only. It restarts itself when the watched set changes.
@@ -25,13 +26,13 @@ This run (`39a3dbf`, US-0608) re-read these components: Planning Record, Plannin
 - Agent progress (`0ebb196`): `agents:progress`, `agentActivity:list`, the `agent:activity` push.
 
 ### Project Service
-- `src/main/projectService.js` (417 lines, not re-read): `detectProject`, `loadIntentList` (cached per root and space), `summarizeIntent`, `inProgress(intent)`, `loadAuditEvents`, `workingAgents`, `inflightCount`, `loadPendingQuestions`, `loadCost`, `loadCrossMachineCost`, the velocity loader; `LEDGER_PATH`, `INFLIGHT_PATH`, `intentsDir`, `assertName`.
+- `src/main/projectService.js` (433 lines at `90031e2`): every AI-DLC reader in one module. `detectProject` (`:49-58`; only `aidlc/spaces/` with a space counts), `listSpaces`, `loadIntentList` (cached per root and space), `summarizeIntent`, `inProgress(intent)`, `loadAuditEvents`, `workingAgents`, `inflightCount`, `loadHandoffInputs`, `loadPendingQuestions`, `loadCost`, `loadCrossMachineCost`, `loadVelocity`, `loadIntentDetail` (`PHASE_DIRS` for the artifacts); `LEDGER_PATH`, `INFLIGHT_PATH`, `intentsDir`, `assertName`. Nothing in it is framework-neutral except `assertName`.
 
 ### Project Access
 - `src/main/projectAccess.js`: root-confined reads (`openRoot`, `resolveInRoot`, `readText` as UTF-8, `readJsonSafe`, `listDir`, `newestMtime`, `exists`). No write calls.
 
 ### Watcher
-- `src/main/watcher.js`: `watchIntents` (the intents folder, the ledger, `.thadeus/usage`, the worktree Unit plans; 300 ms, max 800 ms), `watchFiles` (named files and the `.md` files directly in named folders; 300 ms, max 800 ms), `watchOpenFiles` and `watchForAidlc`.
+- `src/main/watcher.js`: `watchIntents` (the intents folder, the ledger, `.thadeus/usage`, the worktree Unit plans; 300 ms, max 800 ms), `watchFiles` (named files and the `.md` files directly in named folders; 300 ms, max 800 ms), `watchOpenFiles` and `watchForAidlc` (`:219-238`, calls `onFound` once, when a folder appears under `aidlc/spaces/`; nothing else is let through). `watchFiles` and `watchFilesIn` work for any path set, and a Spec Kit watcher can reuse them.
 
 ### Audit Parser
 - `src/main/parsers/audit.js`: the shards as events with stable keys; `mergeAudits`, `categoryOf`. Pure.
@@ -61,7 +62,7 @@ This run (`39a3dbf`, US-0608) re-read these components: Planning Record, Plannin
 - `src/main/parsers/agentProgress.js` (US-0507): `progressRows(events, {running, nowMs})`, `planSteps(text)`, `severityCounts(record)`. It imports `workingAgents` from `projectService.js`.
 
 ### Agent Progress Loader
-- `src/main/agentProgress.js` (US-0507): `loadAgentProgress(root, space, dirName, {exec, nowMs})` reads the Unit's or the stage's plan and the last commit subject, and the review records.
+- `src/main/agentProgress.js` (US-0507): `loadAgentProgress(root, space, dirName, {exec, nowMs})` reads the Unit's or the stage's plan and the last commit subject, and the review records. It starts with `assertName(space)` and `assertName(dirName)`, so a project without a space throws.
 
 ### Velocity Parser
 - `src/main/parsers/velocity.js` (US-0303, listed only): `intentMetrics`, `storyMetrics`, `projectMetrics`, `parseMarkerHistory`.
@@ -79,7 +80,7 @@ This run (`39a3dbf`, US-0608) re-read these components: Planning Record, Plannin
   - `DELIVERY`, `lifecycleTag`, `ruleStatus`.
 
 ### Questions Parser
-- `src/main/questions.js`: `pendingQuestions` from the audit events, `auditEvent`/`auditContext`.
+- `src/main/questions.js` (199 lines): `pendingQuestions(events, {project, intent})` from AI-DLC's audit events (`DECISION_RECORDED`, `STAGE_AWAITING_APPROVAL`, `QUESTION_ASKED` open them; answers, gates and stage events close them), `parseOptions`, `auditEvent` (an audit question as a dialog event), `auditContext`. Pure. Every input is an AI-DLC audit event.
 
 ### Notifications
 - `src/main/notify.js`: system notifications for agent events and audit questions, decided once per event id through Alert Plan.
@@ -94,13 +95,15 @@ This run (`39a3dbf`, US-0608) re-read these components: Planning Record, Plannin
 - `src/main/tools.js`: `TOOL_IDS` (aidlc, claude, opencode, gh, shell), saved paths, PATH lookup, `toolPath`, `probeTool`.
 
 ### Harness Detection
-- `src/main/harness.js`: `detectHarnesses()` from folder markers and `--version`.
+- `src/main/harness.js` (60 lines): `detectHarnesses(root, {exec})` gives `{id, label, selectable, installed, cli}` per table entry. `installed` comes from the markers (dirs, files, a JSON file that mentions `aidlc`), and `cli` from `<cli> --version`. It never rejects. The opencode markers are AI-DLC's own files, so a Spec Kit project on opencode reads as not installed.
 
 ### Settings Store
 - `src/main/settings.js`: the app's `settings.json` in userData. `sanitize` keeps known keys only; per-root `projectSettings` go through `sanitizeProject` (capped at 200 projects). It also exports `PLANNING_BRANCH_DEFAULT`, `PLANNING_PUSH_DEFAULT` and `settingsNow()`. Writes are queued.
+  - The project keys (`:90-109`): `featureDocs`, `featuresPath`, `harness`, `harnessTabs`, `delivery`, `modelProfiles`, `planningBranch`, `ratesPath`, `handoff`. An invalid value is left out, so the default applies.
+  - `setProjectSettings` (`:198-236`) throws for a bad value and merges `modelProfiles` and `handoff` per key. The key is the real root path, so another clone is another project.
 
 ### Setup Helper
-- `src/main/setup.js`: `getSetupInfo` (a dry-run preview), `runSetup`.
+- `src/main/setup.js` (154 lines): `getSetupInfo(root, {harness, exec})` gives the git state, the other harness folders, `aidlc --version` and a `config --harness <id> --dry-run` preview with its counts (`parsePreview`), plus the plugins. `runSetup(root, choices, info)` refuses without a clean preview for that harness and runs fixed steps one by one: `git init -b main` when needed, `aidlc --project-dir <root> config --harness <id> --yes`, then plugins and a preset. One run per root at a time. It is the pattern for `specify init` (US-1405).
 
 ### AI-DLC Config Reader
 - `src/main/aidlcConfig.js` (skimmed): read-only `aidlc config <section> --show --json --harness <h>`, `checkHarness`, `CONFIG_WATCH_PATHS`.
@@ -187,7 +190,10 @@ This run (`39a3dbf`, US-0608) re-read these components: Planning Record, Plannin
 - `src/main/usageSnapshot.js` (listed only): this machine's cost snapshot in `.thadeus/usage/` (US-0209).
 
 ### Token Readings
-- `src/main/tokenReadings.js`: token readings per intent in `.thadeus/tokens/<dir>.json`.
+- `src/main/tokenReadings.js` (78 lines): `readingOf(intentCost, now)` from a ledger summary entry, `addReading` (30 s gap, at most 2000), `readReadings`, `recordReading(root, dirName, reading)` into `.thadeus/tokens/<dirName>.json` with `writeAtomic` after `resolveInRoot` (a `.thadeus` link out of the root is refused). Only `project:cost` calls the writer.
+
+### Token History
+- `src/main/tokenHistory.js` (155 lines, US-0215): `loadTokenHistory`. Recorded readings win. Otherwise it rebuilds from the Claude Code transcripts the ledger names for `intent:<uuid>`, read only under `~/.claude/projects`, counting calls inside the audit's stage windows (`stageWindows`, `wallClockMs`). The rebuild is cached in memory and never written. Both inputs (ledger, audit) are AI-DLC's.
 
 ### App Menu
 - `src/main/menu.js`: the menu template, `menu:command`, menu state.
@@ -223,7 +229,7 @@ This run (`39a3dbf`, US-0608) re-read these components: Planning Record, Plannin
 ## Preload
 
 ### Preload Bridge
-- `src/preload/index.js` (185 lines): `window.bridge` with named members only (see `api-documentation.md` section 1).
+- `src/preload/index.js` (188 lines at `90031e2`): `window.bridge` with named members only (see `api-documentation.md` section 1). It is one `call(channel)` or `subscribe(channel)` per member, so a new channel is one line here.
   - Feature docs: `loadFeatures`, `getStoryLinks`, `setStoryRelease`, `createRelease`, `deleteRelease`, `getPlanningStatus`, `pushPlanning`, `getLifecycleRuleStatus` (lines 85-95) and `onFeaturesChanged` (line 138).
   - Editor: `readFileForEdit`, `writeFile`, `watchOpenFiles`, `onFileChanged` (lines 34-38).
   - There is no planning-status subscription.
@@ -234,7 +240,7 @@ This run (`39a3dbf`, US-0608) re-read these components: Planning Record, Plannin
 - `src/shared/agentActivity.js` (US-0214): `reduceActivity`, `activityRows`. Pure; no agent text by construction.
 
 ### Harness Table
-- `src/shared/harnesses.js`: six harnesses with markers, CLI, commands and `perAgentModels`.
+- `src/shared/harnesses.js` (112 lines): six harnesses with markers, CLI, `commands` and `perAgentModels`; only `claude` and `opencode` are `selectable` and have `commands: {aidlc: '/aidlc'}`. Helpers: `selectableHarness`, `setupHarness`, `defaultSetupHarness`, `resolveHarness`, `scopesDir`, `harnessCommand(entry, suffix)` (only `commands.aidlc`). The marker dirs also feed `fileWrite.js`'s engine-owned list.
 
 ### Shared i18n
 - `src/shared/i18n.js`: one i18next instance per process with ICU, `sv`/`en`, `t`, `locale`.
@@ -269,10 +275,17 @@ This run (`39a3dbf`, US-0608) re-read these components: Planning Record, Plannin
 - `main.jsx`, `index.html`: fonts, theme, the language before the first render, the CSP.
 
 ### App Shell
-- `App.jsx`: project tabs, the left arm, settings, menu commands, dialogs. Agent dialog wiring (`:222-298`): `receiveAgentEvents` opens the dialog on a fresh open event, `dialogEvents`/`popupEvents` feed it, `hasNewQuestion` closes it.
+- `App.jsx` (772 lines): project tabs, the left arm, settings, menu commands, dialogs.
+  - Tabs hold `{projectId, root, name, detection}`, and `project:detected` replaces `detection`.
+  - `ui[projectId]` holds `{view, configSection, featuresTab, teamSection}`; `meta[projectId]` holds `{showFeatures, intentCount, harness, delivery, busy, lastIntentChangeAt}`, reported by ProjectView.
+  - The arm (`:398-403`, `:588-665`): `offered` = features (docs), config, editor always; plans, cost, velocity, github only `isAidlc`. The first block is "Intents", or "Set up" when not AI-DLC. Configuration hides `AIDLC_SECTIONS` outside AI-DLC. The menu state carries `isAidlc`. Agent dialog wiring (`:222-298`): `receiveAgentEvents` opens the dialog on a fresh open event, `dialogEvents`/`popupEvents` feed it, `hasNewQuestion` closes it.
 
 ### ProjectView
-- `ProjectView.jsx`: one `TerminalProvider` per project, with `useProject` and `useFeatures`; the `view === '<id>'` branches.
+- `ProjectView.jsx` (521 lines): one `TerminalProvider` per project, with `useProject` (inside `AidlcProject`) and `useFeatures`; the `view === '<id>'` branches.
+  - `AidlcProject` (`:69-165`) holds the intents, cost, velocity and github views; otherwise `SetupAidlc` shows in the same place (`:413-427`).
+  - It repeats App's `offered` table (`:360`) and handles the terminal menu commands (`answer`, `handoff`, `type`, `restart`, show).
+  - It resolves the agent harness and restarts the agent tab when `isAidlc` turns true (`SetupDone`).
+  - `ConfigView` and `AddHarnessDialog` only show in AI-DLC.
 
 ### TerminalContext
 - `TerminalContext.jsx`: the tab registry, `type`, `sequence`, `restart`, `anyBusy`, `answer`, `state`.
@@ -281,7 +294,7 @@ This run (`39a3dbf`, US-0608) re-read these components: Planning Record, Plannin
 - `TerminalPanel.jsx`: xterm sessions bound to ptys, the tab bar, quick commands.
 
 ### Terminal Control
-- `terminalControl.js`: the activity signal, `waitFor`, `runSequence`, shell quoting. Pure.
+- `terminalControl.js` (115 lines): the activity signal (`createActivity`, idle after `quietMs`), `waitFor`, `runSequence` (wait for idle, write, wait up to 3 s for the echo), `sendHandoff`, `shellQuote`, `dropText`. Pure. Framework-neutral.
 
 ### Picker Reader
 - `picker.js`: reads Claude Code's picker from the screen rows. Pure.
@@ -299,7 +312,7 @@ This run (`39a3dbf`, US-0608) re-read these components: Planning Record, Plannin
 - `AgentHooksStrip.jsx`, `AgentHooksSection.jsx`, `AgentHooksPreview.jsx`; `useAgentHooks`.
 
 ### ResumeButton
-- `ResumeButton.jsx`: resumes an in-flight intent through the idle agent tab.
+- `ResumeButton.jsx` (92 lines): resumes an in-flight intent through the idle agent tab. The command is `harnessCommand(terminal.harness)`. It waits while any agent tab works or asks, a live session runs the active intent, or the audit was written in the last 10 minutes (`ELSEWHERE_MS`). It types `/aidlc` without Enter, or submits `/aidlc intent <dir>` first for another intent.
 
 ### IntentList
 - `IntentList.jsx`: intents with search, filters, sort, cost and step dots.
@@ -423,7 +436,7 @@ This run (`39a3dbf`, US-0608) re-read these components: Planning Record, Plannin
 - `tokens.js`: CSS tokens for xterm.
 
 ### useProject
-- `useProject.js`: per project tab, the intent list, the selected detail, cost, models and `lastIntentChangeAt`.
+- `useProject.js` (137 lines): per project tab, the intent list, the selected detail, cost, models and `lastIntentChangeAt`. It reloads only what a `project:changed` names, matched on `projectId` and `space`, and highlights new audit keys for 4 s. It is the template for a Spec Kit data hook.
 
 ### useFeatures
 - `useFeatures.js` (skimmed at `39a3dbf`): settings, features, story links and the lifecycle rule. On `features:changed` it calls `loadDocs()`, which runs `getProjectSettings` and `loadFeatures` and sets both. There is no request id: two reloads in flight can land out of order.

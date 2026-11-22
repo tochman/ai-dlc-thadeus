@@ -24,6 +24,34 @@
       "html_url": "https://github.com/tochman/ai-dlc-thadeus/pull/58#issuecomment-1"
     }
   ],
+  "graphql": {
+    "data": {
+      "repository": {
+        "pullRequest": {
+          "reviewThreads": {
+            "nodes": [
+              {
+                "id": "PRRT_1",
+                "isResolved": false,
+                "path": "src/main/git.js",
+                "line": 14,
+                "comments": {
+                  "nodes": [
+                    {
+                      "author": { "login": "bo" },
+                      "body": "Why fetch here?",
+                      "createdAt": "2026-11-15T11:30:00Z",
+                      "url": "https://github.com/tochman/ai-dlc-thadeus/pull/58#discussion_r3"
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        }
+      }
+    }
+  },
   "repos/tochman/ai-dlc-thadeus/pulls/58/reviews": [
     {
       "id": 2,

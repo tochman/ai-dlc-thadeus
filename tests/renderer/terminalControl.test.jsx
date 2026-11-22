@@ -140,6 +140,56 @@ describe('sendHandoff', () => {
     expect(write).toHaveBeenCalledTimes(1);
   });
 
+  // US-0039 FR2.1–FR2.5: park mode asks AI-DLC to stop first; the choice's lines follow on idle.
+  const parkBridge = ({ park = { line: 'THADEUS: park', sent: true }, idle = [false, false, true], lines = ['/clear', '/aidlc --resume'] } = {}) => {
+    const b = bridgeOf({ lines, waitReady: true, idle });
+    b.commands = vi.fn(async () => ({ lines, waitReady: true, mode: 'park' }));
+    b.park = vi.fn(async () => park);
+    return b;
+  };
+
+  it('busy: the park line goes at once, the page is told it was sent, the rest follows on idle (FR2.2)', async () => {
+    const bridge = parkBridge();
+    const write = vi.fn();
+    const onWaiting = vi.fn();
+    const done = sendHandoff({ bridge, eventId: 'h1', choice: 'fresh', write, onWaiting, pollMs: 500 });
+    await vi.advanceTimersByTimeAsync(0);
+    expect(write.mock.calls.flat()).toEqual(['THADEUS: park\r']);
+    expect(onWaiting).toHaveBeenCalledWith('park');
+    expect(bridge.waiting).toHaveBeenCalledWith('h1', true);
+    await vi.advanceTimersByTimeAsync(1000);
+    await expect(done).resolves.toEqual({ ok: true });
+    expect(write.mock.calls.flat()).toEqual(['THADEUS: park\r', '/clear\r', '/aidlc --resume\r']);
+  });
+
+  it('at a gate main answers the question itself: nothing extra is typed, the page still says the request was sent (FR2.1)', async () => {
+    const bridge = parkBridge({ park: { line: null, sent: true }, idle: [true] });
+    const write = vi.fn();
+    const onWaiting = vi.fn();
+    await sendHandoff({ bridge, eventId: 'h1', choice: 'fresh', write, onWaiting });
+    expect(onWaiting).toHaveBeenCalledWith('park');
+    expect(write.mock.calls.flat()).toEqual(['/clear\r', '/aidlc --resume\r']);
+  });
+
+  it('a held request (a permission waits) types nothing first and the page says it waits for idle', async () => {
+    const bridge = parkBridge({ park: { line: null, sent: false }, idle: [false, true] });
+    const onWaiting = vi.fn();
+    const done = sendHandoff({ bridge, eventId: 'h1', choice: 'fresh', write: vi.fn(), onWaiting, pollMs: 500 });
+    await vi.advanceTimersByTimeAsync(1000);
+    await done;
+    expect(onWaiting).toHaveBeenCalledWith('idle');
+  });
+
+  it('an agent that never stops within the limit: nothing after the park line, notIdle (FR2.5)', async () => {
+    const bridge = parkBridge({ idle: [false] });
+    const write = vi.fn();
+    const done = sendHandoff({ bridge, eventId: 'h1', choice: 'compact', write, pollMs: 60_000 });
+    await vi.advanceTimersByTimeAsync(31 * 60 * 1000);
+    await expect(done).resolves.toEqual({ ok: false, reason: 'notIdle' });
+    expect(write.mock.calls.flat()).toEqual(['THADEUS: park\r']);
+    expect(bridge.sent).not.toHaveBeenCalled();
+  });
+
   it('a harness with no commands, or a choice that was not offered, types nothing (FR3.5)', async () => {
     const bridge = bridgeOf({ lines: null });
     const write = vi.fn();

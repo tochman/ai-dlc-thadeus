@@ -60,8 +60,11 @@ import { clearBitbucket, hasBitbucket, loadBitbucket, saveBitbucket } from './cr
 import { collisions, loadMachines, loadOpenQuestions, matchPull, possibleCollisions, storyComments } from './teamActivity.js';
 import { readRuleStatus } from './releases.js';
 import { createScheduler, noteAppWrite, planAction, reapplyLost, recordContent, recordTree, resolvePlanning, runCycle, waitingList } from './planningSync.js';
+import { addThadeus } from './planningRecord.js';
+import { syncCycle, watchThadeus } from './thadeusSync.js';
 import { storyIdsIn } from './parsers/features.js';
 import { runFixed } from './exec.js';
+import { park, readParkStatus, unpark, withParkStatus } from './intentPark.js';
 import { DELIVERY_DEFAULT } from './parsers/releases.js';
 import { getSetupInfo, runSetup } from './setup.js';
 import { detectHarnesses } from './harness.js';
@@ -71,7 +74,7 @@ import { setupHarness } from '../shared/harnesses.js';
 import { PLANNING_BRANCH_DEFAULT, PLANNING_PUSH_DEFAULT, getProjectSettings, getSettings, setProjectSettings, setSettings, settingsNow } from './settings.js';
 import { watchFiles, watchForAidlc, watchIntents, watchOpenFiles } from './watcher.js';
 import { listTree, readForEdit, writeFileSafe } from './fileWrite.js';
-import { featureWatchPaths, loadFeatures, loadStoryLinks } from './features.js';
+import { featureWatchPaths, loadFeatures, loadPlanningFeatures, loadStoryLinks } from './features.js';
 import { SPECKIT_WATCH_PATHS, loadSpeckitFeatures } from './speckitFeatures.js';
 import { killAllSessions, killProjectSessions, killSession, resizeSession, spawnSession, tapOutput, writeSession } from './pty.js';
 import { createAgentChannel } from './agentChannel.js';
@@ -192,6 +195,8 @@ async function closeWatcher(p) {
   const e = p.editorWatcher;
   const h = p.headWatcher;
   const k = p.speckitWatcher;
+  const th = p.thadeusWatcher;
+  p.thadeusWatcher = null;
   p.watcher = null;
   p.setupWatcher = null;
   p.speckitWatcher = null;
@@ -201,7 +206,7 @@ async function closeWatcher(p) {
   p.editorWatcher = null;
   p.headWatcher = null;
   // US-0506 u4 SCD31: the hooks watcher, previews and isCurrent keys go with the project.
-  await Promise.all([w?.close(), s?.close(), f?.close(), c?.close(), e?.close(), h?.close(), k?.close(), installer?.closeProject(p.id)]);
+  await Promise.all([w?.close(), s?.close(), f?.close(), c?.close(), e?.close(), h?.close(), k?.close(), th?.close(), installer?.closeProject(p.id)]);
 }
 
 /**
@@ -446,6 +451,7 @@ function agentWiring() {
   installer = createHookInstaller({
     log: (line) => console.warn(line),
     usedOf: usedHarnesses,
+    record: (root, entry) => addThadeus(app.getPath('userData'), root, entry), // US-0609 FR3.3: the install ends in a commit
     // RD42: a harness that stops being current ends its running sessions; the push reaches every window (BR7.17).
     onStatus: statusPusher({ senders: () => new Set([...projects.values()].map((p) => p.sender)), demote: (root, harness) => agent.demote(root, harness) })
   });
@@ -504,6 +510,7 @@ const handoffChoice = (c) => {
 };
 const handoffHandlers = {
   'handoff:commands': async (_event, id, choice) => handoff?.commandsFor(handoffId(id), handoffChoice(choice)) ?? null,
+  'handoff:park': async (_event, id) => handoff?.park(handoffId(id)) ?? null, // US-0039 FR2.1, FR2.2
   'handoff:idle': async (_event, id) => handoff?.idle(handoffId(id)) ?? false,
   'handoff:waitReady': async (_event, id) => handoff?.waitReady(handoffId(id)) ?? false,
   'handoff:waiting': async (_event, id, on) => agentStore?.setHandoff(handoffId(id), on === true ? 'waiting' : 'shown'),
@@ -531,6 +538,19 @@ async function checkProfiles(projectId) {
     p.sender.send('modelProfile:ask', { projectId, ...ask });
   } catch (err) {
     console.error(`Modellprofilen kunde inte kontrolleras för ${p.root}:`, err);
+  }
+}
+
+/**
+ * US-0510 FR4.1: reads `aidlc engine status` for the active intent, keeps it with its read time for project:intents,
+ * and tells the renderer to reload the list (the active intent may have changed too). Never throws.
+ */
+async function refreshParkStatus(projectId) {
+  const p = projects.get(projectId);
+  if (!p) return;
+  p.parkStatus = await readParkStatus(p.root);
+  if (projects.get(projectId) === p && !p.sender.isDestroyed()) {
+    p.sender.send('project:changed', { projectId, space: p.space, dirNames: [], indexChanged: true, costChanged: false });
   }
 }
 
@@ -654,13 +674,50 @@ const planning = createScheduler({
     } catch (err) {
       res = { error: { kind: 'git', reason: err.message } };
     }
-    if (res.reapplied || res.pushed) sendFeaturesChanged(projectId, p);
+    if (res.reapplied || res.pushed || res.moved) sendFeaturesChanged(projectId, p); // US-0036 FR2.2: a fetch moved the read ref
     await sendPlanningChanged(projectId, res); // FR7.2: after every cycle, a failed one too
     return res;
   },
   idle: () => net.isOnline() && !appBusy(),
   intervalMs: () => (settingsNow().planningPushMinutes ?? PLANNING_PUSH_DEFAULT) * 60 * 1000
 });
+
+// US-0609 FR3.1: the app's own files (`.thadeus/`, the harness hook files) get their own scheduler, with planning's
+// push interval and idle rule; the cycle shares planning's record and per-project chain.
+const thadeusCtx = async (projectId) => {
+  const p = project(projectId);
+  const settings = await getProjectSettings(p.root);
+  const userData = app.getPath('userData');
+  return { root: p.root, userData, planningBranch: settings.planningBranch ?? PLANNING_BRANCH_DEFAULT, gh: runGh, online: () => net.isOnline() };
+};
+
+const thadeusSyncer = createScheduler({
+  run: async (projectId) => {
+    const res = await syncCycle(await thadeusCtx(projectId));
+    await sendPlanningChanged(projectId, null); // FR3.8: the waiting list shows what is left
+    return res;
+  },
+  idle: () => net.isOnline() && !appBusy(),
+  intervalMs: () => (settingsNow().planningPushMinutes ?? PLANNING_PUSH_DEFAULT) * 60 * 1000
+});
+
+/** US-0609 FR3.1, FR3.2: each changed app file waits in the record; an idle app syncs at once. Never throws. */
+function watchThadeusFiles(projectId) {
+  const p = project(projectId);
+  try {
+    p.thadeusWatcher = watchThadeus(p.root, async (files) => {
+      try {
+        for (const entry of files) await addThadeus(app.getPath('userData'), p.root, entry);
+        await sendPlanningChanged(projectId, null);
+        thadeusSyncer.kick(projectId);
+      } catch (err) {
+        console.warn('.thadeus-ändringen kunde inte registreras:', err.message);
+      }
+    });
+  } catch (err) {
+    console.error(`Bevakning av .thadeus kunde inte startas för ${p.root}:`, err);
+  }
+}
 
 /**
  * US-0607 FR4.1, US-0608 FR7.1: the release list's block: each change waiting with its stories, the target, and the
@@ -803,12 +860,15 @@ const handlers = {
       agentTabs: new Set()
     });
     // US-1401 BR1.9: the space watcher for AI-DLC, the setup watcher for no framework; US-1402 BR6.7: Spec Kit's files.
-    if (detection.framework === 'aidlc') await watchSpace(projectId, detection.activeSpace);
-    else if (detection.framework === 'speckit') watchSpeckit(projectId);
+    if (detection.framework === 'aidlc') {
+      await watchSpace(projectId, detection.activeSpace);
+      refreshParkStatus(projectId); // US-0510 FR4.1: not awaited; opening never waits on AI-DLC
+    } else if (detection.framework === 'speckit') watchSpeckit(projectId);
     else if (detection.framework === null) watchForSetup(projectId);
     syncFeaturesWatch(projectId); // not awaited: opening a project never waits on the feature docs
     watchConfig(projectId);
     watchGitHead(projectId);
+    watchThadeusFiles(projectId); // US-0609 FR3.1
     // US-0506 u4 PD31: the hooks status is computed after the first render and pushed as agent-hooks:changed.
     agentWiring();
     installer.openProject(projectId, root).catch((err) => console.error(`[agent-hooks] status failed for ${root}:`, err.code ?? err.message));
@@ -832,9 +892,24 @@ const handlers = {
   'project:intents': async (_event, projectId, space, onlyDirs) => {
     const p = project(projectId);
     await watchSpace(projectId, space);
-    return loadIntentList(p.root, space, Array.isArray(onlyDirs) ? onlyDirs.map(String) : undefined);
+    return withParkStatus(await loadIntentList(p.root, space, Array.isArray(onlyDirs) ? onlyDirs.map(String) : undefined), p.parkStatus);
   },
   'project:intent': async (_event, projectId, space, dirName) => loadIntentDetail(project(projectId).root, space, dirName),
+  // US-0510 FR4.2, FR4.3: park the active intent, or unpark one (switching to it first); the list reloads on project:changed.
+  'intents:park': async (_event, projectId) => {
+    const p = project(projectId);
+    const res = await park(p.root);
+    await refreshParkStatus(projectId);
+    return res;
+  },
+  'intents:unpark': async (_event, projectId, dirName) => {
+    const p = project(projectId);
+    const { intents } = await loadIntentList(p.root, p.space, []);
+    const known = intents.filter((i) => !i.missingOnDisk).map((i) => i.dirName);
+    const res = await unpark(p.root, dirName, { activeDirName: intents.find((i) => i.active)?.dirName ?? null, known });
+    await refreshParkStatus(projectId);
+    return res;
+  },
   // US-0303 FR3.5: the project's velocity from the cached intent list, the feature docs, the release tags and the epic
   // files' git history (the folder of the first epic file; none without epic files).
   'project:velocity': async (_event, projectId, space) => {
@@ -1289,7 +1364,10 @@ const handlers = {
   // Feature docs (EPIC-06). The root is always looked up here; the renderer never names one.
   'features:load': async (_event, projectId) => {
     const p = project(projectId);
-    const [features, tags] = await Promise.all([loadFeatures(p.root, (await getProjectSettings(p.root)).featuresPath), listReleaseTags(p.root)]);
+    const settings = await getProjectSettings(p.root);
+    // US-0036 FR2.1: with the planning sync on, a story branch shows the target's planning; without it the checkout's.
+    const load = planningOff(settings) ? loadFeatures(p.root, settings.featuresPath) : planningCtx(projectId).then(loadPlanningFeatures);
+    const [features, tags] = await Promise.all([load, listReleaseTags(p.root)]);
     return { ...features, tags }; // the vX.Y.Z tags for the release picker and the Releases view (US-0603 FR2.1, FR3.2)
   },
   // A story's release marker (US-0603 FR2.2, FR2.3): named fields only; main finds the files from the overview.
@@ -1401,7 +1479,10 @@ const handlers = {
 
 export function registerIpc() {
   // US-0607 FR3.1, FR1.3: the first tick runs every open project (never run is due), which also applies lost actions.
-  planningTimer = setInterval(() => planning.tick([...projects.keys()]), PLANNING_TICK_MS);
+  planningTimer = setInterval(() => {
+    planning.tick([...projects.keys()]);
+    thadeusSyncer.tick([...projects.keys()]); // US-0609 FR3.1
+  }, PLANNING_TICK_MS);
   planningTimer.unref?.();
   const { handlers: agentHandlers, listeners } = agentWiring();
   for (const [channel, listener] of Object.entries(listeners)) ipcMain.on(channel, listener); // timing only (OD1)
