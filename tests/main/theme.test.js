@@ -240,3 +240,12 @@ describe('the US-0417 LCARS language', () => {
     expect(css).not.toMatch(/\.lcars-(meter|segmeter)[^{]*:hover/);
   });
 });
+
+// US-0417: the intent tabs stay one row of tiles, so the tab content never draws over a wrapped second row.
+describe('intent tab tiles (US-0417)', () => {
+  it('keeps the tab row on one line, unshrunk, with tiles that may narrow', () => {
+    expect(css).toMatch(/\.detail-tabs\s*\{[^}]*flex-wrap:\s*nowrap[^}]*\}/);
+    expect(css).toMatch(/\.detail-tabs\s*\{[^}]*flex:\s*none[^}]*\}/);
+    expect(css).toMatch(/\.detail-tabs \.lcars-tile\s*\{[^}]*min-width:\s*0[^}]*\}/);
+  });
+});
