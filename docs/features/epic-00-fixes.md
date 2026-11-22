@@ -6,7 +6,7 @@
 
 > Small fixes the person reports while using the app: something looks off, behaves wrongly or is missing a detail. Each fix becomes a story here, so nothing reported in passing gets lost. A fix that grows into a feature moves to its topic's epic.
 
-**Stories:** US-0001, US-0002, US-0003, US-0004, US-0005, US-0006, US-0007, US-0008, US-0009, US-0010, US-0011, US-0012, US-0013, US-0014, US-0015, US-0016, US-0017, US-0018, US-0019, US-0020, US-0021, US-0022, US-0023, US-0024, US-0025, US-0026, US-0027, US-0028, US-0029, US-0030, US-0031, US-0032, US-0033, US-0034, US-0035, US-0036, US-0037, US-0038, US-0039, US-0040
+**Stories:** US-0001, US-0002, US-0003, US-0004, US-0005, US-0006, US-0007, US-0008, US-0009, US-0010, US-0011, US-0012, US-0013, US-0014, US-0015, US-0016, US-0017, US-0018, US-0019, US-0020, US-0021, US-0022, US-0023, US-0024, US-0025, US-0026, US-0027, US-0028, US-0029, US-0030, US-0031, US-0032, US-0033, US-0034, US-0035, US-0036, US-0037, US-0038, US-0039, US-0040, US-0041
 
 **Status (2026-11-22):** ✅ US-0001–US-0020 released (v0.2.3–v0.2.6). ✅ US-0021–US-0023 released in v0.2.7. ✅ US-0024 released in v0.2.8. ✅ US-0025 released in v0.2.9. ✅ US-0026 released in v0.2.9. ✅ US-0027 released in v0.2.9. ✅ US-0028 released in v0.2.10. ✅ US-0029 released in v0.2.10. ✅ US-0030 released in v0.2.10. ✅ US-0031 released in v0.2.10. ✅ US-0032 released in v0.2.11. ✅ US-0033 released in v0.2.11. ✅ US-0034 released in v0.2.12. ✅ US-0035 and US-0036 released in v0.2.13. 🚧 US-0037–US-0040 in progress for v0.2.14. Each story names its release.
 
@@ -660,4 +660,22 @@
   - [ ] A test fails without the fix and passes with it; the existing suite stays green.
 - **Notes:** A code fix, so it runs on the `quick-fix` plan. Likely touches `src/main/parsers/intents.js`, `sortIntents` in `src/renderer/IntentList.jsx` and their tests. Open question for the person: a separate "Last activity" sort is left out unless asked for.
 - **Dependencies:** US-0510
+
+---
+
+**US-0041: "Wait until the AI-DLC step is done" shows only while a step really runs** 📋 Planned
+- As a **developer updating the AI-DLC tool or pulling from GitHub**, in order to **use those buttons whenever no AI-DLC step runs**, I would like **the "Wait until the AI-DLC step is done, or park the work first" notice to show only while AI-DLC is working on a stage, and to go away by itself when it stops or is parked**.
+- **Epic:** EPIC-00
+- **Priority:** High
+- **Complexity:** Small
+- **Background:** Reported 2026-11-22: the notice (`github.wait`) in Settings › Tools (`src/renderer/AidlcUpdate.jsx`) and the GitHub refresh panel (`src/renderer/RefreshPanel.jsx`) "never disappears, even when AI-DLC is not working", and the buttons stay disabled. Both use `isWorkflowRunning` (`src/renderer/workflowBusy.js`, US-0502 FR3.5, US-0504 FR4): an agent tab is busy, or anything under `intents/` changed in the last 5 minutes (`lastIntentChangeAt`, `src/renderer/useProject.js`). AI-DLC's hooks append a `HUMAN_TURN` entry to the active intent's audit shard on every message typed to the agent, also when the intent is parked or complete (the finished `261120-release-0-2-13` shard changed this way on 2026-11-22). So any chat with the agent keeps the window open, parking does not clear it, and a busy agent tab counts as an AI-DLC step even when it only answers a question.
+- **Acceptance Criteria:**
+  - [ ] **Given** the active intent is complete or parked, **then** the notice does not show and the buttons are enabled, whatever the agent tab is doing.
+  - [ ] **Given** the active intent is in flight and the only recent changes under `intents/` are audit entries that are not stage work (`HUMAN_TURN` and similar) or the engine's runtime files, **then** those changes do not count as AI-DLC working.
+  - [ ] **Given** a stage is running (its state or artifacts change, or an agent tab is busy with the in-flight intent), **then** the notice shows as today, and it goes away by itself within a minute of the step stopping or the work being parked.
+  - [ ] **Given** the notice shows, **then** it says why (which intent and stage), so the person knows what to wait for or park.
+  - [ ] Every text goes through `t()` in `sv.json` and `en.json`.
+  - [ ] A test fails without the fix and passes with it; the existing suite stays green.
+- **Notes:** A code fix, so it runs on the `quick-fix` plan. Likely touches `src/renderer/workflowBusy.js`, `src/renderer/useProject.js` (what sets `lastIntentChangeAt`), possibly `src/main/watcher.js` (which changes it reports), `AidlcUpdate.jsx`, `RefreshPanel.jsx` and their tests.
+- **Dependencies:** US-0502, US-0504, US-0510
 
