@@ -1774,7 +1774,20 @@ a.md-link:hover { color: var(--steel-light); }
 .velocity-key--average { height: 2px; background: var(--coral-soft); }
 .velocity-sources { display: flex; flex-direction: column; gap: 4px; font-size: 13px; }
 .velocity-sources code { overflow-wrap: anywhere; }
-.story-comments-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
-.story-comment .lcars-card-head { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+/* US-1203: the Review tab: readout rows with a state strip at the left edge, the action pill at the right. */
+.story-comments { display: flex; flex-direction: column; gap: 10px; }
+.review-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.review-row { position: relative; display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between; padding: 6px 10px 6px 16px; background: var(--slate-1); }
+.review-row::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 5px; background: var(--strip, transparent); }
+.review-row-text { margin: 0; flex: 1 1 20em; overflow-wrap: anywhere; }
+.review-thread { flex-direction: column; align-items: stretch; }
+.review-thread-head { display: flex; gap: 10px; align-items: center; justify-content: space-between; }
+.review-thread-where { color: var(--steel-text); font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.review-comments { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.review-comment { display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: baseline; }
+.review-comment .story-comment-text { flex-basis: 100%; }
+.review-pull-title { margin: 0 0 6px; color: var(--text-2); }
+.review-resolved > summary { cursor: pointer; color: var(--muted); margin: 6px 0; }
+a.lcars-pill { text-decoration: none; }
 .story-comment-author { color: var(--steel-light); }
 .story-comment-text { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; }

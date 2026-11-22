@@ -19,11 +19,20 @@ export async function pulls(api, p) {
   );
 }
 
-/** US-1201 AC-1, AC-4: the notes people wrote on one merge request; GitLab's own system notes are left out. */
+/**
+ * US-1201 AC-1, AC-4: the notes people wrote on one merge request; GitLab's own system notes are left out. US-1203: read
+ * by discussion, so a note in a thread carries the thread's file, line and resolved state (null if not resolvable).
+ */
 export async function comments(api, p, number) {
-  return asList(await api(`${project(p)}/merge_requests/${number}/notes?per_page=100`))
-    .filter((n) => !n.system)
-    .map((n) => ({ author: n.author?.username ?? null, body: n.body ?? '', time: n.created_at ?? null, url: null }));
+  return asList(await api(`${project(p)}/merge_requests/${number}/discussions?per_page=100`)).flatMap((d) => {
+    const first = asList(d.notes)[0] ?? {};
+    const thread = d.individual_note
+      ? null
+      : { id: d.id, path: first.position?.new_path ?? null, line: first.position?.new_line ?? null, resolved: first.resolvable ? !!first.resolved : null };
+    return asList(d.notes)
+      .filter((n) => !n.system)
+      .map((n) => ({ author: n.author?.username ?? null, body: n.body ?? '', time: n.created_at ?? null, url: null, ...(thread ? { thread } : {}) }));
+  });
 }
 
 /** US-1201 AC-1, AC-4: the approvals of one merge request, each at the time the approvals last changed. */

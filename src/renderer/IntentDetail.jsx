@@ -319,7 +319,7 @@ export default function IntentDetail({
           )}
           {tab === 'timeline' && <Timeline events={detail.events} newKeys={newKeys} />}
           {tab === 'units' && <BoltDag dag={detail.graph?.boltDag ?? null} statuses={detail.units} />}
-          {tab === 'comments' && <StoryComments projectId={projectId} space={space} dirName={detail.dirName} />}
+          {tab === 'comments' && <StoryComments projectId={projectId} space={space} dirName={detail.dirName} files={detail.files} onOpenFile={showFile} />}
           {tab === 'files' && <ArtifactReader projectId={projectId} groups={detail.files} selected={openFile} onSelect={setOpenFile} />}
         </div>
       </Frame>

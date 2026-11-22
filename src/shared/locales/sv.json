@@ -134,7 +134,7 @@
       "units": "Units",
       "cost": "Kostnad",
       "velocity": "Takt",
-      "comments": "Kommentarer",
+      "comments": "Granskning",
       "files": "Filer"
     },
     "tabsLabel": "Intent-vyer",
@@ -460,26 +460,49 @@
       "onBranches": "{story} finns på {n} grenar: {where}",
       "loadFailed": "Datorerna kunde inte läsas: {error}"
     },
-    "comments": {
-      "source": {
-        "pull": "Pull request",
-        "review": "Granskning",
-        "question": "Öppen fråga",
-        "approval": "Godkännande",
-        "finding": "Granskningsfynd"
+    "review": {
+      "title": "Granskning",
+      "description": "Det som väntar på dig, och vad granskarna sa i storyns pull request.",
+      "needsTitle": "Väntar på dig",
+      "nothing": "Inget väntar på dig.",
+      "needs": {
+        "question": "AI-DLC väntar på ditt svar: {text}",
+        "finding": "Granskaren sa NOT-READY om {stage}. Läs granskningen och ändra.",
+        "changes": "{author} bad om ändringar. Svara eller skicka en rättelse.",
+        "thread": "Olöst tråd i {where} av {author}: svara eller lös den."
+      },
+      "action": {
+        "answer": "Svara i filen",
+        "readReview": "Läs granskningen",
+        "open": "Öppna på {platform}"
+      },
+      "pullTitle": "Pull request",
+      "pullCaption": "Pull request #{number}: {title}",
+      "columns": {
+        "number": "Nummer",
+        "state": "Läge",
+        "reviewers": "Granskare"
+      },
+      "state": {
+        "changes": "Öppen · ändringar begärda",
+        "approved": "Öppen · godkänd",
+        "waiting": "Öppen · väntar på granskning"
       },
       "reviewState": {
         "approved": "Godkände",
         "changes": "Bad om ändringar",
         "commented": "Kommenterade"
       },
-      "pull": "Pull request #{number}: {title}",
-      "noPull": "Ingen öppen pull request har storynumret i grenen eller titeln. Raderna nedan är AI-DLC:s.",
-      "approvedStage": "Godkände {stage}",
-      "verdict": "{stage}: {verdict}",
-      "empty": "Inga kommentarer, frågor eller godkännanden för intenten ännu.",
+      "reviewer": "{author} ({state})",
+      "noReviewers": "Ingen ännu",
+      "conversation": "Samtal",
+      "where": "{path}:{line}",
+      "resolved": "{n, plural, one {# löst tråd} other {# lösta trådar}}",
+      "noThreads": "Inga kommentarer i pull requesten ännu.",
+      "noPull": "Ingen öppen pull request har {stories} i grenen eller titeln. Länka en genom att sätta storynumret i grenens namn (till exempel feat/{first}) eller i titeln.",
+      "noStory": "Intenten är inte kopplad till någon story, så ingen pull request kan hittas.",
       "loading": "Läser…",
-      "loadFailed": "Kommentarerna kunde inte läsas: {error}"
+      "loadFailed": "Granskningen kunde inte läsas: {error}"
     }
   },
   "terminal": {

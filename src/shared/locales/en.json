@@ -134,7 +134,7 @@
       "units": "Units",
       "cost": "Cost",
       "velocity": "Velocity",
-      "comments": "Comments",
+      "comments": "Review",
       "files": "Files"
     },
     "tabsLabel": "Intent views",
@@ -460,26 +460,49 @@
       "onBranches": "{story} is on {n} branches: {where}",
       "loadFailed": "The machines could not be read: {error}"
     },
-    "comments": {
-      "source": {
-        "pull": "Pull request",
-        "review": "Review",
-        "question": "Open question",
-        "approval": "Approval",
-        "finding": "Review finding"
+    "review": {
+      "title": "Review",
+      "description": "What waits on you, and what reviewers said on the story's pull request.",
+      "needsTitle": "Needs you",
+      "nothing": "Nothing waits on you.",
+      "needs": {
+        "question": "AI-DLC waits for your answer: {text}",
+        "finding": "The reviewer said NOT-READY on {stage}. Read the review and revise.",
+        "changes": "{author} asked for changes. Reply or push a fix.",
+        "thread": "Unresolved thread in {where} by {author}: reply or resolve it."
+      },
+      "action": {
+        "answer": "Answer in the file",
+        "readReview": "Read the review",
+        "open": "Open on {platform}"
+      },
+      "pullTitle": "Pull request",
+      "pullCaption": "Pull request #{number}: {title}",
+      "columns": {
+        "number": "Number",
+        "state": "State",
+        "reviewers": "Reviewers"
+      },
+      "state": {
+        "changes": "Open · changes requested",
+        "approved": "Open · approved",
+        "waiting": "Open · waiting for review"
       },
       "reviewState": {
         "approved": "Approved",
         "changes": "Asked for changes",
         "commented": "Commented"
       },
-      "pull": "Pull request #{number}: {title}",
-      "noPull": "No open pull request has the story number in its branch or title. The rows below are AI-DLC's.",
-      "approvedStage": "Approved {stage}",
-      "verdict": "{stage}: {verdict}",
-      "empty": "No comments, questions or approvals for the intent yet.",
+      "reviewer": "{author} ({state})",
+      "noReviewers": "None yet",
+      "conversation": "Conversation",
+      "where": "{path}:{line}",
+      "resolved": "{n, plural, one {# resolved thread} other {# resolved threads}}",
+      "noThreads": "No comments on the pull request yet.",
+      "noPull": "No open pull request has {stories} in its branch or title. Link one by putting the story number in the branch name (for example feat/{first}) or in the title.",
+      "noStory": "The intent is not linked to a story, so no pull request can be found.",
       "loading": "Reading…",
-      "loadFailed": "The comments could not be read: {error}"
+      "loadFailed": "The review could not be read: {error}"
     }
   },
   "terminal": {
