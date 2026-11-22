@@ -590,19 +590,22 @@
 
 ---
 
-**US-0037: The Park button sits in line with the intent head instead of breaking it** 📋 Planned, for v0.2.14
-- As a **developer looking at an intent in flight**, in order to **read the intent head at a glance**, I would like **the Park (and Unpark) button to fit the head's LCARS layout like the other controls**.
+**US-0037: The intent head shows one clear control per state, in the LCARS look** 📋 Planned, for v0.2.14
+- As a **developer looking at an intent in flight**, in order to **read the intent head at a glance and know which button does what**, I would like **the park and resume controls, the step and the cost to fit the head's LCARS layout, say each thing once, and never offer two buttons for the same action**.
 - **Epic:** EPIC-00
 - **Priority:** Medium
-- **Complexity:** Small
-- **Background:** Reported 2026-11-20 on intent `261120-us0311-agi-absence-on`. Park shows as a small, top-aligned 32 px block with its label pressed against the edge, wedged between the title and the tall pill-shaped "Resume at …" button. It does not line up with the resume button or the chips, and pushes the head out of shape. Seen again 2026-11-22 on the parked intent `261119-spec-kit-framework`: the orange "Parked at Functional Design" pill and a flat "Unpark" block sit jammed together, top-aligned between the title and the resume button, in neither the LCARS style nor line with them. `ParkControls` (`src/renderer/IntentDetail.jsx`) renders `lcars-block--sm` as its own flex item in `.intent-head`, which aligns items to the top (`src/renderer/theme.css`, US-0510).
+- **Complexity:** Medium
+- **Background:** Reported 2026-11-20 on intent `261120-us0311-agi-absence-on`. Park shows as a small, top-aligned 32 px block with its label pressed against the edge, wedged between the title and the tall pill-shaped "Resume at …" button. It does not line up with the resume button or the chips, and pushes the head out of shape. `ParkControls` (`src/renderer/IntentDetail.jsx`) renders `lcars-block--sm` as its own flex item in `.intent-head`, which aligns items to the top (`src/renderer/theme.css`, US-0510). Seen again 2026-11-22 on the parked intent `261119-spec-kit-framework`, and the person asked to revisit the logic as well as the look. For a parked intent the head shows three elements for one state: the orange "Parked at Functional Design" pill, an "Unpark" block jammed against it, and "Resume at Functional Design in Claude", which unparks too (`unparkThenResume` in `src/renderer/ResumeButton.jsx`). The step shows twice ("(Step 11 of 16)" on the resume button, "Step 11 of 16" in the progress row) and the sidebar reads "Stages 10/16" beside it. The progress row says "In progress · Functional design" while the intent is parked. The sidebar's cost ("recorded $136.12 · at current prices $134.67") wraps into five large lines.
 - **Acceptance Criteria:**
-  - [ ] **Given** an intent in flight that can be parked, **then** Park has the same height and vertical alignment as the resume button beside it, with padding around its label, and the title, chips and resume button keep their places.
-  - [ ] **Given** a parked intent, **then** Unpark and the parked mark sit the same way: the mark is an LCARS element, not an orange pill with a plain block pressed against it, and neither overlaps or crowds the title or the resume button.
-  - [ ] **Given** a narrow window, **then** the head wraps cleanly, with Park staying next to the resume button.
-  - [ ] The look follows the LCARS interface.
+  - [ ] **Given** the active intent in flight and not parked, **then** the head shows Resume and Park side by side, the same height, aligned, with padding around their labels.
+  - [ ] **Given** a parked intent, **then** the head shows the parked state once, as an LCARS element, and one action, "Unpark and resume at <stage>"; there is no separate Unpark button doing half of the same thing.
+  - [ ] **Given** a parked intent, **then** the progress row says it is parked at its stage, not "In progress".
+  - [ ] The step is shown once, in the progress row; the resume button names only the stage. The sidebar's stage count is labelled so it does not read as a different step.
+  - [ ] The sidebar's cost fits its column at its normal size, without wrapping into large lines.
+  - [ ] **Given** a narrow window, **then** the head wraps cleanly, with Park staying next to Resume.
+  - [ ] The look follows the LCARS interface. Every new text goes through `t()` in `sv.json` and `en.json`.
   - [ ] A test fails without the fix and passes with it; the existing suite stays green.
-- **Notes:** A code fix, so it runs on the `quick-fix` plan. Likely touches `src/renderer/IntentDetail.jsx`, `src/renderer/theme.css` and their tests.
+- **Notes:** A code fix, so it runs on the `quick-fix` plan. Likely touches `src/renderer/IntentDetail.jsx` (`ParkControls`, the head and progress row, the sidebar), `src/renderer/ResumeButton.jsx`, `src/renderer/theme.css` and their tests.
 - **Dependencies:** US-0510
 
 ---
