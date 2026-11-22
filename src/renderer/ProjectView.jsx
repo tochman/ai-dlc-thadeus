@@ -26,7 +26,6 @@ import { DELIVERY_DEFAULT } from '../main/parsers/releases.js';
 import { TerminalProvider, useTerminal } from './TerminalContext.jsx';
 import { useProject } from './useProject.js';
 import { useFeatures } from './useFeatures.js';
-import { useFold } from './useFold.js'; // US-0415
 import { harnessCommand, resolveHarness, selectableHarness } from '../shared/harnesses.js';
 
 const AIDLC_TABS = ['settings', 'plans']; // US-0905: the sub-views of Configuration › AI-DLC
@@ -75,7 +74,6 @@ function AidlcProject({ project, view, teamSection = 'refresh', onView, focusInt
   const p = useProject(projectId, detection.activeSpace);
   const activeIntent = p.intents.find((i) => i.active) ?? null;
   const activeDirName = activeIntent?.dirName ?? null;
-  const fold = useFold('intents'); // US-0415 FR5.1: the intents list folds to a strip
 
   // The editor's "the agent may change this file too" notice needs the active intent's record (US-1001).
   useEffect(() => {
@@ -117,26 +115,27 @@ function AidlcProject({ project, view, teamSection = 'refresh', onView, focusInt
       {/* Who does what across my machines, the team view's second section in the arm (US-1201 AC-3). */}
       {view === 'github' && teamSection === 'machines' && <MachinesView projectId={projectId} space={p.space} />}
       <div className="project-body" hidden={view !== 'intents'}>
-        <aside className={`sidebar${fold.folded ? ' is-folded' : ''}`} aria-label={t('intents.overview')} onClick={fold.folded ? fold.toggle : undefined}>
-          <button {...fold.toggleProps} />
-          {detection.spaces.length > 1 && (
-            <label className="field">
-              <span className="field-label">{t('intents.space')}</span>
-              <select className="lcars-select" value={p.space} onChange={(e) => p.setSpace(e.target.value)} data-testid="project-space-select">
-                {detection.spaces.map((s) => (
-                  <option key={s} value={s}>
-                    {s}
-                  </option>
-                ))}
-              </select>
-            </label>
-          )}
-          {p.listWarning && (
-            <p className="banner banner-warn" role="status">
-              {t('intents.listStale', { warning: p.listWarning })}
-            </p>
-          )}
-          <IntentList intents={p.intents} selected={p.selected} onSelect={p.setSelected} cost={p.cost} projectId={projectId} />
+        {/* US-0417 with US-0415: the list column is the shared drawer (IntentList), folding to its slim stack. */}
+        <aside className="intents-col" aria-label={t('intents.overview')}>
+          <IntentList intents={p.intents} selected={p.selected} onSelect={p.setSelected} cost={p.cost} projectId={projectId}>
+            {detection.spaces.length > 1 && (
+              <label className="field">
+                <span className="field-label">{t('intents.space')}</span>
+                <select className="lcars-select" value={p.space} onChange={(e) => p.setSpace(e.target.value)} data-testid="project-space-select">
+                  {detection.spaces.map((s) => (
+                    <option key={s} value={s}>
+                      {s}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            )}
+            {p.listWarning && (
+              <p className="banner banner-warn" role="status">
+                {t('intents.listStale', { warning: p.listWarning })}
+              </p>
+            )}
+          </IntentList>
         </aside>
         <section className="content">
           {p.error && (

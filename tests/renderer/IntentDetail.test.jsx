@@ -131,7 +131,7 @@ describe('IntentDetail head, one control per state (US-0037)', () => {
     show(base);
     expect(screen.getByTestId('intent-resume').textContent).toBe('Fortsätt vid Functional Design');
     expect(screen.getByTestId('intent-detail').textContent.match(/steg 2 av 3/gi)).toHaveLength(1);
-    expect(screen.getByTestId('intent-detail-stages').textContent).toBe('Klara stages1/3');
+    expect(screen.getByTestId('intent-detail-stages').textContent).toBe('Klara stages 1/3'); // US-0417: on the frame's foot bar
   });
 
   it('puts Park and Resume side by side in one actions group on the active intent in flight (FR3.1, FR3.6)', () => {

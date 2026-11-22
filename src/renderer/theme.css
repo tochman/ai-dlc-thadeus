@@ -815,9 +815,10 @@ button.lcars-nb:hover:not(:disabled), a.lcars-nb:hover { filter: brightness(1.15
 .list-fold-toggle[aria-expanded='false']::before { content: '\203A'; } /* › folded: bring it back */
 .list-fold-toggle:hover { filter: brightness(1.15); }
 .list-fold-toggle:focus-visible { outline: 2px solid var(--steel-light); outline-offset: 2px; }
-.is-folded { width: 28px; flex: 0 0 28px; min-width: 28px; padding: 0; overflow: hidden; cursor: pointer; background: var(--slate-2); border-radius: 0 14px 14px 0; }
-.is-folded > :not(.list-fold-toggle) { display: none; }
-.is-folded:hover { background: var(--slate-3); }
+/* The old strip; ListDrawer folds to its own stack, so these rules leave it alone (US-0417). */
+.is-folded:not(.lcars-drawer) { width: 28px; flex: 0 0 28px; min-width: 28px; padding: 0; overflow: hidden; cursor: pointer; background: var(--slate-2); border-radius: 0 14px 14px 0; }
+.is-folded:not(.lcars-drawer) > :not(.list-fold-toggle) { display: none; }
+.is-folded:not(.lcars-drawer):hover { background: var(--slate-3); }
 .editor-view:has(> .file-tree.is-folded) { grid-template-columns: 28px 1fr; }
 .file-tree > .list-fold-toggle { display: block; margin: 0 0 4px auto; }
 :root[data-motion='full'] .sidebar, :root[data-motion='full'] .editor-view { transition: flex-basis 200ms ease-out, min-width 200ms ease-out, width 200ms ease-out, grid-template-columns 200ms ease-out; }
@@ -839,14 +840,15 @@ button.lcars-nb:hover:not(:disabled), a.lcars-nb:hover { filter: brightness(1.15
 .info-tip { cursor: help; color: var(--steel-text); }
 .cost-legacy { margin: 0; font-size: 14px; color: var(--text-2); }
 .cost-chart { margin: 0; }
-.cost-chart rect { fill: var(--slate-4); }
+.cost-chart rect { fill: var(--steel-mid); }
+.cost-chart rect:last-child { fill: var(--steel-light); } /* US-0417: the newest intent, lit */
 .cost-chart rect:hover { fill: var(--steel); }
 .cost-chart figcaption { font-size: 12px; }
 .cost-tab { display: flex; flex-direction: column; gap: 14px; }
 .cost-tab .lcars-readout { max-width: 420px; }
 .cost-table { border-collapse: collapse; width: 100%; font-size: 14px; font-variant-numeric: tabular-nums; }
 .cost-table caption { text-align: left; padding-bottom: 4px; color: var(--steel); font-size: 13px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; }
-.cost-table th, .cost-table td { border-bottom: 1px solid var(--slate-2); padding: 3px 6px; text-align: left; }
+.cost-table th, .cost-table td { padding: 3px 6px; text-align: left; } /* US-0417: a readout table, no row rules */
 .cost-table th { color: var(--muted); font-weight: 400; font-size: 12px; text-transform: uppercase; }
 .cost-table tr.is-top td { color: var(--steel-text); }
 .cost-table .missing-price { color: var(--coral-soft); font-style: italic; }
@@ -929,7 +931,8 @@ button.lcars-nb:hover:not(:disabled), a.lcars-nb:hover { filter: brightness(1.15
 .readout-spacer { flex: 1; }
 /* US-0022: below 1280 px the readout column hides, so the header carries the way into the token detail instead. */
 .intent-tokens-open { display: none; align-self: flex-start; }
-@media (max-width: 1280px) { .readout-col { display: none; } .intent-tokens-open { display: inline-flex; } }
+/* US-0417: the frame's arm holds the way into Activity; the head's block shows only when the arm is hidden. */
+@container (max-width: 560px) { .intent-tokens-open { display: flex; } }
 /* Live tokens (EPIC-02 US-0207): segmented bar meters lit from the bottom, steel to soft coral (US-0417), with a slow glow,
    and a steel line waveform that flows. The data-motion rules below stop both (NFR4). */
 .token-view { display: flex; flex-direction: column; gap: 6px; }
@@ -989,7 +992,8 @@ button.lcars-nb:hover:not(:disabled), a.lcars-nb:hover { filter: brightness(1.15
 .token-kind--cacheRead { fill: var(--steel-deep); background: var(--steel-deep); }
 .token-detail-legend { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px 18px; color: var(--text-2); font-size: 13px; letter-spacing: 0.06em; text-transform: uppercase; }
 .token-detail-legend li { display: inline-flex; align-items: center; gap: 6px; }
-.token-detail-key { width: 14px; height: 10px; }
+.token-detail-key { width: 10px; height: 10px; } /* US-0417: legend squares */
+.token-detail-tick line { stroke: var(--slate-3); stroke-width: 1; } /* US-0417: faint tick scales */
 .token-detail-key.token-kind--cacheRead { outline: 1px solid var(--slate-3); }
 /* US-0214 FR5.1, NFR3: each legend entry is a toggle; switched off, its key is hollow and its label struck through. */
 .token-detail-legend-toggle { display: inline-flex; align-items: center; gap: 6px; padding: 2px 4px; border: 0; background: none; color: inherit; font: inherit; letter-spacing: inherit; text-transform: inherit; cursor: pointer; }
@@ -1018,7 +1022,7 @@ button.lcars-nb:hover:not(:disabled), a.lcars-nb:hover { filter: brightness(1.15
 .token-detail-figure { display: flex; flex-direction: column; gap: 2px; min-width: 0; padding-left: 8px; border-left: 4px solid var(--slate-3); }
 .token-detail-figure dd { margin: 0; }
 .token-detail-splits { display: flex; flex-wrap: wrap; gap: 16px; }
-.token-detail-card { flex: 1 1 300px; min-width: 0; display: flex; flex-direction: column; gap: 8px; padding: 10px 14px 12px; border: 3px solid var(--slate-3); border-radius: 4px 22px 4px 4px; background: var(--bg); }
+.token-detail-card { flex: 1 1 300px; min-width: 0; display: flex; flex-direction: column; gap: 8px; } /* US-0417: no boxed cards */
 .token-detail-card--model { flex-basis: 100%; }
 .token-detail-card h3 { flex: 1; font-size: 20px; }
 .token-detail-rows { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
@@ -1071,17 +1075,14 @@ button.lcars-nb:hover:not(:disabled), a.lcars-nb:hover { filter: brightness(1.15
 
 /* Workflow control (EPIC-05): Fortsätt is the light primary block, pill-ended on the left (US-0417: no amber); the step is in the progress row (US-0037 FR3.4). */
 .resume { display: inline-flex; flex-direction: column; align-items: flex-end; gap: 4px; }
-.resume-button { display: flex; height: 56px; padding: 0; border: 0; background: none; color: var(--on-light); text-transform: uppercase; }
-.resume-main { display: flex; align-items: flex-end; padding: 0 18px 8px; background: var(--slate-5); font-size: 19px; font-weight: 600; white-space: nowrap; border-radius: 28px 0 0 28px; transition: filter 150ms ease-out; }
-.resume-button:hover:not([aria-disabled='true']) .resume-main { filter: brightness(1.1); }
+/* US-0417: Resume is a primary pill (.lcars-pill--primary); these only keep its label on one line. */
+.resume-main { white-space: nowrap; }
 /* Waiting while an agent runs the work (US-0007, US-0009): greyed like every other disabled block. aria-disabled keeps
    it focusable so its tooltip gives the reason (US-0414 FR2.4). */
-.resume-button[aria-disabled='true'] { cursor: default; }
-.resume-button[aria-disabled='true'] .resume-main { background: var(--slate-0); color: var(--slate-4); }
+.resume-button[aria-disabled='true'] { cursor: default; background: var(--slate-0); color: var(--slate-4); filter: none; }
 .resume-message { color: var(--coral-soft); font-size: 13px; }
 .intent-rows .resume { align-items: flex-start; margin: 4px 0 2px 11px; }
-.intent-rows .resume-button { height: 28px; }
-.intent-rows .resume-main { padding: 0 12px 4px 12px; font-size: 13px; border-radius: 14px 0 0 14px; }
+.intent-rows .resume-button { height: var(--bar-thin); padding: 0 12px; font-size: 12px; }
 
 /* Low windows (F-01): tighter intent detail so the tabs and the first pipeline rows fit at 1100 x 800. */
 @media (max-height: 900px) {
@@ -1766,14 +1767,51 @@ a.md-link:hover { color: var(--steel-light); }
 .velocity-chart { margin: 0; }
 .velocity-chart rect.is-intents { fill: var(--steel); }
 .velocity-chart rect.is-stories { fill: var(--steel-light); }
-.velocity-chart-average { fill: none; stroke: var(--coral-soft); stroke-width: 2; vector-effect: non-scaling-stroke; }
+.velocity-chart-average { fill: none; stroke: var(--white); stroke-width: 1.5; stroke-dasharray: 4 4; vector-effect: non-scaling-stroke; } /* US-0417: coral is alert only */
 .velocity-legend { display: flex; gap: 6px; align-items: center; font-size: 12px; color: var(--muted); }
 .velocity-key { display: inline-block; width: 10px; height: 10px; margin-left: 8px; }
 .velocity-key--intents { background: var(--steel); }
 .velocity-key--stories { background: var(--steel-light); }
-.velocity-key--average { height: 2px; background: var(--coral-soft); }
+.velocity-key--average { height: 2px; background: var(--white); }
 .velocity-sources { display: flex; flex-direction: column; gap: 4px; font-size: 13px; }
 .velocity-sources code { overflow-wrap: anywhere; }
+
+/* ---------- US-0417 views on the shared pieces: the Intents column in the drawer, the intent head and the data views
+   (Activity, Cost, Velocity) in the curved diagonal frame. ---------- */
+.intents-col { flex: none; display: flex; min-height: 0; }
+.intent-drawer { --lw: 340px; }
+.intent-drawer .intent-list { display: flex; flex-direction: column; gap: var(--gap-m); min-height: 0; }
+.intent-detail { overflow-y: auto; }
+.intent-detail > .lcars-df, .token-detail > .lcars-df { flex: 1; }
+.token-detail { flex: 1; min-width: 0; }
+.velocity-view, .cost-panel { padding: 0; }
+.lcars-dblk-small, .lcars-dblk .readout-value--cost { font-size: 13px; line-height: 1.2; }
+.lcars-dblk .token-detail-rate { width: 100%; height: 22px; }
+.lcars-df-arm .token-view { padding: var(--gap) 0; }
+.lcars-df-arm > .lcars-nb { margin-left: 0; }
+.lcars-df-arm > .lcars-nb::before { display: none; }
+/* The intent tabs as tiles: the state strip on top (steel when selected), selection is brightness. */
+.detail-tabs { gap: var(--gap); }
+.detail-tabs .lcars-tile { flex: 1 1 96px; max-width: 150px; min-height: 52px; margin-left: 0; padding-top: 10px; }
+.lcars-tile::before { left: 0; right: 0; top: 0; bottom: auto; width: auto; height: 4px; background: var(--strip, var(--slate-2)); }
+.intent-head-actions { align-items: center; }
+/* Section switches (Diagram | Table, Tokens | $, Week | Month): square blocks side by side. */
+.token-detail-switch, .velocity-units { display: inline-flex; gap: var(--gap); }
+.velocity-units .lcars-nb { margin-left: 0; min-width: 72px; }
+.velocity-units .lcars-nb::before { display: none; }
+/* Agent progress in a readout table: the row's state strip at its left edge. */
+.lcars-rt tr.token-detail-row { display: table-row; }
+.lcars-rt tr[class*='lcars-strip--'] td:first-child { padding-left: 12px; box-shadow: inset 4px 0 0 var(--strip); }
+.lcars-rt tr.agent-progress-row--child { margin: 0; border: 0; padding: 0; }
+.lcars-rt tr.agent-progress-row--child td:first-child { padding-left: 30px; }
+.agent-progress-table td { vertical-align: top; white-space: normal; }
+/* Cost: the token mix as flat meters, the share per scope as a segmented meter. */
+.cost-panel-head { display: flex; justify-content: flex-end; }
+.cost-mix { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: var(--gap-l); margin: var(--gap-m) 0; }
+.cost-mix-row { display: grid; grid-template-columns: 96px 1fr 44px; gap: var(--gap); align-items: center; margin-bottom: var(--gap); color: var(--text-2); font-size: 13px; text-transform: uppercase; }
+.cost-mix-value { color: var(--steel-text); font-variant-numeric: tabular-nums; text-align: right; }
+.cost-share { height: 22px; }
+.lcars-key--done { background: var(--slate-5); }
 .story-comments-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
 .story-comment .lcars-card-head { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
 .story-comment-author { color: var(--steel-light); }

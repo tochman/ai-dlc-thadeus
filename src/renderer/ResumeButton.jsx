@@ -96,7 +96,8 @@ export default function ResumeButton({ projectId, intent, activeDirName, activeI
   return (
     <span className="resume">
       <Tooltip text={unavailable}>
-        <button className="resume-button" onClick={resume} aria-disabled={!!unavailable} data-testid="intent-resume">
+        {/* US-0417 (Shape rule): Resume is an action, so a pill. */}
+        <button className="resume-button lcars-pill lcars-pill--primary" onClick={resume} aria-disabled={!!unavailable} data-testid="intent-resume">
           <span className="resume-main">{main}</span>
         </button>
       </Tooltip>

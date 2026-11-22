@@ -246,18 +246,19 @@ describe('ProjectView: lifecycle rule notice (US-0603 FR5.2, FR5.3)', () => {
 });
 
 describe('ProjectView: the Intents list folds away (US-0415)', () => {
-  it('the toggle folds the sidebar to the strip, and the strip brings it back with the search text kept (AC5.1.1, AC5.1.2)', async () => {
+  it('the toggle folds the list to the drawer stack, and the stack brings it back with the search text kept (AC5.1.1, AC5.1.2)', async () => {
     renderView('intents');
-    const aside = (await screen.findByTestId('intent-list')).closest('aside');
+    const drawer = (await screen.findByTestId('intent-list')).closest('[data-testid="list-drawer"]');
+    expect(drawer.closest('aside')).toBeTruthy(); // US-0417: the drawer is the Intents column
     fireEvent.change(screen.getByTestId('intent-list-search'), { target: { value: 'config' } });
-    const toggle = within(aside).getByTestId('list-fold-toggle');
+    const toggle = within(drawer).getByTestId('list-fold-toggle');
     fireEvent.click(toggle);
-    expect(aside.classList.contains('is-folded')).toBe(true);
+    expect(drawer.classList.contains('is-folded')).toBe(true);
     expect(toggle.getAttribute('aria-expanded')).toBe('false');
-    expect(screen.getByTestId('intent-list-search')).toBeTruthy(); // still mounted, hidden by the strip's CSS
+    expect(screen.getByTestId('intent-list-search')).toBeTruthy(); // still mounted, inert while folded
 
-    fireEvent.click(aside);
-    expect(aside.classList.contains('is-folded')).toBe(false);
+    fireEvent.click(within(drawer).getByTestId('list-drawer-stack'));
+    expect(drawer.classList.contains('is-folded')).toBe(false);
     expect(screen.getByTestId('intent-list-search').value).toBe('config');
   });
 });

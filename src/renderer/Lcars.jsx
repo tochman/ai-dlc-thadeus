@@ -103,9 +103,11 @@ export function Block({ as: Tag = 'div', strip, figure, selected = false, tone, 
 
 /**
  * US-0417 (Dense readouts): a readout table. Tabular figures, a square legend key in the first cell, three levels of
- * brightness: the first row is the key value (white), value columns live (steel), the rest grey.
+ * brightness: the first row is the key value (white), value columns live (steel), the rest grey. A row's `strip` is its
+ * state at the left edge (as on a block); `attrs` go on its <tr> (a test id, tabIndex, an extra class).
  * @param {{caption?: string, columns: Array<{label: string, align?: 'right', value?: boolean}>,
- *          rows: Array<{id?: string, legend?: string, cells: import('react').ReactNode[]}>, total?: import('react').ReactNode[]}} props
+ *          rows: Array<{id?: string, legend?: string, strip?: string, attrs?: object, cells: import('react').ReactNode[]}>,
+ *          total?: import('react').ReactNode[]}} props
  */
 export function ReadoutTable({ caption, columns, rows, total, className = '' }) {
   if (!rows?.length) return null;
@@ -124,7 +126,11 @@ export function ReadoutTable({ caption, columns, rows, total, className = '' }) 
       </thead>
       <tbody>
         {rows.map((row, ri) => (
-          <tr key={row.id ?? ri} className={`lcars-e-rise${ri === 0 ? ' is-top' : ''}`}>
+          <tr
+            key={row.id ?? ri}
+            {...row.attrs}
+            className={['lcars-e-rise', ri === 0 && 'is-top', row.strip && `lcars-strip--${row.strip}`, row.attrs?.className].filter(Boolean).join(' ')}
+          >
             {row.cells.map((cell, ci) => (
               <td key={ci} className={cellClass(columns[ci])}>
                 {ci === 0 && row.legend && <span className={`lcars-key lcars-key--${row.legend}`} aria-hidden="true" />}
@@ -302,12 +308,14 @@ const DF_HAIR_IN = 'M186 280 V219 A106 106 0 0 1 217.1 143.9 L235.9 125.1 A106 1
  * heads the 42 px top bar with `sub` in a dark segment and `tag` in an outlined box at its end; `readouts` drop out of
  * the arm as blocks; `corner` ({label, value}) is written on the band; `footer` labels the bottom bar. Content sits on
  * plain black. Below 560 px the corner drops and the readouts flow into a row (container query in theme.css).
+ * `arm` is more content for the arm under the readouts (a small live view, a nav block); `titleRef` makes the title a
+ * focus target (tabIndex -1), for a view that moves focus to its title on open.
  * @param {{title: import('react').ReactNode, as?: string, sub?: import('react').ReactNode, tag?: import('react').ReactNode,
  *          corner?: {label: string, value: string}, footer?: import('react').ReactNode,
  *          readouts?: Array<{k: import('react').ReactNode, v: import('react').ReactNode, tone?: 'steel'|'deep', strip?: string}>,
- *          className?: string, children?: import('react').ReactNode}} props
+ *          arm?: import('react').ReactNode, titleRef?: object, className?: string, children?: import('react').ReactNode}} props
  */
-export function DiagonalFrame({ title, as: Title = 'h2', sub, tag, corner, footer, readouts = [], className = '', children }) {
+export function DiagonalFrame({ title, as: Title = 'h2', sub, tag, corner, footer, readouts = [], arm, titleRef, className = '', children }) {
   return (
     <section className={`lcars-df ${className}`} data-testid="lcars-diagonal-frame">
       <div className="lcars-df-in lcars-e-slide">
@@ -329,7 +337,9 @@ export function DiagonalFrame({ title, as: Title = 'h2', sub, tag, corner, foote
         <span className="lcars-df-x lcars-df-hl-o lcars-e-draw" aria-hidden="true" />
         <span className="lcars-df-x lcars-df-hl-i lcars-e-draw" aria-hidden="true" />
         <div className="lcars-df-x lcars-df-top">
-          <Title className="lcars-title lcars-e-rise">{title}</Title>
+          <Title ref={titleRef} tabIndex={titleRef ? -1 : undefined} className="lcars-title lcars-e-rise">
+            {title}
+          </Title>
           {sub != null && <span className="lcars-sseg lcars-seg-lab">{sub}</span>}
           <span className="lcars-sseg lcars-e-draw" aria-hidden="true" />
           {tag != null && (
@@ -352,7 +362,7 @@ export function DiagonalFrame({ title, as: Title = 'h2', sub, tag, corner, foote
           <span className="lcars-sseg lcars-e-draw" aria-hidden="true" />
           <span className="lcars-sseg lcars-sseg--cap lcars-e-draw" aria-hidden="true" />
         </div>
-        {readouts.length > 0 && (
+        {(readouts.length > 0 || arm) && (
           <div className="lcars-df-arm">
             {readouts.map((r, i) => (
               <div
@@ -365,6 +375,7 @@ export function DiagonalFrame({ title, as: Title = 'h2', sub, tag, corner, foote
                 <span className="lcars-dblk-v">{r.v}</span>
               </div>
             ))}
+            {arm}
             <span className="lcars-df-arm-close" aria-hidden="true" />
           </div>
         )}
