@@ -6,9 +6,9 @@
 
 > Small fixes the person reports while using the app: something looks off, behaves wrongly or is missing a detail. Each fix becomes a story here, so nothing reported in passing gets lost. A fix that grows into a feature moves to its topic's epic.
 
-**Stories:** US-0001, US-0002, US-0003, US-0004, US-0005, US-0006, US-0007, US-0008, US-0009, US-0010, US-0011, US-0012, US-0013, US-0014, US-0015, US-0016, US-0017, US-0018, US-0019, US-0020, US-0021, US-0022, US-0023, US-0024, US-0025, US-0026, US-0027, US-0028, US-0029, US-0030, US-0031, US-0032, US-0033, US-0034, US-0035, US-0036, US-0037, US-0038, US-0039, US-0040, US-0041, US-0042, US-0043
+**Stories:** US-0001, US-0002, US-0003, US-0004, US-0005, US-0006, US-0007, US-0008, US-0009, US-0010, US-0011, US-0012, US-0013, US-0014, US-0015, US-0016, US-0017, US-0018, US-0019, US-0020, US-0021, US-0022, US-0023, US-0024, US-0025, US-0026, US-0027, US-0028, US-0029, US-0030, US-0031, US-0032, US-0033, US-0034, US-0035, US-0036, US-0037, US-0038, US-0039, US-0040, US-0041, US-0042, US-0043, US-0044
 
-**Status (2026-11-22):** ✅ US-0001–US-0020 released (v0.2.3–v0.2.6). ✅ US-0021–US-0023 released in v0.2.7. ✅ US-0024 released in v0.2.8. ✅ US-0025 released in v0.2.9. ✅ US-0026 released in v0.2.9. ✅ US-0027 released in v0.2.9. ✅ US-0028 released in v0.2.10. ✅ US-0029 released in v0.2.10. ✅ US-0030 released in v0.2.10. ✅ US-0031 released in v0.2.10. ✅ US-0032 released in v0.2.11. ✅ US-0033 released in v0.2.11. ✅ US-0034 released in v0.2.12. ✅ US-0035 and US-0036 released in v0.2.13. ✅ US-0037, US-0038, US-0039, US-0040, US-0041 and US-0042 released in v0.2.14. Each story names its release.
+**Status (2026-11-22):** ✅ US-0001–US-0020 released (v0.2.3–v0.2.6). ✅ US-0021–US-0023 released in v0.2.7. ✅ US-0024 released in v0.2.8. ✅ US-0025 released in v0.2.9. ✅ US-0026 released in v0.2.9. ✅ US-0027 released in v0.2.9. ✅ US-0028 released in v0.2.10. ✅ US-0029 released in v0.2.10. ✅ US-0030 released in v0.2.10. ✅ US-0031 released in v0.2.10. ✅ US-0032 released in v0.2.11. ✅ US-0033 released in v0.2.11. ✅ US-0034 released in v0.2.12. ✅ US-0035 and US-0036 released in v0.2.13. ✅ US-0037, US-0038, US-0039, US-0040, US-0041 and US-0042 released in v0.2.14. 📋 US-0043 planned, for v0.3.0. 📋 US-0044 planned. Each story names its release.
 
 ---
 
@@ -710,3 +710,19 @@
 - **Notes:** A code chore, so it runs on the `quick-fix` plan. Built last in v0.3.0, after the Spec Kit stories, because it touches the same files (`App.jsx`, `ProjectView.jsx`, `ProjectSettingsView.jsx`) and would otherwise clash with their branches.
 - **Dependencies:** none
 
+---
+
+**US-0044: The intent view fits the window and its parts stay inside their frames** 📋 Planned
+- As a **developer following an intent**, in order to **see all of the intent view without parts cut off or spilling out**, I would like **the intent view's rows, buttons and panels to fit the window and stay inside the LCARS frames**.
+- **Epic:** EPIC-00
+- **Priority:** High
+- **Complexity:** Small
+- **Background:** Reported 2026-11-22 with two screenshots of the v0.2.14 app on the `spec-kit-framework` intent, after the US-0417 LCARS rework. The view is wider than the window: the story chips row, the tab row (Review and Files out of sight in a narrow window), the Units graph, the intent name, the "Unpark and resume" button and the "Read the review" button are cut off at the right edge. There is an empty band between the title bar and the chips row. The Review view's heading sits against the tab row. The left arm's Live tokens panel spills out of the arm's curve, with its chart below the frame.
+- **Acceptance Criteria:**
+  - [ ] **Given** a window of any width the app allows, **then** the intent view has no horizontal overflow: the chips and the tabs wrap or scroll inside their own row, and the head's intent name and buttons stay fully visible.
+  - [ ] **Given** a wide Units graph, **then** it scrolls inside its own panel and does not widen the view.
+  - [ ] **Given** the intent view, **then** there is no empty band between the title bar and the chips row, and each view's heading has the usual space below the tab row.
+  - [ ] **Given** the left arm, **then** the Live tokens panel and its chart stay inside the arm's frame.
+  - [ ] A test fails without each change and passes with it; the existing suite, the built-app end-to-end tests and the LCARS look stay as they are.
+- **Notes:** A code fix, so it runs on the `quick-fix` plan (`fix/US-0044`). Fix forward as the next patch release.
+- **Dependencies:** US-0417 ✅
