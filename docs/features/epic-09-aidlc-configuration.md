@@ -26,7 +26,7 @@
 
 **Stories:** US-0901, US-0902, US-0903, US-0904, US-0905
 
-**Status (2026-11-22):** ✅ US-0901–US-0904 released (v0.2.2–v0.2.4). 📋 US-0905 planned for v0.2.14. Each story names its release.
+**Status (2026-11-22):** ✅ US-0901–US-0904 released (v0.2.2–v0.2.4). 🚧 US-0905 in progress for v0.2.14. Each story names its release.
 
 ---
 
@@ -180,7 +180,7 @@ The CLI refuses a harness that the project hasn't installed.
   - [x] Agents whose run differs from their configuration (US-0204) are marked, with a suggestion to align them. `aidlc config models --check` flags agent files that were edited by hand.
 - **Dependencies:** US-0901, US-0204, US-0801
 
-**US-0905: Plans live under Configuration, beside the AI-DLC settings** 📋 Planned, for v0.2.14
+**US-0905: Plans live under Configuration, beside the AI-DLC settings** 🚧 In progress, for v0.2.14
 - As a **developer setting up how AI-DLC works in a project**, in order to **find the plans where the rest of the AI-DLC setup is**, I would like **Plans to be part of Configuration, in its AI-DLC part, instead of its own block in the left arm**.
 - **Epic:** EPIC-09
 - **Priority:** Medium

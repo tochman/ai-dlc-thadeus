@@ -8,7 +8,7 @@
 
 **Stories:** US-0401, US-0402, US-0403, US-0404, US-0405, US-0406, US-0407, US-0408, US-0409, US-0410, US-0411, US-0412, US-0413, US-0414, US-0415, US-0416, US-0417
 
-**Status (2026-11-22):** ✅ US-0401–US-0411 released (v0.1.1–v0.2.5). 📋 US-0412 planned, for v0.3.2. ✅ US-0413 released in v0.2.7. ✅ US-0414 released in v0.2.8. ✅ US-0415 released in v0.2.13. 📋 US-0416 planned, for v0.2.14. 📋 US-0417 planned, for v0.2.14. Each story names its release.
+**Status (2026-11-22):** ✅ US-0401–US-0411 released (v0.1.1–v0.2.5). 📋 US-0412 planned, for v0.3.2. ✅ US-0413 released in v0.2.7. ✅ US-0414 released in v0.2.8. ✅ US-0415 released in v0.2.13. 📋 US-0416 planned, for v0.2.14. 🚧 US-0417 in progress, for v0.2.14. Each story names its release.
 
 ---
 
@@ -346,7 +346,7 @@
 
 ---
 
-**US-0417: A richer LCARS language across the app: nested frames, quiet colour, dense readouts** 📋 Planned, for v0.2.14
+**US-0417: A richer LCARS language across the app: nested frames, quiet colour, dense readouts** 🚧 In progress, for v0.2.14
 - As a **developer who lives in the console**, in order to **read state at a glance and enjoy the look**, I would like **the app's LCARS look taken further, after the two reference screens the person gave, as shared pieces every view uses**.
 - **Epic:** EPIC-04
 - **Priority:** Medium
