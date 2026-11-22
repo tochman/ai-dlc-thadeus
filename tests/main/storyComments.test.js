@@ -1,5 +1,5 @@
-// US-1201 AC-4: one list per story: the pull request's comments and reviews with AI-DLC's open questions, approvals and
-// review findings, in time order, each row with its source, author and time.
+// US-1201 AC-4, US-1203: the story's pull request and AI-DLC's open questions; what needs you, the reviewers and the
+// review threads.
 import { afterAll, describe, expect, it, vi } from 'vitest';
 import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
@@ -81,31 +81,71 @@ describe('openQuestions (US-1201 AC-4)', () => {
   });
 });
 
-describe('storyComments (US-1201 AC-4)', () => {
-  it("merges the pull request's comments and reviews with AI-DLC's questions, approvals and findings in time order", () => {
-    const { pull, rows } = storyComments({ stories: ['US-0414'] }, PULLS, EVENTS, QUESTIONS);
-    expect(pull).toEqual({ number: 59, title: 'fix(us-0414): one tooltip', url: 'https://x/59' });
-    expect(rows.map((r) => [r.source, r.author, r.time])).toEqual([
-      ['question', 'AI-DLC', '2026-11-16T09:30:00Z'],
-      ['finding', 'aidlc-architecture-reviewer-agent', '2026-11-16T10:00:00.000Z'],
-      ['pull', 'anna', '2026-11-16T10:30:00Z'],
-      ['approval', 'pc', '2026-11-16T11:00:00.000Z'],
-      ['review', 'anna', '2026-11-16T12:00:00Z']
+// US-1203: a pull request with a change request, an open and a resolved review thread, and a plain comment.
+const THREAD = (id, path, line, resolved) => ({ id, path, line, resolved });
+const REVIEWED = {
+  number: 61,
+  title: 'feat(US-1203): review tab',
+  branch: 'feat/US-1203',
+  url: 'https://x/61',
+  files: [],
+  comments: [
+    { author: 'anna', body: 'Nice.', time: '2026-11-22T08:00:00Z', url: 'https://x/61#c1' },
+    { author: 'bo', body: 'Why a map here?', time: '2026-11-22T09:00:00Z', url: 'https://x/61#r1', thread: THREAD('t1', 'src/a.js', 12, false) },
+    { author: 'me', body: 'Fewer lookups.', time: '2026-11-22T09:30:00Z', url: 'https://x/61#r2', thread: THREAD('t1', 'src/a.js', 12, false) },
+    { author: 'anna', body: 'Typo.', time: '2026-11-22T10:00:00Z', url: 'https://x/61#r3', thread: THREAD('t2', 'src/b.js', 3, true) }
+  ],
+  reviews: [
+    { author: 'bo', state: 'changes', time: '2026-11-22T09:05:00Z', body: '', url: 'https://x/61#rv1' },
+    { author: 'bo', state: 'commented', time: '2026-11-22T11:00:00Z', body: 'Still one thing.', url: 'https://x/61#rv2' },
+    { author: 'anna', state: 'approved', time: '2026-11-22T10:05:00Z', body: '', url: 'https://x/61#rv3' }
+  ]
+};
+const REVIEW_EVENTS = [
+  ev('REVIEW_COMPLETED', '2026-11-22T07:00:00Z', { Stage: 'requirements-analysis', Reviewer: 'lead', Verdict: 'NOT-READY', Iteration: '1' }),
+  ev('REVIEW_COMPLETED', '2026-11-22T07:10:00Z', { Stage: 'requirements-analysis', Reviewer: 'lead', Verdict: 'READY', Iteration: '2' }),
+  ev('GATE_APPROVED', '2026-11-22T07:20:00Z', { Stage: 'requirements-analysis' }),
+  ev('REVIEW_COMPLETED', '2026-11-22T07:30:00Z', { Stage: 'code-generation', Reviewer: 'arch', Verdict: 'NOT-READY', Iteration: '2' })
+];
+
+describe('storyComments (US-1203)', () => {
+  it('lists what needs you: open questions, NOT-READY findings still standing, change requests and unresolved threads', () => {
+    const { needs } = storyComments({ stories: ['US-1203'] }, [REVIEWED], REVIEW_EVENTS, QUESTIONS);
+    expect(needs).toEqual([
+      { kind: 'question', text: 'Q1. Which profile?', file: QUESTIONS[0].file, time: QUESTIONS[0].time },
+      { kind: 'finding', stage: 'code-generation', iteration: 2, author: 'arch', time: '2026-11-22T07:30:00.000Z' },
+      { kind: 'changes', author: 'bo', time: '2026-11-22T09:05:00Z', url: 'https://x/61#rv1' },
+      { kind: 'thread', path: 'src/a.js', line: 12, author: 'bo', text: 'Why a map here?', time: '2026-11-22T09:30:00Z', url: 'https://x/61#r1' }
     ]);
-    expect(rows[1]).toMatchObject({ stage: 'code-generation', text: 'NOT-READY' });
-    expect(rows[3]).toMatchObject({ stage: 'code-generation' });
-    expect(rows[4]).toMatchObject({ state: 'approved' });
   });
 
-  it('gives only the AI-DLC rows without a pull request, and nothing for an intent with nothing yet', () => {
-    const { pull, rows } = storyComments({ stories: ['US-0999'] }, PULLS, EVENTS, QUESTIONS);
-    expect(pull).toBeNull();
-    expect(rows.map((r) => r.source)).toEqual(['question', 'finding', 'approval']);
-    expect(storyComments({ stories: [] }, [], [], [])).toEqual({ pull: null, rows: [] });
+  it('gives the pull request with its reviewers, each at their latest verdict, and repeats no approval', () => {
+    const res = storyComments({ stories: ['US-1203'] }, [REVIEWED], REVIEW_EVENTS, []);
+    expect(res.pull).toEqual({
+      number: 61,
+      title: 'feat(US-1203): review tab',
+      url: 'https://x/61',
+      reviewers: [
+        { author: 'bo', state: 'changes' },
+        { author: 'anna', state: 'approved' }
+      ]
+    });
+    expect(JSON.stringify(res)).not.toMatch(/"approval"|GATE_APPROVED/);
   });
 
-  it('keeps a row without a time last', () => {
-    const { rows } = storyComments({ stories: [] }, [], EVENTS.slice(2), [{ text: 'Q9', file: 'x.md', time: null }]);
-    expect(rows.map((r) => r.source)).toEqual(['approval', 'question']);
+  it('groups review comments by thread with file and line, newest thread first, and marks the resolved ones', () => {
+    const { threads } = storyComments({ stories: ['US-1203'] }, [REVIEWED], [], []);
+    expect(threads.map((t) => [t.path, t.line, t.resolved, t.comments.map((c) => c.author)])).toEqual([
+      [null, null, null, ['bo']], // the review body at 11:00
+      ['src/b.js', 3, true, ['anna']],
+      ['src/a.js', 12, false, ['bo', 'me']],
+      [null, null, null, ['anna']] // the plain comment at 08:00
+    ]);
+    expect(threads[0].comments[0]).toMatchObject({ body: 'Still one thing.', state: 'commented', url: 'https://x/61#rv2' });
+  });
+
+  it('gives nothing for an intent with no pull request and nothing waiting', () => {
+    expect(storyComments({ stories: ['US-0999'] }, [REVIEWED], [], [])).toEqual({ pull: null, needs: [], threads: [] });
+    expect(storyComments({ stories: [] }, [], EVENTS.slice(2), [])).toEqual({ pull: null, needs: [], threads: [] });
   });
 });

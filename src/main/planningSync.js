@@ -81,13 +81,22 @@ async function writeDoc(root, rel, text) {
 }
 
 /** A file as it is on `ref`, or null when it is not there (or there is no ref). */
-async function showAt(ctx, ref, file) {
+export async function showAt(ctx, ref, file) {
   if (!ref) return null;
   try {
     return await git(ctx.root, ['show', `${ref}:./${file}`], ctx);
   } catch {
     return null;
   }
+}
+
+/** US-0036 FR2.1: a folder's entries on `ref` as `{name, isDir}` (as listDir gives them); [] when it is not there. */
+export async function listAt(ctx, ref, dir) {
+  const out = await git(ctx.root, ['ls-tree', ref, '--', `${dir}/`], ctx).catch(() => '');
+  return lines(out).map((l) => {
+    const [meta, file] = l.split('\t');
+    return { name: posix.basename(file), isDir: meta.split(' ')[1] === 'tree' };
+  });
 }
 
 // US-0608 D2, D3: per file, the hashes the app's own writes went through, newest last.
@@ -260,7 +269,7 @@ async function firstRef(ctx, refs) {
 }
 
 /** US-0607 FR3.2: origin's target branch, else origin's main (a docs branch not pushed yet), else null. */
-const remoteBase = (ctx, target) =>
+export const remoteBase = (ctx, target) =>
   firstRef(ctx, [
     [`refs/remotes/origin/${target}`, `origin/${target}`],
     [`refs/remotes/origin/${MAIN}`, `origin/${MAIN}`]
@@ -275,7 +284,7 @@ const targetRef = async (ctx, target) =>
   ]));
 
 /** US-0606 FR2.1, US-0607 FR3.3: `main`, or the docs branch (checked against git's ref rules, NFR3) once `main` is protected. */
-async function targetOf(ctx, record) {
+export async function targetOf(ctx, record) {
   if (!record.protectedMain) return MAIN;
   const branch = ctx.planningBranch || 'docs/planning';
   if (branch === MAIN || branch.startsWith('-') || !(await gitOk(ctx.root, ['check-ref-format', '--branch', branch], ctx))) {
@@ -291,8 +300,19 @@ async function placeOf(ctx, record) {
   return { target, branch, inPlace: branch === target };
 }
 
+/**
+ * US-0036 FR2.1, FR2.5: where the planning views read from. On the target the checkout (`inPlace`); elsewhere `ref`:
+ * origin's target, else origin's main, else the local target or main, and `remote` says whether it is origin's.
+ * @returns {Promise<{inPlace: boolean, branch: string|null, ref: string|null, remote: boolean}>}
+ */
+export async function planningSource(ctx) {
+  const place = await placeOf(ctx, await readRecord(ctx.userData, ctx.root));
+  const ref = await targetRef(ctx, place.target);
+  return { inPlace: place.inPlace, branch: place.branch, ref, remote: Boolean(ref?.startsWith('origin/')) };
+}
+
 /** US-0606 FR2.1: runs `fn` in a temporary worktree under the app's data folder, removed again whatever happens. */
-async function withWorktree(ctx, spec, fn) {
+export async function withWorktree(ctx, spec, fn) {
   const dir = path.join(ctx.userData, 'planning', `wt-${createHash('sha1').update(String(ctx.root)).digest('hex').slice(0, 12)}`);
   await fs.rm(dir, { recursive: true, force: true }); // left over from a crash
   await git(ctx.root, ['worktree', 'prune'], ctx);
@@ -315,7 +335,7 @@ async function planningSpec(ctx, target) {
 
 // ponytail: one operation at a time per project, in this process; a second app instance could interleave.
 const chains = new Map();
-function serial(key, fn) {
+export function serial(key, fn) {
   const run = (chains.get(key) ?? Promise.resolve()).then(fn);
   chains.set(
     key,
@@ -340,7 +360,7 @@ function scheduleCommit(ctx) {
 }
 
 /** US-0608 FR3.1: the story branch's own stories: the id in its name, and every id the active intent's description names. */
-const ownStories = (ctx, branch) => [...new Set([...storyIdsIn(branch), ...(ctx.ownStoryIds ?? [])])];
+export const ownStories = (ctx, branch) => [...new Set([...storyIdsIn(branch), ...(ctx.ownStoryIds ?? [])])];
 const contentOf = (record, file) => record.actions.find((a) => a.kind === 'content' && a.file === file);
 
 /** US-0608 FR2.1: on the target, a changed file not yet in the record is kept whole, against HEAD (and the app's last write). */
@@ -463,21 +483,64 @@ export function planAction(ctx, { kind, storyIds = [], version = null }, hashes 
 }
 
 /**
+ * US-0036 FR2.3: an entry whose text the read ref's file already had at an earlier commit is an older copy, nothing newer.
+ * ponytail: only the last 20 commits of the file are compared; an older copy than that still becomes a conflict.
+ */
+async function olderCopy(ctx, ref, entry) {
+  if (!ref) return false;
+  const commits = lines(await git(ctx.root, ['log', '-n', '20', '--format=%H', ref, '--', entry.file], ctx).catch(() => ''));
+  for (const commit of commits) if ((await showAt(ctx, commit, entry.file)) === entry.content) return true;
+  return false;
+}
+
+/** US-0038 FR1.2: a release counts as tagged when its tag `vX.Y.Z` exists. */
+const isTagged = (tags, version) => tags.some((tag) => tag.name === version);
+/** US-0038 FR1.2: `docs/releases/X.Y.Z.md` of a tagged release. */
+const taggedPlan = (ctx, tags, file) => posix.dirname(file) === plansDir(ctx.featuresPath) && isTagged(tags, `v${posix.basename(file, '.md')}`);
+
+/**
+ * US-0038 FR1.2: a waiting entry for a tagged release's plan (its file, or creating or deleting it) is dropped and
+ * logged, never offered as Use mine. A committed one is in an app commit, which pushFrom handles.
+ */
+async function dropTagged(ctx, record, tags) {
+  const old = record.actions.filter(
+    (a) =>
+      a.state !== 'committed' &&
+      (a.kind === 'content' ? taggedPlan(ctx, tags, a.file) : ['createRelease', 'deleteRelease'].includes(a.kind) && isTagged(tags, a.version))
+  );
+  if (!old.length) return record;
+  for (const a of old) console.info(`Planeringsändringen ${a.kind} ${a.file ?? a.version} släpps: releasen är redan taggad.`);
+  await removeActions(
+    ctx.userData,
+    ctx.root,
+    old.map((a) => a.id)
+  );
+  return { ...record, actions: record.actions.filter((a) => !old.includes(a)) };
+}
+
+/**
  * US-0607 FR1.3, US-0608 FR4, FR5.2, FR6: every waiting change again, where it belongs; once the window has passed since
- * the last change, one commit. A content entry whose file moved on is marked a conflict and left alone.
+ * the last change, one commit. A content entry whose file moved on is marked a conflict and left alone, unless it only
+ * holds an older copy of the file, which is dropped (US-0036 FR2.3).
  */
 async function replayStep(ctx) {
-  const record = await readRecord(ctx.userData, ctx.root);
-  const live = record.actions.filter((a) => a.state !== 'conflict');
+  const tags = await listReleaseTags(ctx.root, { exec: ctx.exec });
+  const record = await dropTagged(ctx, await readRecord(ctx.userData, ctx.root), tags);
+  const live = record.actions.filter((a) => a.state !== 'conflict' && a.kind !== 'thadeus'); // US-0609: thadeusSync commits those
   const pending = live.filter((a) => a.state === 'pending');
   const quiet = pending.every((a) => Date.now() - Date.parse(a.at) >= windowOf(ctx));
   const place = await placeOf(ctx, record);
   if (!place.inPlace && !(quiet && pending.length)) return { reapplied: 0 };
-  const tags = await listReleaseTags(ctx.root, { exec: ctx.exec });
+  const readRef = await targetRef(ctx, place.target);
   const work = async (cwd) => {
-    const { changed, conflicts } = await replayIn(cwd, ctx, live, tags);
+    const { changed, conflicts: clashes } = await replayIn(cwd, ctx, live, tags);
+    const entryOf = (id) => live.find((a) => a.id === id);
+    const stale = [];
+    for (const id of clashes) if (await olderCopy(ctx, readRef, entryOf(id))) stale.push(id);
+    const conflicts = clashes.filter((id) => !stale.includes(id));
+    if (stale.length) await removeActions(ctx.userData, ctx.root, stale);
     if (conflicts.length) await markConflict(ctx.userData, ctx.root, conflicts);
-    const going = live.filter((a) => !conflicts.includes(a.id) && (a.state === 'pending' || changed.includes(a)));
+    const going = live.filter((a) => !clashes.includes(a.id) && (a.state === 'pending' || changed.includes(a)));
     const commit = quiet ? await commitIn(cwd, ctx, subjectOf(going)) : { committed: false };
     if (commit.committed)
       await markCommitted(
@@ -531,7 +594,8 @@ export async function waitingList(ctx) {
     version: a.version ?? null,
     file: a.file ?? null,
     state: a.state,
-    ...(a.state === 'conflict' ? { content: a.content } : {})
+    ...(a.state === 'conflict' ? { content: a.content } : {}),
+    ...(a.from ? { from: a.from } : {}) // US-0038 FR1.4: the app commit it was set aside from
   }));
   return { target: `origin/${target}`, entries };
 }
@@ -547,13 +611,55 @@ async function sourcesOf(ctx, target) {
   return list;
 }
 
-/** US-0607 FR3.2, FR3.5: in a worktree, rebases onto origin and pushes; a conflict is aborted and names the files. */
-async function pushFrom(ctx, wt, target) {
+/**
+ * US-0038 FR1.1, FR1.2: an app commit stopped the rebase in `wt` on files the target changed since. Each such file keeps
+ * the target's text and the rebase goes on; the commit's text of it waits as a conflict entry naming the commit (Use
+ * mine / Keep theirs, FR1.4), or, for a tagged release's plan, is dropped with a log line. A file the record still holds
+ * an uncommitted change of keeps that entry: it is newer, and the replay marks it a conflict by itself.
+ * @returns {Promise<{} | {error: {kind: 'conflict', files: string[], commit: string}}>} the error once the rebase is aborted
+ */
+async function setAside(ctx, wt) {
+  const tags = await listReleaseTags(ctx.root, { exec: ctx.exec });
+  const aside = [];
+  let files = [];
+  let commit = '';
+  // ponytail: at most 50 stops in one rebase; a branch with more conflicting app commits stays blocked and says so.
+  for (let stop = 0; stop < 50; stop++) {
+    files = lines(await git(wt, ['diff', '--name-only', '--diff-filter=U'], ctx).catch(() => ''));
+    commit = (await git(wt, ['log', '-1', '--format=%h %s', 'REBASE_HEAD'], ctx).catch(() => '')).trim();
+    if (!files.length || !commit) break; // not a content conflict: nothing to set aside
+    for (const file of files) {
+      const mine = await git(wt, ['show', `REBASE_HEAD:./${file}`], ctx).catch(() => null);
+      if (taggedPlan(ctx, tags, file)) console.info(`Appens commit ${commit} släpper ${file}: releasen är redan taggad.`);
+      else if (mine === null) console.info(`Appens commit ${commit} tog bort ${file}, som målet har ändrat; målets fil behålls.`);
+      else aside.push({ file, content: mine, from: commit });
+      if (!(await gitOk(wt, ['checkout', '--ours', '--', file], ctx))) await gitOk(wt, ['rm', '--quiet', '--', file], ctx); // ours: the target
+    }
+    await gitOk(wt, ['add', '--', ...files], ctx);
+    const empty = await gitOk(wt, ['diff', '--cached', '--quiet'], ctx);
+    if (await gitOk(wt, ['-c', 'core.editor=true', 'rebase', empty ? '--skip' : '--continue'], ctx)) {
+      const { actions } = await readRecord(ctx.userData, ctx.root);
+      const held = new Set(actions.filter((a) => a.kind === 'content' && a.state !== 'committed').map((a) => a.file));
+      for (const e of aside) {
+        if (held.has(e.file)) continue; // a later stop of the same file replaces this entry (addContent), so the newest text wins
+        await addContent(ctx.userData, ctx.root, { ...e, baseHash: null, storyIds: [], by: 'watcher', state: 'conflict' });
+      }
+      return {};
+    }
+  }
+  await gitOk(wt, ['rebase', '--abort'], ctx);
+  return { error: { kind: 'conflict', files, ...(commit ? { commit } : {}) } };
+}
+
+/**
+ * US-0607 FR3.2, FR3.5, US-0038 FR1.1: in a worktree, rebases onto origin and pushes. A conflicting app commit's files
+ * are set aside (setAside); a rebase that still fails is aborted and names the commit and the files.
+ */
+export async function pushFrom(ctx, wt, target) {
   const base = await remoteBase(ctx, target);
   if (base && !(await gitOk(wt, ['rebase', '--quiet', base], ctx))) {
-    const files = lines(await git(wt, ['diff', '--name-only', '--diff-filter=U'], ctx).catch(() => ''));
-    await gitOk(wt, ['rebase', '--abort'], ctx);
-    return { error: { kind: 'conflict', files } };
+    const res = await setAside(ctx, wt);
+    if (res.error) return res;
   }
   const subjects = lines(await git(wt, ['log', '--format=%s', base ? `${base}..HEAD` : 'HEAD'], ctx));
   try {
@@ -583,7 +689,7 @@ async function pushAll(ctx, target) {
 }
 
 /** US-0607 FR3.3: true for a protected `main`, false for an unprotected one, undefined when gh cannot say. */
-async function detectProtection(ctx) {
+export async function detectProtection(ctx) {
   try {
     await ctx.gh(['api', `repos/{owner}/{repo}/branches/${MAIN}/protection`], { cwd: ctx.root });
     return true;
@@ -598,7 +704,7 @@ async function detectProtection(ctx) {
  * ponytail: the docs branch is not deleted after the merge, so a later pull request can show earlier, already merged
  * changes again; delete it after each merge if that confuses anyone.
  */
-async function openPull(ctx, target, subjects) {
+export async function openPull(ctx, target, subjects) {
   if (!ctx.gh) return { prOffer: { branch: target } };
   const title = subjects.length === 1 ? subjects[0] : 'docs: release planning';
   try {
@@ -630,11 +736,15 @@ async function pushStep(ctx) {
     return {};
   }
   if (!ctx.online()) return { error: { kind: 'offline' } };
+  const readRef = await targetRef(ctx, await targetOf(ctx, record));
+  const commitOf = async () => (readRef ? (await git(ctx.root, ['rev-parse', '--verify', '--quiet', readRef], ctx).catch(() => '')).trim() : '');
+  const before = await commitOf();
   try {
     await git(ctx.root, ['fetch', '--quiet', '--prune', 'origin'], ctx);
   } catch (err) {
     return { error: { kind: 'push', reason: reasonOf(err) } };
   }
+  const moved = before !== (await commitOf()) ? { moved: true } : {}; // US-0036 FR2.2: the views reload
   if (record.protectedMain === undefined && ctx.gh) {
     const known = await detectProtection(ctx);
     if (known !== undefined) record = await setProtectedMain(ctx.userData, ctx.root, known);
@@ -646,11 +756,11 @@ async function pushStep(ctx) {
     target = await targetOf(ctx, record);
     out = await pushAll(ctx, target);
   }
-  if (out.error) return { error: out.error };
-  if (!out.pushed) return {};
+  if (out.error) return { error: out.error, ...moved };
+  if (!out.pushed) return moved;
   await dropCommitted(ctx, record);
   await gitOk(ctx.root, ['branch', '-D', BRANCH], ctx); // the next action starts again from origin
-  return target === MAIN ? { pushed: true } : { pushed: true, ...(await openPull(ctx, target, out.subjects)) };
+  return target === MAIN ? { pushed: true, ...moved } : { pushed: true, ...moved, ...(await openPull(ctx, target, out.subjects)) };
 }
 
 /**

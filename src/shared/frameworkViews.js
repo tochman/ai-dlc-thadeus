@@ -3,7 +3,7 @@
 
 // The first entry is the framework's default view: the one shown when the chosen view is not offered (R-01).
 const VIEWS = {
-  aidlc: ['intents', 'features', 'config', 'plans', 'cost', 'velocity', 'github', 'editor'],
+  aidlc: ['intents', 'features', 'config', 'cost', 'velocity', 'github', 'editor'],
   speckit: ['specs', 'features', 'config', 'editor'],
   none: ['setup', 'features', 'config', 'editor']
 };

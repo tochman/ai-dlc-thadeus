@@ -466,6 +466,7 @@ function HandoffPage({ ev, keysRef, guarded, onHandoff }) {
   const h = ev.handoff;
   const [error, setError] = useState(null);
   const [busy, setBusy] = useState(false);
+  const [parked, setParked] = useState(false); // US-0039 FR2.2: the park request went out
   const waiting = ev.state === 'waiting';
   const disabled = busy || waiting || ev.state !== 'shown';
 
@@ -479,7 +480,7 @@ function HandoffPage({ ev, keysRef, guarded, onHandoff }) {
       return;
     }
     setBusy(true);
-    Promise.resolve(onHandoff?.(ev, choice, { onWaiting: () => {} }) ?? { ok: false, reason: 'noCommands' })
+    Promise.resolve(onHandoff?.(ev, choice, { onWaiting: (how) => setParked(how === 'park') }) ?? { ok: false, reason: 'noCommands' })
       .then((r) => !r?.ok && setError(t(`agentDialog.handoff.failed.${r?.reason ?? 'noCommands'}`)))
       .catch((err) => setError(errorText(err)))
       .finally(() => setBusy(false));
@@ -524,7 +525,7 @@ function HandoffPage({ ev, keysRef, guarded, onHandoff }) {
       </div>
       {(waiting || error) && (
         <p className={`question-popup-status${error ? ' is-error' : ''}`} role="status" data-testid="agent-dialog-handoff-status">
-          {error ?? t('agentDialog.handoff.waiting')}
+          {error ?? t(parked ? 'agentDialog.handoff.parkSent' : 'agentDialog.handoff.waiting')}
         </p>
       )}
     </section>

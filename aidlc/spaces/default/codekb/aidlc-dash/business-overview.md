@@ -31,19 +31,22 @@ T.H.A.D.E.U.S. (package `thadeus`, repository `aidlc-dash`) is a desktop "bridge
 - **No agent text in an activity row** (US-0214 NFR2), except the deliberate US-0030 fields.
 - **Release planning never disturbs the work** (US-0606): on a branch other than the target, the app commits in a temporary worktree on its own branch `dash/planning`, never in the checkout.
 
-## Active Intent (US-0608)
+## Active Intent (EPIC-14, US-1401–US-1410)
 
-The story is "Every planning change is kept by the app until it is on `main` or the docs branch" (EPIC-06, express, for v0.2.10). Today only three release-list actions are kept. The person wants:
-- every change to `docs/FEATURES.md`, `docs/features/` and `docs/releases/` kept outside the working tree until it is on `origin/main` (or the docs branch when `main` is protected), whoever made it: the release list, the editor or an agent;
-- a change that is not the story's own committed on the app's branch, never left in a story's tree;
-- the waiting changes shown in the release list, with Push now;
-- the intermittent error when a story is assigned to a release reproduced in a test, found and fixed;
-- grouped commits, and end-to-end tests of the built app against a real git repo with a bare `origin`, run in CI.
+The intent is `spec-kit-framework` (classic, for v0.3.0). It lets a project follow GitHub Spec Kit instead of AI-DLC, never both. Spec Kit is the `specify` CLI plus `/speckit-*` slash commands, with its files in `.specify/` and `specs/<feature>/`. The person wants:
+- one value, `framework: 'aidlc' | 'speckit'`, that decides the left arm's view set (US-1401);
+- a Spec Kit feature list with each feature's flow and tasks (US-1402);
+- the next `/speckit-*` command offered and typed into the agent terminal (US-1403);
+- a constitution and extensions view (US-1404);
+- Spec Kit setup through `specify init`, after a preview (US-1405);
+- detection and a framework choice on first open (US-1406), switching later (US-1407), and the choice kept in the repository (US-1408);
+- a token log per feature (US-1409), and waiting questions and agent progress in a Spec Kit project (US-1410).
 
-Where this lands, and the causes found, are in `architecture.md` ("Release planning today") and `code-quality-assessment.md` ("Brownfield Notes for US-0608").
+The shared shell stays the same for both frameworks: the terminal, dialogs and hooks, the editor, git, the Features view and project settings. Today every AI-DLC assumption hangs on one boolean, `detection.isAidlc`. Where it is read and what a switch must touch is in `architecture.md` ("Where AI-DLC is assumed today") and `code-quality-assessment.md` ("Brownfield Notes for EPIC-14").
 
 ## Previous Intents
 
+- **US-0608** (every planning change kept until it is pushed, EPIC-06): landed. `features:planningChanged` and `features:resolvePlanning` are now in the bridge. The notes in `architecture.md` and `code-quality-assessment.md` are from `39a3dbf` and were not re-verified.
 - **US-0030** (agent progress honesty, EPIC-00): the notes are kept in `architecture.md` ("Agent progress today") and `code-quality-assessment.md`.
 - **US-0210** (model profile switch, built). It asks to switch to a stronger model profile when an intent on a critical plan starts, and switches back when it ends. Its building blocks and limits are kept in `architecture.md` and `code-quality-assessment.md`. The main limit: a saved AI-DLC profile holds only efforts per group, not models.
 - **US-0214** (agent activity from hook events, delivered): `src/shared/agentActivity.js`, the activity kinds in `dialog.sh` and `agentAdapters.js`, `agentActivity:list` and `agent:activity`.

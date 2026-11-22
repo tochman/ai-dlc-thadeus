@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useId, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Terminal } from '@xterm/xterm';
 import { FitAddon } from '@xterm/addon-fit';
@@ -6,7 +6,7 @@ import '@xterm/xterm/css/xterm.css';
 import { createActivity, dropText } from './terminalControl.js';
 import { isAgentTab, useTerminal } from './TerminalContext.jsx';
 import AuctumMark from './AuctumMark.jsx';
-import { Bar } from './Lcars.jsx';
+import { Bar, Pill } from './Lcars.jsx';
 import Tooltip from './Tooltip.jsx';
 import { xtermTheme } from './tokens.js';
 import { t as translate } from '../shared/i18n.js';
@@ -266,6 +266,14 @@ export default function TerminalPanel({ projectId, visible, onChooseHarness }) {
   // null = the CSS default clamp(180px, 24vh, 240px) on the open panel; a number once the person drags (F-01).
   const [height, setHeight] = useState(null);
   const panelRef = useRef(null);
+  const bodyId = useId();
+  const toggleRef = useRef(null);
+  const toggled = useRef(false); // US-0417: focus stays on Hide / Show terminal after a click, not after a command
+  useEffect(() => {
+    if (!toggled.current) return;
+    toggled.current = false;
+    toggleRef.current?.focus({ preventScroll: true });
+  }, [open]);
   const clampHeight = (h) => Math.round(Math.min(window.innerHeight * 0.6, Math.max(180, h)));
   const currentHeight = () => height ?? panelRef.current?.offsetHeight ?? 220;
   const pendingTabs = tabs.filter((tab) => terminal.pending(tab));
@@ -290,6 +298,8 @@ export default function TerminalPanel({ projectId, visible, onChooseHarness }) {
 
   // The Konsol mockup: the agent and Shell as blocks in the bottom arm with their state on the block, segmented
   // bars above and below the terminal, quick commands in a tiny select in the bar's dark segment (EPIC-04 FR3.6).
+  // US-0417: Hide / Show terminal is the last segment of the window's foot bar, a pill like Full screen at the other
+  // corner; the elbow keeps only the mark. Hidden, the panel is that one foot bar (the sessions stay mounted).
   return (
     <section
       ref={panelRef}
@@ -309,38 +319,39 @@ export default function TerminalPanel({ projectId, visible, onChooseHarness }) {
           data-testid="terminal-panel-resize"
         />
       )}
-      <div className="terminal-arm">
-        <div role="tablist" aria-label={t('terminal.tabsLabel')} className="terminal-tabs">
-          {tabs.map((tab) => {
-            const agent = isAgentTab(tab);
-            const state = terminal.state(tab);
-            const on = active === tab;
-            const breathing = agent && state === 'busy';
-            const checking = agent && !harnessIn(tab);
-            return (
-              <button
-                key={tab}
-                role="tab"
-                aria-selected={on}
-                className={`lcars-block term-tab term-tab--${agent ? 'agent' : tab} lcars-block--${on ? 'active' : 'mid'} ${breathing ? 'is-breathing' : ''}`}
-                onClick={() => terminal.show(tab)} // an agent tab shown becomes the one 'agent' goes to (US-0803)
-                data-testid={`terminal-panel-tab-${testId(tab)}`}
-              >
-                <span className={`term-state term-state-${state}`} data-testid={`terminal-panel-state-${testId(tab)}`}>
-                  {checking ? t('terminal.checking') : t(`terminal.state.${state}`)}
-                </span>
-                <span className="term-tab-name" data-testid={`terminal-panel-name-${testId(tab)}`}>
-                  {tabLabel(tab)}
-                </span>
-              </button>
-            );
-          })}
+      {open && (
+        <div className="terminal-arm">
+          <div role="tablist" aria-label={t('terminal.tabsLabel')} className="terminal-tabs">
+            {tabs.map((tab) => {
+              const agent = isAgentTab(tab);
+              const state = terminal.state(tab);
+              const on = active === tab;
+              const breathing = agent && state === 'busy';
+              const checking = agent && !harnessIn(tab);
+              return (
+                <button
+                  key={tab}
+                  role="tab"
+                  aria-selected={on}
+                  className={`lcars-block term-tab term-tab--${agent ? 'agent' : tab} lcars-block--${on ? 'light' : 'dark'} ${breathing ? 'is-breathing' : ''}`}
+                  onClick={() => terminal.show(tab)} // an agent tab shown becomes the one 'agent' goes to (US-0803)
+                  data-testid={`terminal-panel-tab-${testId(tab)}`}
+                >
+                  <span className={`term-state term-state-${state}`} data-testid={`terminal-panel-state-${testId(tab)}`}>
+                    {checking ? t('terminal.checking') : t(`terminal.state.${state}`)}
+                  </span>
+                  <span className="term-tab-name" data-testid={`terminal-panel-name-${testId(tab)}`}>
+                    {tabLabel(tab)}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+          <div className="terminal-elbow" aria-hidden="true" data-testid="terminal-panel-elbow">
+            <AuctumMark size={96} className="terminal-elbow-mark" decorative />
+          </div>
         </div>
-        <button className="terminal-elbow" onClick={() => setOpen((o) => !o)} aria-expanded={open} data-testid="terminal-panel-toggle">
-          <AuctumMark size={96} className="terminal-elbow-mark" decorative />
-          <span className="terminal-elbow-label">{open ? t('terminal.hide') : t('terminal.show')}</span>
-        </button>
-      </div>
+      )}
       <div className="terminal-main">
         {open && (
           <Bar
@@ -351,7 +362,7 @@ export default function TerminalPanel({ projectId, visible, onChooseHarness }) {
             ]}
           />
         )}
-        <div className="terminal-body" hidden={!open}>
+        <div className="terminal-body" id={bodyId} hidden={!open}>
           {harnessProblem && (
             <div className="term-session" hidden={!(visible && open && active === agentTabs[0])}>
               <div className="term-status" role="status" data-testid="terminal-panel-harness-problem">
@@ -415,13 +426,26 @@ export default function TerminalPanel({ projectId, visible, onChooseHarness }) {
             )}
           </div>
         )}
-        <Bar
-          segs={[
-            ['slate-3', 2],
-            ['steel-deep', 70],
-            ['slate-2', 1]
-          ]}
-        />
+        <div className="terminal-footbar" data-testid="terminal-panel-footbar">
+          <span className="lcars-sseg terminal-footbar-head" aria-hidden="true" />
+          <span className="lcars-sseg lcars-sseg--fix terminal-footbar-a" aria-hidden="true" />
+          <span className="lcars-sseg lcars-sseg--deep" aria-hidden="true" />
+          <span className="lcars-sseg lcars-sseg--steel terminal-footbar-b" aria-hidden="true" />
+          <span className="lcars-sseg lcars-sseg--fix" aria-hidden="true" />
+          <Pill
+            ref={toggleRef}
+            className="terminal-toggle"
+            aria-expanded={open}
+            aria-controls={bodyId}
+            onClick={() => {
+              toggled.current = true;
+              setOpen((o) => !o);
+            }}
+            data-testid="terminal-panel-toggle"
+          >
+            {open ? t('terminal.hide') : t('terminal.show')}
+          </Pill>
+        </div>
       </div>
     </section>
   );

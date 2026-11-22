@@ -9,10 +9,10 @@ import { viewFields } from '../../src/shared/frameworkViews.js';
 vi.mock('../../src/renderer/ProjectView.jsx', async () => {
   const { default: LatestMessageStrip } = await import('../../src/renderer/LatestMessageStrip.jsx');
   return {
-    default: function ProjectViewStub({ project, view, onMeta, onOpenReply }) {
+    default: function ProjectViewStub({ project, view, section, aidlcTab, onMeta, onOpenReply }) {
       useEffect(() => onMeta(project.projectId, { showFeatures: true, intentCount: 7 }), [project.projectId, onMeta]);
       return (
-        <div data-testid={`project-view-${project.projectId}`} data-view={view}>
+        <div data-testid={`project-view-${project.projectId}`} data-view={view} data-section={section} data-aidlc-tab={aidlcTab}>
           <LatestMessageStrip projectId={project.projectId} onOpenReply={onOpenReply} />
         </div>
       );
@@ -371,6 +371,40 @@ describe('App shell', () => {
     expect(button.getAttribute('aria-pressed')).toBe('false');
   });
 
+  it('has no Plans block in the arm; the old Plans view opens Configuration › AI-DLC › Plans (US-0905)', async () => {
+    await renderApp({ openProjects: ['/p/aidlc-dash-a'], activeProject: '/p/aidlc-dash-a' });
+    await screen.findByTestId('project-view-switch-config');
+    expect(screen.queryByTestId('project-view-switch-plans')).toBeNull();
+    fireEvent.click(screen.getByTestId('project-view-switch-config'));
+    // The arm's Configuration sub-blocks are as before: Plans is a sub-view inside AI-DLC, not a sub-block.
+    expect(screen.getAllByTestId(/^config-section-/).map((el) => el.dataset.testid)).toEqual([
+      'config-section-docs',
+      'config-section-agent',
+      'config-section-aidlc',
+      'config-section-costRules',
+      'config-section-modelProfiles'
+    ]);
+
+    // A link or menu item that still asks for the old Plans view opens it at its new place.
+    act(() => push.menuCommand({ command: 'view', view: 'intents' }));
+    act(() => push.menuCommand({ command: 'view', view: 'plans' }));
+    expect(screen.getByTestId('project-view-switch-config').getAttribute('aria-current')).toBe('page');
+    expect(screen.getByTestId('config-section-aidlc').getAttribute('aria-current')).toBe('page');
+    const pane = screen.getByTestId('project-view-p1');
+    expect([pane.dataset.view, pane.dataset.section, pane.dataset.aidlcTab]).toEqual(['config', 'aidlc', 'plans']);
+    cleanup();
+
+    // Without AI-DLC there is no AI-DLC section, so no plans, as before.
+    mockBridge({ openProjects: ['/p/plain-a'], activeProject: '/p/plain-a' });
+    window.bridge.openProject = vi.fn(async (dir) => ({ ...projectInfo(dir, 'p1'), detection: detectionOf(null) }));
+    render(<App />);
+    fireEvent.click(await screen.findByTestId('project-view-switch-config'));
+    expect(screen.queryByTestId('config-section-aidlc')).toBeNull();
+    expect(screen.queryByTestId('project-view-switch-plans')).toBeNull();
+    act(() => push.menuCommand({ command: 'view', view: 'plans' }));
+    expect(screen.getByTestId('config-section-docs').getAttribute('aria-current')).toBe('page');
+  });
+
   it('runs a menu command through the same function as the arm button, reports the menu state and ignores unknown ones (US-0404 FR2.4–FR2.6)', async () => {
     await renderApp({ openProjects: ['/p/aidlc-dash-a'], activeProject: '/p/aidlc-dash-a' });
     await screen.findByTestId('project-view-switch-features');
@@ -401,6 +435,94 @@ describe('App shell', () => {
     await waitFor(() => expect(window.bridge.sendMenuState).toHaveBeenLastCalledWith({ hasProject: false, framework: null, showFeatures: false }));
     act(() => push.menuCommand({ command: 'closeProject' }));
     expect(window.bridge.closeProject).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('App shell in the US-0417 language', () => {
+  const open = { openProjects: ['/p/aidlc-dash-a'], activeProject: '/p/aidlc-dash-a' };
+
+  it('gives Settings a "‹ Back to <view>" pill on the title bar that returns to the view shown before', async () => {
+    await renderApp(open);
+    fireEvent.click(await screen.findByTestId('project-view-switch-features'));
+    expect(screen.queryByTestId('settings-back')).toBeNull(); // only while Settings is open
+
+    fireEvent.click(screen.getByTestId('app-settings-open'));
+    const back = screen.getByTestId('settings-back');
+    expect(back.tagName).toBe('BUTTON');
+    expect(back.className).toContain('lcars-pill'); // an action, so a pill
+    expect(back.textContent).toBe('‹ Tillbaka till Features');
+    expect(within(document.querySelector('.app-header')).getByTestId('settings-back')).toBe(back); // on the window's title bar
+
+    fireEvent.click(back);
+    expect(screen.queryByTestId('settings-view')).toBeNull();
+    expect(screen.getByTestId('project-view-switch-features').getAttribute('aria-current')).toBe('page');
+  });
+
+  it('returns from Settings with Esc wherever the focus is, but not while a dialog is open', async () => {
+    await renderApp(open);
+    await screen.findByTestId('project-view-switch-features');
+    fireEvent.click(screen.getByTestId('app-settings-open'));
+    fireEvent.keyDown(document.body, { key: 'Escape' });
+    expect(screen.queryByTestId('settings-view')).toBeNull();
+    expect(screen.getByTestId('project-view-switch-intents').getAttribute('aria-current')).toBe('page');
+
+    fireEvent.click(screen.getByTestId('app-settings-open'));
+    const dialog = document.createElement('dialog');
+    dialog.setAttribute('open', '');
+    document.body.appendChild(dialog);
+    fireEvent.keyDown(document.body, { key: 'Escape' }); // Esc belongs to the dialog
+    expect(screen.getByTestId('settings-view')).toBeTruthy();
+    dialog.remove();
+  });
+
+  it('says only "‹ Back" when no project is open', async () => {
+    await renderApp({});
+    await waitFor(() => expect(window.bridge.getSettings).toHaveBeenCalled());
+    fireEvent.click(screen.getByTestId('app-settings-open'));
+    expect(screen.getByTestId('settings-back').textContent).toBe('‹ Tillbaka');
+  });
+
+  it('keeps a 28 px safe inset in full screen through a class on the window', async () => {
+    await renderApp({});
+    const app = document.querySelector('.app');
+    expect(app.classList.contains('is-fullscreen')).toBe(false);
+    act(() => push.fullscreen(true));
+    expect(app.classList.contains('is-fullscreen')).toBe(true);
+    act(() => push.fullscreen(false));
+    expect(app.classList.contains('is-fullscreen')).toBe(false);
+  });
+
+  it('puts the window title, the branch sub-label and Full screen as the last segment on one bar', async () => {
+    await renderApp(open);
+    await screen.findByTestId('project-view-switch-features');
+    const bar = within(screen.getByRole('banner')).getByTestId('lcars-segbar');
+    expect(bar.className).toContain('lcars-segbar--window');
+    expect(within(bar).getByRole('heading', { level: 1 }).textContent).toMatch(/aidlc-dash-a.*Intents/);
+    expect(await within(bar).findByText('feat/epic04-living-lcars')).toBeTruthy();
+    expect(bar.lastElementChild).toBe(screen.getByTestId('fullscreen-toggle'));
+    expect(screen.getByTestId('fullscreen-toggle').className).toContain('lcars-pill');
+  });
+
+  it('shows the mark once, in the brand corner, and the intent count as the Intents block figure', async () => {
+    await renderApp(open);
+    expect(within(screen.getByTestId('app-brand')).getAllByRole('img', { name: 'Auctum' })).toHaveLength(1);
+    expect(screen.getByTestId('project-tabs').querySelector('svg')).toBeNull(); // no second watermark in the arm
+    const intents = await screen.findByTestId('project-view-switch-intents');
+    await waitFor(() => expect(intents.querySelector('.lcars-nb-fig')?.textContent).toBe('7'));
+    expect(intents.className).toContain('lcars-nb');
+  });
+
+  it('runs the entrance on entering a view, not under reduced motion', async () => {
+    await renderApp(open);
+    await screen.findByTestId('project-view-switch-features');
+    fireEvent.click(screen.getByTestId('project-view-switch-features'));
+    await waitFor(() => expect(document.querySelector('.app-main').classList.contains('is-entering')).toBe(true));
+    cleanup();
+
+    mockReducedMotion(true);
+    await renderApp(open);
+    fireEvent.click(await screen.findByTestId('project-view-switch-features'));
+    expect(document.querySelector('.app-main').classList.contains('is-entering')).toBe(false);
   });
 });
 

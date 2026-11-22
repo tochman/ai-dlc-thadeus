@@ -24,6 +24,11 @@ function Prerequisites({ info }) {
       <li>
         <strong>{t('setup.harnessesLabel')}</strong> {info.harnesses.length ? info.harnesses.join(', ') : t('setup.noHarnesses')}
       </li>
+      {info.thadeusIgnored && (
+        <li className="tag-warn" role="note" data-testid="setup-thadeus-ignored">
+          {t('setup.thadeusIgnored')}
+        </li>
+      )}
     </ul>
   );
 }

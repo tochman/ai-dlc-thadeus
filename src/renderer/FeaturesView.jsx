@@ -6,7 +6,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { FileContent } from './ArtifactReader.jsx';
 import { useEditor } from './editor/EditorContext.jsx';
-import { Frame } from './Lcars.jsx';
+import { Block, Frame, ListDrawer, Pill, SectionHeading, useEntrance } from './Lcars.jsx';
 import Tooltip from './Tooltip.jsx';
 import { withSlots } from './format.js';
 import { STATUS_MARKER } from '../main/parsers/features.js';
@@ -16,6 +16,9 @@ import { EMPTY_FILTERS, NO_RELEASE, filterOptions, isActive, matches, storyRows 
 const errorText = (err) => String(err?.message ?? err).replace(/^Error invoking remote method '[^']+': (Error: )?/, '');
 // Pågår is steel (active), Klar and Driftsatt a light slate block, Planerad an outline (FR1.3, US-0603 FR6).
 const STATUS_CLASS = { planned: 'tag', progress: 'tag tag-live', done: 'tag tag-done', deployed: 'tag tag-done' };
+// US-0417 (Shape rule): a list row's state as the strip at its left edge: steel live, outline planned, grey done.
+const STATUS_STRIP = { planned: 'parked', progress: 'live', done: 'done', deployed: 'done' };
+const stripOf = (status) => STATUS_STRIP[status] ?? 'quiet';
 
 /**
  * Status as marker and text, never colour alone (NFR3), with the docs' own status text as its tooltip (US-0414 FR2.2).
@@ -175,9 +178,9 @@ function NewRelease({ tags, locked, onCreate }) {
   return (
     <>
       <div className="features-release">
-        <button className="btn btn-accent" disabled={locked} onClick={() => setDraft(draft === null ? '' : null)} data-testid="releases-new">
+        <Pill tone="primary" disabled={locked} onClick={() => setDraft(draft === null ? '' : null)} data-testid="releases-new">
           {t('features.release.new.button')}
-        </button>
+        </Pill>
       </div>
       {draft !== null && (
         <form className="features-release" onSubmit={submit}>
@@ -187,13 +190,13 @@ function NewRelease({ tags, locked, onCreate }) {
           </label>
           {suggestions.length > 0 && <span className="muted">{t('features.release.new.suggestions')}</span>}
           {suggestions.map((v) => (
-            <button key={v} type="button" className="btn btn-quiet" onClick={() => setDraft(v)} data-testid="releases-new-suggestion">
+            <Pill key={v} tone="quiet" onClick={() => setDraft(v)} data-testid="releases-new-suggestion">
               {v}
-            </button>
+            </Pill>
           ))}
-          <button type="submit" className="btn" disabled={locked} data-testid="releases-new-create">
+          <Pill type="submit" tone="primary" disabled={locked} data-testid="releases-new-create">
             {t('features.release.new.create')}
-          </button>
+          </Pill>
         </form>
       )}
     </>
@@ -203,17 +206,25 @@ function NewRelease({ tags, locked, onCreate }) {
 /** US-0608 FR1.2: the docs' hashes as one key, to tell the reload that belongs to a write from one that does not. */
 const hashesOf = (f) => JSON.stringify([f?.overviewHash ?? null, (f?.epics ?? []).map((e) => e.hash ?? null), (f?.plans ?? []).map((p) => p.hash ?? null)]);
 
-/** US-0607 FR3.5, US-0606 FR4.2: one sentence for a planning error from main ({kind, reason?, files?}). */
+/**
+ * US-0607 FR3.5, US-0606 FR4.2: one sentence for a planning error from main ({kind, reason?, files?, commit?}). US-0038
+ * FR1.4: a conflict that names its app commit says which one blocks and what to do.
+ */
 function planningErrorText(t, error) {
   const kind = ['offline', 'conflict', 'push', 'commit'].includes(error?.kind) ? error.kind : 'git';
-  return t(`features.planning.error.${kind}`, { reason: error?.reason ?? '', files: (error?.files ?? []).join(', ') });
+  const key = kind === 'conflict' && error.commit ? 'conflictCommit' : kind;
+  return t(`features.planning.error.${key}`, { reason: error?.reason ?? '', files: (error?.files ?? []).join(', '), commit: error?.commit ?? '' });
 }
 
-/** US-0608 FR7.1: one line for a waiting change: what it does, then its stories. */
+/** US-0608 FR7.1: one line for a waiting change: what it does, then its stories (and, US-0038 FR1.4, the app commit it came from). */
 function entryText(t, e) {
+  // US-0609 FR3.8: a waiting app file (`.thadeus/`, a harness file) by its name.
+  if (e.kind === 'thadeus') return t('features.planning.thadeus', { file: e.file });
   const what =
     e.kind === 'content' ? t('features.planning.entry.content', { file: e.file }) : t(`features.planning.entry.${e.kind}`, { version: e.version ?? 'none' });
-  return e.storyIds?.length ? `${what} · ${t('features.planning.entry.stories', { ids: e.storyIds.join(', ') })}` : what;
+  const parts = [what, ...(e.storyIds?.length ? [t('features.planning.entry.stories', { ids: e.storyIds.join(', ') })] : [])];
+  if (e.from) parts.push(t('features.planning.entry.from', { commit: e.from }));
+  return parts.join(' · ');
 }
 
 /**
@@ -228,6 +239,9 @@ function PlanningConflict({ entry, busy, onResolve }) {
     <>
       <span className="tag-warn" role="note">
         {t('features.planning.conflict', { file: entry.file })}
+      </span>{' '}
+      <span className="muted" data-testid="planning-choose">
+        {t('features.planning.choose')}
       </span>{' '}
       <button className="btn btn-quiet" disabled={busy} onClick={() => onResolve(entry.id, 'mine')} data-testid="planning-use-mine">
         {t('features.planning.useMine')}
@@ -295,11 +309,8 @@ function PlanningSync({ projectId, features, reapply = true }) {
   const entries = status?.entries ?? [];
   if (!status || !(status.pending > 0 || entries.length > 0 || status.reapplied > 0 || status.prOffer || status.error)) return null;
   return (
-    <div className="features-release" data-testid="planning-sync">
-      <div className="lcars-heading">
-        <h3 className="section-title">{t('features.planning.title')}</h3>
-        <span className="lcars-heading-line" aria-hidden="true" />
-      </div>
+    <div className="features-release features-planning" data-testid="planning-sync">
+      <SectionHeading as="h3" title={t('features.planning.title')} />
       {status.pending > 0 && <p data-testid="planning-pending">{t('features.planning.pending', { n: status.pending })}</p>}
       {entries.length > 0 && (
         <>
@@ -334,9 +345,9 @@ function PlanningSync({ projectId, features, reapply = true }) {
       )}
       {status.prOffer && <p data-testid="planning-pr-offer">{t('features.planning.prOffer', { branch: status.prOffer.branch })}</p>}
       {status.pending > 0 && !status.noRemote && (
-        <button className="lcars-block lcars-block--sm" disabled={busy} onClick={pushNow} data-testid="planning-push-now">
+        <Pill tone="primary" disabled={busy} onClick={pushNow} data-testid="planning-push-now">
           {t('features.planning.pushNow')}
-        </button>
+        </Pill>
       )}
     </div>
   );
@@ -391,95 +402,108 @@ function ReleasesView({ projectId, features, onOpenStory, locked, lockedWrite })
     return write(() => bridge.createRelease(projectId, version), 'features.release.new.failed');
   }
 
+  // US-0417: the release list is a list column with its own drawer (RELEASES), its fold kept as the Releases view's.
   return (
-    <>
-      <PlanningSync projectId={projectId} features={features} />
-      <NewRelease tags={features.tags} locked={locked} onCreate={create} />
-      {error && (
-        <p className="refresh-error" role="alert">
-          {error}
-        </p>
-      )}
-      {releases.length === 0 ? (
-        <p className="muted">{t('features.releases.empty')}</p>
-      ) : (
-        <ul className="intent-rows" aria-label={t('features.releases.title')}>
-          {releases.map((r) => (
-            <li key={r.version} className="intent-row" data-testid="features-view-release">
-              <span className="intent-row-top">
-                <span className="intent-slug">{r.version}</span>
-                <span className={r.released ? 'tag tag-done' : 'tag'}>
-                  {!r.released
-                    ? t('features.releases.planned')
-                    : r.date
-                      ? t('features.releases.releasedOn', { date: r.date })
-                      : t('features.releases.released')}
-                </span>
-              </span>
-              <span className="muted">{t('features.releases.storyCount', { n: r.stories.length })}</span>
-              {r.stories.length > 0 && (
-                <ul className="features-release-stories">
-                  {r.stories.map(({ epicId, story, stale }) => (
-                    <li key={story.id}>
-                      <button className="btn btn-quiet" onClick={() => onOpenStory(epicId, story.id)}>
-                        {story.id}: {story.title}
-                      </button>{' '}
-                      <StatusBadge status={story.status} text={story.statusText} focusable />
-                      {stale && <StaleFlag version={r.version} />}
-                      {!r.released && (
-                        <button
-                          className="btn btn-quiet"
-                          disabled={locked}
-                          aria-label={t('features.release.removeLabel', { version: r.version })}
-                          onClick={() => setStory(epicId, story.id, null)}
-                          data-testid="releases-remove-story"
-                        >
-                          {t('features.release.remove')}
-                        </button>
-                      )}
-                    </li>
+    <aside className="features-list features-releases" aria-label={t('features.releases.title')}>
+      <ListDrawer
+        viewId="releases"
+        title={t('features.releases.title')}
+        count={releases.length}
+        controls={<span className="lcars-sect-meta">{t('features.count', { n: releases.length })}</span>}
+      >
+        <PlanningSync projectId={projectId} features={features} />
+        <NewRelease tags={features.tags} locked={locked} onCreate={create} />
+        {error && (
+          <p className="refresh-error" role="alert">
+            {error}
+          </p>
+        )}
+        {releases.length === 0 ? (
+          <p className="muted">{t('features.releases.empty')}</p>
+        ) : (
+          <ReleaseRows {...{ releases, unassigned, locked, setStory, write, projectId, onOpenStory }} />
+        )}
+      </ListDrawer>
+    </aside>
+  );
+}
+
+/** US-0603 FR3, US-0605: the release rows, square blocks whose strip carries the state (planned live, released done). */
+function ReleaseRows({ releases, unassigned, locked, setStory, write, projectId, onOpenStory }) {
+  const { t } = useTranslation();
+  const bridge = window.bridge;
+  return (
+    <ul className="intent-rows" aria-label={t('features.releases.title')}>
+      {releases.map((r) => (
+        <li key={r.version} className={`features-rel-row lcars-strip--${r.released ? 'done' : 'live'}`} data-testid="features-view-release">
+          <span className="intent-row-top">
+            <span className="intent-slug">{r.version}</span>
+            <span className={r.released ? 'tag tag-done' : 'tag'}>
+              {!r.released ? t('features.releases.planned') : r.date ? t('features.releases.releasedOn', { date: r.date }) : t('features.releases.released')}
+            </span>
+          </span>
+          <span className="muted">{t('features.releases.storyCount', { n: r.stories.length })}</span>
+          {r.stories.length > 0 && (
+            <ul className="features-release-stories">
+              {r.stories.map(({ epicId, story, stale }) => (
+                <li key={story.id}>
+                  <button className="btn btn-quiet" onClick={() => onOpenStory(epicId, story.id)}>
+                    {story.id}: {story.title}
+                  </button>{' '}
+                  <StatusBadge status={story.status} text={story.statusText} focusable />
+                  {stale && <StaleFlag version={r.version} />}
+                  {!r.released && (
+                    <Pill
+                      tone="quiet"
+                      disabled={locked}
+                      aria-label={t('features.release.removeLabel', { version: r.version })}
+                      onClick={() => setStory(epicId, story.id, null)}
+                      data-testid="releases-remove-story"
+                    >
+                      {t('features.release.remove')}
+                    </Pill>
+                  )}
+                </li>
+              ))}
+            </ul>
+          )}
+          {!r.released && (
+            <span className="features-release">
+              {unassigned.length > 0 && (
+                <select
+                  className="lcars-select"
+                  value=""
+                  disabled={locked}
+                  aria-label={t('features.release.add')}
+                  onChange={(e) => {
+                    const pick = unassigned.find(({ story }) => story.id === e.target.value);
+                    if (pick) setStory(pick.epicId, pick.story.id, r.version);
+                  }}
+                  data-testid="releases-add-story"
+                >
+                  <option value="">{t('features.release.add')}</option>
+                  {unassigned.map(({ story }) => (
+                    <option key={story.id} value={story.id}>
+                      {story.id}: {story.title}
+                    </option>
                   ))}
-                </ul>
+                </select>
               )}
-              {!r.released && (
-                <span className="features-release">
-                  {unassigned.length > 0 && (
-                    <select
-                      className="lcars-select"
-                      value=""
-                      disabled={locked}
-                      aria-label={t('features.release.add')}
-                      onChange={(e) => {
-                        const pick = unassigned.find(({ story }) => story.id === e.target.value);
-                        if (pick) setStory(pick.epicId, pick.story.id, r.version);
-                      }}
-                      data-testid="releases-add-story"
-                    >
-                      <option value="">{t('features.release.add')}</option>
-                      {unassigned.map(({ story }) => (
-                        <option key={story.id} value={story.id}>
-                          {story.id}: {story.title}
-                        </option>
-                      ))}
-                    </select>
-                  )}
-                  {canDelete(r) && (
-                    <button
-                      className="btn btn-quiet"
-                      disabled={locked}
-                      onClick={() => write(() => bridge.deleteRelease(projectId, { version: r.version, hash: r.plan.hash }), 'features.release.delete.failed')}
-                      data-testid="releases-delete"
-                    >
-                      {t('features.release.delete.button')}
-                    </button>
-                  )}
-                </span>
+              {canDelete(r) && (
+                <Pill
+                  tone="quiet"
+                  disabled={locked}
+                  onClick={() => write(() => bridge.deleteRelease(projectId, { version: r.version, hash: r.plan.hash }), 'features.release.delete.failed')}
+                  data-testid="releases-delete"
+                >
+                  {t('features.release.delete.button')}
+                </Pill>
               )}
-            </li>
-          ))}
-        </ul>
-      )}
-    </>
+            </span>
+          )}
+        </li>
+      ))}
+    </ul>
   );
 }
 
@@ -549,13 +573,13 @@ function StoryFilters({ prefix, filters, setFilters, options, count }) {
         <span className="field-label">{t('features.filter.text')}</span>
         <input type="search" value={filters.text} onChange={(e) => setFilters({ ...filters, text: e.target.value })} data-testid={`${prefix}-text`} />
       </label>
-      <span className="muted" aria-live="polite" data-testid={`${prefix}-count`}>
+      <span className="filters-count" aria-live="polite" data-testid={`${prefix}-count`}>
         {t('features.filter.count', { n: count })}
       </span>
       {isActive(filters) && (
-        <button className="btn btn-quiet" onClick={() => setFilters(EMPTY_FILTERS)} data-testid={`${prefix}-clear`}>
+        <Pill tone="quiet" onClick={() => setFilters(EMPTY_FILTERS)} data-testid={`${prefix}-clear`}>
           {t('features.filter.clear')}
-        </button>
+        </Pill>
       )}
     </div>
   );
@@ -681,6 +705,7 @@ export default function FeaturesView({
   const [epicId, setEpicId] = useState(null);
   const [storyId, setStoryId] = useState(null);
   const [filters, setFilters] = useState(EMPTY_FILTERS); // never saved: empty each time the view opens (US-0604 FR5)
+  const entering = useEntrance(`${projectId}:${tab}`); // US-0417: the entrance runs on entering Epics or Releases
   const setTab = (id) => id !== tab && onTab?.(id); // Epics | Releases (US-0603 FR3.1)
   const releases = delivery === 'releases';
   const showReleases = releases && tab === 'releases';
@@ -746,63 +771,76 @@ export default function FeaturesView({
     const found = storyRows(epics).filter((row) => matches(row, filters));
     body = (
       <div className="project-body">
-        <aside className="sidebar" aria-label={t('features.epics')}>
-          <div className="lcars-heading">
-            <h2 className="section-title">{t('features.epics')}</h2>
-            <span className="lcars-heading-line" aria-hidden="true" />
-            <span className="lcars-heading-meta">{t('features.count', { n: epics.length })}</span>
-          </div>
-          {features.intro && <p className="muted features-intro">{features.intro}</p>}
-          <StoryFilters prefix="features-view-all-filter" filters={filters} setFilters={setFilters} options={options} count={found.length} />
-          {isActive(filters) ? (
-            // US-0604 FR1.1: the matches of every epic replace the epic list; a row opens the story on its epic's page.
-            <ul className="intent-rows" aria-label={t('features.filter.matches')} data-testid="features-view-matches">
-              {found.map(({ epicId: id, story }) => (
-                <li key={story.id}>
-                  <button className="intent-row" onClick={() => openStory(id, story.id)} data-testid="features-view-match">
-                    <span className="intent-row-top">
-                      <span className="intent-slug">
-                        {story.id}: {story.title}
-                      </span>
-                      <StatusBadge status={story.status} text={story.statusText} />
-                    </span>
-                    <span className="muted">{id}</span>
-                  </button>
-                </li>
-              ))}
-              {found.length === 0 && <li className="muted">{t('features.noMatch')}</li>}
-            </ul>
-          ) : (
-            <ul className="intent-rows" aria-label={t('features.epics')}>
-              {epics.map((e) => {
-                const total = e.parsed?.stories.length ?? 0;
-                return (
-                  <li key={e.id}>
-                    <button
-                      className={`intent-row ${e.id === epic.id ? 'is-selected' : ''}`}
-                      aria-current={e.id === epic.id}
-                      onClick={() => {
-                        setEpicId(e.id);
-                        setStoryId(null);
-                      }}
-                      data-testid="features-view-epic"
+        <aside className="features-list" aria-label={t('features.epics')}>
+          <ListDrawer
+            viewId="features"
+            title={t('features.epics')}
+            count={epics.length}
+            controls={<span className="lcars-sect-meta">{t('features.count', { n: epics.length })}</span>}
+          >
+            {features.intro && <p className="muted features-intro">{features.intro}</p>}
+            <StoryFilters prefix="features-view-all-filter" filters={filters} setFilters={setFilters} options={options} count={found.length} />
+            {isActive(filters) ? (
+              // US-0604 FR1.1: the matches of every epic replace the epic list; a row opens the story on its epic's page.
+              <ul className="intent-rows" aria-label={t('features.filter.matches')} data-testid="features-view-matches">
+                {found.map(({ epicId: id, story }, i) => (
+                  <li key={story.id}>
+                    <Block
+                      as="button"
+                      strip={stripOf(story.status)}
+                      index={i}
+                      className="features-row"
+                      onClick={() => openStory(id, story.id)}
+                      data-testid="features-view-match"
                     >
                       <span className="intent-row-top">
                         <span className="intent-slug">
-                          {e.id}: {e.title}
+                          {story.id}: {story.title}
                         </span>
+                        <StatusBadge status={story.status} text={story.statusText} />
                       </span>
-                      <span className="muted">{e.topic}</span>
-                      <span className="intent-row-meta">
-                        <StatusBadge status={e.statusKind} text={e.status} />
-                        <span>{e.parsed ? t('features.storiesDone', { done: storiesDone(e), total }) : t('features.unreadable')}</span>
-                      </span>
-                    </button>
+                      <span className="intent-row-meta">{id}</span>
+                    </Block>
                   </li>
-                );
-              })}
-            </ul>
-          )}
+                ))}
+                {found.length === 0 && <li className="muted">{t('features.noMatch')}</li>}
+              </ul>
+            ) : (
+              <ul className="intent-rows" aria-label={t('features.epics')}>
+                {epics.map((e, i) => {
+                  const total = e.parsed?.stories.length ?? 0;
+                  return (
+                    <li key={e.id}>
+                      <Block
+                        as="button"
+                        strip={stripOf(e.statusKind)}
+                        selected={e.id === epic.id}
+                        index={i}
+                        className="features-row"
+                        aria-current={e.id === epic.id}
+                        onClick={() => {
+                          setEpicId(e.id);
+                          setStoryId(null);
+                        }}
+                        data-testid="features-view-epic"
+                      >
+                        <span className="intent-row-top">
+                          <span className="intent-slug">
+                            {e.id}: {e.title}
+                          </span>
+                        </span>
+                        <span className="muted">{e.topic}</span>
+                        <span className="intent-row-meta">
+                          <StatusBadge status={e.statusKind} text={e.status} />
+                          <span>{e.parsed ? t('features.storiesDone', { done: storiesDone(e), total }) : t('features.unreadable')}</span>
+                        </span>
+                      </Block>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </ListDrawer>
         </aside>
         <section className="content">
           <Frame>
@@ -831,8 +869,21 @@ export default function FeaturesView({
     }
   }
 
+  // US-0036 FR2.4, FR2.5: where the planning comes from: the remote ref, the local branch without one, or this checkout.
+  const source = features.source;
+  const sourceText = !source
+    ? null
+    : source.inPlace
+      ? t('features.source.here', { branch: source.branch })
+      : t(source.remote ? 'features.source.remote' : 'features.source.local', { ref: source.ref });
+
   return (
-    <div className="features-view" data-testid="features-view">
+    <div className={`features-view${entering ? ' is-entering' : ''}`} data-testid="features-view">
+      {sourceText && (
+        <p className="muted" data-testid="features-source">
+          {sourceText}
+        </p>
+      )}
       {(features.warnings ?? []).map((w) => (
         <p key={w} className="banner banner-warn" role="status">
           {w}

@@ -284,6 +284,8 @@ vi.mock('../../src/main/fileWrite.js', () => ({ listTree: m.svc.listTree, readFo
 vi.mock('../../src/main/features.js', () => ({
   featureWatchPaths: m.svc.featureWatchPaths,
   loadFeatures: m.svc.loadFeatures,
+  // ponytail: US-0036 reads the planning through loadPlanningFeatures; here it is the loadFeatures stub, so the existing checks hold.
+  loadPlanningFeatures: (ctx) => m.svc.loadFeatures(ctx.root, ctx.featuresPath),
   loadStoryLinks: m.svc.loadStoryLinks
 }));
 vi.mock('../../src/main/releases.js', () => ({ setStoryRelease: m.svc.setStoryRelease, readRuleStatus: m.svc.readRuleStatus }));
@@ -899,8 +901,10 @@ describe('team collaboration (US-1201 AC-1–AC-4)', () => {
     svc.loadIntentDetail.mockResolvedValueOnce({ dirName: '261116-a', files: [], events: [] });
     svc.loadStoryLinks.mockResolvedValueOnce({ 'US-0209': ['261116-a'] });
     const res = await call('team:comments', {}, projectId, 'default', '261116-a');
-    expect(res.pull).toEqual({ number: 58, title: 'feat(US-0209): cost', url: 'u58' });
-    expect(res.rows.map((r) => r.source)).toEqual(['pull', 'question']);
+    expect(res.pull).toEqual({ number: 58, title: 'feat(US-0209): cost', url: 'u58', reviewers: [] });
+    expect(res.stories).toEqual(['US-0209']);
+    expect(res.threads.map((x) => x.comments.length)).toEqual([1]);
+    expect(res.needs.map((n) => n.kind)).toEqual(['question']);
     expect(res.error).toBeNull();
     expect(svc.listComments).toHaveBeenLastCalledWith(expect.objectContaining({ id: 'github' }), 58, expect.any(Object));
 
@@ -909,7 +913,8 @@ describe('team collaboration (US-1201 AC-1–AC-4)', () => {
     svc.listComments.mockRejectedValueOnce(platformError('timeout'));
     const failed = await call('team:comments', {}, projectId, 'default', '261116-a');
     expect(failed.error).toMatchObject({ code: 'timeout' });
-    expect(failed.rows.map((r) => r.source)).toEqual(['question']);
+    expect(failed.threads).toEqual([]);
+    expect(failed.needs.map((n) => n.kind)).toEqual(['question']);
   });
 
   it('credentials:bitbucket saves, clears and tells whether it is set, and never sends the password back', async () => {

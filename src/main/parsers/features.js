@@ -262,6 +262,19 @@ export function applyChange(target, changes) {
   return { text: blocks.map((b) => b.text).join('\n'), conflicts };
 }
 
+/**
+ * US-0036 FR2.1: `target` with every story block of `work` about an `own` story on top: replaced, or inserted after the
+ * block it follows in `work`. Only story blocks count (keyed by the story's id), so a Status line or table row that names
+ * an own story keeps the target's text and shows what the target has.
+ */
+export function overlayOwn(target, work, own) {
+  const W = storyBlocks(work ?? '');
+  const mine = W.flatMap((b, i) =>
+    own.includes(b.key.replace(/#\d+$/, '')) ? [{ key: b.key, before: null, after: b.text, prev: W[i - 1]?.key ?? null }] : []
+  );
+  return mine.length ? applyChange(target, mine).text : target;
+}
+
 /** @returns {{id: string|null, title: string, description: string, intro: string, storiesLine: string|null, statusLine: string|null, stories: object[], raw: string, warnings: string[]}} */
 export function parseEpic(md) {
   const raw = String(md ?? '');

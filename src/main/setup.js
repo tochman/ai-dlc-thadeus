@@ -52,6 +52,16 @@ async function readPlugins(root, setupId, exec) {
   return { plugins: [], warning: t('errors.pluginsFailed', { error: errorText(lastErr) }) };
 }
 
+/**
+ * US-0609 FR3.7: whether a `.gitignore` entry hides `.thadeus/` (check-ignore exits 0 for an ignored path, 1 for one
+ * that is not; any failure counts as not ignored).
+ */
+const thadeusIgnored = (root, exec) =>
+  runFixed('git', ['check-ignore', '-q', '.thadeus/x'], { cwd: root, exec }).then(
+    () => true,
+    () => false
+  );
+
 /** The table entry for a setup harness id; anything else throws (US-0802 FR1.4). */
 function checkedHarness(id) {
   const entry = setupHarness(id);
@@ -67,7 +77,7 @@ export async function getSetupInfo(root, { harness = DEFAULT_HARNESS, exec } = {
   const { id, setupId } = checkedHarness(harness);
   const harnesses = (await listDir(root, '.')).filter((e) => e.isDir && OTHER_HARNESSES.includes(e.name)).map((e) => `${e.name}/`);
   const git = { isRepo: await isGitRepo(root, { exec }) };
-  const base = { harness: id, git, harnesses, preview: null, plugins: [], presets: PRESETS };
+  const base = { harness: id, git, harnesses, preview: null, plugins: [], presets: PRESETS, thadeusIgnored: git.isRepo && (await thadeusIgnored(root, exec)) };
 
   let version;
   try {

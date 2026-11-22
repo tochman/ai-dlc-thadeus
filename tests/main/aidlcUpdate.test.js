@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { checkProgram, programCommand, projectCommand, projectPlan, readProjectPlan, readUpdateCheck } from '../../src/main/aidlcUpdate.js';
-import { isWorkflowRunning } from '../../src/renderer/workflowBusy.js';
+import { inFlightIntent, isWorkflowRunning } from '../../src/renderer/workflowBusy.js';
 
 // The real answers of aidlc 2.11.3 (US-0504): `update --check --json` behind, current and offline.
 const BEHIND = JSON.stringify({
@@ -123,18 +123,38 @@ describe('projectPlan and the commands (FR1.3, FR2.3, NFR1)', () => {
   });
 });
 
-describe('isWorkflowRunning (FR4)', () => {
+describe('isWorkflowRunning (FR4, US-0041)', () => {
   const NOW = 1_000_000_000;
   const idle = { anyBusy: () => false };
-  it('is true for a busy agent tab or an AI-DLC write within 5 minutes', () => {
-    expect(isWorkflowRunning({ anyBusy: () => true }, null, NOW)).toBe(true);
-    expect(isWorkflowRunning(idle, NOW - 4 * 60 * 1000, NOW)).toBe(true);
-    expect(isWorkflowRunning({ state: (tab) => (tab === 'agent' ? 'busy' : 'idle') }, null, NOW)).toBe(true);
+  const flight = (at) => ({ name: 'release-0-2-14', stage: 'code-generation', at });
+  it('is true for a busy agent tab or a stage write within a minute, while the active intent is in flight', () => {
+    expect(isWorkflowRunning({ anyBusy: () => true }, flight(null), NOW)).toBe(true);
+    expect(isWorkflowRunning(idle, flight(NOW - 50 * 1000), NOW)).toBe(true);
+    expect(isWorkflowRunning({ state: (tab) => (tab === 'agent' ? 'busy' : 'idle') }, flight(null), NOW)).toBe(true);
   });
 
   it('is false otherwise, also without a terminal', () => {
-    expect(isWorkflowRunning(idle, NOW - 6 * 60 * 1000, NOW)).toBe(false);
-    expect(isWorkflowRunning(idle, null, NOW)).toBe(false);
-    expect(isWorkflowRunning(null, null, NOW)).toBe(false);
+    expect(isWorkflowRunning(idle, flight(NOW - 61 * 1000), NOW)).toBe(false); // US-0041 AC3: gone within a minute
+    expect(isWorkflowRunning(idle, flight(null), NOW)).toBe(false);
+    expect(isWorkflowRunning(null, flight(null), NOW)).toBe(false);
+  });
+
+  it('is false with no in-flight intent, whatever the agent tab does (US-0041 AC1)', () => {
+    expect(isWorkflowRunning({ anyBusy: () => true }, null, NOW)).toBe(false);
+  });
+});
+
+describe('inFlightIntent (US-0041 AC1)', () => {
+  const active = { dirName: '261122-release-0-2-14', slug: 'release-0-2-14', active: true, status: 'in-flight', currentStage: 'code-generation' };
+  it('is the active intent while it is in flight and not parked', () => {
+    expect(inFlightIntent([{ dirName: 'x', active: false }, active])).toEqual({ name: 'release-0-2-14', stage: 'code-generation' });
+  });
+
+  it('is null for a complete or parked active intent, or none', () => {
+    expect(inFlightIntent([{ ...active, status: 'complete' }])).toBeNull();
+    expect(inFlightIntent([{ ...active, stateStatus: 'Completed' }])).toBeNull();
+    expect(inFlightIntent([{ ...active, parked: true }])).toBeNull();
+    expect(inFlightIntent([{ ...active, active: false }])).toBeNull();
+    expect(inFlightIntent([])).toBeNull();
   });
 });

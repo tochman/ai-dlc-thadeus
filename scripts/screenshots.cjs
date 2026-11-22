@@ -1,5 +1,6 @@
-// US-1101 FR3.3: retakes the README screenshots (docs/screenshots/intents.png, cost.png, features.png, timeline.png)
-// from the built app, against invented demo projects, so no real project names, branches or costs show.
+// US-1101 FR3.3, US-1103, US-1102: retakes the README screenshots (docs/screenshots/intents.png, timeline.png, cost.png,
+// features.png, releases.png, configuration.png) and the animated docs/screenshots/demo.gif from the built app, against
+// invented demo projects, so no real project names, branches or costs show. Needs ffmpeg for the GIF.
 // Usage: npm run screenshots (builds with electron-vite first, then runs this file as Electron's main script).
 //
 // Isolation: everything lives in tests/.tmp/screenshots (gitignored). appData points there before the app's main
@@ -128,9 +129,9 @@ const EPICS = [
     title: 'Note Editor',
     intro: 'Write notes in Markdown, with autosave, so nothing is ever lost.',
     stories: [
-      ['US-0101', 'Write a note in Markdown', 'done'],
-      ['US-0102', 'Autosave while typing', 'done'],
-      ['US-0103', 'Word count per note', 'done']
+      ['US-0101', 'Write a note in Markdown', 'done', 'v1.0.0'],
+      ['US-0102', 'Autosave while typing', 'done', 'v1.0.0'],
+      ['US-0103', 'Word count per note', 'done', 'v1.1.0']
     ]
   },
   {
@@ -139,9 +140,9 @@ const EPICS = [
     title: 'Organise',
     intro: 'Find any note again: tags, search and pinned notes.',
     stories: [
-      ['US-0201', 'Tag notes', 'done'],
-      ['US-0202', 'Search titles, text and tags', 'done'],
-      ['US-0203', 'Pin notes to the top', 'planned']
+      ['US-0201', 'Tag notes', 'done', 'v1.1.0'],
+      ['US-0202', 'Search titles, text and tags', 'done', 'v1.1.0'],
+      ['US-0203', 'Pin notes to the top', 'planned', 'v1.3.0']
     ]
   },
   {
@@ -150,8 +151,8 @@ const EPICS = [
     title: 'Sharing',
     intro: 'Work on notebooks together, with clear access rights.',
     stories: [
-      ['US-0301', 'Share a notebook', 'progress'],
-      ['US-0302', 'Comments on a note', 'planned']
+      ['US-0301', 'Share a notebook', 'progress', 'v1.2.0'],
+      ['US-0302', 'Comments on a note', 'planned', 'v1.2.0']
     ]
   },
   {
@@ -160,12 +161,15 @@ const EPICS = [
     title: 'Offline & Export',
     intro: 'Your notes are yours: they work offline and leave in plain files.',
     stories: [
-      ['US-0401', 'Offline mode', 'done'],
-      ['US-0402', 'Export as Markdown', 'done']
+      ['US-0401', 'Offline mode', 'done', 'v1.2.0'],
+      ['US-0402', 'Export as Markdown', 'done', 'v1.2.0']
     ]
   }
 ];
 const MARK = { done: '✅ Done', progress: '🚧 In progress', planned: '📋 Planned' };
+const TAGGED = ['v1.0.0', 'v1.1.0']; // released; v1.2.0 and v1.3.0 are planned (US-1103: the Releases view)
+/** A story's status text with its release: "✅ Released in v1.1.0" or "📋 Planned, for v1.3.0". */
+const markOf = (s, v) => (TAGGED.includes(v) ? `✅ Released in ${v}` : `${MARK[s]}, for ${v}`);
 
 const iso = (ms) => new Date(ms).toISOString().replace(/\.\d{3}Z$/, 'Z');
 const write = (file, text) => {
@@ -347,7 +351,7 @@ function featuresDocs(root) {
   );
   for (const e of EPICS) {
     const stories = e.stories.map(
-      ([id, title, s]) => `**${id}: ${title}** ${MARK[s]}
+      ([id, title, s, v]) => `**${id}: ${title}** ${markOf(s, v)}
 - As a **note taker**, in order to **keep my thoughts in order**, I would like to **${title.toLowerCase()}**.
 - **Epic:** ${e.id}
 - **Priority:** ${s === 'planned' ? 'Medium' : 'High'}
@@ -358,12 +362,25 @@ function featuresDocs(root) {
 - **Dependencies:** None
 `
     );
-    const status = e.stories.map(([id, , s]) => `${MARK[s].split(' ')[0]} ${id} ${MARK[s].split(' ').slice(1).join(' ').toLowerCase()}`).join('. ');
+    const status = e.stories
+      .map(([id, , s, v]) => {
+        const m = markOf(s, v);
+        return `${m.split(' ')[0]} ${id} ${m.split(' ').slice(1).join(' ').toLowerCase()}`;
+      })
+      .join('. ');
     write(
       path.join(root, 'docs/features', e.file),
       `# ${e.id}: ${e.title}\n\n> Epic file — for an overview of all epics see [FEATURES.md](../FEATURES.md).\n\n---\n\n> ${e.intro}\n\n**Stories:** ${e.stories.map(([id]) => id).join(', ')}\n\n**Status (2026-11-14):** ${status}.\n\n---\n\n## User Stories\n\n${stories.join('\n')}`
     );
   }
+  const slice = (v) =>
+    EPICS.flatMap((e) =>
+      e.stories.filter((st) => st[3] === v).map(([id, title, s]) => `| ${id} | ${e.id.slice(5)} | ${title} | High | Medium | — | ${MARK[s]} |`)
+    );
+  write(
+    path.join(root, 'docs/releases/1.2.0.md'),
+    `# Release plan v1.2.0\n\n**Theme:** Notes that work anywhere, and with others.\n\n## The v1.2.0 slice\n\n| Story | Epic | Title | Priority | Complexity | Depends on | Status |\n|-------|------|-------|----------|------------|------------|--------|\n${slice('v1.2.0').join('\n')}\n`
+  );
 }
 
 function makeProject(root, intents, branch, withFeatures) {
@@ -407,6 +424,7 @@ function makeProject(root, intents, branch, withFeatures) {
   git('init', '-q', '-b', branch);
   git('add', '-A');
   git('commit', '-q', '-m', 'Demo project');
+  if (withFeatures) for (const v of TAGGED) git('tag', v);
 }
 
 function prepare() {
@@ -469,11 +487,26 @@ async function drive(win) {
     await sleep(800);
   };
   const shot = async (name) => {
+    // The hooks notice comes back per view; hide it again (US-1103: clean shots).
+    await js(`document.querySelector('[data-testid="agent-hooks-strip-dismiss"]')?.click()`);
     await sleep(1500);
     const image = (await win.webContents.capturePage()).resize({ ...SIZE, quality: 'best' });
     fs.writeFileSync(path.join(OUT, name), image.toPNG());
     console.log(`docs/screenshots/${name}`);
   };
+
+  // US-1102: frames for the README's animated GIF, taken the whole run through (about 5 a second).
+  const frames = path.join(WORK, 'frames');
+  fs.mkdirSync(frames, { recursive: true });
+  let n = 0;
+  let recording = true;
+  const recorder = (async () => {
+    while (recording) {
+      const image = (await win.webContents.capturePage()).resize({ width: 960, quality: 'good' });
+      fs.writeFileSync(path.join(frames, `${String(n++).padStart(4, '0')}.png`), image.toPNG());
+      await sleep(200);
+    }
+  })();
 
   await waitFor('[data-testid="intent-list-row"]');
   // The demo projects have no agent hooks installed; hide that notice for this run (it is not saved).
@@ -490,6 +523,30 @@ async function drive(win) {
   await click('[data-testid="project-view-switch-features"]');
   await click('[data-testid="features-view-epic"]', 'Sharing');
   await shot('features.png');
+  await click('[data-testid="features-view-tab-releases"]');
+  await click('[data-testid="features-view-release"]', 'v1.2.0');
+  await shot('releases.png');
+  await click('[data-testid="project-view-switch-config"]');
+  await shot('configuration.png');
+  await click('[data-testid="project-view-switch-intents"]');
+  await sleep(1500);
+
+  recording = false;
+  await recorder;
+  // 1.6× speed, 10 frames a second, one shared palette: about 12 s, kept under 5 MB.
+  execFileSync('ffmpeg', [
+    '-y',
+    '-loglevel',
+    'error',
+    '-framerate',
+    '5',
+    '-i',
+    path.join(frames, '%04d.png'),
+    '-vf',
+    'setpts=PTS/1.6,fps=10,split[a][b];[a]palettegen=max_colors=96[p];[b][p]paletteuse=dither=bayer:bayer_scale=4',
+    path.join(OUT, 'demo.gif')
+  ]);
+  console.log('docs/screenshots/demo.gif');
 }
 
 const profile = prepare();

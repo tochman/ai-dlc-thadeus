@@ -123,6 +123,29 @@ describe('IntentList', () => {
     expect(rowSlugs()).toEqual(['epic29-small-k2-fixes', 'orphan-notes', 'epic02-finish']);
   });
 
+  // Arrives newest first, as mergeIntents gives it.
+  const mixed = [
+    { ...base, dirName: '261122-c-done', slug: 'c-done', status: 'complete', date: '2026-11-22' },
+    { ...base, dirName: '261121-b-open', slug: 'b-open', status: 'in-flight', date: '2026-11-21' },
+    { ...base, dirName: '261120-d-parked', slug: 'd-parked', status: 'in-flight', parked: true, date: '2026-11-20' },
+    { ...base, dirName: '261119-e-unknown', slug: 'e-unknown', status: null, date: '2026-11-19' },
+    { ...base, dirName: '261118-a-active', slug: 'a-active', status: 'in-flight', active: true, date: '2026-11-18' }
+  ];
+
+  it('sorts by date with the active intent on top, then open and parked work, then the rest, each newest first (US-0040 FR4.1)', () => {
+    render(<IntentList intents={mixed} selected={null} onSelect={vi.fn()} />);
+    expect(rowSlugs()).toEqual(['a-active', 'b-open', 'd-parked', 'c-done', 'e-unknown']);
+  });
+
+  it('keeps the name and cost sorts free of the open-work grouping (US-0040 FR4.4)', () => {
+    const costs = { available: true, perIntent: { '261122-c-done': costEntry(9), '261118-a-active': costEntry(1) } };
+    render(<IntentList intents={mixed} selected={null} onSelect={vi.fn()} cost={costs} />);
+    fireEvent.change(screen.getByTestId('intent-list-sort'), { target: { value: 'name' } });
+    expect(rowSlugs()).toEqual(['a-active', 'b-open', 'c-done', 'd-parked', 'e-unknown']);
+    fireEvent.change(screen.getByTestId('intent-list-sort'), { target: { value: 'cost' } });
+    expect(rowSlugs().slice(0, 2)).toEqual(['c-done', 'a-active']);
+  });
+
   it('shows the cost in USD, "–" with an explanation when there is no entry, and nothing without a ledger (FR1.2, FR1.4, FR1.5)', () => {
     const { rerender } = render(<IntentList intents={intents} selected={null} onSelect={vi.fn()} cost={cost} />);
     const cells = screen.getAllByTestId('intent-list-row-cost');
@@ -182,5 +205,21 @@ describe('IntentList', () => {
     const done = [{ ...intents[2], active: true }];
     render(<IntentList intents={done} selected={null} onSelect={vi.fn()} />);
     expect(screen.queryByText('Aktiv')).toBeNull();
+  });
+});
+
+describe('IntentList parked mark (US-0510)', () => {
+  it("a parked intent's row shows the LCARS mark with its stage (AC4.1.1)", () => {
+    const list = [{ ...intents[0], parked: true, parkedStage: 'code-generation' }, intents[1], intents[2]];
+    render(<IntentList intents={list} selected={null} onSelect={vi.fn()} />);
+    const marks = screen.getAllByTestId('intent-parked');
+    expect(marks).toHaveLength(1);
+    expect(marks[0].textContent).toBe('Parkerad vid Code Generation');
+    expect(marks[0].closest('[data-testid="intent-list-row"]').querySelector('.intent-slug').textContent).toBe('epic29-small-k2-fixes');
+  });
+
+  it('shows no mark on intents that are not parked (AC4.1.6)', () => {
+    render(<IntentList intents={[{ ...intents[0], parked: false, parkedStage: null }, intents[2]]} selected={null} onSelect={vi.fn()} />);
+    expect(screen.queryByTestId('intent-parked')).toBeNull();
   });
 });
