@@ -8,7 +8,7 @@
 
 **Stories:** US-0401, US-0402, US-0403, US-0404, US-0405, US-0406, US-0407, US-0408, US-0409, US-0410, US-0411, US-0412, US-0413, US-0414, US-0415, US-0416, US-0417
 
-**Status (2026-11-22):** ✅ US-0401–US-0411 released (v0.1.1–v0.2.5). 📋 US-0412 planned, for v0.3.2. ✅ US-0413 released in v0.2.7. ✅ US-0414 released in v0.2.8. ✅ US-0415 released in v0.2.13. 🚧 US-0416 in progress, for v0.2.14. 🚧 US-0417 in progress, for v0.2.14. Each story names its release.
+**Status (2026-11-22):** ✅ US-0401–US-0411 released (v0.1.1–v0.2.5). 📋 US-0412 planned, for v0.3.2. ✅ US-0413 released in v0.2.7. ✅ US-0414 released in v0.2.8. ✅ US-0415 released in v0.2.13. ✅ US-0416 done, for v0.2.14. ✅ US-0417 done, for v0.2.14. Each story names its release.
 
 ---
 
@@ -327,26 +327,26 @@
 
 ---
 
-**US-0416: Settings › Tools is one clear, grouped LCARS view** 🚧 In progress, for v0.2.14
+**US-0416: Settings › Tools is one clear, grouped LCARS view** ✅ Done, for v0.2.14
 - As a **developer checking that my tools are set up**, in order to **see at a glance what is found, what is missing and what needs updating**, I would like **Settings › Tools grouped by purpose, with one row per tool, its state as a chip, and its actions in one place**.
 - **Epic:** EPIC-04
 - **Priority:** Medium
 - **Complexity:** Medium
 - **Background:** Asked for 2026-11-22 with a screenshot: "rather messy and not very intuitive". The view is a grid of same-size cards of uneven height with large empty areas. AI-DLC shows up three times (the AI-DLC CLI card, the AI-DLC Program card with "Newer: v2.11.4", and AI-DLC in this project with long file lists that run off the bottom). Long paths wrap over three lines. Every card repeats "Found automatically" and "Choose…". Bitbucket's username and app-password form sits among tool paths. A missing tool (GitLab CLI) looks like the others apart from small orange text. Built in `src/renderer/SettingsView.jsx` (`Tools`) and `src/renderer/AidlcUpdate.jsx`.
 - **Acceptance Criteria:**
-  - [ ] The view is grouped by purpose, each group an LCARS section: AI-DLC (the CLI, its update and this project's AI-DLC files together, once), Coding agents (Claude Code, opencode, …), Git hosts (GitHub CLI, GitLab CLI, Bitbucket sign-in), System (shell).
-  - [ ] Each tool is one compact row: name, version, a state chip (found, missing, update available, chosen by hand), and its actions (Choose…, Update) at the row's end; the path shows shortened, in full on hover and copyable.
-  - [ ] A missing or outdated tool stands out by its chip and colour, with what it is needed for and what to do in one line.
-  - [ ] Long lists (the project's changed AI-DLC files) are folded to a count, open on request, and never push the rest of the view out of sight.
-  - [ ] Bitbucket's sign-in sits in the Git hosts group as its own row with a Sign in action, not as an always-open form.
-  - [ ] Everything the view does today keeps working (choose a path, rescan, update AI-DLC, update the project files, save Bitbucket credentials).
-  - [ ] It follows the LCARS interface and works at narrow widths; every text goes through `t()` in `sv.json` and `en.json`; rows and actions carry `data-testid`s.
+  - [x] The view is grouped by purpose, each group an LCARS section: AI-DLC (the CLI, its update and this project's AI-DLC files together, once), Coding agents (Claude Code, opencode, …), Git hosts (GitHub CLI, GitLab CLI, Bitbucket sign-in), System (shell).
+  - [x] Each tool is one compact row: name, version, a state chip (found, missing, update available, chosen by hand), and its actions (Choose…, Update) at the row's end; the path shows shortened, in full on hover and copyable.
+  - [x] A missing or outdated tool stands out by its chip and colour, with what it is needed for and what to do in one line.
+  - [x] Long lists (the project's changed AI-DLC files) are folded to a count, open on request, and never push the rest of the view out of sight.
+  - [x] Bitbucket's sign-in sits in the Git hosts group as its own row with a Sign in action, not as an always-open form.
+  - [x] Everything the view does today keeps working (choose a path, rescan, update AI-DLC, update the project files, save Bitbucket credentials).
+  - [x] It follows the LCARS interface and works at narrow widths; every text goes through `t()` in `sv.json` and `en.json`; rows and actions carry `data-testid`s.
 - **Notes:** A redesign of one view, so it runs on the `express` plan (or `visual-express` with a mockup first). Not a fix: no behaviour changes. Builds on US-0035 (tool lookup) and US-0504 (AI-DLC update); the wait notice there is US-0041.
 - **Dependencies:** US-0504, US-0035, US-0041, US-0417
 
 ---
 
-**US-0417: A richer LCARS language across the app: nested frames, quiet colour, dense readouts** 🚧 In progress, for v0.2.14
+**US-0417: A richer LCARS language across the app: nested frames, quiet colour, dense readouts** ✅ Done, for v0.2.14
 - As a **developer who lives in the console**, in order to **read state at a glance and enjoy the look**, I would like **the app's LCARS look taken further, after the two reference screens the person gave, as shared pieces every view uses**.
 - **Epic:** EPIC-04
 - **Priority:** Medium
@@ -361,25 +361,25 @@
   - **Two control shapes:** rounded pills are actions (Settings, Auto-idle, Red alert); square blocks are navigation and readouts. Ours mix them (square "Choose…" actions, pill Resume, square Park).
   - **Texture:** stacks of hairlines, code numbers ("70-678") on arm blocks, small dot and notch marks fill the margins with meaning-light detail. Ours have a few hairlines.
 - **Acceptance Criteria:**
-  - [ ] A mockup of the views (Intents with the intent head, Features › Epics, Settings › Tools, Configuration, Cost, Activity) and the About and Update dialogs in the new language is approved by the person before code.
-  - [ ] Shared pieces in `theme.css` and `Lcars.jsx`: a nested frame (outer, inner and hairline, segmented bars, a title set in a frame break), a tile with a state strip, a readout table (tabular figures, legend squares, three brightness levels), a scale slider/meter and a segmented meter.
-  - [ ] The nested frame also comes in a diagonal form: a 45° elbow with rounded joints, hairlines running parallel outside and inside it, and an outlined tag with a dot cluster in its corner; views use round and diagonal elbows on purpose: the diagonal frame marks the data sub-views (Cost, Velocity and the like, at app level and in an intent's tabs), the round frame stays for the main views, as the person suggested on 2026-11-22; the mockup confirms which views get which.
-  - [ ] Nav blocks can carry a thin state strip at their left edge. No grid or `+` marks behind content: content sits on plain black (decided 2026-11-22).
-  - [ ] Containment rules, written in the theme and obeyed everywhere (asked 2026-11-22: "elements do not break the design of parent elements"): a child never extends past its parent's outline (a segment takes its bar's thickness, a block its column's width); no local bulges, a bar has one thickness along its length; elements are separated by the standard gaps, never overlap or touch a frame line, hairline or curve; an elbow's radii follow the thickness of the bars it joins; text stays inside its own element; one spacing scale and one set of bar thicknesses.
-  - [ ] Readouts never look like controls: a read-only meter or scale has no knob, thumb or handle and no hover or pointer change; knobs, thumbs and pills are only for things that can be changed (asked 2026-11-22).
-  - [ ] One colour rule, written down in the theme: structure grey/slate, live values steel, key value white, coral/red for alert and selection only; amber is kept for one meaning (the person's attention) or dropped.
-  - [ ] One shape rule: actions are pills, navigation and readouts are square blocks; every view follows it.
-  - [ ] No boxed cards with borders remain; panels sit inside frames.
-  - [ ] The three mocked views are rebuilt with the shared pieces; other views pick them up as they are touched.
-  - [ ] Contrast stays at WCAG AA for text; motion respects reduced motion; works at narrow widths.
-  - [ ] Navigation stays as it is: the same left arm, blocks and order, the same views, tabs and lists in the same places. Only the look changes (asked 2026-11-22: "making the LCARS look and feel better, not redesigning the whole app"); the one structural change in v0.2.14 is US-0416's grouping inside Settings › Tools.
-  - [ ] The list-column drawer (US-0415) works on every list column: Intents, Activity, Features › Epics, Features › Releases and the Editor's file tree. It takes the new look: the toggle is the last element of the list's heading row (no extra column) and a slim LCARS strip when folded (count and vertical label), without amber; folding and opening animate smoothly (width, frame and content together, no jump in the main view) and switch instantly under reduced motion.
-  - [ ] Hide terminal / Show terminal moves to the last segment of a thin bar along the window's foot, in the lower-right corner, styled like Full screen in the top bar so the two sit as a pair (asked 2026-11-22); the terminal's elbow keeps the mark.
-  - [ ] The token detail view (`src/renderer/TokenDetail.jsx`) is renamed "Activity" ("Aktivitet" in Swedish): its title, the intent head's button that opens it, and their `t()` keys in `en.json` and `sv.json` (asked 2026-11-22). It is a data sub-view in the diagonal frame; its chart drops the amber band for a steel or slate tone with legend squares.
-  - [ ] Settings gets a way out: a "‹ Back to <view>" pill on its title bar, and Esc, return to the view and project shown before Settings opened (asked 2026-11-22). The app's name and mark have one home that obeys the containment rules (the mark alone in the top-left elbow, the name as the label of the arm's foot block), with no duplicate watermark.
-  - [ ] Every view enters with one shared, reusable sequence, after the Activity mockup (asked 2026-11-22): the frame slides in, the elbow band wipes, bars draw out, blocks slide in in turn, content rises, charts and meters grow from their baseline. It runs on entering a view only, stays well under a second, never blocks clicks, and is off under reduced motion.
-  - [ ] The About dialog (`AboutDialog.jsx`) is redesigned in the new language, and the app update (check for updates, update available, downloading, ready to restart, error) becomes one LCARS dialog, opened by "Check for updates" and when an update is found (asked 2026-11-22).
-  - [ ] Built in our own app's terms only: no ships, insignia, names or other franchise artwork from the references.
+  - [x] A mockup of the views (Intents with the intent head, Features › Epics, Settings › Tools, Configuration, Cost, Activity) and the About and Update dialogs in the new language is approved by the person before code.
+  - [x] Shared pieces in `theme.css` and `Lcars.jsx`: a nested frame (outer, inner and hairline, segmented bars, a title set in a frame break), a tile with a state strip, a readout table (tabular figures, legend squares, three brightness levels), a scale slider/meter and a segmented meter.
+  - [x] The nested frame also comes in a diagonal form: a 45° elbow with rounded joints, hairlines running parallel outside and inside it, and an outlined tag with a dot cluster in its corner; views use round and diagonal elbows on purpose: the diagonal frame marks the data sub-views (Cost, Velocity and the like, at app level and in an intent's tabs), the round frame stays for the main views, as the person suggested on 2026-11-22; the mockup confirms which views get which.
+  - [x] Nav blocks can carry a thin state strip at their left edge. No grid or `+` marks behind content: content sits on plain black (decided 2026-11-22).
+  - [x] Containment rules, written in the theme and obeyed everywhere (asked 2026-11-22: "elements do not break the design of parent elements"): a child never extends past its parent's outline (a segment takes its bar's thickness, a block its column's width); no local bulges, a bar has one thickness along its length; elements are separated by the standard gaps, never overlap or touch a frame line, hairline or curve; an elbow's radii follow the thickness of the bars it joins; text stays inside its own element; one spacing scale and one set of bar thicknesses.
+  - [x] Readouts never look like controls: a read-only meter or scale has no knob, thumb or handle and no hover or pointer change; knobs, thumbs and pills are only for things that can be changed (asked 2026-11-22).
+  - [x] One colour rule, written down in the theme: structure grey/slate, live values steel, key value white, coral/red for alert and selection only; amber is kept for one meaning (the person's attention) or dropped.
+  - [x] One shape rule: actions are pills, navigation and readouts are square blocks; every view follows it.
+  - [x] No boxed cards with borders remain; panels sit inside frames.
+  - [x] The three mocked views are rebuilt with the shared pieces; other views pick them up as they are touched.
+  - [x] Contrast stays at WCAG AA for text; motion respects reduced motion; works at narrow widths.
+  - [x] Navigation stays as it is: the same left arm, blocks and order, the same views, tabs and lists in the same places. Only the look changes (asked 2026-11-22: "making the LCARS look and feel better, not redesigning the whole app"); the one structural change in v0.2.14 is US-0416's grouping inside Settings › Tools.
+  - [x] The list-column drawer (US-0415) works on every list column: Intents, Activity, Features › Epics, Features › Releases and the Editor's file tree. It takes the new look: the toggle is the last element of the list's heading row (no extra column) and a slim LCARS strip when folded (count and vertical label), without amber; folding and opening animate smoothly (width, frame and content together, no jump in the main view) and switch instantly under reduced motion.
+  - [x] Hide terminal / Show terminal moves to the last segment of a thin bar along the window's foot, in the lower-right corner, styled like Full screen in the top bar so the two sit as a pair (asked 2026-11-22); the terminal's elbow keeps the mark.
+  - [x] The token detail view (`src/renderer/TokenDetail.jsx`) is renamed "Activity" ("Aktivitet" in Swedish): its title, the intent head's button that opens it, and their `t()` keys in `en.json` and `sv.json` (asked 2026-11-22). It is a data sub-view in the diagonal frame; its chart drops the amber band for a steel or slate tone with legend squares.
+  - [x] Settings gets a way out: a "‹ Back to <view>" pill on its title bar, and Esc, return to the view and project shown before Settings opened (asked 2026-11-22). The app's name and mark have one home that obeys the containment rules (the mark alone in the top-left elbow, the name as the label of the arm's foot block), with no duplicate watermark.
+  - [x] Every view enters with one shared, reusable sequence, after the Activity mockup (asked 2026-11-22): the frame slides in, the elbow band wipes, bars draw out, blocks slide in in turn, content rises, charts and meters grow from their baseline. It runs on entering a view only, stays well under a second, never blocks clicks, and is off under reduced motion.
+  - [x] The About dialog (`AboutDialog.jsx`) is redesigned in the new language, and the app update (check for updates, update available, downloading, ready to restart, error) becomes one LCARS dialog, opened by "Check for updates" and when an update is found (asked 2026-11-22).
+  - [x] Built in our own app's terms only: no ships, insignia, names or other franchise artwork from the references.
 - **Notes:** Runs on the `visual-express` plan (mockup first). Built before US-0416 in v0.2.14, so Settings › Tools is redesigned once, with these pieces; US-0412 (pipeline cards) uses them later.
 - **Dependencies:** US-0414, US-0415
 

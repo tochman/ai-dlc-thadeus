@@ -8,7 +8,7 @@
 
 **Stories:** US-1201, US-1202, US-1203
 
-**Status (2026-11-22):** ✅ US-1201 and US-1202 released in v0.2.8 (US-1202 is built inside US-1201). 🚧 US-1203 in progress, for v0.2.14. Each story names its release.
+**Status (2026-11-22):** ✅ US-1201 and US-1202 released in v0.2.8 (US-1202 is built inside US-1201). ✅ US-1203 done, for v0.2.14. Each story names its release.
 
 ---
 
@@ -74,20 +74,20 @@
 
 ---
 
-**US-1203: The intent's Comments tab shows what needs attention, and why it matters** 🚧 In progress, for v0.2.14
+**US-1203: The intent's Comments tab shows what needs attention, and why it matters** ✅ Done, for v0.2.14
 - As a **developer following an intent**, in order to **see at once what needs me and what reviewers said**, I would like **the Comments tab to lead with what waits on me, show the pull request's review as a conversation, and say plainly what it shows and why it is empty**.
 - **Epic:** EPIC-12
 - **Priority:** Medium
 - **Complexity:** Medium
 - **Background:** Asked for 2026-11-22: the person "struggles to understand what it displays and the value of the data displayed". Today (`src/renderer/StoryComments.jsx`, US-1201 AC-4) the tab lists, oldest first and all alike, the comments and reviews of the story's pull request (found by the story number in its branch or title) together with AI-DLC's open questions, approvals and review findings. With no matching pull request it shows one line ("No open pull request has the story number in its branch or title. The rows below are AI-DLC's.") and then rows such as "APPROVAL · macbookpro · Approved Requirements Analysis", which the Timeline tab already shows.
 - **Acceptance Criteria:**
-  - [ ] The tab is named for what it holds ("Review" / "Granskning"), with a one-line description under its title.
-  - [ ] **Needs you** comes first: AI-DLC questions waiting for an answer, review findings marked NOT-READY, the pull request's change requests and unresolved threads; each row says what to do and opens the right place (the agent dialog, or the comment on GitHub). With nothing waiting, it says so in one line.
-  - [ ] **Pull request**: its number, state and reviewers as a readout, then the review comments grouped by thread (file and line when there is one), newest thread first, resolved threads folded.
-  - [ ] Approvals are not repeated here; they stay in Timeline.
-  - [ ] **Given** no pull request matches, **then** the tab says which story number it looked for and how to link a pull request (the number in its branch or title), instead of a bare sentence.
-  - [ ] It follows the LCARS language of US-0417 (readout rows with state strips, pills for actions); every text goes through `t()` in `sv.json` and `en.json`.
-  - [ ] A test fails without the change and passes with it; the existing suite stays green.
+  - [x] The tab is named for what it holds ("Review" / "Granskning"), with a one-line description under its title.
+  - [x] **Needs you** comes first: AI-DLC questions waiting for an answer, review findings marked NOT-READY, the pull request's change requests and unresolved threads; each row says what to do and opens the right place (the agent dialog, or the comment on GitHub). With nothing waiting, it says so in one line.
+  - [x] **Pull request**: its number, state and reviewers as a readout, then the review comments grouped by thread (file and line when there is one), newest thread first, resolved threads folded.
+  - [x] Approvals are not repeated here; they stay in Timeline.
+  - [x] **Given** no pull request matches, **then** the tab says which story number it looked for and how to link a pull request (the number in its branch or title), instead of a bare sentence.
+  - [x] It follows the LCARS language of US-0417 (readout rows with state strips, pills for actions); every text goes through `t()` in `sv.json` and `en.json`.
+  - [x] A test fails without the change and passes with it; the existing suite stays green.
 - **Notes:** Content and look; the data sources (`gh`/`glab`/Bitbucket, the audit log) stay as they are.
 - **Dependencies:** US-1201, US-0417
 
