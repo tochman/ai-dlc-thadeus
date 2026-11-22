@@ -622,3 +622,22 @@
   - [ ] A test fails without the fix and passes with it; the existing suite stays green.
 - **Notes:** A code fix, so it runs on the `quick-fix` plan. Likely touches `src/main/planningSync.js` (`pushFrom`, `pushAll`, `replayStep`), `src/main/planningRecord.js` (`addContent`), the planning sync row in the Releases view and their tests. The 2026-11-20 block was cleared by hand: delete `dash/planning` and choose "Keep theirs" for `docs/releases/0.2.13.md`.
 - **Dependencies:** US-0036, US-0608
+
+---
+
+**US-0039: Fresh session and Compact act now, or ask AI-DLC to park, instead of waiting for an idle that never comes** 📋 Planned, for v0.2.14
+- As a **developer whose AI-DLC session has grown large**, in order to **really get a fresh session when I pick one**, I would like **the handoff dialog to act at once when it is safe, and otherwise to tell AI-DLC to stop at its next safe point so the app can clear and resume**.
+- **Epic:** EPIC-00
+- **Priority:** High
+- **Complexity:** Small
+- **Background:** Reported 2026-11-22. Choosing Fresh session (or Compact) shows "Waiting until the agent is idle…" and nothing happens. `sendHandoff` (`src/renderer/terminalControl.js`) types nothing until `isIdle` (`src/main/sessionHandoff.js`) is true, for up to 30 minutes. `isIdle` is false while a question is open, which includes the AI-DLC gate the page itself was offered at, and false all through an autonomous run that never stops.
+- **Acceptance Criteria:**
+  - [ ] **Given** AI-DLC waits at a gate (its question is open), **when** I pick Fresh session, **then** the app hands the question back, and types `/clear` and `/aidlc --resume` at once; the gate shows again in the new session.
+  - [ ] **Given** the agent is working, **when** I pick Fresh session, **then** the app types one line into the session asking AI-DLC to park at its next safe point (`aidlc engine orchestrate park --person-asked`), the page says so, and once the agent stops the app types `/clear` and `/aidlc --resume`.
+  - [ ] **Given** the agent is working, **when** I pick Compact, **then** the same park request is sent and `/compact` follows when the agent stops.
+  - [ ] **Given** the agent is already idle, **then** the choice is typed at once, as today.
+  - [ ] Every new text goes through `t()` in `sv.json` and `en.json`.
+  - [ ] A test fails without the fix and passes with it; the existing suite stays green.
+- **Notes:** A code fix, so it runs on the `quick-fix` plan. Likely touches `src/main/sessionHandoff.js` (`isIdle`, `commandsFor`), `src/renderer/terminalControl.js` (`sendHandoff`), `src/renderer/AgentDialog.jsx` (`HandoffPage`) and their tests. A hard interrupt (Esc) mid-turn is left out: it can cut a file write short.
+- **Dependencies:** US-0213, US-0026
+
