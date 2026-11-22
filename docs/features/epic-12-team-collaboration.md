@@ -8,7 +8,7 @@
 
 **Stories:** US-1201, US-1202, US-1203
 
-**Status (2026-11-22):** ✅ US-1201 and US-1202 released in v0.2.8 (US-1202 is built inside US-1201). 📋 US-1203 planned. Each story names its release.
+**Status (2026-11-22):** ✅ US-1201 and US-1202 released in v0.2.8 (US-1202 is built inside US-1201). 📋 US-1203 planned, for v0.2.14. Each story names its release.
 
 ---
 
@@ -74,7 +74,7 @@
 
 ---
 
-**US-1203: The intent's Comments tab shows what needs attention, and why it matters** 📋 Planned
+**US-1203: The intent's Comments tab shows what needs attention, and why it matters** 📋 Planned, for v0.2.14
 - As a **developer following an intent**, in order to **see at once what needs me and what reviewers said**, I would like **the Comments tab to lead with what waits on me, show the pull request's review as a conversation, and say plainly what it shows and why it is empty**.
 - **Epic:** EPIC-12
 - **Priority:** Medium
