@@ -20,7 +20,7 @@ import ProjectSettingsView, { AIDLC_SECTIONS, confirmHarnessSwitch } from './Pro
 import CostRulesSection from './CostRulesSection.jsx';
 import ModelProfilesSection from './ModelProfilesSection.jsx'; // US-0210
 import ProfileSwitchDialog from './ProfileSwitchDialog.jsx'; // US-0210
-import { Frame } from './Lcars.jsx';
+import { Frame, RoundFrame } from './Lcars.jsx';
 import { featureDocsPrompt, lifecycleRulePrompt } from './featureDocsPrompt.js';
 import { DELIVERY_DEFAULT } from '../main/parsers/releases.js';
 import { TerminalProvider, useTerminal } from './TerminalContext.jsx';
@@ -447,55 +447,70 @@ function ProjectContent({
               onSetup={offerSetup}
             />
           )}
-          {view === 'config' && configSection === 'costRules' && <CostRulesSection projectId={project.projectId} />}
-          {view === 'config' && configSection === 'modelProfiles' && (
-            <ModelProfilesSection projectId={project.projectId} harness={harnessId} settings={settings} />
-          )}
           <ProfileSwitchDialog
             ask={profileAsk}
             answer={(yes) => window.bridge.answerModelProfile(project.projectId, profileAsk.kind, yes, harnessId)}
             onClose={() => setProfileAsk(null)}
           />
-          {view === 'config' && !AIDLC_SECTIONS.includes(configSection) && (
-            <ProjectSettingsView
-              section={configSection}
-              agentHooksFocus={hooksFocus}
-              projectId={project.projectId}
-              settings={settings}
-              harness={harnessId}
-              harnesses={detected}
-              onSetup={offerSetup}
-              onAddHarness={isAidlc ? () => setAddingHarness(true) : undefined}
-            />
-          )}
-          {isAidlc && aidlcShown && (
-            <div className="detail-tabs" role="tablist" aria-label={t('config.tabsLabel')}>
-              {AIDLC_TABS.map((id) => (
-                <button
-                  key={id}
-                  role="tab"
-                  aria-selected={(id === 'plans') === plansShown}
-                  className={`lcars-block lcars-block--tab lcars-block--${(id === 'plans') === plansShown ? 'active' : 'mid'}`}
-                  onClick={() => onView?.('config', { configSection: 'aidlc', aidlcTab: id })}
-                  data-testid={`aidlc-view-tab-${id}`}
-                >
-                  {id === 'plans' ? t('settings.project.sections.plans') : t('config.tabSettings')}
-                </button>
-              ))}
+          {/* US-0417: Configuration in the round frame, the section's title on its bar. The frame stays mounted while
+              another view shows, so the AI-DLC configuration keeps its reads (FR6.1). */}
+          {(view === 'config' || configShown) && (
+            <div className="config-pane" hidden={view !== 'config'}>
+              <RoundFrame
+                className="config-frame"
+                title={t(`settings.project.sections.${configSection}`)}
+                sub={t('config.frameSub', { project: project.name })}
+                footer={selectableHarness(harnessId)?.label}
+              >
+                {view === 'config' && configSection === 'costRules' && <CostRulesSection projectId={project.projectId} />}
+                {view === 'config' && configSection === 'modelProfiles' && (
+                  <ModelProfilesSection projectId={project.projectId} harness={harnessId} settings={settings} />
+                )}
+                {view === 'config' && !AIDLC_SECTIONS.includes(configSection) && (
+                  <ProjectSettingsView
+                    section={configSection}
+                    agentHooksFocus={hooksFocus}
+                    projectId={project.projectId}
+                    settings={settings}
+                    harness={harnessId}
+                    harnesses={detected}
+                    onSetup={offerSetup}
+                    onAddHarness={isAidlc ? () => setAddingHarness(true) : undefined}
+                  />
+                )}
+                {isAidlc && aidlcShown && (
+                  // US-0417: the Settings | Plans switch as tiles with a top strip; the chosen one is brighter.
+                  <div className="lcars-tiles" role="tablist" aria-label={t('config.tabsLabel')}>
+                    {AIDLC_TABS.map((id) => (
+                      <button
+                        key={id}
+                        type="button"
+                        role="tab"
+                        aria-selected={(id === 'plans') === plansShown}
+                        className={`lcars-tile lcars-e-block${(id === 'plans') === plansShown ? ' is-sel' : ''}`}
+                        onClick={() => onView?.('config', { configSection: 'aidlc', aidlcTab: id })}
+                        data-testid={`aidlc-view-tab-${id}`}
+                      >
+                        {id === 'plans' ? t('settings.project.sections.plans') : t('config.tabSettings')}
+                      </button>
+                    ))}
+                  </div>
+                )}
+                {isAidlc && (configShown || settingsShown) && (
+                  <div className="project-mode" hidden={!settingsShown}>
+                    <ConfigView
+                      projectId={project.projectId}
+                      visible={visible && view === 'config'}
+                      harnesses={detected}
+                      defaultHarness={harnessId}
+                      onSetup={() => setAddingHarness(true)}
+                    />
+                  </div>
+                )}
+                {isAidlc && plansShown && <PlansView projectId={project.projectId} visible={visible} harness={harnessId} />}
+              </RoundFrame>
             </div>
           )}
-          {isAidlc && (configShown || settingsShown) && (
-            <div className="project-mode" hidden={!settingsShown}>
-              <ConfigView
-                projectId={project.projectId}
-                visible={visible && view === 'config'}
-                harnesses={detected}
-                defaultHarness={harnessId}
-                onSetup={() => setAddingHarness(true)}
-              />
-            </div>
-          )}
-          {isAidlc && plansShown && <PlansView projectId={project.projectId} visible={visible} harness={harnessId} />}
           {view === 'editor' && (
             <div className="editor-view" data-testid="editor-view">
               <FileTree projectId={project.projectId} onOpen={editor.open} />

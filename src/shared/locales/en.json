@@ -919,6 +919,7 @@
     "loading": "Reading the AI-DLC configuration…",
     "tabsLabel": "AI-DLC views",
     "tabSettings": "Settings",
+    "frameSub": "Project settings · {project}",
     "harnessLabel": "Harness",
     "section": {
       "models": "Models and effort",
@@ -1213,7 +1214,24 @@
     "kept": "Installed. The downloaded package is kept at",
     "relaunch": "Restart now",
     "upToDate": "You have the latest version.",
-    "confirmRestart": "An agent tab is working. Updating restarts the app and ends its terminal sessions. Update anyway?"
+    "confirmRestart": "An agent tab is working. Updating restarts the app and ends its terminal sessions. Update anyway?",
+    "dialogTitle": "Update",
+    "show": "Show",
+    "checking": "Checking for an update",
+    "checkingText": "Asking GitHub for the latest release of {repo}…",
+    "upToDateTitle": "Up to date",
+    "downloadTitle": "Downloading",
+    "passwordTitle": "Installing needs your password",
+    "readyTitle": "Ready to restart",
+    "errorTitle": "The update was stopped",
+    "whatToDo": "Try again in a while. If that does not help, download the release from GitHub and install it yourself.",
+    "retry": "Try again",
+    "busyWarn": "An agent tab is working. Updating restarts the app and ends its terminal.",
+    "installed": "Installed",
+    "latest": "Latest",
+    "checked": "Checked",
+    "source": "Source",
+    "footer": "{repo} · releases"
   },
   "tokens": {
     "title": "Live tokens",
@@ -1325,9 +1343,15 @@
     }
   },
   "aboutDialog": {
-    "exit": "EXIT",
-    "licenses": "LICENSES",
-    "licensesFailed": "The licences could not be opened: {error}"
+    "title": "About",
+    "licenses": "Licences",
+    "licensesFailed": "The licences could not be opened: {error}",
+    "version": "Version",
+    "patch": "Patch",
+    "platform": "Platform",
+    "build": "Build",
+    "madeBy": "Made by",
+    "repository": "Repository"
   },
   "menu": {
     "about": "About {app}",

@@ -643,6 +643,45 @@ button.lcars-nb:hover:not(:disabled), a.lcars-nb:hover { filter: brightness(1.15
   .lcars-df-arm-close { display: none; }
 }
 
+/* Round frame (RoundFrame in Lcars.jsx): a top and a bottom elbow with circular arcs only, the radii from elbowRadii
+   (--rf-ro / --rf-ri for the top bar, --rf-rob / --rf-rib for the bottom bar). The title heads the top bar; the arm is
+   filled, or holds readout blocks on black; a corner block (the dialogs' brand) takes the arm column of the top elbow.
+   Content sits on plain black, above the elbows' inner cut. */
+.lcars-rf {
+  --rf-c: var(--slate-4);
+  display: grid;
+  grid-template-columns: var(--rf-arm) max(var(--rf-ri), var(--rf-rib)) minmax(0, 1fr);
+  grid-template-rows:
+    var(--rf-top) max(var(--rf-ri), calc(var(--rf-ro) - var(--rf-top))) minmax(0, 1fr) max(var(--rf-rib), calc(var(--rf-rob) - var(--rf-bot)))
+    var(--rf-bot);
+  min-width: 0;
+  min-height: 0;
+}
+.lcars-rf-tl, .lcars-rf-bl { position: relative; grid-column: 1 / 3; background: var(--rf-c); }
+.lcars-rf-tl { grid-row: 1 / 3; border-top-left-radius: var(--rf-ro); }
+.lcars-rf-bl { grid-row: 4 / 6; border-bottom-left-radius: var(--rf-rob); }
+.lcars-rf-tl::after, .lcars-rf-bl::after { content: ''; position: absolute; left: var(--rf-arm); right: 0; background: var(--bg); }
+.lcars-rf-tl::after { top: var(--rf-top); bottom: 0; border-top-left-radius: var(--rf-ri); }
+.lcars-rf-bl::after { top: 0; bottom: var(--rf-bot); border-bottom-left-radius: var(--rf-rib); }
+.lcars-rf-top { grid-column: 3; grid-row: 1; min-width: 0; padding-left: var(--gap); }
+.lcars-rf-top > .lcars-segbar { height: var(--rf-top); }
+.lcars-rf-bot { grid-column: 3; grid-row: 5; display: flex; gap: var(--gap); min-width: 0; height: var(--rf-bot); padding-left: var(--gap); }
+.lcars-rf-bot .lcars-seg-lab { font-size: 11px; }
+.lcars-rf-arm { grid-column: 1; grid-row: 3; min-height: 0; background: var(--rf-c); }
+.lcars-rf.has-readouts .lcars-rf-arm { display: flex; flex-direction: column; gap: var(--gap); padding: var(--gap) 0; background: none; }
+.lcars-rf.has-readouts .lcars-rf-arm > .lcars-dblk:last-child { flex: 1; }
+.lcars-rf-body { position: relative; z-index: 1; grid-column: 2 / 4; grid-row: 2 / 5; min-width: 0; min-height: 0; overflow: auto; padding: var(--gap-l) 0 var(--gap-l) var(--gap-l); }
+.lcars-rf.has-corner .lcars-rf-tl { grid-column: 1; display: flex; align-items: center; justify-content: flex-end; padding-right: 12px; border-top-left-radius: var(--rf-ri); color: var(--on-light); }
+.lcars-rf.has-corner .lcars-rf-tl::after { display: none; }
+.lcars-rf.has-corner .lcars-rf-top { grid-column: 2 / 4; }
+/* Pills in a row under content; readout rows (label, value) with the key value white. */
+.lcars-pills { display: flex; flex-wrap: wrap; align-items: center; gap: var(--gap); margin-top: var(--gap-l); }
+.lcars-kv { display: grid; grid-template-columns: minmax(120px, 200px) minmax(0, 1fr); gap: 8px 16px; margin: 0; }
+.lcars-kv dt { color: var(--muted); font-size: 13px; letter-spacing: 0.08em; text-transform: uppercase; }
+.lcars-kv dd { margin: 0; color: var(--steel-text); font-size: 17px; overflow-wrap: anywhere; font-variant-numeric: tabular-nums; }
+.lcars-kv dd.is-key { color: var(--white); font-weight: 600; }
+.lcars-kv dd.is-mono { font-family: var(--font-mono); font-size: 13px; letter-spacing: 0; }
+
 /* Effects. Static versions under Dämpad and Av follow at the end of the file. */
 .is-breathing { animation: lcars-breathe 2.4s ease-in-out infinite; }
 .is-attn { animation: lcars-attn 1.6s ease-in-out infinite; }
@@ -1428,10 +1467,11 @@ a.md-link:hover { color: var(--steel-light); }
 .editor-monaco { min-height: 320px; border-left: var(--gap) solid var(--steel-deep); }
 .editor-preview { overflow: auto; background: var(--slate-1); padding: 8px 12px; }
 .editor-diff { height: 360px; }
-/* The update notice (EPIC-04 US-0407): a calm notice in the corner, never a modal. */
-.update-notice { position: fixed; right: 16px; bottom: 16px; z-index: 40; width: min(440px, calc(100vw - 32px)); max-height: 60vh; overflow: auto; border-left: var(--gap) solid var(--steel); display: flex; flex-direction: column; gap: 8px; }
-.update-notice h2 { margin: 0; color: var(--steel); font-size: 15px; letter-spacing: 0.04em; text-transform: uppercase; }
-.update-notice-notes { max-height: 30vh; overflow: auto; }
+/* The update notice (EPIC-04 US-0407): a calm notice in the corner, never a modal; US-0417: the way into the Update
+   dialog, a black block with the live steel strip and pills. */
+.update-notice { position: fixed; right: 16px; bottom: 16px; z-index: 40; width: min(380px, calc(100vw - 32px)); padding: 10px 14px 12px; background: var(--bg); border-left: var(--gap) solid var(--steel); box-shadow: 0 0 0 1px var(--slate-3); }
+.update-notice h2 { margin: 0; color: var(--steel-text); font-size: 15px; letter-spacing: 0.04em; text-transform: uppercase; }
+.update-notice .lcars-pills { margin-top: var(--gap-m); }
 .features-links { display: flex; flex-wrap: wrap; gap: var(--gap); align-items: center; margin: 0 0 8px; }
 /* Releases (US-0603): the Epics | Releases switch, the story's release picker and the stories under a release. */
 .features-release { display: flex; flex-wrap: wrap; gap: var(--gap); align-items: center; margin: 0 0 8px; }
@@ -1479,69 +1519,98 @@ a.md-link:hover { color: var(--steel-light); }
 }
 .settings-dialog::backdrop { background: var(--backdrop); }
 .settings-dialog h2 { margin: 0 0 14px; font-size: 28px; }
-/* US-0408: the padding sits on the body so a click on the <dialog> itself means the backdrop. */
-/* US-0409: an LCARS panel. The grid is the elbow: the arm spans every row, the top and foot bars join it, and the
-   main area overlaps the arm by its corner radius so the inner curve shows the arm's colour behind it. */
-.about-dialog { padding: 0; border: 0; border-radius: 0; width: min(760px, 94vw); max-width: none; background: var(--bg); }
-.about-lcars {
-  display: grid;
-  grid-template-columns: 112px 1fr;
-  grid-template-rows: var(--bar) 1fr var(--bar) auto;
-  padding: 14px 16px 10px;
+/* US-0417: the one LCARS dialog frame (LcarsDialog.jsx) for About and Update: a native modal over the dimmed app, the
+   round frame with the brand corner, the title on the 30 px bar and Close as its last pill. The padding sits on the
+   box, so a click on the <dialog> itself is the backdrop. */
+dialog.lcars-dlg { width: min(780px, calc(100vw - 32px)); max-width: none; max-height: calc(100vh - 32px); padding: 0; border: 0; overflow: auto; background: transparent; color: var(--text); }
+dialog.lcars-dlg::backdrop { background: var(--backdrop); }
+.lcars-dlg-box { padding: 16px; background: var(--bg); }
+.lcars-dlg .lcars-rf { min-height: 420px; }
+.lcars-dlg .lcars-rf-tl { background: var(--slate-4); }
+.lcars-dlg-brand { display: flex; align-items: center; gap: 8px; }
+.lcars-dlg-brand .app-mark { color: var(--amber); } /* amber: the Auctum mark */
+.lcars-dlg .lcars-dblk { margin-left: 11px; }
+.lcars-dlg-error { margin: var(--gap-m) 0 0; color: var(--coral-soft); overflow-wrap: anywhere; }
+/* About (US-0408): the mark with the name, full name and tagline, readout rows, the Licences pill. */
+.about-head { display: flex; align-items: center; gap: var(--gap-l); margin-bottom: var(--gap-l); }
+.about-mark { flex: none; color: var(--amber); } /* amber: the mark */
+.about-name { margin: 0; color: var(--white); font-size: 28px; font-weight: 700; letter-spacing: 0.04em; }
+.about-full { margin: 4px 0 0; color: var(--text-2); font-size: 15px; }
+.about-tag { margin: 4px 0 0; color: var(--steel-text); font-size: 15px; }
+/* Update (US-0407 states): the big current → new line, notes, warnings, the coral error strip, the running meter. */
+.update-dialog-big { margin: 0 0 var(--gap-m); font-size: 30px; font-variant-numeric: tabular-nums; }
+.update-dialog-big .is-key { color: var(--white); font-weight: 600; }
+.update-dialog-big .is-dim { color: var(--muted); }
+.update-dialog-text { margin: 0 0 var(--gap-m); color: var(--text-2); overflow-wrap: anywhere; }
+.update-dialog-notes { max-height: 30vh; overflow: auto; margin-bottom: var(--gap-m); color: var(--text-2); }
+.update-dialog-warn { margin: var(--gap-m) 0; color: var(--coral-soft); }
+.update-dialog-err { position: relative; margin-bottom: var(--gap-l); padding-left: 16px; }
+.update-dialog-err::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: var(--coral); }
+.update-dialog-err p { margin: 8px 0; overflow-wrap: anywhere; }
+.update-dialog-err code { display: block; margin-top: 6px; padding: 8px 10px; background: var(--slate-1); border-left: var(--gap) solid var(--slate-4); white-space: pre-wrap; }
+.update-dialog .lcars-segmeter { height: 16px; }
+.update-dialog input[type='password'] { flex: 1 1 200px; max-width: 280px; border-left-color: var(--slate-4); }
+:root[data-motion='full'] .update-dialog-run { animation: lcars-breathe 1.4s ease-in-out infinite; }
+
+/* US-0417: Configuration in the round frame. The sections inside lose their card: each one's head is a section heading
+   (the first is already the frame's title), fields are dark bars, actions are pills, choices are square blocks, tables
+   are readouts. No amber but the focus ring. */
+.config-pane { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+.config-pane[hidden] { display: none; }
+.config-frame { flex: 1; }
+.config-frame .lcars-rf-body > * + * { margin-top: var(--gap-l); }
+.config-frame .settings-frame { display: block; margin: 0 0 var(--gap-l); padding: 0; background: none; border: 0; border-radius: 0; animation: none; }
+.config-frame .settings-frame > .lcars-card-head { display: flex; align-items: flex-end; gap: var(--gap); min-height: var(--bar-thin); margin-bottom: var(--gap-m); padding: 0; background: none; border-radius: 0; animation: none; }
+.config-frame .settings-frame > .lcars-card-head::after { content: ''; flex: 1 1 24px; height: 1px; background: var(--slate-2); }
+.config-frame .settings-frame > .lcars-card-head > h2 { margin: 0; color: var(--steel); font-size: var(--title-section); line-height: 1; text-box: trim-both cap alphabetic; }
+.config-frame .settings-frame-elbow { display: none; }
+.config-frame .settings-frame > .lcars-card-body { padding: 0; background: none; border-radius: 0; }
+.config-frame .project-settings > :first-child > .settings-frame:first-child > .lcars-card-head,
+.config-frame .project-settings > :first-child > .settings-frame:first-child > .lcars-card-head::after { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+.config-frame .btn { align-items: center; justify-content: center; min-height: var(--bar-med); padding: 0 16px; border-radius: 999px; font-weight: 600; font-size: 14px; }
+.config-frame .btn-accent { background: var(--slate-5); }
+.config-frame .btn-quiet { background: none; border: 1px solid var(--slate-4); color: var(--text-2); font-weight: 400; }
+.config-frame :is(input[type='text'], input[type='number'], textarea) { min-height: 32px; padding: 5px 10px; background: var(--slate-1); border: 0; border-left: var(--gap) solid var(--slate-4); color: var(--text); font-family: var(--font-mono); font-size: 13px; letter-spacing: 0; }
+.config-frame .field-label { color: var(--muted); font-size: 13px; letter-spacing: 0.08em; }
+.config-frame .lcars-radio-group { gap: var(--gap); flex-wrap: wrap; }
+.config-frame .lcars-radio-group > .lcars-block { min-width: 120px; height: 40px; }
+.config-frame .lcars-radio-group > .lcars-block--mid { background: var(--slate-2); color: var(--text-2); }
+.config-frame .lcars-radio-group > .lcars-block--active { background: var(--slate-5); color: var(--on-light); }
+.config-frame .config-section { padding: 0; background: none; border: 0; }
+.config-frame .config-section h2 { color: var(--steel); font-size: var(--title-section); }
+.config-frame .cost-table th { border-bottom: 0; padding: 0 8px 4px 0; font-size: 12px; letter-spacing: 0.08em; }
+.config-frame .cost-table td { border-bottom: 0; padding: 3px 8px 3px 0; color: var(--text-2); }
+.config-frame .cost-table tr:first-child td { color: var(--white); }
+.config-frame .panel { background: none; padding: 0; }
+.config-frame .tag-active { background: var(--steel-deep); color: var(--text); }
+/* The AI-DLC Settings | Plans switch: square tiles with a strip on top, the chosen one light with black text. */
+.lcars-tiles { display: flex; flex-wrap: wrap; gap: var(--gap); }
+.lcars-tile {
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  justify-content: flex-end;
+  min-width: 140px;
+  min-height: 48px;
+  padding: 10px 10px 5px;
+  border: 0;
+  background: var(--slate-2);
+  color: var(--text-2);
+  font: 600 16px/1.1 var(--font-head);
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
 }
-.about-lcars-arm {
-  grid-column: 1; grid-row: 1 / 4;
-  display: flex; flex-direction: column; align-items: flex-start; gap: var(--gap);
-  padding: 44px 30px 40px 14px;
-  background: var(--slate-5);
-  border-radius: 48px 0 0 48px;
-}
-.about-lcars-top { grid-column: 2; grid-row: 1; display: flex; justify-content: flex-end; background: var(--slate-5); padding-right: 20%; }
-.about-lcars-foot { grid-column: 2; grid-row: 3; background: var(--slate-5); }
-.about-lcars-main {
-  grid-column: 2; grid-row: 2;
-  position: relative; margin-left: -24px;
-  min-height: 280px; padding: 8px 4px 16px 44px;
-  background: var(--bg);
-  border-radius: 24px 0 0 24px;
-  display: flex; flex-direction: column; gap: 10px;
-}
-.about-lcars-code { background: var(--bg); color: var(--text-2); font-size: 11px; letter-spacing: 0.1em; line-height: 1; padding: 3px 6px; font-variant-numeric: tabular-nums; }
-.about-lcars-code--bar { align-self: stretch; display: flex; align-items: center; padding: 0 8px; }
-.about-lcars-exit {
-  position: relative; margin: 10px 0; width: 100%; min-height: 40px; padding: 14px 8px 4px 12px;
-  border: 0; border-radius: 0; cursor: pointer;
-  background: var(--steel-light); color: var(--on-light);
-  font: 600 16px/1 var(--font-head); letter-spacing: 0.12em; text-align: left; text-transform: uppercase;
-}
-.about-lcars-exit::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 5px; background: var(--alert); }
-.about-lcars-exit:focus-visible { outline: 2px solid var(--amber); outline-offset: 2px; }
-/* US-1101 FR6.2: LICENSES, an arm block like EXIT with a light tab instead of the alert one (US-0417). */
-.about-lcars-licenses { margin-top: 0; }
-.about-lcars-licenses::before { background: var(--slate-5); }
-.about-lcars-error { margin: 12px 0 0; color: var(--alert); font-size: 14px; letter-spacing: 0.04em; overflow-wrap: anywhere; }
-.about-lcars-title { margin: 0; align-self: flex-end; color: var(--steel); font: 700 44px/1 var(--font-head); letter-spacing: 0.08em; text-transform: uppercase; white-space: nowrap; }
-.about-lcars-content { display: flex; align-items: center; gap: 20px; }
-.about-lcars-content .splash-mark { flex-shrink: 0; }
-.about-lcars-bars { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 12px; }
-.about-lcars-row { display: flex; flex-direction: column; gap: 5px; }
-.about-lcars-bar { display: flex; align-items: center; gap: var(--gap); }
-.about-lcars-bar-text {
-  flex: 1; min-width: 0; padding: 5px 10px;
-  background: var(--text-2); color: var(--slate-2);
-  border-radius: 14px 0 0 14px;
-  font-size: 15px; font-weight: 600; line-height: 1.2; letter-spacing: 0.08em; text-align: right; text-transform: uppercase;
-  overflow-wrap: anywhere;
-}
-.about-lcars-tab { flex: 0 0 18px; align-self: stretch; }
-.about-lcars-line { flex: 0 0 48px; height: 2px; }
-.about-lcars-bullet { display: flex; align-items: center; gap: var(--gap); padding-left: 10px; }
-.about-lcars-dot { width: 8px; height: 8px; border-radius: 50%; }
-.about-lcars-hair { flex: 1; height: 1px; opacity: 0.6; }
-.about-lcars-tone--slate { background: var(--slate-4); }
-.about-lcars-tone--steel-light { background: var(--steel-light); }
-.about-lcars-tone--coral-soft { background: var(--coral-soft); }
-.about-lcars-status { grid-column: 2; grid-row: 4; margin: 6px 0 0; text-align: right; color: var(--text-2); font-size: 12px; letter-spacing: 0.1em; text-transform: uppercase; font-variant-numeric: tabular-nums; }
+.lcars-tile::before { content: ''; position: absolute; left: 0; right: 0; top: 0; height: 4px; background: var(--slate-3); }
+.lcars-tile:hover:not(.is-sel) { filter: brightness(1.15); }
+.lcars-tile.is-sel { background: var(--slate-5); color: var(--on-light); }
+.lcars-tile.is-sel::before { background: var(--steel); }
+/* Model profiles as outlined cards; the chosen (active) one is brighter. */
+.lcars-pcard { position: relative; border: 1px solid var(--slate-3); padding: 52px 10px 10px; margin: 0 0 var(--gap-m); }
+.lcars-pcard > .lcars-pcard-title { position: absolute; left: 0; right: 0; top: 0; float: none; width: 100%; padding: 12px 10px 4px; border-bottom: 1px solid var(--slate-3); color: var(--steel-text); font-size: 19px; text-align: right; }
+.lcars-pcard > .lcars-pcard-title::before { content: ''; position: absolute; left: 10px; top: 4px; width: 45%; height: 3px; background: var(--slate-3); }
+.lcars-pcard.is-chosen { border-color: var(--slate-5); }
+.lcars-pcard.is-chosen > .lcars-pcard-title { color: var(--white); border-color: var(--slate-5); }
+.lcars-pcard.is-chosen > .lcars-pcard-title::before { background: var(--white); }
 .settings-group { border: 0; border-top: 1px solid var(--slate-2); margin: 0 0 14px; padding: 8px 0 0; display: flex; flex-direction: column; gap: var(--gap); }
 .settings-setup { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
 .settings-help { margin: 4px 0 0; font-size: 13px; max-width: 460px; }
