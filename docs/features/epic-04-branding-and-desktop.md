@@ -370,6 +370,7 @@
   - [ ] No boxed cards with borders remain; panels sit inside frames.
   - [ ] The three mocked views are rebuilt with the shared pieces; other views pick them up as they are touched.
   - [ ] Contrast stays at WCAG AA for text; motion respects reduced motion; works at narrow widths.
+  - [ ] Navigation stays as it is: the same left arm, blocks and order, the same views, tabs and lists in the same places. Only the look changes (asked 2026-11-22: "making the LCARS look and feel better, not redesigning the whole app"); the one structural change in v0.2.14 is US-0416's grouping inside Settings › Tools.
   - [ ] Built in our own app's terms only: no ships, insignia, names or other franchise artwork from the references.
 - **Notes:** Runs on the `visual-express` plan (mockup first). Built before US-0416 in v0.2.14, so Settings › Tools is redesigned once, with these pieces; US-0412 (pipeline cards) uses them later.
 - **Dependencies:** US-0414, US-0415
