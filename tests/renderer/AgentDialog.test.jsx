@@ -862,3 +862,31 @@ describe('AgentDialog: a new page and the page on screen (US-0031)', () => {
     expect(screen.getByTestId('agent-dialog-new-count').textContent).toBe('+1 ny');
   });
 });
+
+describe('AgentDialog: the project band with several projects open (US-0046)', () => {
+  const names = { pa: 'alpha', pb: 'beta' };
+  const props = () => base({ projectNameOf: (id) => names[id] ?? '' });
+  const alpha = () => hookEvent('gate-2026-11-14', { projectId: 'pa' });
+  const beta = () => hookEvent('reordered', { eventId: 'h2', sessionId: 's2', projectId: 'pb', arrivedAtMs: 2 });
+  const band = () => screen.getByTestId('agent-dialog-project').textContent;
+
+  it('showProject: the page names its project in the band (AC1)', () => {
+    show(<AgentDialog {...props()} showProject events={[alpha()]} />);
+    expect(band()).toBe('PROJEKT alpha');
+  });
+
+  it('paging shows each page its own project (AC2)', () => {
+    show(<AgentDialog {...props()} showProject events={[alpha(), beta()]} />);
+    expect(band()).toBe('PROJEKT alpha');
+    fireEvent.click(screen.getByTestId('agent-dialog-next'));
+    expect(band()).toBe('PROJEKT beta');
+    fireEvent.click(screen.getByTestId('agent-dialog-prev'));
+    expect(band()).toBe('PROJEKT alpha');
+  });
+
+  it('without showProject there is no band and the where line is as before (AC3)', () => {
+    show(<AgentDialog {...props()} events={[alpha()]} />);
+    expect(screen.queryByTestId('agent-dialog-project')).toBeNull();
+    expect(screen.getByTestId('agent-dialog-where').textContent).toBe('alpha · 261114-agent-dialogs · code-generation');
+  });
+});

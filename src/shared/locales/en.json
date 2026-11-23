@@ -1538,6 +1538,7 @@
       }
     },
     "context": "{project} · {intent} · {stage}",
+    "project": "PROJECT {project}",
     "state": {
       "sending": "Sending…",
       "sent": "Sent to {harness}.",

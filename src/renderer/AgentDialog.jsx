@@ -14,6 +14,8 @@
 // with the agent's own choices in its order and the refusing one below a rule. Nothing is preselected; a digit only
 // focuses a choice and Enter or a click sends it. For GUARD_MS after the page shows, or after the window gains focus,
 // every key, click and Esc on the dialog is swallowed (K8, review R-03).
+//
+// US-0046: with two or more projects open (showProject), every page names its project in an LCARS band above the head.
 import { Fragment, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { t as translate } from '../shared/i18n.js';
@@ -539,7 +541,8 @@ function HandoffPage({ ev, keysRef, guarded, onHandoff }) {
  *   projectNameOf?: (projectId) => string, onAuditSend?: (q, answer) => Promise<{ok, error?}>,
  *   onOpenTerminal: (ev) => void, onClose: () => void, onNotice?: (text: string) => void}} props events in pager order
  *   (AgentEvents, C3); harnessOf gives a project's running harness for audit events (a table entry) or null; onNotice
- *   shows a short app notice (u2 K11: a permission handed back to the terminal)
+ *   shows a short app notice (u2 K11: a permission handed back to the terminal); showProject (US-0046) adds the
+ *   project band
  */
 export default function AgentDialog({
   open,
@@ -551,7 +554,8 @@ export default function AgentDialog({
   onOpenTerminal,
   onClose,
   onNotice,
-  onHandoff // US-0213: (ev, choice, { onWaiting }) => Promise<{ ok, reason? }>
+  onHandoff, // US-0213: (ev, choice, { onWaiting }) => Promise<{ ok, reason? }>
+  showProject = false // US-0046: several projects open, so each page names its project in a band
 }) {
   const { t } = useTranslation();
   const ref = useRef(null);
@@ -723,6 +727,11 @@ export default function AgentDialog({
     >
       {open && ev && (
         <div>
+          {showProject && (
+            <p className="agent-dialog-project" data-testid="agent-dialog-project">
+              {t('agentDialog.project', { project: where.project })}
+            </p>
+          )}
           <div className={`question-popup-head${permPage ? ' is-permission' : ''}`}>
             <h2 id="agent-dialog-title" ref={titleRef} tabIndex={-1} data-testid="agent-dialog-title">
               {waiting}
