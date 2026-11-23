@@ -1,0 +1,12 @@
+{
+  "stage": "code-generation",
+  "upstream_ids": ["AC1", "AC2", "AC3", "AC4", "AC5"],
+  "coverage": [
+    { "id": "AC1", "status": "OK", "target": "src/renderer/AgentDialog.jsx" },
+    { "id": "AC2", "status": "OK", "target": "src/renderer/AgentDialog.jsx" },
+    { "id": "AC3", "status": "OK", "target": "src/renderer/App.jsx" },
+    { "id": "AC4", "status": "OK", "target": "src/shared/locales/sv.json" },
+    { "id": "AC5", "status": "OK", "target": "tests/renderer/AgentDialog.test.jsx" }
+  ],
+  "reverse": []
+}
