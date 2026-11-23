@@ -1,0 +1,9 @@
+{
+  "stage": "code-generation",
+  "upstream_ids": ["US-0045-AC1", "US-0045-AC2", "US-0045-AC3"],
+  "coverage": [
+    { "id": "US-0045-AC1", "status": "OK", "target": "src/main/agentEvents.js" },
+    { "id": "US-0045-AC2", "status": "OK", "target": "src/renderer/App.jsx" },
+    { "id": "US-0045-AC3", "status": "OK", "target": "tests/main/agentEvents.test.js" }
+  ]
+}
