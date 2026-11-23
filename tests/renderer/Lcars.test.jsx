@@ -18,6 +18,7 @@ import {
   elbowRadii,
   useEntrance
 } from '../../src/renderer/Lcars.jsx';
+import { HOVER_DELAY_MS } from '../../src/renderer/Tooltip.jsx';
 
 let stored;
 beforeEach(() => {
@@ -302,6 +303,24 @@ describe('curved diagonal frame', () => {
     expect(blocks[0].className).toContain('lcars-strip--live');
     expect(frame.querySelector('svg').getAttribute('aria-hidden')).toBe('true');
     expect(within(frame).getByTestId('lcars-diagonal-body').textContent).toBe('chart');
+  });
+
+  // US-0044 AC1: a long title is shortened by the bar, so its whole name is the app's tooltip, on hover only: a view
+  // that moves focus to its title when it opens shows no tooltip, and no native title attribute is used (US-0414).
+  it('shows the whole title in the tooltip on hover, not on focus (US-0044 AC1)', () => {
+    vi.useFakeTimers();
+    try {
+      render(<DiagonalFrame title="epic29-a-very-long-intent-name">body</DiagonalFrame>);
+      const heading = screen.getByRole('heading', { level: 2 });
+      expect(heading.getAttribute('title')).toBeNull();
+      fireEvent.focus(heading);
+      expect(screen.queryByRole('tooltip')).toBeNull();
+      fireEvent.mouseOver(heading);
+      act(() => vi.advanceTimersByTime(HOVER_DELAY_MS));
+      expect(screen.getByRole('tooltip').textContent).toBe('epic29-a-very-long-intent-name');
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });
 

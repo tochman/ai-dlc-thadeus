@@ -341,8 +341,9 @@ export function DiagonalFrame({ title, as: Title = 'h2', sub, tag, corner, foote
         <span className="lcars-df-x lcars-df-hl-o lcars-e-draw" aria-hidden="true" />
         <span className="lcars-df-x lcars-df-hl-i lcars-e-draw" aria-hidden="true" />
         <div className="lcars-df-x lcars-df-top">
-          {/* US-0044 AC1: the whole title on hover when the bar shortens it (the app's tooltip, US-0414 FR2.2). */}
-          <Tooltip text={typeof title === 'string' ? title : null}>
+          {/* US-0044 AC1: the whole title on hover when the bar shortens it (the app's tooltip, US-0414 FR2.2); hover
+              only (empty focusText), since a view moves focus to its title when it opens (titleRef). */}
+          <Tooltip text={typeof title === 'string' ? title : null} focusText="">
             <Title ref={titleRef} tabIndex={titleRef ? -1 : undefined} className="lcars-title lcars-e-rise">
               {title}
             </Title>
