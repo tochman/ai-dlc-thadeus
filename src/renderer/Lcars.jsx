@@ -341,7 +341,8 @@ export function DiagonalFrame({ title, as: Title = 'h2', sub, tag, corner, foote
         <span className="lcars-df-x lcars-df-hl-o lcars-e-draw" aria-hidden="true" />
         <span className="lcars-df-x lcars-df-hl-i lcars-e-draw" aria-hidden="true" />
         <div className="lcars-df-x lcars-df-top">
-          <Title ref={titleRef} tabIndex={titleRef ? -1 : undefined} className="lcars-title lcars-e-rise">
+          {/* US-0044 AC1: the whole title on hover when the bar shortens it. */}
+          <Title ref={titleRef} tabIndex={titleRef ? -1 : undefined} className="lcars-title lcars-e-rise" title={typeof title === 'string' ? title : undefined}>
             {title}
           </Title>
           {sub != null && <span className="lcars-sseg lcars-seg-lab">{sub}</span>}
