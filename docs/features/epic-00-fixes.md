@@ -6,9 +6,9 @@
 
 > Small fixes the person reports while using the app: something looks off, behaves wrongly or is missing a detail. Each fix becomes a story here, so nothing reported in passing gets lost. A fix that grows into a feature moves to its topic's epic.
 
-**Stories:** US-0001, US-0002, US-0003, US-0004, US-0005, US-0006, US-0007, US-0008, US-0009, US-0010, US-0011, US-0012, US-0013, US-0014, US-0015, US-0016, US-0017, US-0018, US-0019, US-0020, US-0021, US-0022, US-0023, US-0024, US-0025, US-0026, US-0027, US-0028, US-0029, US-0030, US-0031, US-0032, US-0033, US-0034, US-0035, US-0036, US-0037, US-0038, US-0039, US-0040, US-0041, US-0042, US-0043, US-0044
+**Stories:** US-0001, US-0002, US-0003, US-0004, US-0005, US-0006, US-0007, US-0008, US-0009, US-0010, US-0011, US-0012, US-0013, US-0014, US-0015, US-0016, US-0017, US-0018, US-0019, US-0020, US-0021, US-0022, US-0023, US-0024, US-0025, US-0026, US-0027, US-0028, US-0029, US-0030, US-0031, US-0032, US-0033, US-0034, US-0035, US-0036, US-0037, US-0038, US-0039, US-0040, US-0041, US-0042, US-0043, US-0044, US-0045
 
-**Status (2026-11-22):** ✅ US-0001–US-0020 released (v0.2.3–v0.2.6). ✅ US-0021–US-0023 released in v0.2.7. ✅ US-0024 released in v0.2.8. ✅ US-0025 released in v0.2.9. ✅ US-0026 released in v0.2.9. ✅ US-0027 released in v0.2.9. ✅ US-0028 released in v0.2.10. ✅ US-0029 released in v0.2.10. ✅ US-0030 released in v0.2.10. ✅ US-0031 released in v0.2.10. ✅ US-0032 released in v0.2.11. ✅ US-0033 released in v0.2.11. ✅ US-0034 released in v0.2.12. ✅ US-0035 and US-0036 released in v0.2.13. ✅ US-0037, US-0038, US-0039, US-0040, US-0041 and US-0042 released in v0.2.14. 📋 US-0043 planned, for v0.3.0. 🚧 US-0044 in progress. Each story names its release.
+**Status (2026-11-22):** ✅ US-0001–US-0020 released (v0.2.3–v0.2.6). ✅ US-0021–US-0023 released in v0.2.7. ✅ US-0024 released in v0.2.8. ✅ US-0025 released in v0.2.9. ✅ US-0026 released in v0.2.9. ✅ US-0027 released in v0.2.9. ✅ US-0028 released in v0.2.10. ✅ US-0029 released in v0.2.10. ✅ US-0030 released in v0.2.10. ✅ US-0031 released in v0.2.10. ✅ US-0032 released in v0.2.11. ✅ US-0033 released in v0.2.11. ✅ US-0034 released in v0.2.12. ✅ US-0035 and US-0036 released in v0.2.13. ✅ US-0037, US-0038, US-0039, US-0040, US-0041 and US-0042 released in v0.2.14. 📋 US-0043 planned, for v0.2.15. 🚧 US-0044 in progress, for v0.2.15. 📋 US-0045 planned, for v0.2.15. Each story names its release.
 
 ---
 
@@ -696,7 +696,7 @@
 
 ---
 
-**US-0043: A cleaning pass: no ESLint warnings, simpler code** 📋 Planned, for v0.3.0
+**US-0043: A cleaning pass: no ESLint warnings, simpler code** 📋 Planned, for v0.2.15
 - As a **developer working on the app**, in order to **see real problems in the lint output instead of 30 familiar warnings**, I would like **a cleaning pass that clears the ESLint warnings and simplifies the code they point at, using the `/simplify` skill**.
 - **Epic:** EPIC-00
 - **Priority:** Medium
@@ -712,7 +712,7 @@
 
 ---
 
-**US-0044: The intent view fits the window and its parts stay inside their frames** 🚧 In progress
+**US-0044: The intent view fits the window and its parts stay inside their frames** 🚧 In progress, for v0.2.15
 - As a **developer following an intent**, in order to **see all of the intent view without parts cut off or spilling out**, I would like **the intent view's rows, buttons and panels to fit the window and stay inside the LCARS frames**.
 - **Epic:** EPIC-00
 - **Priority:** High
@@ -726,3 +726,18 @@
   - [ ] A test fails without each change and passes with it; the existing suite, the built-app end-to-end tests and the LCARS look stay as they are.
 - **Notes:** A code fix, so it runs on the `quick-fix` plan (`fix/US-0044`). Fix forward as the next patch release.
 - **Dependencies:** US-0417 ✅
+
+---
+
+**US-0045: The agent dialog clears its compact, fresh-session and no-intent pages, and shows the newest message** 📋 Planned, for v0.2.15
+- As a **developer answering the app's dialogs**, in order to **act on what is happening now**, I would like **the dialog to drop its compact, fresh-session and no-intent pages once they no longer apply, and to show a new message when it arrives instead of the last one in the queue**.
+- **Epic:** EPIC-00
+- **Priority:** High
+- **Complexity:** Small
+- **Background:** Reported 2026-11-23: the dialogs still do not clear the compact / new session / no-intent pages, and when a new message comes in, the last message in the queue is shown, not the new one. US-0031 (v0.2.10) fixed the same symptom for the page the dialog was closed on; this case is still open.
+- **Acceptance Criteria:**
+  - [ ] **Given** a compact, fresh-session or no-intent page in the dialog, **when** it no longer applies (it was picked, the session restarted, or an intent became active), **then** it leaves the dialog's queue.
+  - [ ] **Given** the dialog has earlier pages in its queue, **when** a new message arrives, **then** the dialog shows the new message; the earlier pages stay reachable with Previous/Next.
+  - [ ] A test fails without each change and passes with it; the existing suite stays green.
+- **Notes:** A code fix, so it runs on the `quick-fix` plan (`fix/US-0045`).
+- **Dependencies:** US-0031 ✅
