@@ -41,7 +41,7 @@ We ship a desktop app, not a hosted service. A release is a git tag `vX.Y.Z` on 
 
 The gates, in order: the local `.dmg` check by hand; green CI on the release pull request; the merge; the tag. There is no staging environment.
 
-The tag drives `.github/workflows/release.yml`. Its `verify` job checks the tag against `package.json`, runs a gitleaks secret scan, the coverage tests, ESLint, Prettier, and the built-app end-to-end tests. Then `build-mac` (universal `.dmg`) and `build-linux` (`.deb` on Ubuntu 22.04, with a glibc check) run. The `release` job writes `SHA256SUMS.txt` and publishes a GitHub release with `--generate-notes`, not as a prerelease. Pull requests into `main` run the same build and test jobs but do not publish.
+The tag drives `.github/workflows/release.yml`. Its `verify` job checks the tag against `package.json`, runs a gitleaks secret scan, the coverage tests, ESLint, Prettier, and the built-app end-to-end tests. Then `build-mac` (universal `.dmg`) and `build-linux` (`.deb` on Ubuntu 22.04, with a glibc check) run. The `release` job writes `SHA256SUMS.txt` and publishes a GitHub release with `--generate-notes`, not as a prerelease. Story and fix pull requests into `main` run only `verify`. A `release/vX.Y.Z` pull request also runs `build-mac` and `build-linux`, so packaging is proven before the tag. Pull requests never publish. (changed 2026-11-23, #98)
 
 The gitleaks secret scan runs on every pull request in the `verify` job and blocks the merge when it finds a secret. False positives are recorded in `.gitleaksignore` with their fingerprint.
 
