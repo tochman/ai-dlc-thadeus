@@ -153,6 +153,29 @@ describe('App shell: the newest page (US-0031)', () => {
     expect(header()).toBe('Mapp');
   });
 
+  // US-0045 AC2: a new message shows when it arrives, also over a page that is still open; earlier pages stay reachable.
+  it('open on an old question, a newer message moves the dialog to it; Previous reaches the question (US-0045 AC2)', async () => {
+    await renderApp();
+    push('p1', [question()]);
+    await waitFor(() => expect(dialogOpen()).toBe(true));
+    expect(header()).toBe('Val');
+    push('p1', [question(), handoff()]);
+    await waitFor(() => expect(screen.queryByTestId('agent-dialog-handoff-size')).toBeTruthy());
+    fireEvent.click(screen.getByTestId('agent-dialog-prev'));
+    expect(screen.getByText('Vilken fil?')).toBeTruthy();
+  });
+
+  it('closed with pages queued, the newest of several new pages opens the dialog (US-0045 AC2)', async () => {
+    await renderApp();
+    push('p1', [question()]);
+    await waitFor(() => expect(dialogOpen()).toBe(true));
+    fireEvent.click(screen.getByTestId('agent-dialog-close'));
+    const older = question({ eventId: 'h4-q', arrivedAtMs: 7, questions: [{ ...question().questions[0], header: 'Mapp', text: 'Vilken mapp?' }] });
+    push('p1', [question({ state: 'handedBack' }), older, handoff({ arrivedAtMs: 9 })]);
+    await waitFor(() => expect(dialogOpen()).toBe(true));
+    expect(screen.queryByTestId('agent-dialog-handoff-size')).toBeTruthy();
+  });
+
   it('only a sent page left closes the dialog by itself; a live page beside it keeps it open (AC1.4.1, AC1.4.2, FR4)', async () => {
     await renderApp();
     const other = question({ eventId: 'h4-q', arrivedAtMs: 8 });
