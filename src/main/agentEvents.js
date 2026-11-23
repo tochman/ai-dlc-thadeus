@@ -273,6 +273,12 @@ export function createAgentEventStore({
       if (parsed.source === 'compact') s.compactedAtMs ??= now; // the fallback when PostCompact is absent
       for (const w of readyWaits) if (w.sessionId === raw.sessionId && w.sources.includes(parsed.source)) w.resolve(true);
     }
+    // US-0045 AC1: a new session start or a compaction changes the context, so an offer made before it no longer applies.
+    // Only a page still shown goes; a choice under way (waiting, sending) finishes on its own. Before signalFns, so an
+    // offer the controller makes for this signal (the new-session page) comes after.
+    if (parsed.kind === 'session' || parsed.kind === 'postcompact')
+      for (const ev of [...events.values()])
+        if (ev.kind === 'handoff' && ev.sessionId === raw.sessionId && ev.state === 'shown') move(ev, 'ended', { endedBy: 'movedOn' });
     const note = { sessionId: raw.sessionId, projectId: session.projectId, tabId: session.tabId, harness: session.harness, kind: parsed.kind, parsed };
     for (const fn of signalFns) fn(note);
   }
