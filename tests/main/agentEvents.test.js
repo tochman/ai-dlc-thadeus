@@ -616,6 +616,36 @@ describe('handoff pages (US-0213)', () => {
     store.endSession('s1');
     expect(store.list('p1').filter((e) => e.kind === 'handoff')).toEqual([]);
   });
+
+  // US-0045 AC1: an offer made before the context changed no longer applies, so a new session start or a compaction in
+  // the same session ends it; a choice under way finishes on its own, and another session's page stays.
+  const sig = (sessionId, kind, payload) => raw(sessionId, `1700000000-${seq + 200}`, { kind, bytes: Buffer.from(JSON.stringify(payload)) });
+  const handoffs = () => store.list('p1').filter((e) => e.kind === 'handoff');
+
+  for (const [kind, payload] of [
+    ['session', { source: 'clear' }],
+    ['session', { source: 'compact' }],
+    ['session', { source: 'startup' }],
+    ['session', { source: 'resume' }],
+    ['postcompact', { trigger: 'manual' }]
+  ]) {
+    it(`a shown page ends at the session's next ${kind} ${payload.source ?? payload.trigger} (US-0045 AC1)`, () => {
+      start();
+      store.addHandoff('s1', offer);
+      sig('s1', kind, payload);
+      expect(handoffs()).toEqual([]);
+    });
+  }
+
+  it('a page whose choice is under way stays, and another session’s page stays (US-0045 AC1)', () => {
+    start();
+    start('s2', { tabId: 'agent:claude-2' });
+    const busy = store.addHandoff('s1', offer);
+    store.setHandoff(busy, 'waiting');
+    const other = store.addHandoff('s2', offer);
+    sig('s1', 'session', { source: 'clear' });
+    expect(handoffs().map((e) => e.eventId)).toEqual([busy, other]);
+  });
 });
 
 // US-0214 FR1, FR2.3, NFR2: activity events are kept per project as rows, never as a page, and pushed within 2 s.

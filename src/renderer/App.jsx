@@ -226,24 +226,27 @@ export default function App() {
   // Agent events (US-0506 u1 C4): the list per open project, then main's pushes. Only an event not seen before and
   // not waiting since the start opens the dialog (US-0505 FR1.4), and only when alertPlan says so for its kind
   // (US-0506 u5 D2): questions and permissions follow questionAlerts, replies replyAlerts.
-  // US-0031 FR1, FR1.1, FR3: a closed dialog opens on the first new page in pager order; an open one is never moved.
-  // Pushes from several projects can land before the next render: the first new page across all of them wins.
-  const popupOpenRef = useRef(popupOpen);
-  popupOpenRef.current = popupOpen;
-  const firstNewRef = useRef(null);
-  if (!popupOpen) firstNewRef.current = null;
+  // US-0045 AC2 (was US-0031 FR1, FR3): a new page shows when it arrives, whether the dialog is closed or open; the
+  // dialog's page guard (GUARD_MS) keeps a keystroke meant for the old page from answering it. Of several new pages the
+  // newest arrival wins (ties in pager order), also across pushes from several projects before the next render.
+  const newestRef = useRef(null);
+  const newest = (a, b) => {
+    if (!a) return b;
+    const d = b.arrivedAtMs - a.arrivedAtMs;
+    return d > 0 || (d === 0 && byPager(b, a) < 0) ? b : a;
+  };
   const receiveAgentEvents = useCallback((projectId, events) => {
     if (typeof projectId !== 'string' || !Array.isArray(events)) return;
     const seen = seenQuestionsRef.current;
     const fresh = events.filter((e) => !e.early && (e.state === 'shown' || e.state === 'timedOut') && !seen.has(e.eventId));
     for (const e of events) seen.add(e.eventId);
     setAgentEvents((m) => ({ ...m, [projectId]: events }));
-    const opening = fresh.filter((e) => alertPlan(e.kind, alertSettingsRef.current, true).open).sort(byPager);
+    const opening = fresh.filter((e) => alertPlan(e.kind, alertSettingsRef.current, true).open);
     if (!opening.length) return;
-    if (!popupOpenRef.current) {
-      firstNewRef.current = [firstNewRef.current, opening[0]].filter(Boolean).sort(byPager)[0];
-      setPopupFocus({ id: firstNewRef.current.eventId });
-    }
+    const before = newestRef.current;
+    newestRef.current = opening.reduce(newest, before);
+    // A new page older than the one shown last (one listed late) opens the dialog without moving the page being read.
+    if (newestRef.current !== before) setPopupFocus({ id: newestRef.current.eventId });
     setPopupOpen(true);
   }, []);
   useEffect(() => bridge.agentEvents?.onChanged(({ projectId, events }) => receiveAgentEvents(projectId, events)), [receiveAgentEvents]);
