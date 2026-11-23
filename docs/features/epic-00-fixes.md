@@ -8,7 +8,7 @@
 
 **Stories:** US-0001, US-0002, US-0003, US-0004, US-0005, US-0006, US-0007, US-0008, US-0009, US-0010, US-0011, US-0012, US-0013, US-0014, US-0015, US-0016, US-0017, US-0018, US-0019, US-0020, US-0021, US-0022, US-0023, US-0024, US-0025, US-0026, US-0027, US-0028, US-0029, US-0030, US-0031, US-0032, US-0033, US-0034, US-0035, US-0036, US-0037, US-0038, US-0039, US-0040, US-0041, US-0042, US-0043, US-0044, US-0045, US-0046
 
-**Status (2026-11-22):** ✅ US-0001–US-0020 released (v0.2.3–v0.2.6). ✅ US-0021–US-0023 released in v0.2.7. ✅ US-0024 released in v0.2.8. ✅ US-0025 released in v0.2.9. ✅ US-0026 released in v0.2.9. ✅ US-0027 released in v0.2.9. ✅ US-0028 released in v0.2.10. ✅ US-0029 released in v0.2.10. ✅ US-0030 released in v0.2.10. ✅ US-0031 released in v0.2.10. ✅ US-0032 released in v0.2.11. ✅ US-0033 released in v0.2.11. ✅ US-0034 released in v0.2.12. ✅ US-0035 and US-0036 released in v0.2.13. ✅ US-0037, US-0038, US-0039, US-0040, US-0041 and US-0042 released in v0.2.14. 📋 US-0043 planned, for v0.2.15. ✅ US-0044 done, for v0.2.15. ✅ US-0045 done, for v0.2.15. 📋 US-0046 planned, for v0.2.15. Each story names its release.
+**Status (2026-11-23):** ✅ US-0001–US-0020 released (v0.2.3–v0.2.6). ✅ US-0021–US-0023 released in v0.2.7. ✅ US-0024 released in v0.2.8. ✅ US-0025 released in v0.2.9. ✅ US-0026 released in v0.2.9. ✅ US-0027 released in v0.2.9. ✅ US-0028 released in v0.2.10. ✅ US-0029 released in v0.2.10. ✅ US-0030 released in v0.2.10. ✅ US-0031 released in v0.2.10. ✅ US-0032 released in v0.2.11. ✅ US-0033 released in v0.2.11. ✅ US-0034 released in v0.2.12. ✅ US-0035 and US-0036 released in v0.2.13. ✅ US-0037, US-0038, US-0039, US-0040, US-0041 and US-0042 released in v0.2.14. 📋 US-0043 planned, for v0.2.15. ✅ US-0044 done, for v0.2.15. ✅ US-0045 done, for v0.2.15. ✅ US-0046 done, for v0.2.15. Each story names its release.
 
 ---
 
@@ -744,17 +744,17 @@
 
 ---
 
-**US-0046: The agent dialog names the project it comes from when several projects are open** 📋 Planned, for v0.2.15
+**US-0046: The agent dialog names the project it comes from when several projects are open** ✅ Done, for v0.2.15
 - As a **developer with several projects open**, in order to **know which project is asking before I answer**, I would like **each agent dialog page to name the project it comes from**.
 - **Epic:** EPIC-00
 - **Priority:** High
 - **Complexity:** Small
 - **Background:** Reported 2026-11-23: with several projects open, a dialog page does not say which project it comes from, so a question, gate, compact or fresh-session offer can be answered for the wrong project.
 - **Acceptance Criteria:**
-  - [ ] **Given** two or more projects are open, **when** the agent dialog shows a page, **then** the page names the project it comes from (the project's name, as in the project list), in the LCARS look.
-  - [ ] **Given** the dialog's queue holds pages from different projects, **when** I page with Previous/Next, **then** each page shows its own project.
-  - [ ] **Given** only one project is open, **then** the dialog looks as it does now, without a project name.
-  - [ ] The project name goes through `t()` with an ICU placeholder, with the same key in `sv.json` and `en.json`.
-  - [ ] A test fails without each change and passes with it; the existing suite stays green.
+  - [x] **Given** two or more projects are open, **when** the agent dialog shows a page, **then** the page names the project it comes from (the project's name, as in the project list), in the LCARS look.
+  - [x] **Given** the dialog's queue holds pages from different projects, **when** I page with Previous/Next, **then** each page shows its own project.
+  - [x] **Given** only one project is open, **then** the dialog looks as it does now, without a project name.
+  - [x] The project name goes through `t()` with an ICU placeholder, with the same key in `sv.json` and `en.json`.
+  - [x] A test fails without each change and passes with it; the existing suite stays green.
 - **Notes:** A code fix, so it runs on the `quick-fix` plan (`fix/US-0046`).
 - **Dependencies:** US-0031 ✅

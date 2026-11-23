@@ -785,6 +785,7 @@ export default function App() {
         focus={popupFocus}
         harnessOf={(projectId) => selectableHarness(meta[projectId]?.harness)}
         projectNameOf={(projectId) => tabs.find((tab) => tab.projectId === projectId)?.name ?? ''}
+        showProject={tabs.length > 1} // US-0046: name the project on each page when several are open
         onAuditSend={sendAnswer}
         onHandoff={sendHandoff}
         onOpenTerminal={answerInAgent}

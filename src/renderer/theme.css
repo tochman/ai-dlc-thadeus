@@ -1628,6 +1628,8 @@ dialog.lcars-dlg::backdrop { background: var(--backdrop); }
 .question-popup.is-calm { border-left-color: var(--steel-deep); border-top-color: var(--steel-deep); border-bottom-color: var(--slate-2); }
 .question-popup-head { margin: 0 0 10px; padding: 6px 16px; background: var(--steel); color: var(--on-light); border-radius: 0 22px 22px 0; transition: background-color 1.2s ease-out, box-shadow 1.2s ease-out; }
 .question-popup .question-popup-head h2 { margin: 0; font-size: 24px; color: inherit; }
+/* US-0046: with several projects open, an LCARS pill above the head names the project the page comes from. */
+.agent-dialog-project { display: inline-block; margin: 0 0 6px; padding: 2px 14px; background: var(--steel-deep); color: var(--white); border-radius: 0 22px 22px 0; font-size: 14px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; overflow-wrap: anywhere; }
 /* US-0506 u2 BR5.13: a permission page (M3) has a soft coral header (US-0417), the command in a monospaced block of its own, and the
    refusing choice below a rule with a coral edge. Choice labels wrap whole: never an ellipsis (SD11). */
 .question-popup .question-popup-head.is-permission { background: var(--coral-soft); }
