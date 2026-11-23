@@ -58,6 +58,9 @@ jobs:
 
   build-mac:
     needs: verify
+    # The packages are built only for a release: on a tag, and on a release/vX.Y.Z pull request so packaging is proven
+    # before the tag. Story and fix pull requests run verify only.
+    if: startsWith(github.ref, 'refs/tags/') || startsWith(github.head_ref, 'release/')
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
@@ -80,6 +83,9 @@ jobs:
 
   build-linux:
     needs: verify
+    # The packages are built only for a release: on a tag, and on a release/vX.Y.Z pull request so packaging is proven
+    # before the tag. Story and fix pull requests run verify only.
+    if: startsWith(github.ref, 'refs/tags/') || startsWith(github.head_ref, 'release/')
     # node-pty is compiled on the runner and links against its glibc/libstdc++. Building on 22.04 keeps the
     # .deb runnable on Ubuntu 22.04 and newer; ubuntu-latest produced a pty.node that needed GLIBC_2.42 (v0.1.0).
     runs-on: ubuntu-22.04
