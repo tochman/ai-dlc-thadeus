@@ -564,6 +564,21 @@ describe('App shell: agent dialogs (US-0506 u1)', () => {
     await waitFor(() => expect(screen.getByTestId('agent-dialog').hasAttribute('open')).toBe(false));
   });
 
+  // US-0046 AC1, AC3: the project band only with two or more projects open.
+  it('with one project open the dialog has no project band', async () => {
+    await withAgentEvents({});
+    act(() => push.agentEvents({ projectId: 'p1', events: [hookEvent] }));
+    await screen.findByTestId('agent-dialog-title');
+    expect(screen.queryByTestId('agent-dialog-project')).toBeNull();
+  });
+
+  it('with two projects open the page names its project in the band', async () => {
+    await withAgentEvents({ openProjects: ['/p/aidlc-dash-a', '/p/other-b'] });
+    await waitFor(() => expect(window.bridge.agentEvents.list).toHaveBeenCalledWith('p2'));
+    act(() => push.agentEvents({ projectId: 'p2', events: [{ ...hookEvent, projectId: 'p2' }] }));
+    expect((await screen.findByTestId('agent-dialog-project')).textContent).toBe('PROJEKT other-b');
+  });
+
   it('with question alerts off the dialog does not open by itself', async () => {
     await withAgentEvents({ questionAlerts: 'off' });
     await waitFor(() => expect(window.bridge.getSettings).toHaveBeenCalled());

@@ -145,6 +145,76 @@ export function ParkControls({ projectId, intent, activeDirName }) {
   );
 }
 
+/**
+ * US-0508 FR1.2–FR1.5: the intent's display name, edited in place. Save sends the trimmed name (empty resets it to
+ * the folder name); a refusal shows its reason next to the field. Offered in every state, also while work runs.
+ * The list follows on project:changed.
+ */
+export function RenameControl({ projectId, intent }) {
+  const { t } = useTranslation();
+  const [value, setValue] = useState(null); // null: not editing
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState(null);
+
+  const close = () => {
+    setValue(null);
+    setError(null);
+  };
+  async function save(event) {
+    event.preventDefault();
+    setBusy(true);
+    setError(null);
+    try {
+      const res = await window.bridge.renameIntent(projectId, intent.dirName, value.trim());
+      if (res?.ok) setValue(null);
+      else setError(res?.error ?? '');
+    } catch (err) {
+      setError(String(err?.message ?? err));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  if (value === null) {
+    return (
+      <Pill tone="quiet" onClick={() => setValue(intent.slug ?? '')} data-testid="intent-rename">
+        {t('intents.rename.open')}
+      </Pill>
+    );
+  }
+  return (
+    <form className="intent-rename" onSubmit={save} onKeyDown={(e) => e.key === 'Escape' && close()} data-testid="intent-rename-form">
+      <label className="field">
+        <span className="field-label">{t('intents.rename.label')}</span>
+        <input
+          type="text"
+          className="lcars-input"
+          value={value}
+          maxLength={60}
+          onChange={(e) => setValue(e.target.value)}
+          aria-invalid={error !== null}
+          autoFocus
+          data-testid="intent-rename-input"
+        />
+      </label>
+      <span className="muted">{t('intents.rename.hint')}</span>
+      <div className="intent-rename-actions">
+        <Pill type="submit" disabled={busy} data-testid="intent-rename-save">
+          {t('intents.rename.save')}
+        </Pill>
+        <Pill tone="quiet" onClick={close} data-testid="intent-rename-cancel">
+          {t('intents.rename.cancel')}
+        </Pill>
+      </div>
+      {error !== null && (
+        <p className="refresh-error" role="alert" data-testid="intent-rename-error">
+          {error}
+        </p>
+      )}
+    </form>
+  );
+}
+
 export default function IntentDetail({
   projectId,
   space = 'default',
@@ -257,6 +327,7 @@ export default function IntentDetail({
           {/* US-0037 FR3.1, FR3.6: Park and Resume as one group, the same height, wrapping together. */}
           {intent && (
             <div className="intent-head-actions" data-testid="intent-head-actions">
+              <RenameControl key={`rename:${intent.dirName}`} projectId={projectId} intent={intent} />
               <ParkControls key={intent.dirName} projectId={projectId} intent={intent} activeDirName={activeDirName} />
               <ResumeButton projectId={projectId} intent={intent} activeDirName={activeDirName} activeIntent={activeIntent} position={position} />
             </div>

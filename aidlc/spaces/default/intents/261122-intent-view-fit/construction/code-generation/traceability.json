@@ -1,0 +1,11 @@
+{
+  "stage": "code-generation",
+  "upstream_ids": ["US-0044-AC1", "US-0044-AC2", "US-0044-AC3", "US-0044-AC4", "US-0044-AC5"],
+  "coverage": [
+    { "id": "US-0044-AC1", "status": "OK", "target": "src/renderer/theme.css" },
+    { "id": "US-0044-AC2", "status": "OK", "target": "tests/e2e/intentLayout.spec.js" },
+    { "id": "US-0044-AC3", "status": "OK", "target": "src/renderer/theme.css" },
+    { "id": "US-0044-AC4", "status": "OK", "target": "src/renderer/theme.css" },
+    { "id": "US-0044-AC5", "status": "OK", "target": "tests/e2e/intentLayout.spec.js" }
+  ]
+}

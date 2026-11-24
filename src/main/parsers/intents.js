@@ -34,8 +34,10 @@ function newestFirst(a, b) {
  * @param {unknown} index parsed intents.json (anything that is not an array counts as empty)
  * @param {string[]} diskDirs intent folder names found on disk
  * @param {string|null} activeDirName contents of active-intent
+ * @param {Record<string, string>} [names] US-0508 FR1.6: display names by dirName; a named intent shows its name as
+ *   `slug`, AI-DLC's own slug stays in `aidlcSlug`, and `dirName` (every lookup's key) never changes
  */
-export function mergeIntents(index, diskDirs, activeDirName) {
+export function mergeIntents(index, diskDirs, activeDirName, names = {}) {
   const entries = Array.isArray(index) ? index.filter((e) => e && typeof e.dirName === 'string') : [];
   const onDisk = new Set(diskDirs);
   const indexed = new Set(entries.map((e) => e.dirName));
@@ -62,6 +64,13 @@ export function mergeIntents(index, diskDirs, activeDirName) {
     }));
 
   return [...fromIndex, ...diskOnly]
-    .map((i) => ({ ...i, date: dateFromDirName(i.dirName), createdMs: createdMsFromUuid(i.uuid), active: i.dirName === activeDirName }))
+    .map((i) => ({
+      ...i,
+      slug: Object.hasOwn(names, i.dirName) ? names[i.dirName] : i.slug,
+      aidlcSlug: i.slug,
+      date: dateFromDirName(i.dirName),
+      createdMs: createdMsFromUuid(i.uuid),
+      active: i.dirName === activeDirName
+    }))
     .sort(newestFirst);
 }

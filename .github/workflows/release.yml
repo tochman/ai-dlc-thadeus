@@ -44,7 +44,7 @@ jobs:
         env:
           THADEUS_REQUIRE_DASH: '1' # the hook script tests must run under dash too, not be skipped
       - name: ESLint
-        run: npx eslint .
+        run: npx eslint . --max-warnings 0
       - name: Prettier
         run: npx prettier --check .
       # US-0608 FR9.3: the planning end-to-end tests drive the built app. Ubuntu 24.04 blocks the unprivileged user
@@ -58,6 +58,9 @@ jobs:
 
   build-mac:
     needs: verify
+    # The packages are built only for a release: on a tag, and on a release/vX.Y.Z pull request so packaging is proven
+    # before the tag. Story and fix pull requests run verify only.
+    if: startsWith(github.ref, 'refs/tags/') || startsWith(github.head_ref, 'release/')
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
@@ -80,6 +83,9 @@ jobs:
 
   build-linux:
     needs: verify
+    # The packages are built only for a release: on a tag, and on a release/vX.Y.Z pull request so packaging is proven
+    # before the tag. Story and fix pull requests run verify only.
+    if: startsWith(github.ref, 'refs/tags/') || startsWith(github.head_ref, 'release/')
     # node-pty is compiled on the runner and links against its glibc/libstdc++. Building on 22.04 keeps the
     # .deb runnable on Ubuntu 22.04 and newer; ubuntu-latest produced a pty.node that needed GLIBC_2.42 (v0.1.0).
     runs-on: ubuntu-22.04

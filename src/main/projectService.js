@@ -2,6 +2,7 @@
 // A broken file only affects its own intent; the last good result is returned instead (NFR2, FR7.4).
 import { exists, listDir, newestMtime, readJsonSafe, readText } from './projectAccess.js';
 import { mergeIntents } from './parsers/intents.js';
+import { readIntentNames } from './intentNames.js';
 import { parseState } from './parsers/state.js';
 import { parseRuntimeGraph } from './parsers/runtimeGraph.js';
 import { mergeAudits, categoryOf } from './parsers/audit.js';
@@ -128,10 +129,11 @@ export async function loadIntentList(root, space, onlyDirs) {
   const index = indexRes.ok ? indexRes.value : indexRes.missing ? [] : (prev?.index ?? []);
   const diskDirs = (await listDir(root, dir)).filter((e) => e.isDir && !e.name.startsWith('.')).map((e) => e.name);
   const active = (await readTextOrNull(root, `${dir}/active-intent`))?.trim() ?? null;
+  const names = await readIntentNames(root); // US-0508 FR1.6: read on every load, so a rename shows on the next reload
 
   const summaries = new Map(prev?.summaries ?? []);
   const intents = await Promise.all(
-    mergeIntents(index, diskDirs, active).map(async (intent) => {
+    mergeIntents(index, diskDirs, active, names).map(async (intent) => {
       let extra = summaries.get(intent.dirName);
       const reread = !extra || !Array.isArray(onlyDirs) || onlyDirs.includes(intent.dirName);
       if (reread && !intent.missingOnDisk) {
