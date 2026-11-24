@@ -122,6 +122,16 @@
     "active": "Aktiv",
     "parked": "Parkerad vid {stage}",
     "park": "Parkera",
+    "rename": {
+      "open": "Byt namn",
+      "label": "Visningsnamn",
+      "hint": "Små bokstäver, siffror och bindestreck, högst 60. Tomt visar mappnamnet igen.",
+      "save": "Spara",
+      "cancel": "Avbryt",
+      "invalid": "\"{name}\" är inget giltigt namn: använd små bokstäver, siffror och bindestreck, 1 till 60 tecken.",
+      "taken": "\"{name}\" används redan av ett annat intent i det här spacet.",
+      "unknown": "Det finns inget intent {name} i det här spacet."
+    },
     "unknownStatus": "okänd status",
     "doneOfExecuted": "Klara av körda stages",
     "missingInIndex": "Saknas i intents.json",
