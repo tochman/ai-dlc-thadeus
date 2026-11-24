@@ -10,7 +10,7 @@
 
 **Stories:** US-1401–US-1410
 
-**Status (2026-11-20):** ✅ US-1401, US-1402 done, for v0.3.0 · 📋 US-1403–US-1410 planned, for v0.3.0.
+**Status (2026-11-24):** ✅ US-1401, US-1402, US-1408 done, for v0.3.0 · 📋 US-1403–US-1407, US-1409–US-1410 planned, for v0.3.0.
 
 ---
 
@@ -113,17 +113,17 @@
 - **Notes:** Moving work from one framework's format into the other's is out of scope.
 - **Dependencies:** US-1401, US-1405, US-1406
 
-**US-1408: Keep the project's framework in the repository** 📋 Planned, for v0.3.0
+**US-1408: Keep the project's framework in the repository** ✅ Done, for v0.3.0
 - As a **developer working on a project from more than one clone**, in order to **have every clone follow the same framework**, I would like **the project's framework to be kept in the repository, not only on my machine**.
 - **Epic:** EPIC-14
 - **Priority:** High
 - **Complexity:** Small
 - **Background:** Found 2026-11-19 in the EPIC-14 Ideation check: project settings are kept on one machine, keyed by the folder, so another clone would be asked again. Decided: the choice is kept in the repository.
 - **Acceptance Criteria:**
-  - [ ] **Given** a project whose framework was chosen on one clone, **when** another clone opens it, **then** it follows the same framework and is not asked again.
-  - [ ] The choice is written to one file in the repository only after I confirm it (US-1406), and that file is named in the preview.
-  - [ ] **Given** the file is missing or unreadable, **then** the app falls back to what it finds (US-1401) and says why.
-  - [ ] Every text goes through `t()` in Swedish and English, in the LCARS look.
+  - [x] **Given** a project whose framework was chosen on one clone, **when** another clone opens it, **then** it follows the same framework and is not asked again.
+  - [x] The choice is written to one file in the repository only after I confirm it (US-1406), and that file is named in the preview.
+  - [x] **Given** the file is missing or unreadable, **then** the app falls back to what it finds (US-1401) and says why.
+  - [x] Every text goes through `t()` in Swedish and English, in the LCARS look.
 - **Dependencies:** US-1401
 
 **US-1409: A token log per Spec Kit feature** 📋 Planned, for v0.3.0

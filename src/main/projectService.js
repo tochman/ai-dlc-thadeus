@@ -16,6 +16,7 @@ import { intentMetrics, parseMarkerHistory, projectMetrics, storyMetrics } from 
 import { parkedFromAudit } from './intentPark.js';
 import { t } from '../shared/i18n.js';
 import { viewFields } from '../shared/frameworkViews.js';
+import { PROJECT_FILE, readProjectFile } from './projectFile.js';
 
 const PHASE_DIRS = ['initialization', 'ideation', 'inception', 'construction', 'operation', 'verification'];
 // ponytail: unbounded per-process cache keyed by root/space/intent; fine for a handful of projects.
@@ -58,18 +59,26 @@ function chooseFramework(found, saved, askWhenBoth) {
   return { framework: null, source: 'detected' };
 }
 
+/** US-1408 FR2.3 (BR1.3, BR1.4): why the saved framework was not followed, or null when there was none to follow. */
+function savedReason(read, source) {
+  if (!read.ok) return read.reason === 'missing' ? null : t('projectFile.unusable', { file: PROJECT_FILE, reason: t(`projectFile.reason.${read.reason}`) });
+  return source === 'file' ? null : t('projectFile.savedNotFound', { file: PROJECT_FILE });
+}
+
 /**
- * US-1401 FR1.3, FR1.5 (contract C1): the project's Detection. `saved` is the framework kept in the repository (U2);
- * `askWhenBoth` turns BR1.3 on (U4). Active-space resolution is unchanged.
+ * US-1401 FR1.3, FR1.5, US-1408 FR2.2, FR2.3 (contract C1): the project's Detection. The framework kept in
+ * `.thadeus/project.json` is followed when its folder is there (BR1.5); otherwise detection falls back and says why
+ * (BR1.3, BR1.4). `askWhenBoth` turns BR1.3 of US-1401 on (U4). Active-space resolution is unchanged.
  */
-export async function detectProject(root, { saved = null, askWhenBoth = false } = {}) {
+export async function detectProject(root, { askWhenBoth = false } = {}) {
   const hasSpacesDir = await exists(root, 'aidlc/spaces');
   const spaces = hasSpacesDir ? await listSpaces(root) : [];
   const speckit = (await listDir(root, '.')).some((e) => e.name === '.specify' && e.isDir);
   const found = { aidlc: spaces.length > 0, speckit };
-  const { framework, source } = chooseFramework(found, saved, askWhenBoth);
-  let reason = null;
-  if (framework === null && source === 'detected') reason = t(hasSpacesDir ? 'errors.noSpace' : 'errors.notAidlc');
+  const read = await readProjectFile(root);
+  const { framework, source } = chooseFramework(found, read.ok ? read.value.framework : null, askWhenBoth);
+  const folderReason = framework === null && source === 'detected' ? t(hasSpacesDir ? 'errors.noSpace' : 'errors.notAidlc') : null;
+  const reason = [savedReason(read, source), folderReason].filter(Boolean).join(' ') || null;
   const detection = { framework, source, found, reason, ...viewFields(framework), activeSpace: null, spaces: [] };
   if (framework !== 'aidlc') return detection;
   const named = (await readTextOrNull(root, 'aidlc/active-space'))?.trim();
