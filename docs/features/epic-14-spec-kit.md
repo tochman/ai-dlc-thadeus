@@ -138,7 +138,7 @@
   - [ ] The log is never written in `.specify/` or `specs/`. Every text goes through `t()` in Swedish and English, in the LCARS look.
 - **Dependencies:** US-1401, US-1402
 
-**US-1410: Waiting questions and agent progress in a Spec Kit project** 📋 Planned, for v0.3.0
+**US-1410: Waiting questions and agent progress in a Spec Kit project** 🚧 In progress, for v0.3.0
 - As a **developer**, in order to **see what the agent waits on in a Spec Kit project**, I would like **the waiting-questions popup and the agent progress to work in a Spec Kit project too**.
 - **Epic:** EPIC-14
 - **Priority:** Medium
