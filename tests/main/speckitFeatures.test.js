@@ -4,7 +4,7 @@ import { promises as fs } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { t } from '../../src/shared/i18n.js';
-import { MAX_READ_BYTES, SPECKIT_WATCH_PATHS, loadSpeckitFeatures } from '../../src/main/speckitFeatures.js';
+import { MAX_READ_BYTES, SPECKIT_WATCH_PATHS, activeFeature, loadSpeckitFeatures } from '../../src/main/speckitFeatures.js';
 import { spyWrites } from './fsWriteSpy.js';
 
 const roots = [];
@@ -260,6 +260,19 @@ describe('loadSpeckitFeatures: speed (NFR7.3)', () => {
     expect(performance.now() - start).toBeLessThan(500);
     expect(r.features).toHaveLength(50);
     expect(r.features[0].tasks.total).toBe(490);
+  });
+});
+
+describe('activeFeature (US-1409 BR2.1)', () => {
+  it('gives the folder feature.json names when it is a listed feature folder', async () => {
+    const root = await project({ 'specs/001-login/': null, '.specify/feature.json': featureJson('specs/001-login') });
+    expect(await activeFeature(root)).toBe('001-login');
+  });
+
+  it('gives null for a missing or unreadable feature.json and for a folder that is not there', async () => {
+    expect(await activeFeature(await project({ 'specs/001-login/': null }))).toBeNull();
+    expect(await activeFeature(await project({ 'specs/001-login/': null, '.specify/feature.json': '{not json' }))).toBeNull();
+    expect(await activeFeature(await project({ 'specs/001-login/': null, '.specify/feature.json': featureJson('specs/002-gone') }))).toBeNull();
   });
 });
 

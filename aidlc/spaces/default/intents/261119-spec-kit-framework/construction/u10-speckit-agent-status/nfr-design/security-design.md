@@ -1,0 +1,11 @@
+# Security Design: U10 u10-speckit-agent-status
+
+Sources: `security-requirements.md` in `../nfr-requirements/` (and its review's three Minor points), the U10 `functional-spec.md` and `rules.md`, and contract C9 in `contract-summary.md`. No login, network call or secret; the boundary is the IPC call from the renderer.
+
+| NFR | Design |
+|---|---|
+| NFR3.1 | `loadSpeckitProgress` imports no fs module; its only file access is U6's `loadSpeckitFeatures`, which is read-only. A test runs the `agents:progress` handler on a Spec Kit fixture with spies on every fs write, mkdir, rename and unlink; zero calls. |
+| NFR3.2 | The handler first calls `project(projectId)`, which refuses an unknown id. Branch order, fixed: when `p.framework === 'speckit'`, the C9 branch runs and any `dirName` is ignored (a Spec Kit project has no intents); otherwise, when `dirName` is a string, today's `loadAgentProgress(p.root, p.space, dirName)` runs, which checks the name with `assertName`; otherwise (no dir name) the C9 branch runs. The C9 branch builds no path from renderer input. Tests: Spec Kit project with a dir name gets C9; AI-DLC project with `../x` rejects; AI-DLC project with no dir name gets C9. |
+| NFR3.3 | `waitingFrom(events)` gets only `store.list(projectId)`, which filters by project id, so another open project's question never reaches it. It skips events whose id starts with `audit-` (the AI-DLC fallback rows, not hooks), keeps kinds `question` and `permission` in an open state, takes the first in pager order, and returns only `{ question, agent }`. Tests: an event of another project in the store is not shown; a permission with a tool input holding a path and a command returns only the two fields. |
+| NFR5.1 | Main builds `question` as the header, else the body's first line, trimmed and cut to 200 characters. The renderer puts it and the agent name in plain text nodes (no `dangerouslySetInnerHTML`, no Markdown). Tests: a `<script>` question shows as text; a 5,000-character body arrives as 200 characters. |
+| NFR5.2 | `Promise.allSettled` over the two parts: a rejected feature read gives `feature: null` and a `console.warn` naming the cause; a missing store gives `waiting: null`. The handler resolves for a Spec Kit project whatever the parts do; only an unknown project id rejects. |

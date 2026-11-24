@@ -43,7 +43,8 @@ export default defineConfig({
         'src/renderer/AgentHooksStrip.jsx': { lines: 80 }, // US-0506 u4 (src/main/agentHooks.js is under agent*.js)
         'src/renderer/AgentHooksPreview.jsx': { lines: 80 }, // US-0506 u4
         'src/renderer/AgentHooksSection.jsx': { lines: 80 }, // US-0506 u4
-        '.opencode/plugins/thadeus-dialog.js': { lines: 80 }
+        '.opencode/plugins/thadeus-dialog.js': { lines: 80 },
+        'src/main/speckitTokens.js': { lines: 80 } // US-1409 NFR8.1
       }
     },
     projects: [

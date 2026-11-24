@@ -32,6 +32,7 @@ import { agentName, summarizeLedger } from './parsers/ledger.js';
 import { getConfiguredModels } from './models.js';
 import { loadRates } from './modelRates.js';
 import { readReadings, readingOf, recordReading } from './tokenReadings.js';
+import { createSpeckitTokens } from './speckitTokens.js';
 import { USAGE_DIR, snapshotOf, writeSnapshot } from './usageSnapshot.js';
 import { CONFIG_WATCH_PATHS, checkHarness, getAidlcConfig } from './aidlcConfig.js';
 import { applyPlanEdit, deletePlan, listPlans, planStages, previewPlanEdit, savePlan } from './plans.js';
@@ -494,6 +495,20 @@ function agentWiring() {
     writeInstruction: (sessionId, text) => channel.writeInstruction(sessionId, text)
   });
   store.onSignal((note) => handoff.onSignal(note));
+  // US-1409 BR1.1: a turn end of a Spec Kit project credits its feature's token log (cursor in user data, NFR3.5);
+  // an AI-DLC project keeps its ledger readings untouched.
+  const speckitTokens = createSpeckitTokens({
+    userDataDir: userData,
+    projectsDir: CLAUDE_PROJECTS,
+    ratesOf: async (root) => (await costRates(root))?.rates ?? {}
+  });
+  store.onSignal((note) => {
+    const p = projects.get(note.projectId);
+    if (p?.framework !== 'speckit') return;
+    const transcriptPath = note.kind === 'reply' ? note.parsed.signals?.transcriptPath : null;
+    const usage = note.kind === 'usage' ? note.parsed.usage : null;
+    if (transcriptPath || usage) speckitTokens.onTurn({ root: p.root, harness: note.harness, sessionId: note.sessionId, transcriptPath, usage });
+  });
   // US-0214 FR2.3: the activity rows of a project, pushed to every window within 2 s of a change.
   store.onActivity((change) => {
     for (const p of projects.values()) if (!p.sender.isDestroyed()) p.sender.send('agent:activity', change);

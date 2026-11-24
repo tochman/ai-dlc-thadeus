@@ -1,0 +1,13 @@
+# Security Requirements: U5 u5-speckit-commands
+
+Sources: NFR3, NFR4, NFR5 and NFR6 in `requirements.md`, contracts C5, C6 and C7 in `contract-summary.md`, and the U5 `functional-spec.md` and `rules.md` (BR5.1, BR5.5–BR5.8). There is no login, no network call and no secret in this Unit. U5's one risk is what it types into a live agent terminal: a line break or control character in a command would send more than the person clicked. The text comes from the person (the specify description) and from project files (extension command names read by U7).
+
+| ID | Requirement | Measure |
+|---|---|---|
+| NFR3.1 | No U5 code writes, creates, renames or deletes anything under `.specify/` or `specs/`, and U5 reads no file itself (C6). | Test: the Spec Kit view with every button clicked makes zero fs write calls (the existing NFR3 spy test extended) |
+| NFR4.1 | U5 runs no CLI and spawns no process; a command only reaches the agent through the existing terminal control (`terminal.type`), into a tab the person already started. | Code review and a test that the view imports no `child_process` path or new IPC channel |
+| NFR4.2 | `speckitCommand` refuses a name that is not a core stem or a safe extension command name (letters, digits, `.`, `-`, `_`), even though U7's reader already leaves unsafe names out (C6). It then returns no command, and no button shows for it. | Main test: `speckit.git.commit` gives a command; `a;rm -rf`, `x\ny` and an empty name give none |
+| NFR4.3 | The specify description becomes one plain line before it is typed: line breaks and tabs become spaces, control characters (escape included) are removed, ends are trimmed, and at most 1000 characters are kept; an empty result types nothing (BR5.6). | Main test: `a\nb\tc\u001b[2J` becomes `a b c[2J`; 1,500 characters give 1,000; blanks give no command |
+| NFR4.4 | Only a click types, and the text is the command, one space, the arguments, then one Enter, nothing else (BR5.7). Nothing is typed on open, on refresh or on a timer. | Renderer test: open and a `speckit:changed` push make zero `terminal.type` calls; a click makes one, with `submit: true` |
+| NFR5.1 | When `speckit:rules` fails or names read errors, the core four quick commands still show and a note says the extension commands could not all be read (BR5.5). | Renderer test: rules call rejects, and returns `hooksChecked: false`; both show the core four and the note |
+| NFR6.1 | A command is typed only into a tab whose harness is claude or opencode; any other or unknown harness disables the button with its reason (BR5.1, BR5.8). | Renderer test per harness: claude, opencode, codex, unknown |

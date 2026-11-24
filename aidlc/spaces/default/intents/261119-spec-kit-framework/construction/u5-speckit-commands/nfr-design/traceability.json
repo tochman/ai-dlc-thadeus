@@ -1,0 +1,18 @@
+{
+  "stage": "nfr-design",
+  "unit": "u5-speckit-commands",
+  "upstream_ids": ["NFR7.1", "NFR7.2", "NFR7.3", "NFR7.4", "NFR3.1", "NFR4.1", "NFR4.2", "NFR4.3", "NFR4.4", "NFR5.1", "NFR6.1"],
+  "coverage": [
+    { "id": "NFR7.1", "status": "OK", "target": "nextCommand in render on U6's refreshed feature; rules re-read on speckit:changed; no watcher" },
+    { "id": "NFR7.2", "status": "OK", "target": "ready state derived in render from useTerminal tab, harness and state" },
+    { "id": "NFR7.3", "status": "OK", "target": "pure functions in src/shared/speckitCommands.js; zero IPC on click" },
+    { "id": "NFR7.4", "status": "OK", "target": "per-button sending flag set before await type, cleared in finally" },
+    { "id": "NFR3.1", "status": "OK", "target": "no fs import; Spec Kit write-spy test extended to every button" },
+    { "id": "NFR4.1", "status": "OK", "target": "only useTerminal().type; no child_process or new channel, import test" },
+    { "id": "NFR4.2", "status": "OK", "target": "core stem or ^speckit(\\.[a-z0-9_-]+)+$, else null and no button" },
+    { "id": "NFR4.3", "status": "OK", "target": "specifyText: breaks and U+2028/2029 to space, strip \\p{Cc}, trim, 1000 chars" },
+    { "id": "NFR4.4", "status": "OK", "target": "type only in onClick, submit: true; mount and push make zero calls" },
+    { "id": "NFR5.1", "status": "OK", "target": "rules failure or hooksChecked false keeps core four plus one note" },
+    { "id": "NFR6.1", "status": "OK", "target": "ready only for claude or opencode and idle; disabled with reason otherwise" }
+  ]
+}
