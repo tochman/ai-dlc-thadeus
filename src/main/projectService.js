@@ -50,10 +50,22 @@ export async function listSpaces(root) {
   return (await listDir(root, 'aidlc/spaces')).filter((e) => e.isDir && !e.name.startsWith('.')).map((e) => e.name);
 }
 
-/** US-1401 FR1.3: which framework a saved value, the folders found and `askWhenBoth` give (BR1.1–BR1.4). */
-function chooseFramework(found, saved, askWhenBoth) {
+/**
+ * US-1401 FR1.3, US-1406 FR4.1 (BR4.1): which frameworks the folders show. Reads only (`stat`/`readdir`), shared by
+ * detection and the choice screen's scan (NFR3.1).
+ * @returns {Promise<{aidlc: boolean, speckit: boolean}>}
+ */
+export async function foundFrameworks(root) {
+  const spaces = (await exists(root, 'aidlc/spaces')) ? await listSpaces(root) : [];
+  const speckit = (await listDir(root, '.')).some((e) => e.name === '.specify' && e.isDir);
+  return { aidlc: spaces.length > 0, speckit };
+}
+
+/** US-1401 FR1.3, US-1406 BR4.1: which framework the project file's read and the folders found give (BR1.1–BR1.4). */
+function pickFramework(found, read) {
+  if (!read.ok && read.reason === 'missing') return { framework: null, source: 'ask' }; // no saved choice: the choice screen
+  const saved = read.ok ? read.value.framework : null;
   if (found[saved] === true) return { framework: saved, source: 'file' };
-  if (found.aidlc && found.speckit && askWhenBoth) return { framework: null, source: 'ask' }; // switched on by U4
   if (found.aidlc) return { framework: 'aidlc', source: 'detected' };
   if (found.speckit) return { framework: 'speckit', source: 'detected' };
   return { framework: null, source: 'detected' };
@@ -68,19 +80,17 @@ function savedReason(read, source) {
 /**
  * US-1401 FR1.3, FR1.5, US-1408 FR2.2, FR2.3 (contract C1): the project's Detection. The framework kept in
  * `.thadeus/project.json` is followed when its folder is there (BR1.5); otherwise detection falls back and says why
- * (BR1.3, BR1.4). `askWhenBoth` turns BR1.3 of US-1401 on (U4). Active-space resolution is unchanged.
+ * (BR1.3, BR1.4). US-1406 BR4.1: with no file at all it asks (`source: 'ask'`). Active-space resolution is unchanged.
  */
-export async function detectProject(root, { askWhenBoth = false } = {}) {
-  const hasSpacesDir = await exists(root, 'aidlc/spaces');
-  const spaces = hasSpacesDir ? await listSpaces(root) : [];
-  const speckit = (await listDir(root, '.')).some((e) => e.name === '.specify' && e.isDir);
-  const found = { aidlc: spaces.length > 0, speckit };
+export async function detectProject(root) {
+  const found = await foundFrameworks(root);
   const read = await readProjectFile(root);
-  const { framework, source } = chooseFramework(found, read.ok ? read.value.framework : null, askWhenBoth);
-  const folderReason = framework === null && source === 'detected' ? t(hasSpacesDir ? 'errors.noSpace' : 'errors.notAidlc') : null;
+  const { framework, source } = pickFramework(found, read);
+  const folderReason = framework === null && source === 'detected' ? t((await exists(root, 'aidlc/spaces')) ? 'errors.noSpace' : 'errors.notAidlc') : null;
   const reason = [savedReason(read, source), folderReason].filter(Boolean).join(' ') || null;
   const detection = { framework, source, found, reason, ...viewFields(framework), activeSpace: null, spaces: [] };
   if (framework !== 'aidlc') return detection;
+  const spaces = await listSpaces(root);
   const named = (await readTextOrNull(root, 'aidlc/active-space'))?.trim();
   const activeSpace = spaces.includes(named) ? named : spaces.includes('default') ? 'default' : spaces[0];
   return { ...detection, activeSpace, spaces };

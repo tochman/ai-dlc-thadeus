@@ -41,6 +41,9 @@ async function setup() {
   tmp = await fs.realpath(await fs.mkdtemp(path.join(os.tmpdir(), 'thadeus-e2e-layout-')));
   const project = path.join(tmp, 'project');
   await fs.cp(path.resolve('tests/fixtures/project'), project, { recursive: true });
+  // US-1406 BR4.1: a project with no saved framework opens on the choice screen, so the fixture saves AI-DLC.
+  await fs.mkdir(path.join(project, '.thadeus'));
+  writeFileSync(path.join(project, '.thadeus/project.json'), JSON.stringify({ version: 1, framework: 'aidlc' }));
   const intents = path.join(project, 'aidlc/spaces/default/intents');
   const base = path.join(intents, DIR);
   const index = JSON.parse(readFileSync(path.join(intents, 'intents.json'), 'utf8'));

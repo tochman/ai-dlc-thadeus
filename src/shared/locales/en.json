@@ -754,8 +754,22 @@
     "failed": "specify init failed. The project stays as it was in the app.",
     "timeout": "specify init did not finish within 120 s. The project stays as it was in the app."
   },
+  "frameworkChoice": {
+    "title": "Choose the project's framework",
+    "intro": "The app follows one framework per project. Nothing is written in the project before you confirm.",
+    "scanning": "Looking at the project…",
+    "found": "Found in this project",
+    "notFound": "Not found in this project",
+    "cliFound": "{tool} is on the PATH",
+    "cliMissing": "{tool} is not on the PATH",
+    "proposed": "Proposed",
+    "confirm": "Confirm",
+    "back": "Back to the choice",
+    "retry": "Try again",
+    "scanFailed": "The project could not be looked at: {reason}",
+    "saveFailed": "The choice could not be saved: {reason}"
+  },
   "setup": {
-    "chooseFramework": "Framework",
     "framework": {
       "aidlc": "AI-DLC",
       "speckit": "Spec Kit"
