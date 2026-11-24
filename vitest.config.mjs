@@ -19,7 +19,8 @@ const TIMED = [
   'tests/main/velocity.test.js',
   'tests/main/git.test.js',
   'tests/main/planningSync.test.js', // US-0607: real git repositories
-  'tests/main/watcher.test.js'
+  'tests/main/watcher.test.js',
+  'tests/main/agentProgressSpeckitTimed.test.js' // US-1410 NFR7.3: 30 features and 200 events within 1 s
 ];
 export default defineConfig({
   plugins: [react()],

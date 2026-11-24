@@ -1,8 +1,9 @@
 // US-1401 FR1.4: a Spec Kit project's first view, in the LCARS frame (BR1.6, BR1.12). US-1402 FR6 fills it with
-// the features under specs/ and the Spec Kit version note.
+// the features under specs/ and the Spec Kit version note. US-1410 BR10.5: the agent progress readout above them.
 import { useTranslation } from 'react-i18next';
 import { Frame } from './Lcars.jsx';
 import SpeckitFeatures from './SpeckitFeatures.jsx';
+import SpeckitProgress from './SpeckitProgress.jsx';
 
 /** @param {{projectId: string}} props */
 export default function SpeckitShell({ projectId }) {
@@ -16,6 +17,7 @@ export default function SpeckitShell({ projectId }) {
           </h2>
           <span className="lcars-heading-line" aria-hidden="true" />
         </div>
+        <SpeckitProgress projectId={projectId} />
         <SpeckitFeatures projectId={projectId} />
       </Frame>
     </section>

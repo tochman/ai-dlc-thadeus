@@ -149,7 +149,9 @@ const m = vi.hoisted(() => {
       hasBitbucket: vi.fn(async () => true),
       loadBitbucket: vi.fn(async () => ({ username: 'u', appPassword: 'p' })),
       loadMachines: vi.fn(async (_root, _space, intents) => intents.map((i) => ({ ...i, machines: [{ host: 'mac', cloneId: 'a' }] }))),
-      loadOpenQuestions: vi.fn(async () => [{ text: 'Q2. Open?', file: 'q.md', time: null }])
+      loadOpenQuestions: vi.fn(async () => [{ text: 'Q2. Open?', file: 'q.md', time: null }]),
+      loadAuditEvents: vi.fn(async () => []),
+      inflightCount: vi.fn(async () => 0)
     }
   };
 });
@@ -171,6 +173,9 @@ vi.mock('../../src/main/projectService.js', () => ({
   loadVelocity: m.svc.loadVelocity,
   loadPendingQuestions: m.svc.loadPendingQuestions,
   loadWorkingAgents: m.svc.loadWorkingAgents,
+  loadAuditEvents: m.svc.loadAuditEvents, // US-1410: agents:progress's AI-DLC path
+  inflightCount: m.svc.inflightCount,
+  workingAgents: () => [],
   assertName: (name, what) => {
     if (typeof name !== 'string' || !/^[^/\\]+$/.test(name) || name.startsWith('.')) throw new Error(`Ogiltigt ${what}: ${name}`);
   },
@@ -806,6 +811,64 @@ describe('Spec Kit features', () => {
     svc.detectProject.mockResolvedValueOnce(KIT);
     await svc.watchForAidlc.mock.calls.at(-1)[0].onFound();
     expect(speckitWatch('/work/kit-later')).toBeDefined();
+  });
+});
+
+// US-1410 BR10.1, BR10.8, NFR3.1, NFR3.2 (contract C9): agents:progress for Spec Kit, in the fixed branch order.
+describe('agents:progress', () => {
+  const KIT = { framework: 'speckit', isAidlc: false, views: ['specs'], activeSpace: null, spaces: [] };
+  const C9 = { source: 'none', waiting: null, feature: null };
+
+  it('resolves C9 for a Spec Kit project with no AI-DLC space, and ignores a dir name there', async () => {
+    const { projectId } = await openProject('/work/kit-progress', KIT);
+    expect(await call('agents:progress', {}, projectId)).toEqual(C9);
+    expect(await call('agents:progress', {}, projectId, '261119-x')).toEqual(C9);
+    expect(svc.loadAuditEvents).not.toHaveBeenCalled();
+    expect(svc.loadSpeckitFeatures).toHaveBeenLastCalledWith('/work/kit-progress');
+  });
+
+  it("gives the active feature's tasks with source tasks", async () => {
+    const { projectId } = await openProject('/work/kit-feature', KIT);
+    svc.loadSpeckitFeatures.mockResolvedValueOnce({ features: [{ dir: '001-a', name: 'a', tasks: { done: 2, total: 5 } }], active: '001-a', errors: [] });
+    expect(await call('agents:progress', {}, projectId)).toEqual({ source: 'tasks', waiting: null, feature: { name: 'a', done: 2, total: 5 } });
+  });
+
+  it("keeps an AI-DLC project's per-intent rows, rejects '../x', and gives C9 with no dir name", async () => {
+    const { projectId } = await openProject('/work/ai-progress');
+    expect(await call('agents:progress', {}, projectId, '261119-x')).toEqual([]);
+    expect(svc.loadAuditEvents).toHaveBeenLastCalledWith('/work/ai-progress', 'aidlc/spaces/default/intents/261119-x');
+    await expect(call('agents:progress', {}, projectId, '../x')).rejects.toThrow(/Ogiltigt intent/);
+    expect(await call('agents:progress', {}, projectId)).toEqual(C9);
+  });
+
+  it('rejects an unknown project', async () => {
+    await expect(call('agents:progress', {}, 'nope')).rejects.toThrow(/Okänt projekt/);
+  });
+
+  it('writes nothing in a real Spec Kit folder (BR10.8, NFR3.1)', async () => {
+    const { promises: fsp } = await import('node:fs');
+    const os = await import('node:os');
+    const nodePath = await import('node:path');
+    const { spyWrites } = await import('./fsWriteSpy.js');
+    const real = await vi.importActual('../../src/main/speckitFeatures.js');
+    const root = await fsp.mkdtemp(nodePath.join(os.tmpdir(), 'ipc-progress-'));
+    try {
+      await fsp.mkdir(nodePath.join(root, '.specify'), { recursive: true });
+      await fsp.mkdir(nodePath.join(root, 'specs/001-a'), { recursive: true });
+      await fsp.writeFile(nodePath.join(root, '.specify/feature.json'), JSON.stringify({ feature_directory: 'specs/001-a' }));
+      await fsp.writeFile(nodePath.join(root, 'specs/001-a/tasks.md'), '## Phase 1: Setup\n- [x] T001 one\n- [ ] T002 two\n');
+      const { projectId } = await openProject(root, KIT);
+      svc.loadSpeckitFeatures.mockImplementationOnce(real.loadSpeckitFeatures);
+      const writes = spyWrites();
+      try {
+        expect(await call('agents:progress', {}, projectId)).toEqual({ source: 'tasks', waiting: null, feature: { name: 'a', done: 1, total: 2 } });
+        expect(writes.calls()).toEqual([]);
+      } finally {
+        writes.restore();
+      }
+    } finally {
+      await fsp.rm(root, { recursive: true, force: true });
+    }
   });
 });
 

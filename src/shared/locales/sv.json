@@ -38,6 +38,15 @@
   "speckit": {
     "title": "Spec Kit",
     "empty": "Inga features inlästa än.",
+    "progress": {
+      "title": "Agentens framsteg",
+      "waiting": "{agent} väntar på svar: {question}",
+      "feature": "{name}: {done} av {total} uppgifter klara",
+      "fromHooks": "från agentens hooks",
+      "fromTasks": "från tasks.md",
+      "nothingYet": "Inget att visa än: inga agenthooks och ingen aktiv feature.",
+      "failed": "Agentens framsteg kunde inte läsas."
+    },
     "reason": {
       "unreadable": "Kunde inte läsas ({code}).",
       "invalid": "Inte giltig JSON, eller så saknas det väntade fältet.",
@@ -1547,6 +1556,7 @@
     "speckitReadOnly": "{rel} tillhör Spec Kit och sparas inte från appen."
   },
   "agentDialog": {
+    "sourceHooks": "Från agentens hooks",
     "title": {
       "waiting": "Agenten väntar på ditt svar",
       "stillWaiting": "Agenten väntar fortfarande på ditt svar",
