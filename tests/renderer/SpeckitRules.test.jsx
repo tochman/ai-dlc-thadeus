@@ -1,10 +1,12 @@
 // US-1404 AC4.2.1–AC4.2.3, BR7.1–BR7.4, FR7.3, NFR3.4, NFR5.1, NFR7.4: Configuration › Spec Kit (contract C6).
+// US-1403 BR5.9: the constitution command in the agent tab's harness form (contract C7).
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { t } from '../../src/shared/i18n.js';
 import { EditorCtx } from '../../src/renderer/editor/EditorContext.jsx';
 
-const terminal = { type: vi.fn(async () => true) };
+let harness = { id: 'claude', name: 'Claude Code' };
+const terminal = { lastAgent: 'agent:x', harnessOf: () => harness, state: () => 'idle', asking: () => false, type: vi.fn(async () => true) };
 vi.mock('../../src/renderer/TerminalContext.jsx', () => ({ useTerminal: () => terminal }));
 window.bridge = {}; // ArtifactReader keeps the bridge object it finds at import; beforeEach fills it
 const { default: SpeckitRules } = await import('../../src/renderer/SpeckitRules.jsx');
@@ -74,15 +76,27 @@ describe('SpeckitRules: the constitution (AC4.2.1, BR7.1, BR7.2)', () => {
     expect(open).toHaveBeenCalledTimes(1);
   });
 
-  it('says there is no constitution yet and types /speckit-constitution only on a click', async () => {
+  it("says there is no constitution yet and types the constitution command in the tab's form, only on a click", async () => {
     window.bridge.speckitRules.mockResolvedValue(result({ constitution: { path: CONSTITUTION, exists: false } }));
     renderRules();
     expect((await screen.findByTestId('speckit-rules-no-constitution')).textContent).toContain(t('speckit.rules.noConstitution'));
     expect(screen.queryByTestId('speckit-rules-constitution')).toBeNull();
     expect(window.bridge.readFile).not.toHaveBeenCalled();
     expect(terminal.type).not.toHaveBeenCalled();
-    fireEvent.click(screen.getByTestId('speckit-rules-constitution-run'));
-    expect(terminal.type).toHaveBeenCalledWith('agent', '/speckit-constitution ', { submit: false });
+    expect(screen.getByTestId('speckit-rules-constitution-run').textContent).toBe('/speckit-constitution');
+    await act(async () => fireEvent.click(screen.getByTestId('speckit-rules-constitution-run')));
+    // Without Enter: the person adds the principles they want after the command.
+    expect(terminal.type).toHaveBeenCalledWith('agent', '/speckit-constitution', { submit: false });
+  });
+
+  it('types the opencode form for an opencode agent tab (BR5.9)', async () => {
+    harness = { id: 'opencode', name: 'opencode' };
+    window.bridge.speckitRules.mockResolvedValue(result({ constitution: { path: CONSTITUTION, exists: false } }));
+    renderRules();
+    const run = await screen.findByTestId('speckit-rules-constitution-run');
+    await act(async () => fireEvent.click(run));
+    expect(terminal.type).toHaveBeenCalledWith('agent', '/speckit.constitution', { submit: false });
+    harness = { id: 'claude', name: 'Claude Code' };
   });
 
   it('offers no /speckit-constitution when the constitution exists but cannot be read', async () => {

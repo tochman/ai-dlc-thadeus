@@ -1,17 +1,48 @@
 // US-1402 FR6.2–FR6.4: one Spec Kit feature: its flow worked out from the files (BR6.3), its tasks by phase with
 // Convergence rounds (BR6.4), and its files, each opened read-only through `onOpenFile` (BR6.5).
+// US-1403 FR5.1: the next command for the active feature (BR5.2, BR5.4), and the converge note (BR5.3).
 import { useTranslation } from 'react-i18next';
+import { nextCommand } from '../shared/speckitCommands.js';
+import SpeckitCommandButton from './SpeckitCommandButton.jsx';
 
 const STEPS = ['spec', 'clarify', 'plan', 'tasks', 'implement', 'converge'];
 
-/** @param {{feature: object, onOpenFile: (rel: string) => void, openFile?: string|null}} props a feature from speckit:features (C5) */
-export default function SpeckitFeatureDetail({ feature, onOpenFile, openFile = null }) {
+/** US-1403 BR5.4: the next command for the active feature; for another, the note naming the active one (or none). */
+function NextCommand({ feature, activeName }) {
+  const { t } = useTranslation();
+  if (!feature.active) {
+    return (
+      <p className="muted" data-testid="speckit-commands-not-active">
+        {activeName ? t('speckit.commands.notActive', { name: activeName }) : t('speckit.commands.noActive')}
+      </p>
+    );
+  }
+  const next = nextCommand(feature);
+  return (
+    <div className="speckit-commands-row" data-testid="speckit-commands-next">
+      <span className="field-label">{t('speckit.commands.next')}</span>
+      <SpeckitCommandButton name={next.name} />
+      {next.converged === 'unknown' && (
+        <p className="muted" data-testid="speckit-commands-converge-note">
+          {t('speckit.commands.convergeNote')}
+        </p>
+      )}
+    </div>
+  );
+}
+
+/**
+ * @param {{feature: object, activeName?: string|null, onOpenFile: (rel: string) => void, openFile?: string|null}} props
+ * a feature from speckit:features (C5) and the active feature's name, or null when none is active
+ */
+export default function SpeckitFeatureDetail({ feature, activeName = null, onOpenFile, openFile = null }) {
   const { t } = useTranslation();
   const { flow, tasks, files, dir } = feature;
   const prefix = `specs/${dir}/`;
   return (
     <div className="speckit-feature" data-testid="speckit-feature-detail">
       <h3 className="section-title">{feature.number ? `${feature.number} · ${feature.name}` : feature.name}</h3>
+      <NextCommand feature={feature} activeName={activeName} />
 
       <ol className="speckit-flow" data-testid="speckit-feature-flow">
         {STEPS.map((step) => (

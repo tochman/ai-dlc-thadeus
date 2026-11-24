@@ -1,0 +1,26 @@
+{
+  "stage": "code-generation",
+  "unit": "u8-framework-switch",
+  "version": 1,
+  "writes": [
+    { "path": "src/main/frameworkSwitch.js" },
+    { "path": "src/main/ipc.js" },
+    { "path": "src/preload/index.js" },
+    { "path": "src/shared/frameworkViews.js" },
+    { "path": "src/renderer/FrameworkSection.jsx" },
+    { "path": "src/renderer/ProjectView.jsx" },
+    { "path": "src/renderer/theme.css" },
+    { "path": "src/shared/locales/en.json" },
+    { "path": "src/shared/locales/sv.json" },
+    { "path": "vitest.config.mjs" },
+    { "path": "tests/main/frameworkSwitch.test.js" },
+    { "path": "tests/main/frameworkSwitchTimed.test.js" },
+    { "path": "tests/main/ipc.test.js" },
+    { "path": "tests/main/frameworkViews.test.js" },
+    { "path": "tests/renderer/FrameworkSection.test.jsx" },
+    { "path": "tests/renderer/ProjectView.test.jsx" },
+    { "path": "tests/renderer/AppShell.test.jsx" },
+    { "path": "docs/FEATURES.md" },
+    { "path": "docs/features/epic-14-spec-kit.md" }
+  ]
+}

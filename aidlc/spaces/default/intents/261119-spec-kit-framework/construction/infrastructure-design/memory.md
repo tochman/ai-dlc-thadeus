@@ -2,6 +2,7 @@
 > This file is kept up to date automatically while the stage runs. Add observations at the review step, not by editing here directly.
 
 ## Interpretations
+- 2026-11-24T18:31:00Z — [unit u9-feature-token-log] library kind, so only cicd-pipeline and traceability; components.md is absent by design (Domain Design not on the plan), topology taken from logical-components.md. No new pipeline stage: the existing verify job covers it. NFR1.1 marked N/A. No questions asked.
 <!-- example: 2026-05-29T10:14:32Z — chose REST over GraphQL; the consuming team only needs CRUD, revisit if subscriptions land -->
 
 ## Deviations

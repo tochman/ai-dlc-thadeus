@@ -1,0 +1,11 @@
+# Security Requirements: U8 u8-framework-switch
+
+Sources: NFR3 and NFR4 in `requirements.md`, contracts C2, C3 and C10 in `contract-summary.md`, and the U8 `functional-spec.md` and `rules.md` (BR8.1, BR8.4, BR8.5). There is no login, no network call and no secret in this Unit. The threats are a write before the person confirms or before setup succeeds, a renderer call that names a path or an unknown framework, a deleted file of the old framework, and a command started outside the existing setup.
+
+| ID | Requirement | Measure |
+|---|---|---|
+| NFR3.4 | `project:switchPreview` writes nothing anywhere. `project:switch` writes only `.thadeus/project.json`, and only through U2's `writeProjectFile` (temp file, then rename). No U8 code writes, renames or deletes anything under `.specify/`, `specs/` or `aidlc/`: the old framework's files stay (BR8.5). | Tests with a spy on every fs write and remove call: preview makes zero calls; a switch makes exactly U2's write; a refused switch makes zero |
+| NFR3.5 | Both handlers check their input before any file access: the project id must be a known open project, and `to` one of `FRAMEWORKS` and not the current framework. Anything else rejects with a translated reason and reads and writes nothing (BR8.1). | Tests: unknown id, the current framework, `''`, `'SPECKIT'`, `'../x'`, an object, `undefined` |
+| NFR3.6 | The renderer never sends a path. The project root comes from the main process's own project record; `keeps` holds only the fixed folder names (`aidlc/`, `.specify/`, `specs/`), never a full path. | Test: extra arguments are ignored; `keeps` is a subset of the fixed names |
+| NFR3.7 | `project:switch` re-checks the target folder itself and refuses with `setupNeeded` when it is missing, whatever the renderer believes, so a setup that failed or was cancelled can never be followed by a write (BR8.4). | Test: folder removed between preview and switch gives `setupNeeded` and no write |
+| NFR4.5 | U8 starts no program of its own. The setup step runs only through the existing handlers, `setup:run` (US-0503) and `speckit:setup` (C3), with their fixed arguments, no shell and their timeout (C7); `switchPreview` and `switch` call no `runFixed`. | Test with an injected runner: neither handler runs a command |

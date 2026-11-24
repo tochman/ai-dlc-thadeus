@@ -10,7 +10,7 @@
 
 **Stories:** US-1401–US-1410
 
-**Status (2026-11-24):** ✅ US-1401, US-1402, US-1404, US-1405, US-1406, US-1408, US-1410 done, for v0.3.0 · 🚧 US-1407 in progress, for v0.3.0 · 📋 US-1403, US-1409 planned, for v0.3.0.
+**Status (2026-11-24):** ✅ US-1401, US-1402, US-1403, US-1404, US-1405, US-1406, US-1408, US-1410 done, for v0.3.0 · 🚧 US-1407 in progress, for v0.3.0 · 📋 US-1409 planned, for v0.3.0.
 
 ---
 

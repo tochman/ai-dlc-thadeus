@@ -3,15 +3,13 @@
 // raw HTML as text (NFR5.1); what could not be read is named (FR7.3). Nothing here writes a Spec Kit file.
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useTerminal } from './TerminalContext.jsx';
 import { useEditor } from './editor/EditorContext.jsx';
 import { FileView } from './ArtifactReader.jsx';
+import SpeckitCommandButton from './SpeckitCommandButton.jsx';
 
 const errorText = (err) => String(err?.message ?? err).replace(/^Error invoking remote method '[^']+': (Error: )?/, '');
 // NFR3.4: the one path this view hands the editor, a constant, never one taken from the result.
 const CONSTITUTION = '.specify/memory/constitution.md';
-// ponytail: typed straight into the agent tab, as SpeckitFeatures does; C7's speckitCommand replaces it when US-1403 (U5) lands.
-const RUN_CONSTITUTION = '/speckit-constitution ';
 
 /** One hook row: before or after which command, the command it runs, its mode and the condition note (AC4.2.2). */
 function HookRow({ hook }) {
@@ -58,7 +56,6 @@ function ExtensionCard({ extension }) {
 /** @param {{projectId: string}} props */
 export default function SpeckitRules({ projectId }) {
   const { t } = useTranslation();
-  const terminal = useTerminal();
   const editor = useEditor();
   const [result, setResult] = useState(null);
   const [error, setError] = useState(null);
@@ -122,15 +119,8 @@ export default function SpeckitRules({ projectId }) {
             {!exists && !constitutionError && (
               <div className="speckit-empty" data-testid="speckit-rules-no-constitution">
                 <p className="muted">{t('speckit.rules.noConstitution')}</p>
-                {terminal && (
-                  <button
-                    className="btn btn-accent"
-                    onClick={() => terminal.type('agent', RUN_CONSTITUTION, { submit: false })}
-                    data-testid="speckit-rules-constitution-run"
-                  >
-                    {t('speckit.rules.runConstitution')}
-                  </button>
-                )}
+                {/* US-1403 BR5.9: in the tab's harness form, without Enter, so the person can add the principles they want. */}
+                <SpeckitCommandButton name="constitution" submit={false} testId="speckit-rules-constitution-run" />
               </div>
             )}
           </section>

@@ -1321,6 +1321,12 @@ button.lcars-nb:hover:not(:disabled), a.lcars-nb:hover { filter: brightness(1.15
 .speckit-rules-hook { display: flex; flex-wrap: wrap; gap: var(--gap); align-items: baseline; }
 .speckit-mode-mandatory { background: var(--steel); color: var(--on-light); } /* the one a run cannot skip */
 .speckit-mode-off { color: var(--muted); }
+/* US-1403: Spec Kit commands, each a pill with its reason beside it, the quick bar as one strip-edged block */
+.speckit-commands { display: grid; gap: var(--gap); padding: var(--gap) var(--gap-m); background: var(--slate-1); border-left: var(--gap) solid var(--slate-3); }
+.speckit-commands-row { display: flex; flex-wrap: wrap; gap: var(--gap); align-items: center; }
+.speckit-commands-row input[type='text'] { flex: 1 1 240px; }
+.speckit-command { display: inline-flex; flex-wrap: wrap; gap: var(--gap); align-items: center; }
+.speckit-command-failed { color: var(--coral); font-size: 12px; }
 /* ---------- Configuration › Framework, the switch (US-1407) ---------- */
 .framework-section, .framework-switch-setup-step { display: grid; gap: var(--gap-m); min-width: 0; }
 .framework-section-current { margin: 0; font-weight: 600; }
