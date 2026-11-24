@@ -104,6 +104,8 @@ const m = vi.hoisted(() => {
       runSetup: vi.fn(async () => ({ ok: true })),
       getSpeckitSetupInfo: vi.fn(async (root, { harness }) => ({ root, harness })),
       runSpeckitSetup: vi.fn(async () => ({ ok: true, output: 'ok' })),
+      frameworkScan: vi.fn(async () => ({ proposal: null })), // US-1406
+      chooseFramework: vi.fn(async () => ({ ok: true, file: null, next: 'setupAidlc' })),
       detectHarnesses: vi.fn(async () => [{ id: 'claude', installed: true }]),
       getTools: vi.fn(async () => [{ id: 'aidlc', path: '/bin/aidlc' }]),
       setToolPaths: vi.fn(),
@@ -255,6 +257,7 @@ vi.mock('../../src/main/git.js', () => ({
 }));
 vi.mock('../../src/main/setup.js', () => ({ getSetupInfo: m.svc.getSetupInfo, runSetup: m.svc.runSetup }));
 vi.mock('../../src/main/speckitSetup.js', () => ({ getSpeckitSetupInfo: m.svc.getSpeckitSetupInfo, runSpeckitSetup: m.svc.runSpeckitSetup }));
+vi.mock('../../src/main/frameworkChoice.js', () => ({ frameworkScan: m.svc.frameworkScan, chooseFramework: m.svc.chooseFramework }));
 vi.mock('../../src/main/harness.js', () => ({ detectHarnesses: m.svc.detectHarnesses }));
 vi.mock('../../src/main/tools.js', () => ({
   TOOL_IDS: ['aidlc', 'claude', 'git'],
@@ -837,6 +840,65 @@ describe('Spec Kit features', () => {
     svc.detectProject.mockResolvedValueOnce(KIT);
     await svc.watchForAidlc.mock.calls.at(-1)[0].onFound();
     expect(speckitWatch('/work/kit-later')).toBeDefined();
+  });
+});
+
+describe('US-1406 the framework choice (C4, NFR3.3, NFR7.1)', () => {
+  const ASK = { framework: null, source: 'ask', isAidlc: false };
+  const setupWatcher = () => svc.watchForAidlc.mock.results.at(-1).value;
+
+  it('project:frameworkScan resolves the project by id, ignores extra arguments and refuses an unknown id', async () => {
+    const { projectId } = await openProject('/work/fc-scan', ASK);
+    svc.frameworkScan.mockResolvedValueOnce({ proposal: 'aidlc' });
+    expect(await call('project:frameworkScan', {}, projectId, '/etc')).toEqual({ proposal: 'aidlc' });
+    expect(svc.frameworkScan).toHaveBeenLastCalledWith('/work/fc-scan');
+    await expect(call('project:frameworkScan', {}, 'nope')).rejects.toThrow('Okänt projekt: nope');
+  });
+
+  it('project:chooseFramework refuses an unknown id without calling the choice', async () => {
+    const calls = svc.chooseFramework.mock.calls.length;
+    await expect(call('project:chooseFramework', {}, 'nope', 'aidlc')).rejects.toThrow('Okänt projekt: nope');
+    expect(svc.chooseFramework.mock.calls.length).toBe(calls);
+  });
+
+  it('a found choice switches the project at once: framework, watchers and the project:detected push', async () => {
+    const { projectId, sender } = await openProject('/work/fc-aidlc', ASK);
+    const watcher = setupWatcher();
+    const detection = { framework: 'aidlc', source: 'file', isAidlc: true, activeSpace: 'team' };
+    svc.chooseFramework.mockResolvedValueOnce({ ok: true, file: '.thadeus/project.json', next: 'none' });
+    svc.detectProject.mockResolvedValueOnce(detection);
+    const started = Date.now();
+    expect(await call('project:chooseFramework', {}, projectId, 'aidlc', '/evil')).toEqual({ ok: true, file: '.thadeus/project.json', next: 'none' });
+    expect(Date.now() - started).toBeLessThan(2000);
+    expect(svc.chooseFramework).toHaveBeenLastCalledWith('/work/fc-aidlc', 'aidlc');
+    expect(sender.send).toHaveBeenCalledWith('project:detected', { projectId, detection });
+    expect(watcher.close).toHaveBeenCalled();
+    expect(svc.watchIntents).toHaveBeenLastCalledWith(expect.objectContaining({ intentsDir: '/work/fc-aidlc/aidlc/spaces/team/intents' }));
+    await call('file:read', {}, projectId, 'a.md');
+    expect(svc.readForEdit).toHaveBeenLastCalledWith('/work/fc-aidlc', 'a.md', { framework: 'aidlc' });
+  });
+
+  it('a found Spec Kit choice starts the Spec Kit watcher, not a space watcher', async () => {
+    const { projectId, sender } = await openProject('/work/fc-kit', ASK);
+    const intentWatches = svc.watchIntents.mock.calls.length;
+    const detection = { framework: 'speckit', source: 'file', isAidlc: false, activeSpace: null, spaces: [] };
+    svc.chooseFramework.mockResolvedValueOnce({ ok: true, file: '.thadeus/project.json', next: 'none' });
+    svc.detectProject.mockResolvedValueOnce(detection);
+    await call('project:chooseFramework', {}, projectId, 'speckit');
+    expect(sender.send).toHaveBeenCalledWith('project:detected', { projectId, detection });
+    expect(svc.watchFiles).toHaveBeenCalledWith(expect.objectContaining({ root: '/work/fc-kit', paths: expect.arrayContaining(['specs/**']) }));
+    expect(svc.watchIntents.mock.calls.length).toBe(intentWatches);
+  });
+
+  it('a not-found choice changes nothing: no detection, no push, the setup watcher kept', async () => {
+    const { projectId, sender } = await openProject('/work/fc-missing', ASK);
+    const watcher = setupWatcher();
+    const detections = svc.detectProject.mock.calls.length;
+    svc.chooseFramework.mockResolvedValueOnce({ ok: true, file: null, next: 'setupSpeckit' });
+    expect(await call('project:chooseFramework', {}, projectId, 'speckit')).toEqual({ ok: true, file: null, next: 'setupSpeckit' });
+    expect(svc.detectProject.mock.calls.length).toBe(detections);
+    expect(sender.send).not.toHaveBeenCalledWith('project:detected', expect.anything());
+    expect(watcher.close).not.toHaveBeenCalled();
   });
 });
 

@@ -66,10 +66,10 @@ speckit:setup(projectId, harness) -> { ok: true, output: string } | { ok: false,
 
 ```yaml
 project:frameworkScan(projectId) -> { found: { aidlc: boolean, speckit: boolean }, cli: { aidlc: boolean, specify: boolean }, proposal: aidlc | speckit | null }
-project:chooseFramework(projectId, framework) -> { ok: true, file: ".thadeus/project.json", next: setupAidlc | setupSpeckit | none }
+project:chooseFramework(projectId, framework) -> { ok: true, file: ".thadeus/project.json" | null, next: setupAidlc | setupSpeckit | none }
 ```
 
-Nothing is written before this call. A `project:detected` push (C1) follows it.
+Nothing is written before this call. `file` is null when nothing was written: the chosen framework was not found and its setup comes first (US-1406 BR4.6, an additive change). After a write, a `project:detected` push (C1) is sent before the call returns.
 
 ### C5: Spec Kit features
 

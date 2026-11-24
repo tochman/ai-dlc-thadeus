@@ -69,6 +69,7 @@ import { NAMES_PATH, setIntentName } from './intentNames.js';
 import { DELIVERY_DEFAULT } from './parsers/releases.js';
 import { getSetupInfo, runSetup } from './setup.js';
 import { getSpeckitSetupInfo, runSpeckitSetup } from './speckitSetup.js';
+import { chooseFramework, frameworkScan } from './frameworkChoice.js';
 import { detectHarnesses } from './harness.js';
 import { TOOL_IDS, getTools, setToolPaths, validateTool } from './tools.js';
 import { checkProgram, errorText as checkError, programCommand, projectCommand, projectPlan } from './aidlcUpdate.js';
@@ -369,20 +370,30 @@ async function syncFeaturesWatch(projectId) {
  * A folder with no framework is watched until a space or `.specify/` appears, then it is detected again (FR4.6).
  * US-1401 BR1.9: it acts when the framework changed, and only an AI-DLC project gets the space watcher.
  */
+/**
+ * Detects the project again and, when it now has a framework, switches it: the setup watcher closes, the space or
+ * Spec Kit watcher starts and `project:detected` is pushed (US-1401 BR1.9). US-1406 NFR7.1: the one owner of that
+ * switch, for the setup watcher and for a saved choice alike.
+ */
+async function applyDetection(projectId) {
+  const p = project(projectId);
+  const detection = await detectProject(p.root);
+  if (detection.framework === null || !projects.has(projectId)) return;
+  await p.setupWatcher?.close();
+  p.setupWatcher = null;
+  p.framework = detection.framework;
+  if (detection.framework === 'aidlc') await watchSpace(projectId, detection.activeSpace);
+  else if (detection.framework === 'speckit') watchSpeckit(projectId);
+  if (!p.sender.isDestroyed()) p.sender.send('project:detected', { projectId, detection });
+}
+
 function watchForSetup(projectId) {
   const p = project(projectId);
   p.setupWatcher = watchForAidlc({
     root: p.root,
     onFound: async () => {
       try {
-        const detection = await detectProject(p.root);
-        if (detection.framework === null || !projects.has(projectId)) return;
-        await p.setupWatcher?.close();
-        p.setupWatcher = null;
-        p.framework = detection.framework;
-        if (detection.framework === 'aidlc') await watchSpace(projectId, detection.activeSpace);
-        else if (detection.framework === 'speckit') watchSpeckit(projectId);
-        if (!p.sender.isDestroyed()) p.sender.send('project:detected', { projectId, detection });
+        await applyDetection(projectId);
       } catch (err) {
         console.error(`Omdetektering misslyckades för ${p.root}:`, err);
       }
@@ -1301,6 +1312,14 @@ const handlers = {
     const p = project(projectId);
     const result = await runSpeckitSetup(p.root, { harness }, p.speckitSetupInfo);
     if (result.ok) p.harnesses = detectHarnesses(p.root);
+    return result;
+  },
+  // US-1406 FR4 (C4, NFR3.3): the first-open choice. The renderer sends a project id, never a path; extra arguments are
+  // ignored. A written choice switches the project before the call returns (NFR7.1).
+  'project:frameworkScan': async (_event, projectId) => frameworkScan(project(projectId).root),
+  'project:chooseFramework': async (_event, projectId, framework) => {
+    const result = await chooseFramework(project(projectId).root, framework);
+    if (result.file) await applyDetection(projectId);
     return result;
   },
   'settings:get': async () => {

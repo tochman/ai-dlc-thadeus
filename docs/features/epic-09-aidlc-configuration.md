@@ -24,9 +24,9 @@
 > - A change to committed, project-wide settings (`--project`, `aidlc/scopes/`) says "this changes the project's committed settings" next to **Apply**.
 > - Changes to the active work's settings are blocked while the agent tab is busy ("Arbetar").
 
-**Stories:** US-0901–US-0907
+**Stories:** US-0901, US-0902, US-0903, US-0904, US-0905
 
-**Status (2026-11-24):** ✅ US-0901–US-0904 released (v0.2.2–v0.2.4). ✅ US-0905 released in v0.2.14. 📋 US-0906 planned, for v0.3.3. 📋 US-0907 planned, for v0.3.4. Each story names its release.
+**Status (2026-11-22):** ✅ US-0901–US-0904 released (v0.2.2–v0.2.4). ✅ US-0905 released in v0.2.14. Each story names its release.
 
 ---
 
@@ -194,35 +194,3 @@ The CLI refuses a harness that the project hasn't installed.
   - [x] Every text goes through `t()` in `sv.json` and `en.json`; the sub-block carries a `data-testid`.
 - **Notes:** Moves the view only; nothing about plans changes. Added to v0.2.14 on 2026-11-22, ahead of US-1401 (v0.3.0): on `main` the move is made where the left arm is built today, and the Spec Kit criterion holds trivially until US-1401 lands; US-1401's shared view list (`src/shared/frameworkViews.js`, on the Spec Kit branches) must then carry Plans under Configuration.
 - **Dependencies:** US-0903
-
-**US-0906: Visual plan designer: drag and drop custom plans for AI-DLC and Spec Kit** 📋 Planned, for v0.3.3
-- As a **developer**, in order to **shape how the agents work on my project without writing plan files by hand**, I would like **to design custom plans on a canvas, by dragging, toggling and configuring steps, and save them to the project**.
-- **Epic:** EPIC-09
-- **Priority:** High
-- **Complexity:** Large
-- **Source:** GitHub issue [#96](https://github.com/tochman/ai-dlc-thadeus/issues/96)
-- **Background:** Builds on the text based Plans view (US-0903). One canvas in the shared shell, one small adapter per framework, so the EPIC-14 rule holds: one value decides the view set, no general plugin system. The designer edits only what the project's framework can run; it is not a free workflow builder.
-- **Acceptance Criteria:**
-  - [ ] **Given** an AI-DLC project, **when** I open a plan in the designer, **then** its stages show as nodes in pipeline order, skipped stages visibly off, with the plan's defaults in a side panel.
-  - [ ] **When** I drag in, remove, toggle or configure a stage, **then** the change is checked against what the framework allows, and a step that is not allowed is refused with the reason.
-  - [ ] **When** I save, **then** I see a preview and nothing is written before I click Apply. AI-DLC plans are saved through the `aidlc` CLI (`aidlc engine scope save`).
-  - [ ] **Given** a Spec Kit project, **then** the core flow is a locked spine, and I can place, remove and set extensions and hooks around it, saved to `.specify/extensions.yml` after a preview.
-  - [ ] **Given** a plan file changed outside the app, **then** the canvas reloads it and never overwrites it silently.
-  - [ ] Keyboard and screen reader access, reduced motion respected, every text through `t()` in Swedish and English, in the LCARS look.
-- **Notes:** The issue suggests React Flow (xyflow, MIT); the dependency is chosen at the build. The AI-DLC adapter comes first.
-- **Dependencies:** US-0903, US-0905, US-1401, US-1403
-
-**US-0907: Compose a plan from a sentence in the designer, and change a running plan directly** 📋 Planned, for v0.3.4
-- As a **developer**, in order to **get a plan from a sentence and then adjust it by hand**, I would like **a command bar in the plan designer that asks AI-DLC's composer for a plan and shows the proposal arriving on the canvas**.
-- **Epic:** EPIC-09
-- **Priority:** Medium
-- **Complexity:** Medium
-- **Source:** GitHub issue [#105](https://github.com/tochman/ai-dlc-thadeus/issues/105)
-- **Background:** AI-DLC already has `/aidlc compose "<request>"`, and `--skip` / `--add` to change a running plan. Changing a running intent's plan from its detail is US-0509; this story adds the designer's way to do it.
-- **Acceptance Criteria:**
-  - [ ] **When** I type a request in the command bar (also `Cmd/Ctrl+K`) and press Compose, **then** the agent tab holds `<command> compose "<request>"`, safely quoted and not submitted.
-  - [ ] **Given** the composer writes an approved plan, **then** the designer shows it arriving, and a Before / After toggle marks added, removed and changed stages against the previous plan.
-  - [ ] **Given** the active intent is in flight, **when** I toggle two stages off, **then** the agent tab holds `<command> --skip a,b`, and the stages show dashed until a `RECOMPOSED` event confirms it.
-  - [ ] **Given** reduced or no motion, **then** the plan appears without animation, and the Before / After marking still shows.
-  - [ ] The command bar writes no plan file itself; every change goes through AI-DLC. Every text through `t()` in Swedish and English, in the LCARS look.
-- **Dependencies:** US-0906, US-0509

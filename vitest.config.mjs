@@ -19,7 +19,8 @@ const TIMED = [
   'tests/main/velocity.test.js',
   'tests/main/git.test.js',
   'tests/main/planningSync.test.js', // US-0607: real git repositories
-  'tests/main/watcher.test.js'
+  'tests/main/watcher.test.js',
+  'tests/main/frameworkChoiceTimed.test.js' // US-1406 NFR4.3
 ];
 export default defineConfig({
   plugins: [react()],

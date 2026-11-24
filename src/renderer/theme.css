@@ -1419,10 +1419,12 @@ a.md-link:hover { color: var(--steel-light); }
 .setup-advanced fieldset { border: 1px solid var(--slate-2); margin: 6px 0; display: flex; flex-direction: column; gap: 4px; }
 .setup-advanced legend, .settings-group legend { color: var(--muted); font-size: 12px; letter-spacing: 0.05em; text-transform: uppercase; padding: 0 8px 0 0; }
 .setup-actions { display: flex; gap: var(--gap); align-items: flex-end; }
-.setup-choice { display: flex; gap: 3px; align-items: center; margin-bottom: 8px; } /* US-1405 */
-.setup-choice .field-label { margin-right: 8px; }
-.setup-choice .lcars-block { height: 26px; min-width: 64px; padding: 0 10px 3px; font-size: 14px; }
-.setup-choice .lcars-block:last-child { border-radius: 0 13px 13px 0; }
+/* US-1406: the first-open choice, two LCARS option blocks side by side, the last one rounded off. */
+.framework-choice-options { display: flex; gap: 3px; flex-wrap: wrap; }
+.framework-choice-option { flex: 1 1 220px; max-width: 320px; height: auto; min-height: 96px; flex-direction: column; align-items: flex-start; justify-content: flex-end; gap: 2px; padding: 10px 14px; text-align: left; }
+.framework-choice-option:last-child { border-radius: 0 24px 24px 0; }
+.framework-choice-option strong { font-size: 20px; }
+.framework-choice-proposed { margin-top: 4px; text-transform: uppercase; letter-spacing: 0.06em; font-size: 12px; }
 .setup-done { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; border-left: var(--gap) solid var(--slate-5); flex-shrink: 0; }
 
 .features-view { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 8px; overflow: auto; }
