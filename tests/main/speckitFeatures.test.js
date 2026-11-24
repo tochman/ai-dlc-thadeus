@@ -4,7 +4,7 @@ import { promises as fs } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { t } from '../../src/shared/i18n.js';
-import { MAX_READ_BYTES, loadSpeckitFeatures } from '../../src/main/speckitFeatures.js';
+import { MAX_READ_BYTES, SPECKIT_WATCH_PATHS, loadSpeckitFeatures } from '../../src/main/speckitFeatures.js';
 import { spyWrites } from './fsWriteSpy.js';
 
 const roots = [];
@@ -260,5 +260,18 @@ describe('loadSpeckitFeatures: speed (NFR7.3)', () => {
     expect(performance.now() - start).toBeLessThan(500);
     expect(r.features).toHaveLength(50);
     expect(r.features[0].tasks.total).toBe(490);
+  });
+});
+
+describe('SPECKIT_WATCH_PATHS (US-1404 BR7.8)', () => {
+  it("keeps U6's paths and also follows the constitution, extensions.yml and every extension folder", () => {
+    expect(SPECKIT_WATCH_PATHS).toEqual([
+      'specs/**',
+      '.specify/feature.json',
+      '.specify/init-options.json',
+      '.specify/memory/constitution.md',
+      '.specify/extensions.yml',
+      '.specify/extensions/**'
+    ]);
   });
 });

@@ -145,6 +145,7 @@ contextBridge.exposeInMainWorld('bridge', {
   onFeaturesChanged: subscribe('features:changed'),
   speckitFeatures: call('speckit:features'), // US-1402 FR6 (C5): a Spec Kit project's features, read-only
   onSpeckitChanged: subscribe('speckit:changed'), // US-1402 BR6.7: { projectId, paths }
+  speckitRules: call('speckit:rules'), // US-1404 FR7 (C6): the constitution, extensions and hooks, read-only
   onProjectChanged: subscribe('project:changed'),
   onProjectDetected: subscribe('project:detected'),
   onWatchError: subscribe('project:watchError'),

@@ -1,0 +1,29 @@
+{
+  "stage": "code-generation",
+  "unit": "u7-constitution",
+  "version": 1,
+  "writes": [
+    { "path": "src/main/speckitRules.js" },
+    { "path": "src/renderer/SpeckitRules.jsx" },
+    { "path": "tests/main/speckitRules.test.js" },
+    { "path": "tests/renderer/SpeckitRules.test.jsx" },
+    { "path": "src/main/speckitFeatures.js" },
+    { "path": "src/main/watcher.js" },
+    { "path": "src/main/ipc.js" },
+    { "path": "src/preload/index.js" },
+    { "path": "src/shared/frameworkViews.js" },
+    { "path": "src/renderer/ProjectView.jsx" },
+    { "path": "src/renderer/theme.css" },
+    { "path": "src/shared/locales/en.json" },
+    { "path": "src/shared/locales/sv.json" },
+    { "path": "package.json" },
+    { "path": "package-lock.json" },
+    { "path": "tests/main/speckitFeatures.test.js" },
+    { "path": "tests/main/watcher.test.js" },
+    { "path": "tests/main/ipc.test.js" },
+    { "path": "tests/main/frameworkViews.test.js" },
+    { "path": "tests/renderer/ProjectView.test.jsx" },
+    { "path": "docs/FEATURES.md" },
+    { "path": "docs/features/epic-14-spec-kit.md" }
+  ]
+}

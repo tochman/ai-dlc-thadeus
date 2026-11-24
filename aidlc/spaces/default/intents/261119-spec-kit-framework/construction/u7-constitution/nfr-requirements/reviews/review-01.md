@@ -1,0 +1,29 @@
+## Review
+
+**Verdict:** READY
+**Reviewer:** aidlc-architecture-reviewer-agent
+**Date:** 2026-11-24T09:53:09Z
+**Iteration:** 1
+**Verdict Dictated:** no
+
+### Findings
+
+| ID | Severity | Location | Finding | Required action | Status |
+|---|---|---|---|---|---|
+| R-01 | Major | aidlc/spaces/default/intents/261119-spec-kit-framework/construction/u7-constitution/nfr-requirements/security-requirements.md > NFR3.2 and NFR5.2 | NFR3.2 requires that a symbolic link pointing outside the project root is not read, but it names no mechanism (realpath containment check) and no owner. The existing `readText` and `listDir` helpers (NFR8.2) follow links by default. Two paths are open: a symlinked directory `.specify/extensions/<id>/`, and the constitution, which is also read a second time by the artifact reader's FileView (NFR2.1), outside `speckit:rules`. The 1 MB limit in NFR5.2 has no stated order either: it must be checked with a stat before the read, or a 2 MB file is already in memory. | State that U7 resolves the real path and checks it is inside the project root before any read, for the manifest, `extensions.yml`, the constitution and each extension directory. State that the same check covers the FileView read of the constitution, and that the size check comes before the read. Add a test for a symlinked directory and for a symlinked constitution opened through FileView. | New |
+| R-02 | Minor | aidlc/spaces/default/intents/261119-spec-kit-framework/construction/u7-constitution/nfr-requirements/traceability.json > NFR5 | NFR5 upstream is "Spec Kit v1.4.x and newer is supported; a newer version is read with a warning that names the version; each view names what it could not read". The Unit marks NFR5 OK, but NFR5.1 and NFR5.2 are really security items (no raw HTML, parse limits). Only the "names what it could not read" part is covered, through the `errors` entries. The version warning is neither covered nor marked N/A. NFR5.1 and NFR5.2 also sit in security-requirements.md under a requirement ID with a different meaning. | Renumber NFR5.1 and NFR5.2 as U7-local security IDs, or add the version-warning part of NFR5 with a target or an N/A reason (for example "version warning is U1's"). Make traceability.json say which part of NFR5 is covered. | New |
+| R-03 | Minor | aidlc/spaces/default/intents/261119-spec-kit-framework/construction/u7-constitution/nfr-requirements/security-requirements.md > NFR3.1 | Upstream NFR3 says the app never writes in `.specify/`. NFR3.1 narrows this to U7 code and lets the editor save the constitution (BR7.2), which is a real write to `.specify/memory/constitution.md`. The exception is reasonable, but it is not written down as a change to NFR3 or C6. The test only spies on `loadSpeckitRules`, so it does not cover the other U7 code (watcher paths, the Open-in-editor handler). | Record the constitution save as a named exception to NFR3 and C6 with its approval, and extend the write-spy test to the Open-in-editor handler and the watcher setup. | New |
+| R-04 | Minor | aidlc/spaces/default/intents/261119-spec-kit-framework/construction/u7-constitution/nfr-requirements/security-requirements.md > NFR3.4 and NFR5.1 | NFR3.4 does not say where the "only `.specify/memory/constitution.md`" check runs. If it runs only in the renderer, it is no boundary. NFR5.1 bans raw HTML, but Markdown links and images in a constitution (a `javascript:` or remote `http` URL, a remote image) are not covered. | Say that the check is made in the main-process IPC handler, with a test that calls it directly. Add one line on link and image handling in the reader (no remote image load, no `javascript:` or other non-http(s) links) or point to the reader rule that already does this. | New |
+| R-05 | Minor | aidlc/spaces/default/intents/261119-spec-kit-framework/construction/u7-constitution/nfr-requirements/security-requirements.md > NFR3.3 | The name pattern `^[a-z0-9][a-z0-9._-]*$` has no length limit, yet the test fixture is a 200-character name, so it is unclear whether that name passes or is left out. | Add a maximum length (for example 64 characters) to NFR3.2 and NFR3.3 and state the expected result for the 200-character fixture. | New |
+| R-06 | Minor | aidlc/spaces/default/intents/261119-spec-kit-framework/construction/u7-constitution/nfr-requirements/tech-stack-decisions.md > NFR8.1 and NFR8.3 | `yaml` is added as a runtime dependency with "2.x" and a licence check "when it is added", with no exact version pin. Chokidar's default `followSymlinks` could also watch a link target outside the root under `.specify/extensions/`. | Pin an exact `yaml` version, as the other dependencies are. Set `followSymlinks: false` for the three new watch paths, or say why it is safe. | New |
+| R-07 | Minor | aidlc/spaces/default/intents/261119-spec-kit-framework/construction/u7-constitution/nfr-requirements/performance-requirements.md > NFR7.3 | A 300 ms wall-clock bound on a shared CI runner is likely to be flaky. The `scripts` test project retries twice, but a `main` project test does not. | Run the timing test in the retried `scripts` project, or give it a larger bound (for example 1 s) with the 300 ms recorded as a target. | New |
+
+### Validation Tool Results
+
+| Tool | Result | Interpretation |
+|---|---|---|
+| traceability.json against requirements.md NFR1 to NFR8 | PASS on IDs: all eight upstream IDs are listed once, with targets that exist in the three documents. | NFR5 is marked OK although only part of it is covered (see the Minor finding). |
+
+### Summary
+
+The security and performance targets are measurable and fit a read-only, local-only Unit. The main gap is that the symlink containment in NFR3.2 and the size-before-read order in NFR5.2 name no mechanism, and they also need to cover the second read through FileView. The rest are traceability and wording points. None block approval.

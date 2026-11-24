@@ -119,6 +119,13 @@ const m = vi.hoisted(() => {
       writeFileSafe: vi.fn(async () => ({ ok: true })),
       featureWatchPaths: vi.fn(() => ['docs/FEATURES.md']),
       loadSpeckitFeatures: vi.fn(async () => ({ version: { found: '1.4.3', supported: true }, features: [], active: null, errors: [] })),
+      loadSpeckitRules: vi.fn(async () => ({
+        constitution: { path: '.specify/memory/constitution.md', exists: false },
+        extensions: [],
+        skipped: 0,
+        hooksChecked: true,
+        errors: []
+      })),
       loadFeatures: vi.fn(async () => ({ epics: [] })),
       loadStoryLinks: vi.fn(async () => ({})),
       killAllSessions: vi.fn(),
@@ -293,6 +300,7 @@ vi.mock('../../src/main/features.js', () => ({
 }));
 vi.mock('../../src/main/releases.js', () => ({ setStoryRelease: m.svc.setStoryRelease, readRuleStatus: m.svc.readRuleStatus }));
 vi.mock('../../src/main/speckitFeatures.js', async (importOriginal) => ({ ...(await importOriginal()), loadSpeckitFeatures: m.svc.loadSpeckitFeatures }));
+vi.mock('../../src/main/speckitRules.js', () => ({ loadSpeckitRules: m.svc.loadSpeckitRules }));
 // US-0606/US-0607: the planning sync runs real git; here only its calls are checked, with the real scheduler.
 vi.mock('../../src/main/planningSync.js', async (importOriginal) => ({
   createScheduler: (await importOriginal()).createScheduler,
@@ -788,10 +796,30 @@ describe('Spec Kit features', () => {
     expect(svc.readForEdit).toHaveBeenLastCalledWith('/work/kit-read', 'specs/001-a/spec.md', { framework: 'speckit' });
   });
 
-  it('watches specs/** and the two .specify files of a Spec Kit project, pushes speckit:changed, and closes it with the project', async () => {
+  // US-1404 FR7 (contract C6): the rules, for a Spec Kit project only.
+  it("speckit:rules returns the reader's result for a Spec Kit project, and rejects for another framework", async () => {
+    const { projectId } = await openProject('/work/kit-rules', KIT);
+    const result = { constitution: { path: '.specify/memory/constitution.md', exists: true }, extensions: [], skipped: 0, hooksChecked: true, errors: [] };
+    svc.loadSpeckitRules.mockResolvedValueOnce(result);
+    expect(await call('speckit:rules', {}, projectId)).toBe(result);
+    expect(svc.loadSpeckitRules).toHaveBeenLastCalledWith('/work/kit-rules');
+    const other = await openProject('/work/kit-rules-other');
+    svc.loadSpeckitRules.mockClear();
+    await expect(call('speckit:rules', {}, other.projectId)).rejects.toThrow();
+    expect(svc.loadSpeckitRules).not.toHaveBeenCalled();
+  });
+
+  it('watches specs/**, the .specify files and the extension folders of a Spec Kit project, pushes speckit:changed, and closes it with the project', async () => {
     const { projectId, sender } = await openProject('/work/kit-watch', KIT);
     const opts = speckitWatch('/work/kit-watch');
-    expect(opts.paths).toEqual(['specs/**', '.specify/feature.json', '.specify/init-options.json']);
+    expect(opts.paths).toEqual([
+      'specs/**',
+      '.specify/feature.json',
+      '.specify/init-options.json',
+      '.specify/memory/constitution.md',
+      '.specify/extensions.yml',
+      '.specify/extensions/**'
+    ]);
     opts.onChange(['specs/001-a/tasks.md']);
     expect(sender.send).toHaveBeenCalledWith('speckit:changed', { projectId, paths: ['specs/001-a/tasks.md'] });
     const w = svc.watchFiles.mock.results[svc.watchFiles.mock.calls.findIndex(([o]) => o === opts)].value;

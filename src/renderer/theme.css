@@ -1308,6 +1308,13 @@ button.lcars-nb:hover:not(:disabled), a.lcars-nb:hover { filter: brightness(1.15
 .speckit-tasks label { display: flex; gap: var(--gap); align-items: baseline; }
 .speckit-count { color: var(--steel-text); }
 .speckit-empty { display: grid; gap: var(--gap); justify-items: start; }
+/* US-1404: Configuration › Spec Kit, the constitution and each extension as a strip-edged block */
+.speckit-rules, .speckit-rules-part { display: grid; gap: var(--gap-m); min-width: 0; }
+.speckit-rules-extension { padding: var(--gap) var(--gap-m); background: var(--slate-1); border-left: var(--gap) solid var(--slate-3); margin-bottom: var(--gap); }
+.speckit-rules-command { margin-right: var(--gap); }
+.speckit-rules-hook { display: flex; flex-wrap: wrap; gap: var(--gap); align-items: baseline; }
+.speckit-mode-mandatory { background: var(--steel); color: var(--on-light); } /* the one a run cannot skip */
+.speckit-mode-off { color: var(--muted); }
 .md-link { color: var(--steel-text); text-decoration: underline dotted; }
 a.md-link:hover { color: var(--steel-light); }
 

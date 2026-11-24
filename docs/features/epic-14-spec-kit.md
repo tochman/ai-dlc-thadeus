@@ -10,7 +10,7 @@
 
 **Stories:** US-1401–US-1410
 
-**Status (2026-11-24):** ✅ US-1401, US-1402, US-1408 done, for v0.3.0 · 📋 US-1403–US-1407, US-1409–US-1410 planned, for v0.3.0.
+**Status (2026-11-24):** ✅ US-1401, US-1402, US-1404, US-1408 done, for v0.3.0 · 📋 US-1403, US-1405–US-1407, US-1409–US-1410 planned, for v0.3.0.
 
 ---
 
@@ -60,16 +60,16 @@
   - [ ] Nothing runs without my click. Every text goes through `t()` in Swedish and English, in the LCARS look.
 - **Dependencies:** US-1401, US-1402
 
-**US-1404: Constitution and extensions** 📋 Planned, for v0.3.0
+**US-1404: Constitution and extensions** ✅ Done, for v0.3.0
 - As a **developer**, in order to **see and change the rules my agents follow in a Spec Kit project**, I would like **a view of the project's constitution and its installed extensions and hooks**.
 - **Epic:** EPIC-14
 - **Priority:** Medium
 - **Complexity:** Small
 - **Background:** Asked for 2026-11-19. Fills the place that the memory layers and configuration have in an AI-DLC project.
 - **Acceptance Criteria:**
-  - [ ] **Given** `.specify/memory/constitution.md`, **then** it shows rendered and opens in the editor (EPIC-10).
-  - [ ] **Given** `.specify/extensions.yml`, **then** each extension and hook shows with its command, before or after which command it runs, and whether it is optional, mandatory or turned off.
-  - [ ] A file that cannot be read is named, with the reason, never hidden. Every text goes through `t()` in Swedish and English, in the LCARS look.
+  - [x] **Given** `.specify/memory/constitution.md`, **then** it shows rendered and opens in the editor (EPIC-10).
+  - [x] **Given** `.specify/extensions.yml`, **then** each extension and hook shows with its command, before or after which command it runs, and whether it is optional, mandatory or turned off.
+  - [x] A file that cannot be read is named, with the reason, never hidden. Every text goes through `t()` in Swedish and English, in the LCARS look.
 - **Dependencies:** US-1401
 
 **US-1405: Set up Spec Kit in a project** 📋 Planned, for v0.3.0

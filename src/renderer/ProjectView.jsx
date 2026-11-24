@@ -18,6 +18,7 @@ import ConfigView from './ConfigView.jsx';
 import PlansView from './PlansView.jsx';
 import ProjectSettingsView, { AIDLC_SECTIONS, confirmHarnessSwitch } from './ProjectSettingsView.jsx';
 import SpeckitShell from './SpeckitShell.jsx'; // US-1401
+import SpeckitRules from './SpeckitRules.jsx'; // US-1404
 import { sectionsFor, shownViews } from '../shared/frameworkViews.js';
 import CostRulesSection from './CostRulesSection.jsx';
 import ModelProfilesSection from './ModelProfilesSection.jsx'; // US-0210
@@ -480,7 +481,9 @@ function ProjectContent({
                 {view === 'config' && configSection === 'modelProfiles' && (
                   <ModelProfilesSection projectId={project.projectId} harness={harnessId} settings={settings} />
                 )}
-                {view === 'config' && !AIDLC_SECTIONS.includes(configSection) && (
+                {/* US-1404 BR7.9: Configuration › Spec Kit, offered only to a Spec Kit project by sectionsFor. */}
+                {view === 'config' && configSection === 'speckit' && <SpeckitRules projectId={project.projectId} />}
+                {view === 'config' && !AIDLC_SECTIONS.includes(configSection) && configSection !== 'speckit' && (
                   <ProjectSettingsView
                     section={configSection}
                     agentHooksFocus={hooksFocus}
