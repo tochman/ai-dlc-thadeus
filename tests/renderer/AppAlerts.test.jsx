@@ -1,6 +1,7 @@
 // US-0506 u5 D2, D6, SD53 (LC53): the app shell opens the dialog per alertPlan and acts on a clicked notification.
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { viewFields } from '../../src/shared/frameworkViews.js';
 
 vi.mock('../../src/renderer/ProjectView.jsx', () => ({
   default: function ProjectViewStub({ project }) {
@@ -52,7 +53,7 @@ async function renderApp(settings = {}, lists = {}) {
       projectId: dir.endsWith('a') ? 'p1' : 'p2',
       root: dir,
       name: dir.split('/').pop(),
-      detection: { isAidlc: true, activeSpace: 'default', spaces: ['default'] }
+      detection: { framework: 'aidlc', ...viewFields('aidlc'), activeSpace: 'default', spaces: ['default'] } // US-1401 C1
     })),
     onProjectDetected: vi.fn(() => () => {}),
     agentEvents: {

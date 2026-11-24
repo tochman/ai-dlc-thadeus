@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { useEffect } from 'react';
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { t } from '../../src/shared/i18n.js';
+import { viewFields } from '../../src/shared/frameworkViews.js';
 
 // The project view has its own tests; here it only reports what the left arm needs, as the real one does.
 // It renders the real latest-message strip (US-0506 u3), as the real one does above its terminal.
@@ -19,13 +20,20 @@ vi.mock('../../src/renderer/ProjectView.jsx', async () => {
   };
 });
 
-// Same shapes as settings:get and project:open.
-const projectInfo = (root, projectId) => ({
-  projectId,
-  root,
-  name: root.split('/').pop(),
-  detection: { isAidlc: true, activeSpace: 'default', spaces: ['default'] }
+// Same shapes as settings:get and project:open; the Detection as detectProject builds it (US-1401 C1).
+const detectionOf = (framework) => ({
+  framework,
+  source: 'detected',
+  reason: null,
+  ...viewFields(framework),
+  activeSpace: framework === 'aidlc' ? 'default' : null,
+  spaces: framework === 'aidlc' ? ['default'] : []
 });
+const projectInfo = (root, projectId) => ({ projectId, root, name: root.split('/').pop(), detection: detectionOf('aidlc') });
+/** Opens every project of the next render with this framework. */
+const openAs = (framework) => {
+  window.bridge.openProject = vi.fn(async (dir) => ({ ...projectInfo(dir, 'p1'), detection: detectionOf(framework) }));
+};
 let saved;
 let push; // the main -> renderer channels the test fires: fullscreen, menuCommand
 window.bridge = {}; // App keeps this object from import; each test fills in its methods
@@ -136,7 +144,7 @@ describe('App shell', () => {
     cleanup();
 
     mockBridge({ openProjects: ['/p/plain-a'], activeProject: '/p/plain-a' });
-    window.bridge.openProject = vi.fn(async (dir) => ({ ...projectInfo(dir, 'p1'), detection: { isAidlc: false } }));
+    openAs(null);
     render(<App />);
     fireEvent.click(await screen.findByTestId('project-view-switch-config'));
     expect(screen.getByTestId('config-section-agent')).toBeTruthy();
@@ -184,13 +192,13 @@ describe('App shell', () => {
     cleanup();
 
     mockBridge({ openProjects: ['/p/plain-a'], activeProject: '/p/plain-a' });
-    window.bridge.openProject = vi.fn(async (dir) => ({ ...projectInfo(dir, 'p1'), detection: { isAidlc: false } }));
+    openAs(null);
     render(<App />);
-    await screen.findByTestId('project-view-switch-intents');
+    await screen.findByTestId('project-view-switch-setup');
     expect(screen.getByTestId('arm-cost').disabled).toBe(true);
     expect(screen.getByTestId('arm-github').disabled).toBe(true);
     act(() => push.menuCommand({ command: 'panel', panel: 'github' }));
-    expect(screen.getByTestId('project-view-switch-intents').getAttribute('aria-current')).toBe('page');
+    expect(screen.getByTestId('project-view-switch-setup').getAttribute('aria-current')).toBe('page');
     expect(screen.getByTestId('arm-github').hasAttribute('aria-current')).toBe(false);
   });
 
@@ -204,10 +212,34 @@ describe('App shell', () => {
     cleanup();
 
     mockBridge({ openProjects: ['/p/plain-a'], activeProject: '/p/plain-a' });
-    window.bridge.openProject = vi.fn(async (dir) => ({ ...projectInfo(dir, 'p1'), detection: { isAidlc: false } }));
+    openAs(null);
     render(<App />);
-    await screen.findByTestId('project-view-switch-intents');
+    await screen.findByTestId('project-view-switch-setup');
     expect(screen.getByTestId('arm-velocity').disabled).toBe(true);
+  });
+
+  it('US-1401: a Spec Kit project shows the specs view and no Intents, Kostnad, Velocity, Planer or Github (AC1.1.2)', async () => {
+    mockBridge({ openProjects: ['/p/kit-a'], activeProject: '/p/kit-a' });
+    openAs('speckit');
+    render(<App />);
+    const specs = await screen.findByTestId('project-view-switch-specs');
+    expect(specs.textContent).toBe(t('app.specs'));
+    expect(specs.getAttribute('aria-current')).toBe('page'); // the fallback view is specs, not intents (R-01)
+    expect(screen.getByRole('heading', { level: 1 }).textContent).toMatch(new RegExp(`kit-a.*${t('app.specs')}`));
+    for (const id of ['project-view-switch-intents', 'project-view-switch-plans', 'arm-cost', 'arm-velocity', 'arm-github']) {
+      expect(screen.queryByTestId(id), id).toBeNull();
+    }
+    expect(within(screen.getByTestId('project-tabs')).getByText(t('app.featureCount', { n: 0 }))).toBeTruthy(); // U6 counts them
+    await waitFor(() => expect(window.bridge.sendMenuState).toHaveBeenLastCalledWith({ hasProject: true, framework: 'speckit', showFeatures: true }));
+
+    act(() => push.menuCommand({ command: 'panel', panel: 'cost' })); // AI-DLC's menu items do nothing here
+    expect(screen.getByTestId('project-view-p1').dataset.view).not.toBe('cost');
+    expect(screen.getByTestId('project-view-switch-specs').getAttribute('aria-current')).toBe('page');
+    act(() => push.menuCommand({ command: 'view', view: 'config' }));
+    expect(screen.getByTestId('config-section-agent')).toBeTruthy();
+    expect(screen.queryByTestId('config-section-aidlc')).toBeNull();
+    act(() => push.menuCommand({ command: 'view', view: 'intents' })); // goes to the framework's first view
+    expect(screen.getByTestId('project-view-switch-specs').getAttribute('aria-current')).toBe('page');
   });
 
   it('sets data-motion from the setting, Dämpad under prefers-reduced-motion without one, and saves a new choice (FR4.2)', async () => {
@@ -364,7 +396,7 @@ describe('App shell', () => {
 
     // Without AI-DLC there is no AI-DLC section, so no plans, as before.
     mockBridge({ openProjects: ['/p/plain-a'], activeProject: '/p/plain-a' });
-    window.bridge.openProject = vi.fn(async (dir) => ({ ...projectInfo(dir, 'p1'), detection: { isAidlc: false } }));
+    window.bridge.openProject = vi.fn(async (dir) => ({ ...projectInfo(dir, 'p1'), detection: detectionOf(null) }));
     render(<App />);
     fireEvent.click(await screen.findByTestId('project-view-switch-config'));
     expect(screen.queryByTestId('config-section-aidlc')).toBeNull();
@@ -376,7 +408,7 @@ describe('App shell', () => {
   it('runs a menu command through the same function as the arm button, reports the menu state and ignores unknown ones (US-0404 FR2.4–FR2.6)', async () => {
     await renderApp({ openProjects: ['/p/aidlc-dash-a'], activeProject: '/p/aidlc-dash-a' });
     await screen.findByTestId('project-view-switch-features');
-    await waitFor(() => expect(window.bridge.sendMenuState).toHaveBeenLastCalledWith({ hasProject: true, isAidlc: true, showFeatures: true }));
+    await waitFor(() => expect(window.bridge.sendMenuState).toHaveBeenLastCalledWith({ hasProject: true, framework: 'aidlc', showFeatures: true }));
 
     act(() => push.menuCommand({ command: 'view', view: 'features' }));
     expect(screen.getByTestId('project-view-switch-features').getAttribute('aria-current')).toBe('page');
@@ -400,7 +432,7 @@ describe('App shell', () => {
     // Cmd/Ctrl+W closes the active project like its ×, and then does nothing.
     act(() => push.menuCommand({ command: 'closeProject' }));
     await waitFor(() => expect(window.bridge.closeProject).toHaveBeenCalledWith('p1'));
-    await waitFor(() => expect(window.bridge.sendMenuState).toHaveBeenLastCalledWith({ hasProject: false, isAidlc: false, showFeatures: false }));
+    await waitFor(() => expect(window.bridge.sendMenuState).toHaveBeenLastCalledWith({ hasProject: false, framework: null, showFeatures: false }));
     act(() => push.menuCommand({ command: 'closeProject' }));
     expect(window.bridge.closeProject).toHaveBeenCalledTimes(1);
   });

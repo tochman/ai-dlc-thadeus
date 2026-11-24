@@ -31,7 +31,7 @@ const m = vi.hoisted(() => {
       openRoot: vi.fn(async (dir) => dir),
       readText: vi.fn(async () => 'text'),
       resolveInRoot: vi.fn(async (root, rel) => `${root}/${rel}`),
-      detectProject: vi.fn(async () => ({ isAidlc: true, activeSpace: 'default' })),
+      detectProject: vi.fn(async () => ({ framework: 'aidlc', isAidlc: true, activeSpace: 'default' })),
       intentsDir: vi.fn((space) => `aidlc/spaces/${space}/intents`),
       listSpaces: vi.fn(async () => ['default']),
       loadCost: vi.fn(async () => ({ available: false })),
@@ -343,7 +343,7 @@ const makeSender = () => ({ isDestroyed: vi.fn(() => false), send: vi.fn() });
 const call = (channel, ...args) => m.handlers.get(channel)(...args);
 
 /** Opens a project through the real handler and returns its id and sender. */
-async function openProject(dir = '/proj', detection = { isAidlc: true, activeSpace: 'default' }) {
+async function openProject(dir = '/proj', detection = { framework: 'aidlc', isAidlc: true, activeSpace: 'default' }) {
   svc.detectProject.mockResolvedValueOnce(detection);
   const sender = makeSender();
   const event = { sender };
@@ -389,15 +389,46 @@ describe('projects', () => {
   });
 
   it('watches a folder without AI-DLC until a space appears, then reports the detection', async () => {
-    const { projectId, sender } = await openProject('/work/plain', { isAidlc: false });
+    const { projectId, sender } = await openProject('/work/plain', { framework: null, isAidlc: false });
     const { onFound } = svc.watchForAidlc.mock.calls.at(-1)[0];
-    svc.detectProject.mockResolvedValueOnce({ isAidlc: true, activeSpace: 'team' });
+    const detection = { framework: 'aidlc', isAidlc: true, activeSpace: 'team' };
+    svc.detectProject.mockResolvedValueOnce(detection);
     await onFound();
-    expect(sender.send).toHaveBeenCalledWith('project:detected', { projectId, detection: { isAidlc: true, activeSpace: 'team' } });
+    expect(sender.send).toHaveBeenCalledWith('project:detected', { projectId, detection });
+    expect(svc.watchIntents).toHaveBeenLastCalledWith(expect.objectContaining({ intentsDir: '/work/plain/aidlc/spaces/team/intents' }));
+  });
+
+  it('US-1401 BR1.9: opens a Spec Kit project with its Detection and without the AI-DLC watchers (AC1.1.2)', async () => {
+    const intentWatches = svc.watchIntents.mock.calls.length;
+    const setupWatches = svc.watchForAidlc.mock.calls.length;
+    const detection = { framework: 'speckit', isAidlc: false, views: ['specs'], activeSpace: null, spaces: [] };
+    const res = await openProject('/work/kit', detection);
+    expect(res.detection).toBe(detection); // the open return is the Detection itself (C1)
+    expect(svc.watchIntents.mock.calls.length).toBe(intentWatches);
+    expect(svc.watchForAidlc.mock.calls.length).toBe(setupWatches);
+  });
+
+  it('US-1401 BR1.9: pushes project:detected when .specify/ appears, without watching a space', async () => {
+    const { projectId, sender } = await openProject('/work/plain3', { framework: null, isAidlc: false });
+    const { onFound } = svc.watchForAidlc.mock.calls.at(-1)[0];
+    const intentWatches = svc.watchIntents.mock.calls.length;
+    const detection = { framework: 'speckit', isAidlc: false, activeSpace: null, spaces: [] };
+    svc.detectProject.mockResolvedValueOnce(detection);
+    await onFound();
+    expect(sender.send).toHaveBeenCalledWith('project:detected', { projectId, detection });
+    expect(svc.watchIntents.mock.calls.length).toBe(intentWatches);
+  });
+
+  it('US-1401 BR1.9: keeps watching when the framework did not change', async () => {
+    const { sender } = await openProject('/work/plain4', { framework: null, isAidlc: false });
+    const { onFound } = svc.watchForAidlc.mock.calls.at(-1)[0];
+    svc.detectProject.mockResolvedValueOnce({ framework: null, isAidlc: false });
+    await onFound();
+    expect(sender.send).not.toHaveBeenCalledWith('project:detected', expect.anything());
   });
 
   it('logs a failing re-detection and keeps watching', async () => {
-    await openProject('/work/plain2', { isAidlc: false });
+    await openProject('/work/plain2', { framework: null, isAidlc: false });
     const { onFound, onError } = svc.watchForAidlc.mock.calls.at(-1)[0];
     svc.detectProject.mockRejectedValueOnce(new Error('boom'));
     await onFound();

@@ -10,25 +10,25 @@
 
 **Stories:** US-1401–US-1410
 
-**Status (2026-11-19):** 📋 US-1401–US-1410 planned, for v0.3.0.
+**Status (2026-11-19):** ✅ US-1401 done, for v0.3.0 · 📋 US-1402–US-1410 planned, for v0.3.0.
 
 ---
 
 ## User Stories
 
-**US-1401: One framework per project, and views that follow it** 📋 Planned, for v0.3.0
+**US-1401: One framework per project, and views that follow it** ✅ Done, for v0.3.0
 - As a **developer**, in order to **use THADEUS with the framework my project follows**, I would like **the app to show the views of the project's framework, AI-DLC or Spec Kit, and only those**.
 - **Epic:** EPIC-14
 - **Priority:** High
 - **Complexity:** Medium
 - **Background:** Asked for 2026-11-19. Today a project is accepted only when it has `aidlc/spaces/` (`detectProject` in `src/main/projectService.js`). Which framework a project follows is decided in US-1406 and can be changed in US-1407.
 - **Acceptance Criteria:**
-  - [ ] **Given** a project that follows AI-DLC, **then** it opens exactly as today.
-  - [ ] **Given** a project that follows Spec Kit, **then** the left arm shows the Spec Kit views and no AI-DLC views.
+  - [x] **Given** a project that follows AI-DLC, **then** it opens exactly as today.
+  - [x] **Given** a project that follows Spec Kit, **then** the left arm shows the Spec Kit views and no AI-DLC views.
   - [ ] The project's framework is kept in the repository (US-1408), and the view set follows it.
-  - [ ] **Given** no framework is saved yet (until US-1406), **then** the app follows what it finds: only `.specify/` is Spec Kit, and `aidlc/spaces/` (alone or with `.specify/`) is AI-DLC, as today.
-  - [ ] The shared shell (terminal, dialogs and hooks, editor, git, Features view, project settings) works the same for both. The token log per feature is US-1409; waiting questions and agent progress are US-1410.
-  - [ ] Every text goes through `t()` in Swedish and English, in the LCARS look.
+  - [x] **Given** no framework is saved yet (until US-1406), **then** the app follows what it finds: only `.specify/` is Spec Kit, and `aidlc/spaces/` (alone or with `.specify/`) is AI-DLC, as today.
+  - [x] The shared shell (terminal, dialogs and hooks, editor, git, Features view, project settings) works the same for both. The token log per feature is US-1409; waiting questions and agent progress are US-1410.
+  - [x] Every text goes through `t()` in Swedish and English, in the LCARS look.
 - **Notes:** One value, `framework: 'aidlc' | 'speckit'`, decides the view set. No general plugin system.
 - **Dependencies:** none
 

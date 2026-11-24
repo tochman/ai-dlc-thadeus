@@ -16,10 +16,9 @@ const MODES = ['auto', 'show', 'hide'];
 /**
  * The sections in the arm (US-0012); `aidlc` is the AI-DLC configuration, shown by ConfigView; `costRules` is the
  * cost rule pack (US-0212), shown by CostRulesSection; `modelProfiles` is the model profile switch (US-0210), shown by
- * ModelProfilesSection. All three only in AI-DLC projects (AIDLC_SECTIONS).
+ * ModelProfilesSection. All three only in AI-DLC projects (AIDLC_SECTIONS). The lists live in the shared views table (US-1401).
  */
-export const PROJECT_SECTIONS = ['docs', 'agent', 'aidlc', 'costRules', 'modelProfiles'];
-export const AIDLC_SECTIONS = ['aidlc', 'costRules', 'modelProfiles'];
+export { AIDLC_SECTIONS, PROJECT_SECTIONS } from '../shared/frameworkViews.js';
 
 /**
  * The "Agent-terminal" options (US-0801 FR2.1): the selectable harnesses with their CLI version, and the

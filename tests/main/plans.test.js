@@ -70,6 +70,8 @@ const there = (rel) =>
   );
 
 beforeEach(async () => {
+  // The runner merges process.env into each call, so a harness dir set by the caller (the AI-DLC checkpoint) must not leak in.
+  vi.stubEnv('AIDLC_HARNESS_DIR', undefined);
   tmp = await fs.mkdtemp(path.join(os.tmpdir(), 'plans-'));
   await write('aidlc/scopes/demo.md', DEMO);
   await write('.claude/scopes/aidlc-demo.md', DEMO.split('<!-- BEGIN')[0]);
@@ -79,7 +81,10 @@ beforeEach(async () => {
   await write('.aidlc/tools/data/scope-grid.json', JSON.stringify(SCOPE_GRID)); // opencode installed too (US-0021)
   root = await openRoot(tmp);
 });
-afterEach(() => fs.rm(tmp, { recursive: true, force: true }));
+afterEach(async () => {
+  vi.unstubAllEnvs();
+  await fs.rm(tmp, { recursive: true, force: true });
+});
 
 const running = { dirName: '261114-x', slug: 'x', scope: 'demo', status: 'in-flight', executed: 5, done: 2 };
 const finished = { dirName: '261113-y', slug: 'y', scope: 'demo', status: 'complete' };
