@@ -10,7 +10,7 @@
 
 **Stories:** US-1401–US-1410
 
-**Status (2026-11-24):** ✅ US-1401, US-1402, US-1404, US-1405, US-1408 done, for v0.3.0 · 🚧 US-1410 in progress, for v0.3.0 · 📋 US-1403, US-1406, US-1407, US-1409 planned, for v0.3.0.
+**Status (2026-11-24):** ✅ US-1401, US-1402, US-1404, US-1405, US-1406, US-1408, US-1409, US-1410 done, for v0.3.0 · 🚧 US-1407 in progress, for v0.3.0 · 📋 US-1403 planned, for v0.3.0.
 
 ---
 
@@ -60,16 +60,16 @@
   - [ ] Nothing runs without my click. Every text goes through `t()` in Swedish and English, in the LCARS look.
 - **Dependencies:** US-1401, US-1402
 
-**US-1404: Constitution and extensions** ✅ Done, for v0.3.0
+**US-1404: Constitution and extensions** 📋 Planned, for v0.3.0
 - As a **developer**, in order to **see and change the rules my agents follow in a Spec Kit project**, I would like **a view of the project's constitution and its installed extensions and hooks**.
 - **Epic:** EPIC-14
 - **Priority:** Medium
 - **Complexity:** Small
 - **Background:** Asked for 2026-11-19. Fills the place that the memory layers and configuration have in an AI-DLC project.
 - **Acceptance Criteria:**
-  - [x] **Given** `.specify/memory/constitution.md`, **then** it shows rendered and opens in the editor (EPIC-10).
-  - [x] **Given** `.specify/extensions.yml`, **then** each extension and hook shows with its command, before or after which command it runs, and whether it is optional, mandatory or turned off.
-  - [x] A file that cannot be read is named, with the reason, never hidden. Every text goes through `t()` in Swedish and English, in the LCARS look.
+  - [ ] **Given** `.specify/memory/constitution.md`, **then** it shows rendered and opens in the editor (EPIC-10).
+  - [ ] **Given** `.specify/extensions.yml`, **then** each extension and hook shows with its command, before or after which command it runs, and whether it is optional, mandatory or turned off.
+  - [ ] A file that cannot be read is named, with the reason, never hidden. Every text goes through `t()` in Swedish and English, in the LCARS look.
 - **Dependencies:** US-1401
 
 **US-1405: Set up Spec Kit in a project** ✅ Done, for v0.3.0
@@ -85,21 +85,21 @@
   - [x] Every text goes through `t()` in Swedish and English, in the LCARS look.
 - **Dependencies:** US-0503
 
-**US-1406: See what is installed in a new project, and choose its framework** 📋 Planned, for v0.3.0
+**US-1406: See what is installed in a new project, and choose its framework** ✅ Done, for v0.3.0
 - As a **developer**, in order to **start right with a project I open for the first time**, I would like **the app to show which framework the project already has, and let me choose the one it follows**.
 - **Epic:** EPIC-14
 - **Priority:** High
 - **Complexity:** Medium
 - **Background:** Asked for 2026-11-19. The first step when a project without a framework setting is opened.
 - **Acceptance Criteria:**
-  - [ ] **Given** a project opened for the first time, **then** the app shows what it found: AI-DLC (`aidlc/spaces/`), Spec Kit (`.specify/`), both or neither, and whether the `aidlc` and `specify` commands are on the login shell's `PATH`.
-  - [ ] **Given** exactly one framework, **then** it is proposed, and one click confirms it.
-  - [ ] **Given** both, **then** I choose which one the app follows. The other is left alone and not shown.
-  - [ ] **Given** neither, **then** I choose AI-DLC or Spec Kit, and the app goes on to that framework's setup (US-0503 or US-1405).
-  - [ ] The choice is kept in the repository (US-1408), and the project is not asked again on any clone. Nothing in the project is written before I confirm. Every text goes through `t()` in Swedish and English, in the LCARS look.
+  - [x] **Given** a project opened for the first time, **then** the app shows what it found: AI-DLC (`aidlc/spaces/`), Spec Kit (`.specify/`), both or neither, and whether the `aidlc` and `specify` commands are on the login shell's `PATH`.
+  - [x] **Given** exactly one framework, **then** it is proposed, and one click confirms it.
+  - [x] **Given** both, **then** I choose which one the app follows. The other is left alone and not shown.
+  - [x] **Given** neither, **then** I choose AI-DLC or Spec Kit, and the app goes on to that framework's setup (US-0503 or US-1405).
+  - [x] The choice is kept in the repository (US-1408), and the project is not asked again on any clone. Nothing in the project is written before I confirm. Every text goes through `t()` in Swedish and English, in the LCARS look.
 - **Dependencies:** US-1401, US-1405
 
-**US-1407: Switch a project from one framework to the other** 📋 Planned, for v0.3.0
+**US-1407: Switch a project from one framework to the other** 🚧 In progress, for v0.3.0
 - As a **developer**, in order to **move a project from AI-DLC to Spec Kit, or back**, I would like **to switch its framework from the project settings**.
 - **Epic:** EPIC-14
 - **Priority:** Medium
@@ -126,26 +126,26 @@
   - [x] Every text goes through `t()` in Swedish and English, in the LCARS look.
 - **Dependencies:** US-1401
 
-**US-1409: A token log per Spec Kit feature** 📋 Planned, for v0.3.0
+**US-1409: A token log per Spec Kit feature** ✅ Done, for v0.3.0
 - As a **developer**, in order to **see what each Spec Kit feature cost in tokens**, I would like **the token log to be kept per feature in a Spec Kit project, as it is per intent in an AI-DLC project**.
 - **Epic:** EPIC-14
 - **Priority:** Medium
 - **Complexity:** Medium
 - **Background:** Found 2026-11-19 in the EPIC-14 Ideation check: the token log is kept per AI-DLC intent, and Spec Kit has no intents.
 - **Acceptance Criteria:**
-  - [ ] **Given** a Spec Kit project, **then** token use is logged per feature under `specs/`, and the active feature (`.specify/feature.json`) gets the readings.
-  - [ ] **Given** no active feature, **then** readings go to a project-wide bucket that is named as such, never silently dropped.
-  - [ ] The log is never written in `.specify/` or `specs/`. Every text goes through `t()` in Swedish and English, in the LCARS look.
+  - [x] **Given** a Spec Kit project, **then** token use is logged per feature under `specs/`, and the active feature (`.specify/feature.json`) gets the readings.
+  - [x] **Given** no active feature, **then** readings go to a project-wide bucket that is named as such, never silently dropped.
+  - [x] The log is never written in `.specify/` or `specs/`. Every text goes through `t()` in Swedish and English, in the LCARS look.
 - **Dependencies:** US-1401, US-1402
 
-**US-1410: Waiting questions and agent progress in a Spec Kit project** 🚧 In progress, for v0.3.0
+**US-1410: Waiting questions and agent progress in a Spec Kit project** ✅ Done, for v0.3.0
 - As a **developer**, in order to **see what the agent waits on in a Spec Kit project**, I would like **the waiting-questions popup and the agent progress to work in a Spec Kit project too**.
 - **Epic:** EPIC-14
 - **Priority:** Medium
 - **Complexity:** Medium
 - **Background:** Found 2026-11-19 in the EPIC-14 Ideation check: both are read from an AI-DLC intent's audit log, which a Spec Kit project does not have.
 - **Acceptance Criteria:**
-  - [ ] **Given** a Spec Kit project, **then** the popup and the progress show what the app can tell from the agent dialog hooks and the feature's files, and say where it comes from.
-  - [ ] **Given** nothing can be told, **then** they say so rather than show an empty or wrong state.
-  - [ ] Every text goes through `t()` in Swedish and English, in the LCARS look.
+  - [x] **Given** a Spec Kit project, **then** the popup and the progress show what the app can tell from the agent dialog hooks and the feature's files, and say where it comes from.
+  - [x] **Given** nothing can be told, **then** they say so rather than show an empty or wrong state.
+  - [x] Every text goes through `t()` in Swedish and English, in the LCARS look.
 - **Dependencies:** US-1401, US-1402

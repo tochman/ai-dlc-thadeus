@@ -1,0 +1,23 @@
+{
+  "stage": "code-generation",
+  "unit": "u5-speckit-commands",
+  "version": 1,
+  "writes": [
+    { "path": "src/shared/speckitCommands.js" },
+    { "path": "src/renderer/SpeckitCommandButton.jsx" },
+    { "path": "src/renderer/SpeckitQuickCommands.jsx" },
+    { "path": "src/renderer/SpeckitFeatureDetail.jsx" },
+    { "path": "src/renderer/SpeckitFeatures.jsx" },
+    { "path": "src/renderer/SpeckitRules.jsx" },
+    { "path": "src/renderer/theme.css" },
+    { "path": "src/shared/locales/en.json" },
+    { "path": "src/shared/locales/sv.json" },
+    { "path": "tests/main/speckitCommands.test.js" },
+    { "path": "tests/renderer/SpeckitCommandButton.test.jsx" },
+    { "path": "tests/renderer/SpeckitQuickCommands.test.jsx" },
+    { "path": "tests/renderer/SpeckitFeatures.test.jsx" },
+    { "path": "tests/renderer/SpeckitRules.test.jsx" },
+    { "path": "docs/FEATURES.md" },
+    { "path": "docs/features/epic-14-spec-kit.md" }
+  ]
+}

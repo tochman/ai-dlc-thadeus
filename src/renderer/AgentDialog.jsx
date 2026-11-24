@@ -740,6 +740,12 @@ export default function AgentDialog({
           <p className="question-popup-where" data-testid="agent-dialog-where">
             {whereText}
           </p>
+          {/* US-1410 BR10.6: a hook question or permission names where it comes from */}
+          {hook && (ev.kind === 'question' || ev.kind === 'permission') && (
+            <p className="muted agent-dialog-source" data-testid="agent-dialog-source-hooks">
+              {t('agentDialog.sourceHooks')}
+            </p>
+          )}
           {handoffPage ? (
             <HandoffPage key={ev.eventId} ev={ev} keysRef={keysRef} guarded={guarded} onHandoff={onHandoff} />
           ) : permPage ? (

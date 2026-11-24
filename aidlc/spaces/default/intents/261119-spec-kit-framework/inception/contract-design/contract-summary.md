@@ -102,7 +102,13 @@ speckit:rules(projectId) -> { constitution: { path: string, exists: bool },
 
 ### C7: Command form
 
-`speckitCommand(harness, name, args)` returns a string, which goes to the existing terminal control. The form per harness is set by the test project (open question O1). Until then the epic's `/speckit-<name> <args>` form is used for both harnesses.
+`speckitCommand(harness, name, args)` (`src/shared/speckitCommands.js`) returns a string or `null`, which goes to the existing terminal control. O1 is settled from the installed Spec Kit 1.4.3 (U5, US-1403):
+- **claude**: `/speckit-<name>`, every `.` as `-` (`/speckit-plan`, `/speckit-git-commit`).
+- **opencode**: `/speckit.<name>` as it is (`/speckit.plan`, `/speckit.git.commit`).
+- Arguments follow after one space, as one plain line. An unsafe name gives `null`.
+- **codex** (`$speckit-…`) and every other harness are out of scope and give `null`: the button says the harness is not supported.
+
+The manual release check confirms both forms in a real run.
 
 ### C8: Token log
 
@@ -135,5 +141,5 @@ project:switch(projectId, to) -> { ok: true } | { ok: false, error: { code, mess
 
 | Contract | Question | Blocks |
 |---|---|---|
-| C7 | The command form per harness (`/speckit-plan` or something else) is still to be confirmed on the test project. | U5 |
+| C7 | Settled in U5 (see C7 above); only the manual release check in both harnesses is left. | none |
 | C5 | Which file shows that `clarify`, `checklist` and `analyze` are done is still to be confirmed on the test project. | U6 |

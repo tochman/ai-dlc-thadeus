@@ -1,0 +1,20 @@
+{
+  "stage": "code-generation",
+  "unit": "u9-feature-token-log",
+  "version": 1,
+  "writes": [
+    { "path": "src/main/speckitTokens.js" },
+    { "path": "src/main/tokenReadings.js" },
+    { "path": "src/main/tokenHistory.js" },
+    { "path": "src/main/speckitFeatures.js" },
+    { "path": "src/main/agentAdapters.js" },
+    { "path": "src/main/ipc.js" },
+    { "path": "vitest.config.mjs" },
+    { "path": "tests/main/speckitTokens.test.js" },
+    { "path": "tests/main/tokenReadings.test.js" },
+    { "path": "tests/main/tokenHistory.test.js" },
+    { "path": "tests/main/speckitFeatures.test.js" },
+    { "path": "tests/main/agentAdapters.test.js" },
+    { "path": "tests/main/fileWrite.test.js" }
+  ]
+}

@@ -104,6 +104,8 @@ const m = vi.hoisted(() => {
       runSetup: vi.fn(async () => ({ ok: true })),
       getSpeckitSetupInfo: vi.fn(async (root, { harness }) => ({ root, harness })),
       runSpeckitSetup: vi.fn(async () => ({ ok: true, output: 'ok' })),
+      frameworkScan: vi.fn(async () => ({ proposal: null })), // US-1406
+      chooseFramework: vi.fn(async () => ({ ok: true, file: null, next: 'setupAidlc' })),
       detectHarnesses: vi.fn(async () => [{ id: 'claude', installed: true }]),
       getTools: vi.fn(async () => [{ id: 'aidlc', path: '/bin/aidlc' }]),
       setToolPaths: vi.fn(),
@@ -158,7 +160,10 @@ const m = vi.hoisted(() => {
       hasBitbucket: vi.fn(async () => true),
       loadBitbucket: vi.fn(async () => ({ username: 'u', appPassword: 'p' })),
       loadMachines: vi.fn(async (_root, _space, intents) => intents.map((i) => ({ ...i, machines: [{ host: 'mac', cloneId: 'a' }] }))),
-      loadOpenQuestions: vi.fn(async () => [{ text: 'Q2. Open?', file: 'q.md', time: null }])
+      loadOpenQuestions: vi.fn(async () => [{ text: 'Q2. Open?', file: 'q.md', time: null }]),
+      loadAuditEvents: vi.fn(async () => []),
+      inflightCount: vi.fn(async () => 0),
+      writeProjectFile: vi.fn(async () => ({ ok: true, file: '.thadeus/project.json', replaced: false })) // US-1407: U2's write
     }
   };
 });
@@ -180,6 +185,9 @@ vi.mock('../../src/main/projectService.js', () => ({
   loadVelocity: m.svc.loadVelocity,
   loadPendingQuestions: m.svc.loadPendingQuestions,
   loadWorkingAgents: m.svc.loadWorkingAgents,
+  loadAuditEvents: m.svc.loadAuditEvents, // US-1410: agents:progress's AI-DLC path
+  inflightCount: m.svc.inflightCount,
+  workingAgents: () => [],
   assertName: (name, what) => {
     if (typeof name !== 'string' || !/^[^/\\]+$/.test(name) || name.startsWith('.')) throw new Error(`Ogiltigt ${what}: ${name}`);
   },
@@ -255,6 +263,7 @@ vi.mock('../../src/main/git.js', () => ({
 }));
 vi.mock('../../src/main/setup.js', () => ({ getSetupInfo: m.svc.getSetupInfo, runSetup: m.svc.runSetup }));
 vi.mock('../../src/main/speckitSetup.js', () => ({ getSpeckitSetupInfo: m.svc.getSpeckitSetupInfo, runSpeckitSetup: m.svc.runSpeckitSetup }));
+vi.mock('../../src/main/frameworkChoice.js', () => ({ frameworkScan: m.svc.frameworkScan, chooseFramework: m.svc.chooseFramework }));
 vi.mock('../../src/main/harness.js', () => ({ detectHarnesses: m.svc.detectHarnesses }));
 vi.mock('../../src/main/tools.js', () => ({
   TOOL_IDS: ['aidlc', 'claude', 'git'],
@@ -304,6 +313,7 @@ vi.mock('../../src/main/features.js', () => ({
 vi.mock('../../src/main/releases.js', () => ({ setStoryRelease: m.svc.setStoryRelease, readRuleStatus: m.svc.readRuleStatus }));
 vi.mock('../../src/main/speckitFeatures.js', async (importOriginal) => ({ ...(await importOriginal()), loadSpeckitFeatures: m.svc.loadSpeckitFeatures }));
 vi.mock('../../src/main/speckitRules.js', () => ({ loadSpeckitRules: m.svc.loadSpeckitRules }));
+vi.mock('../../src/main/projectFile.js', async (importOriginal) => ({ ...(await importOriginal()), writeProjectFile: m.svc.writeProjectFile }));
 // US-0606/US-0607: the planning sync runs real git; here only its calls are checked, with the real scheduler.
 vi.mock('../../src/main/planningSync.js', async (importOriginal) => ({
   createScheduler: (await importOriginal()).createScheduler,
@@ -837,6 +847,123 @@ describe('Spec Kit features', () => {
     svc.detectProject.mockResolvedValueOnce(KIT);
     await svc.watchForAidlc.mock.calls.at(-1)[0].onFound();
     expect(speckitWatch('/work/kit-later')).toBeDefined();
+  });
+});
+
+// US-1410 BR10.1, BR10.8, NFR3.1, NFR3.2 (contract C9): agents:progress for Spec Kit, in the fixed branch order.
+describe('agents:progress', () => {
+  const KIT = { framework: 'speckit', isAidlc: false, views: ['specs'], activeSpace: null, spaces: [] };
+  const C9 = { source: 'none', waiting: null, feature: null };
+
+  it('resolves C9 for a Spec Kit project with no AI-DLC space, and ignores a dir name there', async () => {
+    const { projectId } = await openProject('/work/kit-progress', KIT);
+    expect(await call('agents:progress', {}, projectId)).toEqual(C9);
+    expect(await call('agents:progress', {}, projectId, '261119-x')).toEqual(C9);
+    expect(svc.loadAuditEvents).not.toHaveBeenCalled();
+    expect(svc.loadSpeckitFeatures).toHaveBeenLastCalledWith('/work/kit-progress');
+  });
+
+  it("gives the active feature's tasks with source tasks", async () => {
+    const { projectId } = await openProject('/work/kit-feature', KIT);
+    svc.loadSpeckitFeatures.mockResolvedValueOnce({ features: [{ dir: '001-a', name: 'a', tasks: { done: 2, total: 5 } }], active: '001-a', errors: [] });
+    expect(await call('agents:progress', {}, projectId)).toEqual({ source: 'tasks', waiting: null, feature: { name: 'a', done: 2, total: 5 } });
+  });
+
+  it("keeps an AI-DLC project's per-intent rows, rejects '../x', and gives C9 with no dir name", async () => {
+    const { projectId } = await openProject('/work/ai-progress');
+    expect(await call('agents:progress', {}, projectId, '261119-x')).toEqual([]);
+    expect(svc.loadAuditEvents).toHaveBeenLastCalledWith('/work/ai-progress', 'aidlc/spaces/default/intents/261119-x');
+    await expect(call('agents:progress', {}, projectId, '../x')).rejects.toThrow(/Ogiltigt intent/);
+    expect(await call('agents:progress', {}, projectId)).toEqual(C9);
+  });
+
+  it('rejects an unknown project', async () => {
+    await expect(call('agents:progress', {}, 'nope')).rejects.toThrow(/Okänt projekt/);
+  });
+
+  it('writes nothing in a real Spec Kit folder (BR10.8, NFR3.1)', async () => {
+    const { promises: fsp } = await import('node:fs');
+    const os = await import('node:os');
+    const nodePath = await import('node:path');
+    const { spyWrites } = await import('./fsWriteSpy.js');
+    const real = await vi.importActual('../../src/main/speckitFeatures.js');
+    const root = await fsp.mkdtemp(nodePath.join(os.tmpdir(), 'ipc-progress-'));
+    try {
+      await fsp.mkdir(nodePath.join(root, '.specify'), { recursive: true });
+      await fsp.mkdir(nodePath.join(root, 'specs/001-a'), { recursive: true });
+      await fsp.writeFile(nodePath.join(root, '.specify/feature.json'), JSON.stringify({ feature_directory: 'specs/001-a' }));
+      await fsp.writeFile(nodePath.join(root, 'specs/001-a/tasks.md'), '## Phase 1: Setup\n- [x] T001 one\n- [ ] T002 two\n');
+      const { projectId } = await openProject(root, KIT);
+      svc.loadSpeckitFeatures.mockImplementationOnce(real.loadSpeckitFeatures);
+      const writes = spyWrites();
+      try {
+        expect(await call('agents:progress', {}, projectId)).toEqual({ source: 'tasks', waiting: null, feature: { name: 'a', done: 1, total: 2 } });
+        expect(writes.calls()).toEqual([]);
+      } finally {
+        writes.restore();
+      }
+    } finally {
+      await fsp.rm(root, { recursive: true, force: true });
+    }
+  });
+});
+
+describe('US-1406 the framework choice (C4, NFR3.3, NFR7.1)', () => {
+  const ASK = { framework: null, source: 'ask', isAidlc: false };
+  const setupWatcher = () => svc.watchForAidlc.mock.results.at(-1).value;
+
+  it('project:frameworkScan resolves the project by id, ignores extra arguments and refuses an unknown id', async () => {
+    const { projectId } = await openProject('/work/fc-scan', ASK);
+    svc.frameworkScan.mockResolvedValueOnce({ proposal: 'aidlc' });
+    expect(await call('project:frameworkScan', {}, projectId, '/etc')).toEqual({ proposal: 'aidlc' });
+    expect(svc.frameworkScan).toHaveBeenLastCalledWith('/work/fc-scan');
+    await expect(call('project:frameworkScan', {}, 'nope')).rejects.toThrow('Okänt projekt: nope');
+  });
+
+  it('project:chooseFramework refuses an unknown id without calling the choice', async () => {
+    const calls = svc.chooseFramework.mock.calls.length;
+    await expect(call('project:chooseFramework', {}, 'nope', 'aidlc')).rejects.toThrow('Okänt projekt: nope');
+    expect(svc.chooseFramework.mock.calls.length).toBe(calls);
+  });
+
+  it('a found choice switches the project at once: framework, watchers and the project:detected push', async () => {
+    const { projectId, sender } = await openProject('/work/fc-aidlc', ASK);
+    const watcher = setupWatcher();
+    const detection = { framework: 'aidlc', source: 'file', isAidlc: true, activeSpace: 'team' };
+    svc.chooseFramework.mockResolvedValueOnce({ ok: true, file: '.thadeus/project.json', next: 'none' });
+    svc.detectProject.mockResolvedValueOnce(detection);
+    const started = Date.now();
+    expect(await call('project:chooseFramework', {}, projectId, 'aidlc', '/evil')).toEqual({ ok: true, file: '.thadeus/project.json', next: 'none' });
+    expect(Date.now() - started).toBeLessThan(2000);
+    expect(svc.chooseFramework).toHaveBeenLastCalledWith('/work/fc-aidlc', 'aidlc');
+    expect(sender.send).toHaveBeenCalledWith('project:detected', { projectId, detection });
+    expect(watcher.close).toHaveBeenCalled();
+    expect(svc.watchIntents).toHaveBeenLastCalledWith(expect.objectContaining({ intentsDir: '/work/fc-aidlc/aidlc/spaces/team/intents' }));
+    await call('file:read', {}, projectId, 'a.md');
+    expect(svc.readForEdit).toHaveBeenLastCalledWith('/work/fc-aidlc', 'a.md', { framework: 'aidlc' });
+  });
+
+  it('a found Spec Kit choice starts the Spec Kit watcher, not a space watcher', async () => {
+    const { projectId, sender } = await openProject('/work/fc-kit', ASK);
+    const intentWatches = svc.watchIntents.mock.calls.length;
+    const detection = { framework: 'speckit', source: 'file', isAidlc: false, activeSpace: null, spaces: [] };
+    svc.chooseFramework.mockResolvedValueOnce({ ok: true, file: '.thadeus/project.json', next: 'none' });
+    svc.detectProject.mockResolvedValueOnce(detection);
+    await call('project:chooseFramework', {}, projectId, 'speckit');
+    expect(sender.send).toHaveBeenCalledWith('project:detected', { projectId, detection });
+    expect(svc.watchFiles).toHaveBeenCalledWith(expect.objectContaining({ root: '/work/fc-kit', paths: expect.arrayContaining(['specs/**']) }));
+    expect(svc.watchIntents.mock.calls.length).toBe(intentWatches);
+  });
+
+  it('a not-found choice changes nothing: no detection, no push, the setup watcher kept', async () => {
+    const { projectId, sender } = await openProject('/work/fc-missing', ASK);
+    const watcher = setupWatcher();
+    const detections = svc.detectProject.mock.calls.length;
+    svc.chooseFramework.mockResolvedValueOnce({ ok: true, file: null, next: 'setupSpeckit' });
+    expect(await call('project:chooseFramework', {}, projectId, 'speckit')).toEqual({ ok: true, file: null, next: 'setupSpeckit' });
+    expect(svc.detectProject.mock.calls.length).toBe(detections);
+    expect(sender.send).not.toHaveBeenCalledWith('project:detected', expect.anything());
+    expect(watcher.close).not.toHaveBeenCalled();
   });
 });
 
@@ -1429,6 +1556,122 @@ describe('intents:rename (US-0508)', () => {
     expect(sender.send).not.toHaveBeenCalledWith('project:changed', expect.anything());
     await onChange([{ file: '.thadeus/intent-names.json' }]);
     expect(sender.send).toHaveBeenCalledWith(...changed(projectId));
+  });
+});
+
+// US-1407 BR8.5, BR8.6, NFR3.5, NFR3.6, NFR4.5, NFR7.4, NFR7.5 (C10): the switch handlers and the watcher swap.
+describe('framework switch (US-1407)', () => {
+  const both = { aidlc: true, speckit: true };
+  const aidlcDetection = { framework: 'aidlc', isAidlc: true, found: both, activeSpace: 'default', spaces: ['default'] };
+  const speckitDetection = { framework: 'speckit', isAidlc: false, found: both, activeSpace: null, spaces: [] };
+
+  /** The watchers started for `root`, by kind, each with its mock `close`. */
+  function watchersOf(root) {
+    const pick = (fn, match) =>
+      fn.mock.calls
+        .map((c, i) => [c[0], fn.mock.results[i].value])
+        .filter(([arg]) => match(arg))
+        .map(([, w]) => w);
+    return {
+      intents: pick(svc.watchIntents, (a) => a.intentsDir.startsWith(`${root}/`)),
+      speckit: pick(svc.watchFiles, (a) => a.root === root && a.paths.includes('specs/**')),
+      config: pick(svc.watchFiles, (a) => a.root === root && a.paths.includes('aidlc.settings.json')),
+      head: pick(svc.watchOpenFiles, (a) => a.files?.[0] === `${root}/.git/HEAD`)
+    };
+  }
+  const openCount = (ws) => ws.filter((w) => w.close.mock.calls.length === 0).length;
+
+  /** Detection for the re-check, then for after the write. */
+  const detectThen = (after) => svc.detectProject.mockResolvedValueOnce({ found: both }).mockResolvedValueOnce(after);
+
+  it('rejects an unknown project id', async () => {
+    await expect(call('project:switchPreview', {}, 'nope', 'speckit')).rejects.toThrow(/Okänt projekt/);
+    await expect(call('project:switch', {}, 'nope', 'speckit')).rejects.toThrow(/Okänt projekt/);
+  });
+
+  it('previews from the open-project root and refuses the current framework (BR8.1)', async () => {
+    const { projectId, event } = await openProject('/work/swp', aidlcDetection);
+    await expect(call('project:switchPreview', event, projectId, 'aidlc')).rejects.toThrow(/\S/);
+    svc.detectProject.mockResolvedValueOnce({ found: { aidlc: true, speckit: false } });
+    svc.listSpaces.mockResolvedValueOnce(['default']);
+    svc.loadIntentList.mockResolvedValueOnce({ intents: [{ dirName: '261101-a', slug: 'a', status: 'active' }] });
+    const preview = await call('project:switchPreview', event, projectId, 'speckit', '/etc');
+    expect(preview).toEqual({ setupNeeded: true, inProgress: [{ kind: 'intent', name: 'a' }], keeps: ['aidlc/'], unread: [] });
+    expect(svc.detectProject).toHaveBeenLastCalledWith('/work/swp');
+  });
+
+  it('AI-DLC to Spec Kit: one write, the intents watcher closes, the Spec Kit watcher starts, the rest stay, push before reply', async () => {
+    const { projectId, event, sender } = await openProject('/work/sw1', aidlcDetection);
+    for (const fn of [svc.writeProjectFile, svc.runSetup, svc.runSpeckitSetup, svc.spawnSession]) fn.mockClear();
+    const order = [];
+    sender.send.mockImplementation((channel) => order.push(channel));
+    detectThen(speckitDetection);
+    const reply = await call('project:switch', event, projectId, 'speckit').then((r) => {
+      order.push('reply');
+      return r;
+    });
+    expect(reply).toEqual({ ok: true, detection: speckitDetection });
+    expect(svc.writeProjectFile).toHaveBeenCalledTimes(1);
+    expect(svc.writeProjectFile).toHaveBeenCalledWith('/work/sw1', 'speckit');
+    expect(sender.send).toHaveBeenCalledWith('project:detected', { projectId, detection: speckitDetection });
+    expect(order.indexOf('project:detected')).toBeLessThan(order.indexOf('reply'));
+    const w = watchersOf('/work/sw1');
+    expect(openCount(w.intents)).toBe(0);
+    expect(openCount(w.speckit)).toBe(1);
+    expect(openCount(w.config)).toBe(1);
+    expect(openCount(w.head)).toBe(1);
+    // NFR4.5: neither handler runs a program.
+    for (const fn of [svc.runSetup, svc.runSpeckitSetup, svc.spawnSession]) expect(fn).not.toHaveBeenCalled();
+  });
+
+  it('Spec Kit to AI-DLC does the reverse, and a round trip ends with one watcher of each kind', async () => {
+    const { projectId, event } = await openProject('/work/sw2', speckitDetection);
+    detectThen(aidlcDetection);
+    await call('project:switch', event, projectId, 'aidlc');
+    let w = watchersOf('/work/sw2');
+    expect(openCount(w.speckit)).toBe(0);
+    expect(openCount(w.intents)).toBe(1);
+    expect(svc.watchIntents).toHaveBeenLastCalledWith(expect.objectContaining({ intentsDir: '/work/sw2/aidlc/spaces/default/intents' }));
+    detectThen(speckitDetection);
+    await call('project:switch', event, projectId, 'speckit');
+    detectThen(aidlcDetection);
+    await call('project:switch', event, projectId, 'aidlc');
+    w = watchersOf('/work/sw2');
+    expect(openCount(w.intents)).toBe(1);
+    expect(openCount(w.speckit)).toBe(0);
+    expect(openCount(w.config)).toBe(1);
+  });
+
+  it('serialises overlapping calls: one write, then a BR8.1 refusal (NFR7.5)', async () => {
+    const { projectId, event } = await openProject('/work/sw3', aidlcDetection);
+    svc.writeProjectFile.mockClear();
+    detectThen(speckitDetection);
+    const first = call('project:switch', event, projectId, 'speckit');
+    const second = call('project:switch', event, projectId, 'speckit');
+    await expect(first).resolves.toMatchObject({ ok: true });
+    await expect(second).rejects.toThrow(/\S/);
+    expect(svc.writeProjectFile).toHaveBeenCalledTimes(1);
+    expect(openCount(watchersOf('/work/sw3').speckit)).toBe(1);
+  });
+
+  it('refuses with setupNeeded when the target folder is gone, with no write and no push (BR8.4)', async () => {
+    const { projectId, event, sender } = await openProject('/work/sw5', aidlcDetection);
+    svc.writeProjectFile.mockClear();
+    svc.detectProject.mockResolvedValueOnce({ found: { aidlc: true, speckit: false } });
+    const reply = await call('project:switch', event, projectId, 'speckit');
+    expect(reply).toMatchObject({ ok: false, error: { code: 'setupNeeded' } });
+    expect(svc.writeProjectFile).not.toHaveBeenCalled();
+    expect(sender.send).not.toHaveBeenCalledWith('project:detected', expect.anything());
+  });
+
+  it('keeps the write when the re-detection throws: { ok: true, detection: null } and a logged error', async () => {
+    const { projectId, event, sender } = await openProject('/work/sw4', aidlcDetection);
+    svc.detectProject.mockResolvedValueOnce({ found: both }).mockRejectedValueOnce(new Error('gone'));
+    const reply = await call('project:switch', event, projectId, 'speckit');
+    expect(reply).toEqual({ ok: true, detection: null });
+    expect(console.error).toHaveBeenCalled();
+    expect(sender.send).not.toHaveBeenCalledWith('project:detected', expect.anything());
+    expect(openCount(watchersOf('/work/sw4').intents)).toBe(1);
   });
 });
 

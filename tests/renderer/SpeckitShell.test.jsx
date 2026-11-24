@@ -9,7 +9,9 @@ const { default: SpeckitShell } = await import('../../src/renderer/SpeckitShell.
 beforeEach(() => {
   window.bridge = {
     speckitFeatures: vi.fn(async () => ({ version: { found: '1.4.3', supported: true }, features: [], active: null, errors: [] })),
-    onSpeckitChanged: vi.fn(() => () => {})
+    onSpeckitChanged: vi.fn(() => () => {}),
+    getAgentProgress: vi.fn(async () => ({ source: 'none', waiting: null, feature: null })), // US-1410
+    agentEvents: { onChanged: vi.fn(() => () => {}) }
   };
 });
 afterEach(async () => {
@@ -26,6 +28,14 @@ describe('SpeckitShell', () => {
     expect(root.contains(screen.getByTestId('speckit-features-root'))).toBe(true);
     expect(await screen.findByTestId('speckit-features-empty')).toBeTruthy();
     expect(window.bridge.speckitFeatures).toHaveBeenCalledWith('p1');
+  });
+
+  it('shows the agent progress readout above the features list (US-1410 BR10.5)', async () => {
+    render(<SpeckitShell projectId="p1" />);
+    const progress = await screen.findByTestId('speckit-progress-root');
+    const features = screen.getByTestId('speckit-features-root');
+    expect(progress.compareDocumentPosition(features) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(window.bridge.getAgentProgress).toHaveBeenCalledWith('p1');
   });
 
   it('is a labelled region, so the view can be found without seeing it', () => {

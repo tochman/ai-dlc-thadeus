@@ -15,5 +15,7 @@
 
 - 2026-11-24T16:20:00Z — [unit u5-speckit-commands] answered the NFR review's double-click point with a per-button `sending` flag rather than waiting for the tab to show busy; added a failed-send note, strip of all `\p{Cc}` plus U+2028/2029, and kept the module name `speckitCommands.js` from the functional design. No questions asked.
 
+- 2026-11-24T18:26:15Z — [unit u9-feature-token-log] library kind, so only security-design, logical-components and traceability; no cache, pooling or scaling design because a turn is one small local file write. Feature names checked by pattern plus reserved names rather than trusting the C5 reader alone. No questions asked: the NFR answers settled every point.
+
 ## Open questions
 <!-- example: 2026-05-29T10:14:32Z — confirm the retention window with compliance before the next stage hardens the schema -->

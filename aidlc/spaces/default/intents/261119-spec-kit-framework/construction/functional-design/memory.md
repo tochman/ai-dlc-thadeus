@@ -16,6 +16,9 @@
 <!-- example: 2026-05-29T10:14:32Z — picked TDD over BDD this run; the team is unit-first and the domain is well-understood -->
 - 2026-11-24T15:36:22Z — [unit u5-speckit-commands] formed the command from the agent tab's harness, not from the project's installed Spec Kit files; simpler, and the agent names an unknown command itself. Marked with a ponytail note in the spec.
 - 2026-11-24T15:36:22Z — [unit u5-speckit-commands] wrote rules.md although the kind `ui` does not require it, so traceability can name BR targets, as U4 and U7 did.
+- 2026-11-24T18:11:30Z — [unit u9-feature-token-log] readings driven by the existing hook events (Claude Stop with transcript path, opencode usage) rather than a timer; the session cursor kept in the app's user data, not `.thadeus/tokens/`, because thadeusSync treats every JSON there as a reading list and the cursor is machine-local.
+
+- 2026-11-24T19:22:00Z — [unit u8-framework-switch] built on U4's `chooseFramework` flow (open PR #122, read from feat/US-1406): the switch re-checks the folder and writes through U2; setup reuses US-0503 and C3. One confirm covers setup and write, tagged as an assumption. No questions asked.
 
 ## Open questions
 <!-- example: 2026-05-29T10:14:32Z — confirm the retention window with compliance before the next stage hardens the schema -->

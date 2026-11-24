@@ -12,22 +12,22 @@
 
 ## Steps
 
-- [ ] **Step 1: Branch and story status.** The precondition above. Set US-1403 to 🚧 In progress, "for v0.3.0", in its epic marker, the epic's Status line and its FEATURES.md row.
-- [ ] **Step 2: Runner check.** Run the unit-scoped commands from `unit-test-instructions.md` on the unchanged tree and record the baseline. No new dependency. [NFR8.4]
-- [ ] **Step 3: Command form and description, Red.** `tests/main/speckitCommands.test.js`:
+- [x] **Step 1: Branch and story status.** The precondition above. Set US-1403 to 🚧 In progress, "for v0.3.0", in its epic marker, the epic's Status line and its FEATURES.md row.
+- [x] **Step 2: Runner check.** Run the unit-scoped commands from `unit-test-instructions.md` on the unchanged tree and record the baseline. No new dependency. [NFR8.4]
+- [x] **Step 3: Command form and description, Red.** `tests/main/speckitCommands.test.js`:
   - `speckitCommand`: claude `plan` gives `/speckit-plan`; opencode gives `/speckit.plan`; `speckit.git.commit` gives `/speckit-git-commit` and `/speckit.git.commit`; a leading `speckit.` on a core name is stripped to its stem (`speckit.plan` equals `plan`, review finding); arguments follow one space.
   - Unsafe names give `null`: `a;rm -rf`, `x\ny`, `speckit.`, `''`. Codex, `null` and an unknown harness give `null`.
   - `specifyText`: `a\nb\tc\u001b[2J` gives `a b c[2J`; U+0085, U+2028 and U+2029 become spaces; 1,500 characters give 1,000; blanks give `null`.
   - Record the failing output. [BR5.1, BR5.6, NFR4.2, NFR4.3]
-- [ ] **Step 4: Command form and description, Green and Refactor.** `src/shared/speckitCommands.js` with `speckitCommand(harness, name, args)` and `specifyText(raw)`, pure, header naming `US-1403 FR5`. [NFR7.3, NFR8.1]
-- [ ] **Step 5: Next command, Red.** Same file, `nextCommand(feature)` from U6's `flow` and `tasks`:
+- [x] **Step 4: Command form and description, Green and Refactor.** `src/shared/speckitCommands.js` with `speckitCommand(harness, name, args)` and `specifyText(raw)`, pure, header naming `US-1403 FR5`. [NFR7.3, NFR8.1]
+- [x] **Step 5: Next command, Red.** Same file, `nextCommand(feature)` from U6's `flow` and `tasks`:
   - no spec gives specify; no plan gives plan; no `tasks.md` gives tasks;
   - a `tasks.md` that is empty or unreadable (`tasks.total === 0`) gives tasks, never converge (review finding);
   - an open task in a phase or a round gives implement;
   - all done, with or without rounds, gives converge, with `converged: 'unknown'` for the note.
   - Record the failing output. [BR5.2, BR5.3]
-- [ ] **Step 6: Next command, Green and Refactor.** `nextCommand` in the same module.
-- [ ] **Step 7: Button, Red.** `tests/renderer/SpeckitCommandButton.test.jsx` with a stubbed `useTerminal`:
+- [x] **Step 6: Next command, Green and Refactor.** `nextCommand` in the same module.
+- [x] **Step 7: Button, Red.** `tests/renderer/SpeckitCommandButton.test.jsx` with a stubbed `useTerminal`:
   - Ready shows the typed text; a click calls `type('agent', text, { submit: true })` once and shows the terminal.
   - Disabled with its reason for: no agent tab; harness not known yet (`terminal.checking`); codex or another harness (not supported); busy (`intents.resume.busy`); asking (`intents.resume.asking`).
   - Text, harness and busy state all come from the one tab the command goes to (`terminal.lastAgent`, review finding).
@@ -35,15 +35,15 @@
   - `type` resolving `false` or rejecting shows `speckit.commands.sendFailed` and warns.
   - Mount makes zero `type` calls.
   - Record the failing output. [BR5.7, BR5.8, NFR4.4, NFR6.1]
-- [ ] **Step 8: Button, Green and Refactor.** `SpeckitCommandButton.jsx`: an LCARS `btn btn-accent` pill, the reason in the small label style, a `sending` flag set before `await type` and cleared in `finally`. [NFR2.1, NFR8.2]
-- [ ] **Step 9: Quick bar, Red.** `tests/renderer/SpeckitQuickCommands.test.jsx`:
+- [x] **Step 8: Button, Green and Refactor.** `SpeckitCommandButton.jsx`: an LCARS `btn btn-accent` pill, the reason in the small label style, a `sending` flag set before `await type` and cleared in `finally`. [NFR2.1, NFR8.2]
+- [x] **Step 9: Quick bar, Red.** `tests/renderer/SpeckitQuickCommands.test.jsx`:
   - the core four show; extension commands show grouped by id in the reader's order;
   - a rejected `speckit:rules`, read errors or `hooksChecked: false` keep the core four and show `speckit-commands-rules-error`;
   - a `speckit:changed` push reads the rules again and types nothing;
   - specify stays disabled until the description is valid, sends `specifyText`'s result as its argument, clears the field only after a send that resolved `true`, and keeps it after a failed send.
   - Record the failing output. [BR5.5, BR5.6, NFR5.1, NFR7.1]
-- [ ] **Step 10: Quick bar, Green and Refactor.** `SpeckitQuickCommands.jsx`, reading `speckit:rules` on mount and on `speckit:changed`, as `SpeckitRules` does.
-- [ ] **Step 11: Feature detail and views, Red.** In `SpeckitFeatures.test.jsx` and `SpeckitRules.test.jsx`:
+- [x] **Step 10: Quick bar, Green and Refactor.** `SpeckitQuickCommands.jsx`, reading `speckit:rules` on mount and on `speckit:changed`, as `SpeckitRules` does.
+- [x] **Step 11: Feature detail and views, Red.** In `SpeckitFeatures.test.jsx` and `SpeckitRules.test.jsx`:
   - the active feature shows `speckit-commands-next` with its next command;
   - a feature that is not active shows `speckit-commands-not-active` naming the active one;
   - with no active feature (SPECIFY_FEATURE_NO_PERSIST) the note says no feature is active (review finding);
@@ -52,8 +52,8 @@
   - the empty state and the rules view's constitution button use `speckitCommand` (opencode gets `/speckit.specify`, `/speckit.constitution`);
   - the existing write-spy test, with every button clicked, still sees zero fs writes.
   - Record the failing output. [BR5.4, BR5.9, NFR3.1, NFR7.1]
-- [ ] **Step 12: Feature detail and views, Green and Refactor.** Add the button and notes to `SpeckitFeatureDetail.jsx`; mount the quick bar above the list in `SpeckitFeatures.jsx`; remove `SPECIFY` and `RUN_CONSTITUTION`. Add the `speckit.commands.*` keys to `sv.json` and `en.json`. Run ESLint and Prettier on the changed files. [NFR1.1, NFR2.1, NFR8.3]
-- [ ] **Step 13: Documentation and traceability.**
+- [x] **Step 12: Feature detail and views, Green and Refactor.** Add the button and notes to `SpeckitFeatureDetail.jsx`; mount the quick bar above the list in `SpeckitFeatures.jsx`; remove `SPECIFY` and `RUN_CONSTITUTION`. Add the `speckit.commands.*` keys to `sv.json` and `en.json`. Run ESLint and Prettier on the changed files. [NFR1.1, NFR2.1, NFR8.3]
+- [x] **Step 13: Documentation and traceability.**
   - C7 in `contract-summary.md`: O1 settled (claude `/speckit-…`, opencode `/speckit.…`); codex (`$speckit-…`) is out of scope (review finding).
   - Write `code-summary.md`, `source-manifest.json` and `traceability.json`.
   - Set US-1403 to ✅ Done, tick its criteria, keep "for v0.3.0", and update the FEATURES.md row.
