@@ -1051,7 +1051,8 @@
         "plans": "Planer",
         "costRules": "Kostnadsregler",
         "modelProfiles": "Modellprofiler",
-        "speckit": "Spec Kit"
+        "speckit": "Spec Kit",
+        "framework": "Ramverk"
       },
       "saved": "Sparat.",
       "reset": "Återställ"
@@ -1816,6 +1817,35 @@
       "newerVersion": "{file} skrevs av en nyare version av appen (version {version}) och ändras inte.",
       "newerVersionUnknown": "{file} skrevs av en nyare version av appen och ändras inte.",
       "writeFailed": "{file} kunde inte skrivas: {reason}"
+    }
+  },
+  "framework": {
+    "switchInvalid": "Projektet kan bara byta till det andra ramverket, inte till \"{to}\".",
+    "switchedReopen": "Bytet är sparat. Vyerna följer med när projektet öppnas igen.",
+    "switch": {
+      "setupNeeded": "{framework} är inte uppsatt i projektet. Kör dess uppsättning först.",
+      "current": "Projektet följer {framework}.",
+      "button": "Byt till {framework}",
+      "title": "Byta till {framework}?",
+      "setupLine": "{framework} är inte uppsatt här än: dess uppsättning körs först.",
+      "views": "Sedan visar appen bara vyerna för {framework}. Du kan byta tillbaka på samma sätt.",
+      "keeps": "Detta ligger kvar i repot, orört: {list}",
+      "inProgress": "Pågående arbete",
+      "notCarried": "Arbetet följer inte med till det andra ramverket.",
+      "none": "Inget.",
+      "kind": {
+        "intent": "Intent",
+        "feature": "Feature"
+      },
+      "unread": {
+        "intent": "Alla intenter kunde inte läsas, så listan kan vara ofullständig.",
+        "feature": "Featurerna kunde inte läsas, så listan kan vara ofullständig."
+      },
+      "confirm": "Byt",
+      "writing": "Byter…",
+      "setupHint": "Sätt upp {framework} nedan. Bytet sparas när uppsättningen är klar.",
+      "setupStopped": "Uppsättningen blev inte klar, så inget byttes.",
+      "stays": "Projektet stannar på {framework}."
     }
   },
   "fold": {

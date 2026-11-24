@@ -1051,7 +1051,8 @@
         "plans": "Plans",
         "costRules": "Cost rules",
         "modelProfiles": "Model profiles",
-        "speckit": "Spec Kit"
+        "speckit": "Spec Kit",
+        "framework": "Framework"
       },
       "saved": "Saved.",
       "reset": "Reset"
@@ -1816,6 +1817,35 @@
       "newerVersion": "{file} was written by a newer version of the app (version {version}) and is not changed.",
       "newerVersionUnknown": "{file} was written by a newer version of the app and is not changed.",
       "writeFailed": "{file} could not be written: {reason}"
+    }
+  },
+  "framework": {
+    "switchInvalid": "The project can only switch to the other framework, not to \"{to}\".",
+    "switchedReopen": "The switch is saved. The views follow when the project is opened again.",
+    "switch": {
+      "setupNeeded": "{framework} is not set up in this project. Run its setup first.",
+      "current": "This project follows {framework}.",
+      "button": "Switch to {framework}",
+      "title": "Switch to {framework}?",
+      "setupLine": "{framework} is not set up here yet: its setup runs first.",
+      "views": "Then the app shows only the {framework} views. You can switch back the same way.",
+      "keeps": "These stay in the repository, untouched: {list}",
+      "inProgress": "Work in progress",
+      "notCarried": "This work is not carried over to the other framework.",
+      "none": "None.",
+      "kind": {
+        "intent": "Intent",
+        "feature": "Feature"
+      },
+      "unread": {
+        "intent": "The intents could not all be read, so this list may be incomplete.",
+        "feature": "The features could not be read, so this list may be incomplete."
+      },
+      "confirm": "Switch",
+      "writing": "Switching…",
+      "setupHint": "Set up {framework} below. The switch is saved when the setup has finished.",
+      "setupStopped": "The setup did not finish, so nothing was switched.",
+      "stays": "The project stays on {framework}."
     }
   },
   "fold": {

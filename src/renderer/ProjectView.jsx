@@ -19,6 +19,7 @@ import PlansView from './PlansView.jsx';
 import ProjectSettingsView, { AIDLC_SECTIONS, confirmHarnessSwitch } from './ProjectSettingsView.jsx';
 import SpeckitShell from './SpeckitShell.jsx'; // US-1401
 import SpeckitRules from './SpeckitRules.jsx'; // US-1404
+import FrameworkSection from './FrameworkSection.jsx'; // US-1407
 import SetupSpeckit from './SetupSpeckit.jsx'; // US-1405
 import { sectionsFor, shownViews } from '../shared/frameworkViews.js';
 import CostRulesSection from './CostRulesSection.jsx';
@@ -514,7 +515,9 @@ function ProjectContent({
                 )}
                 {/* US-1404 BR7.9: Configuration › Spec Kit, offered only to a Spec Kit project by sectionsFor. */}
                 {view === 'config' && configSection === 'speckit' && <SpeckitRules projectId={project.projectId} />}
-                {view === 'config' && !AIDLC_SECTIONS.includes(configSection) && configSection !== 'speckit' && (
+                {/* US-1407: Configuration › Framework, the switch, offered to both frameworks by sectionsFor. */}
+                {view === 'config' && configSection === 'framework' && <FrameworkSection project={project} harness={harnessId} harnesses={detected} />}
+                {view === 'config' && !AIDLC_SECTIONS.includes(configSection) && !['speckit', 'framework'].includes(configSection) && (
                   <ProjectSettingsView
                     section={configSection}
                     agentHooksFocus={hooksFocus}

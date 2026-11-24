@@ -88,6 +88,8 @@ contextBridge.exposeInMainWorld('bridge', {
   runSetup: call('setup:run'), // runs the setup after the preview (US-0802 FR2.2)
   speckitSetupPreview: call('speckit:setupPreview'), // (projectId, harness?) US-1405 FR3, C3
   speckitSetup: call('speckit:setup'), // (projectId, harness), only after the preview for that harness
+  switchPreview: call('project:switchPreview'), // (projectId, to) US-1407 C10, read-only
+  switchFramework: call('project:switch'), // (projectId, to) US-1407 C10: the one write of .thadeus/project.json
   loadFeatures: call('features:load'),
   getStoryLinks: call('features:storyLinks'),
   // US-0603: a story id, a version and the read hashes cross the bridge, never a path.

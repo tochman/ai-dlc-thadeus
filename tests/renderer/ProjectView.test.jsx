@@ -283,6 +283,20 @@ describe('ProjectView: a Spec Kit project (US-1401)', () => {
     expect(screen.queryByTestId('project-settings-add-harness')).toBeNull(); // adding a harness is AI-DLC setup
   });
 
+  // US-1407: Configuration › Framework shows for both frameworks, and not for a folder with none.
+  it('shows the Framework section in an AI-DLC and a Spec Kit project, not in a folder with no framework', async () => {
+    renderView('config', { project: kit, section: 'framework' });
+    expect(await screen.findByTestId('framework-section')).toBeTruthy();
+    expect(screen.queryByTestId('project-settings-view')).toBeNull();
+    cleanup();
+    renderView('config', { section: 'framework' });
+    expect(await screen.findByTestId('framework-section')).toBeTruthy();
+    cleanup();
+    renderView('config', { project: { ...project, detection: none }, section: 'framework' });
+    expect(await screen.findByTestId('project-settings-view')).toBeTruthy();
+    expect(screen.queryByTestId('framework-section')).toBeNull();
+  });
+
   // US-1404 BR7.9: Configuration › Spec Kit holds the rules, in a Spec Kit project only.
   it('shows the Spec Kit rules in Configuration › Spec Kit, without the project settings', async () => {
     renderView('config', { project: kit, section: 'speckit' });
