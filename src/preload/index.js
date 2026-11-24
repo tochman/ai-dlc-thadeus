@@ -86,6 +86,8 @@ contextBridge.exposeInMainWorld('bridge', {
   },
   getSetupInfo: call('setup:info'),
   runSetup: call('setup:run'), // runs the setup after the preview (US-0802 FR2.2)
+  speckitSetupPreview: call('speckit:setupPreview'), // (projectId, harness?) US-1405 FR3, C3
+  speckitSetup: call('speckit:setup'), // (projectId, harness), only after the preview for that harness
   loadFeatures: call('features:load'),
   getStoryLinks: call('features:storyLinks'),
   // US-0603: a story id, a version and the read hashes cross the bridge, never a path.

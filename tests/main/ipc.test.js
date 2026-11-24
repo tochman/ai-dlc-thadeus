@@ -102,6 +102,8 @@ const m = vi.hoisted(() => {
       readRuleStatus: vi.fn(async () => 'current'),
       getSetupInfo: vi.fn(async () => ({ info: 1 })),
       runSetup: vi.fn(async () => ({ ok: true })),
+      getSpeckitSetupInfo: vi.fn(async (root, { harness }) => ({ root, harness })),
+      runSpeckitSetup: vi.fn(async () => ({ ok: true, output: 'ok' })),
       detectHarnesses: vi.fn(async () => [{ id: 'claude', installed: true }]),
       getTools: vi.fn(async () => [{ id: 'aidlc', path: '/bin/aidlc' }]),
       setToolPaths: vi.fn(),
@@ -245,6 +247,7 @@ vi.mock('../../src/main/git.js', () => ({
   storyMarkerHistory: m.svc.storyMarkerHistory
 }));
 vi.mock('../../src/main/setup.js', () => ({ getSetupInfo: m.svc.getSetupInfo, runSetup: m.svc.runSetup }));
+vi.mock('../../src/main/speckitSetup.js', () => ({ getSpeckitSetupInfo: m.svc.getSpeckitSetupInfo, runSpeckitSetup: m.svc.runSpeckitSetup }));
 vi.mock('../../src/main/harness.js', () => ({ detectHarnesses: m.svc.detectHarnesses }));
 vi.mock('../../src/main/tools.js', () => ({
   TOOL_IDS: ['aidlc', 'claude', 'git'],
@@ -992,6 +995,31 @@ describe('setup, settings and tools', () => {
     const before = svc.detectHarnesses.mock.calls.length;
     await call('setup:run', {}, projectId, { harness: 'claude' });
     expect(svc.runSetup).toHaveBeenLastCalledWith('/work/setup', { harness: 'claude' }, { info: 1 });
+    expect(svc.detectHarnesses.mock.calls.length).toBe(before + 1);
+  });
+
+  // US-1405 FR3, BR3.3: the preview is kept per project, and speckit:setup hands that very preview to the run.
+  it('speckit:setupPreview stores the preview per project; speckit:setup runs with it, and without one gets none', async () => {
+    const a = (await openProject('/work/speckit-a')).projectId;
+    const b = (await openProject('/work/speckit-b')).projectId;
+    expect(await call('speckit:setupPreview', {}, a, 'claude')).toEqual({ root: '/work/speckit-a', harness: 'claude' });
+    expect(svc.getSpeckitSetupInfo).toHaveBeenLastCalledWith('/work/speckit-a', { harness: 'claude' });
+    expect(await call('speckit:setup', {}, a, 'claude')).toEqual({ ok: true, output: 'ok' });
+    expect(svc.runSpeckitSetup).toHaveBeenLastCalledWith('/work/speckit-a', { harness: 'claude' }, { root: '/work/speckit-a', harness: 'claude' });
+    await call('speckit:setup', {}, b, 'claude'); // b never had a preview: the run gets none and refuses (unit-tested)
+    expect(svc.runSpeckitSetup).toHaveBeenLastCalledWith('/work/speckit-b', { harness: 'claude' }, undefined);
+    await call('speckit:setupPreview', {}, b); // no pick: null harness, the project's only one is taken in the module
+    expect(svc.getSpeckitSetupInfo).toHaveBeenLastCalledWith('/work/speckit-b', { harness: null });
+  });
+
+  it('speckit:setup re-detects harnesses after success only', async () => {
+    const { projectId } = await openProject('/work/speckit-c');
+    await call('speckit:setupPreview', {}, projectId, 'opencode');
+    const before = svc.detectHarnesses.mock.calls.length;
+    await call('speckit:setup', {}, projectId, 'opencode');
+    expect(svc.detectHarnesses.mock.calls.length).toBe(before + 1);
+    svc.runSpeckitSetup.mockResolvedValueOnce({ ok: false, error: { code: 'failed', message: 'x' }, output: '' });
+    await call('speckit:setup', {}, projectId, 'opencode');
     expect(svc.detectHarnesses.mock.calls.length).toBe(before + 1);
   });
 

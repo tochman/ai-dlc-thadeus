@@ -737,7 +737,29 @@
       "exists": "The project already has feature docs in {path} (an overview and one file per epic). {rule}"
     }
   },
+  "speckitSetup": {
+    "title": "Set up Spec Kit",
+    "missing": "The specify command was not found on the login shell's PATH.",
+    "installHint": "Install it yourself with: {command}",
+    "retry": "Try again",
+    "found": "Found: {version}",
+    "pickHarness": "Harness",
+    "pickPlaceholder": "Choose a harness",
+    "willRun": "This command runs in the project folder:",
+    "adds": "Spec Kit adds: {list}",
+    "existing": "The folder already has files. Existing files stay; Spec Kit adds its own.",
+    "run": "Run specify init",
+    "running": "Running…",
+    "done": "Spec Kit is set up. The project switches to the Spec Kit views.",
+    "failed": "specify init failed. The project stays as it was in the app.",
+    "timeout": "specify init did not finish within 120 s. The project stays as it was in the app."
+  },
   "setup": {
+    "chooseFramework": "Framework",
+    "framework": {
+      "aidlc": "AI-DLC",
+      "speckit": "Spec Kit"
+    },
     "title": "Not an AI-DLC project",
     "addTitle": "Add harness",
     "harnessLabel": "Harness",
@@ -856,6 +878,7 @@
       "opencode": "opencode CLI",
       "gh": "GitHub CLI (gh)",
       "glab": "GitLab CLI (glab)",
+      "specify": "Spec Kit CLI (specify)",
       "shell": "Shell",
       "neededFor": {
         "aidlc": "Needed for the AI-DLC views and to run AI-DLC commands.",
@@ -863,6 +886,7 @@
         "opencode": "Needed for the agent tabs with opencode.",
         "gh": "Used for the GitHub features, and as a fallback when app updates cannot be read from GitHub directly.",
         "glab": "Needed to read merge requests, reviews and comments from GitLab.",
+        "specify": "Needed to set up Spec Kit in a project.",
         "shell": "Needed for the terminal tabs."
       },
       "bitbucket": {
