@@ -25,7 +25,7 @@
 - **Acceptance Criteria:**
   - [x] **Given** a project that follows AI-DLC, **then** it opens exactly as today.
   - [x] **Given** a project that follows Spec Kit, **then** the left arm shows the Spec Kit views and no AI-DLC views.
-  - [ ] The project's framework is kept in the repository (US-1408), and the view set follows it.
+  - [x] The project's framework is kept in the repository (US-1408), and the view set follows it.
   - [x] **Given** no framework is saved yet (until US-1406), **then** the app follows what it finds: only `.specify/` is Spec Kit, and `aidlc/spaces/` (alone or with `.specify/`) is AI-DLC, as today.
   - [x] The shared shell (terminal, dialogs and hooks, editor, git, Features view, project settings) works the same for both. The token log per feature is US-1409; waiting questions and agent progress are US-1410.
   - [x] Every text goes through `t()` in Swedish and English, in the LCARS look.
@@ -60,16 +60,16 @@
   - [x] Nothing runs without my click. Every text goes through `t()` in Swedish and English, in the LCARS look.
 - **Dependencies:** US-1401, US-1402
 
-**US-1404: Constitution and extensions** 📋 Planned, for v0.3.0
+**US-1404: Constitution and extensions** ✅ Done, for v0.3.0
 - As a **developer**, in order to **see and change the rules my agents follow in a Spec Kit project**, I would like **a view of the project's constitution and its installed extensions and hooks**.
 - **Epic:** EPIC-14
 - **Priority:** Medium
 - **Complexity:** Small
 - **Background:** Asked for 2026-11-19. Fills the place that the memory layers and configuration have in an AI-DLC project.
 - **Acceptance Criteria:**
-  - [ ] **Given** `.specify/memory/constitution.md`, **then** it shows rendered and opens in the editor (EPIC-10).
-  - [ ] **Given** `.specify/extensions.yml`, **then** each extension and hook shows with its command, before or after which command it runs, and whether it is optional, mandatory or turned off.
-  - [ ] A file that cannot be read is named, with the reason, never hidden. Every text goes through `t()` in Swedish and English, in the LCARS look.
+  - [x] **Given** `.specify/memory/constitution.md`, **then** it shows rendered and opens in the editor (EPIC-10).
+  - [x] **Given** `.specify/extensions.yml`, **then** each extension and hook shows with its command, before or after which command it runs, and whether it is optional, mandatory or turned off.
+  - [x] A file that cannot be read is named, with the reason, never hidden. Every text goes through `t()` in Swedish and English, in the LCARS look.
 - **Dependencies:** US-1401
 
 **US-1405: Set up Spec Kit in a project** ✅ Done, for v0.3.0
