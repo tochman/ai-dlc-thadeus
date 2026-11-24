@@ -26,7 +26,7 @@ import os from 'node:os';
 import { readTranscriptContext } from './contextSize.js';
 import { loadTokenHistory } from './tokenHistory.js';
 import { HANDOFF_DEFAULTS, createHandoffController } from './sessionHandoff.js';
-import { loadAgentProgress } from './agentProgress.js';
+import { loadAgentProgress, loadSpeckitProgress } from './agentProgress.js';
 import { notifyEvent, notifyQuestions } from './notify.js';
 import { agentName, summarizeLedger } from './parsers/ledger.js';
 import { getConfiguredModels } from './models.js';
@@ -1037,9 +1037,12 @@ const handlers = {
     return agents.map((a) => ({ ...a, intent: active.slug ?? active.dirName }));
   },
   // The agent progress of one intent for the token detail view (US-0507); read-only, the dir name is checked before use.
+  // US-1410 BR10.1, NFR3.2: a Spec Kit project (any dir name ignored), or a call with no dir name, gets contract C9 from
+  // the hook events and the active feature; it builds no path from the renderer's input and never throws for the parts.
   'agents:progress': async (_event, projectId, dirName) => {
     const p = project(projectId);
-    return loadAgentProgress(p.root, p.space, dirName);
+    if (p.framework !== 'speckit' && typeof dirName === 'string') return loadAgentProgress(p.root, p.space, dirName);
+    return loadSpeckitProgress(p.root, agentStore?.list(projectId) ?? []);
   },
   // US-0214 FR2: the project's activity rows now (main chats and their agents), from the hook events; read-only.
   'agentActivity:list': async (_event, projectId) => {

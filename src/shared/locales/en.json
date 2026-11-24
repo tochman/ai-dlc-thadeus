@@ -38,6 +38,15 @@
   "speckit": {
     "title": "Spec Kit",
     "empty": "No features read yet.",
+    "progress": {
+      "title": "Agent progress",
+      "waiting": "{agent} waits for an answer: {question}",
+      "feature": "{name}: {done} of {total} tasks done",
+      "fromHooks": "from the agent hooks",
+      "fromTasks": "from tasks.md",
+      "nothingYet": "Nothing to show yet: no agent hooks or active feature.",
+      "failed": "The agent progress could not be read."
+    },
     "reason": {
       "unreadable": "Could not be read ({code}).",
       "invalid": "Not valid JSON, or the expected field is missing.",
@@ -1617,6 +1626,7 @@
     "notSpeckitProject": "This project does not follow Spec Kit, so it has no Spec Kit rules to show."
   },
   "agentDialog": {
+    "sourceHooks": "From the agent hooks",
     "title": {
       "waiting": "The agent is waiting for your answer",
       "stillWaiting": "The agent is still waiting for your answer",

@@ -1308,6 +1308,12 @@ button.lcars-nb:hover:not(:disabled), a.lcars-nb:hover { filter: brightness(1.15
 .speckit-tasks label { display: flex; gap: var(--gap); align-items: baseline; }
 .speckit-count { color: var(--steel-text); }
 .speckit-empty { display: grid; gap: var(--gap); justify-items: start; }
+/* US-1410 BR10.5: the agent progress readout, square blocks with a left state strip; a waiting question is a live value. */
+.speckit-progress { display: grid; gap: var(--gap); margin-bottom: var(--gap-l); min-width: 0; }
+.speckit-progress-part { display: flex; flex-wrap: wrap; gap: var(--gap); align-items: baseline; margin: 0; padding: var(--gap) var(--gap-m); background: var(--slate-1); border-left: var(--gap) solid var(--slate-3); overflow-wrap: anywhere; }
+.speckit-progress-part.is-waiting { border-left-color: var(--steel); }
+.speckit-progress-part .speckit-tag { margin-left: auto; }
+.agent-dialog-source { margin: 0; font-size: 12px; }
 /* US-1404: Configuration › Spec Kit, the constitution and each extension as a strip-edged block */
 .speckit-rules, .speckit-rules-part { display: grid; gap: var(--gap-m); min-width: 0; }
 .speckit-rules-extension { padding: var(--gap) var(--gap-m); background: var(--slate-1); border-left: var(--gap) solid var(--slate-3); margin-bottom: var(--gap); }

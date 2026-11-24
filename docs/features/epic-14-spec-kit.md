@@ -10,7 +10,7 @@
 
 **Stories:** US-1401–US-1410
 
-**Status (2026-11-24):** ✅ US-1401, US-1402, US-1404, US-1405, US-1406, US-1408 done, for v0.3.0 · 🚧 US-1407, US-1410 in progress, for v0.3.0 · 📋 US-1403, US-1409 planned, for v0.3.0.
+**Status (2026-11-24):** ✅ US-1401, US-1402, US-1404, US-1405, US-1406, US-1408, US-1410 done, for v0.3.0 · 🚧 US-1407 in progress, for v0.3.0 · 📋 US-1403, US-1409 planned, for v0.3.0.
 
 ---
 
@@ -138,14 +138,14 @@
   - [ ] The log is never written in `.specify/` or `specs/`. Every text goes through `t()` in Swedish and English, in the LCARS look.
 - **Dependencies:** US-1401, US-1402
 
-**US-1410: Waiting questions and agent progress in a Spec Kit project** 🚧 In progress, for v0.3.0
+**US-1410: Waiting questions and agent progress in a Spec Kit project** ✅ Done, for v0.3.0
 - As a **developer**, in order to **see what the agent waits on in a Spec Kit project**, I would like **the waiting-questions popup and the agent progress to work in a Spec Kit project too**.
 - **Epic:** EPIC-14
 - **Priority:** Medium
 - **Complexity:** Medium
 - **Background:** Found 2026-11-19 in the EPIC-14 Ideation check: both are read from an AI-DLC intent's audit log, which a Spec Kit project does not have.
 - **Acceptance Criteria:**
-  - [ ] **Given** a Spec Kit project, **then** the popup and the progress show what the app can tell from the agent dialog hooks and the feature's files, and say where it comes from.
-  - [ ] **Given** nothing can be told, **then** they say so rather than show an empty or wrong state.
-  - [ ] Every text goes through `t()` in Swedish and English, in the LCARS look.
+  - [x] **Given** a Spec Kit project, **then** the popup and the progress show what the app can tell from the agent dialog hooks and the feature's files, and say where it comes from.
+  - [x] **Given** nothing can be told, **then** they say so rather than show an empty or wrong state.
+  - [x] Every text goes through `t()` in Swedish and English, in the LCARS look.
 - **Dependencies:** US-1401, US-1402
