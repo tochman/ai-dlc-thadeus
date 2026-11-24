@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
@@ -56,6 +56,22 @@ describe('projectService parked intents (US-0510)', () => {
       parkedStage: 'code-generation',
       parkedAt: Date.parse('2026-11-20T08:00:00Z')
     });
+  });
+
+  it('US-0508 FR1.6, NFR3: the list shows the display names from .thadeus/intent-names.json; a broken file shows the slugs', async () => {
+    const root = await projectWith({ '261123-rename-and-clean': '', '261122-other': '' });
+    await fs.mkdir(path.join(tmp, '.thadeus'));
+    await fs.writeFile(path.join(tmp, '.thadeus/intent-names.json'), JSON.stringify({ '261122-other': 'tidy-up' }));
+    let { intents } = await loadIntentList(root, 'default');
+    expect(intents.find((i) => i.dirName === '261122-other')).toMatchObject({ slug: 'tidy-up', aidlcSlug: 'other' });
+    expect(intents.find((i) => i.dirName === '261123-rename-and-clean')).toMatchObject({ slug: 'rename-and-clean' });
+
+    await fs.writeFile(path.join(tmp, '.thadeus/intent-names.json'), '{ broken');
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    ({ intents } = await loadIntentList(root, 'default'));
+    expect(intents.find((i) => i.dirName === '261122-other')).toMatchObject({ slug: 'other', aidlcSlug: 'other' });
+    expect(warn).toHaveBeenCalled();
+    warn.mockRestore();
   });
 
   it('an intent whose audit ends with an unparked event is not (AC4.1.6)', async () => {
