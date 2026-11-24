@@ -1,6 +1,6 @@
 // US-1401 FR1.2, FR1.4: the one shared views table, keyed by the project's framework (BR1.5, BR1.6).
 import { describe, expect, it } from 'vitest';
-import { AIDLC_SECTIONS, PROJECT_SECTIONS, sectionsFor, shownViews, viewFields, viewsFor } from '../../src/shared/frameworkViews.js';
+import { AIDLC_SECTIONS, PROJECT_SECTIONS, SPECKIT_SECTIONS, sectionsFor, shownViews, viewFields, viewsFor } from '../../src/shared/frameworkViews.js';
 
 // The views an AI-DLC project offers since v0.2.14 (the old `offered` maps; US-0905 moved Plans under Configuration).
 const V0212_AIDLC = ['intents', 'features', 'config', 'cost', 'velocity', 'github', 'editor'];
@@ -37,10 +37,22 @@ describe('frameworkViews', () => {
   });
 
   it('keeps the AI-DLC configuration sections to AI-DLC projects', () => {
-    expect(sectionsFor('aidlc')).toEqual(PROJECT_SECTIONS);
-    expect(sectionsFor('speckit')).toEqual(['docs', 'agent']);
+    expect(sectionsFor('aidlc')).toEqual(['docs', 'agent', 'aidlc', 'costRules', 'modelProfiles', 'framework']);
     expect(sectionsFor(null)).toEqual(['docs', 'agent']);
     for (const id of AIDLC_SECTIONS) expect(PROJECT_SECTIONS).toContain(id);
+  });
+
+  // US-1404 BR7.9: Configuration › Spec Kit, in a Spec Kit project only.
+  it('gives a Spec Kit project the Spec Kit section, and no other framework', () => {
+    expect(sectionsFor('speckit')).toEqual(['docs', 'agent', 'speckit', 'framework']);
+    for (const fw of ['aidlc', null, 'unknown']) expect(sectionsFor(fw)).not.toContain('speckit');
+    for (const id of SPECKIT_SECTIONS) expect(PROJECT_SECTIONS).toContain(id);
+  });
+
+  // US-1407: the switch shows for both frameworks, never for a folder with none.
+  it('offers the Framework section to AI-DLC and Spec Kit only', () => {
+    for (const fw of ['aidlc', 'speckit']) expect(sectionsFor(fw)).toContain('framework');
+    for (const fw of [null, 'unknown']) expect(sectionsFor(fw)).not.toContain('framework');
   });
 
   it('returns a fresh list each time, so a caller cannot change the table', () => {

@@ -40,9 +40,10 @@ function debounce(flush, debounceMs, maxWaitMs) {
 
 /**
  * A watched target is a file when it ends in .md, .json, .sh or .js (US-0506 u4 PD32: dialog.sh and the opencode plugin),
- * or is dot-named such as aidlc/.aidlc-subagent-inflight; any other target is a folder.
+ * .yml or .yaml (US-1404 BR7.8: Spec Kit's extensions.yml), or is dot-named such as aidlc/.aidlc-subagent-inflight;
+ * any other target is a folder.
  */
-export const isWatchedFile = (t) => /\.(md|json|sh|js)$/i.test(t) || path.posix.basename(t).startsWith('.');
+export const isWatchedFile = (t) => /\.(md|json|sh|js|ya?ml)$/i.test(t) || path.posix.basename(t).startsWith('.');
 
 // US-1402 BR6.7: how far below a `<folder>/**` target files and folders are seen (specs/<feature>/<sub>/<file>).
 // ponytail: chokidar holds one handle per watched folder; move to one recursive fs.watch if a large specs/ is ever measured slow.

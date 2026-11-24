@@ -270,6 +270,33 @@ describe('watchFiles with a specs/** target', { retry: 2 }, () => {
     expect(changes).toBe(1);
   });
 
+  // US-1404 BR7.8, NFR7.1: the constitution, extensions.yml and a manifest under .specify/extensions/ each push.
+  it('sees a change to the constitution, extensions.yml and an extension manifest within 2 s each', async () => {
+    const root = await specProject();
+    await fs.mkdir(path.join(root, '.specify/memory'), { recursive: true });
+    await fs.mkdir(path.join(root, '.specify/extensions/git'), { recursive: true });
+    await wait(300);
+    const at = [];
+    const seen = [];
+    watcher = watchFiles({
+      root,
+      paths: SPECKIT_WATCH_PATHS,
+      onChange: (changed) => {
+        at.push(Date.now());
+        seen.push(changed);
+      }
+    });
+    await watcher.ready;
+    for (const rel of ['.specify/extensions.yml', '.specify/extensions/git/extension.yml', '.specify/memory/constitution.md']) {
+      const start = Date.now();
+      await fs.writeFile(path.join(root, rel), 'x: 1\n');
+      await wait(1500);
+      expect(seen.at(-1), rel).toEqual([rel]);
+      expect(at.at(-1) - start, rel).toBeLessThan(2000);
+    }
+    expect(at).toHaveLength(3);
+  }, 10000); // three 1.5 s waits; the 2 s limit is per change, above
+
   it('keeps a plain folder target to its direct .md files', async () => {
     const root = path.join(TMP, 'docs-only');
     await fs.mkdir(path.join(root, 'docs/features/sub'), { recursive: true });

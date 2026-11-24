@@ -86,6 +86,12 @@ contextBridge.exposeInMainWorld('bridge', {
   },
   getSetupInfo: call('setup:info'),
   runSetup: call('setup:run'), // runs the setup after the preview (US-0802 FR2.2)
+  speckitSetupPreview: call('speckit:setupPreview'), // (projectId, harness?) US-1405 FR3, C3
+  speckitSetup: call('speckit:setup'), // (projectId, harness), only after the preview for that harness
+  switchPreview: call('project:switchPreview'), // (projectId, to) US-1407 C10, read-only
+  switchFramework: call('project:switch'), // (projectId, to) US-1407 C10: the one write of .thadeus/project.json
+  frameworkScan: call('project:frameworkScan'), // (projectId) US-1406 FR4, C4
+  chooseFramework: call('project:chooseFramework'), // (projectId, framework): saves a confirmed choice, or names its setup
   loadFeatures: call('features:load'),
   getStoryLinks: call('features:storyLinks'),
   // US-0603: a story id, a version and the read hashes cross the bridge, never a path.
@@ -147,6 +153,7 @@ contextBridge.exposeInMainWorld('bridge', {
   onFeaturesChanged: subscribe('features:changed'),
   speckitFeatures: call('speckit:features'), // US-1402 FR6 (C5): a Spec Kit project's features, read-only
   onSpeckitChanged: subscribe('speckit:changed'), // US-1402 BR6.7: { projectId, paths }
+  speckitRules: call('speckit:rules'), // US-1404 FR7 (C6): the constitution, extensions and hooks, read-only
   onProjectChanged: subscribe('project:changed'),
   onProjectDetected: subscribe('project:detected'),
   onWatchError: subscribe('project:watchError'),

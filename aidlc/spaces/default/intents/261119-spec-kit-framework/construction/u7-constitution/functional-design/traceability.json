@@ -1,0 +1,13 @@
+{
+  "stage": "functional-design",
+  "unit": "u7-constitution",
+  "upstream_ids": ["AC4.2.1", "AC4.2.2", "AC4.2.3"],
+  "coverage": [
+    { "id": "AC4.2.1", "status": "OK", "target": "BR7.1, BR7.2, BR7.8, BR7.9" },
+    { "id": "AC4.2.2", "status": "OK", "target": "BR7.3, BR7.4, BR7.5, BR7.6" },
+    { "id": "AC4.2.3", "status": "OK", "target": "BR7.1, BR7.3, BR7.6" }
+  ],
+  "reverse": [
+    { "id": "BR7.7", "status": "N/A", "target": "cross-cutting NFR3 (no writes in .specify/ or specs/), covered in every Unit" }
+  ]
+}

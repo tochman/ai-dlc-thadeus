@@ -54,7 +54,13 @@
       "link": "En symbolisk länk, så den följs inte.",
       "outsideRoot": "Pekar utanför projektet.",
       "tooLarge": "Större än 1 MB, så den läses inte.",
-      "notUtf8": "Inte giltig UTF-8-text."
+      "notUtf8": "Inte giltig UTF-8-text.",
+      "notFile": "Inte en fil, så den läses inte.",
+      "yaml": "Inte giltig YAML: {error}",
+      "notMapping": "Översta nivån är inte en lista med nycklar, så inget i den läses.",
+      "noManifest": "Saknas, så tilläggets kommandon är okända.",
+      "unsafeId": "Tilläggets id {id} är inget säkert namn, så dess mapp läses inte.",
+      "unsafeNames": "{count, plural, one {# kommandonamn är inget säkert namn och lämnades bort.} other {# kommandonamn är inga säkra namn och lämnades bort.}}"
     },
     "features": {
       "title": "Features",
@@ -80,6 +86,29 @@
       "round": "Varv {round}",
       "noPhase": "Före första fasen",
       "files": "Filer"
+    },
+    "rules": {
+      "constitution": "Konstitution",
+      "edit": "Redigera",
+      "noConstitution": "Ingen konstitution än. Skriv en med /speckit-constitution i agentterminalen.",
+      "runConstitution": "Skriv konstitutionen (/speckit-constitution)",
+      "extensions": "Tillägg och hooks",
+      "noExtensions": "Inga tillägg är installerade.",
+      "commands": "Kommandon",
+      "hooks": "Hooks",
+      "condition": "bara när: {condition}",
+      "when": {
+        "before": "Före",
+        "after": "Efter"
+      },
+      "mode": {
+        "optional": "valfri",
+        "mandatory": "obligatorisk",
+        "off": "avstängd"
+      },
+      "skipped": "{count, plural, one {# hook i extensions.yml kunde inte läsas och hoppades över.} other {# hooks i extensions.yml kunde inte läsas och hoppades över.}}",
+      "unchecked": "extensions.yml kunde inte läsas, så inga hooks kontrollerades, inte heller de obligatoriska.",
+      "errors": "Kunde inte läsas"
     }
   },
   "app": {
@@ -746,7 +775,43 @@
       "exists": "Projektet har redan feature-beskrivningar i {path} (en översikt och en fil per epic). {rule}"
     }
   },
+  "speckitSetup": {
+    "title": "Sätt upp Spec Kit",
+    "missing": "Kommandot specify hittades inte i inloggningsskalets PATH.",
+    "installHint": "Installera det själv med: {command}",
+    "retry": "Försök igen",
+    "found": "Hittades: {version}",
+    "pickHarness": "Harness",
+    "pickPlaceholder": "Välj en harness",
+    "willRun": "Det här kommandot körs i projektmappen:",
+    "adds": "Spec Kit lägger till: {list}",
+    "existing": "Mappen har redan filer. Befintliga filer ligger kvar; Spec Kit lägger till sina egna.",
+    "run": "Kör specify init",
+    "running": "Kör…",
+    "done": "Spec Kit är uppsatt. Projektet byter till Spec Kit-vyerna.",
+    "failed": "specify init misslyckades. Projektet är som det var i appen.",
+    "timeout": "specify init blev inte klart inom 120 s. Projektet är som det var i appen."
+  },
+  "frameworkChoice": {
+    "title": "Välj projektets ramverk",
+    "intro": "Appen följer ett ramverk per projekt. Inget skrivs i projektet innan du bekräftar.",
+    "scanning": "Tittar på projektet…",
+    "found": "Finns i projektet",
+    "notFound": "Finns inte i projektet",
+    "cliFound": "{tool} finns i PATH",
+    "cliMissing": "{tool} finns inte i PATH",
+    "proposed": "Föreslås",
+    "confirm": "Bekräfta",
+    "back": "Tillbaka till valet",
+    "retry": "Försök igen",
+    "scanFailed": "Projektet kunde inte undersökas: {reason}",
+    "saveFailed": "Valet kunde inte sparas: {reason}"
+  },
   "setup": {
+    "framework": {
+      "aidlc": "AI-DLC",
+      "speckit": "Spec Kit"
+    },
     "title": "Inget AI-DLC-projekt",
     "addTitle": "Lägg till harness",
     "harnessLabel": "Harness",
@@ -865,6 +930,7 @@
       "opencode": "opencode CLI",
       "gh": "GitHub CLI (gh)",
       "glab": "GitLab CLI (glab)",
+      "specify": "Spec Kit CLI (specify)",
       "shell": "Skal",
       "neededFor": {
         "aidlc": "Behövs för AI-DLC-vyerna och för att köra AI-DLC-kommandon.",
@@ -872,6 +938,7 @@
         "opencode": "Behövs för agentflikarna med opencode.",
         "gh": "Används för GitHub-funktionerna, och som reserv när appens uppdateringar inte kan läsas direkt från GitHub.",
         "glab": "Behövs för att läsa merge requests, granskningar och kommentarer från GitLab.",
+        "specify": "Behövs för att sätta upp Spec Kit i ett projekt.",
         "shell": "Behövs för terminalflikarna."
       },
       "bitbucket": {
@@ -1006,7 +1073,9 @@
         "aidlc": "AI-DLC",
         "plans": "Planer",
         "costRules": "Kostnadsregler",
-        "modelProfiles": "Modellprofiler"
+        "modelProfiles": "Modellprofiler",
+        "speckit": "Spec Kit",
+        "framework": "Ramverk"
       },
       "saved": "Sparat.",
       "reset": "Återställ"
@@ -1553,7 +1622,8 @@
     "planNotFound": "Ingen plan med namnet {name} hittades.",
     "notAFile": "{rel} är ingen fil.",
     "engineOwned": "{rel} tillhör AI-DLC:s motor och sparas inte från appen.",
-    "speckitReadOnly": "{rel} tillhör Spec Kit och sparas inte från appen."
+    "speckitReadOnly": "{rel} tillhör Spec Kit och sparas inte från appen.",
+    "notSpeckitProject": "Projektet följer inte Spec Kit, så det har inga Spec Kit-regler att visa."
   },
   "agentDialog": {
     "sourceHooks": "Från agentens hooks",
@@ -1771,6 +1841,35 @@
       "newerVersion": "{file} skrevs av en nyare version av appen (version {version}) och ändras inte.",
       "newerVersionUnknown": "{file} skrevs av en nyare version av appen och ändras inte.",
       "writeFailed": "{file} kunde inte skrivas: {reason}"
+    }
+  },
+  "framework": {
+    "switchInvalid": "Projektet kan bara byta till det andra ramverket, inte till \"{to}\".",
+    "switchedReopen": "Bytet är sparat. Vyerna följer med när projektet öppnas igen.",
+    "switch": {
+      "setupNeeded": "{framework} är inte uppsatt i projektet. Kör dess uppsättning först.",
+      "current": "Projektet följer {framework}.",
+      "button": "Byt till {framework}",
+      "title": "Byta till {framework}?",
+      "setupLine": "{framework} är inte uppsatt här än: dess uppsättning körs först.",
+      "views": "Sedan visar appen bara vyerna för {framework}. Du kan byta tillbaka på samma sätt.",
+      "keeps": "Detta ligger kvar i repot, orört: {list}",
+      "inProgress": "Pågående arbete",
+      "notCarried": "Arbetet följer inte med till det andra ramverket.",
+      "none": "Inget.",
+      "kind": {
+        "intent": "Intent",
+        "feature": "Feature"
+      },
+      "unread": {
+        "intent": "Alla intenter kunde inte läsas, så listan kan vara ofullständig.",
+        "feature": "Featurerna kunde inte läsas, så listan kan vara ofullständig."
+      },
+      "confirm": "Byt",
+      "writing": "Byter…",
+      "setupHint": "Sätt upp {framework} nedan. Bytet sparas när uppsättningen är klar.",
+      "setupStopped": "Uppsättningen blev inte klar, så inget byttes.",
+      "stays": "Projektet stannar på {framework}."
     }
   },
   "fold": {

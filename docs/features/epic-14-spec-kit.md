@@ -10,7 +10,7 @@
 
 **Stories:** US-1401–US-1410
 
-**Status (2026-11-24):** ✅ US-1401, US-1402, US-1408, US-1410 done, for v0.3.0 · 📋 US-1403–US-1407, US-1409 planned, for v0.3.0.
+**Status (2026-11-24):** ✅ US-1401, US-1402, US-1404, US-1405, US-1406, US-1408, US-1410 done, for v0.3.0 · 🚧 US-1407 in progress, for v0.3.0 · 📋 US-1403, US-1409 planned, for v0.3.0.
 
 ---
 
@@ -72,34 +72,34 @@
   - [ ] A file that cannot be read is named, with the reason, never hidden. Every text goes through `t()` in Swedish and English, in the LCARS look.
 - **Dependencies:** US-1401
 
-**US-1405: Set up Spec Kit in a project** 📋 Planned, for v0.3.0
+**US-1405: Set up Spec Kit in a project** ✅ Done, for v0.3.0
 - As a **developer**, in order to **start a project on Spec Kit from the app**, I would like **the app to run `specify init` for the project's harness, after a preview**.
 - **Epic:** EPIC-14
 - **Priority:** High
 - **Complexity:** Medium
 - **Background:** Asked for 2026-11-19. Mirrors the AI-DLC setup (US-0503). It is reached from the choice in US-1406 and from a switch in US-1407.
 - **Acceptance Criteria:**
-  - [ ] **Given** Spec Kit is chosen for a project, **then** the app runs `specify init --integration <claude|opencode>` for the project's harness, after a preview of what it will do.
-  - [ ] **Given** no `specify` command on the login shell's `PATH`, **then** the app says so and names how to install it (`uv tool install specify-cli`). It does not install it.
-  - [ ] A failed `specify init` shows its output, and the project stays as it was in the app.
-  - [ ] Every text goes through `t()` in Swedish and English, in the LCARS look.
+  - [x] **Given** Spec Kit is chosen for a project, **then** the app runs `specify init --integration <claude|opencode>` for the project's harness, after a preview of what it will do.
+  - [x] **Given** no `specify` command on the login shell's `PATH`, **then** the app says so and names how to install it (`uv tool install specify-cli`). It does not install it.
+  - [x] A failed `specify init` shows its output, and the project stays as it was in the app.
+  - [x] Every text goes through `t()` in Swedish and English, in the LCARS look.
 - **Dependencies:** US-0503
 
-**US-1406: See what is installed in a new project, and choose its framework** 📋 Planned, for v0.3.0
+**US-1406: See what is installed in a new project, and choose its framework** ✅ Done, for v0.3.0
 - As a **developer**, in order to **start right with a project I open for the first time**, I would like **the app to show which framework the project already has, and let me choose the one it follows**.
 - **Epic:** EPIC-14
 - **Priority:** High
 - **Complexity:** Medium
 - **Background:** Asked for 2026-11-19. The first step when a project without a framework setting is opened.
 - **Acceptance Criteria:**
-  - [ ] **Given** a project opened for the first time, **then** the app shows what it found: AI-DLC (`aidlc/spaces/`), Spec Kit (`.specify/`), both or neither, and whether the `aidlc` and `specify` commands are on the login shell's `PATH`.
-  - [ ] **Given** exactly one framework, **then** it is proposed, and one click confirms it.
-  - [ ] **Given** both, **then** I choose which one the app follows. The other is left alone and not shown.
-  - [ ] **Given** neither, **then** I choose AI-DLC or Spec Kit, and the app goes on to that framework's setup (US-0503 or US-1405).
-  - [ ] The choice is kept in the repository (US-1408), and the project is not asked again on any clone. Nothing in the project is written before I confirm. Every text goes through `t()` in Swedish and English, in the LCARS look.
+  - [x] **Given** a project opened for the first time, **then** the app shows what it found: AI-DLC (`aidlc/spaces/`), Spec Kit (`.specify/`), both or neither, and whether the `aidlc` and `specify` commands are on the login shell's `PATH`.
+  - [x] **Given** exactly one framework, **then** it is proposed, and one click confirms it.
+  - [x] **Given** both, **then** I choose which one the app follows. The other is left alone and not shown.
+  - [x] **Given** neither, **then** I choose AI-DLC or Spec Kit, and the app goes on to that framework's setup (US-0503 or US-1405).
+  - [x] The choice is kept in the repository (US-1408), and the project is not asked again on any clone. Nothing in the project is written before I confirm. Every text goes through `t()` in Swedish and English, in the LCARS look.
 - **Dependencies:** US-1401, US-1405
 
-**US-1407: Switch a project from one framework to the other** 📋 Planned, for v0.3.0
+**US-1407: Switch a project from one framework to the other** 🚧 In progress, for v0.3.0
 - As a **developer**, in order to **move a project from AI-DLC to Spec Kit, or back**, I would like **to switch its framework from the project settings**.
 - **Epic:** EPIC-14
 - **Priority:** Medium

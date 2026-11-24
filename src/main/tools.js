@@ -6,8 +6,9 @@ import path from 'node:path';
 import { loginPath, readLoginPath, refreshLoginPath, runFixed } from './exec.js';
 import { t } from '../shared/i18n.js';
 
-// opencode for its agent tabs, gh for the updater (US-0410 FR4.1, FR4.2), glab for GitLab merge requests (US-1201 AC-1).
-export const TOOL_IDS = ['aidlc', 'claude', 'opencode', 'gh', 'glab', 'shell'];
+// opencode for its agent tabs, gh for the updater (US-0410 FR4.1, FR4.2), glab for GitLab merge requests (US-1201 AC-1),
+// specify for the Spec Kit setup (US-1405 FR3, R-03).
+export const TOOL_IDS = ['aidlc', 'claude', 'opencode', 'gh', 'glab', 'specify', 'shell'];
 const VERSION_MAX = 80;
 
 // The saved absolute paths per tool id, applied from settings on every read and write (FR2.4, FR7.1).
@@ -66,6 +67,16 @@ export async function resolveOnPath(name, { exec, searchPath } = {}) {
     if (await isExecutable(file)) return file;
   }
   return null;
+}
+
+/**
+ * US-1406 NFR4.1, NFR4.4: where `name` is, without running it. A saved path counts only while it is an executable file
+ * (a stale one is not found); otherwise the bare name is looked up on `searchPath`. Null when not found.
+ */
+export async function locateTool(name, { exec, searchPath } = {}) {
+  const saved = toolPaths[name];
+  if (saved) return (await isExecutable(saved)) ? saved : null;
+  return resolveOnPath(name, { exec, searchPath });
 }
 
 /**

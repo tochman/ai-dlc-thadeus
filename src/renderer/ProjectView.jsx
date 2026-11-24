@@ -18,6 +18,9 @@ import ConfigView from './ConfigView.jsx';
 import PlansView from './PlansView.jsx';
 import ProjectSettingsView, { AIDLC_SECTIONS, confirmHarnessSwitch } from './ProjectSettingsView.jsx';
 import SpeckitShell from './SpeckitShell.jsx'; // US-1401
+import FrameworkChoice from './FrameworkChoice.jsx'; // US-1406
+import SpeckitRules from './SpeckitRules.jsx'; // US-1404
+import FrameworkSection from './FrameworkSection.jsx'; // US-1407
 import { sectionsFor, shownViews } from '../shared/frameworkViews.js';
 import CostRulesSection from './CostRulesSection.jsx';
 import ModelProfilesSection from './ModelProfilesSection.jsx'; // US-0210
@@ -307,11 +310,12 @@ function ProjectContent({
   const { framework, defaultView } = project.detection;
   const onAidlc = framework === 'aidlc';
   const wasAidlc = useRef(onAidlc);
+  const setupRan = useRef(false); // US-1406: a confirmed AI-DLC that was already there is no new setup
   const [justSetUp, setJustSetUp] = useState(false);
 
   const restartAgent = useEffectEvent(() => terminal.restart('agent'));
   useEffect(() => {
-    if (onAidlc && !wasAidlc.current) {
+    if (onAidlc && !wasAidlc.current && setupRan.current) {
       setJustSetUp(true);
       restartAgent();
     }
@@ -363,7 +367,10 @@ function ProjectContent({
     project,
     harnesses: detected,
     currentHarness: harnessId,
-    onApplied: () => setDetectRun((n) => n + 1),
+    onApplied: () => {
+      setupRan.current = true;
+      setDetectRun((n) => n + 1);
+    },
     onSwitchHarness: switchHarness
   };
   const [featureDocsChoice, setFeatureDocsChoice] = useState(false); // lifted from SetupAidlc so it survives the switch (FR4.3)
@@ -444,8 +451,13 @@ function ProjectContent({
                 onActiveRecord={setActiveRecord}
               />
             )}
+            {/* US-1406: a project with no framework opens on the choice screen, which shows a setup when one is needed. */}
             {framework === null && (
-              <SetupAidlc {...setupProps} featureDocs={featureDocsChoice} onFeatureDocsChange={setFeatureDocsChoice} featureDocsExist={docsExist} />
+              <FrameworkChoice
+                projectId={project.projectId}
+                root={project.root}
+                setupProps={{ ...setupProps, featureDocs: featureDocsChoice, onFeatureDocsChange: setFeatureDocsChoice, featureDocsExist: docsExist }}
+              />
             )}
           </div>
           {view === 'features' && (
@@ -480,7 +492,11 @@ function ProjectContent({
                 {view === 'config' && configSection === 'modelProfiles' && (
                   <ModelProfilesSection projectId={project.projectId} harness={harnessId} settings={settings} />
                 )}
-                {view === 'config' && !AIDLC_SECTIONS.includes(configSection) && (
+                {/* US-1404 BR7.9: Configuration › Spec Kit, offered only to a Spec Kit project by sectionsFor. */}
+                {view === 'config' && configSection === 'speckit' && <SpeckitRules projectId={project.projectId} />}
+                {/* US-1407: Configuration › Framework, the switch, offered to both frameworks by sectionsFor. */}
+                {view === 'config' && configSection === 'framework' && <FrameworkSection project={project} harness={harnessId} harnesses={detected} />}
+                {view === 'config' && !AIDLC_SECTIONS.includes(configSection) && !['speckit', 'framework'].includes(configSection) && (
                   <ProjectSettingsView
                     section={configSection}
                     agentHooksFocus={hooksFocus}

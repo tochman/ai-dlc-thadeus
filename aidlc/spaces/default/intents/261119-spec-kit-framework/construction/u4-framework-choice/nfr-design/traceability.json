@@ -1,0 +1,15 @@
+{
+  "stage": "nfr-design",
+  "unit": "u4-framework-choice",
+  "upstream_ids": ["NFR4.3", "NFR7.1", "NFR7.2", "NFR3.1", "NFR3.2", "NFR3.3", "NFR4.1", "NFR4.2"],
+  "coverage": [
+    { "id": "NFR4.3", "status": "OK", "target": "parallel folder checks and PATH lookups over one shared login-PATH read; 1 s timed test in the scripts project" },
+    { "id": "NFR7.1", "status": "OK", "target": "chooseFramework runs detection and sends project:detected before it returns" },
+    { "id": "NFR7.2", "status": "OK", "target": "scan effect keyed on project id and retry counter; Confirm disabled while running; same-content atomic write" },
+    { "id": "NFR3.1", "status": "OK", "target": "read-only foundFrameworks shared with detection; writeProjectFile the only write; write-spy test" },
+    { "id": "NFR3.2", "status": "OK", "target": "project id and FRAMEWORKS checked before any file access" },
+    { "id": "NFR3.3", "status": "OK", "target": "root from the open-project record; fixed file string or null out" },
+    { "id": "NFR4.1", "status": "OK", "target": "locateTool: executable saved path, else bare-name resolveOnPath; nothing run" },
+    { "id": "NFR4.2", "status": "OK", "target": "missing framework returns next only; setup runs in U3/US-0503 handlers" }
+  ]
+}

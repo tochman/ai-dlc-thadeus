@@ -54,7 +54,13 @@
       "link": "A symbolic link, so it is not followed.",
       "outsideRoot": "Points outside the project.",
       "tooLarge": "Larger than 1 MB, so it is not read.",
-      "notUtf8": "Not valid UTF-8 text."
+      "notUtf8": "Not valid UTF-8 text.",
+      "notFile": "Not a file, so it is not read.",
+      "yaml": "Not valid YAML: {error}",
+      "notMapping": "The top level is not a list of keys, so nothing in it is read.",
+      "noManifest": "Missing, so the extension's commands are not known.",
+      "unsafeId": "The extension id {id} is not a safe name, so its folder is not read.",
+      "unsafeNames": "{count, plural, one {# command name is not a safe name and was left out.} other {# command names are not safe names and were left out.}}"
     },
     "features": {
       "title": "Features",
@@ -80,6 +86,29 @@
       "round": "Round {round}",
       "noPhase": "Before the first phase",
       "files": "Files"
+    },
+    "rules": {
+      "constitution": "Constitution",
+      "edit": "Edit",
+      "noConstitution": "No constitution yet. Write one with /speckit-constitution in the agent terminal.",
+      "runConstitution": "Write the constitution (/speckit-constitution)",
+      "extensions": "Extensions and hooks",
+      "noExtensions": "No extensions are installed.",
+      "commands": "Commands",
+      "hooks": "Hooks",
+      "condition": "only when: {condition}",
+      "when": {
+        "before": "Before",
+        "after": "After"
+      },
+      "mode": {
+        "optional": "optional",
+        "mandatory": "mandatory",
+        "off": "turned off"
+      },
+      "skipped": "{count, plural, one {# hook in extensions.yml could not be read and was skipped.} other {# hooks in extensions.yml could not be read and were skipped.}}",
+      "unchecked": "extensions.yml could not be read, so no hooks were checked, mandatory ones included.",
+      "errors": "Could not be read"
     }
   },
   "app": {
@@ -746,7 +775,43 @@
       "exists": "The project already has feature docs in {path} (an overview and one file per epic). {rule}"
     }
   },
+  "speckitSetup": {
+    "title": "Set up Spec Kit",
+    "missing": "The specify command was not found on the login shell's PATH.",
+    "installHint": "Install it yourself with: {command}",
+    "retry": "Try again",
+    "found": "Found: {version}",
+    "pickHarness": "Harness",
+    "pickPlaceholder": "Choose a harness",
+    "willRun": "This command runs in the project folder:",
+    "adds": "Spec Kit adds: {list}",
+    "existing": "The folder already has files. Existing files stay; Spec Kit adds its own.",
+    "run": "Run specify init",
+    "running": "Running…",
+    "done": "Spec Kit is set up. The project switches to the Spec Kit views.",
+    "failed": "specify init failed. The project stays as it was in the app.",
+    "timeout": "specify init did not finish within 120 s. The project stays as it was in the app."
+  },
+  "frameworkChoice": {
+    "title": "Choose the project's framework",
+    "intro": "The app follows one framework per project. Nothing is written in the project before you confirm.",
+    "scanning": "Looking at the project…",
+    "found": "Found in this project",
+    "notFound": "Not found in this project",
+    "cliFound": "{tool} is on the PATH",
+    "cliMissing": "{tool} is not on the PATH",
+    "proposed": "Proposed",
+    "confirm": "Confirm",
+    "back": "Back to the choice",
+    "retry": "Try again",
+    "scanFailed": "The project could not be looked at: {reason}",
+    "saveFailed": "The choice could not be saved: {reason}"
+  },
   "setup": {
+    "framework": {
+      "aidlc": "AI-DLC",
+      "speckit": "Spec Kit"
+    },
     "title": "Not an AI-DLC project",
     "addTitle": "Add harness",
     "harnessLabel": "Harness",
@@ -865,6 +930,7 @@
       "opencode": "opencode CLI",
       "gh": "GitHub CLI (gh)",
       "glab": "GitLab CLI (glab)",
+      "specify": "Spec Kit CLI (specify)",
       "shell": "Shell",
       "neededFor": {
         "aidlc": "Needed for the AI-DLC views and to run AI-DLC commands.",
@@ -872,6 +938,7 @@
         "opencode": "Needed for the agent tabs with opencode.",
         "gh": "Used for the GitHub features, and as a fallback when app updates cannot be read from GitHub directly.",
         "glab": "Needed to read merge requests, reviews and comments from GitLab.",
+        "specify": "Needed to set up Spec Kit in a project.",
         "shell": "Needed for the terminal tabs."
       },
       "bitbucket": {
@@ -1006,7 +1073,9 @@
         "aidlc": "AI-DLC",
         "plans": "Plans",
         "costRules": "Cost rules",
-        "modelProfiles": "Model profiles"
+        "modelProfiles": "Model profiles",
+        "speckit": "Spec Kit",
+        "framework": "Framework"
       },
       "saved": "Saved.",
       "reset": "Reset"
@@ -1553,7 +1622,8 @@
     "planNotFound": "No plan named {name} was found.",
     "notAFile": "{rel} is not a file.",
     "engineOwned": "{rel} belongs to AI-DLC's engine and is not saved from the app.",
-    "speckitReadOnly": "{rel} belongs to Spec Kit and is not saved from the app."
+    "speckitReadOnly": "{rel} belongs to Spec Kit and is not saved from the app.",
+    "notSpeckitProject": "This project does not follow Spec Kit, so it has no Spec Kit rules to show."
   },
   "agentDialog": {
     "sourceHooks": "From the agent hooks",
@@ -1771,6 +1841,35 @@
       "newerVersion": "{file} was written by a newer version of the app (version {version}) and is not changed.",
       "newerVersionUnknown": "{file} was written by a newer version of the app and is not changed.",
       "writeFailed": "{file} could not be written: {reason}"
+    }
+  },
+  "framework": {
+    "switchInvalid": "The project can only switch to the other framework, not to \"{to}\".",
+    "switchedReopen": "The switch is saved. The views follow when the project is opened again.",
+    "switch": {
+      "setupNeeded": "{framework} is not set up in this project. Run its setup first.",
+      "current": "This project follows {framework}.",
+      "button": "Switch to {framework}",
+      "title": "Switch to {framework}?",
+      "setupLine": "{framework} is not set up here yet: its setup runs first.",
+      "views": "Then the app shows only the {framework} views. You can switch back the same way.",
+      "keeps": "These stay in the repository, untouched: {list}",
+      "inProgress": "Work in progress",
+      "notCarried": "This work is not carried over to the other framework.",
+      "none": "None.",
+      "kind": {
+        "intent": "Intent",
+        "feature": "Feature"
+      },
+      "unread": {
+        "intent": "The intents could not all be read, so this list may be incomplete.",
+        "feature": "The features could not be read, so this list may be incomplete."
+      },
+      "confirm": "Switch",
+      "writing": "Switching…",
+      "setupHint": "Set up {framework} below. The switch is saved when the setup has finished.",
+      "setupStopped": "The setup did not finish, so nothing was switched.",
+      "stays": "The project stays on {framework}."
     }
   },
   "fold": {

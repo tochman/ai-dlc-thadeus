@@ -1314,6 +1314,21 @@ button.lcars-nb:hover:not(:disabled), a.lcars-nb:hover { filter: brightness(1.15
 .speckit-progress-part.is-waiting { border-left-color: var(--steel); }
 .speckit-progress-part .speckit-tag { margin-left: auto; }
 .agent-dialog-source { margin: 0; font-size: 12px; }
+/* US-1404: Configuration › Spec Kit, the constitution and each extension as a strip-edged block */
+.speckit-rules, .speckit-rules-part { display: grid; gap: var(--gap-m); min-width: 0; }
+.speckit-rules-extension { padding: var(--gap) var(--gap-m); background: var(--slate-1); border-left: var(--gap) solid var(--slate-3); margin-bottom: var(--gap); }
+.speckit-rules-command { margin-right: var(--gap); }
+.speckit-rules-hook { display: flex; flex-wrap: wrap; gap: var(--gap); align-items: baseline; }
+.speckit-mode-mandatory { background: var(--steel); color: var(--on-light); } /* the one a run cannot skip */
+.speckit-mode-off { color: var(--muted); }
+/* ---------- Configuration › Framework, the switch (US-1407) ---------- */
+.framework-section, .framework-switch-setup-step { display: grid; gap: var(--gap-m); min-width: 0; }
+.framework-section-current { margin: 0; font-weight: 600; }
+.framework-switch-preview { display: grid; gap: var(--gap); padding: var(--gap) var(--gap-m); background: var(--slate-1); border-left: var(--gap) solid var(--slate-3); }
+.framework-switch-preview h3, .framework-switch-preview h4 { margin: 0; text-transform: uppercase; letter-spacing: 0.04em; }
+.framework-switch-work { margin: 0; padding-left: var(--gap-m); }
+.framework-switch-kind { color: var(--steel-text); margin-right: var(--gap); text-transform: uppercase; }
+.framework-switch-error { display: flex; flex-wrap: wrap; gap: var(--gap); align-items: baseline; justify-content: space-between; }
 .md-link { color: var(--steel-text); text-decoration: underline dotted; }
 a.md-link:hover { color: var(--steel-light); }
 
@@ -1418,6 +1433,12 @@ a.md-link:hover { color: var(--steel-light); }
 .setup-advanced fieldset { border: 1px solid var(--slate-2); margin: 6px 0; display: flex; flex-direction: column; gap: 4px; }
 .setup-advanced legend, .settings-group legend { color: var(--muted); font-size: 12px; letter-spacing: 0.05em; text-transform: uppercase; padding: 0 8px 0 0; }
 .setup-actions { display: flex; gap: var(--gap); align-items: flex-end; }
+/* US-1406: the first-open choice, two LCARS option blocks side by side, the last one rounded off. */
+.framework-choice-options { display: flex; gap: 3px; flex-wrap: wrap; }
+.framework-choice-option { flex: 1 1 220px; max-width: 320px; height: auto; min-height: 96px; flex-direction: column; align-items: flex-start; justify-content: flex-end; gap: 2px; padding: 10px 14px; text-align: left; }
+.framework-choice-option:last-child { border-radius: 0 24px 24px 0; }
+.framework-choice-option strong { font-size: 20px; }
+.framework-choice-proposed { margin-top: 4px; text-transform: uppercase; letter-spacing: 0.06em; font-size: 12px; }
 .setup-done { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; border-left: var(--gap) solid var(--slate-5); flex-shrink: 0; }
 
 .features-view { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 8px; overflow: auto; }
