@@ -10,7 +10,7 @@
 
 **Stories:** US-1401–US-1410
 
-**Status (2026-11-24):** ✅ US-1401, US-1402, US-1404, US-1405, US-1406, US-1408 done, for v0.3.0 · 🚧 US-1410 in progress, for v0.3.0 · 📋 US-1403, US-1407, US-1409 planned, for v0.3.0.
+**Status (2026-11-24):** ✅ US-1401, US-1402, US-1404, US-1405, US-1406, US-1408 done, for v0.3.0 · 🚧 US-1407, US-1410 in progress, for v0.3.0 · 📋 US-1403, US-1409 planned, for v0.3.0.
 
 ---
 
@@ -99,7 +99,7 @@
   - [x] The choice is kept in the repository (US-1408), and the project is not asked again on any clone. Nothing in the project is written before I confirm. Every text goes through `t()` in Swedish and English, in the LCARS look.
 - **Dependencies:** US-1401, US-1405
 
-**US-1407: Switch a project from one framework to the other** 📋 Planned, for v0.3.0
+**US-1407: Switch a project from one framework to the other** 🚧 In progress, for v0.3.0
 - As a **developer**, in order to **move a project from AI-DLC to Spec Kit, or back**, I would like **to switch its framework from the project settings**.
 - **Epic:** EPIC-14
 - **Priority:** Medium

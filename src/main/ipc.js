@@ -80,6 +80,7 @@ import { listTree, readForEdit, writeFileSafe } from './fileWrite.js';
 import { featureWatchPaths, loadFeatures, loadPlanningFeatures, loadStoryLinks } from './features.js';
 import { SPECKIT_WATCH_PATHS, loadSpeckitFeatures } from './speckitFeatures.js';
 import { loadSpeckitRules } from './speckitRules.js'; // US-1404
+import { switchFramework, switchPreview, switchTarget } from './frameworkSwitch.js'; // US-1407
 import { killAllSessions, killProjectSessions, killSession, resizeSession, spawnSession, tapOutput, writeSession } from './pty.js';
 import { createAgentChannel } from './agentChannel.js';
 import { createHookInstaller, hooksHandlers, statusPusher } from './agentHooks.js';
@@ -370,23 +371,6 @@ async function syncFeaturesWatch(projectId) {
  * A folder with no framework is watched until a space or `.specify/` appears, then it is detected again (FR4.6).
  * US-1401 BR1.9: it acts when the framework changed, and only an AI-DLC project gets the space watcher.
  */
-/**
- * Detects the project again and, when it now has a framework, switches it: the setup watcher closes, the space or
- * Spec Kit watcher starts and `project:detected` is pushed (US-1401 BR1.9). US-1406 NFR7.1: the one owner of that
- * switch, for the setup watcher and for a saved choice alike.
- */
-async function applyDetection(projectId) {
-  const p = project(projectId);
-  const detection = await detectProject(p.root);
-  if (detection.framework === null || !projects.has(projectId)) return;
-  await p.setupWatcher?.close();
-  p.setupWatcher = null;
-  p.framework = detection.framework;
-  if (detection.framework === 'aidlc') await watchSpace(projectId, detection.activeSpace);
-  else if (detection.framework === 'speckit') watchSpeckit(projectId);
-  if (!p.sender.isDestroyed()) p.sender.send('project:detected', { projectId, detection });
-}
-
 function watchForSetup(projectId) {
   const p = project(projectId);
   p.setupWatcher = watchForAidlc({
@@ -400,6 +384,45 @@ function watchForSetup(projectId) {
     },
     onError: (err) => console.error(`Bevakning efter AI-DLC misslyckades för ${p.root}:`, err)
   });
+}
+
+/**
+ * US-1401 BR1.9, US-1406 NFR7.1, US-1407 NFR7.4: the one owner of following a new Detection, for the setup watcher,
+ * a saved first-open choice and a switch alike. With no `detection` it detects the project again and does nothing
+ * while there is no framework. Only the old framework's watcher closes (and a setup watcher); the hooks, head,
+ * config, editor and `.thadeus` watchers stay. The push goes out before this returns.
+ */
+async function applyDetection(projectId, detection = null) {
+  const p = project(projectId);
+  detection ??= await detectProject(p.root);
+  if (detection.framework === null || !projects.has(projectId)) return;
+  const setup = p.setupWatcher;
+  p.setupWatcher = null;
+  await setup?.close();
+  p.framework = detection.framework;
+  if (detection.framework === 'aidlc') {
+    const kit = p.speckitWatcher;
+    p.speckitWatcher = null;
+    await kit?.close();
+    await watchSpace(projectId, detection.activeSpace);
+  } else if (detection.framework === 'speckit') {
+    const intents = p.watcher;
+    p.watcher = null;
+    p.space = null;
+    p.questions = null; // the old intents' questions leave the popup
+    await intents?.close();
+    watchSpeckit(projectId);
+  }
+  if (!p.sender.isDestroyed()) p.sender.send('project:detected', { projectId, detection });
+}
+
+/** US-1407 BR8.1, BR8.5, BR8.6: one switch; `to` is checked against the framework the project is on now. */
+async function switchOnce(projectId, to) {
+  const p = project(projectId);
+  switchTarget(p.framework, to);
+  const res = await switchFramework(p.root, to);
+  if (res.ok && res.detection) await applyDetection(projectId, res.detection);
+  return res;
 }
 
 // Waiting questions (US-0505). Ids seen in a project's first computation waited already when the app started
@@ -1313,6 +1336,18 @@ const handlers = {
     const result = await runSpeckitSetup(p.root, { harness }, p.speckitSetupInfo);
     if (result.ok) p.harnesses = detectHarnesses(p.root);
     return result;
+  },
+  // US-1407 (C10): a project id and `to` cross the bridge, never a path (NFR3.6). The preview only reads.
+  'project:switchPreview': async (_event, projectId, to) => {
+    const p = project(projectId);
+    return switchPreview(p.root, p.framework, to);
+  },
+  // NFR7.5: serialised per project, so an overlapping call waits and then meets BR8.1 with no second write.
+  'project:switch': async (_event, projectId, to) => {
+    const p = project(projectId);
+    const run = (p.switching ?? Promise.resolve()).then(() => switchOnce(projectId, to));
+    p.switching = run.catch(() => {});
+    return run;
   },
   // US-1406 FR4 (C4, NFR3.3): the first-open choice. The renderer sends a project id, never a path; extra arguments are
   // ignored. A written choice switches the project before the call returns (NFR7.1).

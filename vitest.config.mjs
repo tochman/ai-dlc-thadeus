@@ -20,6 +20,7 @@ const TIMED = [
   'tests/main/git.test.js',
   'tests/main/planningSync.test.js', // US-0607: real git repositories
   'tests/main/watcher.test.js',
+  'tests/main/frameworkSwitchTimed.test.js', // US-1407 NFR7.3: the 2 s preview
   'tests/main/frameworkChoiceTimed.test.js' // US-1406 NFR4.3
 ];
 export default defineConfig({

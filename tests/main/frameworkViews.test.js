@@ -37,16 +37,22 @@ describe('frameworkViews', () => {
   });
 
   it('keeps the AI-DLC configuration sections to AI-DLC projects', () => {
-    expect(sectionsFor('aidlc')).toEqual(['docs', 'agent', 'aidlc', 'costRules', 'modelProfiles']);
+    expect(sectionsFor('aidlc')).toEqual(['docs', 'agent', 'aidlc', 'costRules', 'modelProfiles', 'framework']);
     expect(sectionsFor(null)).toEqual(['docs', 'agent']);
     for (const id of AIDLC_SECTIONS) expect(PROJECT_SECTIONS).toContain(id);
   });
 
   // US-1404 BR7.9: Configuration › Spec Kit, in a Spec Kit project only.
   it('gives a Spec Kit project the Spec Kit section, and no other framework', () => {
-    expect(sectionsFor('speckit')).toEqual(['docs', 'agent', 'speckit']);
+    expect(sectionsFor('speckit')).toEqual(['docs', 'agent', 'speckit', 'framework']);
     for (const fw of ['aidlc', null, 'unknown']) expect(sectionsFor(fw)).not.toContain('speckit');
     for (const id of SPECKIT_SECTIONS) expect(PROJECT_SECTIONS).toContain(id);
+  });
+
+  // US-1407: the switch shows for both frameworks, never for a folder with none.
+  it('offers the Framework section to AI-DLC and Spec Kit only', () => {
+    for (const fw of ['aidlc', 'speckit']) expect(sectionsFor(fw)).toContain('framework');
+    for (const fw of [null, 'unknown']) expect(sectionsFor(fw)).not.toContain('framework');
   });
 
   it('returns a fresh list each time, so a caller cannot change the table', () => {

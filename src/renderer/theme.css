@@ -1315,6 +1315,14 @@ button.lcars-nb:hover:not(:disabled), a.lcars-nb:hover { filter: brightness(1.15
 .speckit-rules-hook { display: flex; flex-wrap: wrap; gap: var(--gap); align-items: baseline; }
 .speckit-mode-mandatory { background: var(--steel); color: var(--on-light); } /* the one a run cannot skip */
 .speckit-mode-off { color: var(--muted); }
+/* ---------- Configuration › Framework, the switch (US-1407) ---------- */
+.framework-section, .framework-switch-setup-step { display: grid; gap: var(--gap-m); min-width: 0; }
+.framework-section-current { margin: 0; font-weight: 600; }
+.framework-switch-preview { display: grid; gap: var(--gap); padding: var(--gap) var(--gap-m); background: var(--slate-1); border-left: var(--gap) solid var(--slate-3); }
+.framework-switch-preview h3, .framework-switch-preview h4 { margin: 0; text-transform: uppercase; letter-spacing: 0.04em; }
+.framework-switch-work { margin: 0; padding-left: var(--gap-m); }
+.framework-switch-kind { color: var(--steel-text); margin-right: var(--gap); text-transform: uppercase; }
+.framework-switch-error { display: flex; flex-wrap: wrap; gap: var(--gap); align-items: baseline; justify-content: space-between; }
 .md-link { color: var(--steel-text); text-decoration: underline dotted; }
 a.md-link:hover { color: var(--steel-light); }
 
