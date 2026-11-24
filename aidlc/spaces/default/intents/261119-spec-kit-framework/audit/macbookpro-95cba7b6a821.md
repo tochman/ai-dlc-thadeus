@@ -22249,3 +22249,451 @@
 **Source**: template
 
 ---
+
+## Human Turn
+**Timestamp**: 2026-11-24T21:30:24Z
+**Event**: HUMAN_TURN
+**Session**: 7e0bec48-3bda-4bb4-a217-8d54f21055c6
+**Origin**: person
+**Source**: typed
+**Message Id**: 4fb44648
+**Open Questions**: 7560ed46, 9c9e79e6, 182896de, 0b7ed011
+**Questions Digest**: {"file":"aidlc/spaces/default/intents/261119-spec-kit-framework/construction/u8-framework-switch/code-generation/code-generation-questions.md","entries":{"Plan Approval":"06737b5ca580aefa"}}
+
+---
+
+## Human Turn
+**Timestamp**: 2026-11-24T21:30:37Z
+**Event**: HUMAN_TURN
+**Session**: 7e0bec48-3bda-4bb4-a217-8d54f21055c6
+**Origin**: person
+**Source**: typed
+**Message Id**: 88f9ec8a
+**Open Questions**: 7560ed46, 9c9e79e6, 182896de, 0b7ed011
+**Questions Digest**: {"file":"aidlc/spaces/default/intents/261119-spec-kit-framework/construction/u8-framework-switch/code-generation/code-generation-questions.md","entries":{"Plan Approval":"06737b5ca580aefa"}}
+
+---
+
+## Host Turn
+**Timestamp**: 2026-11-24T21:35:45Z
+**Event**: HOST_TURN
+**Session**: 7e0bec48-3bda-4bb4-a217-8d54f21055c6
+**Origin**: host
+**Reason**: claude task notification
+**Source**: template
+
+---
+
+## Host Turn
+**Timestamp**: 2026-11-24T21:40:19Z
+**Event**: HOST_TURN
+**Session**: 7e0bec48-3bda-4bb4-a217-8d54f21055c6
+**Origin**: host
+**Reason**: claude task notification
+**Source**: template
+
+---
+
+## Human Turn
+**Timestamp**: 2026-11-24T21:40:50Z
+**Event**: HUMAN_TURN
+**Session**: 7e0bec48-3bda-4bb4-a217-8d54f21055c6
+**Origin**: person
+**Source**: typed
+**Message Id**: 7f5ae66c
+**Open Questions**: 7560ed46, 9c9e79e6, 182896de, 0b7ed011
+**Questions Digest**: {"file":"aidlc/spaces/default/intents/261119-spec-kit-framework/construction/u8-framework-switch/code-generation/code-generation-questions.md","entries":{"Plan Approval":"06737b5ca580aefa"}}
+
+---
+
+## Human Turn
+**Timestamp**: 2026-11-24T21:41:10Z
+**Event**: HUMAN_TURN
+**Session**: 7e0bec48-3bda-4bb4-a217-8d54f21055c6
+**Origin**: person
+**Source**: typed
+**Message Id**: f6066ff2
+**Open Questions**: 7560ed46, 9c9e79e6, 182896de, 0b7ed011
+**Questions Digest**: {"file":"aidlc/spaces/default/intents/261119-spec-kit-framework/construction/u8-framework-switch/code-generation/code-generation-questions.md","entries":{"Plan Approval":"06737b5ca580aefa"}}
+
+---
+
+## Human Turn
+**Timestamp**: 2026-11-24T21:57:05Z
+**Event**: HUMAN_TURN
+**Session**: 7e0bec48-3bda-4bb4-a217-8d54f21055c6
+**Origin**: person
+**Source**: typed
+**Message Id**: 19b80210
+**Open Questions**: 7560ed46, 9c9e79e6, 182896de, 0b7ed011
+**Questions Digest**: {"file":"aidlc/spaces/default/intents/261119-spec-kit-framework/construction/u8-framework-switch/code-generation/code-generation-questions.md","entries":{"Plan Approval":"06737b5ca580aefa"}}
+
+---
+
+## Change Accepted
+**Timestamp**: 2026-11-24T21:57:36Z
+**Event**: CHANGE_ACCEPTED
+**Stage**: code-generation
+**Unit**: u1-framework-views
+**Checkpoint**: review-receipt
+**Changed**: src/renderer/App.jsx, src/renderer/ProjectSettingsView.jsx, tests/renderer/AppAlerts.test.jsx
+**Recorded**: sha256:439309f07934c5cf1a1ea9045a2e74ed52343859a9cbb7e2117205be5bdb6611
+**Current**: sha256:cc0dd6232d12bdc1ffe5ac51adb794fc7cba2f04d11b5db9d1cbcc923c1ade0b
+**Details**: src/renderer/App.jsx, src/renderer/ProjectSettingsView.jsx, tests/renderer/AppAlerts.test.jsx changed after the framework views Unit was reviewed; carrying on.
+
+---
+
+## Change Accepted
+**Timestamp**: 2026-11-24T21:57:36Z
+**Event**: CHANGE_ACCEPTED
+**Stage**: code-generation
+**Unit**: u3-speckit-setup
+**Checkpoint**: review-receipt
+**Changed**: src/renderer/SettingsView.jsx, tests/main/settings.test.js
+**Recorded**: sha256:d42dbf5ceed99bd106d827fe6847909cfaea2ec088b3aa0f7000d15f3a3ec4d8
+**Current**: sha256:242c4349fe54658362bc0cbaa269b90cefe520b3fe7e8804474c68fc64e940b8
+**Details**: src/renderer/SettingsView.jsx, tests/main/settings.test.js changed after the speckit setup Unit was reviewed; carrying on.
+
+---
+
+## Change Accepted
+**Timestamp**: 2026-11-24T21:57:36Z
+**Event**: CHANGE_ACCEPTED
+**Stage**: code-generation
+**Unit**: u2-framework-file
+**Checkpoint**: review-receipt
+**Changed**: docs/FEATURES.md, docs/features/epic-14-spec-kit.md, src/main/projectService.js, src/shared/locales/en.json, src/shared/locales/sv.json, tests/main/fileWrite.test.js, tests/main/projectService.test.js
+**Recorded**: sha256:164d02bf732c750847eb1e21fda0aa438cdfab202f5e95062c0de20f32d13752
+**Current**: sha256:bb394a09326d6d612cc4890016f539a32b78ae1eee459c9d25cf58571e3269d9
+**Details**: The framework file Unit's list of files changed after it was reviewed; carrying on.
+
+---
+
+## Change Accepted
+**Timestamp**: 2026-11-24T21:57:36Z
+**Event**: CHANGE_ACCEPTED
+**Stage**: code-generation
+**Unit**: u5-speckit-commands
+**Checkpoint**: review-receipt
+**Changed**: src/renderer/SpeckitCommandButton.jsx
+**Recorded**: sha256:edbf7a67fcea0f44bd5ed80e451f1fce47348dbfd00a3369c0ab6b784011e585
+**Current**: sha256:3e4c7d765cdb4afedfce96aeab4348bea40ef6b148d9350fc8829b118deffb6f
+**Details**: src/renderer/SpeckitCommandButton.jsx changed after the speckit commands Unit was reviewed; carrying on.
+
+---
+
+## Change Accepted
+**Timestamp**: 2026-11-24T21:57:36Z
+**Event**: CHANGE_ACCEPTED
+**Stage**: code-generation
+**Unit**: u9-feature-token-log
+**Checkpoint**: review-receipt
+**Changed**: src/main/ipc.js, tests/main/fileWrite.test.js, vitest.config.mjs
+**Recorded**: sha256:01322cc851ced5f1b22095add176c3fb9478a33e162fbbed5d3d58b23afec20d
+**Current**: sha256:eb31bb3c94f5f5bb2ddca8af734c4a631c4f6c94d6c438e9d72d48a32c619cc0
+**Details**: The feature token log Unit's list of files changed after it was reviewed; carrying on.
+
+---
+
+## Change Accepted
+**Timestamp**: 2026-11-24T21:57:36Z
+**Event**: CHANGE_ACCEPTED
+**Stage**: code-generation
+**Unit**: u8-framework-switch
+**Checkpoint**: review-receipt
+**Changed**: docs/FEATURES.md, docs/features/epic-14-spec-kit.md, src/main/frameworkSwitch.js, src/main/ipc.js, src/preload/index.js, src/renderer/FrameworkSection.jsx, src/renderer/ProjectView.jsx, src/renderer/theme.css, src/shared/frameworkViews.js, src/shared/locales/en.json (and 9 more)
+**Recorded**: sha256:29d4bda3b7bf6e6ca635c29e494c08c55736599c40e54f6d71d56fc46a93bf52
+**Current**: sha256:d0e6e76964667f5b5afeebf3a305e0e76916e67d97e8027afc1cc5e0c449e15f
+**Details**: docs/FEATURES.md, docs/features/epic-14-spec-kit.md, src/main/frameworkSwitch.js, src/main/ipc.js, src/preload/index.js, src/renderer/FrameworkSection.jsx, src/renderer/ProjectView.jsx, src/renderer/theme.css, src/shared/frameworkViews.js, src/shared/locales/en.json (and 9 more) changed after the framework switch Unit was reviewed; carrying on.
+
+---
+
+## Human Turn
+**Timestamp**: 2026-11-24T21:57:42Z
+**Event**: HUMAN_TURN
+**Session**: 7e0bec48-3bda-4bb4-a217-8d54f21055c6
+**Origin**: person
+**Source**: typed
+**Message Id**: efce8358
+**Open Questions**: 7560ed46, 9c9e79e6, 182896de, 0b7ed011
+**Questions Digest**: {"file":"aidlc/spaces/default/intents/261119-spec-kit-framework/construction/u8-framework-switch/code-generation/code-generation-questions.md","entries":{"Plan Approval":"06737b5ca580aefa"}}
+
+---
+
+## Subagent Completed
+**Timestamp**: 2026-11-24T21:57:51Z
+**Event**: SUBAGENT_COMPLETED
+**Agent Type**: unknown
+**Agent ID**: afac7f4411af749c9
+**Message**: add the working rules to project.md
+
+---
+
+## Human Turn
+**Timestamp**: 2026-11-24T21:58:36Z
+**Event**: HUMAN_TURN
+**Session**: 7e0bec48-3bda-4bb4-a217-8d54f21055c6
+**Origin**: person
+**Source**: typed
+**Message Id**: fc94cc61
+**Open Questions**: 7560ed46, 9c9e79e6, 182896de, 0b7ed011
+**Questions Digest**: {"file":"aidlc/spaces/default/intents/261119-spec-kit-framework/construction/u8-framework-switch/code-generation/code-generation-questions.md","entries":{"Plan Approval":"06737b5ca580aefa"}}
+
+---
+
+## Human Turn
+**Timestamp**: 2026-11-24T21:59:46Z
+**Event**: HUMAN_TURN
+**Session**: 7e0bec48-3bda-4bb4-a217-8d54f21055c6
+**Origin**: person
+**Source**: typed
+**Message Id**: b657ba07
+**Open Questions**: 7560ed46, 9c9e79e6, 182896de, 0b7ed011
+**Questions Digest**: {"file":"aidlc/spaces/default/intents/261119-spec-kit-framework/construction/u8-framework-switch/code-generation/code-generation-questions.md","entries":{"Plan Approval":"06737b5ca580aefa"}}
+
+---
+
+## Checkpoint Verification Recorded
+**Timestamp**: 2026-11-24T22:02:33Z
+**Event**: CHECKPOINT_VERIFICATION_RECORDED
+**Unit**: u8-framework-switch
+**Kind**: unit
+**Stage**: code-generation
+**Stages**: functional-design, nfr-requirements, nfr-design, infrastructure-design, code-generation
+**Verification Id**: b5718ea1-e0f6-43ae-885a-104d6305fc4f
+**Fingerprint**: sha256:58f8d82b3835c4e176349e1dbf5ebc45105224a18e0e47585c00cb828ee6d403
+**Command SHA-256**: 8a8dcedb06e3d0b9a347c5ea549c780b2c42538d4025c3259e2ebc169b275e6c
+**Exit Code**: 0
+**Verified**: true
+**Run floor**: WORKFLOW_STARTED:2026-11-19T16:25:46Z#1
+
+---
+
+## Host Turn
+**Timestamp**: 2026-11-24T22:02:37Z
+**Event**: HOST_TURN
+**Session**: 7e0bec48-3bda-4bb4-a217-8d54f21055c6
+**Origin**: host
+**Reason**: claude task notification
+**Source**: template
+
+---
+
+## Decision Recorded
+**Timestamp**: 2026-11-24T22:02:59Z
+**Event**: DECISION_RECORDED
+**Checkpoint**: Construction Unit Approval
+**Unit**: u8-framework-switch
+**Kind**: unit
+**Stage**: code-generation
+**Fingerprint**: sha256:58f8d82b3835c4e176349e1dbf5ebc45105224a18e0e47585c00cb828ee6d403
+**Session**: 7e0bec48-3bda-4bb4-a217-8d54f21055c6
+**Options**: Approve,Request Changes
+**Asked Evidence**: {"functional-design":["sha256:7de2a70e2ef90057f6739152d2e43adb432d599953d137bea8b0732f00b94217",null],"nfr-requirements":["sha256:abcd1eebbc2ce7dbb706dfc46cf78c8bf2fa8525039bd5b7289eae6d4f3e4e1f",null],"nfr-design":["sha256:b8e5574fc0554fafbd6d7e831951bf08a25dd8bf43f898f54ca2741bed728e90",null],"code-generation":["sha256:6093d015bd0426d0c617c406600974e2dab082bee3a4baf6a9913b37a2d53d6f","sha256:29d4bda3b7bf6e6ca635c29e494c08c55736599c40e54f6d71d56fc46a93bf52"]}
+**Run floors**: {"functional-design":"WORKFLOW_STARTED:2026-11-19T16:25:46Z#1","nfr-requirements":"WORKFLOW_STARTED:2026-11-19T16:25:46Z#1","nfr-design":"WORKFLOW_STARTED:2026-11-19T16:25:46Z#1","infrastructure-design":"WORKFLOW_STARTED:2026-11-19T16:25:46Z#1","code-generation":"WORKFLOW_STARTED:2026-11-19T16:25:46Z#1"}
+**Question Id**: 473051cf
+**Question Type**: unit-checkpoint
+**Question Chat**: 7e0bec48-3bda-4bb4-a217-8d54f21055c6
+**Question Shows**: sha256:1a5bd0b1a96762bac5de3ae30c58b1c2ab03655658fec089a14fcb25009b3446
+
+---
+
+## Human Turn
+**Timestamp**: 2026-11-24T22:03:17Z
+**Event**: HUMAN_TURN
+**Session**: 7e0bec48-3bda-4bb4-a217-8d54f21055c6
+**Origin**: person
+**Source**: picker
+**Picked**: ["Approve"]
+**Message Id**: f0ed6f87
+**Open Questions**: 7560ed46, 9c9e79e6, 182896de, 0b7ed011, 473051cf
+**Questions Digest**: {"file":"aidlc/spaces/default/intents/261119-spec-kit-framework/construction/u8-framework-switch/code-generation/code-generation-questions.md","entries":{"Plan Approval":"06737b5ca580aefa"}}
+
+---
+
+## Question Replied
+**Timestamp**: 2026-11-24T22:03:17Z
+**Event**: QUESTION_REPLIED
+**Session**: 7e0bec48-3bda-4bb4-a217-8d54f21055c6
+**Question**: Approve this completed u8-framework-switch (US-1407, the framework switch)? It's merged in #123 and verified on main (full suite + coverage, ESLint, Prettier all pass); the Cancel-during-setup bug is fixed with a test.
+**Reply**: Approve
+**Options**: ["Approve","Request Changes"]
+
+---
+
+## Change Accepted
+**Timestamp**: 2026-11-24T22:03:27Z
+**Event**: CHANGE_ACCEPTED
+**Stage**: code-generation
+**Unit**: u8-framework-switch
+**Checkpoint**: review-receipt
+**Changed**: docs/FEATURES.md, docs/features/epic-14-spec-kit.md, src/main/frameworkSwitch.js, src/main/ipc.js, src/preload/index.js, src/renderer/FrameworkSection.jsx, src/renderer/ProjectView.jsx, src/renderer/theme.css, src/shared/frameworkViews.js, src/shared/locales/en.json (and 9 more)
+**Recorded**: sha256:29d4bda3b7bf6e6ca635c29e494c08c55736599c40e54f6d71d56fc46a93bf52
+**Current**: sha256:af6d9d05fd55a2055369219c24102cf5ebb7b4df60841f9cfaaecc097d5350ee
+**Details**: docs/FEATURES.md, docs/features/epic-14-spec-kit.md, src/main/frameworkSwitch.js, src/main/ipc.js, src/preload/index.js, src/renderer/FrameworkSection.jsx, src/renderer/ProjectView.jsx, src/renderer/theme.css, src/shared/frameworkViews.js, src/shared/locales/en.json (and 9 more) changed after the framework switch Unit was reviewed; carrying on.
+
+---
+
+## Gate Approved
+**Timestamp**: 2026-11-24T22:03:27Z
+**Event**: GATE_APPROVED
+**Unit**: u8-framework-switch
+**Stage**: code-generation
+**Stages**: functional-design, nfr-requirements, nfr-design, infrastructure-design, code-generation
+**Gate Stages**: functional-design, nfr-requirements, nfr-design, infrastructure-design, code-generation
+**Gate Scope**: unit-end
+**Checkpoint**: construction-unit
+**Fingerprint**: sha256:58f8d82b3835c4e176349e1dbf5ebc45105224a18e0e47585c00cb828ee6d403
+**Run floor**: WORKFLOW_STARTED:2026-11-19T16:25:46Z#1
+**Run floors**: {"functional-design":"WORKFLOW_STARTED:2026-11-19T16:25:46Z#1","nfr-requirements":"WORKFLOW_STARTED:2026-11-19T16:25:46Z#1","nfr-design":"WORKFLOW_STARTED:2026-11-19T16:25:46Z#1","infrastructure-design":"WORKFLOW_STARTED:2026-11-19T16:25:46Z#1","code-generation":"WORKFLOW_STARTED:2026-11-19T16:25:46Z#1"}
+**Verification Command SHA-256**: 8a8dcedb06e3d0b9a347c5ea549c780b2c42538d4025c3259e2ebc169b275e6c
+**Verification Id**: b5718ea1-e0f6-43ae-885a-104d6305fc4f
+**Approved Evidence**: {"functional-design":["sha256:7de2a70e2ef90057f6739152d2e43adb432d599953d137bea8b0732f00b94217",null],"nfr-requirements":["sha256:abcd1eebbc2ce7dbb706dfc46cf78c8bf2fa8525039bd5b7289eae6d4f3e4e1f",null],"nfr-design":["sha256:b8e5574fc0554fafbd6d7e831951bf08a25dd8bf43f898f54ca2741bed728e90",null],"code-generation":["sha256:6093d015bd0426d0c617c406600974e2dab082bee3a4baf6a9913b37a2d53d6f","sha256:29d4bda3b7bf6e6ca635c29e494c08c55736599c40e54f6d71d56fc46a93bf52"]}
+**Session**: 7e0bec48-3bda-4bb4-a217-8d54f21055c6
+**User Input**: Approve
+**Person Reply**: Approve
+**Message Id**: f0ed6f87
+**Review Finding Dispositions**: {"version":1,"dispositions":[{"artifact":"aidlc/spaces/default/intents/261119-spec-kit-framework/construction/u8-framework-switch/code-generation/code-generation-plan.md","id":"R-01","fingerprint":"sha256:14bd811e429004dc5e4cb36d27f7c9024015edf191cadec812e7e36a0fc5ccd5","status":"Changed after review","decided_at_severity":"Major","reviewed_record":{"path":".aidlc-engine/reviews/code-generation/units/u8-framework-switch/46015847fac97e05/1.json","digest":"sha256:64619067f9329f49cc68c39f2f6e4b41fd92dfca0ead5bad27e9e67537265366"}},{"artifact":"aidlc/spaces/default/intents/261119-spec-kit-framework/construction/u8-framework-switch/code-generation/code-generation-plan.md","id":"R-02","fingerprint":"sha256:8f45b106b2b656aba9700d4b0e599ed1ea3ca4d9b8f7f107e712a6f76d83a84e","status":"Changed after review","decided_at_severity":"Minor","reviewed_record":{"path":".aidlc-engine/reviews/code-generation/units/u8-framework-switch/46015847fac97e05/1.json","digest":"sha256:64619067f9329f49cc68c39f2f6e4b41fd92dfca0ead5bad27e9e67537265366"}},{"artifact":"aidlc/spaces/default/intents/261119-spec-kit-framework/construction/u8-framework-switch/code-generation/code-generation-plan.md","id":"R-03","fingerprint":"sha256:a5b2e57adce2cb3be2fef9f34f12e87c0a1e2f95eef8a7f7d870359618319565","status":"Changed after review","decided_at_severity":"Minor","reviewed_record":{"path":".aidlc-engine/reviews/code-generation/units/u8-framework-switch/46015847fac97e05/1.json","digest":"sha256:64619067f9329f49cc68c39f2f6e4b41fd92dfca0ead5bad27e9e67537265366"}},{"artifact":"aidlc/spaces/default/intents/261119-spec-kit-framework/construction/u8-framework-switch/code-generation/code-generation-plan.md","id":"R-04","fingerprint":"sha256:fd23e83f2813ec725face7ae736092326fd743f12ac2d7513f644aa378d5080c","status":"Changed after review","decided_at_severity":"Minor","reviewed_record":{"path":".aidlc-engine/reviews/code-generation/units/u8-framework-switch/46015847fac97e05/1.json","digest":"sha256:64619067f9329f49cc68c39f2f6e4b41fd92dfca0ead5bad27e9e67537265366"}},{"artifact":"aidlc/spaces/default/intents/261119-spec-kit-framework/construction/u8-framework-switch/functional-design/functional-spec.md","id":"R-01","fingerprint":"sha256:c193ddc40c804919375c97ffd833ffaac3e3cea8ccd4ac8c39fd905725daf05c","status":"Accepted risk","decided_at_severity":"Major","reviewed_record":{"path":".aidlc-engine/reviews/functional-design/units/u8-framework-switch/46015847fac97e05/1.json","digest":"sha256:d27a08b5a6474c57a4e652ba1544f8e3d9bb1c9a35b15d9860b74f1428a01c67"}},{"artifact":"aidlc/spaces/default/intents/261119-spec-kit-framework/construction/u8-framework-switch/functional-design/functional-spec.md","id":"R-02","fingerprint":"sha256:638d79fb1dd182b53187bd61e4c2e81d6f35577f2c2203ef3d8b1f76aedbe570","status":"Accepted risk","decided_at_severity":"Minor","reviewed_record":{"path":".aidlc-engine/reviews/functional-design/units/u8-framework-switch/46015847fac97e05/1.json","digest":"sha256:d27a08b5a6474c57a4e652ba1544f8e3d9bb1c9a35b15d9860b74f1428a01c67"}},{"artifact":"aidlc/spaces/default/intents/261119-spec-kit-framework/construction/u8-framework-switch/functional-design/functional-spec.md","id":"R-03","fingerprint":"sha256:424990d67fb0a74419315ac72ddaee36f9c99cb5c5029435a003170b2939aca4","status":"Accepted risk","decided_at_severity":"Minor","reviewed_record":{"path":".aidlc-engine/reviews/functional-design/units/u8-framework-switch/46015847fac97e05/1.json","digest":"sha256:d27a08b5a6474c57a4e652ba1544f8e3d9bb1c9a35b15d9860b74f1428a01c67"}},{"artifact":"aidlc/spaces/default/intents/261119-spec-kit-framework/construction/u8-framework-switch/functional-design/functional-spec.md","id":"R-04","fingerprint":"sha256:6336848bb66c88f6dcd2e7ac925dac2e410b1778f8f9e8f9ab151b0e1cb6d476","status":"Accepted risk","decided_at_severity":"Minor","reviewed_record":{"path":".aidlc-engine/reviews/functional-design/units/u8-framework-switch/46015847fac97e05/1.json","digest":"sha256:d27a08b5a6474c57a4e652ba1544f8e3d9bb1c9a35b15d9860b74f1428a01c67"}},{"artifact":"aidlc/spaces/default/intents/261119-spec-kit-framework/construction/u8-framework-switch/nfr-design/security-design.md","id":"R-01","fingerprint":"sha256:927679191381772e90298b624321de4a07f5b4945fba6614f31ac52bc82f930a","status":"Accepted risk","decided_at_severity":"Major","reviewed_record":{"path":".aidlc-engine/reviews/nfr-design/units/u8-framework-switch/46015847fac97e05/1.json","digest":"sha256:78e5b4aff91bb8d6cb0674814adedd58a613778168b594a8a83020232d1b200d"}},{"artifact":"aidlc/spaces/default/intents/261119-spec-kit-framework/construction/u8-framework-switch/nfr-design/security-design.md","id":"R-02","fingerprint":"sha256:ef60469b2294aab35d5fc5ea019bcd0ed5923e702de2668eedc9f9ddef6930a8","status":"Accepted risk","decided_at_severity":"Minor","reviewed_record":{"path":".aidlc-engine/reviews/nfr-design/units/u8-framework-switch/46015847fac97e05/1.json","digest":"sha256:78e5b4aff91bb8d6cb0674814adedd58a613778168b594a8a83020232d1b200d"}},{"artifact":"aidlc/spaces/default/intents/261119-spec-kit-framework/construction/u8-framework-switch/nfr-design/security-design.md","id":"R-03","fingerprint":"sha256:b7cdc15aebd6148b9063131ab702c868365c5f0aafc2f5a6734c1ae918e2440f","status":"Accepted risk","decided_at_severity":"Minor","reviewed_record":{"path":".aidlc-engine/reviews/nfr-design/units/u8-framework-switch/46015847fac97e05/1.json","digest":"sha256:78e5b4aff91bb8d6cb0674814adedd58a613778168b594a8a83020232d1b200d"}},{"artifact":"aidlc/spaces/default/intents/261119-spec-kit-framework/construction/u8-framework-switch/nfr-requirements/security-requirements.md","id":"R-01","fingerprint":"sha256:a34661a350981f258fb3858cda7003e24371b7d015c00527a8f1bb5b01cb4e06","status":"Accepted risk","decided_at_severity":"Minor","reviewed_record":{"path":".aidlc-engine/reviews/nfr-requirements/units/u8-framework-switch/46015847fac97e05/1.json","digest":"sha256:da8179c977fd47285a0fd65d6ac406fee924e7dd8e25006019b6a3ff7b0f96d7"}},{"artifact":"aidlc/spaces/default/intents/261119-spec-kit-framework/construction/u8-framework-switch/nfr-requirements/security-requirements.md","id":"R-02","fingerprint":"sha256:3551e1a565fa94ed43346b0235094b1ace6f56c29842b003816238b39296fcdf","status":"Accepted risk","decided_at_severity":"Minor","reviewed_record":{"path":".aidlc-engine/reviews/nfr-requirements/units/u8-framework-switch/46015847fac97e05/1.json","digest":"sha256:da8179c977fd47285a0fd65d6ac406fee924e7dd8e25006019b6a3ff7b0f96d7"}},{"artifact":"aidlc/spaces/default/intents/261119-spec-kit-framework/construction/u8-framework-switch/nfr-requirements/security-requirements.md","id":"R-03","fingerprint":"sha256:62b34e269b1a11981bb12ebfd050a63ca78703e9dcddd2f16336cb38735b840b","status":"Accepted risk","decided_at_severity":"Minor","reviewed_record":{"path":".aidlc-engine/reviews/nfr-requirements/units/u8-framework-switch/46015847fac97e05/1.json","digest":"sha256:da8179c977fd47285a0fd65d6ac406fee924e7dd8e25006019b6a3ff7b0f96d7"}}]}
+
+---
+
+## Change Accepted
+**Timestamp**: 2026-11-24T22:05:01Z
+**Event**: CHANGE_ACCEPTED
+**Stage**: code-generation
+**Unit**: u1-framework-views
+**Checkpoint**: review-receipt
+**Changed**: src/renderer/App.jsx, src/renderer/ProjectSettingsView.jsx, tests/renderer/AppAlerts.test.jsx
+**Recorded**: sha256:439309f07934c5cf1a1ea9045a2e74ed52343859a9cbb7e2117205be5bdb6611
+**Current**: sha256:e7c68410624f1719193a3ef6f9e2c30e98576095bf8f9443b661262e357135a7
+**Details**: src/renderer/App.jsx, src/renderer/ProjectSettingsView.jsx, tests/renderer/AppAlerts.test.jsx changed after the framework views Unit was reviewed; carrying on.
+
+---
+
+## Change Accepted
+**Timestamp**: 2026-11-24T22:05:01Z
+**Event**: CHANGE_ACCEPTED
+**Stage**: code-generation
+**Unit**: u3-speckit-setup
+**Checkpoint**: review-receipt
+**Changed**: src/renderer/SettingsView.jsx, tests/main/settings.test.js
+**Recorded**: sha256:d42dbf5ceed99bd106d827fe6847909cfaea2ec088b3aa0f7000d15f3a3ec4d8
+**Current**: sha256:d2b9317b88f33fc32d592a363ae256c72b35f9bcf9ca45f879762967166a3c7a
+**Details**: src/renderer/SettingsView.jsx, tests/main/settings.test.js changed after the speckit setup Unit was reviewed; carrying on.
+
+---
+
+## Change Accepted
+**Timestamp**: 2026-11-24T22:05:01Z
+**Event**: CHANGE_ACCEPTED
+**Stage**: code-generation
+**Unit**: u2-framework-file
+**Checkpoint**: review-receipt
+**Changed**: docs/FEATURES.md, docs/features/epic-14-spec-kit.md, src/main/projectService.js, src/shared/locales/en.json, src/shared/locales/sv.json, tests/main/fileWrite.test.js, tests/main/projectService.test.js
+**Recorded**: sha256:164d02bf732c750847eb1e21fda0aa438cdfab202f5e95062c0de20f32d13752
+**Current**: sha256:9aeaaae4335fa553e78bce87eec0534cef473e55f8ca82c733d4cad6a54fa8e9
+**Details**: The framework file Unit's list of files changed after it was reviewed; carrying on.
+
+---
+
+## Change Accepted
+**Timestamp**: 2026-11-24T22:05:01Z
+**Event**: CHANGE_ACCEPTED
+**Stage**: code-generation
+**Unit**: u5-speckit-commands
+**Checkpoint**: review-receipt
+**Changed**: src/renderer/SpeckitCommandButton.jsx
+**Recorded**: sha256:edbf7a67fcea0f44bd5ed80e451f1fce47348dbfd00a3369c0ab6b784011e585
+**Current**: sha256:715d1bf2fe29bedf7a5097ba5431f74dc1fa3a5432b45e5307e07e483fa8f518
+**Details**: src/renderer/SpeckitCommandButton.jsx changed after the speckit commands Unit was reviewed; carrying on.
+
+---
+
+## Change Accepted
+**Timestamp**: 2026-11-24T22:05:01Z
+**Event**: CHANGE_ACCEPTED
+**Stage**: code-generation
+**Unit**: u8-framework-switch
+**Checkpoint**: review-receipt
+**Changed**: docs/FEATURES.md, docs/features/epic-14-spec-kit.md, src/main/frameworkSwitch.js, src/main/ipc.js, src/preload/index.js, src/renderer/FrameworkSection.jsx, src/renderer/ProjectView.jsx, src/renderer/theme.css, src/shared/frameworkViews.js, src/shared/locales/en.json (and 9 more)
+**Recorded**: sha256:29d4bda3b7bf6e6ca635c29e494c08c55736599c40e54f6d71d56fc46a93bf52
+**Current**: sha256:106b29b2a4b9b3863d3f2ed2d7f08c2d13b5fb3a98f33a5e0818176dfc82ece5
+**Details**: docs/FEATURES.md, docs/features/epic-14-spec-kit.md, src/main/frameworkSwitch.js, src/main/ipc.js, src/preload/index.js, src/renderer/FrameworkSection.jsx, src/renderer/ProjectView.jsx, src/renderer/theme.css, src/shared/frameworkViews.js, src/shared/locales/en.json (and 9 more) changed after the framework switch Unit was reviewed; carrying on.
+
+---
+
+## Stage Awaiting Approval
+**Timestamp**: 2026-11-24T22:05:12Z
+**Event**: STAGE_AWAITING_APPROVAL
+**Stage**: functional-design
+**Next Stage**: nfr-requirements
+**Brief Digest**: none
+**Sensor State**: upstream-coverage@aidlc/spaces/default/intents/261119-spec-kit-framework/construction/u1-framework-views/functional-design/rules.md=failed(2) [detail: aidlc/spaces/default/intents/261119-spec-kit-framework/.aidlc-engine/sensors/functional-design/upstream-coverage-ac52105a.md]; required-sections@aidlc/spaces/default/intents/261119-spec-kit-framework/construction/u5-speckit-commands/functional-design/rules.md=passed; required-sections@aidlc/spaces/default/intents/261119-spec-kit-framework/construction/u5-speckit-commands/functional-design/functional-spec.md=passed; required-sections@aidlc/spaces/default/intents/261119-spec-kit-framework/construction/u5-speckit-commands/functional-design/traceability.json=passed; required-sections@aidlc/spaces/default/intents/261119-spec-kit-framework/construction/u5-speckit-commands/functional-design/frontend-components.md=passed; required-sections@aidlc/spaces/default/intents/261119-spec-kit-framework/construction/u7-constitution/functional-design/rules.md=passed; required-sections@aidlc/spaces/default/intents/261119-spec-kit-framework/construction/u7-constitution/functional-design/functional-spec.md=passed; required-sections@aidlc/spaces/default/intents/261119-spec-kit-framework/construction/u7-constitution/functional-design/traceability.json=passed; required-sections@aidlc/spaces/default/intents/261119-spec-kit-framework/construction/u7-constitution/functional-design/frontend-components.md=passed; required-sections@aidlc/spaces/default/intents/261119-spec-kit-framework/construction/u6-speckit-features/functional-design/rules.md=passed; required-sections@aidlc/spaces/default/intents/261119-spec-kit-framework/construction/u6-speckit-features/functional-design/functional-spec.md=passed; required-sections@aidlc/spaces/default/intents/261119-spec-kit-framework/construction/u6-speckit-features/functional-design/traceability.json=passed; required-sections@aidlc/spaces/default/intents/261119-spec-kit-framework/construction/u6-speckit-features/functional-design/frontend-components.md=passed; required-sections@aidlc/spaces/default/intents/261119-spec-kit-framework/construction/u10-speckit-agent-status/functional-design/rules.md=passed; required-sections@aidlc/spaces/default/intents/261119-spec-kit-framework/construction/u10-speckit-agent-status/functional-design/functional-spec.md=passed; required-sections@aidlc/spaces/default/intents/261119-spec-kit-framework/construction/u10-speckit-agent-status/functional-design/traceability.json=passed; required-sections@aidlc/spaces/default/intents/261119-spec-kit-framework/construction/u10-speckit-agent-status/functional-design/frontend-components.md=passed; required-sections@aidlc/spaces/default/intents/261119-spec-kit-framework/construction/u3-speckit-setup/functional-design/rules.md=passed; required-sections@aidlc/spaces/default/intents/261119-spec-kit-framework/construction/u3-speckit-setup/functional-design/functional-spec.md=passed; required-sections@aidlc/spaces/default/intents/261119-spec-kit-framework/construction/u3-speckit-setup/functional-design/traceability.json=passed; +40 more
+**Open Decisions**: 0
+**Question Id**: 4d764680
+**Question Type**: gate
+**Question Chat**: 7e0bec48-3bda-4bb4-a217-8d54f21055c6
+**Question Shows**: sha256:cdf9fd01a4c58b281e99b56d084a6c6262bf2bd49eb61722b3c82e238549b4dd
+
+---
+
+## Gate Approved
+**Timestamp**: 2026-11-24T22:05:42Z
+**Event**: GATE_APPROVED
+**Stage**: functional-design
+**Brief Digest**: none
+
+---
+
+## Stage Completion
+**Timestamp**: 2026-11-24T22:05:42Z
+**Event**: STAGE_COMPLETED
+**Stage**: functional-design
+**Validation Basis**: {"graphContract":"sha256:9bcda5bd8a06c0847db3e05cd9c841a992450b498f36fead53d3737b78517a4e","inputs":[{"artifact":"components","contentHash":"sha256:14cea437d8b3feaf731640de17d9f343609ecb2e3ebb204356223cfa68ca75a7","instanceCount":1,"presentCount":0,"producer":"domain-design","required":true,"structureHash":"sha256:e5e9b10f432a598611b3a7f9d492c559e1835503300d892987d4758af0c36755"},{"artifact":"contract-summary","contentHash":"sha256:9d73472d7431f3109b9834e213dae9d8ef50979f9da2e555d3cf995a3da0e36c","instanceCount":1,"presentCount":1,"producer":"contract-design","required":false,"structureHash":"sha256:c63ad6e146aac3a23c9bb158b18b1cabffb97c5c6bb4295a44641a86fc6da89a"},{"artifact":"requirements","contentHash":"sha256:b3e3b435ad82e2b96e0d87876575db1202290f83845cbe865c2b906979f75dda","instanceCount":1,"presentCount":1,"producer":"requirements-analysis","required":true,"structureHash":"sha256:1b3819ce6747a2c00aadd488673964985a0793e87d1ec36e7457577d3b917588"},{"artifact":"stories","contentHash":"sha256:c54cd03f5969b6f7e2060b3aa2a0b20f44dfa521cd7675ca7c03092b80a559f2","instanceCount":1,"presentCount":1,"producer":"user-stories","required":false,"structureHash":"sha256:ef4c6731d5c3bbf25da86baf97180cf6de3567e30ac0e76c5a62809881de6fe2"},{"artifact":"unit-of-work-story-map","contentHash":"sha256:cf4f7bb8b9ef0f3b14885f2e75a056be0684c6292f27d6991518293a5d55953b","instanceCount":1,"presentCount":1,"producer":"units-generation","required":false,"structureHash":"sha256:2f6c4201e8f9816f4d2c9f8f92864af4d850c6f6702856dfcc242c52193a1e2e"},{"artifact":"unit-of-work","contentHash":"sha256:3b5457c78c12092652708f263d1e5385481486126d3f68041b232fdb17f685f1","instanceCount":1,"presentCount":1,"producer":"units-generation","required":true,"structureHash":"sha256:16c95a9d2feafdf96ed8584f0706d5da8c0f4540435e96797c870e762b5bee6b"}],"outputs":[{"artifact":"entities","contentHash":"sha256:26af7fe6a04848bb4937c3fae2d08c2882512e981f958c50e5d819c0a736930d","instanceCount":2,"presentCount":2,"producer":"functional-design","required":true,"structureHash":"sha256:b1f5920bf05bf1176bfc06bea017f06cddd97f7d526d2520c511a9e5926e0c5f"},{"artifact":"frontend-components","contentHash":"sha256:4cc26cf544deb3da10bf856fb0a72873f128b70481d6d1f943e92674de0baf7a","instanceCount":8,"presentCount":8,"producer":"functional-design","required":false,"structureHash":"sha256:1e482151991f7bb73dfd9b1c35ff42ddb5d24dee5e8bcd1fdb24282256cc407d"},{"artifact":"functional-spec","contentHash":"sha256:63fe55c09321853711278e84990e761f6f5cf76a1ab124c42a252952354b9d2c","instanceCount":10,"presentCount":10,"producer":"functional-design","required":true,"structureHash":"sha256:8ff599459b8000ffbac448258bcc7df9b91a5eb42672b127848cb29483964824"},{"artifact":"rules","contentHash":"sha256:1d1a1e20500f8b710c26c5107c6107c1ad2e3ab76a47b07624f270924ae6116c","instanceCount":2,"presentCount":2,"producer":"functional-design","required":true,"structureHash":"sha256:9f58bb0c9cb7118cfaf2a8f965534a61e4a8fdc5fd2a0aeefc08b4d703dec209"},{"artifact":"traceability","contentHash":"sha256:09e2ad83f57d867a2b762f7acf2b87e5d06c0128882d46ec088f882c164f82e4","instanceCount":10,"presentCount":10,"producer":"functional-design","required":true,"structureHash":"sha256:2424337ade28c2a8638cd3ab4ce933d01f07a27e912c0ee11107f44367a67dac"}],"projectType":"brownfield","schema":3}
+**Details**: Stage Functional Design approved by gate
+**Tokens In**: 1366
+**Tokens Out**: 463182
+**Cache Read**: 198459709
+**Cache Write**: 4300154
+**Cost USD**: 76.67
+**By Model**: opus-5-5=72.31; sonnet-5-5=4.36
+**By Agent**: main=72.31; aidlc-architecture-reviewer-agent=4.36
+**Tokens By Model**: opus-5-5=1.2k/405.4k/193.5M/3.2M; sonnet-5-5=132/57.7k/5M/1.1M
+**Tokens By Agent**: main=1.2k/405.4k/193.5M/3.2M; aidlc-architecture-reviewer-agent=132/57.7k/5M/1.1M
+
+---
+
+## Stage Start
+**Timestamp**: 2026-11-24T22:05:42Z
+**Event**: STAGE_STARTED
+**Stage**: nfr-requirements
+**Agent**: aidlc-architect-agent
+**Answer Mode**: guide (reused from practices-discovery)
+
+---
+
+## Decision Recorded
+**Timestamp**: 2026-11-24T22:06:27Z
+**Event**: DECISION_RECORDED
+**Stage**: nfr-requirements
+**Decision**: Auto mode refuses recording the closing stage approvals; leave auto mode or approve them
+**Options**: Go,Stop for now
+**Unit**: u8-framework-switch
+**Question Id**: 5c67a972
+**Question Type**: stage-question
+**Question Chat**: 7e0bec48-3bda-4bb4-a217-8d54f21055c6
+**Question Shows**: sha256:d5e1586c2800a259dc72cfb2960caeb7cb9d707d6dc242ab3e4f3302e8f1d744
+
+---
+
+## Human Turn
+**Timestamp**: 2026-11-24T22:06:49Z
+**Event**: HUMAN_TURN
+**Session**: 7e0bec48-3bda-4bb4-a217-8d54f21055c6
+**Origin**: person
+**Source**: typed
+**Message Id**: 6717b344
+**Open Questions**: 7560ed46, 9c9e79e6, 182896de, 0b7ed011, 5c67a972
+**Questions Digest**: {"file":"aidlc/spaces/default/intents/261119-spec-kit-framework/construction/u8-framework-switch/code-generation/code-generation-questions.md","entries":{"Plan Approval":"06737b5ca580aefa"}}
+
+---
