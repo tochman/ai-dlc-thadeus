@@ -45,7 +45,13 @@
       "link": "En symbolisk länk, så den följs inte.",
       "outsideRoot": "Pekar utanför projektet.",
       "tooLarge": "Större än 1 MB, så den läses inte.",
-      "notUtf8": "Inte giltig UTF-8-text."
+      "notUtf8": "Inte giltig UTF-8-text.",
+      "notFile": "Inte en fil, så den läses inte.",
+      "yaml": "Inte giltig YAML: {error}",
+      "notMapping": "Översta nivån är inte en lista med nycklar, så inget i den läses.",
+      "noManifest": "Saknas, så tilläggets kommandon är okända.",
+      "unsafeId": "Tilläggets id {id} är inget säkert namn, så dess mapp läses inte.",
+      "unsafeNames": "{count, plural, one {# kommandonamn är inget säkert namn och lämnades bort.} other {# kommandonamn är inga säkra namn och lämnades bort.}}"
     },
     "features": {
       "title": "Features",
@@ -71,6 +77,29 @@
       "round": "Varv {round}",
       "noPhase": "Före första fasen",
       "files": "Filer"
+    },
+    "rules": {
+      "constitution": "Konstitution",
+      "edit": "Redigera",
+      "noConstitution": "Ingen konstitution än. Skriv en med /speckit-constitution i agentterminalen.",
+      "runConstitution": "Skriv konstitutionen (/speckit-constitution)",
+      "extensions": "Tillägg och hooks",
+      "noExtensions": "Inga tillägg är installerade.",
+      "commands": "Kommandon",
+      "hooks": "Hooks",
+      "condition": "bara när: {condition}",
+      "when": {
+        "before": "Före",
+        "after": "Efter"
+      },
+      "mode": {
+        "optional": "valfri",
+        "mandatory": "obligatorisk",
+        "off": "avstängd"
+      },
+      "skipped": "{count, plural, one {# hook i extensions.yml kunde inte läsas och hoppades över.} other {# hooks i extensions.yml kunde inte läsas och hoppades över.}}",
+      "unchecked": "extensions.yml kunde inte läsas, så inga hooks kontrollerades, inte heller de obligatoriska.",
+      "errors": "Kunde inte läsas"
     }
   },
   "app": {
@@ -1021,7 +1050,8 @@
         "aidlc": "AI-DLC",
         "plans": "Planer",
         "costRules": "Kostnadsregler",
-        "modelProfiles": "Modellprofiler"
+        "modelProfiles": "Modellprofiler",
+        "speckit": "Spec Kit"
       },
       "saved": "Sparat.",
       "reset": "Återställ"
@@ -1568,7 +1598,8 @@
     "planNotFound": "Ingen plan med namnet {name} hittades.",
     "notAFile": "{rel} är ingen fil.",
     "engineOwned": "{rel} tillhör AI-DLC:s motor och sparas inte från appen.",
-    "speckitReadOnly": "{rel} tillhör Spec Kit och sparas inte från appen."
+    "speckitReadOnly": "{rel} tillhör Spec Kit och sparas inte från appen.",
+    "notSpeckitProject": "Projektet följer inte Spec Kit, så det har inga Spec Kit-regler att visa."
   },
   "agentDialog": {
     "title": {

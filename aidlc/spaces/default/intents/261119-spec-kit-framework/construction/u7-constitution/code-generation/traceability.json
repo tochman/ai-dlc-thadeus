@@ -1,0 +1,29 @@
+{
+  "stage": "code-generation",
+  "unit": "u7-constitution",
+  "upstream_ids": ["AC4.2.1", "AC4.2.2", "AC4.2.3", "NFR7.1", "NFR7.2", "NFR7.3", "NFR7.4", "NFR3.1", "NFR3.2", "NFR3.3", "NFR3.4", "NFR5.1", "NFR5.2", "BR7.1", "BR7.2", "BR7.3", "BR7.4", "BR7.5", "BR7.6", "BR7.7", "BR7.8", "BR7.9"],
+  "coverage": [
+    { "id": "AC4.2.1", "status": "OK", "target": "src/renderer/SpeckitRules.jsx" },
+    { "id": "AC4.2.2", "status": "OK", "target": "src/main/speckitRules.js" },
+    { "id": "AC4.2.3", "status": "OK", "target": "src/main/speckitRules.js" },
+    { "id": "NFR7.1", "status": "OK", "target": "src/main/speckitFeatures.js" },
+    { "id": "NFR7.2", "status": "OK", "target": "src/main/watcher.js" },
+    { "id": "NFR7.3", "status": "OK", "target": "tests/main/speckitRules.test.js" },
+    { "id": "NFR7.4", "status": "OK", "target": "src/renderer/SpeckitRules.jsx" },
+    { "id": "NFR3.1", "status": "OK", "target": "tests/main/speckitRules.test.js" },
+    { "id": "NFR3.2", "status": "OK", "target": "src/main/speckitRules.js" },
+    { "id": "NFR3.3", "status": "OK", "target": "src/main/speckitRules.js" },
+    { "id": "NFR3.4", "status": "OK", "target": "src/renderer/SpeckitRules.jsx" },
+    { "id": "NFR5.1", "status": "OK", "target": "tests/renderer/SpeckitRules.test.jsx" },
+    { "id": "NFR5.2", "status": "OK", "target": "src/main/speckitRules.js" },
+    { "id": "BR7.1", "status": "OK", "target": "src/main/speckitRules.js" },
+    { "id": "BR7.2", "status": "OK", "target": "src/renderer/SpeckitRules.jsx" },
+    { "id": "BR7.3", "status": "OK", "target": "src/main/speckitRules.js" },
+    { "id": "BR7.4", "status": "OK", "target": "src/main/speckitRules.js" },
+    { "id": "BR7.5", "status": "OK", "target": "src/main/speckitRules.js" },
+    { "id": "BR7.6", "status": "OK", "target": "src/main/speckitRules.js" },
+    { "id": "BR7.7", "status": "OK", "target": "tests/main/speckitRules.test.js" },
+    { "id": "BR7.8", "status": "OK", "target": "src/main/speckitFeatures.js" },
+    { "id": "BR7.9", "status": "OK", "target": "src/shared/frameworkViews.js" }
+  ]
+}

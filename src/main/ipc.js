@@ -78,6 +78,7 @@ import { watchFiles, watchForAidlc, watchIntents, watchOpenFiles } from './watch
 import { listTree, readForEdit, writeFileSafe } from './fileWrite.js';
 import { featureWatchPaths, loadFeatures, loadPlanningFeatures, loadStoryLinks } from './features.js';
 import { SPECKIT_WATCH_PATHS, loadSpeckitFeatures } from './speckitFeatures.js';
+import { loadSpeckitRules } from './speckitRules.js'; // US-1404
 import { killAllSessions, killProjectSessions, killSession, resizeSession, spawnSession, tapOutput, writeSession } from './pty.js';
 import { createAgentChannel } from './agentChannel.js';
 import { createHookInstaller, hooksHandlers, statusPusher } from './agentHooks.js';
@@ -1201,6 +1202,12 @@ const handlers = {
   },
   // US-1402 FR6 (contract C5): read-only, so it needs no framework check.
   'speckit:features': async (_event, projectId) => loadSpeckitFeatures(project(projectId).root),
+  // US-1404 FR7 (contract C6): read-only; offered only where the section is, in a Spec Kit project (BR7.9).
+  'speckit:rules': async (_event, projectId) => {
+    const p = project(projectId);
+    if (p.framework !== 'speckit') throw new Error(t('errors.notSpeckitProject'));
+    return loadSpeckitRules(p.root);
+  },
   // US-0608 FR2.2, AC1.2.1: a feature doc is in the planning record before it is written; the watcher records it too, should this fail.
   'file:write': async (_event, projectId, rel, content, expect) => {
     const p = project(projectId);
