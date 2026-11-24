@@ -68,6 +68,8 @@ beforeEach(() => {
     // US-1402: the Spec Kit shell reads the features.
     speckitFeatures: vi.fn(async () => ({ version: { found: '1.4.3', supported: true }, features: [], active: null, errors: [] })),
     onSpeckitChanged: vi.fn(() => () => {}),
+    // US-1406: a project with no framework opens on the choice screen, which scans first.
+    frameworkScan: vi.fn(() => new Promise(() => {})),
     // US-1404: Configuration › Spec Kit reads the rules.
     speckitRules: vi.fn(async () => ({
       constitution: { path: '.specify/memory/constitution.md', exists: false },
@@ -208,19 +210,24 @@ describe('ProjectView: one view at a time', () => {
     expect(screen.queryByTestId('plans-view')).toBeNull();
     cleanup();
     renderView('config', { section: 'aidlc', aidlcTab: 'plans', project: { ...project, detection: detectionOf(null) } });
-    expect(await screen.findByTestId('project-not-aidlc')).toBeTruthy();
+    expect(await screen.findByTestId('framework-choice-root')).toBeTruthy(); // US-1406
     expect(screen.queryByTestId('plans-view')).toBeNull();
   });
 
-  it('a folder without AI-DLC shows its setup, whatever view was asked for', async () => {
+  it('US-1406: a folder without a framework shows the choice screen, whatever view was asked for', async () => {
+    window.bridge.frameworkScan = vi.fn(async () => ({ found: { aidlc: false, speckit: false }, cli: { aidlc: false, specify: false }, proposal: null }));
     renderView('github', { project: { ...project, detection: none } });
-    expect(await screen.findByTestId('project-not-aidlc')).toBeTruthy();
+    expect(await screen.findByTestId('framework-choice-root')).toBeTruthy();
+    expect(window.bridge.frameworkScan).toHaveBeenCalledWith('p1');
+    expect(screen.queryByTestId('setup-choice-aidlc')).toBeNull(); // U3's simple choice is replaced
     expect(screen.queryByTestId('refresh-panel')).toBeNull();
     expect(screen.queryByTestId('add-harness-dialog')).toBeNull();
   });
 
-  // US-1405: the setup view offers AI-DLC (as before) or Spec Kit; U4 later turns this into the first-open screen.
-  it('a folder without a framework offers AI-DLC or Spec Kit, and Spec Kit opens its setup', async () => {
+  // US-1406 BR4.6: a missing framework opens the real setup panel from the choice screen.
+  it('the choice screen opens the real Spec Kit setup for a missing Spec Kit', async () => {
+    window.bridge.frameworkScan = vi.fn(async () => ({ found: { aidlc: false, speckit: false }, cli: { aidlc: false, specify: false }, proposal: null }));
+    window.bridge.chooseFramework = vi.fn(async () => ({ ok: true, file: null, next: 'setupSpeckit' }));
     window.bridge.speckitSetupPreview = vi.fn(async () => ({
       specifyOnPath: false,
       version: null,
@@ -232,19 +239,27 @@ describe('ProjectView: one view at a time', () => {
       notEmpty: false
     }));
     renderView('intents', { project: { ...project, detection: none } });
-    expect(await screen.findByTestId('setup-choice-aidlc')).toBeTruthy();
-    expect(screen.getByTestId('setup-choice-aidlc').getAttribute('aria-pressed')).toBe('true');
-    expect(screen.getByTestId('project-not-aidlc')).toBeTruthy();
-    fireEvent.click(screen.getByTestId('setup-choice-speckit'));
+    fireEvent.click(await screen.findByTestId('framework-choice-option-speckit'));
+    fireEvent.click(screen.getByTestId('framework-choice-confirm'));
     expect(await screen.findByTestId('setup-speckit-root')).toBeTruthy();
     expect(screen.queryByTestId('project-not-aidlc')).toBeNull();
     expect(window.bridge.speckitSetupPreview).toHaveBeenCalledWith('p1', null);
   });
 
-  it('a project with a framework shows no setup choice', async () => {
+  it('US-1406: confirming a found AI-DLC switches to its views without the "set up" notice, since no setup ran', async () => {
+    window.bridge.frameworkScan = vi.fn(async () => ({ found: { aidlc: true, speckit: false }, cli: { aidlc: true, specify: false }, proposal: 'aidlc' }));
+    const el = (p) => <ProjectView project={p} visible view="intents" onView={vi.fn()} onMeta={() => {}} />;
+    const { rerender } = render(el({ ...project, detection: none }));
+    await screen.findByTestId('framework-choice-option-aidlc');
+    rerender(el(project)); // main's project:detected push after the saved choice
+    await screen.findByTestId('intent-list');
+    expect(screen.queryByTestId('setup-aidlc-done')).toBeNull();
+  });
+
+  it('a project with a framework shows no choice screen', async () => {
     renderView('intents');
     await screen.findByTestId('intent-list');
-    expect(screen.queryByTestId('setup-choice-speckit')).toBeNull();
+    expect(screen.queryByTestId('framework-choice-root')).toBeNull();
   });
 });
 
@@ -375,7 +390,7 @@ describe('ProjectView: lifecycle rule notice (US-0603 FR5.2, FR5.3)', () => {
 
     featuresHook.extra = { ...docs, ruleStatus: 'missing' };
     renderView('intents', { project: { ...project, detection: none } });
-    await screen.findByTestId('project-not-aidlc');
+    await screen.findByTestId('framework-choice-root'); // US-1406
     expect(screen.queryByTestId('lifecycle-rule-notice')).toBeNull();
   });
 });

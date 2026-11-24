@@ -107,11 +107,76 @@
 
 
 
-- **Parked**: 2026-11-20T07:10:56Z
 
-- **Parked At Stage**: functional-design
 
-- **Parked By**: person
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 ## Phase Progress
 <!-- Status values: Pending, Active, Verified, Skipped -->
@@ -173,7 +238,7 @@
 - **Current Stage**: functional-design
 - **Next Stage**: nfr-requirements
 - **Status**: Running
-- **Last Updated**: 2026-11-20T07:10:56Z
+- **Last Updated**: 2026-11-24T13:38:20Z
 
 - **Construction Autonomy Mode**: autonomous
 

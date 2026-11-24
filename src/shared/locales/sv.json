@@ -783,8 +783,22 @@
     "failed": "specify init misslyckades. Projektet är som det var i appen.",
     "timeout": "specify init blev inte klart inom 120 s. Projektet är som det var i appen."
   },
+  "frameworkChoice": {
+    "title": "Välj projektets ramverk",
+    "intro": "Appen följer ett ramverk per projekt. Inget skrivs i projektet innan du bekräftar.",
+    "scanning": "Tittar på projektet…",
+    "found": "Finns i projektet",
+    "notFound": "Finns inte i projektet",
+    "cliFound": "{tool} finns i PATH",
+    "cliMissing": "{tool} finns inte i PATH",
+    "proposed": "Föreslås",
+    "confirm": "Bekräfta",
+    "back": "Tillbaka till valet",
+    "retry": "Försök igen",
+    "scanFailed": "Projektet kunde inte undersökas: {reason}",
+    "saveFailed": "Valet kunde inte sparas: {reason}"
+  },
   "setup": {
-    "chooseFramework": "Ramverk",
     "framework": {
       "aidlc": "AI-DLC",
       "speckit": "Spec Kit"

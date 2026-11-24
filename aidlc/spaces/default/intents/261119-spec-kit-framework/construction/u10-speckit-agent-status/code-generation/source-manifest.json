@@ -1,0 +1,25 @@
+{
+  "stage": "code-generation",
+  "unit": "u10-speckit-agent-status",
+  "version": 1,
+  "writes": [
+    { "path": "src/main/agentProgress.js" },
+    { "path": "src/main/ipc.js" },
+    { "path": "src/preload/index.js" },
+    { "path": "src/renderer/SpeckitProgress.jsx" },
+    { "path": "src/renderer/SpeckitShell.jsx" },
+    { "path": "src/renderer/AgentDialog.jsx" },
+    { "path": "src/renderer/theme.css" },
+    { "path": "src/shared/locales/en.json" },
+    { "path": "src/shared/locales/sv.json" },
+    { "path": "vitest.config.mjs" },
+    { "path": "tests/main/agentProgressSpeckit.test.js" },
+    { "path": "tests/main/agentProgressSpeckitTimed.test.js" },
+    { "path": "tests/main/ipc.test.js" },
+    { "path": "tests/renderer/SpeckitProgress.test.jsx" },
+    { "path": "tests/renderer/SpeckitShell.test.jsx" },
+    { "path": "tests/renderer/AgentDialog.test.jsx" },
+    { "path": "docs/FEATURES.md" },
+    { "path": "docs/features/epic-14-spec-kit.md" }
+  ]
+}

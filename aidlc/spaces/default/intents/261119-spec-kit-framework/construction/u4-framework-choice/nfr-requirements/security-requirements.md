@@ -1,0 +1,11 @@
+# Security Requirements: U4 u4-framework-choice
+
+Sources: NFR3 and NFR4 in `requirements.md`, contracts C2 and C4 in `contract-summary.md`, and the U4 `functional-spec.md` and `rules.md` (BR4.6, BR4.7, BR4.8). There is no login, no network call and no secret in this Unit. The threats are a write before the person confirms, a renderer call that names a path or an unknown value, and a command started by the choice screen itself.
+
+| ID | Requirement | Measure |
+|---|---|---|
+| NFR3.1 | Detection and `project:frameworkScan` write nothing anywhere (BR4.7). `project:chooseFramework` writes only `.thadeus/project.json`, and only through U2's `writeProjectFile` (temp file, then rename). No U4 code writes, creates or deletes anything under `.specify/` or `specs/`. | Tests with a spy on every fs write call: scan and detection make zero calls; a found choice makes exactly U2's write; a not-found choice makes zero |
+| NFR3.2 | `chooseFramework` checks its input before any file access: the project id must be a known open project and `framework` one of `FRAMEWORKS` (`aidlc`, `speckit`). Anything else rejects with a translated reason and writes nothing (BR4.8). | Tests: unknown id, `''`, `'AIDLC'`, `'../x'`, an object, `undefined` |
+| NFR3.3 | The renderer never sends a path. The project root comes from the main process's own project record; the returned `file` is the fixed string `.thadeus/project.json` or null. | Test: the handler ignores any extra argument; the returned `file` is one of the two values |
+| NFR4.1 | The scan starts no program. `cli.aidlc` and `cli.specify` are a PATH lookup only (`toolPath`, else `resolveOnPath` on the login shell's PATH), with no `--version` run. The login PATH is read by `exec.js`'s fixed command with its 20 s timeout. A lookup that throws counts as not found (BR4.2). | Tests with an injected `exec`: no tool is run; a throwing lookup gives `false` |
+| NFR4.2 | The choice screen never runs `specify init` or `aidlc` setup itself. A missing framework only returns `next: setupSpeckit` or `setupAidlc`; the setup runs through U3's or US-0503's own handler, after its own preview and confirm (BR4.6). | Test: `chooseFramework` for a missing framework calls no `runFixed` |

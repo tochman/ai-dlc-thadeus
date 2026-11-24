@@ -9,6 +9,9 @@
 
 ## Tradeoffs
 - 2026-11-20T04:05:00Z — u2: chose fixed path + lstat over resolveInRoot; resolveInRoot needs the path to exist and allows in-root symlinks, which BR1.1 refuses. No questions asked: functional design settled every target.
+- 2026-11-24T09:53:00Z — [unit u7-constitution] added NFR3.3 (command names must match Spec Kit's dotted form) beyond the functional design: U5 types these names into the terminal, so an extension manifest could otherwise inject a shell line. No questions asked: functional design settled the file shapes.
+- 2026-11-24T11:05:00Z — [unit u10-speckit-agent-status] put the 300 ms timing test in the retried `scripts` project with a 1 s bound, after u7's review called a bare 300 ms CI bound flaky; added NFR5.1's 200-character cut so a hook body cannot flood the readout. No questions asked.
+- 2026-11-24T11:59:04Z — [unit u4-framework-choice] made the `cli` flags a PATH lookup with no `--version` run (NFR4.1), so the choice screen starts no program; reused u10's 1 s timed-test bound in the `scripts` project. NFR5 and NFR6 are N/A for this Unit. No questions asked: functional design settled every target.
 <!-- example: 2026-05-29T10:14:32Z — picked TDD over BDD this run; the team is unit-first and the domain is well-understood -->
 
 ## Open questions

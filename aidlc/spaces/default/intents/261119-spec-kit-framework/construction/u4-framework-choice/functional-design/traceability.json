@@ -1,0 +1,11 @@
+{
+  "stage": "functional-design",
+  "unit": "u4-framework-choice",
+  "upstream_ids": ["AC2.2.1", "AC2.2.2", "AC2.2.3"],
+  "coverage": [
+    { "id": "AC2.2.1", "status": "OK", "target": "BR4.1, BR4.2" },
+    { "id": "AC2.2.2", "status": "OK", "target": "BR4.3, BR4.4, BR4.5, BR4.6" },
+    { "id": "AC2.2.3", "status": "OK", "target": "BR4.6, BR4.7" }
+  ],
+  "reverse": [{ "id": "BR4.8", "status": "N/A", "target": "input validation at the IPC boundary" }]
+}

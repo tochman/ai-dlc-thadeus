@@ -6,9 +6,9 @@
 
 > The console should not only show AI-DLC work but make it easy to steer: pick up an intent that stopped, switch between pieces of work and answer what the workflow is waiting for, without remembering slash commands. The app still never writes AI-DLC files itself. Every action goes through Claude in the embedded terminal, so AI-DLC's own checks and records stay in charge.
 
-**Stories:** US-0501–US-0512
+**Stories:** US-0501, US-0502, US-0503, US-0504, US-0505, US-0506, US-0507, US-0508, US-0509, US-0510
 
-**Status (2026-11-24):** ✅ US-0501–US-0503, US-0505 and US-0506 released (v0.2.0–v0.2.5). ✅ US-0504 released in v0.2.7. ✅ US-0507 released in v0.2.8. ✅ US-0508 released in v0.2.15. 📋 US-0509 planned, for v0.3.1. ✅ US-0510 released in v0.2.13. 📋 US-0511 and US-0512 planned, for v0.3.4. Each story names its release.
+**Status (2026-11-23):** ✅ US-0501–US-0503, US-0505 and US-0506 released (v0.2.0–v0.2.5). ✅ US-0504 released in v0.2.7. ✅ US-0507 released in v0.2.8. ✅ US-0508 released in v0.2.15. 📋 US-0509 planned, for v0.3.1. ✅ US-0510 released in v0.2.13. Each story names its release.
 
 ---
 
@@ -201,36 +201,3 @@
   - [x] Every text goes through `t()` in `sv.json` and `en.json`; the buttons carry `data-testid`s.
 - **Notes:** AI-DLC parks only at a clean stage boundary; the app shows its refusal rather than working around it.
 - **Dependencies:** US-0501
-
-**US-0511: Go back here: resume from a stage with a new instruction** 📋 Planned, for v0.3.4
-- As a **developer**, in order to **send the work back to a stage with a better instruction, without losing what came before it**, I would like **a "Go back here" action on a stage, with a preview of what will be redone, that types the right request into the agent tab for me**.
-- **Epic:** EPIC-05
-- **Priority:** High
-- **Complexity:** Medium
-- **Source:** GitHub issue [#103](https://github.com/tochman/ai-dlc-thadeus/issues/103)
-- **Background:** AI-DLC already jumps back and redoes stages (`aidlc-jump.ts`, logged as `STAGE_JUMPED`). The app only makes it reachable and visible.
-- **Acceptance Criteria:**
-  - [ ] A spike confirms the working command form (`--stage`, `--unit` and free text, or AI-DLC's `redo`/`jump` choice) on Claude Code and opencode, and its result is written here before the build.
-  - [ ] **Given** a done, waiting or running stage and an idle agent, **when** I choose Go back here, write an instruction and confirm, **then** the agent tab holds the line for that stage and instruction, not submitted.
-  - [ ] **Given** a Construction stage and one chosen unit, **then** the line names that unit only, and the preview lists only that unit's later artifacts. The preview is labelled as the app's expectation, not AI-DLC's decision.
-  - [ ] **Given** the agent is busy or waiting for an answer, **then** the action is unavailable and says why, in the same words as Resume (a shared `useAgentAvailability` hook).
-  - [ ] **Given** an instruction with quotes, backslashes or line breaks, **then** it is typed as one safe quoted argument (`quoted()` moved to `src/shared/`).
-  - [ ] **Given** the matching `STAGE_JUMPED` within 10 minutes, **then** a notice lists the invalidated artifacts from the event; with none, no notice shows.
-  - [ ] Not offered for skipped stages. Every text through `t()` in Swedish and English, in the LCARS look.
-- **Dependencies:** US-0501, US-0510
-
-**US-0512: Fix this: hand a NOT-READY finding or a logged error straight to the agent** 📋 Planned, for v0.3.4
-- As a **developer**, in order to **hand a finding or an error straight back to the agent**, I would like **a "Fix this" button next to it that types a precise request, with the right file and context, into the agent tab**.
-- **Epic:** EPIC-05
-- **Priority:** Medium
-- **Complexity:** Small
-- **Source:** GitHub issue [#104](https://github.com/tochman/ai-dlc-thadeus/issues/104)
-- **Acceptance Criteria:**
-  - [ ] **Given** a standing NOT-READY finding for a stage and unit in round 1, **when** I press Fix this in the Review tab, **then** the agent tab holds the request naming that round's `reviews/review-01.md`, not submitted.
-  - [ ] **Given** that round's review file is missing, **then** the newest review file in the folder is used; with none, the line has no path and the tooltip says so.
-  - [ ] **Given** an `ERROR_LOGGED` with a 2,000 character multi line error, **then** Fix this in its Timeline row types one line with the error cut to 300 characters.
-  - [ ] **When** I press Open the review, **then** the review file opens in the artifact reader.
-  - [ ] **Given** the agent is busy or waiting, **then** Fix this is unavailable and says why, in the same words as Resume (`useAgentAvailability`, shared with US-0511).
-  - [ ] The path rule and text cleaning are pure helpers in `src/shared/fixRequest.js` with tests. Every text through `t()` in Swedish and English, in the LCARS look.
-- **Notes:** A Fix this marker in the waterfall comes with US-0305 once both exist.
-- **Dependencies:** US-0501, US-1203

@@ -69,6 +69,7 @@ import { NAMES_PATH, setIntentName } from './intentNames.js';
 import { DELIVERY_DEFAULT } from './parsers/releases.js';
 import { getSetupInfo, runSetup } from './setup.js';
 import { getSpeckitSetupInfo, runSpeckitSetup } from './speckitSetup.js';
+import { chooseFramework, frameworkScan } from './frameworkChoice.js';
 import { detectHarnesses } from './harness.js';
 import { TOOL_IDS, getTools, setToolPaths, validateTool } from './tools.js';
 import { checkProgram, errorText as checkError, programCommand, projectCommand, projectPlan } from './aidlcUpdate.js';
@@ -376,9 +377,7 @@ function watchForSetup(projectId) {
     root: p.root,
     onFound: async () => {
       try {
-        const detection = await detectProject(p.root);
-        if (detection.framework === null || !projects.has(projectId)) return;
-        await applyDetection(projectId, detection);
+        await applyDetection(projectId);
       } catch (err) {
         console.error(`Omdetektering misslyckades för ${p.root}:`, err);
       }
@@ -388,11 +387,15 @@ function watchForSetup(projectId) {
 }
 
 /**
- * US-1401 BR1.9, US-1407 NFR7.4: follows a new Detection. Only the old framework's watcher closes (and a setup
- * watcher); the hooks, head, config, editor and `.thadeus` watchers stay. The push goes out before this returns.
+ * US-1401 BR1.9, US-1406 NFR7.1, US-1407 NFR7.4: the one owner of following a new Detection, for the setup watcher,
+ * a saved first-open choice and a switch alike. With no `detection` it detects the project again and does nothing
+ * while there is no framework. Only the old framework's watcher closes (and a setup watcher); the hooks, head,
+ * config, editor and `.thadeus` watchers stay. The push goes out before this returns.
  */
-async function applyDetection(projectId, detection) {
+async function applyDetection(projectId, detection = null) {
   const p = project(projectId);
+  detection ??= await detectProject(p.root);
+  if (detection.framework === null || !projects.has(projectId)) return;
   const setup = p.setupWatcher;
   p.setupWatcher = null;
   await setup?.close();
@@ -1345,6 +1348,14 @@ const handlers = {
     const run = (p.switching ?? Promise.resolve()).then(() => switchOnce(projectId, to));
     p.switching = run.catch(() => {});
     return run;
+  },
+  // US-1406 FR4 (C4, NFR3.3): the first-open choice. The renderer sends a project id, never a path; extra arguments are
+  // ignored. A written choice switches the project before the call returns (NFR7.1).
+  'project:frameworkScan': async (_event, projectId) => frameworkScan(project(projectId).root),
+  'project:chooseFramework': async (_event, projectId, framework) => {
+    const result = await chooseFramework(project(projectId).root, framework);
+    if (result.file) await applyDetection(projectId);
+    return result;
   },
   'settings:get': async () => {
     const settings = await getSettings();
