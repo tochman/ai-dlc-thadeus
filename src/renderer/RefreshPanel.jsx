@@ -1,7 +1,7 @@
 // "Uppdatera från GitHub" in the sidebar (US-0502, FR3). The app only reads from git; every command that
 // changes the working tree is typed into the shell tab without Enter, for the person to run (NFR1).
 // US-1201 AC-5: named after the platform of origin ("Uppdatera från GitLab"), and it holds the collision warning (AC-2).
-import { useEffect, useState } from 'react';
+import { useEffect, useEffectEvent, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useTerminal } from './TerminalContext.jsx';
 import { FileContent } from './ArtifactReader.jsx';
@@ -125,8 +125,11 @@ export default function RefreshPanel({ projectId, space, lastIntentChangeAt, ope
   const loadStatus = () => act(async () => setStatus(await bridge.getGitStatus(projectId)));
 
   // The local status shows as soon as the panel opens, before any fetch (FR3.5).
+  const loadOnOpen = useEffectEvent(() => {
+    if (!status) loadStatus();
+  }); // US-0043: on opening only, not again when the status changes
   useEffect(() => {
-    if (open && !status) loadStatus();
+    if (open) loadOnOpen();
   }, [open]);
 
   // "Uppdatera" is the only thing that fetches (FR3.2, Q3: C).

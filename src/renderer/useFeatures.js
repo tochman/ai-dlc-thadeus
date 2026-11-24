@@ -16,12 +16,11 @@ export function useFeatures(projectId, space) {
   const [links, setLinks] = useState({});
   // The story lifecycle rule in the space's memory (US-0603 FR5.2): null until read, or when it cannot be read.
   const [ruleStatus, setRuleStatus] = useState(null);
-  const bridge = window.bridge;
 
   const loadRule = useCallback(async () => {
     if (!space) return setRuleStatus(null);
     try {
-      setRuleStatus(await bridge.getLifecycleRuleStatus(projectId, space));
+      setRuleStatus(await window.bridge.getLifecycleRuleStatus(projectId, space));
     } catch (err) {
       console.error('Livscykelregeln kunde inte läsas:', err); // no notice then; the rest of the view is unaffected
       setRuleStatus(null);
@@ -33,7 +32,7 @@ export function useFeatures(projectId, space) {
   const loadDocs = useCallback(async () => {
     const mine = ++seq.current;
     try {
-      const [s, f] = await Promise.all([bridge.getProjectSettings(projectId), bridge.loadFeatures(projectId)]);
+      const [s, f] = await Promise.all([window.bridge.getProjectSettings(projectId), window.bridge.loadFeatures(projectId)]);
       if (mine !== seq.current) return;
       setSettings(s);
       setFeatures(f);
@@ -47,7 +46,7 @@ export function useFeatures(projectId, space) {
   const loadLinks = useCallback(async () => {
     if (!space) return setLinks({});
     try {
-      setLinks(await bridge.getStoryLinks(projectId, space));
+      setLinks(await window.bridge.getStoryLinks(projectId, space));
     } catch (err) {
       console.error('Story-länkar kunde inte läsas:', err); // the stories still show, only without links
     }
@@ -62,6 +61,7 @@ export function useFeatures(projectId, space) {
   // A setting change sends features:changed, so the rule is checked again for the new setting (US-0603 FR5.3);
   // a project change may be the agent saving the rule.
   useEffect(() => {
+    const bridge = window.bridge;
     const offFeatures = bridge.onFeaturesChanged?.((c) => {
       if (c.projectId !== projectId) return;
       loadDocs();

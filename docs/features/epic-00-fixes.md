@@ -8,7 +8,7 @@
 
 **Stories:** US-0001, US-0002, US-0003, US-0004, US-0005, US-0006, US-0007, US-0008, US-0009, US-0010, US-0011, US-0012, US-0013, US-0014, US-0015, US-0016, US-0017, US-0018, US-0019, US-0020, US-0021, US-0022, US-0023, US-0024, US-0025, US-0026, US-0027, US-0028, US-0029, US-0030, US-0031, US-0032, US-0033, US-0034, US-0035, US-0036, US-0037, US-0038, US-0039, US-0040, US-0041, US-0042, US-0043, US-0044, US-0045, US-0046
 
-**Status (2026-11-23):** ✅ US-0001–US-0020 released (v0.2.3–v0.2.6). ✅ US-0021–US-0023 released in v0.2.7. ✅ US-0024 released in v0.2.8. ✅ US-0025 released in v0.2.9. ✅ US-0026 released in v0.2.9. ✅ US-0027 released in v0.2.9. ✅ US-0028 released in v0.2.10. ✅ US-0029 released in v0.2.10. ✅ US-0030 released in v0.2.10. ✅ US-0031 released in v0.2.10. ✅ US-0032 released in v0.2.11. ✅ US-0033 released in v0.2.11. ✅ US-0034 released in v0.2.12. ✅ US-0035 and US-0036 released in v0.2.13. ✅ US-0037, US-0038, US-0039, US-0040, US-0041 and US-0042 released in v0.2.14. 📋 US-0043 planned, for v0.2.15. ✅ US-0044 done, for v0.2.15. ✅ US-0045 done, for v0.2.15. ✅ US-0046 done, for v0.2.15. Each story names its release.
+**Status (2026-11-23):** ✅ US-0001–US-0020 released (v0.2.3–v0.2.6). ✅ US-0021–US-0023 released in v0.2.7. ✅ US-0024 released in v0.2.8. ✅ US-0025 released in v0.2.9. ✅ US-0026 released in v0.2.9. ✅ US-0027 released in v0.2.9. ✅ US-0028 released in v0.2.10. ✅ US-0029 released in v0.2.10. ✅ US-0030 released in v0.2.10. ✅ US-0031 released in v0.2.10. ✅ US-0032 released in v0.2.11. ✅ US-0033 released in v0.2.11. ✅ US-0034 released in v0.2.12. ✅ US-0035 and US-0036 released in v0.2.13. ✅ US-0037, US-0038, US-0039, US-0040, US-0041 and US-0042 released in v0.2.14. ✅ US-0043 done, for v0.2.15. ✅ US-0044 done, for v0.2.15. ✅ US-0045 done, for v0.2.15. ✅ US-0046 done, for v0.2.15. Each story names its release.
 
 ---
 
@@ -696,18 +696,18 @@
 
 ---
 
-**US-0043: A cleaning pass: no ESLint warnings, simpler code** 📋 Planned, for v0.2.15
+**US-0043: A cleaning pass: no ESLint warnings, simpler code** ✅ Done, for v0.2.15
 - As a **developer working on the app**, in order to **see real problems in the lint output instead of 30 familiar warnings**, I would like **a cleaning pass that clears the ESLint warnings and simplifies the code they point at, using the `/simplify` skill**.
 - **Epic:** EPIC-00
 - **Priority:** Medium
 - **Complexity:** Medium
 - **Background:** Asked for 2026-11-22 after the v0.2.14 release. `npx eslint .` (and CI's `verify` job) reports 30 warnings and 0 errors, nearly all `react-hooks/exhaustive-deps` on `useEffect`, `useCallback` and `useMemo`: missing dependencies (`load`, `t`, `bridge`, `terminal`, `project.projectId`, `onMeta`, `onActiveRecord`, `checkNow`, `now`, …) and complex expressions in dependency arrays. They sit in `App.jsx`, `CostRulesSection.jsx`, `FeaturesView.jsx`, `ModelProfilesSection.jsx`, `ProfileSwitchDialog.jsx`, `ProjectSettingsView.jsx`, `ProjectView.jsx`, `RefreshPanel.jsx`, `TerminalContext.jsx`, `TokenView.jsx`, `UpdateNotice.jsx`, `useFeatures.js` and `tests/renderer/EditorPanel.test.jsx`. Some hide real stale-closure bugs; others are effects that should run once and need a clearer shape.
 - **Acceptance Criteria:**
-  - [ ] The `/simplify` skill is run over the code the warnings point at (and the files it touches), and its fixes are applied where they keep behaviour the same.
-  - [ ] Each warning is fixed for its cause: a stable callback (`useCallback`, a ref), a dependency added where the effect must rerun, an effect split or moved into an event handler, or a value extracted from a complex dependency expression. A rule is never switched off to silence a warning, and an `eslint-disable` line is used only with a comment that says why.
-  - [ ] `npx eslint .` reports 0 errors and 0 warnings, and CI keeps it that way (the lint step fails on warnings, `--max-warnings 0`).
-  - [ ] No behaviour changes: a test fails first wherever a warning hid a real bug (a stale value, a missed rerun), and the full suite, coverage (80%), the built-app end-to-end tests and Prettier stay green.
-- **Notes:** A code chore, so it runs on the `quick-fix` plan. Built last in v0.3.0, after the Spec Kit stories, because it touches the same files (`App.jsx`, `ProjectView.jsx`, `ProjectSettingsView.jsx`) and would otherwise clash with their branches.
+  - [x] The `/simplify` skill is run over the code the warnings point at (and the files it touches), and its fixes are applied where they keep behaviour the same.
+  - [x] Each warning is fixed for its cause: a stable callback (`useCallback`, a ref), a dependency added where the effect must rerun, an effect split or moved into an event handler, or a value extracted from a complex dependency expression. A rule is never switched off to silence a warning, and an `eslint-disable` line is used only with a comment that says why.
+  - [x] `npx eslint .` reports 0 errors and 0 warnings, and CI keeps it that way (the lint step fails on warnings, `--max-warnings 0`).
+  - [x] No behaviour changes: a test fails first wherever a warning hid a real bug (a stale value, a missed rerun), and the full suite, coverage (80%), the built-app end-to-end tests and Prettier stay green.
+- **Notes:** A code chore, so it runs on the `quick-fix` plan. Built last in v0.2.15, after US-0508, because it touches the same files (`App.jsx`, `ProjectView.jsx`, `ProjectSettingsView.jsx`) and would otherwise clash with their branches.
 - **Dependencies:** none
 
 ---

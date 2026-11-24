@@ -2,7 +2,7 @@
 // story's release, which main writes as a "for vX.Y.Z" marker (US-0603 FR2). With the Releases delivery setting
 // the view also lists releases (US-0603 FR3), where releases are made, filled and deleted by hand (US-0605); with
 // Continuous deployment all of it is hidden (FR4.1, US-0605 FR5).
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useEffectEvent, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { FileContent } from './ArtifactReader.jsx';
 import { useEditor } from './editor/EditorContext.jsx';
@@ -731,14 +731,15 @@ export default function FeaturesView({
     }
   }
 
-  // A story link from an intent opens that story (FR2.6).
-  useEffect(() => {
+  // A story link from an intent opens that story (FR2.6): on a new link, or once the docs it points into load.
+  const openFocusStory = useEffectEvent(() => {
     const epic = focusStory && epics.find((e) => e.parsed?.stories.some((s) => s.id === focusStory.id));
     if (!epic) return;
     setTab('epics');
     setEpicId(epic.id);
     setStoryId(focusStory.id);
-  }, [focusStory, features]);
+  });
+  useEffect(() => openFocusStory(), [focusStory, features]);
 
   /** A story in the Releases view opens under its epic, as in the epic view (US-0603 FR3.3). */
   function openStory(epic, story) {
