@@ -218,6 +218,34 @@ describe('ProjectView: one view at a time', () => {
     expect(screen.queryByTestId('refresh-panel')).toBeNull();
     expect(screen.queryByTestId('add-harness-dialog')).toBeNull();
   });
+
+  // US-1405: the setup view offers AI-DLC (as before) or Spec Kit; U4 later turns this into the first-open screen.
+  it('a folder without a framework offers AI-DLC or Spec Kit, and Spec Kit opens its setup', async () => {
+    window.bridge.speckitSetupPreview = vi.fn(async () => ({
+      specifyOnPath: false,
+      version: null,
+      installHint: 'uv tool install specify-cli',
+      harnesses: [],
+      harness: null,
+      command: null,
+      adds: [],
+      notEmpty: false
+    }));
+    renderView('intents', { project: { ...project, detection: none } });
+    expect(await screen.findByTestId('setup-choice-aidlc')).toBeTruthy();
+    expect(screen.getByTestId('setup-choice-aidlc').getAttribute('aria-pressed')).toBe('true');
+    expect(screen.getByTestId('project-not-aidlc')).toBeTruthy();
+    fireEvent.click(screen.getByTestId('setup-choice-speckit'));
+    expect(await screen.findByTestId('setup-speckit-root')).toBeTruthy();
+    expect(screen.queryByTestId('project-not-aidlc')).toBeNull();
+    expect(window.bridge.speckitSetupPreview).toHaveBeenCalledWith('p1', null);
+  });
+
+  it('a project with a framework shows no setup choice', async () => {
+    renderView('intents');
+    await screen.findByTestId('intent-list');
+    expect(screen.queryByTestId('setup-choice-speckit')).toBeNull();
+  });
 });
 
 describe('ProjectView: a Spec Kit project (US-1401)', () => {

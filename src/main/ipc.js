@@ -68,6 +68,7 @@ import { park, readParkStatus, unpark, withParkStatus } from './intentPark.js';
 import { NAMES_PATH, setIntentName } from './intentNames.js';
 import { DELIVERY_DEFAULT } from './parsers/releases.js';
 import { getSetupInfo, runSetup } from './setup.js';
+import { getSpeckitSetupInfo, runSpeckitSetup } from './speckitSetup.js';
 import { detectHarnesses } from './harness.js';
 import { TOOL_IDS, getTools, setToolPaths, validateTool } from './tools.js';
 import { checkProgram, errorText as checkError, programCommand, projectCommand, projectPlan } from './aidlcUpdate.js';
@@ -1287,6 +1288,19 @@ const handlers = {
     const p = project(projectId);
     const result = await runSetup(p.root, choices, p.setupInfo);
     if (result.ok) p.harnesses = detectHarnesses(p.root); // the new harness shows as installed at once (FR4.1)
+    return result;
+  },
+  // Spec Kit setup (US-1405 FR3, C3): speckit:setup only runs after a preview for the same harness, kept per
+  // project; after success the setup watcher sees `.specify/` and detects the project again (BR3.8).
+  'speckit:setupPreview': async (_event, projectId, harness) => {
+    const p = project(projectId);
+    p.speckitSetupInfo = await getSpeckitSetupInfo(p.root, { harness: harness ?? null });
+    return p.speckitSetupInfo;
+  },
+  'speckit:setup': async (_event, projectId, harness) => {
+    const p = project(projectId);
+    const result = await runSpeckitSetup(p.root, { harness }, p.speckitSetupInfo);
+    if (result.ok) p.harnesses = detectHarnesses(p.root);
     return result;
   },
   'settings:get': async () => {
