@@ -10,7 +10,7 @@
 
 **Stories:** US-1401–US-1410
 
-**Status (2026-11-20):** ✅ US-1401, US-1408 done, for v0.3.0 · 📋 US-1402–US-1407, US-1409–US-1410 planned, for v0.3.0.
+**Status (2026-11-24):** ✅ US-1401, US-1402, US-1408 done, for v0.3.0 · 📋 US-1403–US-1407, US-1409–US-1410 planned, for v0.3.0.
 
 ---
 
@@ -32,18 +32,18 @@
 - **Notes:** One value, `framework: 'aidlc' | 'speckit'`, decides the view set. No general plugin system.
 - **Dependencies:** none
 
-**US-1402: Spec Kit features: the list and where each one stands** 📋 Planned, for v0.3.0
+**US-1402: Spec Kit features: the list and where each one stands** ✅ Done, for v0.3.0
 - As a **developer**, in order to **see my Spec Kit work at a glance**, I would like **a list of the project's features and, for each one, its progress through the Spec Kit flow and its tasks**.
 - **Epic:** EPIC-14
 - **Priority:** High
 - **Complexity:** Medium
 - **Background:** Asked for 2026-11-19. Fills the place that Intents and the pipeline have in an AI-DLC project.
 - **Acceptance Criteria:**
-  - [ ] **Given** folders under `specs/`, **then** each shows as a feature with its number (or timestamp) and name, and the one named in `.specify/feature.json` is marked active.
-  - [ ] **Given** a feature, **then** its flow shows spec, clarify, plan, tasks, implement and converge as done or not, worked out from the files that exist and from `tasks.md`. The view says it is worked out from files.
-  - [ ] **Given** a `tasks.md`, **then** its tasks show by phase, with ID, the `[P]` parallel mark, the `[USn]` story and ticked or not, and a count of done and total. Convergence phases show as rounds.
-  - [ ] Every file of the feature (`spec.md`, `plan.md`, `research.md`, `data-model.md`, `contracts/`, `checklists/`) opens in the artifact reader.
-  - [ ] The view updates live when the files change. Nothing is written in `.specify/` or `specs/`. Every text goes through `t()` in Swedish and English, in the LCARS look.
+  - [x] **Given** folders under `specs/`, **then** each shows as a feature with its number (or timestamp) and name, and the one named in `.specify/feature.json` is marked active.
+  - [x] **Given** a feature, **then** its flow shows spec, clarify, plan, tasks, implement and converge as done or not, worked out from the files that exist and from `tasks.md`. The view says it is worked out from files.
+  - [x] **Given** a `tasks.md`, **then** its tasks show by phase, with ID, the `[P]` parallel mark, the `[USn]` story and ticked or not, and a count of done and total. Convergence phases show as rounds.
+  - [x] Every file of the feature (`spec.md`, `plan.md`, `research.md`, `data-model.md`, `contracts/`, `checklists/`) opens in the artifact reader.
+  - [x] The view updates live when the files change. Nothing is written in `.specify/` or `specs/`. Every text goes through `t()` in Swedish and English, in the LCARS look.
 - **Notes:** Before this story starts, a test project made with `specify init` checks how `clarify`, `checklist` and `analyze` record their output.
 - **Dependencies:** US-1401
 

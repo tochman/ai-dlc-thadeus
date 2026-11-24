@@ -38,24 +38,32 @@ export function isEngineOwned(rel) {
   return ENGINE_DIRS.some((d) => p === d || p.startsWith(`${d}/`)) || ENGINE_FILES.some((re) => re.test(p));
 }
 
-/** The real path, refused when it or its real target is engine-owned. */
-async function resolveEditable(root, rel) {
+/** US-1402 NFR3.2: in a Spec Kit project, everything under specs/ and .specify/ is Spec Kit's, except the constitution. */
+const isSpeckitOwned = (rel) => {
+  const p = posix(path.posix.normalize(posix(String(rel)))).replace(/^\.\//, '');
+  return (p.startsWith('specs/') || p.startsWith('.specify/')) && p !== '.specify/memory/constitution.md';
+};
+
+/** The real path, refused when it or its real target is engine-owned, or Spec Kit's in a Spec Kit project (US-1402 NFR3.2). */
+async function resolveEditable(root, rel, { framework } = {}) {
   const abs = await resolveInRoot(root, rel);
   const real = posix(path.relative(root, abs));
-  return { abs, engine: isEngineOwned(rel) || isEngineOwned(real) };
+  const speckit = framework === 'speckit' && (isSpeckitOwned(rel) || isSpeckitOwned(real));
+  return { abs, engine: isEngineOwned(rel) || isEngineOwned(real), speckit };
 }
 
 /**
  * The file for the editor, with its mtime and hash, and `readOnly`: null, or the reason it can't be saved
- * ('engine', 'binary', 'tooLarge'). `content` is null for a binary file and one over 10 MB.
+ * ('engine', 'speckit', 'binary', 'tooLarge'). `content` is null for a binary file and one over 10 MB.
+ * `framework` is the project's (US-1402 NFR3.2: 'speckit' makes Spec Kit's files read-only).
  */
-export async function readForEdit(root, rel) {
-  const { abs, engine } = await resolveEditable(root, rel);
+export async function readForEdit(root, rel, { framework } = {}) {
+  const { abs, engine, speckit } = await resolveEditable(root, rel, { framework });
   const stat = await fs.stat(abs);
   if (!stat.isFile()) throw new Error(t('errors.notAFile', { rel: String(rel) }));
   const buf = stat.size > MAX_READ_BYTES ? null : await fs.readFile(abs);
   const binary = buf ? buf.subarray(0, BINARY_PROBE_BYTES).includes(0) : false;
-  const readOnly = engine ? 'engine' : binary ? 'binary' : stat.size > MAX_EDIT_BYTES ? 'tooLarge' : null;
+  const readOnly = engine ? 'engine' : speckit ? 'speckit' : binary ? 'binary' : stat.size > MAX_EDIT_BYTES ? 'tooLarge' : null;
   return {
     rel,
     content: buf && !binary ? buf.toString('utf8') : null,
@@ -69,13 +77,15 @@ export async function readForEdit(root, rel) {
 /**
  * Writes `content` to `rel` when the file on disk still has `expectHash` (the hash it was opened or last saved with).
  * A file changed meanwhile comes back as `{conflict: true, disk}` with its text, mtime and hash. `expectMtime` is
- * compared first: an equal mtime and size skip the hashing. Throws for an engine-owned or out-of-root path.
+ * compared first: an equal mtime and size skip the hashing. Throws for an engine-owned or out-of-root path, and for
+ * Spec Kit's files when `framework` is 'speckit' (US-1402 NFR3.2).
  * @returns {Promise<{ok: true, mtimeMs: number, hash: string} | {conflict: true, disk: {content: string, mtimeMs: number, hash: string}}>}
  */
-export async function writeFileSafe(root, rel, content, { expectMtime, expectHash } = {}) {
+export async function writeFileSafe(root, rel, content, { expectMtime, expectHash, framework } = {}) {
   if (typeof content !== 'string') throw new Error(t('errors.invalidValue', { what: 'content', value: typeof content }));
-  const { abs, engine } = await resolveEditable(root, rel);
+  const { abs, engine, speckit } = await resolveEditable(root, rel, { framework });
   if (engine) throw new Error(t('errors.engineOwned', { rel: String(rel) }));
+  if (speckit) throw new Error(t('errors.speckitReadOnly', { rel: String(rel) }));
   const stat = await fs.stat(abs);
   if (!stat.isFile()) throw new Error(t('errors.notAFile', { rel: String(rel) }));
   const next = Buffer.from(content, 'utf8');

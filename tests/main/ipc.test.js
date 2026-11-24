@@ -118,6 +118,7 @@ const m = vi.hoisted(() => {
       readForEdit: vi.fn(async () => ({ content: 'c' })),
       writeFileSafe: vi.fn(async () => ({ ok: true })),
       featureWatchPaths: vi.fn(() => ['docs/FEATURES.md']),
+      loadSpeckitFeatures: vi.fn(async () => ({ version: { found: '1.4.3', supported: true }, features: [], active: null, errors: [] })),
       loadFeatures: vi.fn(async () => ({ epics: [] })),
       loadStoryLinks: vi.fn(async () => ({})),
       killAllSessions: vi.fn(),
@@ -291,6 +292,7 @@ vi.mock('../../src/main/features.js', () => ({
   loadStoryLinks: m.svc.loadStoryLinks
 }));
 vi.mock('../../src/main/releases.js', () => ({ setStoryRelease: m.svc.setStoryRelease, readRuleStatus: m.svc.readRuleStatus }));
+vi.mock('../../src/main/speckitFeatures.js', async (importOriginal) => ({ ...(await importOriginal()), loadSpeckitFeatures: m.svc.loadSpeckitFeatures }));
 // US-0606/US-0607: the planning sync runs real git; here only its calls are checked, with the real scheduler.
 vi.mock('../../src/main/planningSync.js', async (importOriginal) => ({
   createScheduler: (await importOriginal()).createScheduler,
@@ -771,13 +773,50 @@ describe('updater', () => {
   });
 });
 
+// US-1402 FR6, BR6.7 (contract C5): the Spec Kit features and their watcher.
+describe('Spec Kit features', () => {
+  const KIT = { framework: 'speckit', isAidlc: false, views: ['specs'], activeSpace: null, spaces: [] };
+  const speckitWatch = (root) => svc.watchFiles.mock.calls.find(([o]) => o.root === root && o.paths.includes('specs/**'))?.[0];
+
+  it("speckit:features returns the reader's result for the project's root, and file:read passes the framework", async () => {
+    const { projectId } = await openProject('/work/kit-read', KIT);
+    const result = { version: { found: '1.5.0', supported: false }, features: [{ dir: '001-a' }], active: '001-a', errors: [] };
+    svc.loadSpeckitFeatures.mockResolvedValueOnce(result);
+    expect(await call('speckit:features', {}, projectId)).toBe(result);
+    expect(svc.loadSpeckitFeatures).toHaveBeenLastCalledWith('/work/kit-read');
+    await call('file:read', {}, projectId, 'specs/001-a/spec.md');
+    expect(svc.readForEdit).toHaveBeenLastCalledWith('/work/kit-read', 'specs/001-a/spec.md', { framework: 'speckit' });
+  });
+
+  it('watches specs/** and the two .specify files of a Spec Kit project, pushes speckit:changed, and closes it with the project', async () => {
+    const { projectId, sender } = await openProject('/work/kit-watch', KIT);
+    const opts = speckitWatch('/work/kit-watch');
+    expect(opts.paths).toEqual(['specs/**', '.specify/feature.json', '.specify/init-options.json']);
+    opts.onChange(['specs/001-a/tasks.md']);
+    expect(sender.send).toHaveBeenCalledWith('speckit:changed', { projectId, paths: ['specs/001-a/tasks.md'] });
+    const w = svc.watchFiles.mock.results[svc.watchFiles.mock.calls.findIndex(([o]) => o === opts)].value;
+    await call('project:close', {}, projectId);
+    expect(w.close).toHaveBeenCalled();
+  });
+
+  it('gives an AI-DLC project no Spec Kit watcher, and starts one when a plain folder turns out to be Spec Kit', async () => {
+    await openProject('/work/kit-none');
+    expect(speckitWatch('/work/kit-none')).toBeUndefined();
+    await openProject('/work/kit-later', { framework: null, isAidlc: false });
+    svc.detectProject.mockResolvedValueOnce(KIT);
+    await svc.watchForAidlc.mock.calls.at(-1)[0].onFound();
+    expect(speckitWatch('/work/kit-later')).toBeDefined();
+  });
+});
+
 describe('files, shell and git', () => {
   it('reads, edits and lists files in the project root', async () => {
     const { projectId } = await openProject('/work/files');
     expect(await call('project:file', {}, projectId, 'a.md')).toBe('text');
     expect(await call('file:read', {}, projectId, 'a.md')).toEqual({ content: 'c' });
+    expect(svc.readForEdit).toHaveBeenLastCalledWith('/work/files', 'a.md', { framework: 'aidlc' }); // US-1402 NFR3.2
     await call('file:write', {}, projectId, 'a.md', 'new', { mtimeMs: 1, hash: 'h' });
-    expect(svc.writeFileSafe).toHaveBeenCalledWith('/work/files', 'a.md', 'new', { expectMtime: 1, expectHash: 'h' });
+    expect(svc.writeFileSafe).toHaveBeenCalledWith('/work/files', 'a.md', 'new', { expectMtime: 1, expectHash: 'h', framework: 'aidlc' });
     expect(await call('project:listTree', {}, projectId)).toEqual(['a']);
   });
 

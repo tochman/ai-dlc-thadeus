@@ -1,9 +1,11 @@
-// US-1401 FR1.4: a Spec Kit project's first view, in the LCARS frame (BR1.6, BR1.12). It is the empty shell U6 fills
-// with the features under specs/ and the Spec Kit version note.
+// US-1401 FR1.4: a Spec Kit project's first view, in the LCARS frame (BR1.6, BR1.12). US-1402 FR6 fills it with
+// the features under specs/ and the Spec Kit version note.
 import { useTranslation } from 'react-i18next';
 import { Frame } from './Lcars.jsx';
+import SpeckitFeatures from './SpeckitFeatures.jsx';
 
-export default function SpeckitShell() {
+/** @param {{projectId: string}} props */
+export default function SpeckitShell({ projectId }) {
   const { t } = useTranslation();
   return (
     <section className="content" aria-labelledby="speckit-shell-title" data-testid="speckit-shell-root">
@@ -14,7 +16,7 @@ export default function SpeckitShell() {
           </h2>
           <span className="lcars-heading-line" aria-hidden="true" />
         </div>
-        <p className="muted">{t('speckit.empty')}</p>
+        <SpeckitFeatures projectId={projectId} />
       </Frame>
     </section>
   );

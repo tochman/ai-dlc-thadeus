@@ -37,7 +37,41 @@
   },
   "speckit": {
     "title": "Spec Kit",
-    "empty": "No features read yet."
+    "empty": "No features read yet.",
+    "reason": {
+      "unreadable": "Could not be read ({code}).",
+      "invalid": "Not valid JSON, or the expected field is missing.",
+      "missing": "Names a folder that is not a feature under specs/.",
+      "link": "A symbolic link, so it is not followed.",
+      "outsideRoot": "Points outside the project.",
+      "tooLarge": "Larger than 1 MB, so it is not read.",
+      "notUtf8": "Not valid UTF-8 text."
+    },
+    "features": {
+      "title": "Features",
+      "active": "Active",
+      "empty": "No features yet. Start one with /speckit-specify in the agent terminal.",
+      "specify": "Start a feature (/speckit-specify)",
+      "versionWarning": "This project uses Spec Kit {version}. THADEUS is made for v1.4.x, so some things may show wrongly.",
+      "versionUnknown": "The Spec Kit version could not be found. THADEUS is made for v1.4.x, so some things may show wrongly.",
+      "errors": "Could not be read",
+      "flowNote": "Worked out from the files that exist and from tasks.md, not recorded by Spec Kit.",
+      "step": {
+        "spec": "Spec",
+        "clarify": "Clarify",
+        "plan": "Plan",
+        "tasks": "Tasks",
+        "implement": "Implement",
+        "converge": "Converge"
+      },
+      "done": "done",
+      "notDone": "not done",
+      "count": "{done} of {total} tasks done",
+      "skipped": "{count, plural, one {# line in tasks.md is not a task and was skipped} other {# lines in tasks.md are not tasks and were skipped}}",
+      "round": "Round {round}",
+      "noPhase": "Before the first phase",
+      "files": "Files"
+    }
   },
   "app": {
     "reopenFailed": "Could not reopen: {list}",
@@ -1509,7 +1543,8 @@
     "planInUse": "{name} is used by an intent in progress ({intents}) and can't be deleted.",
     "planNotFound": "No plan named {name} was found.",
     "notAFile": "{rel} is not a file.",
-    "engineOwned": "{rel} belongs to AI-DLC's engine and is not saved from the app."
+    "engineOwned": "{rel} belongs to AI-DLC's engine and is not saved from the app.",
+    "speckitReadOnly": "{rel} belongs to Spec Kit and is not saved from the app."
   },
   "agentDialog": {
     "title": {

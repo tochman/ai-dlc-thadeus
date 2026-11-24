@@ -64,7 +64,10 @@ beforeEach(() => {
     setProjectSettings: vi.fn(async () => ({})),
     // US-1201: the collision warning in the panel and the machines section.
     getCollisions: vi.fn(async () => ({ isRepo: true, branch: 'main', base: 'origin/main', behind: 0, error: null, collisions: [] })),
-    getMachines: vi.fn(async () => ({ intents: [], branches: [], flags: [] }))
+    getMachines: vi.fn(async () => ({ intents: [], branches: [], flags: [] })),
+    // US-1402: the Spec Kit shell reads the features.
+    speckitFeatures: vi.fn(async () => ({ version: { found: '1.4.3', supported: true }, features: [], active: null, errors: [] })),
+    onSpeckitChanged: vi.fn(() => () => {})
   };
 });
 afterEach(() => {

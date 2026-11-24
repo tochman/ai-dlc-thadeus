@@ -5,6 +5,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { openRoot } from '../../src/main/projectAccess.js';
 import { isEngineOwned, listTree, readForEdit, writeAtomic, writeFileSafe } from '../../src/main/fileWrite.js';
+import { t } from '../../src/shared/i18n.js';
 
 let tmp;
 let outside;
@@ -99,6 +100,54 @@ describe('safe writes (EPIC-10 US-1001, NFR6)', () => {
 });
 
 // US-0506 u4 LC32, RD33, SD36: the shared atomic write.
+// US-1402 NFR3.2, security-design §1: in a Spec Kit project the app never writes Spec Kit's files, except the constitution.
+describe('Spec Kit files in the editor (US-1402 NFR3.2)', () => {
+  const SPECKIT = { framework: 'speckit' };
+  beforeEach(async () => {
+    await write('specs/001-a/spec.md', '# Spec\n');
+    await write('.specify/feature.json', '{}');
+    await write('.specify/memory/constitution.md', '# Constitution\n');
+  });
+
+  it('opens files under specs/ and .specify/ read-only', async () => {
+    expect(await readForEdit(root, 'specs/001-a/spec.md', SPECKIT)).toMatchObject({ readOnly: 'speckit', content: '# Spec\n' });
+    expect(await readForEdit(root, '.specify/feature.json', SPECKIT)).toMatchObject({ readOnly: 'speckit' });
+    expect(await readForEdit(root, 'docs/notes.md', SPECKIT)).toMatchObject({ readOnly: null });
+  });
+
+  it('refuses to save them, the same file reached through a link too', async () => {
+    const opened = await readForEdit(root, 'specs/001-a/spec.md', SPECKIT);
+    const at = { expectMtime: opened.mtimeMs, expectHash: opened.hash };
+    await expect(writeFileSafe(root, 'specs/001-a/spec.md', 'x', { ...at, ...SPECKIT })).rejects.toThrow(
+      t('errors.speckitReadOnly', { rel: 'specs/001-a/spec.md' })
+    );
+    await fs.symlink(path.join(tmp, 'specs/001-a/spec.md'), path.join(tmp, 'docs/spec-link.md'));
+    await expect(writeFileSafe(root, 'docs/spec-link.md', 'x', { ...at, ...SPECKIT })).rejects.toThrow(
+      t('errors.speckitReadOnly', { rel: 'docs/spec-link.md' })
+    );
+    expect(await fs.readFile(path.join(tmp, 'specs/001-a/spec.md'), 'utf8')).toBe('# Spec\n');
+  });
+
+  it('keeps .specify/memory/constitution.md editable', async () => {
+    const opened = await readForEdit(root, '.specify/memory/constitution.md', SPECKIT);
+    expect(opened.readOnly).toBeNull();
+    expect(
+      await writeFileSafe(root, '.specify/memory/constitution.md', '# New\n', { expectMtime: opened.mtimeMs, expectHash: opened.hash, ...SPECKIT })
+    ).toMatchObject({ ok: true });
+  });
+
+  it('leaves a specs/ file editable in an AI-DLC project or with no framework', async () => {
+    for (const opts of [{ framework: 'aidlc' }, {}]) {
+      const opened = await readForEdit(root, 'specs/001-a/spec.md', opts);
+      expect(opened.readOnly).toBeNull();
+      expect(await writeFileSafe(root, 'specs/001-a/spec.md', '# Spec\n', { expectMtime: opened.mtimeMs, expectHash: opened.hash, ...opts })).toMatchObject({
+        ok: true
+      });
+    }
+    expect((await readForEdit(root, 'specs/001-a/spec.md')).readOnly).toBeNull();
+  });
+});
+
 describe('writeAtomic (US-0506 u4 RD33)', () => {
   const target = () => path.join(tmp, 'docs/notes.md');
   const tmpLeft = async () => (await fs.readdir(path.join(tmp, 'docs'))).filter((f) => f.endsWith('.tmp'));
