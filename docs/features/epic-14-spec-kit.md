@@ -10,7 +10,7 @@
 
 **Stories:** US-1401–US-1410
 
-**Status (2026-11-24):** ✅ US-1401, US-1402, US-1403, US-1404, US-1405, US-1406, US-1408, US-1409, US-1410 done, for v0.3.0 · 🚧 US-1407 in progress, for v0.3.0.
+**Status (2026-11-24):** ✅ US-1401, US-1402, US-1403, US-1404, US-1405, US-1406, US-1407, US-1408, US-1409, US-1410 done, for v0.3.0.
 
 ---
 
@@ -99,17 +99,17 @@
   - [x] The choice is kept in the repository (US-1408), and the project is not asked again on any clone. Nothing in the project is written before I confirm. Every text goes through `t()` in Swedish and English, in the LCARS look.
 - **Dependencies:** US-1401, US-1405
 
-**US-1407: Switch a project from one framework to the other** 🚧 In progress, for v0.3.0
+**US-1407: Switch a project from one framework to the other** ✅ Done, for v0.3.0
 - As a **developer**, in order to **move a project from AI-DLC to Spec Kit, or back**, I would like **to switch its framework from the project settings**.
 - **Epic:** EPIC-14
 - **Priority:** Medium
 - **Complexity:** Medium
 - **Background:** Asked for 2026-11-19. A project still follows one framework at a time (decided 2026-11-19); switching changes which one.
 - **Acceptance Criteria:**
-  - [ ] **Given** a project that follows one framework, **when** I choose to switch in the project settings, **then** a preview shows what happens: the other framework's setup runs if it is not there yet (US-0503 or US-1405), the app's views change, and the old framework's files stay in the repository untouched.
-  - [ ] **Given** work in progress in the old framework (an unfinished intent, or a feature with open tasks), **then** the preview names it and says it is not carried over.
-  - [ ] After the switch, the app follows only the new framework, and the old one's views are gone. Switching back works the same way.
-  - [ ] Nothing is deleted. Every text goes through `t()` in Swedish and English, in the LCARS look.
+  - [x] **Given** a project that follows one framework, **when** I choose to switch in the project settings, **then** a preview shows what happens: the other framework's setup runs if it is not there yet (US-0503 or US-1405), the app's views change, and the old framework's files stay in the repository untouched.
+  - [x] **Given** work in progress in the old framework (an unfinished intent, or a feature with open tasks), **then** the preview names it and says it is not carried over.
+  - [x] After the switch, the app follows only the new framework, and the old one's views are gone. Switching back works the same way.
+  - [x] Nothing is deleted. Every text goes through `t()` in Swedish and English, in the LCARS look.
 - **Notes:** Moving work from one framework's format into the other's is out of scope.
 - **Dependencies:** US-1401, US-1405, US-1406
 
