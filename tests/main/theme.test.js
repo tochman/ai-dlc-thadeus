@@ -239,6 +239,20 @@ describe('the US-0417 LCARS language', () => {
     expect(rule('.lcars-meter')).toMatch(/cursor: default;/);
     expect(css).not.toMatch(/\.lcars-(meter|segmeter)[^{]*:hover/);
   });
+
+  // US-1402 FR6: the Spec Kit views follow the same language.
+  it('draws the Spec Kit views in the LCARS language: scale gaps, no cards, square state blocks, selection by brightness', () => {
+    const speckit = [...css.matchAll(/(?:^|\n)(\.speckit[^{]*)\{([^}]*)\}/g)];
+    expect(speckit.length).toBeGreaterThan(0);
+    for (const [, , body] of speckit) {
+      expect(body).not.toMatch(/border-radius/); // square blocks, no pills for readouts
+      expect(body).not.toMatch(/gap: \d/); // gaps come from --gap, --gap-m, --gap-l
+    }
+    expect(rule('.speckit-feature')).toBe(''); // no boxed card
+    expect(rule('.speckit-list .link.is-selected, .speckit-files .link.is-selected')).toMatch(/background: var\(--slate-5\);[^}]*color: var\(--on-light\);/);
+    expect(rule('.speckit-flow li')).toMatch(/border-left: var\(--gap\) solid var\(--slate-3\);/);
+    expect(rule('.speckit-flow li.is-done')).toMatch(/border-left-color: var\(--slate-5\);/);
+  });
 });
 
 // US-0417: the intent tabs stay one row of tiles, so the tab content never draws over a wrapped second row.
