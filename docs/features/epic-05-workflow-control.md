@@ -8,7 +8,7 @@
 
 **Stories:** US-0501, US-0502, US-0503, US-0504, US-0505, US-0506, US-0507, US-0508, US-0509, US-0510
 
-**Status (2026-11-23):** ✅ US-0501–US-0503, US-0505 and US-0506 released (v0.2.0–v0.2.5). ✅ US-0504 released in v0.2.7. ✅ US-0507 released in v0.2.8. ✅ US-0508 done, for v0.2.15. 📋 US-0509 planned, for v0.3.1. ✅ US-0510 released in v0.2.13. Each story names its release.
+**Status (2026-11-23):** ✅ US-0501–US-0503, US-0505 and US-0506 released (v0.2.0–v0.2.5). ✅ US-0504 released in v0.2.7. ✅ US-0507 released in v0.2.8. ✅ US-0508 released in v0.2.15. 📋 US-0509 planned, for v0.3.1. ✅ US-0510 released in v0.2.13. Each story names its release.
 
 ---
 
@@ -156,7 +156,7 @@
 - **Notes:** Added 2026-11-14 at the person's request. Decided 2026-11-16: it goes into the token detail view, not a view of its own.
 - **Dependencies:** US-0104, US-0506
 
-**US-0508: Rename an intent** ✅ Done, for v0.2.15
+**US-0508: Rename an intent** ✅ Released in v0.2.15
 - As a **developer with many intents**, in order to **find the right one by a name that says what it is**, I would like to **rename an intent from the app**.
 - **Epic:** EPIC-05
 - **Priority:** Medium

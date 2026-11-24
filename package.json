@@ -1,7 +1,7 @@
 {
   "name": "thadeus",
   "productName": "THADEUS",
-  "version": "0.2.14",
+  "version": "0.2.15",
   "private": true,
   "description": "T.H.A.D.E.U.S. (Transformative Human-AI Development Environment for Ubiquitous Systems): bridge console for AI-DLC projects with read-only visualisation and an embedded Claude terminal",
   "author": {
