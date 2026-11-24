@@ -598,7 +598,8 @@ button.lcars-nb:hover:not(:disabled), a.lcars-nb:hover { filter: brightness(1.15
 /* Curved diagonal frame for the data sub-views. One filled band, wide where it leaves the arm and thin where it joins
    the 42 px top bar, circular bends; the hairlines follow at 12 px. Geometry fixed in px (the SVG is 360 x 280). */
 .lcars-df { min-width: 0; container-type: inline-size; }
-.lcars-df-in { position: relative; min-height: 560px; padding: 176px 22px 70px 206px; }
+/* US-0044 AC4: flow-root holds the floated arm, so the frame grows to keep the arm above its lower curve. */
+.lcars-df-in { --df-top: 176px; position: relative; display: flow-root; min-height: 560px; padding: var(--df-top) 22px 70px 206px; }
 .lcars-df-corner { position: absolute; left: 0; top: 0; overflow: visible; }
 .lcars-df-band { fill: var(--slate-4); }
 .lcars-df-hair { fill: none; stroke: var(--slate-3); stroke-width: 1; }
@@ -606,7 +607,9 @@ button.lcars-nb:hover:not(:disabled), a.lcars-nb:hover { filter: brightness(1.15
 .lcars-df-corner-value { font: 600 30px var(--font-head); fill: var(--on-light); }
 .lcars-df-x { position: absolute; }
 .lcars-df-top { left: 366px; right: 0; top: 40px; height: var(--bar-large); display: flex; gap: var(--gap); align-items: stretch; min-width: 0; }
-.lcars-df-top .lcars-title { flex-shrink: 0; }
+/* US-0044 AC1: a long title shortens with an ellipsis (the whole name in its tooltip) instead of widening the view. */
+.lcars-df-top .lcars-seg-lab { flex-shrink: 0; }
+.lcars-df-top .lcars-title { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .lcars-df-tag { flex: none; display: flex; align-items: center; gap: 8px; padding: 0 8px; }
 .lcars-tagbox { height: var(--bar-large); padding: 0 12px; border: 1px solid var(--slate-5); background: var(--bg); color: var(--text-2); font-size: 18px; line-height: 40px; letter-spacing: 0.06em; text-transform: uppercase; white-space: nowrap; }
 .lcars-dotc { display: grid; grid-template-columns: repeat(3, 4px); gap: 3px; }
@@ -621,7 +624,9 @@ button.lcars-nb:hover:not(:disabled), a.lcars-nb:hover { filter: brightness(1.15
 .lcars-df-low::after { content: ''; position: absolute; left: 150px; top: 0; right: 0; bottom: 16px; background: var(--bg); border-bottom-left-radius: 22px; }
 .lcars-df-bot { left: 210px; right: 0; bottom: 16px; height: 16px; display: flex; gap: var(--gap); align-items: stretch; }
 .lcars-df-bot .lcars-seg-lab { font-size: 11px; }
-.lcars-df-arm { position: absolute; left: 24px; top: 286px; width: var(--bar-thick); display: grid; gap: var(--gap); }
+/* US-0044 AC4: floated into the left padding (24px from the edge, 286px from the top) rather than absolute; its bottom
+   margin clears the lower curve (120px high, 16px up, less the 70px padding). */
+.lcars-df-arm { float: left; margin: calc(286px - var(--df-top)) 0 70px -182px; width: var(--bar-thick); display: grid; gap: var(--gap); }
 .lcars-dblk { position: relative; display: flex; flex-direction: column; justify-content: space-between; align-items: flex-end; min-height: 52px; padding: 4px 8px 5px 14px; background: var(--slate-4); color: var(--on-light); text-align: right; cursor: default; }
 .lcars-dblk::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: var(--strip, transparent); }
 .lcars-dblk-k { align-self: flex-start; font-size: 12px; letter-spacing: 0.06em; text-transform: uppercase; }
@@ -638,7 +643,7 @@ button.lcars-nb:hover:not(:disabled), a.lcars-nb:hover { filter: brightness(1.15
   .lcars-df-in { padding: 110px 0 40px; }
   .lcars-df-corner, .lcars-df-low, .lcars-df-hl-left, .lcars-df-hl-in { display: none; }
   .lcars-df-top, .lcars-df-hl-o, .lcars-df-hl-i, .lcars-df-bot { left: 0; }
-  .lcars-df-arm { position: relative; left: auto; top: auto; width: auto; display: flex; flex-wrap: wrap; margin: 0 0 16px; }
+  .lcars-df-arm { float: none; width: auto; display: flex; flex-wrap: wrap; margin: 0 0 16px; }
   .lcars-df-arm .lcars-dblk { flex: 1 1 110px; min-height: 48px; }
   .lcars-df-arm-close { display: none; }
 }
@@ -931,6 +936,9 @@ button.lcars-nb:hover:not(:disabled), a.lcars-nb:hover { filter: brightness(1.15
 /* US-0037 FR3.1, FR3.6: Park beside Resume in one group that wraps as one piece; Park takes Resume's height, with room around its label. */
 .intent-head-actions { display: flex; align-items: flex-start; gap: var(--gap); }
 .intent-park { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }
+/* US-0508: the rename field, inline in the head beside Park and Resume. */
+.intent-rename { display: flex; flex-direction: column; gap: 4px; min-width: 240px; max-width: 360px; }
+.intent-rename-actions { display: flex; gap: var(--gap); }
 .intent-park .lcars-block { height: 56px; padding: 0 16px 8px; font-size: 15px; }
 .intent-cost { margin-left: auto; font-size: 16px; color: var(--steel-text); font-variant-numeric: tabular-nums; white-space: nowrap; }
 .intent-row-meta { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 12px; color: var(--muted); text-transform: uppercase; }
@@ -1623,6 +1631,8 @@ dialog.lcars-dlg::backdrop { background: var(--backdrop); }
 .question-popup.is-calm { border-left-color: var(--steel-deep); border-top-color: var(--steel-deep); border-bottom-color: var(--slate-2); }
 .question-popup-head { margin: 0 0 10px; padding: 6px 16px; background: var(--steel); color: var(--on-light); border-radius: 0 22px 22px 0; transition: background-color 1.2s ease-out, box-shadow 1.2s ease-out; }
 .question-popup .question-popup-head h2 { margin: 0; font-size: 24px; color: inherit; }
+/* US-0046: with several projects open, an LCARS pill above the head names the project the page comes from. */
+.agent-dialog-project { display: inline-block; margin: 0 0 6px; padding: 2px 14px; background: var(--steel-deep); color: var(--white); border-radius: 0 22px 22px 0; font-size: 14px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; overflow-wrap: anywhere; }
 /* US-0506 u2 BR5.13: a permission page (M3) has a soft coral header (US-0417), the command in a monospaced block of its own, and the
    refusing choice below a rule with a coral edge. Choice labels wrap whole: never an ellipsis (SD11). */
 .question-popup .question-popup-head.is-permission { background: var(--coral-soft); }
@@ -1956,6 +1966,12 @@ a.lcars-pill { text-decoration: none; }
 .detail-tabs .lcars-tile { flex: 1 1 0; min-width: 0; max-width: 150px; min-height: 52px; margin-left: 0; padding-top: 10px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .lcars-tile::before { left: 0; right: 0; top: 0; bottom: auto; width: auto; height: 4px; background: var(--strip, var(--slate-2)); }
 .intent-head-actions { align-items: center; }
+/* US-0044 AC3: the head starts just under the top bar, beside the elbow's diagonal (clear of it from x 306), so no empty
+   band; the tab content keeps the usual space under the tabs. */
+.intent-df .lcars-df-in { --df-top: 104px; }
+.intent-df .intent-head { margin-left: 100px; }
+.intent-df .detail-tabs { margin-bottom: 16px; }
+@container (max-width: 560px) { .intent-df .intent-head { margin-left: 0; } }
 /* Section switches (Diagram | Table, Tokens | $, Week | Month): square blocks side by side. */
 .token-detail-switch, .velocity-units { display: inline-flex; gap: var(--gap); }
 .velocity-units .lcars-nb { margin-left: 0; min-width: 72px; }

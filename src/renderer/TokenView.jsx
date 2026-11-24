@@ -4,7 +4,7 @@
 // A missing or half-written ledger keeps the last good values and says so in one sentence (NFR5). Every meter has a
 // text label and its figure, so nothing is told by colour alone; the glow and the wave stop with the animations
 // setting through theme.css's data-motion rules (NFR4). Style only after the person's reference (NFR3).
-import { useEffect, useState } from 'react';
+import { useEffect, useEffectEvent, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { formatTokens } from './format.js';
 import { HISTORY_MAX, SEGMENTS, meterLevel, pushSample, tokensOf } from './tokenFlow.js';
@@ -38,9 +38,10 @@ export default function TokenView({ cost, dirName, live, onOpen, ref }) {
 
   useEffect(() => setHistory([]), [dirName]); // another intent: a new history
   const key = now ? METERS.map((m) => now[m]).join('|') : null;
-  useEffect(() => {
+  const addSample = useEffectEvent(() => {
     if (now) setHistory((h) => pushSample(h, now, Date.now()));
-  }, [key]); // a new ledger reading, not every render
+  });
+  useEffect(() => addSample(), [key]); // a new ledger reading, not every render
 
   const shown = now ?? history.at(-1)?.tokens ?? null;
   if (!live || !shown) return null;

@@ -38,9 +38,10 @@ afterEach(() => {
 
 function Harness({ files }) {
   const editor = useEditorTabs('p1');
+  const { open } = editor; // stable for one project
   useEffect(() => {
-    files.forEach((f) => editor.open(f));
-  }, []);
+    files.forEach((f) => open(f));
+  }, [open, files]); // each test renders once, so this runs once
   return <EditorPanel projectId="p1" editor={editor} />;
 }
 const type = async (text) => fireEvent.change(await screen.findByTestId('monaco'), { target: { value: text } });
@@ -74,9 +75,10 @@ describe('EditorPanel (EPIC-10 US-1001)', () => {
   it('adds an appended section after the content, unsaved, and writes nothing until the person saves (US-1201 AC-2)', async () => {
     function AppendHarness() {
       const editor = useEditorTabs('p1');
+      const { open } = editor;
       useEffect(() => {
-        editor.open('docs/notes.md', { append: '\n## Efter merge med main\n' });
-      }, []);
+        open('docs/notes.md', { append: '\n## Efter merge med main\n' });
+      }, [open]);
       return (
         <>
           <button data-testid="append-again" onClick={() => editor.open('docs/notes.md', { append: 'again\n' })} />

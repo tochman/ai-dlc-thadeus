@@ -1,0 +1,1 @@
+"The remaining v0.2.15 stories in one intent: US-0508 (rename an intent, docs/features/epic-05-workflow-control.md) first, then US-0043 (a cleaning pass: no ESLint warnings, simpler code, docs/features/epic-00-fixes.md) after US-0508 merges. Each story on its own branch (feat/US-0508, fix/US-0043) and its own squash-merged pull request."

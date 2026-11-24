@@ -61,6 +61,7 @@ export default function UpdateNotice({ busy, checkRequest = 0 }) {
 
   // The start-up check (main limits it to once a day) and main's own pushes: an offer and download progress.
   useEffect(() => {
+    const bridge = window.bridge; // read here: the render's alias is not an effect dependency (US-0043)
     bridge
       .checkUpdate?.({ force: false })
       .then((state) => {
@@ -77,11 +78,11 @@ export default function UpdateNotice({ busy, checkRequest = 0 }) {
   // The installed version, for the arm and the "current → new" line; read once, when the dialog first opens.
   useEffect(() => {
     if (!open || current) return;
-    bridge
+    window.bridge
       .getAppInfo?.()
       .then((info) => setCurrent(info?.version ?? null))
       .catch((err) => console.warn('Appversionen kunde inte läsas:', errorText(err)));
-  }, [open]);
+  }, [open, current]);
 
   function checkNow() {
     setOpen(true);
@@ -103,7 +104,7 @@ export default function UpdateNotice({ busy, checkRequest = 0 }) {
   checkRef.current = checkNow;
 
   useEffect(() => {
-    if (checkRequest) checkNow();
+    if (checkRequest) checkRef.current();
   }, [checkRequest]);
   useEffect(() => {
     const onOpen = () => checkRef.current();

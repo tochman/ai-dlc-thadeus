@@ -1,7 +1,7 @@
 {
   "name": "thadeus",
   "productName": "THADEUS",
-  "version": "0.2.14",
+  "version": "0.2.15",
   "private": true,
   "description": "T.H.A.D.E.U.S. (Transformative Human-AI Development Environment for Ubiquitous Systems): bridge console for AI-DLC projects with read-only visualisation and an embedded Claude terminal",
   "author": {
@@ -15,7 +15,7 @@
     "build": "electron-vite build && node scripts/third-party-licenses.mjs && electron-builder --mac",
     "test": "vitest run tests/",
     "coverage": "vitest run tests/ --coverage",
-    "lint": "eslint .",
+    "lint": "eslint . --max-warnings 0",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "icon": "electron scripts/make-icon.cjs",

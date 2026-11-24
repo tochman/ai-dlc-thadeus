@@ -1,0 +1,1 @@
+"US-0045 (EPIC-00, for v0.2.15): the agent dialog clears its compact, fresh-session and no-intent pages once they no longer apply, and shows a new message when it arrives instead of the last one in the queue. Branch fix/US-0045."
