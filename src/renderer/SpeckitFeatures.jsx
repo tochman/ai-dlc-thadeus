@@ -1,20 +1,18 @@
 // US-1402 FR6 (contract C5): a Spec Kit project's features. Reads `speckit:features` on mount and on each
 // `speckit:changed` push (NFR7.4), shows the version warning (BR6.9), the list with the active mark (BR6.1, BR6.2)
 // or the empty state (BR6.8), the selected feature's detail, its file read-only (NFR3.2), and what could not be read (BR6.10).
+// US-1403 FR5.2: the quick commands above the list, also in the empty state, where specify starts the first feature (BR5.9).
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useTerminal } from './TerminalContext.jsx';
 import { FileView } from './ArtifactReader.jsx';
 import SpeckitFeatureDetail from './SpeckitFeatureDetail.jsx';
+import SpeckitQuickCommands from './SpeckitQuickCommands.jsx';
 
 const errorText = (err) => String(err?.message ?? err).replace(/^Error invoking remote method '[^']+': (Error: )?/, '');
-// ponytail: typed straight into the agent tab; C7's speckitCommand(harness, 'specify') replaces this when US-1405 (U5) lands.
-const SPECIFY = '/speckit-specify ';
 
 /** @param {{projectId: string}} props */
 export default function SpeckitFeatures({ projectId }) {
   const { t } = useTranslation();
-  const terminal = useTerminal();
   const [result, setResult] = useState(null);
   const [error, setError] = useState(null);
   const [selected, setSelected] = useState(null);
@@ -56,6 +54,7 @@ export default function SpeckitFeatures({ projectId }) {
   };
   const feature = result?.features.find((f) => f.dir === selected) ?? null;
   const version = result?.version;
+  const activeName = result?.features.find((f) => f.dir === result.active)?.name ?? null;
 
   return (
     <div className="speckit-features" data-testid="speckit-features-root">
@@ -71,17 +70,12 @@ export default function SpeckitFeatures({ projectId }) {
         </p>
       )}
 
+      {result && <SpeckitQuickCommands projectId={projectId} />}
+
       {result && result.features.length === 0 && (
-        <div className="speckit-empty">
-          <p className="muted" data-testid="speckit-features-empty">
-            {t('speckit.features.empty')}
-          </p>
-          {terminal && (
-            <button className="btn btn-accent" onClick={() => terminal.run('agent', (s) => s.write(SPECIFY))} data-testid="speckit-features-specify">
-              {t('speckit.features.specify')}
-            </button>
-          )}
-        </div>
+        <p className="muted" data-testid="speckit-features-empty">
+          {t('speckit.features.empty')}
+        </p>
       )}
 
       {result && result.features.length > 0 && (
@@ -110,7 +104,7 @@ export default function SpeckitFeatures({ projectId }) {
           </nav>
           {feature && (
             <div className="speckit-detail">
-              <SpeckitFeatureDetail feature={feature} openFile={openFile} onOpenFile={setOpenFile} />
+              <SpeckitFeatureDetail feature={feature} activeName={activeName} openFile={openFile} onOpenFile={setOpenFile} />
               {openFile && <FileView projectId={projectId} rel={openFile} editable={false} html="text" />}
             </div>
           )}

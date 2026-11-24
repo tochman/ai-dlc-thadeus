@@ -1,0 +1,15 @@
+{
+  "stage": "nfr-requirements",
+  "unit": "u9-feature-token-log",
+  "upstream_ids": ["NFR1", "NFR2", "NFR3", "NFR4", "NFR5", "NFR6", "NFR7", "NFR8"],
+  "coverage": [
+    { "id": "NFR1", "status": "OK", "target": "NFR1.1" },
+    { "id": "NFR2", "status": "N/A", "target": "U9 has no view (log files only)" },
+    { "id": "NFR3", "status": "OK", "target": "NFR3.1, NFR3.2, NFR3.3, NFR3.4, NFR3.5, NFR3.6" },
+    { "id": "NFR4", "status": "N/A", "target": "U9 runs no CLI" },
+    { "id": "NFR5", "status": "N/A", "target": "feature.json is read through U6's reader, which owns the version check" },
+    { "id": "NFR6", "status": "OK", "target": "NFR6.1, NFR6.2" },
+    { "id": "NFR7", "status": "N/A", "target": "U9 has no view to refresh" },
+    { "id": "NFR8", "status": "OK", "target": "NFR8.1" }
+  ]
+}

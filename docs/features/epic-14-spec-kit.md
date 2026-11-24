@@ -10,7 +10,7 @@
 
 **Stories:** US-1401–US-1410
 
-**Status (2026-11-24):** ✅ US-1401, US-1402, US-1404, US-1405, US-1408 done, for v0.3.0 · 🚧 US-1410 in progress, for v0.3.0 · 📋 US-1403, US-1406, US-1407, US-1409 planned, for v0.3.0.
+**Status (2026-11-24):** ✅ US-1401, US-1402, US-1403, US-1404, US-1405, US-1408 done, for v0.3.0 · 🚧 US-1410 in progress, for v0.3.0 · 📋 US-1406, US-1407, US-1409 planned, for v0.3.0.
 
 ---
 
@@ -47,17 +47,17 @@
 - **Notes:** Before this story starts, a test project made with `specify init` checks how `clarify`, `checklist` and `analyze` record their output.
 - **Dependencies:** US-1401
 
-**US-1403: Run Spec Kit commands from the app** 📋 Planned, for v0.3.0
+**US-1403: Run Spec Kit commands from the app** ✅ Done, for v0.3.0
 - As a **developer**, in order to **drive Spec Kit without typing every command**, I would like **the app to offer the next `/speckit-*` command for a feature and run it in the agent terminal**.
 - **Epic:** EPIC-14
 - **Priority:** High
 - **Complexity:** Medium
 - **Background:** Decided 2026-11-19: the app runs the `/speckit-*` commands, as it does `/aidlc` (Resume and the quick commands, EPIC-05).
 - **Acceptance Criteria:**
-  - [ ] **Given** a feature, **then** the app offers the next command from where it stands (for example `/speckit-plan` when it has a spec but no plan, `/speckit-implement` when tasks are open, `/speckit-converge` after an implement round), and runs it in the agent terminal when I click.
-  - [ ] Quick commands for the Spec Kit project include `/speckit-specify` with a description I type, `/speckit-clarify`, `/speckit-analyze` and `/speckit-constitution`, and the commands of installed extensions (from `.specify/extensions.yml`).
-  - [ ] Each command is written in the form the project's harness expects (Spec Kit's invocation style for that integration).
-  - [ ] Nothing runs without my click. Every text goes through `t()` in Swedish and English, in the LCARS look.
+  - [x] **Given** a feature, **then** the app offers the next command from where it stands (for example `/speckit-plan` when it has a spec but no plan, `/speckit-implement` when tasks are open, `/speckit-converge` after an implement round), and runs it in the agent terminal when I click.
+  - [x] Quick commands for the Spec Kit project include `/speckit-specify` with a description I type, `/speckit-clarify`, `/speckit-analyze` and `/speckit-constitution`, and the commands of installed extensions (from `.specify/extensions.yml`).
+  - [x] Each command is written in the form the project's harness expects (Spec Kit's invocation style for that integration).
+  - [x] Nothing runs without my click. Every text goes through `t()` in Swedish and English, in the LCARS look.
 - **Dependencies:** US-1401, US-1402
 
 **US-1404: Constitution and extensions** ✅ Done, for v0.3.0

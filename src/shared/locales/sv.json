@@ -56,8 +56,7 @@
     "features": {
       "title": "Features",
       "active": "Aktiv",
-      "empty": "Inga features än. Starta en med /speckit-specify i agentterminalen.",
-      "specify": "Starta en feature (/speckit-specify)",
+      "empty": "Inga features än. Beskriv en ovanför och starta den med specify.",
       "versionWarning": "Projektet använder Spec Kit {version}. THADEUS är gjord för v1.4.x, så en del kan visas fel.",
       "versionUnknown": "Spec Kit-versionen gick inte att hitta. THADEUS är gjord för v1.4.x, så en del kan visas fel.",
       "errors": "Kunde inte läsas",
@@ -81,8 +80,7 @@
     "rules": {
       "constitution": "Konstitution",
       "edit": "Redigera",
-      "noConstitution": "Ingen konstitution än. Skriv en med /speckit-constitution i agentterminalen.",
-      "runConstitution": "Skriv konstitutionen (/speckit-constitution)",
+      "noConstitution": "Ingen konstitution än. Kommandot nedan skriver in konstitutionskommandot i agentterminalen, så att du kan lägga till dina principer och skicka.",
       "extensions": "Tillägg och hooks",
       "noExtensions": "Inga tillägg är installerade.",
       "commands": "Kommandon",
@@ -100,6 +98,19 @@
       "skipped": "{count, plural, one {# hook i extensions.yml kunde inte läsas och hoppades över.} other {# hooks i extensions.yml kunde inte läsas och hoppades över.}}",
       "unchecked": "extensions.yml kunde inte läsas, så inga hooks kontrollerades, inte heller de obligatoriska.",
       "errors": "Kunde inte läsas"
+    },
+    "commands": {
+      "title": "Kommandon",
+      "describe": "Beskriv featuren",
+      "needDescription": "Beskriv featuren först.",
+      "noTab": "Ingen agentflik är öppen.",
+      "unsupported": "{harness} har inga Spec Kit-kommandon i appen, så inget skrivs in.",
+      "sendFailed": "Inte inskrivet: agentfliken är borta.",
+      "rulesError": "Tilläggens kommandon kunde inte alla läsas.",
+      "next": "Nästa kommando",
+      "notActive": "Spec Kits kommandon gäller den aktiva featuren, {name}.",
+      "noActive": "Spec Kits kommandon gäller den aktiva featuren, och ingen feature är aktiv.",
+      "convergeNote": "Filerna kan inte visa om featuren har konvergerat: converge lägger till uppgifter när arbete återstår och skriver inget när den är klar."
     }
   },
   "app": {

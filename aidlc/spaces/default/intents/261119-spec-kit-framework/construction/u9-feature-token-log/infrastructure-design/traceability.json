@@ -1,0 +1,18 @@
+{
+  "stage": "infrastructure-design",
+  "unit": "u9-feature-token-log",
+  "upstream_ids": ["NFR3.1", "NFR3.6", "NFR6.1", "NFR6.2", "NFR8.1", "NFR1.1", "NFR3.2", "NFR3.3", "NFR3.4", "NFR3.5"],
+  "coverage": [
+    { "id": "NFR3.1", "status": "OK", "target": "cicd-pipeline.md: verify job unit tests (fs-write spy) block merge" },
+    { "id": "NFR3.2", "status": "OK", "target": "cicd-pipeline.md: verify job unit tests with temp-dir symlink fixtures" },
+    { "id": "NFR3.3", "status": "OK", "target": "cicd-pipeline.md: verify job unit tests" },
+    { "id": "NFR3.4", "status": "OK", "target": "cicd-pipeline.md: verify job unit tests with symlinked .thadeus fixture" },
+    { "id": "NFR3.5", "status": "OK", "target": "cicd-pipeline.md: packaging check of the userData cursor path in release PR" },
+    { "id": "NFR3.6", "status": "OK", "target": "cicd-pipeline.md: verify job unit tests with transcript fixtures" },
+    { "id": "NFR6.1", "status": "OK", "target": "cicd-pipeline.md: opencode plugin tests in verify job" },
+    { "id": "NFR6.2", "status": "OK", "target": "cicd-pipeline.md: verify job unit tests" },
+    { "id": "NFR8.1", "status": "OK", "target": "cicd-pipeline.md: coverage, ESLint, Prettier, gitleaks gates in verify job" },
+    { "id": "NFR1.1", "status": "N/A", "target": "console logging only; no infrastructure needed" }
+  ],
+  "reverse": []
+}

@@ -1,0 +1,16 @@
+{
+  "stage": "nfr-design",
+  "unit": "u10-speckit-agent-status",
+  "upstream_ids": ["NFR7.1", "NFR7.2", "NFR7.3", "NFR7.4", "NFR3.1", "NFR3.2", "NFR3.3", "NFR5.1", "NFR5.2"],
+  "coverage": [
+    { "id": "NFR7.1", "status": "OK", "target": "subscribe to U6's speckit:changed push; one call per push" },
+    { "id": "NFR7.2", "status": "OK", "target": "subscribe to agent-events:changed, filtered by project id" },
+    { "id": "NFR7.3", "status": "OK", "target": "in-memory store.list plus one features read under Promise.allSettled; timed test in the TIMED list, 1 s bound" },
+    { "id": "NFR7.4", "status": "OK", "target": "effect keyed on project id and refresh counter; one 'again' flag per burst" },
+    { "id": "NFR3.1", "status": "OK", "target": "no fs import in loadSpeckitProgress; write-spy test on the handler" },
+    { "id": "NFR3.2", "status": "OK", "target": "project() refuses unknown ids; fixed branch order speckit, then dirName via assertName, then C9" },
+    { "id": "NFR3.3", "status": "OK", "target": "store.list(projectId) filters by project; audit- rows skipped; two fields out" },
+    { "id": "NFR5.1", "status": "OK", "target": "main cuts to first line and 200 characters; renderer plain text nodes" },
+    { "id": "NFR5.2", "status": "OK", "target": "Promise.allSettled; null part plus console.warn; resolves for Spec Kit" }
+  ]
+}

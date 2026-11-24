@@ -1,0 +1,12 @@
+{
+  "stage": "functional-design",
+  "unit": "u8-framework-switch",
+  "upstream_ids": ["AC2.3.1", "AC2.3.2", "AC2.3.3", "AC2.3.4"],
+  "coverage": [
+    { "id": "AC2.3.1", "status": "OK", "target": "BR8.1, BR8.2" },
+    { "id": "AC2.3.2", "status": "OK", "target": "BR8.3" },
+    { "id": "AC2.3.3", "status": "OK", "target": "BR8.4" },
+    { "id": "AC2.3.4", "status": "OK", "target": "BR8.5, BR8.6" }
+  ],
+  "reverse": []
+}
