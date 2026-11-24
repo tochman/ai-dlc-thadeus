@@ -45,7 +45,13 @@
       "link": "A symbolic link, so it is not followed.",
       "outsideRoot": "Points outside the project.",
       "tooLarge": "Larger than 1 MB, so it is not read.",
-      "notUtf8": "Not valid UTF-8 text."
+      "notUtf8": "Not valid UTF-8 text.",
+      "notFile": "Not a file, so it is not read.",
+      "yaml": "Not valid YAML: {error}",
+      "notMapping": "The top level is not a list of keys, so nothing in it is read.",
+      "noManifest": "Missing, so the extension's commands are not known.",
+      "unsafeId": "The extension id {id} is not a safe name, so its folder is not read.",
+      "unsafeNames": "{count, plural, one {# command name is not a safe name and was left out.} other {# command names are not safe names and were left out.}}"
     },
     "features": {
       "title": "Features",
@@ -71,6 +77,29 @@
       "round": "Round {round}",
       "noPhase": "Before the first phase",
       "files": "Files"
+    },
+    "rules": {
+      "constitution": "Constitution",
+      "edit": "Edit",
+      "noConstitution": "No constitution yet. Write one with /speckit-constitution in the agent terminal.",
+      "runConstitution": "Write the constitution (/speckit-constitution)",
+      "extensions": "Extensions and hooks",
+      "noExtensions": "No extensions are installed.",
+      "commands": "Commands",
+      "hooks": "Hooks",
+      "condition": "only when: {condition}",
+      "when": {
+        "before": "Before",
+        "after": "After"
+      },
+      "mode": {
+        "optional": "optional",
+        "mandatory": "mandatory",
+        "off": "turned off"
+      },
+      "skipped": "{count, plural, one {# hook in extensions.yml could not be read and was skipped.} other {# hooks in extensions.yml could not be read and were skipped.}}",
+      "unchecked": "extensions.yml could not be read, so no hooks were checked, mandatory ones included.",
+      "errors": "Could not be read"
     }
   },
   "app": {
@@ -1035,7 +1064,8 @@
         "aidlc": "AI-DLC",
         "plans": "Plans",
         "costRules": "Cost rules",
-        "modelProfiles": "Model profiles"
+        "modelProfiles": "Model profiles",
+        "speckit": "Spec Kit"
       },
       "saved": "Saved.",
       "reset": "Reset"
@@ -1582,7 +1612,8 @@
     "planNotFound": "No plan named {name} was found.",
     "notAFile": "{rel} is not a file.",
     "engineOwned": "{rel} belongs to AI-DLC's engine and is not saved from the app.",
-    "speckitReadOnly": "{rel} belongs to Spec Kit and is not saved from the app."
+    "speckitReadOnly": "{rel} belongs to Spec Kit and is not saved from the app.",
+    "notSpeckitProject": "This project does not follow Spec Kit, so it has no Spec Kit rules to show."
   },
   "agentDialog": {
     "title": {

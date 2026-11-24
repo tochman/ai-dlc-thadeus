@@ -9,10 +9,13 @@ const VIEWS = {
 };
 
 /**
- * The project's own sections in Configuration (US-0012); `aidlc`, `costRules` and `modelProfiles` are AI-DLC's.
+ * The project's own sections in Configuration (US-0012); `aidlc`, `costRules` and `modelProfiles` are AI-DLC's, and
+ * `speckit` is Spec Kit's (US-1404 BR7.9).
  */
-export const PROJECT_SECTIONS = ['docs', 'agent', 'aidlc', 'costRules', 'modelProfiles'];
+export const PROJECT_SECTIONS = ['docs', 'agent', 'aidlc', 'costRules', 'modelProfiles', 'speckit'];
 export const AIDLC_SECTIONS = ['aidlc', 'costRules', 'modelProfiles'];
+export const SPECKIT_SECTIONS = ['speckit'];
+const OWN = { aidlc: AIDLC_SECTIONS, speckit: SPECKIT_SECTIONS };
 
 /** US-1401 FR1.4: the views a framework offers ('aidlc', 'speckit', or null for none); an unknown value is none. */
 export function viewsFor(framework) {
@@ -30,7 +33,8 @@ export function shownViews(views, showFeatures) {
   return (views ?? []).filter((id) => id !== 'features' || showFeatures);
 }
 
-/** US-1401 FR1.6: the Configuration sections a framework offers. */
+/** US-1401 FR1.6, US-1404 BR7.9: the Configuration sections a framework offers: the shared ones and its own. */
 export function sectionsFor(framework) {
-  return framework === 'aidlc' ? [...PROJECT_SECTIONS] : PROJECT_SECTIONS.filter((id) => !AIDLC_SECTIONS.includes(id));
+  const own = OWN[framework] ?? [];
+  return PROJECT_SECTIONS.filter((id) => own.includes(id) || !(AIDLC_SECTIONS.includes(id) || SPECKIT_SECTIONS.includes(id)));
 }

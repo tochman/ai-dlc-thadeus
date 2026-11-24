@@ -69,7 +69,15 @@ beforeEach(() => {
     speckitFeatures: vi.fn(async () => ({ version: { found: '1.4.3', supported: true }, features: [], active: null, errors: [] })),
     onSpeckitChanged: vi.fn(() => () => {}),
     // US-1406: a project with no framework opens on the choice screen, which scans first.
-    frameworkScan: vi.fn(() => new Promise(() => {}))
+    frameworkScan: vi.fn(() => new Promise(() => {})),
+    // US-1404: Configuration › Spec Kit reads the rules.
+    speckitRules: vi.fn(async () => ({
+      constitution: { path: '.specify/memory/constitution.md', exists: false },
+      extensions: [],
+      skipped: 0,
+      hooksChecked: true,
+      errors: []
+    }))
   };
 });
 afterEach(() => {
@@ -288,6 +296,19 @@ describe('ProjectView: a Spec Kit project (US-1401)', () => {
     renderView('config', { project: kit, section: 'agent' });
     expect(await screen.findByTestId('project-settings-view')).toBeTruthy();
     expect(screen.queryByTestId('project-settings-add-harness')).toBeNull(); // adding a harness is AI-DLC setup
+  });
+
+  // US-1404 BR7.9: Configuration › Spec Kit holds the rules, in a Spec Kit project only.
+  it('shows the Spec Kit rules in Configuration › Spec Kit, without the project settings', async () => {
+    renderView('config', { project: kit, section: 'speckit' });
+    expect(await screen.findByTestId('speckit-rules-root')).toBeTruthy();
+    expect(window.bridge.speckitRules).toHaveBeenCalledWith('p1');
+    expect(screen.queryByTestId('project-settings-view')).toBeNull();
+    cleanup();
+
+    renderView('config', { section: 'speckit' }); // an AI-DLC project has no such section: its own first one shows
+    expect(await screen.findByTestId('project-settings-view')).toBeTruthy();
+    expect(screen.queryByTestId('speckit-rules-root')).toBeNull();
   });
 });
 

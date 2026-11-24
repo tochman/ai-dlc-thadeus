@@ -1,0 +1,17 @@
+{
+  "stage": "nfr-design",
+  "unit": "u7-constitution",
+  "upstream_ids": ["NFR7.1", "NFR7.2", "NFR7.3", "NFR7.4", "NFR3.1", "NFR3.2", "NFR3.3", "NFR3.4", "NFR5.1", "NFR5.2"],
+  "coverage": [
+    { "id": "NFR7.1", "status": "OK", "target": "three paths added to SPECKIT_WATCH_PATHS on the existing Spec Kit watcher" },
+    { "id": "NFR7.2", "status": "OK", "target": "shared watchFiles debounce, 300 ms, at most 800 ms" },
+    { "id": "NFR7.3", "status": "OK", "target": "parallel manifest reads, no cache; warm-up then timed call under 300 ms" },
+    { "id": "NFR7.4", "status": "OK", "target": "effect keyed on project id and speckit:changed counter" },
+    { "id": "NFR3.1", "status": "OK", "target": "readSpeckitFile calls only stat, readFile, realpath; write-spy test" },
+    { "id": "NFR3.2", "status": "OK", "target": "resolveInRoot real-path containment; id pattern before any path" },
+    { "id": "NFR3.3", "status": "OK", "target": "main-side name pattern, at most 100 characters" },
+    { "id": "NFR3.4", "status": "OK", "target": "root-relative paths out; editor open checks resolveInRoot" },
+    { "id": "NFR5.1", "status": "OK", "target": "ArtifactReader skipHtml and react-markdown default URL filter" },
+    { "id": "NFR5.2", "status": "OK", "target": "size check before read, strict UTF-8, yaml default alias limit" }
+  ]
+}

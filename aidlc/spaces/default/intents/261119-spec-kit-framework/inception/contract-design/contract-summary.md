@@ -92,8 +92,12 @@ push speckit:changed { projectId, paths: [string] }   # within 2 s (NFR7)
 ```yaml
 speckit:rules(projectId) -> { constitution: { path: string, exists: bool },
   extensions: [ { id: string, commands: [string],
-                  hooks: [ { when: before | after, command: string, mode: optional | mandatory | off } ] } ],
+                  hooks: [ { when: before | after, target: string, command: string, mode: optional | mandatory | off,
+                             condition: string | null } ] } ],
+  skipped: int,          # hook entries that could not be read (BR7.4)
+  hooksChecked: bool,    # false when extensions.yml could not be read or parsed (BR7.3)
   errors: [ { path: string, reason: string } ] }
+# Spec Kit projects only; another framework is refused. Added in U7 (US-1404), additive: target, condition, skipped, hooksChecked.
 ```
 
 ### C7: Command form

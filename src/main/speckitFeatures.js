@@ -7,8 +7,18 @@ import { parseTasks } from './parsers/speckitTasks.js';
 import { t } from '../shared/i18n.js';
 
 export const MAX_READ_BYTES = 1024 * 1024; // NFR5.1: larger files go in errors, unread
-/** BR6.7: what the Spec Kit watcher follows; fixed, so a new feature folder is seen without a resync. */
-export const SPECKIT_WATCH_PATHS = ['specs/**', '.specify/feature.json', '.specify/init-options.json'];
+/**
+ * BR6.7: what the Spec Kit watcher follows; fixed, so a new feature folder is seen without a resync. US-1404 BR7.8 adds
+ * the constitution, extensions.yml and the extension folders, so the rules section refreshes too.
+ */
+export const SPECKIT_WATCH_PATHS = [
+  'specs/**',
+  '.specify/feature.json',
+  '.specify/init-options.json',
+  '.specify/memory/constitution.md',
+  '.specify/extensions.yml',
+  '.specify/extensions/**'
+];
 const FEATURE_JSON = '.specify/feature.json';
 const VERSION_FILES = [
   ['.specify/init-options.json', 'speckit_version'],
@@ -21,8 +31,11 @@ const utf8 = new TextDecoder('utf-8', { fatal: true });
 const reason = (key, values) => t(`speckit.reason.${key}`, values);
 const NO_TASKS = { done: 0, total: 0, skipped: 0, phases: [] };
 
-/** `{ text }`, `{ missing: true }`, or `{ error: reason }` for a text file of at most 1 MB that is valid UTF-8 (NFR5.1). */
-async function readLimited(root, rel) {
+/**
+ * `{ text }`, `{ missing: true }`, or `{ error: reason }` for a text file of at most 1 MB that is valid UTF-8 (NFR5.1).
+ * Also used by US-1404's rules reader, after its own containment check.
+ */
+export async function readLimited(root, rel) {
   const abs = path.join(root, rel);
   try {
     if ((await fs.stat(abs)).size > MAX_READ_BYTES) return { error: reason('tooLarge') };
