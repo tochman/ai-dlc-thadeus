@@ -38,6 +38,15 @@
   "speckit": {
     "title": "Spec Kit",
     "empty": "No features read yet.",
+    "progress": {
+      "title": "Agent progress",
+      "waiting": "{agent} waits for an answer: {question}",
+      "feature": "{name}: {done} of {total} tasks done",
+      "fromHooks": "from the agent hooks",
+      "fromTasks": "from tasks.md",
+      "nothingYet": "Nothing to show yet: no agent hooks or active feature.",
+      "failed": "The agent progress could not be read."
+    },
     "reason": {
       "unreadable": "Could not be read ({code}).",
       "invalid": "Not valid JSON, or the expected field is missing.",
@@ -794,8 +803,22 @@
     "failed": "specify init failed. The project stays as it was in the app.",
     "timeout": "specify init did not finish within 120 s. The project stays as it was in the app."
   },
+  "frameworkChoice": {
+    "title": "Choose the project's framework",
+    "intro": "The app follows one framework per project. Nothing is written in the project before you confirm.",
+    "scanning": "Looking at the project…",
+    "found": "Found in this project",
+    "notFound": "Not found in this project",
+    "cliFound": "{tool} is on the PATH",
+    "cliMissing": "{tool} is not on the PATH",
+    "proposed": "Proposed",
+    "confirm": "Confirm",
+    "back": "Back to the choice",
+    "retry": "Try again",
+    "scanFailed": "The project could not be looked at: {reason}",
+    "saveFailed": "The choice could not be saved: {reason}"
+  },
   "setup": {
-    "chooseFramework": "Framework",
     "framework": {
       "aidlc": "AI-DLC",
       "speckit": "Spec Kit"
@@ -1062,7 +1085,8 @@
         "plans": "Plans",
         "costRules": "Cost rules",
         "modelProfiles": "Model profiles",
-        "speckit": "Spec Kit"
+        "speckit": "Spec Kit",
+        "framework": "Framework"
       },
       "saved": "Saved.",
       "reset": "Reset"
@@ -1613,6 +1637,7 @@
     "notSpeckitProject": "This project does not follow Spec Kit, so it has no Spec Kit rules to show."
   },
   "agentDialog": {
+    "sourceHooks": "From the agent hooks",
     "title": {
       "waiting": "The agent is waiting for your answer",
       "stillWaiting": "The agent is still waiting for your answer",
@@ -1827,6 +1852,35 @@
       "newerVersion": "{file} was written by a newer version of the app (version {version}) and is not changed.",
       "newerVersionUnknown": "{file} was written by a newer version of the app and is not changed.",
       "writeFailed": "{file} could not be written: {reason}"
+    }
+  },
+  "framework": {
+    "switchInvalid": "The project can only switch to the other framework, not to \"{to}\".",
+    "switchedReopen": "The switch is saved. The views follow when the project is opened again.",
+    "switch": {
+      "setupNeeded": "{framework} is not set up in this project. Run its setup first.",
+      "current": "This project follows {framework}.",
+      "button": "Switch to {framework}",
+      "title": "Switch to {framework}?",
+      "setupLine": "{framework} is not set up here yet: its setup runs first.",
+      "views": "Then the app shows only the {framework} views. You can switch back the same way.",
+      "keeps": "These stay in the repository, untouched: {list}",
+      "inProgress": "Work in progress",
+      "notCarried": "This work is not carried over to the other framework.",
+      "none": "None.",
+      "kind": {
+        "intent": "Intent",
+        "feature": "Feature"
+      },
+      "unread": {
+        "intent": "The intents could not all be read, so this list may be incomplete.",
+        "feature": "The features could not be read, so this list may be incomplete."
+      },
+      "confirm": "Switch",
+      "writing": "Switching…",
+      "setupHint": "Set up {framework} below. The switch is saved when the setup has finished.",
+      "setupStopped": "The setup did not finish, so nothing was switched.",
+      "stays": "The project stays on {framework}."
     }
   },
   "fold": {

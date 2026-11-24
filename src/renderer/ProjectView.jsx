@@ -18,8 +18,9 @@ import ConfigView from './ConfigView.jsx';
 import PlansView from './PlansView.jsx';
 import ProjectSettingsView, { AIDLC_SECTIONS, confirmHarnessSwitch } from './ProjectSettingsView.jsx';
 import SpeckitShell from './SpeckitShell.jsx'; // US-1401
+import FrameworkChoice from './FrameworkChoice.jsx'; // US-1406
 import SpeckitRules from './SpeckitRules.jsx'; // US-1404
-import SetupSpeckit from './SetupSpeckit.jsx'; // US-1405
+import FrameworkSection from './FrameworkSection.jsx'; // US-1407
 import { sectionsFor, shownViews } from '../shared/frameworkViews.js';
 import CostRulesSection from './CostRulesSection.jsx';
 import ModelProfilesSection from './ModelProfilesSection.jsx'; // US-0210
@@ -33,31 +34,6 @@ import { useFeatures } from './useFeatures.js';
 import { harnessCommand, resolveHarness, selectableHarness } from '../shared/harnesses.js';
 
 const AIDLC_TABS = ['settings', 'plans']; // US-0905: the sub-views of Configuration › AI-DLC
-
-/**
- * US-1405 FR3: AI-DLC or Spec Kit for a folder with no framework, as two LCARS switch blocks; the pressed one is
- * steel. U4 (US-1406) later replaces this with the first-open screen.
- */
-function SetupChoice({ value, onChange }) {
-  const { t } = useTranslation();
-  return (
-    <div className="setup-choice" role="group" aria-label={t('setup.chooseFramework')}>
-      <span className="field-label">{t('setup.chooseFramework')}</span>
-      {['aidlc', 'speckit'].map((id) => (
-        <button
-          key={id}
-          type="button"
-          aria-pressed={value === id}
-          className={`lcars-block lcars-block--sm lcars-block--${value === id ? 'active' : 'dark'}`}
-          onClick={() => onChange(id)}
-          data-testid={`setup-choice-${id}`}
-        >
-          {t(`setup.framework.${id}`)}
-        </button>
-      ))}
-    </div>
-  );
-}
 
 /** Why the chosen harness cannot start, in one sentence, or null (US-0801 FR5.1). */
 function harnessProblem(entry, detected, t) {
@@ -334,11 +310,12 @@ function ProjectContent({
   const { framework, defaultView } = project.detection;
   const onAidlc = framework === 'aidlc';
   const wasAidlc = useRef(onAidlc);
+  const setupRan = useRef(false); // US-1406: a confirmed AI-DLC that was already there is no new setup
   const [justSetUp, setJustSetUp] = useState(false);
 
   const restartAgent = useEffectEvent(() => terminal.restart('agent'));
   useEffect(() => {
-    if (onAidlc && !wasAidlc.current) {
+    if (onAidlc && !wasAidlc.current && setupRan.current) {
       setJustSetUp(true);
       restartAgent();
     }
@@ -390,11 +367,13 @@ function ProjectContent({
     project,
     harnesses: detected,
     currentHarness: harnessId,
-    onApplied: () => setDetectRun((n) => n + 1),
+    onApplied: () => {
+      setupRan.current = true;
+      setDetectRun((n) => n + 1);
+    },
     onSwitchHarness: switchHarness
   };
   const [featureDocsChoice, setFeatureDocsChoice] = useState(false); // lifted from SetupAidlc so it survives the switch (FR4.3)
-  const [setupFramework, setSetupFramework] = useState('aidlc'); // which setup a folder with no framework shows (US-1405)
   const [focusIntent, setFocusIntent] = useState(null);
   const [focusStory, setFocusStory] = useState(null);
   const storiesByIntent = useMemo(() => invertLinks(links), [links]);
@@ -472,12 +451,13 @@ function ProjectContent({
                 onActiveRecord={setActiveRecord}
               />
             )}
-            {framework === null && <SetupChoice value={setupFramework} onChange={setSetupFramework} />}
-            {framework === null && setupFramework === 'aidlc' && (
-              <SetupAidlc {...setupProps} featureDocs={featureDocsChoice} onFeatureDocsChange={setFeatureDocsChoice} featureDocsExist={docsExist} />
-            )}
-            {framework === null && setupFramework === 'speckit' && (
-              <SetupSpeckit projectId={project.projectId} root={project.root} onApplied={setupProps.onApplied} />
+            {/* US-1406: a project with no framework opens on the choice screen, which shows a setup when one is needed. */}
+            {framework === null && (
+              <FrameworkChoice
+                projectId={project.projectId}
+                root={project.root}
+                setupProps={{ ...setupProps, featureDocs: featureDocsChoice, onFeatureDocsChange: setFeatureDocsChoice, featureDocsExist: docsExist }}
+              />
             )}
           </div>
           {view === 'features' && (
@@ -514,7 +494,9 @@ function ProjectContent({
                 )}
                 {/* US-1404 BR7.9: Configuration › Spec Kit, offered only to a Spec Kit project by sectionsFor. */}
                 {view === 'config' && configSection === 'speckit' && <SpeckitRules projectId={project.projectId} />}
-                {view === 'config' && !AIDLC_SECTIONS.includes(configSection) && configSection !== 'speckit' && (
+                {/* US-1407: Configuration › Framework, the switch, offered to both frameworks by sectionsFor. */}
+                {view === 'config' && configSection === 'framework' && <FrameworkSection project={project} harness={harnessId} harnesses={detected} />}
+                {view === 'config' && !AIDLC_SECTIONS.includes(configSection) && !['speckit', 'framework'].includes(configSection) && (
                   <ProjectSettingsView
                     section={configSection}
                     agentHooksFocus={hooksFocus}

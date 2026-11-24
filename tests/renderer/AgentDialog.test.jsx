@@ -220,6 +220,14 @@ describe('AgentDialog: hook questions', () => {
     expect(screen.getByTestId('agent-dialog-where').textContent).toBe('aidlc-dash · 261114-agent-dialogs · code-generation');
   });
 
+  it('a hook question page says it comes from the agent hooks; an audit page does not (US-1410 BR10.6)', () => {
+    const { unmount } = show(<AgentDialog {...base()} events={[hookEvent()]} />);
+    expect(screen.getByTestId('agent-dialog-source-hooks').textContent).toBe('Från agentens hooks');
+    unmount();
+    show(<AgentDialog {...base()} events={[audit()]} />); // `audit` is defined below, before any test runs
+    expect(screen.queryByTestId('agent-dialog-source-hooks')).toBeNull();
+  });
+
   it.each([
     [{ state: 'sending' }, 'Skickar…'],
     [{ state: 'sent', via: 'hook' }, 'Skickat till Claude Code.'],
@@ -596,6 +604,11 @@ describe('AgentDialog: permission pages', () => {
   const key = (k, target = dialog()) => fireEvent.keyDown(target, { key: k });
   const later = (ms) => vi.setSystemTime(Date.now() + ms);
   const payload = (over) => ({ ...JSON.parse(readFileSync(path.join(FIX, 'claude', 'permission-bash.json'), 'utf8')), ...over });
+
+  it('a permission page says it comes from the agent hooks (US-1410 BR10.6)', () => {
+    show(<AgentDialog {...base()} events={[permissionEvent()]} />);
+    expect(screen.getByTestId('agent-dialog-source-hooks').textContent).toBe('Från agentens hooks');
+  });
 
   it('M3: the kind and "<harness> ber om behörighet", where, what, detail, cwd and the choices in order (BR5.13, AC2.1.1)', () => {
     show(<AgentDialog {...base()} events={[permissionEvent()]} />);

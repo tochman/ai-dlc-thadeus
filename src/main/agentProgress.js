@@ -1,11 +1,14 @@
 // US-0507 FR2, FR3.2, FR5.3, NFR2: the agent progress of one intent. The rows come from the audit events
 // (parsers/agentProgress.js); this adds each build's plan steps and last commit subject and each review's findings.
 // Read-only: every path goes through projectAccess (resolveInRoot), and git only runs `log -1` with fixed arguments.
+// US-1410 FR10 (contract C9): the Spec Kit form, from the hook events and U6's features reader; it reads no file itself.
 import path from 'node:path';
 import { readJsonSafe, readText, resolveInRoot } from './projectAccess.js';
 import { assertName, inflightCount, intentsDir, loadAuditEvents } from './projectService.js';
 import { planSteps, progressRows, severityCounts } from './parsers/agentProgress.js';
 import { lastCommitSubject } from './git.js';
+import { loadSpeckitFeatures } from './speckitFeatures.js';
+import { selectableHarness } from '../shared/harnesses.js';
 
 const PLAN = 'code-generation/code-generation-plan.md';
 const ENGINE = '.aidlc-engine/';
@@ -49,6 +52,58 @@ async function withFindings(root, base, row) {
   const rel = `${base}/${row.record.startsWith(ENGINE) ? '' : ENGINE}${row.record}`;
   const res = await readJsonSafe(root, rel);
   return res.ok ? { ...row, severities: severityCounts(res.value), unreadable: null } : { ...row, severities: null, unreadable: rel };
+}
+
+const OPEN = new Set(['shown', 'timedOut']); // agentEvents.js's open states
+const WAITS = new Set(['question', 'permission']);
+const MAX_QUESTION = 200; // NFR5.1, in characters (code points)
+
+/** NFR5.1: the header, else the body's first non-empty line, trimmed and cut to 200 characters. */
+function questionText(ev) {
+  if (ev.kind === 'permission') return ev.permission?.what ?? ''; // NFR3.3: the tool name only, never its detail
+  const q = ev.questions?.[0];
+  const text =
+    q?.header?.trim() ||
+    (q?.text ?? '')
+      .split('\n')
+      .map((l) => l.trim())
+      .find(Boolean) ||
+    '';
+  return Array.from(text).slice(0, MAX_QUESTION).join('');
+}
+
+/**
+ * US-1410 BR10.2, NFR3.3: the first open hook question or permission of `events` (one project's list, in pager order),
+ * as `{ question, agent }` and nothing else; null when none is open. The audit fallback rows are not hooks.
+ */
+export function waitingFrom(events) {
+  const ev = (events ?? []).find((e) => WAITS.has(e.kind) && OPEN.has(e.state) && !String(e.eventId).startsWith('audit-'));
+  return ev ? { question: questionText(ev), agent: selectableHarness(ev.harness)?.label ?? ev.harness } : null;
+}
+
+/** BR10.3: the active feature's name and task counts, or null. */
+async function activeFeature(root, loadFeatures) {
+  const { features, active } = await loadFeatures(root);
+  const f = active ? features.find((x) => x.dir === active) : null;
+  return f ? { name: f.name, done: f.tasks.done, total: f.tasks.total } : null;
+}
+
+/**
+ * US-1410 FR10, BR10.1–BR10.4, NFR5.2 (contract C9): `{ source: hooks|tasks|none, waiting, feature }` for a Spec Kit
+ * project (or a call with no intent). A failing part is null; this never rejects.
+ * @param {string} root the project root
+ * @param {object[]} events the project's public hook events, in pager order (store.list)
+ * @param {{loadFeatures?: Function}} [opts] loadFeatures: U6's reader, injectable for tests
+ */
+export async function loadSpeckitProgress(root, events, { loadFeatures = loadSpeckitFeatures } = {}) {
+  const waiting = waitingFrom(events); // in memory, pure: no file work (NFR7.3)
+  let feature = null;
+  try {
+    feature = await activeFeature(root, loadFeatures);
+  } catch (err) {
+    console.warn('Spec Kit-featuren kunde inte läsas:', err.message);
+  }
+  return { source: waiting ? 'hooks' : feature ? 'tasks' : 'none', waiting, feature };
 }
 
 /**

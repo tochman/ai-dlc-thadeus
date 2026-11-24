@@ -88,6 +88,10 @@ contextBridge.exposeInMainWorld('bridge', {
   runSetup: call('setup:run'), // runs the setup after the preview (US-0802 FR2.2)
   speckitSetupPreview: call('speckit:setupPreview'), // (projectId, harness?) US-1405 FR3, C3
   speckitSetup: call('speckit:setup'), // (projectId, harness), only after the preview for that harness
+  switchPreview: call('project:switchPreview'), // (projectId, to) US-1407 C10, read-only
+  switchFramework: call('project:switch'), // (projectId, to) US-1407 C10: the one write of .thadeus/project.json
+  frameworkScan: call('project:frameworkScan'), // (projectId) US-1406 FR4, C4
+  chooseFramework: call('project:chooseFramework'), // (projectId, framework): saves a confirmed choice, or names its setup
   loadFeatures: call('features:load'),
   getStoryLinks: call('features:storyLinks'),
   // US-0603: a story id, a version and the read hashes cross the bridge, never a path.
@@ -106,7 +110,9 @@ contextBridge.exposeInMainWorld('bridge', {
   setProjectSettings: call('projectSettings:set'),
   getAidlcConfig: call('config:get'), // read-only AI-DLC configuration for one harness (EPIC-09 US-0901)
   getWorkingAgents: call('agents:working'), // the agents working now in the active intent (US-0901)
-  getAgentProgress: call('agents:progress'), // an intent's agent progress rows, by dir name (US-0507)
+  // An intent's agent progress rows, by dir name (US-0507); with no dir name, or in a Spec Kit project, contract C9
+  // { source, waiting, feature } (US-1410).
+  getAgentProgress: call('agents:progress'),
   // US-0214: a project's activity rows from the hook events (main chats and their agents), and their changes.
   agentActivity: { list: call('agentActivity:list'), onChanged: subscribe('agent:activity') },
   // Changing AI-DLC settings (US-0902): a change is {kind, key, value, where}, never a command.

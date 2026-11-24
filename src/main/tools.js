@@ -70,6 +70,16 @@ export async function resolveOnPath(name, { exec, searchPath } = {}) {
 }
 
 /**
+ * US-1406 NFR4.1, NFR4.4: where `name` is, without running it. A saved path counts only while it is an executable file
+ * (a stale one is not found); otherwise the bare name is looked up on `searchPath`. Null when not found.
+ */
+export async function locateTool(name, { exec, searchPath } = {}) {
+  const saved = toolPaths[name];
+  if (saved) return (await isExecutable(saved)) ? saved : null;
+  return resolveOnPath(name, { exec, searchPath });
+}
+
+/**
  * `<file> --version` with a fixed argument and no shell, within runFixed's 10 s timeout (FR2.1, C2).
  * Never throws: a tool that cannot answer comes back as not found with its reason (A3).
  * `path` is the PATH a scan already read, so the check starts no second login-shell read (US-0035 FR1.5).

@@ -3,7 +3,7 @@ import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { openRoot } from '../../src/main/projectAccess.js';
-import { detectProject, loadIntentDetail, loadIntentList } from '../../src/main/projectService.js';
+import { detectProject, foundFrameworks, loadIntentDetail, loadIntentList } from '../../src/main/projectService.js';
 import { viewsFor } from '../../src/shared/frameworkViews.js';
 import { t } from '../../src/shared/i18n.js';
 
@@ -35,26 +35,55 @@ async function fixture({ spaces, speckit = false, saved } = {}) {
 describe('projectService.detectProject', () => {
   afterEach(() => fs.rm(TMP, { recursive: true, force: true }));
 
-  it('recognises the fixture project with active space "default" (FR1.2)', async () => {
+  it('US-1406 BR4.1: the fixture project has no saved framework, so it asks, with what it found (AC2.2.1)', async () => {
     const root = await openRoot(path.join(FIXTURES, 'project'));
     expect(await detectProject(root)).toEqual({
-      framework: 'aidlc',
-      source: 'detected',
+      framework: null,
+      source: 'ask',
       found: { aidlc: true, speckit: false },
       reason: null,
-      views: viewsFor('aidlc'),
-      defaultView: 'intents',
-      isAidlc: true,
-      activeSpace: 'default',
-      spaces: ['default']
+      views: viewsFor(null),
+      defaultView: 'setup',
+      isAidlc: false,
+      activeSpace: null,
+      spaces: []
     });
   });
 
-  it('US-1401 BR1.2: only .specify/ is Spec Kit (AC1.1.3)', async () => {
-    const res = await detectProject(await fixture({ speckit: true }));
+  it('US-1406 BR4.1: no saved file asks whatever is found: one, both or neither (AC2.2.1)', async () => {
+    for (const [opts, found] of [
+      [{ spaces: ['team'] }, { aidlc: true, speckit: false }],
+      [{ speckit: true }, { aidlc: false, speckit: true }],
+      [
+        { spaces: ['default'], speckit: true },
+        { aidlc: true, speckit: true }
+      ],
+      [{}, { aidlc: false, speckit: false }],
+      [{ spaces: [] }, { aidlc: false, speckit: false }]
+    ]) {
+      expect(await detectProject(await fixture(opts))).toMatchObject({
+        framework: null,
+        source: 'ask',
+        found,
+        reason: null,
+        isAidlc: false,
+        activeSpace: null
+      });
+    }
+  });
+
+  it('US-1406 BR4.1: foundFrameworks gives the same found as detection, and reads only', async () => {
+    const root = await fixture({ spaces: ['default'], speckit: true });
+    expect(await foundFrameworks(root)).toEqual({ aidlc: true, speckit: true });
+    expect(await foundFrameworks(await fixture({ spaces: [] }))).toEqual({ aidlc: false, speckit: false });
+    expect(await foundFrameworks(await fixture({ speckit: true }))).toEqual({ aidlc: false, speckit: true });
+  });
+
+  it('US-1401 BR1.2: a saved speckit with only .specify/ is Spec Kit (AC1.1.3)', async () => {
+    const res = await detectProject(await fixture({ speckit: true, saved: { version: 1, framework: 'speckit' } }));
     expect(res).toEqual({
       framework: 'speckit',
-      source: 'detected',
+      source: 'file',
       found: { aidlc: false, speckit: true },
       reason: null,
       views: viewsFor('speckit'),
@@ -65,30 +94,26 @@ describe('projectService.detectProject', () => {
     });
   });
 
-  it('US-1401 BR1.1: AI-DLC alone, or with .specify/, is AI-DLC until U4 switches the question on (AC1.1.3, AC1.1.4)', async () => {
-    expect(await detectProject(await fixture({ spaces: ['team'] }))).toMatchObject({ framework: 'aidlc', activeSpace: 'team', spaces: ['team'] });
-    const both = await detectProject(await fixture({ spaces: ['default'], speckit: true }));
-    expect(both).toMatchObject({ framework: 'aidlc', source: 'detected', found: { aidlc: true, speckit: true }, isAidlc: true });
+  it('US-1406 BR4.1: a saved aidlc is followed with its active space (FR1.2)', async () => {
+    const res = await detectProject(await fixture({ spaces: ['team'], speckit: true, saved: { version: 1, framework: 'aidlc' } }));
+    expect(res).toMatchObject({ framework: 'aidlc', source: 'file', reason: null, isAidlc: true, activeSpace: 'team', spaces: ['team'] });
   });
 
-  it('US-1401 BR1.3: both found with askWhenBoth gives no framework and asks (AC1.1.4)', async () => {
-    const res = await detectProject(await fixture({ spaces: ['default'], speckit: true }), { askWhenBoth: true });
-    expect(res).toMatchObject({ framework: null, source: 'ask', found: { aidlc: true, speckit: true }, defaultView: 'setup', isAidlc: false });
-    expect(res.views).toEqual(viewsFor(null));
-  });
-
-  it('US-1401 BR1.4: neither, or an empty aidlc/spaces/, gives no framework and today’s reason', async () => {
-    const none = await detectProject(await fixture());
-    expect(none).toMatchObject({ framework: null, source: 'detected', found: { aidlc: false, speckit: false }, isAidlc: false });
-    expect(none.reason).toMatch(/aidlc\/spaces/);
-    const empty = await detectProject(await fixture({ spaces: [] }));
+  it('US-1408 BR1.4: an unusable file with an empty aidlc/spaces/ gives no framework and today’s reason', async () => {
+    const empty = await detectProject(await fixture({ spaces: [], saved: '[]' }));
     expect(empty).toMatchObject({ framework: null, source: 'detected', isAidlc: false });
     expect(empty.reason).toMatch(/space/);
   });
 
-  it('US-1408 BR1.5: a saved speckit with both folders is followed, with no question even with askWhenBoth (AC1.2.1)', async () => {
+  it('US-1408 BR1.5: a saved speckit with both folders is followed, with no question (AC1.2.1)', async () => {
     const both = await fixture({ spaces: ['default'], speckit: true, saved: { version: 1, framework: 'speckit' } });
-    expect(await detectProject(both, { askWhenBoth: true })).toMatchObject({ framework: 'speckit', source: 'file', reason: null, activeSpace: null });
+    expect(await detectProject(both)).toMatchObject({ framework: 'speckit', source: 'file', reason: null, activeSpace: null });
+  });
+
+  it('US-1406 BR4.1: a newer-version file keeps U2’s detection with its reason', async () => {
+    const res = await detectProject(await fixture({ spaces: ['default'], saved: { version: 2, framework: 'aidlc' } }));
+    expect(res).toMatchObject({ framework: 'aidlc', source: 'detected' });
+    expect(res.reason).toContain(t('projectFile.reason.unknownVersion'));
   });
 
   it('US-1408 BR1.4: a saved speckit with no .specify/ falls back to aidlc and says the saved one was not found (AC1.2.3)', async () => {
@@ -106,10 +131,6 @@ describe('projectService.detectProject', () => {
     expect(bogus).toMatchObject({ framework: 'aidlc', source: 'detected' });
     expect(bogus.reason).toContain(t('projectFile.reason.unknownFramework'));
     expect(bogus.reason).not.toContain('bogus'); // NFR1.1
-  });
-
-  it('US-1408 BR1.3: a missing file falls back with no reason, as before', async () => {
-    expect(await detectProject(await fixture({ spaces: ['default'], speckit: true }))).toMatchObject({ framework: 'aidlc', source: 'detected', reason: null });
   });
 
   it('US-1408: an unusable file in a folder with neither framework gives both reasons', async () => {
@@ -137,11 +158,9 @@ describe('projectService.detectProject', () => {
     await expect(loadIntentDetail(root, 'default', '../x')).rejects.toThrow(/Ogiltigt namn/);
   });
 
-  it('reports isAidlc:false with a reason for a plain folder (FR1.2)', async () => {
+  it('US-1406 BR4.1: a plain folder with no saved file asks (FR1.2)', async () => {
     const root = await openRoot(path.join(FIXTURES, 'plain-folder'));
-    const res = await detectProject(root);
-    expect(res.isAidlc).toBe(false);
-    expect(res.reason).toMatch(/aidlc\/spaces/);
+    expect(await detectProject(root)).toMatchObject({ framework: null, source: 'ask', isAidlc: false, reason: null });
   });
 });
 

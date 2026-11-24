@@ -382,7 +382,8 @@ describe('App shell', () => {
       'config-section-agent',
       'config-section-aidlc',
       'config-section-costRules',
-      'config-section-modelProfiles'
+      'config-section-modelProfiles',
+      'config-section-framework' // US-1407: the switch
     ]);
 
     // A link or menu item that still asks for the old Plans view opens it at its new place.
