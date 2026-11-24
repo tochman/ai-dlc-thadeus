@@ -38,10 +38,25 @@ export function readingOf(intentCost, now) {
 export function addReading(list, reading) {
   const last = list.at(-1);
   if (last && (reading.at - last.at < MIN_GAP_MS || KINDS.every((k) => reading[k] === last[k]))) return list;
-  const next = [...list, reading];
-  if (next.length <= MAX_READINGS) return next;
-  const half = Math.floor(next.length / 2);
-  return [...next.slice(0, half).filter((_, i) => i % 2 === 0), ...next.slice(half)];
+  return thin([...list, reading]);
+}
+
+/** FR2.2: past MAX_READINGS every second reading of the oldest half is dropped. */
+function thin(list) {
+  if (list.length <= MAX_READINGS) return list;
+  const half = Math.floor(list.length / 2);
+  return [...list.slice(0, half).filter((_, i) => i % 2 === 0), ...list.slice(half)];
+}
+
+/**
+ * US-1409 BR2.2: adds one turn's tokens and dollars (`turn`, the reading kinds without `at`) to the last cumulative
+ * reading. Under 30 s after the last reading the new total replaces it, so no usage is lost to the throttle; otherwise
+ * it is appended. Thins like addReading.
+ */
+export function mergeReading(list, turn, at) {
+  const last = list.at(-1);
+  const next = { at, ...Object.fromEntries(KINDS.map((k) => [k, (last?.[k] ?? 0) + (turn[k] ?? 0)])) };
+  return thin([...(last && at - last.at < MIN_GAP_MS ? list.slice(0, -1) : list), next]);
 }
 
 function fileOf(dirName) {
@@ -67,12 +82,26 @@ export async function readReadings(root, dirName) {
  * @returns {Promise<boolean>} true when a reading was written
  */
 export async function recordReading(root, dirName, reading) {
-  const rel = fileOf(dirName);
-  const list = await readReadings(root, dirName);
+  const list = await readReadings(root, dirName); // checks the name, like writeReadings
   const next = addReading(list, reading);
   if (next === list) return false;
-  await fs.mkdir(path.join(root, TOKENS_DIR), { recursive: true });
-  const dir = await resolveInRoot(root, TOKENS_DIR); // a symlinked .thadeus pointing outside the project is refused
-  await writeAtomic(path.join(dir, path.basename(rel)), JSON.stringify(next));
+  await writeReadings(root, dirName, next);
   return true;
+}
+
+/**
+ * US-0208 FR2.1, US-1409 BR3.1, NFR3.4: writes `list` atomically as `.thadeus/tokens/<key>.json`. The key passes the
+ * name check; a `.thadeus` that links out of the project is refused. `write` is writeAtomic (a test may wrap it).
+ */
+export async function writeReadings(root, key, list, write = writeAtomic) {
+  const rel = fileOf(key);
+  let dir;
+  // One level at a time, so a symlinked .thadeus pointing outside the project is refused before anything is made in it.
+  for (const level of ['.thadeus', TOKENS_DIR]) {
+    await fs.mkdir(path.join(root, level)).catch((err) => {
+      if (err.code !== 'EEXIST') throw err;
+    });
+    dir = await resolveInRoot(root, level);
+  }
+  await write(path.join(dir, path.basename(rel)), JSON.stringify(list));
 }

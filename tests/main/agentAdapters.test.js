@@ -221,9 +221,17 @@ describe('handoff signals (US-0213)', () => {
     expect(raw('opencode', 'usage', { data: { tokens, modelID: 'claude-sonnet-4-5' } })).toEqual({
       ok: true,
       kind: 'usage',
-      context: { tokens: 91_010, model: 'claude-sonnet-4-5' }
+      context: { tokens: 91_010, model: 'claude-sonnet-4-5' },
+      usage: { tokens, cost: 0 }
     });
     expect(raw('opencode', 'postcompact', { data: { tokens } })).toEqual({ ok: true, kind: 'postcompact', trigger: null });
+  });
+
+  it('US-1409 BR1.3, NFR6.1: an opencode usage event passes its tokens and cost on as usage; without tokens there is none', () => {
+    const tokens = { input: 10, output: 5, reasoning: 2, cache: { read: 90, write: 1 } };
+    expect(raw('opencode', 'usage', { data: { tokens, cost: 0.25 } }).usage).toEqual({ tokens, cost: 0.25 });
+    expect(raw('opencode', 'usage', { properties: { tokens } }).usage).toEqual({ tokens, cost: 0 });
+    expect(raw('opencode', 'usage', { data: { cost: 1 } })).not.toHaveProperty('usage');
   });
 
   it('refuses a body that is not JSON, for every new kind of both harnesses', () => {

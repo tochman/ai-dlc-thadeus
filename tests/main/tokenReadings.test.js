@@ -5,7 +5,7 @@ import { promises as fs, readFileSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { summarizeLedger } from '../../src/main/parsers/ledger.js';
-import { MAX_READINGS, addReading, readReadings, readingOf, recordReading } from '../../src/main/tokenReadings.js';
+import { MAX_READINGS, addReading, mergeReading, readReadings, readingOf, recordReading } from '../../src/main/tokenReadings.js';
 
 const ledger = JSON.parse(readFileSync(path.join(process.cwd(), 'tests/fixtures/ledger/usage-ledger.json'), 'utf8'));
 const UUID = '01a1c625-50f3-7f83-9755-b096bf4025e6';
@@ -46,6 +46,36 @@ describe('addReading (US-0208 FR2, FR2.2, NFR4)', () => {
     expect(next.at(-1).input).toBe(MAX_READINGS + 1);
     expect(next.slice(-1000).map((r) => r.input)).toEqual(Array.from({ length: 1000 }, (_, i) => MAX_READINGS - 998 + i)); // newest half untouched
     expect(JSON.stringify(next).length).toBeLessThan(200_000); // NFR4
+  });
+});
+
+describe('mergeReading (US-1409 BR2.2)', () => {
+  const turn = (n, usd = 0.01) => ({ input: n, output: n, cacheWrite5m: 0, cacheWrite1h: 0, cacheRead: n, usd });
+
+  it('starts a list with the turn as the first cumulative reading', () => {
+    expect(mergeReading([], turn(5), 1000)).toEqual([{ at: 1000, input: 5, output: 5, cacheWrite5m: 0, cacheWrite1h: 0, cacheRead: 5, usd: 0.01 }]);
+  });
+
+  it('replaces the last reading with the new total when the turn ends under 30 s after it, so nothing is lost', () => {
+    const first = mergeReading([], turn(5), 0);
+    expect(mergeReading(first, turn(3), 29_999)).toEqual([{ at: 29_999, input: 8, output: 8, cacheWrite5m: 0, cacheWrite1h: 0, cacheRead: 8, usd: 0.02 }]);
+  });
+
+  it('appends a new cumulative reading 30 s or more after the last', () => {
+    const first = mergeReading([], turn(5), 0);
+    const next = mergeReading(first, turn(3, 0), 30_000);
+    expect(next.map((r) => [r.at, r.input, r.usd])).toEqual([
+      [0, 5, 0.01],
+      [30_000, 8, 0.01]
+    ]);
+  });
+
+  it('past 2000 readings thins the oldest half, as addReading does', () => {
+    const full = Array.from({ length: MAX_READINGS }, (_, i) => reading(i * 30_000, i + 1));
+    const next = mergeReading(full, turn(1), MAX_READINGS * 30_000);
+    expect(next.length).toBeLessThanOrEqual(MAX_READINGS);
+    expect(next[0]).toEqual(full[0]);
+    expect(next.at(-1).input).toBe(MAX_READINGS + 1);
   });
 });
 

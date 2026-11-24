@@ -24,7 +24,10 @@ function addLine(calls, line, index) {
   if (!usage || typeof usage !== 'object' || !Number.isFinite(at)) return;
   const split = usage.cache_creation;
   const hasSplit = split && typeof split === 'object';
-  calls.set(typeof row.message.id === 'string' ? row.message.id : `#${index}`, {
+  const id = typeof row.message.id === 'string' ? row.message.id : null;
+  calls.set(id ?? `#${index}`, {
+    id, // US-1409 BR1.2: the cursor counts by message id
+    model: typeof row.message.model === 'string' ? row.message.model : null, // US-1409 BR4.1: priced per model
     at,
     input: count(usage.input_tokens),
     output: count(usage.output_tokens),

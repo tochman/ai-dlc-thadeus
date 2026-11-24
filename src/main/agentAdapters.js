@@ -247,7 +247,11 @@ function opencodeSignal(kind, body) {
   const d = isObject(p.data) ? p.data : isObject(p.properties) ? p.properties : {};
   if (kind === 'session') return { ok: true, kind, source: 'startup' }; // the plugin reports main sessions only
   if (kind === 'status') return { ok: true, kind, busy: isObject(d.status) && d.status.type !== 'idle' };
-  if (kind === 'usage') return { ok: true, kind, context: opencodeContext(d) };
+  if (kind === 'usage') {
+    // US-1409 BR1.3, NFR6.1: the session's running token totals and cost, for the Spec Kit token log; absent without tokens.
+    const usage = isObject(d.tokens) ? { usage: { tokens: d.tokens, cost: Number.isFinite(d.cost) ? d.cost : 0 } } : {};
+    return { ok: true, kind, context: opencodeContext(d), ...usage };
+  }
   return { ok: true, kind: 'postcompact', trigger: null };
 }
 

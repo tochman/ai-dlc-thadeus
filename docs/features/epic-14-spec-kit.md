@@ -10,7 +10,7 @@
 
 **Stories:** US-1401–US-1410
 
-**Status (2026-11-24):** ✅ US-1401, US-1402, US-1403, US-1404, US-1405, US-1406, US-1408, US-1410 done, for v0.3.0 · 🚧 US-1407 in progress, for v0.3.0 · 📋 US-1409 planned, for v0.3.0.
+**Status (2026-11-24):** ✅ US-1401, US-1402, US-1403, US-1404, US-1405, US-1406, US-1408, US-1409, US-1410 done, for v0.3.0 · 🚧 US-1407 in progress, for v0.3.0.
 
 ---
 
@@ -126,16 +126,16 @@
   - [x] Every text goes through `t()` in Swedish and English, in the LCARS look.
 - **Dependencies:** US-1401
 
-**US-1409: A token log per Spec Kit feature** 📋 Planned, for v0.3.0
+**US-1409: A token log per Spec Kit feature** ✅ Done, for v0.3.0
 - As a **developer**, in order to **see what each Spec Kit feature cost in tokens**, I would like **the token log to be kept per feature in a Spec Kit project, as it is per intent in an AI-DLC project**.
 - **Epic:** EPIC-14
 - **Priority:** Medium
 - **Complexity:** Medium
 - **Background:** Found 2026-11-19 in the EPIC-14 Ideation check: the token log is kept per AI-DLC intent, and Spec Kit has no intents.
 - **Acceptance Criteria:**
-  - [ ] **Given** a Spec Kit project, **then** token use is logged per feature under `specs/`, and the active feature (`.specify/feature.json`) gets the readings.
-  - [ ] **Given** no active feature, **then** readings go to a project-wide bucket that is named as such, never silently dropped.
-  - [ ] The log is never written in `.specify/` or `specs/`. Every text goes through `t()` in Swedish and English, in the LCARS look.
+  - [x] **Given** a Spec Kit project, **then** token use is logged per feature under `specs/`, and the active feature (`.specify/feature.json`) gets the readings.
+  - [x] **Given** no active feature, **then** readings go to a project-wide bucket that is named as such, never silently dropped.
+  - [x] The log is never written in `.specify/` or `specs/`. Every text goes through `t()` in Swedish and English, in the LCARS look.
 - **Dependencies:** US-1401, US-1402
 
 **US-1410: Waiting questions and agent progress in a Spec Kit project** ✅ Done, for v0.3.0

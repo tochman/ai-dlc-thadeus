@@ -35,8 +35,8 @@ describe('callsOfTranscript (FR2.2)', () => {
       usageLine('msg_2', T0 + 60_000, { input_tokens: 5, output_tokens: 7, cache_read_input_tokens: 9, cache_creation_input_tokens: 0 })
     ];
     expect(callsOfTranscript(lines)).toEqual([
-      { at: T0 + 100, input: 2, output: 50, cacheWrite5m: 100, cacheWrite1h: 200, cacheRead: 1000 },
-      { at: T0 + 60_000, input: 5, output: 7, cacheWrite5m: 0, cacheWrite1h: 0, cacheRead: 9 }
+      { id: 'msg_1', model: 'claude-opus-5-5', at: T0 + 100, input: 2, output: 50, cacheWrite5m: 100, cacheWrite1h: 200, cacheRead: 1000 },
+      { id: 'msg_2', model: 'claude-opus-5-5', at: T0 + 60_000, input: 5, output: 7, cacheWrite5m: 0, cacheWrite1h: 0, cacheRead: 9 }
     ]);
   });
 
@@ -54,6 +54,14 @@ describe('callsOfTranscript (FR2.2)', () => {
   it('puts a cache write without its 5 m / 1 h split into 5 m', () => {
     const [call] = callsOfTranscript([usageLine('msg_4', T0, { input_tokens: 1, output_tokens: 1, cache_creation_input_tokens: 40 })]);
     expect([call.cacheWrite5m, call.cacheWrite1h, call.cacheRead]).toEqual([40, 0, 0]);
+  });
+
+  it('US-1409 BR1.2, BR4.1: keeps each call message id and model; a line without them gives null', () => {
+    const lines = [usageLine('msg_5', T0, USAGE), JSON.stringify({ type: 'assistant', timestamp: new Date(T0).toISOString(), message: { usage: USAGE } })];
+    expect(callsOfTranscript(lines).map((c) => [c.id, c.model])).toEqual([
+      ['msg_5', 'claude-opus-5-5'],
+      [null, null]
+    ]);
   });
 });
 

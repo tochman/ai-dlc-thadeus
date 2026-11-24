@@ -178,6 +178,15 @@ async function listFeatureDirs(root, errors) {
 }
 
 /**
+ * US-1409 BR2.1 (contract C5): only the active feature folder, as loadSpeckitFeatures resolves it; null when
+ * feature.json is missing, unreadable, linked or names a folder that is not listed under `specs/`.
+ */
+export async function activeFeature(root) {
+  const errors = [];
+  return readActive(root, await fs.realpath(root), await listFeatureDirs(root, errors), errors);
+}
+
+/**
  * US-1402 FR6 (contract C5): `{ version: { found, supported }, features: [...], active, errors: [{ path, reason }] }`.
  * Every failed read goes in errors and never hides the rest (BR6.10). Nothing is written (BR6.6).
  * @param {string} root the project root
