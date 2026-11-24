@@ -15,7 +15,7 @@
     "build": "electron-vite build && node scripts/third-party-licenses.mjs && electron-builder --mac",
     "test": "vitest run tests/",
     "coverage": "vitest run tests/ --coverage",
-    "lint": "eslint .",
+    "lint": "eslint . --max-warnings 0",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "icon": "electron scripts/make-icon.cjs",

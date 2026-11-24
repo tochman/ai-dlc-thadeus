@@ -1,7 +1,7 @@
 // The model profile question and its result (US-0210 US1.2, US1.3): a native LCARS <dialog> like DocsDialog, never
 // window.confirm (NFR4). Asks "Switch to the critical profile?" (FR2.1) or before switching back (FR1.4); a switch back
 // without asking runs at once. Shows every command with its output or error (FR4.2, FR4.3, FR5.2).
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useEffectEvent, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 /**
@@ -28,12 +28,14 @@ export default function ProfileSwitchDialog({ ask, answer, onClose }) {
     }
   }
 
+  const replyYes = useEffectEvent(() => reply(true)); // US-0043: the latest answer/onClose, once per question
+
   useEffect(() => {
     setResult(null);
     const d = ref.current;
     if (d && ask && !d.open) d.showModal ? d.showModal() : d.setAttribute('open', '');
     if (d && !ask && d.open) d.close ? d.close() : d.removeAttribute('open');
-    if (ask && !ask.confirm) reply(true); // FR3.1: "Ask before switching back" is off
+    if (ask && !ask.confirm) replyYes(); // FR3.1: "Ask before switching back" is off
   }, [ask]);
 
   return (

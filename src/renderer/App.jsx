@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useEffectEvent, useLayoutEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import ProjectView from './ProjectView.jsx';
 import AuctumMark from './AuctumMark.jsx';
@@ -126,6 +126,9 @@ export default function App() {
     return info;
   }, []);
 
+  // US-0043: an error line in the current language, from effects that must not rerun when the language changes.
+  const showError = useEffectEvent((key, values) => setError(t(key, values)));
+
   // Reopen the tabs from the last session (FR1.5).
   useEffect(() => {
     (async () => {
@@ -149,9 +152,9 @@ export default function App() {
           }
         }
         if (activeInfo) setActiveId(activeInfo.projectId);
-        if (failed.length) setError(t('app.reopenFailed', { list: failed.join('; ') }));
+        if (failed.length) showError('app.reopenFailed', { list: failed.join('; ') });
       } catch (err) {
-        setError(t('app.settingsReadFailed', { error: errorText(err) }));
+        showError('app.settingsReadFailed', { error: errorText(err) });
       } finally {
         setRestored(true);
       }
@@ -174,7 +177,7 @@ export default function App() {
         recentProjects: recentRef.current,
         activeProject: active?.root ?? null
       })
-      .catch((err) => setError(t('app.settingsSaveFailed', { error: errorText(err) })));
+      .catch((err) => showError('app.settingsSaveFailed', { error: errorText(err) }));
   }, [tabs, activeId, restored]);
 
   // The branch in the header. Read-only; it is only a label, so a failure just leaves it out. It is read again
