@@ -2,7 +2,7 @@
 // agent dialog hooks. A native modal <dialog> as the other setup dialogs: focus on Cancel at open, Esc cancels the
 // preview in main (agentHooks.cancel), no key applies. The renderer sees only paths, summaries and diff text, never the
 // bytes to write (SD33); apply names only the preview id.
-import { Fragment, useEffect, useRef, useState } from 'react';
+import { Fragment, useEffect, useEffectEvent, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { selectableHarness } from '../shared/harnesses.js';
 
@@ -57,9 +57,10 @@ export default function AgentHooksPreview({ projectId, harness, action, onClose 
         setMessage(errorText(err));
         setFinal(true);
       });
+  const loadOnOpen = useEffectEvent(load); // US-0043: the latest load, without rerunning the open effect
 
   useEffect(() => {
-    load();
+    loadOnOpen();
     const d = ref.current;
     if (d && !d.open) d.showModal ? d.showModal() : d.setAttribute('open', '');
     cancelRef.current?.focus();

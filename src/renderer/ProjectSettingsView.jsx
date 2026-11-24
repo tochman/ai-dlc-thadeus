@@ -1,6 +1,6 @@
 // A project's settings in its Configuration view (EPIC-06 FR3, US-0012): one section at a time, chosen in the left arm
 // like the Settings tabs, in the same LCARS frames. Saved in the app's own settings, never in the project.
-import { useEffect, useState } from 'react';
+import { useEffect, useEffectEvent, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { isValidFeaturesPath } from '../main/parsers/features.js';
 import { isValidRatesPath } from '../main/reprice.js';
@@ -243,7 +243,10 @@ function AgentSection({ projectId, settings, harness, harnesses, onAddHarness, a
     load();
     clear();
   };
-  useEffect(load, [harness, savedTabs.join()]); // detection finished, or the saved values after a save
+  // Detection finished, or the saved values after a save: compared by content, as the list is new on every render.
+  const loadSaved = useEffectEvent(load);
+  const savedKey = savedTabs.join();
+  useEffect(() => loadSaved(), [harness, savedKey]);
 
   function submit(e) {
     e.preventDefault();

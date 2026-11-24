@@ -37,6 +37,8 @@ const m = vi.hoisted(() => {
       loadCost: vi.fn(async () => ({ available: false })),
       loadIntentDetail: vi.fn(async () => ({ detail: true })),
       loadIntentList: vi.fn(async () => ({ intents: [] })),
+      setIntentName: vi.fn(async () => ({ ok: true, name: 'tidy-up' })), // US-0508
+      watchThadeus: vi.fn(() => ({ close: vi.fn(async () => {}) })), // US-0508: the .thadeus watcher's callback is driven by hand
       // US-0209: the merged summary; null when there is no ledger and no cost row.
       loadCrossMachineCost: vi.fn(async (_root, _space, _intents, ledger) => ({
         summary: ledger ? { project: { total: { usd: 3 } }, perIntent: {} } : null,
@@ -331,6 +333,8 @@ vi.mock('../../src/main/menu.js', () => ({
   setMenuState: m.svc.setMenuState
 }));
 vi.mock('../../src/main/i18n.js', () => ({ currentLanguage: m.svc.currentLanguage, setLanguageFromSettings: m.svc.setLanguageFromSettings }));
+vi.mock('../../src/main/intentNames.js', () => ({ NAMES_PATH: '.thadeus/intent-names.json', setIntentName: m.svc.setIntentName }));
+vi.mock('../../src/main/thadeusSync.js', async (importOriginal) => ({ ...(await importOriginal()), watchThadeus: m.svc.watchThadeus }));
 
 const ipc = await import('../../src/main/ipc.js');
 ipc.registerIpc();
@@ -1337,6 +1341,38 @@ describe('agent dialogs wiring (US-0506 u1 LC6)', () => {
     const args = svc.spawnSession.mock.calls.at(-1)[0];
     expect(args.env).toBeUndefined();
     expect(args.onExit).toBeUndefined();
+  });
+});
+
+describe('intents:rename (US-0508)', () => {
+  const listed = [{ dirName: '261123-rename-and-clean', slug: 'rename-and-clean', aidlcSlug: 'rename-and-clean' }];
+  const changed = (projectId) => ['project:changed', { projectId, space: 'default', dirNames: [], indexChanged: true, costChanged: false }];
+
+  it('saves the name against the space list and tells the renderer to reload it (FR1.3, FR1.5)', async () => {
+    const { projectId, sender } = await openProject('/work/rename');
+    svc.loadIntentList.mockResolvedValueOnce({ intents: listed });
+    sender.send.mockClear();
+    expect(await call('intents:rename', {}, projectId, '261123-rename-and-clean', 'tidy-up')).toEqual({ ok: true, name: 'tidy-up' });
+    expect(svc.setIntentName).toHaveBeenLastCalledWith('/work/rename', '261123-rename-and-clean', 'tidy-up', { intents: listed });
+    expect(sender.send).toHaveBeenCalledWith(...changed(projectId));
+  });
+
+  it('a refused name comes back with its reason and sends nothing (FR1.3)', async () => {
+    const { projectId, sender } = await openProject('/work/rename-bad');
+    svc.setIntentName.mockResolvedValueOnce({ ok: false, error: 'taken' });
+    sender.send.mockClear();
+    expect(await call('intents:rename', {}, projectId, '261123-rename-and-clean', 'other')).toEqual({ ok: false, error: 'taken' });
+    expect(sender.send).not.toHaveBeenCalledWith('project:changed', expect.anything());
+  });
+
+  it('a change to intent-names.json, also one pulled from another clone, reloads the list; other .thadeus files do not (FR1.7)', async () => {
+    const { projectId, sender } = await openProject('/work/rename-watch');
+    const onChange = svc.watchThadeus.mock.calls.at(-1)[1];
+    sender.send.mockClear();
+    await onChange([{ file: '.thadeus/tokens/x.json' }]);
+    expect(sender.send).not.toHaveBeenCalledWith('project:changed', expect.anything());
+    await onChange([{ file: '.thadeus/intent-names.json' }]);
+    expect(sender.send).toHaveBeenCalledWith(...changed(projectId));
   });
 });
 

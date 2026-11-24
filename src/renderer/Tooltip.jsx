@@ -77,6 +77,7 @@ export default function Tooltip({ text, focusText, focusable = false, children }
     onMouseLeave: chain('onMouseLeave', () => mode !== 'focus' && hide()),
     onFocus: chain('onFocus', (e) => {
       if (e.target !== e.currentTarget) return; // focus inside the anchor belongs to that element
+      if (!(focusText ?? text)) return; // US-0044: an empty focusText means hover only, so focus leaves hover free
       stopTimer();
       anchorRef.current = e.currentTarget;
       setMode('focus');

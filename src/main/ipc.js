@@ -65,6 +65,7 @@ import { syncCycle, watchThadeus } from './thadeusSync.js';
 import { storyIdsIn } from './parsers/features.js';
 import { runFixed } from './exec.js';
 import { park, readParkStatus, unpark, withParkStatus } from './intentPark.js';
+import { NAMES_PATH, setIntentName } from './intentNames.js';
 import { DELIVERY_DEFAULT } from './parsers/releases.js';
 import { getSetupInfo, runSetup } from './setup.js';
 import { detectHarnesses } from './harness.js';
@@ -549,9 +550,12 @@ async function refreshParkStatus(projectId) {
   const p = projects.get(projectId);
   if (!p) return;
   p.parkStatus = await readParkStatus(p.root);
-  if (projects.get(projectId) === p && !p.sender.isDestroyed()) {
-    p.sender.send('project:changed', { projectId, space: p.space, dirNames: [], indexChanged: true, costChanged: false });
-  }
+  if (projects.get(projectId) === p) sendListChanged(projectId, p);
+}
+
+/** Tells the renderer to reload the intent list (US-0510 FR4.1, US-0508 FR1.7). */
+function sendListChanged(projectId, p) {
+  if (!p.sender.isDestroyed()) p.sender.send('project:changed', { projectId, space: p.space, dirNames: [], indexChanged: true, costChanged: false });
 }
 
 /** (Re)starts the watcher when the renderer looks at a different space. */
@@ -706,6 +710,7 @@ function watchThadeusFiles(projectId) {
   const p = project(projectId);
   try {
     p.thadeusWatcher = watchThadeus(p.root, async (files) => {
+      if (files.some((f) => f.file === NAMES_PATH)) sendListChanged(projectId, p); // US-0508 FR1.7: a rename here or pulled in
       try {
         for (const entry of files) await addThadeus(app.getPath('userData'), p.root, entry);
         await sendPlanningChanged(projectId, null);
@@ -908,6 +913,14 @@ const handlers = {
     const known = intents.filter((i) => !i.missingOnDisk).map((i) => i.dirName);
     const res = await unpark(p.root, dirName, { activeDirName: intents.find((i) => i.active)?.dirName ?? null, known });
     await refreshParkStatus(projectId);
+    return res;
+  },
+  // US-0508 FR1.3, FR1.5: an intent's display name, checked against the space's list; allowed while its work runs.
+  'intents:rename': async (_event, projectId, dirName, name) => {
+    const p = project(projectId);
+    const { intents } = await loadIntentList(p.root, p.space, []);
+    const res = await setIntentName(p.root, String(dirName), name, { intents });
+    if (res.ok) sendListChanged(projectId, p);
     return res;
   },
   // US-0303 FR3.5: the project's velocity from the cached intent list, the feature docs, the release tags and the epic

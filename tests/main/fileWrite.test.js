@@ -215,7 +215,8 @@ describe('writeAtomic (US-0506 u4 RD33)', () => {
   // US-0607 FR1.1 adds planningRecord.js: one file per project in the app's own userData folder, named by a hash of the root.
   // US-0608 D5 adds planningSync.js: it writes only feature-doc paths that validDocFile checked, its folder resolved in the root.
   // US-0609 FR3.5 adds thadeusSync.js: it writes only paths isThadeusPath or the harness table accept, resolved in its worktree root.
-  it('is imported only by fileWrite.js, agentHooks.js, tokenReadings.js, usageSnapshot.js, credentials.js, costRules.js, planningRecord.js, planningSync.js and thadeusSync.js (SD36)', () => {
+  // US-0508 FR1.1 adds intentNames.js: one fixed file, .thadeus/intent-names.json, its folder resolved in the root.
+  it('is imported only by fileWrite.js, agentHooks.js, tokenReadings.js, usageSnapshot.js, credentials.js, costRules.js, planningRecord.js, planningSync.js, thadeusSync.js and intentNames.js (SD36)', () => {
     const src = path.resolve(__dirname, '../../src');
     const users = readdirSync(src, { recursive: true })
       .filter((f) => /\.jsx?$/.test(f))
@@ -227,6 +228,7 @@ describe('writeAtomic (US-0506 u4 RD33)', () => {
       'main/costRules.js',
       'main/credentials.js',
       'main/fileWrite.js',
+      'main/intentNames.js',
       'main/planningRecord.js',
       'main/planningSync.js',
       'main/thadeusSync.js',

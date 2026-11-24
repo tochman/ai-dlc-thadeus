@@ -162,6 +162,16 @@
     "active": "Active",
     "parked": "Parked at {stage}",
     "park": "Park",
+    "rename": {
+      "open": "Rename",
+      "label": "Display name",
+      "hint": "Lowercase letters, digits and hyphens, at most 60. Empty shows the folder name again.",
+      "save": "Save",
+      "cancel": "Cancel",
+      "invalid": "\"{name}\" is not a valid name: use lowercase letters, digits and hyphens, 1 to 60 characters.",
+      "taken": "\"{name}\" is already used by another intent in this space.",
+      "unknown": "There is no intent {name} in this space."
+    },
     "unknownStatus": "unknown status",
     "doneOfExecuted": "Done of executed stages",
     "missingInIndex": "Missing in intents.json",
@@ -1579,6 +1589,7 @@
       }
     },
     "context": "{project} · {intent} · {stage}",
+    "project": "PROJECT {project}",
     "state": {
       "sending": "Sending…",
       "sent": "Sent to {harness}.",

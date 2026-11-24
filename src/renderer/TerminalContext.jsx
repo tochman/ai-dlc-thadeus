@@ -47,8 +47,11 @@ export function TerminalProvider({ children, askingIntents = [] }) {
   const noteAgent = (tab) => {
     if (isAgentTab(tab) && tab !== ALIAS) setLastAgent(tab);
   };
-  const tabName = (tab) =>
-    isAgentTab(tab) ? (harnessOf(resolve(tab))?.name ?? agentRef.current.harness?.name ?? t('terminal.agent')) : t(`terminal.tabName.${tab}`);
+  // Reads only refs, so one function serves every render (US-0043).
+  const tabName = useCallback(
+    (tab) => (isAgentTab(tab) ? (harnessOf(resolve(tab))?.name ?? agentRef.current.harness?.name ?? t('terminal.agent')) : t(`terminal.tabName.${tab}`)),
+    []
+  );
   const markPending = useCallback((tab, on) => setPending((p) => (!!p[tab] === on ? p : { ...p, [tab]: on })), []);
 
   const register = useCallback(
@@ -80,17 +83,20 @@ export function TerminalProvider({ children, askingIntents = [] }) {
   }, []);
 
   /** Starts an exited tab and waits for its first idle (FR1.3). */
-  const ready = useCallback(async (tab) => {
-    const s = sessions.current[tab];
-    if (!s) throw new Error(noTabText(tab));
-    if (s.activity.state === 'exited' && !(await s.spawn())) throw new Error(t('terminal.cannotStart', { name: tabName(tab) }));
-    try {
-      await waitFor(s.activity, 'idle', READY_TIMEOUT_MS);
-    } catch {
-      throw new Error(t('terminal.noResponse', { name: tabName(tab), seconds: READY_TIMEOUT_MS / 1000 }));
-    }
-    return s;
-  }, []);
+  const ready = useCallback(
+    async (tab) => {
+      const s = sessions.current[tab];
+      if (!s) throw new Error(noTabText(tab));
+      if (s.activity.state === 'exited' && !(await s.spawn())) throw new Error(t('terminal.cannotStart', { name: tabName(tab) }));
+      try {
+        await waitFor(s.activity, 'idle', READY_TIMEOUT_MS);
+      } catch {
+        throw new Error(t('terminal.noResponse', { name: tabName(tab), seconds: READY_TIMEOUT_MS / 1000 }));
+      }
+      return s;
+    },
+    [tabName]
+  );
 
   /** Shows the tab, makes sure it runs, then does `fn`. Errors are shown in the terminal panel. */
   const run = useCallback(
@@ -112,8 +118,9 @@ export function TerminalProvider({ children, askingIntents = [] }) {
     [ready, show]
   );
 
-  const stateOf = (tab) => states[resolve(tab)] ?? 'exited';
-  const lastHarness = harnessOf(lastRef.current) ?? agent.harness;
+  const anyAsking = askingIntents.length > 0; // all `asking` reads, so the value changes only when this does
+  const lastTab = lastRef.current; // the tab 'agent' resolves to in this render
+  const lastHarness = harnessOf(lastTab) ?? agent.harness;
 
   const value = useMemo(
     () => ({
@@ -126,17 +133,17 @@ export function TerminalProvider({ children, askingIntents = [] }) {
       setAgent,
       agentTabs,
       harnessOf,
-      lastAgent: lastRef.current,
+      lastAgent: lastTab,
       register,
       show,
-      state: stateOf,
+      state: (tab) => states[resolve(tab)] ?? 'exited',
       /** True when any agent tab is "Arbetar" (US-0803: busy checks count every agent tab). */
       anyBusy: () => agentTabs.some((tab) => states[tab] === 'busy'),
       /**
        * True while an agent waits on the person in this project: a question or gate asked since the app started
        * (US-0505 `early: false`), with an agent tab still running (EPIC-00 US-0005).
        */
-      asking: () => askingIntents.length > 0 && agentTabs.some((tab) => (states[tab] ?? 'exited') !== 'exited'),
+      asking: () => anyAsking && agentTabs.some((tab) => (states[tab] ?? 'exited') !== 'exited'),
       /** True while any agent tab's session is alive (not exited), quiet or not (EPIC-00 US-0007). */
       running: () => agentTabs.some((tab) => (states[tab] ?? 'exited') !== 'exited'),
       /** How many agent tabs are "Arbetar" now. */
@@ -208,7 +215,7 @@ export function TerminalProvider({ children, askingIntents = [] }) {
         if (!(await sessions.current[key]?.restart())) setError(t('terminal.cannotRestart', { name: tabName(key) }));
       }
     }),
-    [view, error, agent, agentTabs, lastAgent, setAgent, register, show, states, run, pending, markPending, askingIntents.join('\n')]
+    [view, error, agent, agentTabs, lastTab, lastHarness, setAgent, register, show, states, run, pending, markPending, tabName, anyAsking]
   );
 
   return <TerminalCtx.Provider value={value}>{children}</TerminalCtx.Provider>;

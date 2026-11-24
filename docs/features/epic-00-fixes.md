@@ -6,9 +6,9 @@
 
 > Small fixes the person reports while using the app: something looks off, behaves wrongly or is missing a detail. Each fix becomes a story here, so nothing reported in passing gets lost. A fix that grows into a feature moves to its topic's epic.
 
-**Stories:** US-0001, US-0002, US-0003, US-0004, US-0005, US-0006, US-0007, US-0008, US-0009, US-0010, US-0011, US-0012, US-0013, US-0014, US-0015, US-0016, US-0017, US-0018, US-0019, US-0020, US-0021, US-0022, US-0023, US-0024, US-0025, US-0026, US-0027, US-0028, US-0029, US-0030, US-0031, US-0032, US-0033, US-0034, US-0035, US-0036, US-0037, US-0038, US-0039, US-0040, US-0041, US-0042, US-0043
+**Stories:** US-0001, US-0002, US-0003, US-0004, US-0005, US-0006, US-0007, US-0008, US-0009, US-0010, US-0011, US-0012, US-0013, US-0014, US-0015, US-0016, US-0017, US-0018, US-0019, US-0020, US-0021, US-0022, US-0023, US-0024, US-0025, US-0026, US-0027, US-0028, US-0029, US-0030, US-0031, US-0032, US-0033, US-0034, US-0035, US-0036, US-0037, US-0038, US-0039, US-0040, US-0041, US-0042, US-0043, US-0044, US-0045, US-0046
 
-**Status (2026-11-22):** ✅ US-0001–US-0020 released (v0.2.3–v0.2.6). ✅ US-0021–US-0023 released in v0.2.7. ✅ US-0024 released in v0.2.8. ✅ US-0025 released in v0.2.9. ✅ US-0026 released in v0.2.9. ✅ US-0027 released in v0.2.9. ✅ US-0028 released in v0.2.10. ✅ US-0029 released in v0.2.10. ✅ US-0030 released in v0.2.10. ✅ US-0031 released in v0.2.10. ✅ US-0032 released in v0.2.11. ✅ US-0033 released in v0.2.11. ✅ US-0034 released in v0.2.12. ✅ US-0035 and US-0036 released in v0.2.13. ✅ US-0037, US-0038, US-0039, US-0040, US-0041 and US-0042 released in v0.2.14. Each story names its release.
+**Status (2026-11-23):** ✅ US-0001–US-0020 released (v0.2.3–v0.2.6). ✅ US-0021–US-0023 released in v0.2.7. ✅ US-0024 released in v0.2.8. ✅ US-0025 released in v0.2.9. ✅ US-0026 released in v0.2.9. ✅ US-0027 released in v0.2.9. ✅ US-0028 released in v0.2.10. ✅ US-0029 released in v0.2.10. ✅ US-0030 released in v0.2.10. ✅ US-0031 released in v0.2.10. ✅ US-0032 released in v0.2.11. ✅ US-0033 released in v0.2.11. ✅ US-0034 released in v0.2.12. ✅ US-0035 and US-0036 released in v0.2.13. ✅ US-0037, US-0038, US-0039, US-0040, US-0041 and US-0042 released in v0.2.14. ✅ US-0043 released in v0.2.15. ✅ US-0044 released in v0.2.15. ✅ US-0045 released in v0.2.15. ✅ US-0046 released in v0.2.15. Each story names its release.
 
 ---
 
@@ -696,17 +696,65 @@
 
 ---
 
-**US-0043: A cleaning pass: no ESLint warnings, simpler code** 📋 Planned, for v0.3.0
+**US-0043: A cleaning pass: no ESLint warnings, simpler code** ✅ Released in v0.2.15
 - As a **developer working on the app**, in order to **see real problems in the lint output instead of 30 familiar warnings**, I would like **a cleaning pass that clears the ESLint warnings and simplifies the code they point at, using the `/simplify` skill**.
 - **Epic:** EPIC-00
 - **Priority:** Medium
 - **Complexity:** Medium
 - **Background:** Asked for 2026-11-22 after the v0.2.14 release. `npx eslint .` (and CI's `verify` job) reports 30 warnings and 0 errors, nearly all `react-hooks/exhaustive-deps` on `useEffect`, `useCallback` and `useMemo`: missing dependencies (`load`, `t`, `bridge`, `terminal`, `project.projectId`, `onMeta`, `onActiveRecord`, `checkNow`, `now`, …) and complex expressions in dependency arrays. They sit in `App.jsx`, `CostRulesSection.jsx`, `FeaturesView.jsx`, `ModelProfilesSection.jsx`, `ProfileSwitchDialog.jsx`, `ProjectSettingsView.jsx`, `ProjectView.jsx`, `RefreshPanel.jsx`, `TerminalContext.jsx`, `TokenView.jsx`, `UpdateNotice.jsx`, `useFeatures.js` and `tests/renderer/EditorPanel.test.jsx`. Some hide real stale-closure bugs; others are effects that should run once and need a clearer shape.
 - **Acceptance Criteria:**
-  - [ ] The `/simplify` skill is run over the code the warnings point at (and the files it touches), and its fixes are applied where they keep behaviour the same.
-  - [ ] Each warning is fixed for its cause: a stable callback (`useCallback`, a ref), a dependency added where the effect must rerun, an effect split or moved into an event handler, or a value extracted from a complex dependency expression. A rule is never switched off to silence a warning, and an `eslint-disable` line is used only with a comment that says why.
-  - [ ] `npx eslint .` reports 0 errors and 0 warnings, and CI keeps it that way (the lint step fails on warnings, `--max-warnings 0`).
-  - [ ] No behaviour changes: a test fails first wherever a warning hid a real bug (a stale value, a missed rerun), and the full suite, coverage (80%), the built-app end-to-end tests and Prettier stay green.
-- **Notes:** A code chore, so it runs on the `quick-fix` plan. Built last in v0.3.0, after the Spec Kit stories, because it touches the same files (`App.jsx`, `ProjectView.jsx`, `ProjectSettingsView.jsx`) and would otherwise clash with their branches.
+  - [x] The `/simplify` skill is run over the code the warnings point at (and the files it touches), and its fixes are applied where they keep behaviour the same.
+  - [x] Each warning is fixed for its cause: a stable callback (`useCallback`, a ref), a dependency added where the effect must rerun, an effect split or moved into an event handler, or a value extracted from a complex dependency expression. A rule is never switched off to silence a warning, and an `eslint-disable` line is used only with a comment that says why.
+  - [x] `npx eslint .` reports 0 errors and 0 warnings, and CI keeps it that way (the lint step fails on warnings, `--max-warnings 0`).
+  - [x] No behaviour changes: a test fails first wherever a warning hid a real bug (a stale value, a missed rerun), and the full suite, coverage (80%), the built-app end-to-end tests and Prettier stay green.
+- **Notes:** A code chore, so it runs on the `quick-fix` plan. Built last in v0.2.15, after US-0508, because it touches the same files (`App.jsx`, `ProjectView.jsx`, `ProjectSettingsView.jsx`) and would otherwise clash with their branches.
 - **Dependencies:** none
 
+---
+
+**US-0044: The intent view fits the window and its parts stay inside their frames** ✅ Released in v0.2.15
+- As a **developer following an intent**, in order to **see all of the intent view without parts cut off or spilling out**, I would like **the intent view's rows, buttons and panels to fit the window and stay inside the LCARS frames**.
+- **Epic:** EPIC-00
+- **Priority:** High
+- **Complexity:** Small
+- **Background:** Reported 2026-11-22 with two screenshots of the v0.2.14 app on the `spec-kit-framework` intent, after the US-0417 LCARS rework. The view is wider than the window: the story chips row, the tab row (Review and Files out of sight in a narrow window), the Units graph, the intent name, the "Unpark and resume" button and the "Read the review" button are cut off at the right edge. There is an empty band between the title bar and the chips row. The Review view's heading sits against the tab row. The left arm's Live tokens panel spills out of the arm's curve, with its chart below the frame.
+- **Acceptance Criteria:**
+  - [x] **Given** a window of any width the app allows, **then** the intent view has no horizontal overflow: the chips and the tabs wrap or scroll inside their own row, and the head's intent name and buttons stay fully visible.
+  - [x] **Given** a wide Units graph, **then** it scrolls inside its own panel and does not widen the view.
+  - [x] **Given** the intent view, **then** there is no empty band between the title bar and the chips row, and each view's heading has the usual space below the tab row.
+  - [x] **Given** the left arm, **then** the Live tokens panel and its chart stay inside the arm's frame.
+  - [x] A test fails without each change and passes with it; the existing suite, the built-app end-to-end tests and the LCARS look stay as they are.
+- **Notes:** A code fix, so it runs on the `quick-fix` plan (`fix/US-0044`). Fix forward as the next patch release.
+- **Dependencies:** US-0417 ✅
+
+---
+
+**US-0045: The agent dialog clears its compact, fresh-session and no-intent pages, and shows the newest message** ✅ Released in v0.2.15
+- As a **developer answering the app's dialogs**, in order to **act on what is happening now**, I would like **the dialog to drop its compact, fresh-session and no-intent pages once they no longer apply, and to show a new message when it arrives instead of the last one in the queue**.
+- **Epic:** EPIC-00
+- **Priority:** High
+- **Complexity:** Small
+- **Background:** Reported 2026-11-23: the dialogs still do not clear the compact / new session / no-intent pages, and when a new message comes in, the last message in the queue is shown, not the new one. US-0031 (v0.2.10) fixed the same symptom for the page the dialog was closed on; this case is still open.
+- **Acceptance Criteria:**
+  - [x] **Given** a compact, fresh-session or no-intent page in the dialog, **when** it no longer applies (it was picked, the session restarted, or an intent became active), **then** it leaves the dialog's queue.
+  - [x] **Given** the dialog has earlier pages in its queue, **when** a new message arrives, **then** the dialog shows the new message; the earlier pages stay reachable with Previous/Next.
+  - [x] A test fails without each change and passes with it; the existing suite stays green.
+- **Notes:** A code fix, so it runs on the `quick-fix` plan (`fix/US-0045`).
+- **Dependencies:** US-0031 ✅
+
+---
+
+**US-0046: The agent dialog names the project it comes from when several projects are open** ✅ Released in v0.2.15
+- As a **developer with several projects open**, in order to **know which project is asking before I answer**, I would like **each agent dialog page to name the project it comes from**.
+- **Epic:** EPIC-00
+- **Priority:** High
+- **Complexity:** Small
+- **Background:** Reported 2026-11-23: with several projects open, a dialog page does not say which project it comes from, so a question, gate, compact or fresh-session offer can be answered for the wrong project.
+- **Acceptance Criteria:**
+  - [x] **Given** two or more projects are open, **when** the agent dialog shows a page, **then** the page names the project it comes from (the project's name, as in the project list), in the LCARS look.
+  - [x] **Given** the dialog's queue holds pages from different projects, **when** I page with Previous/Next, **then** each page shows its own project.
+  - [x] **Given** only one project is open, **then** the dialog looks as it does now, without a project name.
+  - [x] The project name goes through `t()` with an ICU placeholder, with the same key in `sv.json` and `en.json`.
+  - [x] A test fails without each change and passes with it; the existing suite stays green.
+- **Notes:** A code fix, so it runs on the `quick-fix` plan (`fix/US-0046`).
+- **Dependencies:** US-0031 ✅

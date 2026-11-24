@@ -93,7 +93,9 @@ export default function ModelProfilesSection({ projectId, harness, settings, mot
   const [status, setStatus] = useState(null); // {ok: boolean, text?: string}
   const active = settings?.modelProfiles?.active ?? 'none';
 
-  useEffect(() => setDraft(draftOf(settings?.modelProfiles)), [JSON.stringify(settings?.modelProfiles ?? null)]);
+  // The draft follows the saved profiles when their content changes, not on every new settings object (US-0043).
+  const savedKey = JSON.stringify(settings?.modelProfiles ?? null);
+  useEffect(() => setDraft(draftOf(JSON.parse(savedKey))), [savedKey]);
   useEffect(() => {
     if (!harness) return;
     Promise.all([window.bridge.listPlans(projectId, harness), window.bridge.getSavedModelProfiles(projectId, harness)])

@@ -25,6 +25,7 @@ contextBridge.exposeInMainWorld('bridge', {
   // US-0510 FR4.2, FR4.3: a project id and an intent name cross the bridge, never a command.
   parkIntent: call('intents:park'),
   unparkIntent: call('intents:unpark'),
+  renameIntent: call('intents:rename'), // US-0508 FR1.2: a project id, a folder name and the new display name
   getCost: call('project:cost'),
   getVelocity: call('project:velocity'), // intent, story and project velocity (US-0303 FR3.5)
   // An intent's token readings by dir name (EPIC-02 US-0208); with a space, `{source, readings, wallMs, gap}`, rebuilt

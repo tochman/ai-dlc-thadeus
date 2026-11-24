@@ -8,7 +8,7 @@
 
 **Stories:** US-0501, US-0502, US-0503, US-0504, US-0505, US-0506, US-0507, US-0508, US-0509, US-0510
 
-**Status (2026-11-20):** ✅ US-0501–US-0503, US-0505 and US-0506 released (v0.2.0–v0.2.5). ✅ US-0504 released in v0.2.7. ✅ US-0507 released in v0.2.8. 📋 US-0508 and US-0509 planned, for v0.3.1. ✅ US-0510 released in v0.2.13. Each story names its release.
+**Status (2026-11-23):** ✅ US-0501–US-0503, US-0505 and US-0506 released (v0.2.0–v0.2.5). ✅ US-0504 released in v0.2.7. ✅ US-0507 released in v0.2.8. ✅ US-0508 released in v0.2.15. 📋 US-0509 planned, for v0.3.1. ✅ US-0510 released in v0.2.13. Each story names its release.
 
 ---
 
@@ -156,19 +156,19 @@
 - **Notes:** Added 2026-11-14 at the person's request. Decided 2026-11-16: it goes into the token detail view, not a view of its own.
 - **Dependencies:** US-0104, US-0506
 
-**US-0508: Rename an intent** 📋 Planned, for v0.3.1
+**US-0508: Rename an intent** ✅ Released in v0.2.15
 - As a **developer with many intents**, in order to **find the right one by a name that says what it is**, I would like to **rename an intent from the app**.
 - **Epic:** EPIC-05
 - **Priority:** Medium
 - **Complexity:** Medium
 - **Background:** Asked for 2026-11-15: "I wonder if we can add a story about renaming intents? I think this could be a good addition."
 - **Acceptance Criteria:**
-  - [ ] An intent in the list or its detail can be given a new name, checked like a slug (no spaces, no path characters, unique in the space).
-  - [ ] The rename goes through AI-DLC's own command when it has one; the app never edits engine-owned files itself.
-  - [ ] Story links, the cost history and an open intent's view follow the new name; nothing points at the old one.
-  - [ ] An intent whose work is running cannot be renamed, and the app says why.
-  - [ ] Every text goes through `t()` in Swedish and English.
-- **Notes:** `aidlc engine orchestrate help` (aidlc 2.11.3) lists `intent switch`, `archive` and `unarchive`, but no rename. Find out whether AI-DLC offers one, or whether a display name kept beside the slug is enough.
+  - [x] An intent's detail (opened from its row in the list) can give it a new name, checked like a slug (lowercase letters, digits and hyphens, 1 to 60 characters, unique in the space). An empty name brings the folder name back.
+  - [x] The rename goes through AI-DLC's own command when it has one; the app never edits engine-owned files itself. AI-DLC 2.11.3 has none, so the app keeps the name in its own `.thadeus/intent-names.json`.
+  - [x] Story links, the cost history and an open intent's view follow the new name; nothing points at the old one.
+  - [x] An intent can be renamed at any time, also while its work is running: the name is only shown, so nothing AI-DLC uses moves. (Changed 2026-11-23 from "cannot be renamed while running".)
+  - [x] Every text goes through `t()` in Swedish and English.
+- **Notes:** AI-DLC 2.11.3 lists `intent switch`, `archive` and `unarchive`, but no rename, so the name is a display name kept beside the slug.
 - **Dependencies:** US-0501
 
 **US-0509: Change the plan of an intent that has started** 📋 Planned, for v0.3.1

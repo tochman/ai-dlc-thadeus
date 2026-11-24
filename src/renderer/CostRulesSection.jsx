@@ -3,7 +3,7 @@
 // Clash warnings and broken files show with the diff and never block the save (FR6.2, FR2.4). Main keeps the
 // previewed texts; only {on, lines} cross the bridge. US-0032 AC1: shipped lines a block lacks are offered, and adding
 // them only edits the text; the usual preview and save write them.
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { COST_RULES_TARGETS } from '../shared/costRules.js';
 import { ChangePanel } from './ConfigEdit.jsx';
@@ -72,20 +72,22 @@ export default function CostRulesSection({ projectId, motion }) {
   const [texts, setTexts] = useState({});
   const [calls, setCalls] = useState(null);
 
-  function load() {
-    return Promise.resolve()
-      .then(() => window.bridge.costRulesStatus(projectId))
-      .then((s) => {
-        setStatus(s);
-        setOn(s.on);
-        setTexts(Object.fromEntries(COST_RULES_TARGETS.map((k) => [k, (s.lines[k] ?? []).join('\n')])));
-        setLoadError(null);
-      })
-      .catch((err) => setLoadError(errorText(err)));
-  }
+  const load = useCallback(
+    () =>
+      Promise.resolve()
+        .then(() => window.bridge.costRulesStatus(projectId))
+        .then((s) => {
+          setStatus(s);
+          setOn(s.on);
+          setTexts(Object.fromEntries(COST_RULES_TARGETS.map((k) => [k, (s.lines[k] ?? []).join('\n')])));
+          setLoadError(null);
+        })
+        .catch((err) => setLoadError(errorText(err))),
+    [projectId]
+  );
   useEffect(() => {
     load();
-  }, [projectId]);
+  }, [load]);
 
   // US-0032 AC1: the shipped lines a present block lacks and the text does not hold yet.
   const missing = COST_RULES_TARGETS.flatMap((k) => {

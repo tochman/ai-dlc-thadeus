@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useEffectEvent, useMemo, useRef, useState } from 'react';
 import EditorPanel, { useEditorTabs } from './editor/EditorPanel.jsx';
 import FileTree from './editor/FileTree.jsx';
 import { EditorCtx } from './editor/EditorContext.jsx';
@@ -78,13 +78,16 @@ function AidlcProject({ project, view, teamSection = 'refresh', onView, focusInt
   const activeDirName = activeIntent?.dirName ?? null;
 
   // The editor's "the agent may change this file too" notice needs the active intent's record (US-1001).
+  // US-0043: the effects below run on their trigger only and read the latest callbacks through effect events.
+  const reportRecord = useEffectEvent((record) => onActiveRecord?.(record));
   useEffect(() => {
-    onActiveRecord?.(activeDirName && p.space ? `aidlc/spaces/${p.space}/intents/${activeDirName}/` : null);
+    reportRecord(activeDirName && p.space ? `aidlc/spaces/${p.space}/intents/${activeDirName}/` : null);
   }, [activeDirName, p.space]);
 
   // A story's link to an intent selects that intent (FR2.6).
+  const selectIntent = useEffectEvent((dirName) => p.setSelected(dirName));
   useEffect(() => {
-    if (focusIntent) p.setSelected(focusIntent.dirName);
+    if (focusIntent) selectIntent(focusIntent.dirName);
   }, [focusIntent]);
 
   // "N intents" at the foot of the left arm (FR2.2).
@@ -265,12 +268,14 @@ function ProjectContent({
   );
   const editorCtx = useMemo(() => ({ open: openInApp }), [openInApp]);
   const [activeRecord, setActiveRecord] = useState(null);
-  useEffect(() => {
-    if (editRequest?.projectId === project.projectId) openInApp(editRequest.rel);
-  }, [editRequest]); // once per request, from the docs dialog
+  // Once per request, from the docs dialog; effect events read the latest values without rerunning (US-0043).
+  const openRequest = useEffectEvent((request) => {
+    if (request?.projectId === project.projectId) openInApp(request.rel);
+  });
+  useEffect(() => openRequest(editRequest), [editRequest]);
 
   // The Terminal menu (EPIC-04 US-0404 FR2.4): only the project it was sent for reacts; seq lets it repeat.
-  useEffect(() => {
+  const runTerminalCommand = useEffectEvent((terminalCommand) => {
     if (!terminalCommand || terminalCommand.projectId !== project.projectId) return;
     // The question popup's answer: keys for the agent tab, the view stays where it is (US-0505).
     if (terminalCommand.action === 'answer') {
@@ -296,17 +301,19 @@ function ProjectContent({
     }
     if (terminalCommand.action === 'restart') terminal.restart(terminal.view.active);
     else terminal.show(terminalCommand.action);
-  }, [terminalCommand]); // runs once per command, not when the terminal state changes
+  });
+  useEffect(() => runTerminalCommand(terminalCommand), [terminalCommand]); // once per command, not when the terminal state changes
   // US-1401 FR1.2: the framework and the shared views table decide what shows (AC1.1.5).
   const { framework, defaultView } = project.detection;
   const onAidlc = framework === 'aidlc';
   const wasAidlc = useRef(onAidlc);
   const [justSetUp, setJustSetUp] = useState(false);
 
+  const restartAgent = useEffectEvent(() => terminal.restart('agent'));
   useEffect(() => {
     if (onAidlc && !wasAidlc.current) {
       setJustSetUp(true);
-      terminal.restart('agent');
+      restartAgent();
     }
     wasAidlc.current = onAidlc;
   }, [onAidlc]); // only the switch from "not AI-DLC" to AI-DLC matters here
@@ -327,10 +334,11 @@ function ProjectContent({
   const problem = harness ? harnessProblem(harness, detected, t) : null;
   const extras = (harness && tabIds ? tabIds.filter((id) => id !== harness.id) : []).map(selectableHarness).filter((h) => h && !harnessProblem(h, detected, t));
   const extrasKey = extras.map((h) => h.id).join();
-  useEffect(() => {
+  const reportAgent = useEffectEvent(() => {
     terminal.setAgent({ harness, problem, extras });
     onMeta?.(project.projectId, { harness: problem ? null : harnessId }); // the question popup answers only a running harness
-  }, [harness, problem, extrasKey]); // setAgent is stable
+  });
+  useEffect(() => reportAgent(), [harness, problem, extrasKey]); // extras compared by their ids
   // The agent tab's warning (FR5.1) and the hooks strip's Details (US-0506 u4 BR7.15) open Configuration › Agent (US-0012).
   const [hooksFocus, setHooksFocus] = useState(false);
   const openAgentSettings = (focusHooks) => {
