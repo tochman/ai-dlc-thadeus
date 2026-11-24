@@ -15676,3 +15676,393 @@
 **Options**: ["Merge #119 if green (Recommended)","Redo u7 design here","Park for now"]
 
 ---
+
+## Sensor Fired
+**Timestamp**: 2026-11-24T13:34:16Z
+**Event**: SENSOR_FIRED
+**Fire id**: 870ade98
+**Sensor ID**: required-sections
+**Stage slug**: code-generation
+**Unit**: u4-framework-choice
+**Output path**: aidlc/spaces/default/intents/261119-spec-kit-framework/construction/u4-framework-choice/code-generation/code-generation-plan.md
+
+---
+
+## Sensor Passed
+**Timestamp**: 2026-11-24T13:34:17Z
+**Event**: SENSOR_PASSED
+**Fire id**: 870ade98
+**Sensor ID**: required-sections
+**Stage slug**: code-generation
+**Unit**: u4-framework-choice
+**Output path**: aidlc/spaces/default/intents/261119-spec-kit-framework/construction/u4-framework-choice/code-generation/code-generation-plan.md
+**Duration ms**: 243
+
+---
+
+## Sensor Fired
+**Timestamp**: 2026-11-24T13:34:17Z
+**Event**: SENSOR_FIRED
+**Fire id**: c9890e8d
+**Sensor ID**: required-sections
+**Stage slug**: code-generation
+**Unit**: u4-framework-choice
+**Output path**: aidlc/spaces/default/intents/261119-spec-kit-framework/construction/u4-framework-choice/code-generation/unit-test-instructions.md
+
+---
+
+## Sensor Passed
+**Timestamp**: 2026-11-24T13:34:17Z
+**Event**: SENSOR_PASSED
+**Fire id**: c9890e8d
+**Sensor ID**: required-sections
+**Stage slug**: code-generation
+**Unit**: u4-framework-choice
+**Output path**: aidlc/spaces/default/intents/261119-spec-kit-framework/construction/u4-framework-choice/code-generation/unit-test-instructions.md
+**Duration ms**: 251
+
+---
+
+## Sensor Fired
+**Timestamp**: 2026-11-24T13:34:17Z
+**Event**: SENSOR_FIRED
+**Fire id**: da13d8e5
+**Sensor ID**: required-sections
+**Stage slug**: code-generation
+**Unit**: u4-framework-choice
+**Output path**: aidlc/spaces/default/intents/261119-spec-kit-framework/construction/u4-framework-choice/code-generation/code-summary.md
+
+---
+
+## Sensor Passed
+**Timestamp**: 2026-11-24T13:34:18Z
+**Event**: SENSOR_PASSED
+**Fire id**: da13d8e5
+**Sensor ID**: required-sections
+**Stage slug**: code-generation
+**Unit**: u4-framework-choice
+**Output path**: aidlc/spaces/default/intents/261119-spec-kit-framework/construction/u4-framework-choice/code-generation/code-summary.md
+**Duration ms**: 283
+
+---
+
+## Sensor Fired
+**Timestamp**: 2026-11-24T13:34:18Z
+**Event**: SENSOR_FIRED
+**Fire id**: 9c9de6d9
+**Sensor ID**: required-sections
+**Stage slug**: code-generation
+**Unit**: u4-framework-choice
+**Output path**: aidlc/spaces/default/intents/261119-spec-kit-framework/construction/u4-framework-choice/code-generation/traceability.json
+
+---
+
+## Sensor Passed
+**Timestamp**: 2026-11-24T13:34:18Z
+**Event**: SENSOR_PASSED
+**Fire id**: 9c9de6d9
+**Sensor ID**: required-sections
+**Stage slug**: code-generation
+**Unit**: u4-framework-choice
+**Output path**: aidlc/spaces/default/intents/261119-spec-kit-framework/construction/u4-framework-choice/code-generation/traceability.json
+**Duration ms**: 268
+
+---
+
+## Sensor Fired
+**Timestamp**: 2026-11-24T13:34:19Z
+**Event**: SENSOR_FIRED
+**Fire id**: 9fa38f34
+**Sensor ID**: traceability
+**Stage slug**: code-generation
+**Unit**: u4-framework-choice
+**Output path**: aidlc/spaces/default/intents/261119-spec-kit-framework/construction/u4-framework-choice/code-generation/traceability.json
+
+---
+
+## Sensor Failed
+**Timestamp**: 2026-11-24T13:34:19Z
+**Event**: SENSOR_FAILED
+**Fire id**: 9fa38f34
+**Sensor ID**: traceability
+**Stage slug**: code-generation
+**Unit**: u4-framework-choice
+**Output path**: aidlc/spaces/default/intents/261119-spec-kit-framework/construction/u4-framework-choice/code-generation/traceability.json
+**Detail path**: aidlc/spaces/default/intents/261119-spec-kit-framework/.aidlc-engine/sensors/code-generation/traceability-9fa38f34.md
+**Findings count**: 8
+
+---
+
+## Change Accepted
+**Timestamp**: 2026-11-24T13:34:39Z
+**Event**: CHANGE_ACCEPTED
+**Stage**: code-generation
+**Unit**: u10-speckit-agent-status
+**Checkpoint**: review-receipt
+**Changed**: docs/FEATURES.md, docs/features/epic-14-spec-kit.md, src/main/agentProgress.js, src/main/ipc.js, src/preload/index.js, src/renderer/AgentDialog.jsx, src/renderer/SpeckitProgress.jsx, src/renderer/SpeckitShell.jsx, src/renderer/theme.css, src/shared/locales/en.json (and 8 more)
+**Recorded**: sha256:9f9a5232319f8bd8ec718631da51159d8480b008247bd3cdc9f9155058e1ed1f
+**Current**: sha256:d22e4df98b83b46df80dd4635655e28285563bebfb096938522338c2499eaa11
+**Details**: docs/FEATURES.md, docs/features/epic-14-spec-kit.md, src/main/agentProgress.js, src/main/ipc.js, src/preload/index.js, src/renderer/AgentDialog.jsx, src/renderer/SpeckitProgress.jsx, src/renderer/SpeckitShell.jsx, src/renderer/theme.css, src/shared/locales/en.json (and 8 more) changed after the speckit agent status Unit was reviewed; carrying on.
+
+---
+
+## Change Accepted
+**Timestamp**: 2026-11-24T13:34:39Z
+**Event**: CHANGE_ACCEPTED
+**Stage**: code-generation
+**Unit**: u7-constitution
+**Checkpoint**: review-receipt
+**Changed**: src/renderer/ProjectView.jsx, tests/renderer/ProjectView.test.jsx
+**Recorded**: sha256:3f12db4a17df979a809be74b65ceb0e143bbdf63362897e7b80c6e2b99f3069f
+**Current**: sha256:8e2825a7a698333cea07f6c823edee05bca42b1e35a4c7b6fb088366b6ffa84a
+**Details**: src/renderer/ProjectView.jsx, tests/renderer/ProjectView.test.jsx changed after the constitution Unit was reviewed; carrying on.
+
+---
+
+## Change Accepted
+**Timestamp**: 2026-11-24T13:34:39Z
+**Event**: CHANGE_ACCEPTED
+**Stage**: code-generation
+**Unit**: u6-speckit-features
+**Checkpoint**: review-receipt
+**Changed**: tests/main/fileWrite.test.js
+**Recorded**: sha256:b9c88a521fc165f9ad087a3bb57e38b347d7a0142e812a3d711e61330b64c81c
+**Current**: sha256:8e26360e8e633a890dbc3eb44964bea3bb32e54a4efd11676061e0fa84b27fce
+**Details**: tests/main/fileWrite.test.js changed after the speckit features Unit was reviewed; carrying on.
+
+---
+
+## Change Accepted
+**Timestamp**: 2026-11-24T13:34:39Z
+**Event**: CHANGE_ACCEPTED
+**Stage**: code-generation
+**Unit**: u2-framework-file
+**Checkpoint**: review-receipt
+**Changed**: docs/FEATURES.md, docs/features/epic-14-spec-kit.md, src/main/projectService.js, src/shared/locales/en.json, src/shared/locales/sv.json, tests/main/fileWrite.test.js, tests/main/projectService.test.js
+**Recorded**: sha256:164d02bf732c750847eb1e21fda0aa438cdfab202f5e95062c0de20f32d13752
+**Current**: sha256:61e4309be179791eadca1335f34aac52fab0753d8f3d8a38c821d895a3e609d3
+**Details**: The framework file Unit's list of files changed after it was reviewed; carrying on.
+
+---
+
+## Change Accepted
+**Timestamp**: 2026-11-24T13:34:39Z
+**Event**: CHANGE_ACCEPTED
+**Stage**: code-generation
+**Unit**: u3-speckit-setup
+**Checkpoint**: review-receipt
+**Changed**: src/main/tools.js, src/renderer/SettingsView.jsx, tests/main/settings.test.js
+**Recorded**: sha256:d42dbf5ceed99bd106d827fe6847909cfaea2ec088b3aa0f7000d15f3a3ec4d8
+**Current**: sha256:8aab8c0d9cbe7e4d7b673f6c0ed81c87271f751527f11ecb1234da03355d13e6
+**Details**: src/main/tools.js, src/renderer/SettingsView.jsx, tests/main/settings.test.js changed after the speckit setup Unit was reviewed; carrying on.
+
+---
+
+## Change Accepted
+**Timestamp**: 2026-11-24T13:34:39Z
+**Event**: CHANGE_ACCEPTED
+**Stage**: code-generation
+**Unit**: u1-framework-views
+**Checkpoint**: review-receipt
+**Changed**: src/renderer/App.jsx, src/renderer/ProjectSettingsView.jsx, tests/renderer/AppAlerts.test.jsx, tests/renderer/AppShell.test.jsx
+**Recorded**: sha256:439309f07934c5cf1a1ea9045a2e74ed52343859a9cbb7e2117205be5bdb6611
+**Current**: sha256:6582f35e2958b48f9292178c41045be3b8675f4a62ab7c3cc31adc32cf9e880a
+**Details**: src/renderer/App.jsx, src/renderer/ProjectSettingsView.jsx, tests/renderer/AppAlerts.test.jsx, tests/renderer/AppShell.test.jsx changed after the framework views Unit was reviewed; carrying on.
+
+---
+
+## Error Logged
+**Timestamp**: 2026-11-24T13:34:41Z
+**Event**: ERROR_LOGGED
+**Tool**: aidlc-log
+**Command**: aidlc-log engine log review --stage code-generation --reviewer aidlc-architecture-reviewer-agent --unit u4-framework-choice --iteration 1 --project-dir <project-dir>
+**Error**: Cannot record REVIEW_REQUESTED for "code-generation": unit "u4-framework-choice" has no valid source manifest at aidlc/spaces/default/intents/261119-spec-kit-framework/construction/u4-framework-choice/code-generation/source-manifest.json (writes[21].path is inside the framework record/shell exclusions). Write the manifest listing every application-source path the reviewer will inspect, then dispatch the review.
+
+---
+
+## Review Requested
+**Timestamp**: 2026-11-24T13:34:58Z
+**Event**: REVIEW_REQUESTED
+**Stage**: code-generation
+**Reviewer**: aidlc-architecture-reviewer-agent
+**Unit**: u4-framework-choice
+**Iteration**: 1
+**Artifact Fingerprint**: sha256:c93881b70e8e9fa64e3b0eadfc446a7f0672760ca748c29430152c7aec3a3cd2
+**Request Id**: review:b002c7bc89cca16aa0131ffc1da8a3e8
+**Source Fingerprint**: 2cb59fc052adfc3ce744b70257ef4153f6d7e6e2441d6b110023d3c1cd3c5c6e
+**Unit Source Fingerprint**: sha256:409d232476541d96196cd55781adc380122004990931162dc221c0faf68b8468
+**Review File**: .aidlc-engine/reviews/code-generation/units/u4-framework-choice/46015847fac97e05/1.b002c7bc89cca16aa0131ffc1da8a3e8.review.md
+
+---
+
+## Artifact Created
+**Timestamp**: 2026-11-24T13:35:09Z
+**Event**: ARTIFACT_CREATED
+**Tool**: Write
+**File**: <project-dir>/aidlc/spaces/default/intents/261119-spec-kit-framework/.aidlc-engine/reviewer-dispatch.json
+**Context**: .aidlc-engine > reviewer-dispatch.json
+
+---
+
+## Subagent Dispatched
+**Timestamp**: 2026-11-24T13:35:27Z
+**Event**: SUBAGENT_DISPATCHED
+**Agent Type**: aidlc-architecture-reviewer-agent
+
+---
+
+## Subagent Dispatched
+**Timestamp**: 2026-11-24T13:36:59Z
+**Event**: SUBAGENT_DISPATCHED
+**Agent Type**: aidlc-architecture-reviewer-agent
+
+---
+
+## Artifact Created
+**Timestamp**: 2026-11-24T13:37:47Z
+**Event**: ARTIFACT_CREATED
+**Tool**: Write
+**File**: <project-dir>/aidlc/spaces/default/intents/261119-spec-kit-framework/.aidlc-engine/reviews/code-generation/units/u4-framework-choice/46015847fac97e05/1.b002c7bc89cca16aa0131ffc1da8a3e8.review.md
+**Context**: .aidlc-engine > reviews > code-generation > units > u4-framework-choice > 46015847fac97e05 > 1.b002c7bc89cca16aa0131ffc1da8a3e8.review.md
+
+---
+
+## Subagent Completed
+**Timestamp**: 2026-11-24T13:37:51Z
+**Event**: SUBAGENT_COMPLETED
+**Agent Type**: aidlc-architecture-reviewer-agent
+**Agent ID**: aeeaac75afb20dc54
+**Review File Digest**: .aidlc-engine/reviews/code-generation/units/u3-speckit-setup/46015847fac97e05/1.240fb0c5c99283b8b79adc9abf16ad8b.review.md=absent; .aidlc-engine/reviews/code-generation/units/u7-constitution/46015847fac97e05/1.ba115cd3246e9080eae9dcb59d0f3949.review.md=absent; .aidlc-engine/reviews/code-generation/units/u4-framework-choice/46015847fac97e05/1.b002c7bc89cca16aa0131ffc1da8a3e8.review.md=931e1129562b0247d43b4dd26693300cf297eb6384e07cb46ef25af521e897ce
+
+---
+
+## Host Turn
+**Timestamp**: 2026-11-24T13:37:51Z
+**Event**: HOST_TURN
+**Session**: c14cabd5-81ff-4256-bccf-9a6ad5408043
+**Origin**: host
+**Reason**: claude agent message
+**Source**: template
+
+---
+
+## Review Completed
+**Timestamp**: 2026-11-24T13:37:57Z
+**Event**: REVIEW_COMPLETED
+**Stage**: code-generation
+**Reviewer**: aidlc-architecture-reviewer-agent
+**Unit**: u4-framework-choice
+**Iteration**: 1
+**Verdict**: READY
+**Review Verdict Dictated**: no
+**Request Fingerprint**: sha256:c93881b70e8e9fa64e3b0eadfc446a7f0672760ca748c29430152c7aec3a3cd2
+**Artifact Fingerprint**: sha256:c93881b70e8e9fa64e3b0eadfc446a7f0672760ca748c29430152c7aec3a3cd2
+**Request Id**: review:b002c7bc89cca16aa0131ffc1da8a3e8
+**Request Source Fingerprint**: 2cb59fc052adfc3ce744b70257ef4153f6d7e6e2441d6b110023d3c1cd3c5c6e
+**Source Fingerprint**: 2cb59fc052adfc3ce744b70257ef4153f6d7e6e2441d6b110023d3c1cd3c5c6e
+**Unit Source Fingerprint**: sha256:409d232476541d96196cd55781adc380122004990931162dc221c0faf68b8468
+**Review Record**: .aidlc-engine/reviews/code-generation/units/u4-framework-choice/46015847fac97e05/1.json
+**Review Record Digest**: sha256:cf480d5b9c25a3ab803c391f0d237567c9fb9a3d64336b694ec6537bd8c06ba9
+**Testing Contract**: sha256:bfe3fc216905988409d5a13f51ed4ab2709768afac7dac9ce951c1faa1c86abd
+
+---
+
+## Unit Started
+**Timestamp**: 2026-11-24T13:38:16Z
+**Event**: UNIT_STARTED
+**Stage**: code-generation
+**Unit**: u4-framework-choice
+**Run floor**: WORKFLOW_STARTED:2026-11-19T16:25:46Z#1
+
+---
+
+## Unit Completed
+**Timestamp**: 2026-11-24T13:38:20Z
+**Event**: UNIT_COMPLETED
+**Stage**: code-generation
+**Unit**: u4-framework-choice
+**Run floor**: WORKFLOW_STARTED:2026-11-19T16:25:46Z#1
+
+---
+
+## Checkpoint Verification Recorded
+**Timestamp**: 2026-11-24T14:52:53Z
+**Event**: CHECKPOINT_VERIFICATION_RECORDED
+**Unit**: u4-framework-choice
+**Kind**: unit
+**Stage**: code-generation
+**Stages**: functional-design, nfr-requirements, nfr-design, infrastructure-design, code-generation
+**Verification Id**: 427e6914-11a8-482d-af76-551ab94b1ccf
+**Fingerprint**: sha256:bb3ff66e1cb7f4333b648d91cc0c7982cffc02e5477e6d3a25f19c3a2521e3df
+**Command SHA-256**: 8a8dcedb06e3d0b9a347c5ea549c780b2c42538d4025c3259e2ebc169b275e6c
+**Exit Code**: null
+**Verified**: false
+**Run floor**: WORKFLOW_STARTED:2026-11-19T16:25:46Z#1
+
+---
+
+## Host Turn
+**Timestamp**: 2026-11-24T14:59:28Z
+**Event**: HOST_TURN
+**Session**: c14cabd5-81ff-4256-bccf-9a6ad5408043
+**Origin**: host
+**Reason**: claude task notification
+**Source**: template
+
+---
+
+## Host Turn
+**Timestamp**: 2026-11-24T15:07:08Z
+**Event**: HOST_TURN
+**Session**: c14cabd5-81ff-4256-bccf-9a6ad5408043
+**Origin**: host
+**Reason**: claude task notification
+**Source**: template
+
+---
+
+## Checkpoint Verification Recorded
+**Timestamp**: 2026-11-24T15:12:19Z
+**Event**: CHECKPOINT_VERIFICATION_RECORDED
+**Unit**: u4-framework-choice
+**Kind**: unit
+**Stage**: code-generation
+**Stages**: functional-design, nfr-requirements, nfr-design, infrastructure-design, code-generation
+**Verification Id**: ba4c5c0d-9cf1-45d5-96ac-7410a1e9ec5b
+**Fingerprint**: sha256:bb3ff66e1cb7f4333b648d91cc0c7982cffc02e5477e6d3a25f19c3a2521e3df
+**Command SHA-256**: 8a8dcedb06e3d0b9a347c5ea549c780b2c42538d4025c3259e2ebc169b275e6c
+**Exit Code**: 0
+**Verified**: true
+**Run floor**: WORKFLOW_STARTED:2026-11-19T16:25:46Z#1
+
+---
+
+## Host Turn
+**Timestamp**: 2026-11-24T15:12:23Z
+**Event**: HOST_TURN
+**Session**: c14cabd5-81ff-4256-bccf-9a6ad5408043
+**Origin**: host
+**Reason**: claude task notification
+**Source**: template
+
+---
+
+## Gate Approved
+**Timestamp**: 2026-11-24T15:12:56Z
+**Event**: GATE_APPROVED
+**Unit**: u4-framework-choice
+**Stage**: code-generation
+**Stages**: functional-design, nfr-requirements, nfr-design, infrastructure-design, code-generation
+**Gate Stages**: functional-design, nfr-requirements, nfr-design, infrastructure-design, code-generation
+**Gate Scope**: unit-end
+**Checkpoint**: construction-unit
+**Fingerprint**: sha256:bb3ff66e1cb7f4333b648d91cc0c7982cffc02e5477e6d3a25f19c3a2521e3df
+**Run floor**: WORKFLOW_STARTED:2026-11-19T16:25:46Z#1
+**Run floors**: {"functional-design":"WORKFLOW_STARTED:2026-11-19T16:25:46Z#1","nfr-requirements":"WORKFLOW_STARTED:2026-11-19T16:25:46Z#1","nfr-design":"WORKFLOW_STARTED:2026-11-19T16:25:46Z#1","infrastructure-design":"WORKFLOW_STARTED:2026-11-19T16:25:46Z#1","code-generation":"WORKFLOW_STARTED:2026-11-19T16:25:46Z#1"}
+**Verification Command SHA-256**: 8a8dcedb06e3d0b9a347c5ea549c780b2c42538d4025c3259e2ebc169b275e6c
+**Verification Id**: ba4c5c0d-9cf1-45d5-96ac-7410a1e9ec5b
+**Approved Evidence**: {"functional-design":["sha256:26fb526c6333e91bb17b64eb295529c58042e94ab05926a9c8f09e4b0e4488d8",null],"nfr-requirements":["sha256:e12ff37bccb0a9f792118e7a67c51fc0bdcc696d1c0447a4545ab200389ae59e",null],"nfr-design":["sha256:d22afe0f507a06f920a6058a61c4d04e04bcd8aeed8db3fc100c8ffe79067795",null],"code-generation":["sha256:c93881b70e8e9fa64e3b0eadfc446a7f0672760ca748c29430152c7aec3a3cd2","sha256:409d232476541d96196cd55781adc380122004990931162dc221c0faf68b8468",{"\u0000docs/FEATURES.md":"100644 97c143c6e7660d4cbc68dfcf43bfa3f8e1182f3723212d4d480b003403fde7c3","\u0000docs/features/epic-14-spec-kit.md":"100644 a092c024764641b6c888c573ade06de01b39cc7fb89ba89f060edce99feacfed","\u0000src/main/frameworkChoice.js":"100644 39d9f932541d4cebbfc3ae7b8e9d70f1b5674e60e32e4c3f1c131f213aa69540","\u0000src/main/ipc.js":"100644 79ffb648bf4dd2aa01afbefb41a1a6b179fa44d6b1e9941f56ddd0de94375309","\u0000src/main/projectService.js":"100644 c99816fb022238a6d97a40ce7bcfa20244cf69ef9a25a4445e8392f7e0d22714","\u0000src/main/tools.js":"100644 109dd6650784e8a8815ba99715e61187b05c76254e72e675d486dd7332c0aecc","\u0000src/preload/index.js":"100644 47d5d9aba2721c2dc6df416bea3d6dd7cc8b5835095aaf1f747d5b023a5ae6c9","\u0000src/renderer/FrameworkChoice.jsx":"100644 480988a199dd7a6d2e75caa267b966e70d3fc6941e59aa0527b1eaba67bbe721","\u0000src/renderer/ProjectView.jsx":"100644 10057d00aa0683cd1ba1e9bc7abe9e349ce7c99fe7d6db61e16da26c50fa2bea","\u0000src/renderer/theme.css":"100644 41b75c3bb71981309c443c9e62393ae0ebf709b3815706df0e8d75547606e4f6","\u0000src/shared/locales/en.json":"100644 1dff9ee220469a1dc23e43ce177cbc7b6f23ad3e7d826c1572d597ec7ebebd18","\u0000src/shared/locales/sv.json":"100644 1350f390601aa0b5e6ca57bc71cbec0332a1151679727fce8fd253c78da58c2b","\u0000tests/e2e/intentLayout.spec.js":"100644 c63acfdc908c74a9a754403c0312c18ddece05ca8ae784409939268e949ca2b3","\u0000tests/main/frameworkChoice.test.js":"100644 8aed33f62f1e932cf90d61932889b1cd3e1c129c05edb29f81f4809860ca81ee","\u0000tests/main/frameworkChoiceTimed.test.js":"100644 b1dd2b33ff8f6d3fccd5f4a24d61b686040126b3986f3629d44370e2ddb85635","\u0000tests/main/ipc.test.js":"100644 8c17001e6946426329125ebab17cf3f260e70ed82ecb1b3b7cb3cf5e41ce58bb","\u0000tests/main/locateTool.test.js":"100644 b9f965bbd4623c8ec1abe6ed56cadf44e63be628463d12090c52157fa673c451","\u0000tests/main/projectService.test.js":"100644 e5916fb0839cb117c7b935024813c3e11b18b884188db0bb321fc7750b0de0fd","\u0000tests/renderer/FrameworkChoice.test.jsx":"100644 f8b5c1da4d6aad4847e23d2c8b5bcb21ef7470b091a667a5da54ea6bb2484cf2","\u0000tests/renderer/ProjectView.test.jsx":"100644 bf0dde8b1d7d2fda1c3473c4b7c2f5b04e610a9db24fdfb97076bedfc7f0427b","\u0000vitest.config.mjs":"100644 564affbd6fb054bcd29ed7684ced77ced40a020d3cee5c4eab6f6c0bc0be095f"}]}
+**Autonomous**: true
+**Review Finding Dispositions**: {"version":1,"dispositions":[{"artifact":"aidlc/spaces/default/intents/261119-spec-kit-framework/construction/u4-framework-choice/code-generation/code-generation-plan.md","id":"R-01","fingerprint":"sha256:c40d7da2bbd403e5e0d35d7ee5a78425a7ba5ea137ea7e52f4aa6bea3aa2aaf7","status":"Approved autonomously","decided_at_severity":"Minor","reviewed_record":{"path":".aidlc-engine/reviews/code-generation/units/u4-framework-choice/46015847fac97e05/1.json","digest":"sha256:cf480d5b9c25a3ab803c391f0d237567c9fb9a3d64336b694ec6537bd8c06ba9"}},{"artifact":"aidlc/spaces/default/intents/261119-spec-kit-framework/construction/u4-framework-choice/code-generation/code-generation-plan.md","id":"R-02","fingerprint":"sha256:79b1ad34fdd0d364812a9e0d6e3666c31fef2eabba6fd3cf474218b1440116d0","status":"Approved autonomously","decided_at_severity":"Minor","reviewed_record":{"path":".aidlc-engine/reviews/code-generation/units/u4-framework-choice/46015847fac97e05/1.json","digest":"sha256:cf480d5b9c25a3ab803c391f0d237567c9fb9a3d64336b694ec6537bd8c06ba9"}},{"artifact":"aidlc/spaces/default/intents/261119-spec-kit-framework/construction/u4-framework-choice/code-generation/code-generation-plan.md","id":"R-03","fingerprint":"sha256:41b40a7891828d3937901bba3f27f76c887c19683550af97c3b10796f9dc987e","status":"Approved autonomously","decided_at_severity":"Minor","reviewed_record":{"path":".aidlc-engine/reviews/code-generation/units/u4-framework-choice/46015847fac97e05/1.json","digest":"sha256:cf480d5b9c25a3ab803c391f0d237567c9fb9a3d64336b694ec6537bd8c06ba9"}},{"artifact":"aidlc/spaces/default/intents/261119-spec-kit-framework/construction/u4-framework-choice/functional-design/functional-spec.md","id":"R-01","fingerprint":"sha256:e373de98c508a1bc7127340cee98b5d59639007f5379c8a048a994fbd0bda706","status":"Approved autonomously","decided_at_severity":"Major","reviewed_record":{"path":".aidlc-engine/reviews/functional-design/units/u4-framework-choice/46015847fac97e05/1.json","digest":"sha256:dff757bffec9ad486a3d9688b4f254c3766064da0d25c3c91cf3cadbf7359e0f"}},{"artifact":"aidlc/spaces/default/intents/261119-spec-kit-framework/construction/u4-framework-choice/functional-design/functional-spec.md","id":"R-02","fingerprint":"sha256:aae84e1f063b9823f578e90ecff322459ddee28c8a734e9a0e92971303d35fa9","status":"Approved autonomously","decided_at_severity":"Minor","reviewed_record":{"path":".aidlc-engine/reviews/functional-design/units/u4-framework-choice/46015847fac97e05/1.json","digest":"sha256:dff757bffec9ad486a3d9688b4f254c3766064da0d25c3c91cf3cadbf7359e0f"}},{"artifact":"aidlc/spaces/default/intents/261119-spec-kit-framework/construction/u4-framework-choice/functional-design/functional-spec.md","id":"R-03","fingerprint":"sha256:d27682d34f3c162678a4c0d03e24c4d7ef88dfc8d8a232ea9454df979b062830","status":"Approved autonomously","decided_at_severity":"Minor","reviewed_record":{"path":".aidlc-engine/reviews/functional-design/units/u4-framework-choice/46015847fac97e05/1.json","digest":"sha256:dff757bffec9ad486a3d9688b4f254c3766064da0d25c3c91cf3cadbf7359e0f"}},{"artifact":"aidlc/spaces/default/intents/261119-spec-kit-framework/construction/u4-framework-choice/functional-design/functional-spec.md","id":"R-04","fingerprint":"sha256:64bf213129f0bd47c32e315f7384b2e4470b63e51fe47ba245070f779a4609bb","status":"Approved autonomously","decided_at_severity":"Minor","reviewed_record":{"path":".aidlc-engine/reviews/functional-design/units/u4-framework-choice/46015847fac97e05/1.json","digest":"sha256:dff757bffec9ad486a3d9688b4f254c3766064da0d25c3c91cf3cadbf7359e0f"}},{"artifact":"aidlc/spaces/default/intents/261119-spec-kit-framework/construction/u4-framework-choice/nfr-design/security-design.md","id":"R-01","fingerprint":"sha256:4faf5781d00068dff69ade353a2a3e2c48af85e717a7030ed9ddce41e560295c","status":"Approved autonomously","decided_at_severity":"Major","reviewed_record":{"path":".aidlc-engine/reviews/nfr-design/units/u4-framework-choice/46015847fac97e05/1.json","digest":"sha256:50c42473ebcdeebd5b2fad0e5c5f2144b3dd8486b628728acba4cf902b9ef817"}},{"artifact":"aidlc/spaces/default/intents/261119-spec-kit-framework/construction/u4-framework-choice/nfr-design/security-design.md","id":"R-02","fingerprint":"sha256:3d27ad77af99fb14547e3936bcd7b03a63340a18d2a65809988e337cb228f529","status":"Approved autonomously","decided_at_severity":"Minor","reviewed_record":{"path":".aidlc-engine/reviews/nfr-design/units/u4-framework-choice/46015847fac97e05/1.json","digest":"sha256:50c42473ebcdeebd5b2fad0e5c5f2144b3dd8486b628728acba4cf902b9ef817"}},{"artifact":"aidlc/spaces/default/intents/261119-spec-kit-framework/construction/u4-framework-choice/nfr-design/security-design.md","id":"R-03","fingerprint":"sha256:bd56108f5fcd4444c8130b8562a2bae3d406d83a413221c4363feb6dd364b458","status":"Approved autonomously","decided_at_severity":"Minor","reviewed_record":{"path":".aidlc-engine/reviews/nfr-design/units/u4-framework-choice/46015847fac97e05/1.json","digest":"sha256:50c42473ebcdeebd5b2fad0e5c5f2144b3dd8486b628728acba4cf902b9ef817"}},{"artifact":"aidlc/spaces/default/intents/261119-spec-kit-framework/construction/u4-framework-choice/nfr-design/security-design.md","id":"R-04","fingerprint":"sha256:9d3ffdd23afaac987c81c1ba9714901cdd1958d406f282baf9441ec3464eac2e","status":"Approved autonomously","decided_at_severity":"Minor","reviewed_record":{"path":".aidlc-engine/reviews/nfr-design/units/u4-framework-choice/46015847fac97e05/1.json","digest":"sha256:50c42473ebcdeebd5b2fad0e5c5f2144b3dd8486b628728acba4cf902b9ef817"}},{"artifact":"aidlc/spaces/default/intents/261119-spec-kit-framework/construction/u4-framework-choice/nfr-requirements/security-requirements.md","id":"R-01","fingerprint":"sha256:afc761e5a3a59597febc28d3788445e51edcd68fedff43effeea5df390065034","status":"Approved autonomously","decided_at_severity":"Major","reviewed_record":{"path":".aidlc-engine/reviews/nfr-requirements/units/u4-framework-choice/46015847fac97e05/1.json","digest":"sha256:10008346150e5722ce9dd879e37b6a650bd130fa59b3d7ff8cd69eef2ae96596"}},{"artifact":"aidlc/spaces/default/intents/261119-spec-kit-framework/construction/u4-framework-choice/nfr-requirements/security-requirements.md","id":"R-02","fingerprint":"sha256:93ddf30aea0cee2b4c97c550ff9cfa97783f07969b29ed29cbeec7c5f200f5f0","status":"Approved autonomously","decided_at_severity":"Minor","reviewed_record":{"path":".aidlc-engine/reviews/nfr-requirements/units/u4-framework-choice/46015847fac97e05/1.json","digest":"sha256:10008346150e5722ce9dd879e37b6a650bd130fa59b3d7ff8cd69eef2ae96596"}},{"artifact":"aidlc/spaces/default/intents/261119-spec-kit-framework/construction/u4-framework-choice/nfr-requirements/security-requirements.md","id":"R-03","fingerprint":"sha256:35c8d54e8e813f1c1e5f8da887ad1583bc79386bd8326e31eea88e7a4ed8bfaf","status":"Approved autonomously","decided_at_severity":"Minor","reviewed_record":{"path":".aidlc-engine/reviews/nfr-requirements/units/u4-framework-choice/46015847fac97e05/1.json","digest":"sha256:10008346150e5722ce9dd879e37b6a650bd130fa59b3d7ff8cd69eef2ae96596"}},{"artifact":"aidlc/spaces/default/intents/261119-spec-kit-framework/construction/u4-framework-choice/nfr-requirements/security-requirements.md","id":"R-04","fingerprint":"sha256:769dd01262b14356a410972d2ab3d5f430f04bbe0d4245632c40525b6db8a028","status":"Approved autonomously","decided_at_severity":"Minor","reviewed_record":{"path":".aidlc-engine/reviews/nfr-requirements/units/u4-framework-choice/46015847fac97e05/1.json","digest":"sha256:10008346150e5722ce9dd879e37b6a650bd130fa59b3d7ff8cd69eef2ae96596"}},{"artifact":"aidlc/spaces/default/intents/261119-spec-kit-framework/construction/u4-framework-choice/nfr-requirements/security-requirements.md","id":"R-05","fingerprint":"sha256:3d369d674f864190beeb54a33e8f0ce673094b3821a81df991451b4ac387c0fc","status":"Approved autonomously","decided_at_severity":"Minor","reviewed_record":{"path":".aidlc-engine/reviews/nfr-requirements/units/u4-framework-choice/46015847fac97e05/1.json","digest":"sha256:10008346150e5722ce9dd879e37b6a650bd130fa59b3d7ff8cd69eef2ae96596"}}]}
+
+---

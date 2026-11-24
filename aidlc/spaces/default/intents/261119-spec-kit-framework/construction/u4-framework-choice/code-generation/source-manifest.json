@@ -3,27 +3,68 @@
   "unit": "u4-framework-choice",
   "version": 1,
   "writes": [
-    { "path": "src/main/frameworkChoice.js" },
-    { "path": "src/main/projectService.js" },
-    { "path": "src/main/tools.js" },
-    { "path": "src/main/ipc.js" },
-    { "path": "src/preload/index.js" },
-    { "path": "src/renderer/FrameworkChoice.jsx" },
-    { "path": "src/renderer/ProjectView.jsx" },
-    { "path": "src/renderer/theme.css" },
-    { "path": "src/shared/locales/sv.json" },
-    { "path": "src/shared/locales/en.json" },
-    { "path": "tests/main/projectService.test.js" },
-    { "path": "tests/main/locateTool.test.js" },
-    { "path": "tests/main/frameworkChoice.test.js" },
-    { "path": "tests/main/frameworkChoiceTimed.test.js" },
-    { "path": "tests/main/ipc.test.js" },
-    { "path": "tests/renderer/FrameworkChoice.test.jsx" },
-    { "path": "tests/renderer/ProjectView.test.jsx" },
-    { "path": "tests/e2e/intentLayout.spec.js" },
-    { "path": "vitest.config.mjs" },
-    { "path": "docs/FEATURES.md" },
-    { "path": "docs/features/epic-14-spec-kit.md" },
-    { "path": "aidlc/spaces/default/intents/261119-spec-kit-framework/inception/contract-design/contract-summary.md" }
+    {
+      "path": "src/main/frameworkChoice.js"
+    },
+    {
+      "path": "src/main/projectService.js"
+    },
+    {
+      "path": "src/main/tools.js"
+    },
+    {
+      "path": "src/main/ipc.js"
+    },
+    {
+      "path": "src/preload/index.js"
+    },
+    {
+      "path": "src/renderer/FrameworkChoice.jsx"
+    },
+    {
+      "path": "src/renderer/ProjectView.jsx"
+    },
+    {
+      "path": "src/renderer/theme.css"
+    },
+    {
+      "path": "src/shared/locales/sv.json"
+    },
+    {
+      "path": "src/shared/locales/en.json"
+    },
+    {
+      "path": "tests/main/projectService.test.js"
+    },
+    {
+      "path": "tests/main/locateTool.test.js"
+    },
+    {
+      "path": "tests/main/frameworkChoice.test.js"
+    },
+    {
+      "path": "tests/main/frameworkChoiceTimed.test.js"
+    },
+    {
+      "path": "tests/main/ipc.test.js"
+    },
+    {
+      "path": "tests/renderer/FrameworkChoice.test.jsx"
+    },
+    {
+      "path": "tests/renderer/ProjectView.test.jsx"
+    },
+    {
+      "path": "tests/e2e/intentLayout.spec.js"
+    },
+    {
+      "path": "vitest.config.mjs"
+    },
+    {
+      "path": "docs/FEATURES.md"
+    },
+    {
+      "path": "docs/features/epic-14-spec-kit.md"
+    }
   ]
 }
