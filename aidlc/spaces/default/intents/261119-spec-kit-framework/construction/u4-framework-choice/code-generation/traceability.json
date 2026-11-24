@@ -1,0 +1,18 @@
+{
+  "stage": "code-generation",
+  "unit": "u4-framework-choice",
+  "upstream_ids": ["AC2.2.1", "AC2.2.2", "AC2.2.3", "BR4.1", "BR4.2", "BR4.3", "BR4.4", "BR4.5", "BR4.6", "BR4.7", "BR4.8"],
+  "coverage": [
+    { "id": "AC2.2.1", "status": "OK", "target": "src/main/frameworkChoice.js" },
+    { "id": "AC2.2.2", "status": "OK", "target": "src/renderer/FrameworkChoice.jsx" },
+    { "id": "AC2.2.3", "status": "OK", "target": "src/renderer/FrameworkChoice.jsx" },
+    { "id": "BR4.1", "status": "OK", "target": "src/main/projectService.js" },
+    { "id": "BR4.2", "status": "OK", "target": "src/main/frameworkChoice.js" },
+    { "id": "BR4.3", "status": "OK", "target": "src/main/frameworkChoice.js" },
+    { "id": "BR4.4", "status": "OK", "target": "src/renderer/FrameworkChoice.jsx" },
+    { "id": "BR4.5", "status": "OK", "target": "src/main/ipc.js" },
+    { "id": "BR4.6", "status": "OK", "target": "src/main/frameworkChoice.js" },
+    { "id": "BR4.7", "status": "OK", "target": "tests/main/frameworkChoice.test.js" },
+    { "id": "BR4.8", "status": "OK", "target": "src/main/frameworkChoice.js" }
+  ]
+}

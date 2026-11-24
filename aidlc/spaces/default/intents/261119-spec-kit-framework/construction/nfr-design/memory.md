@@ -9,6 +9,8 @@
 <!-- example: 2026-05-29T10:14:32Z — skipped the optional caching layer the stage prose suggested; the dataset is small enough that it adds risk -->
 
 ## Tradeoffs
+- 2026-11-24T11:10:00Z — [unit u10-speckit-agent-status] no cache for agents:progress: the event list is in memory and the features read is one call, so a cache would only add invalidation on the same two pushes. Fixed the IPC branch order (Spec Kit first, then dir name) to settle the NFR review's open point. No questions asked.
+- 2026-11-24T12:04:00Z — [unit u4-framework-choice] settled the NFR review's findings in the design: an exported `locateTool` (stale saved path counts as not found, `specify` always a bare PATH lookup), 300 ms aimed for with a 1 s CI test bound, the person's confirm overwrites a file that appeared after the scan, and no main-side lock because the same-content atomic write is harmless twice. No questions asked.
 <!-- example: 2026-05-29T10:14:32Z — picked TDD over BDD this run; the team is unit-first and the domain is well-understood -->
 
 ## Open questions
