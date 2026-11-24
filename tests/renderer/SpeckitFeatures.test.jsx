@@ -1,11 +1,13 @@
 // US-1402 AC4.1.1–AC4.1.6, BR6.8–BR6.10, NFR3.2, NFR5.2, NFR7.4: the Spec Kit features list and detail (contract C5).
+// US-1403 AC3.1.1, AC3.1.3, BR5.3, BR5.4, BR5.9, NFR3.1, NFR7.1: the next command, the quick bar in the empty state.
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { t } from '../../src/shared/i18n.js';
 import { EditorCtx } from '../../src/renderer/editor/EditorContext.jsx';
 
-const session = { write: vi.fn() };
-const terminal = { run: vi.fn(async (_tab, fn) => fn(session)) };
+const HARNESS = { claude: { id: 'claude', name: 'Claude Code' }, opencode: { id: 'opencode', name: 'opencode' } };
+let harness = HARNESS.claude;
+const terminal = { lastAgent: 'agent:x', harnessOf: () => harness, state: () => 'idle', asking: () => false, type: vi.fn(async () => true) };
 vi.mock('../../src/renderer/TerminalContext.jsx', () => ({ useTerminal: () => terminal }));
 window.bridge = {}; // ArtifactReader keeps the bridge object it finds at import; beforeEach fills it
 const { default: SpeckitFeatures } = await import('../../src/renderer/SpeckitFeatures.jsx');
@@ -36,13 +38,16 @@ const result = (over = {}) => ({ version: { found: '1.4.3', supported: true }, f
 let changed;
 let unsubscribe;
 beforeEach(() => {
-  changed = null;
+  const listeners = []; // the view and its quick bar each listen
+  changed = (e) => listeners.forEach((cb) => cb(e));
   unsubscribe = vi.fn();
+  harness = HARNESS.claude;
   Object.assign(window.bridge, {
     platform: 'darwin',
     speckitFeatures: vi.fn(async () => result()),
+    speckitRules: vi.fn(async () => ({ extensions: [{ id: 'git', commands: ['speckit.git.commit'], hooks: [] }], errors: [], hooksChecked: true })),
     onSpeckitChanged: vi.fn((cb) => {
-      changed = cb;
+      listeners.push(cb);
       return unsubscribe;
     }),
     readFile: vi.fn(async () => '# Spec\n\n<script>alert(1)</script>\n')
@@ -150,14 +155,16 @@ describe('SpeckitFeatures: live updates (AC4.1.5, NFR7.4)', () => {
 });
 
 describe('SpeckitFeatures: empty state, version and errors (AC4.1.6, BR6.8–BR6.10)', () => {
-  it('offers /speckit-specify with no features, and types it into the agent terminal only on a click', async () => {
+  it("offers specify through the quick bar with no features, in the harness's form, typed only on a click (BR5.9)", async () => {
+    harness = HARNESS.opencode;
     window.bridge.speckitFeatures.mockResolvedValue(result({ features: [], active: null }));
     render(<SpeckitFeatures projectId="p1" />);
     expect((await screen.findByTestId('speckit-features-empty')).textContent).toBe(t('speckit.features.empty'));
-    expect(terminal.run).not.toHaveBeenCalled();
-    fireEvent.click(screen.getByTestId('speckit-features-specify'));
-    await waitFor(() => expect(session.write).toHaveBeenCalledWith('/speckit-specify '));
-    expect(terminal.run).toHaveBeenCalledWith('agent', expect.any(Function));
+    const bar = await screen.findByTestId('speckit-commands-root');
+    fireEvent.change(within(bar).getByTestId('speckit-commands-specify-input'), { target: { value: 'Photo albums' } });
+    expect(terminal.type).not.toHaveBeenCalled();
+    await act(async () => fireEvent.click(within(bar).getAllByTestId('speckit-commands-button')[0]));
+    expect(terminal.type).toHaveBeenCalledWith('agent', '/speckit.specify Photo albums', { submit: true });
   });
 
   it('warns about a version other than v1.4.x by name, or that it is unknown, and not for v1.4.x', async () => {
@@ -189,5 +196,67 @@ describe('SpeckitFeatures: empty state, version and errors (AC4.1.6, BR6.8–BR6
     render(<SpeckitFeatures projectId="p1" />);
     expect((await screen.findByRole('alert')).textContent).toBe('boom');
     expect(screen.queryByTestId('speckit-features-empty')).toBeNull();
+  });
+});
+
+const allDone = {
+  ...albums,
+  flow: { ...albums.flow, implement: true, converge: true },
+  tasks: { ...albums.tasks, done: 3, phases: albums.tasks.phases.map((p) => ({ ...p, items: p.items.map((i) => ({ ...i, done: true })) })) }
+};
+const next = async () => within(await screen.findByTestId('speckit-commands-next')).getByTestId('speckit-commands-button');
+
+describe('SpeckitFeatures: the next command (US-1403 AC3.1.1, BR5.2–BR5.4)', () => {
+  it('offers the active feature its next command, typed with Enter on a click', async () => {
+    render(<SpeckitFeatures projectId="p1" />);
+    expect((await next()).textContent).toBe('/speckit-implement');
+    expect(screen.queryByTestId('speckit-commands-converge-note')).toBeNull();
+    await act(async () => fireEvent.click(await next()));
+    expect(terminal.type).toHaveBeenCalledWith('agent', '/speckit-implement', { submit: true });
+  });
+
+  it('offers no command for a feature that is not active, and names the active one', async () => {
+    render(<SpeckitFeatures projectId="p1" />);
+    await waitFor(() => expect(rows()).toHaveLength(2));
+    fireEvent.click(rows()[1]);
+    expect(screen.getByTestId('speckit-commands-not-active').textContent).toBe(t('speckit.commands.notActive', { name: 'albums' }));
+    expect(screen.queryByTestId('speckit-commands-next')).toBeNull();
+  });
+
+  it('says no feature is active when none is (SPECIFY_FEATURE_NO_PERSIST)', async () => {
+    window.bridge.speckitFeatures.mockResolvedValue(result({ features: [{ ...albums, active: false }, search], active: null }));
+    render(<SpeckitFeatures projectId="p1" />);
+    await waitFor(() => expect(rows()).toHaveLength(2));
+    fireEvent.click(rows()[0]);
+    expect(screen.getByTestId('speckit-commands-not-active').textContent).toBe(t('speckit.commands.noActive'));
+  });
+
+  it('keeps converge after converge, with the note that the files cannot show it (BR5.3)', async () => {
+    window.bridge.speckitFeatures.mockResolvedValue(result({ features: [allDone, search] }));
+    render(<SpeckitFeatures projectId="p1" />);
+    expect((await next()).textContent).toBe('/speckit-converge');
+    expect(screen.getByTestId('speckit-commands-converge-note').textContent).toBe(t('speckit.commands.convergeNote'));
+  });
+
+  it('turns plan into tasks when a plan.md arrives with speckit:changed (NFR7.1)', async () => {
+    const planned = { ...albums, flow: { ...albums.flow, plan: false, tasks: false }, tasks: NO_TASKS };
+    window.bridge.speckitFeatures.mockResolvedValueOnce(result({ features: [planned, search] }));
+    render(<SpeckitFeatures projectId="p1" />);
+    expect((await next()).textContent).toBe('/speckit-plan');
+    window.bridge.speckitFeatures.mockResolvedValueOnce(result({ features: [{ ...planned, flow: { ...planned.flow, plan: true } }, search] }));
+    await act(async () => changed({ projectId: 'p1', paths: ['specs/001-albums/plan.md'] }));
+    await waitFor(async () => expect((await next()).textContent).toBe('/speckit-tasks'));
+    expect(terminal.type).not.toHaveBeenCalled();
+  });
+
+  it('calls no bridge write with every command button clicked: only reads and the agent tab (NFR3.1, NFR4.1)', async () => {
+    render(<SpeckitFeatures projectId="p1" />);
+    await screen.findByTestId('speckit-commands-next');
+    await screen.findAllByTestId('speckit-commands-extension');
+    fireEvent.change(screen.getByTestId('speckit-commands-specify-input'), { target: { value: 'x' } });
+    for (const b of screen.getAllByTestId('speckit-commands-button')) await act(async () => fireEvent.click(b));
+    expect(terminal.type).toHaveBeenCalledTimes(screen.getAllByTestId('speckit-commands-button').length);
+    const called = Object.entries(window.bridge).filter(([, f]) => vi.isMockFunction(f) && f.mock.calls.length > 0);
+    expect(called.map(([name]) => name).sort()).toEqual(['onSpeckitChanged', 'speckitFeatures', 'speckitRules']);
   });
 });

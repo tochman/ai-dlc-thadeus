@@ -65,8 +65,7 @@
     "features": {
       "title": "Features",
       "active": "Active",
-      "empty": "No features yet. Start one with /speckit-specify in the agent terminal.",
-      "specify": "Start a feature (/speckit-specify)",
+      "empty": "No features yet. Describe one above and start it with specify.",
       "versionWarning": "This project uses Spec Kit {version}. THADEUS is made for v1.4.x, so some things may show wrongly.",
       "versionUnknown": "The Spec Kit version could not be found. THADEUS is made for v1.4.x, so some things may show wrongly.",
       "errors": "Could not be read",
@@ -90,8 +89,7 @@
     "rules": {
       "constitution": "Constitution",
       "edit": "Edit",
-      "noConstitution": "No constitution yet. Write one with /speckit-constitution in the agent terminal.",
-      "runConstitution": "Write the constitution (/speckit-constitution)",
+      "noConstitution": "No constitution yet. The command below types the constitution command into the agent terminal, for you to add your principles and send.",
       "extensions": "Extensions and hooks",
       "noExtensions": "No extensions are installed.",
       "commands": "Commands",
@@ -109,6 +107,19 @@
       "skipped": "{count, plural, one {# hook in extensions.yml could not be read and was skipped.} other {# hooks in extensions.yml could not be read and were skipped.}}",
       "unchecked": "extensions.yml could not be read, so no hooks were checked, mandatory ones included.",
       "errors": "Could not be read"
+    },
+    "commands": {
+      "title": "Commands",
+      "describe": "Describe the feature",
+      "needDescription": "Describe the feature first.",
+      "noTab": "No agent tab is open.",
+      "unsupported": "{harness} has no Spec Kit commands in the app, so nothing is typed.",
+      "sendFailed": "Not typed: the agent tab is gone.",
+      "rulesError": "The extension commands could not all be read.",
+      "next": "Next command",
+      "notActive": "Spec Kit's commands act on the active feature, {name}.",
+      "noActive": "Spec Kit's commands act on the active feature, and no feature is active.",
+      "convergeNote": "The files cannot show whether the feature has converged: converge adds tasks when work is left and writes nothing when it is done."
     }
   },
   "app": {
