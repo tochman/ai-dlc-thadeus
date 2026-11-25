@@ -4,7 +4,7 @@
 
 - Builds: archive one or several intents and unarchive one, from the detail and the list, through AI-DLC's own command, with the changed files committed on `main`
 - Touches: new `src/shared/intentArchive.js`, `src/main/intentArchive.js`, `src/main/archiveCommit.js`, `src/renderer/ArchiveControls.jsx` and `ArchiveDialog.jsx`; changes in `projectService.js`, `ipc.js`, `IntentList.jsx`, `IntentDetail.jsx`, both locale files and the readers named below
-- Tests: about 75 (unit, component and real-git tests), each written before its code; repair: the two failing layout tests of the built app and one added to the same spec
+- Tests: about 75 (unit, component and real-git tests), each written before its code; repair: the two failing layout tests of the built app and one added to the same spec; second repair: the command's form (Step 21), in two existing test files
 
 ## Design
 
@@ -53,8 +53,11 @@ Close
 - [ ] **Step 18** The unit's command green, ESLint and Prettier clean on the changed files; module headers name US-0513 and their requirement; `ponytail:` comments on the two ceilings (the renderer's active space is from opening; files are compared by size and time).
 
 Repair after Build and Test (loop-back 1)
-- [x] **Step 19 Red, green** The built-app tests `intentLayout.spec.js` AC1 and AC2 at 1280 fail (765 px wide in 718). Let the head actions wrap in `theme.css`, and keep Park and Resume together as one piece with a small wrapper in `IntentDetail.jsx` (US-0037 FR3.1). AC1.1.1
-- [x] **Step 20 Red, green** Asked for directly by the person: the "Step n of m" text lay over the frame's thin line. A built-app test at 1920 failed first; the step row starts in line with the chips (`theme.css`).
+- [ ] **Step 19 Red, green** The built-app tests `intentLayout.spec.js` AC1 and AC2 at 1280 fail (765 px wide in 718). Let the head actions wrap in `theme.css`, and keep Park and Resume together as one piece with a small wrapper in `IntentDetail.jsx` (US-0037 FR3.1). AC1.1.1
+- [ ] **Step 20 Red, green** Asked for directly by the person: the "Step n of m" text lay over the frame's thin line. A built-app test at 1920 failed first; the step row starts in line with the chips (`theme.css`).
+
+Repair after Build and Test (loop-back 2)
+- [x] **Step 21 Red, green** AI-DLC 2.11.3 has no `aidlc intent`; the form is `aidlc engine intent archive|unarchive|switch`. Change the expected arguments in `intentArchive.test.js` and `intentPark.test.js` first, then `intentArchive.js` and `intentPark.js` (Unpark's switch, US-0510, has the same fault). This replaces the form in FR1.3 and FR2.2. AC1.1.3, AC2.1.2
 
 **Left to Build and Test:** the full suite with coverage, the existing Playwright specs, the real archive and unarchive in a throwaway project (NFR3), and the story's markers and criteria in the feature docs.
 

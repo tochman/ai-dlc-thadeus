@@ -44,9 +44,17 @@ Done in the conversation, not by the developer agent: a few lines.
 - **Found in pictures of the built app:** "Nothing is deleted" in the dialog was right-aligned; the button's style no longer reaches into the dialog. No test: alignment only.
 - **Result:** built app 18 passed; the full suite with coverage exit 0, 93.52% lines; ESLint and Prettier clean. Select mode and the dialog were looked at in the built app.
 
+## Repair after Build and Test (loop-back 2)
+
+Done in the conversation, not by the developer agent.
+
+- **Step 21:** `aidlc engine intent archive|unarchive|switch` in `intentArchive.js` and `intentPark.js`. Red: 5 failed, 18 passed. Green: 23 passed. The form replaces `aidlc intent …` in FR1.3, FR2.2, AC1.1.3 and AC2.1.2, which were wrong; those documents were left as approved.
+- **Also fixed by it:** the released Unpark of an intent that is not active (US-0510).
+- **NFR3 done by the person** with this form, in a throwaway clone: archive and unarchive exit 0, and exactly the state, `intents.json` and one audit file changed.
+
 ## Not run
 
-- AI-DLC's real archive and unarchive (NFR3): its checks stop an agent, so the person runs it.
+None.
 
 ## Open
 
