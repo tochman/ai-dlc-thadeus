@@ -32,6 +32,7 @@ import { TerminalProvider, useTerminal } from './TerminalContext.jsx';
 import { useProject } from './useProject.js';
 import { useFeatures } from './useFeatures.js';
 import { harnessCommand, resolveHarness, selectableHarness } from '../shared/harnesses.js';
+import { isArchived } from '../shared/intentArchive.js'; // US-0513
 
 const AIDLC_TABS = ['settings', 'plans']; // US-0905: the sub-views of Configuration › AI-DLC
 
@@ -93,10 +94,11 @@ function AidlcProject({ project, view, teamSection = 'refresh', onView, focusInt
     if (focusIntent) selectIntent(focusIntent.dirName);
   }, [focusIntent]);
 
-  // "N intents" at the foot of the left arm (FR2.2).
+  // "N intents" at the foot of the left arm (FR2.2), the list's own count (US-0513 FR3.1).
+  const intentCount = p.intents.filter((i) => !isArchived(i)).length;
   useEffect(() => {
-    onMeta?.(projectId, { intentCount: p.intents.length });
-  }, [projectId, p.intents.length, onMeta]);
+    onMeta?.(projectId, { intentCount });
+  }, [projectId, intentCount, onMeta]);
 
   // Settings › Tools disables the AI-DLC updates for 5 minutes after an AI-DLC write (US-0504 FR4).
   useEffect(() => {
@@ -125,7 +127,15 @@ function AidlcProject({ project, view, teamSection = 'refresh', onView, focusInt
       <div className="project-body" hidden={view !== 'intents'}>
         {/* US-0417 with US-0415: the list column is the shared drawer (IntentList), folding to its slim stack. */}
         <aside className="intents-col" aria-label={t('intents.overview')}>
-          <IntentList intents={p.intents} selected={p.selected} onSelect={p.setSelected} cost={p.cost} projectId={projectId}>
+          <IntentList
+            intents={p.intents}
+            selected={p.selected}
+            onSelect={p.setSelected}
+            cost={p.cost}
+            projectId={projectId}
+            space={p.space}
+            activeSpace={detection.activeSpace}
+          >
             {detection.spaces.length > 1 && (
               <label className="field">
                 <span className="field-label">{t('intents.space')}</span>
@@ -155,6 +165,7 @@ function AidlcProject({ project, view, teamSection = 'refresh', onView, focusInt
             <IntentDetail
               projectId={projectId}
               space={p.space}
+              activeSpace={detection.activeSpace}
               detail={p.detail}
               intent={p.intents.find((i) => i.dirName === p.detail.dirName)}
               activeDirName={activeDirName}

@@ -12,13 +12,15 @@ export const isSkipped = (s) => s.mode === 'SKIP' || s.status === 'skipped';
 const DOT_OF = { done: 'done', 'in-progress': 'current', revising: 'current', 'awaiting-approval': 'attn' };
 // In progress breathes, "needs you" pulses coral (FR3.4, FR4.1).
 const EFFECT = { 'in-progress': 'is-breathing', revising: 'is-breathing', 'awaiting-approval': 'is-attn' };
+/** US-0513 FR1.6: begun, but nothing runs or waits in it: mergePipeline gives an archived intent no current stage. */
+const atRest = (s) => s.current === false && s.status in EFFECT;
 
 /** One dot per executed stage, in pipeline order, for the intent's dot indicator (FR3.3). */
 export function pipelineSteps(pipeline) {
   return pipeline.phases
     .flatMap((p) => p.stages)
     .filter((s) => !isSkipped(s))
-    .map((s) => DOT_OF[s.status] ?? (s.current ? 'current' : 'todo'));
+    .map((s) => (atRest(s) ? 'todo' : (DOT_OF[s.status] ?? (s.current ? 'current' : 'todo'))));
 }
 
 const MAX_SEGMENTS = 8;
@@ -94,7 +96,7 @@ function StageBlock({ stage, index, open, onToggle, stageCost, stageModels, deta
     <li className={['stage', ...states].filter(Boolean).join(' ')}>
       <Tooltip text={details} focusText={focusText}>
         <button
-          className={`lcars-card stage-card ${EFFECT[stage.status] ?? (stage.current ? 'is-breathing' : '')}`}
+          className={`lcars-card stage-card ${atRest(stage) ? '' : (EFFECT[stage.status] ?? (stage.current ? 'is-breathing' : ''))}`}
           onClick={onToggle}
           aria-expanded={open}
           data-testid="pipeline-stage"

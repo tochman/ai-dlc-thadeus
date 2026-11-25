@@ -25,6 +25,10 @@ contextBridge.exposeInMainWorld('bridge', {
   // US-0510 FR4.2, FR4.3: a project id and an intent name cross the bridge, never a command.
   parkIntent: call('intents:park'),
   unparkIntent: call('intents:unpark'),
+  // US-0513 FR1.3, FR2.2, FR4.3: intent names and one reason cross the bridge, never a command.
+  archiveIntents: call('intents:archive'),
+  unarchiveIntent: call('intents:unarchive'),
+  onArchiveProgress: subscribe('intents:archiveProgress'), // { projectId, n, total }
   renameIntent: call('intents:rename'), // US-0508 FR1.2: a project id, a folder name and the new display name
   getCost: call('project:cost'),
   getVelocity: call('project:velocity'), // intent, story and project velocity (US-0303 FR3.5)

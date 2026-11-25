@@ -4,6 +4,17 @@ import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/re
 const terminal = { state: vi.fn(() => 'idle'), type: vi.fn() };
 vi.mock('../../src/renderer/TerminalContext.jsx', () => ({ useTerminal: () => terminal }));
 const { default: RefreshPanel } = await import('../../src/renderer/RefreshPanel.jsx');
+const { inFlightIntent } = await import('../../src/renderer/workflowBusy.js');
+
+describe('inFlightIntent', () => {
+  it('is the active intent in flight; an archived one is none, also when its row alone is active (US-0513 AC1.2.4)', () => {
+    const active = { dirName: 'a', slug: 'a', active: true, status: 'in-flight', currentStage: 'code-generation' };
+    expect(inFlightIntent([active])).toEqual({ name: 'a', stage: 'code-generation' });
+    expect(inFlightIntent([{ ...active, stateStatus: 'Archived' }])).toBeNull();
+    expect(inFlightIntent([{ ...active, status: 'archived', active: false }])).toBeNull();
+    expect(inFlightIntent([{ ...active, stateStatus: 'Completed' }])).toBeNull();
+  });
+});
 // US-0041 AC4: sv.json github.waitFor names the in-flight intent and its stage (EPIC-07 github.wait before).
 const FLIGHT = { name: 'release-0-2-14', stage: 'code-generation', at: null };
 const WAIT_MESSAGE = 'Vänta tills AI-DLC är klart med Code Generation i release-0-2-14, eller parkera arbetet först';

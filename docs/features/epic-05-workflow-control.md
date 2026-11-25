@@ -8,7 +8,7 @@
 
 **Stories:** US-0501–US-0513
 
-**Status (2026-11-25):** ✅ US-0501–US-0503, US-0505 and US-0506 released (v0.2.0–v0.2.5). ✅ US-0504 released in v0.2.7. ✅ US-0507 released in v0.2.8. ✅ US-0508 released in v0.2.15. 📋 US-0509 planned, for v0.3.1. ✅ US-0510 released in v0.2.13. 📋 US-0511 and US-0512 planned, for v0.3.4. 🚧 US-0513 in progress, for v0.3.1. Each story names its release.
+**Status (2026-11-25):** ✅ US-0501–US-0503, US-0505 and US-0506 released (v0.2.0–v0.2.5). ✅ US-0504 released in v0.2.7. ✅ US-0507 released in v0.2.8. ✅ US-0508 released in v0.2.15. 📋 US-0509 planned, for v0.3.1. ✅ US-0510 released in v0.2.13. 📋 US-0511 and US-0512 planned, for v0.3.4. ✅ US-0513 done, for v0.3.1. Each story names its release.
 
 ---
 
@@ -235,23 +235,23 @@
 - **Notes:** A Fix this marker in the waterfall comes with US-0305 once both exist.
 - **Dependencies:** US-0501, US-1203
 
-**US-0513: Archive and unarchive an intent from the app** 🚧 In progress, for v0.3.1
+**US-0513: Archive and unarchive an intent from the app** ✅ Done, for v0.3.1
 - As a **developer with many intents**, in order to **see only the work that still matters, without losing the record of the rest**, I would like to **archive an intent I am done with, finished or not, and bring it back when I need it**.
 - **Epic:** EPIC-05
 - **Priority:** Medium
 - **Complexity:** Medium
 - **Background:** Asked for 2026-11-25. This project has over 60 intents, nearly all complete, and the list shows them all. AI-DLC 2.11.3 has `aidlc intent archive <name> [--reason <text>]` and `aidlc intent unarchive <name>`. Archiving deletes nothing: the record, its audit log and its Bolt worktrees stay on disk, and unarchiving brings the intent back as running or complete, as it was.
 - **Acceptance Criteria:**
-  - [ ] **Given** an intent in flight, parked or complete, **then** its detail offers "Archive" with an optional reason. A confirmation names the intent, says that nothing is deleted, and warns when the intent is unfinished or active.
-  - [ ] **When** I confirm, **then** the app runs AI-DLC's own archive command with fixed arguments and a timeout, never through a shell, and never edits AI-DLC's files itself.
-  - [ ] **Given** an agent is working on that intent, **then** Archive is unavailable and says why.
-  - [ ] **Given** archived intents, **then** the list leaves them out, and says how many there are with a "Show archived" choice. Shown, they carry an "Archived" mark and have no Resume, Park or Unpark.
-  - [ ] **Given** an archived intent, **then** its detail still opens with its pipeline, timeline, artifacts and cost, and offers "Unarchive", which runs AI-DLC's unarchive command and shows the intent as running or complete again.
-  - [ ] **Given** several complete intents, **then** I can choose more than one and archive them in one go, with one confirmation that lists them. If one is refused, the rest still run and the refused one is named with AI-DLC's reason.
-  - [ ] **Given** AI-DLC refuses (for example claimed team Units), **then** the app shows its reason and the intent stays as it was.
-  - [ ] Archiving the active intent leaves no active intent: nothing shows as running, and no question from it waits in the popup.
-  - [ ] Cost, token history, velocity and story links still count archived intents. One that was complete before it was archived still counts as delivered, in the app and in the feature docs check in CI.
-  - [ ] The list follows the files live, also when an agent or a pull archives an intent.
-  - [ ] Every text goes through `t()` in `sv.json` and `en.json`, in the LCARS look; the buttons carry `data-testid`s and work from the keyboard.
+  - [x] **Given** an intent in flight, parked or complete, **then** its detail offers "Archive" with an optional reason. A confirmation names the intent, says that nothing is deleted, and warns when the intent is unfinished or active.
+  - [x] **When** I confirm, **then** the app runs AI-DLC's own archive command with fixed arguments and a timeout, never through a shell, and never edits AI-DLC's files itself.
+  - [x] **Given** an agent is working on that intent, **then** Archive is unavailable and says why.
+  - [x] **Given** archived intents, **then** the list leaves them out, and says how many there are with a "Show archived" choice. Shown, they carry an "Archived" mark and have no Resume, Park or Unpark.
+  - [x] **Given** an archived intent, **then** its detail still opens with its pipeline, timeline, artifacts and cost, and offers "Unarchive", which runs AI-DLC's unarchive command and shows the intent as running or complete again.
+  - [x] **Given** several complete intents, **then** I can choose more than one and archive them in one go, with one confirmation that lists them. If one is refused, the rest still run and the refused one is named with AI-DLC's reason.
+  - [x] **Given** AI-DLC refuses (for example claimed team Units), **then** the app shows its reason and the intent stays as it was.
+  - [x] Archiving the active intent leaves no active intent: nothing shows as running, and no question from it waits in the popup.
+  - [x] Cost, token history, velocity and story links still count archived intents. One that was complete before it was archived still counts as delivered, in the app and in the feature docs check in CI.
+  - [x] The list follows the files live, also when an agent or a pull archives an intent.
+  - [x] Every text goes through `t()` in `sv.json` and `en.json`, in the LCARS look; the buttons carry `data-testid`s and work from the keyboard.
 - **Notes:** Archiving changes the intent's state to `Archived` and keeps the earlier status in `Archived From`, so code that only looks for `complete` needs a check: `inFlightIntent` (`src/renderer/workflowBusy.js`) and `tests/main/featureDocsStatus.test.js` both do. Archiving is the person's decision: the app never archives by itself. US-1301 counts the cost of an intent archived unfinished as rework. The Spec Kit counterpart is US-1411.
 - **Dependencies:** US-0501, US-0508, US-0510

@@ -153,6 +153,28 @@ for (const width of [1280, 1920]) {
     expect(heading.top - tabs.bottom).toBeGreaterThanOrEqual(12);
   });
 
+  test(`US-0513 at ${width}: the chips, the step row and the request keep clear of the frame's thin line`, async () => {
+    const page = await open(width);
+    // Every pixel along both hairlines of the corner, in page coordinates.
+    const line = await page.locator('.lcars-df-hair').evaluateAll((paths) =>
+      paths.flatMap((p) => {
+        const m = p.getScreenCTM();
+        return Array.from({ length: Math.ceil(p.getTotalLength()) }, (_, i) => {
+          const at = p.getPointAtLength(i).matrixTransform(m);
+          return { x: at.x, y: at.y };
+        });
+      })
+    );
+    expect(line.length).toBeGreaterThan(100);
+    for (const sel of ['.lcars-chips', '.intent-progress-step', '[data-testid="intent-detail-description"]']) {
+      const b = await box(page.locator(`[data-testid="intent-detail"] ${sel}`).first());
+      expect(
+        line.filter((p) => p.x >= b.left - 4 && p.x <= b.right && p.y >= b.top && p.y <= b.bottom),
+        sel
+      ).toEqual([]);
+    }
+  });
+
   test(`AC4 at ${width}: the Live tokens panel and its chart stay inside the left arm`, async () => {
     const page = await open(width);
     for (const tab of ['pipeline', 'timeline', 'units', 'cost', 'velocity', 'comments', 'files']) {

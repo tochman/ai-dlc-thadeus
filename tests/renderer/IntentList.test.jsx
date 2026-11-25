@@ -1,6 +1,7 @@
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { HARNESSES } from '../../src/shared/harnesses.js';
+import { t } from '../../src/shared/i18n.js';
 import { HOVER_DELAY_MS } from '../../src/renderer/Tooltip.jsx';
 
 const terminal = { state: vi.fn(() => 'idle'), type: vi.fn(), sequence: vi.fn(), harness: HARNESSES.find((h) => h.id === 'claude') };
@@ -205,6 +206,238 @@ describe('IntentList', () => {
     const done = [{ ...intents[2], active: true }];
     render(<IntentList intents={done} selected={null} onSelect={vi.fn()} />);
     expect(screen.queryByText('Aktiv')).toBeNull();
+  });
+});
+
+const option = (id, value) => [...screen.getByTestId(id).options].find((o) => o.value === value);
+const pickStatus = (value) => fireEvent.change(screen.getByTestId('intent-list-status-filter'), { target: { value } });
+const search = (value) => fireEvent.change(screen.getByTestId('intent-list-search'), { target: { value } });
+const slugsShown = () => screen.queryAllByTestId('intent-list-row').map((r) => r.querySelector('.intent-slug').textContent);
+
+describe('IntentList archived intents (US-0513 FR3)', () => {
+  const open = Array.from({ length: 4 }, (_, n) => ({ ...base, dirName: `open-${n}`, slug: `open-${n}`, scope: 'feature', status: 'complete' }));
+  const old = Array.from({ length: 60 }, (_, n) => ({
+    ...base,
+    dirName: `old-${n}`,
+    slug: `old-${String(n).padStart(2, '0')}`,
+    scope: n % 2 ? 'bugfix' : 'feature',
+    status: 'archived'
+  }));
+  const ui = (list) => <IntentList intents={list} selected={null} onSelect={vi.fn()} />;
+
+  it('leaves them out of the list, its count and every other status choice (AC3.1.1)', () => {
+    render(ui([...open, ...old]));
+    expect(slugsShown()).toEqual(open.map((i) => i.slug));
+    expect(screen.getByTestId('list-drawer-open').getAttribute('aria-label')).toBe(t('fold.showN', { n: 4 }));
+    expect([...screen.getByTestId('intent-list-status-filter').options].map((o) => o.textContent)).toEqual([
+      t('intents.allStatuses'),
+      'complete',
+      t('intents.archive.filter', { n: 60 })
+    ]);
+    pickStatus('complete');
+    expect(slugsShown()).toHaveLength(4);
+  });
+
+  it('the choice "Archived (60)" shows only those; search, plan and sort work inside it (AC3.1.2)', () => {
+    render(ui([...open, ...old]));
+    pickStatus('archived');
+    expect(slugsShown()).toHaveLength(60);
+    search('old-1');
+    expect(slugsShown()).toHaveLength(10);
+    fireEvent.change(screen.getByTestId('intent-list-scope-filter'), { target: { value: 'bugfix' } });
+    expect(slugsShown()).toEqual(['old-11', 'old-13', 'old-15', 'old-17', 'old-19']);
+    fireEvent.change(screen.getByTestId('intent-list-sort'), { target: { value: 'name' } });
+    expect(slugsShown()[0]).toBe('old-11');
+  });
+
+  it('has no such choice with none archived, and goes back to all statuses when the last one is unarchived (AC3.1.3)', () => {
+    const { rerender } = render(ui([...open, old[0]]));
+    pickStatus('archived');
+    expect(slugsShown()).toEqual(['old-00']);
+    rerender(ui([...open, { ...old[0], status: 'complete' }])); // AC3.1.4: the list and its count follow at once
+    expect(screen.getByTestId('intent-list-status-filter').value).toBe('');
+    expect(option('intent-list-status-filter', 'archived')).toBeUndefined();
+    expect(slugsShown()).toHaveLength(5);
+    rerender(ui([...open, old[0]]));
+    expect(slugsShown()).toHaveLength(4); // the filter really went back, it does not return to the archived ones
+  });
+
+  it('goes back to all statuses when archiving empties the status that was chosen', () => {
+    const running = { ...base, dirName: 'r', slug: 'running', status: 'in-flight' };
+    const { rerender } = render(ui([running, ...open]));
+    pickStatus('complete');
+    rerender(ui([running, ...open.map((i) => ({ ...i, status: 'archived' }))]));
+    expect(screen.getByTestId('intent-list-status-filter').value).toBe('');
+    expect(slugsShown()).toEqual(['running']);
+  });
+
+  it('says so when every intent is archived, and names the choice (AC3.1.5)', () => {
+    render(ui(old));
+    expect(screen.getByTestId('intent-list-empty').textContent).toBe(t('intents.archive.allArchived', { n: 60 }));
+    search('nothing like this');
+    pickStatus('archived');
+    expect(screen.getByTestId('intent-list-empty').textContent).toBe(t('intents.noMatch'));
+  });
+});
+
+describe('IntentList archiving several (US-0513 FR4)', () => {
+  const complete = (n) => ({ ...base, dirName: `d-${n}`, slug: `done-${n}`, scope: 'feature', status: 'complete' });
+  const list = [
+    { ...base, dirName: 'run', slug: 'running', scope: 'feature', status: 'in-flight', active: true },
+    complete(1),
+    complete(2),
+    { ...complete(3), scope: 'bugfix' },
+    { ...complete(4), missingOnDisk: true },
+    { ...complete(5), missingInIndex: true },
+    { ...complete(6), status: 'archived' }
+  ];
+  const ui = (over = {}) => (
+    <div className="project-body">
+      <IntentList intents={list} selected={null} onSelect={vi.fn()} projectId="p1" space="default" activeSpace="default" {...over} />
+    </div>
+  );
+  const click = (id) => fireEvent.click(screen.getByTestId(id));
+  const checks = () => screen.queryAllByTestId('intent-list-check');
+  const checkOf = (slug) => checks().find((c) => c.getAttribute('aria-label') === t('intents.archive.selectOne', { name: slug }));
+  const chosen = () => screen.getByTestId('intent-list-chosen').textContent;
+  let finish;
+  let progress;
+  beforeEach(() => {
+    window.bridge = {
+      archiveIntents: vi.fn(() => new Promise((resolve) => (finish = resolve))),
+      onArchiveProgress: vi.fn((fn) => {
+        progress = fn;
+        return () => {};
+      })
+    };
+  });
+  afterEach(() => delete window.bridge);
+
+  it('Select gives every visible complete intent a checkbox and no other; Select again ends it (AC4.1.1)', () => {
+    render(ui());
+    expect(checks()).toHaveLength(0);
+    click('intent-list-select');
+    expect(checks().map((c) => c.getAttribute('aria-label'))).toEqual(['done-1', 'done-2', 'done-3'].map((name) => t('intents.archive.selectOne', { name })));
+    fireEvent.click(checkOf('done-1'));
+    expect(chosen()).toBe(t('intents.archive.chosen', { n: 1 }));
+    fireEvent.click(checkOf('done-1'));
+    expect(chosen()).toBe(t('intents.archive.chosen', { n: 0 }));
+    fireEvent.click(checkOf('done-2'));
+    click('intent-list-select');
+    expect(checks()).toHaveLength(0);
+    click('intent-list-select');
+    expect(chosen()).toBe(t('intents.archive.chosen', { n: 0 })); // a new choice starts empty
+  });
+
+  it('Select all takes the visible ones, and a choice outlives a search and a filter (AC4.1.1)', () => {
+    render(ui());
+    click('intent-list-select');
+    search('done-1');
+    click('intent-list-select-all');
+    expect(chosen()).toBe(t('intents.archive.chosen', { n: 1 }));
+    search('');
+    fireEvent.change(screen.getByTestId('intent-list-scope-filter'), { target: { value: 'bugfix' } });
+    expect(checks()).toHaveLength(1);
+    fireEvent.click(checkOf('done-3'));
+    expect(chosen()).toBe(t('intents.archive.chosen', { n: 2 }));
+    fireEvent.change(screen.getByTestId('intent-list-scope-filter'), { target: { value: '' } });
+    expect(checks().map((c) => c.checked)).toEqual([true, false, true]);
+  });
+
+  it('a chosen one that is archived meanwhile is no longer chosen', () => {
+    const { rerender } = render(ui());
+    click('intent-list-select');
+    click('intent-list-select-all');
+    rerender(ui({ intents: list.map((i) => (i.dirName === 'd-2' ? { ...i, status: 'archived' } : i)) }));
+    expect(chosen()).toBe(t('intents.archive.chosen', { n: 2 }));
+  });
+
+  it('"Archive N" is unavailable with nothing chosen, and lists every chosen intent in list order, hidden ones too (AC4.1.2, AC4.1.3)', () => {
+    render(ui());
+    click('intent-list-select');
+    expect(screen.getByTestId('intent-list-archive').disabled).toBe(true);
+    for (const slug of ['done-3', 'done-1']) fireEvent.click(checkOf(slug));
+    search('done-3');
+    expect(screen.getByTestId('intent-list-archive').textContent).toBe(t('intents.archive.confirm', { n: 2 }));
+    click('intent-list-archive');
+    expect(screen.getAllByTestId('archive-dialog-name').map((n) => n.textContent)).toEqual(['done-1', 'done-3']);
+    fireEvent.change(screen.getByTestId('archive-dialog-reason'), { target: { value: 'tidy' } });
+    click('archive-dialog-confirm');
+    expect(window.bridge.archiveIntents).toHaveBeenCalledWith('p1', ['d-1', 'd-3'], 'tidy');
+  });
+
+  it('shows the progress in the list once the dialog is closed, allows no second start, and ends Select mode with the result (AC4.1.4, AC4.1.5)', async () => {
+    render(ui());
+    click('intent-list-select');
+    click('intent-list-select-all');
+    screen.getByTestId('intent-list-archive').focus();
+    click('intent-list-archive');
+    click('archive-dialog-confirm');
+    expect(screen.queryAllByTestId('archive-outcome-progress')).toHaveLength(1); // in the dialog only
+    click('archive-dialog-close');
+    act(() => progress({ projectId: 'p1', n: 2, total: 3 }));
+    expect(screen.getByTestId('archive-outcome-progress').textContent).toBe(t('intents.archive.progress', { n: 2, total: 3 }));
+    expect(screen.getByTestId('intent-list-archive').disabled).toBe(true);
+    expect(document.activeElement).toBe(screen.getByTestId('intent-list-rows')); // the opener can no longer take focus
+    click('intent-list-archive');
+    expect(screen.queryByTestId('archive-dialog-confirm')).toBeNull();
+
+    await act(async () => finish({ ok: true, archived: ['d-1', 'd-3'], refused: [{ dirName: 'd-2', error: 'claimed' }], commit: { state: 'dirtyIndex' } }));
+    expect(screen.getByTestId('archive-outcome-done').textContent).toBe(t('intents.archive.done', { n: 2 }));
+    expect(screen.getByTestId('archive-outcome-refused').textContent).toBe('done-2: claimed');
+    expect(screen.getByTestId('archive-outcome-commit').textContent).toBe(t('intents.archive.commit.dirtyIndex'));
+    expect(checks()).toHaveLength(0);
+    click('intent-list-archive-close');
+    expect(screen.queryByTestId('archive-outcome')).toBeNull();
+  });
+
+  it('with the dialog open the result is there, and focus goes to the list when it is closed (FR7.2)', async () => {
+    render(ui());
+    click('intent-list-select');
+    click('intent-list-select-all');
+    screen.getByTestId('intent-list-archive').focus();
+    click('intent-list-archive');
+    click('archive-dialog-confirm');
+    await act(async () => finish({ ok: true, archived: ['d-1', 'd-2', 'd-3'], refused: [], commit: { state: 'waiting' } }));
+    expect(screen.getAllByTestId('archive-outcome')).toHaveLength(1);
+    click('archive-dialog-close');
+    expect(screen.queryByTestId('archive-outcome')).toBeNull();
+    expect(document.activeElement).toBe(screen.getByTestId('intent-list-rows'));
+  });
+
+  it('stays through a run that leaves no complete intent: the list reloads before the answer comes', async () => {
+    const { rerender } = render(ui());
+    click('intent-list-select');
+    click('intent-list-select-all');
+    screen.getByTestId('intent-list-archive').focus();
+    click('intent-list-archive');
+    click('archive-dialog-confirm');
+    rerender(ui({ intents: list.map((i) => (i.status === 'complete' ? { ...i, status: 'archived' } : i)) }));
+    expect(screen.getAllByTestId('archive-dialog-name')).toHaveLength(3);
+    await act(async () => finish({ ok: true, archived: ['d-1', 'd-2', 'd-3'], refused: [], commit: { state: 'waiting' } }));
+    expect(screen.getByTestId('archive-outcome-done')).toBeTruthy();
+    expect(screen.queryByTestId('intent-list-select')).toBeNull(); // nothing left to choose
+    click('archive-dialog-close');
+    expect(document.activeElement).toBe(screen.getByTestId('intent-list-rows'));
+  });
+
+  it('a refused start keeps Select mode and the choice', async () => {
+    render(ui());
+    click('intent-list-select');
+    click('intent-list-select-all');
+    click('intent-list-archive');
+    click('archive-dialog-confirm');
+    await act(async () => finish({ ok: false, error: 'already running' }));
+    expect(screen.getByTestId('archive-dialog-error').textContent).toBe('already running');
+    click('archive-dialog-cancel');
+    expect(chosen()).toBe(t('intents.archive.chosen', { n: 3 }));
+  });
+
+  it('is not offered in another space than AI-DLC’s active one, nor without a complete intent', () => {
+    const { rerender } = render(ui({ activeSpace: 'team' }));
+    expect(screen.queryByTestId('intent-list-select')).toBeNull();
+    rerender(ui({ intents: [list[0]] }));
+    expect(screen.queryByTestId('intent-list-select')).toBeNull();
   });
 });
 

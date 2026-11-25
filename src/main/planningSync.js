@@ -33,7 +33,7 @@ import { t } from '../shared/i18n.js';
 const posix = path.posix;
 // ponytail: a fixed branch name and a fixed `main`; make both settings if a project's trunk is named otherwise.
 const BRANCH = 'dash/planning';
-const MAIN = 'main';
+export const MAIN = 'main';
 const AGENT_SUBJECT = 'docs: update the feature docs';
 const GIT_TIMEOUT_MS = 30000;
 const WINDOW_MS = 30000; // US-0608 FR6.1: one commit per burst, this long after its last change
@@ -244,13 +244,18 @@ function porcelainFiles(out) {
 const changedDocs = async (cwd, ctx) =>
   porcelainFiles(await git(cwd, ['--no-optional-locks', 'status', '--porcelain', '-z', '--untracked-files=all', '--', ...docPaths(ctx.featuresPath)], ctx));
 
-/**
- * US-0606 FR2.2, FR2.5, FR4.2: commits every changed feature-doc file in `cwd`, and nothing else. A refused commit
- * (a hook) gives the reason and the files, and unstages them again, so the change stays as it was in the working tree.
- */
+/** US-0606 FR2.2, FR2.5, FR4.2: commits every changed feature-doc file in `cwd`, and nothing else. */
 async function commitIn(cwd, ctx, subject) {
   const files = await changedDocs(cwd, ctx);
-  if (!files.length) return { committed: false };
+  return files.length ? commitFiles(cwd, ctx, files, subject) : { committed: false };
+}
+
+/**
+ * US-0606 FR4.2, US-0513 FR5.1, FR5.5: commits exactly `files` (relative to `cwd`); other staged work stays staged. A
+ * refused commit (a hook) gives the reason and the files, and unstages them again, so the change stays as it was in the
+ * working tree.
+ */
+export async function commitFiles(cwd, ctx, files, subject) {
   try {
     await git(cwd, ['add', '-A', '--', ...files], ctx);
     await git(cwd, ['commit', '--quiet', '-m', subject, '--', ...files], ctx);

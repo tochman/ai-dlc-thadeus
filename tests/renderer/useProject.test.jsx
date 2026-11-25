@@ -56,6 +56,28 @@ describe('useProject', () => {
     expect(result.current.listWarning).toBe('w');
   });
 
+  it('first selects the newest intent that is not archived, and nothing when all are (US-0513 FR3.1)', async () => {
+    const archived = { dirName: 'x', status: 'archived', active: false };
+    bridge.getIntents.mockResolvedValueOnce({ intents: [archived, { dirName: 'y', status: 'complete' }], warning: null });
+    const { result } = renderHook(() => useProject('p1', 'default'));
+    await waitFor(() => expect(result.current.selected).toBe('y'));
+    expect(result.current.intents).toHaveLength(2); // the list itself holds the archived ones too
+
+    bridge.getIntents.mockResolvedValueOnce({ intents: [archived], warning: null });
+    const all = renderHook(() => useProject('p2', 'default')).result;
+    await waitFor(() => expect(all.current.intents).toHaveLength(1));
+    expect(all.current.selected).toBeNull();
+  });
+
+  it('keeps the selected intent selected when it is archived (US-0513 FR3.4)', async () => {
+    const { result } = renderHook(() => useProject('p1', 'default'));
+    await waitFor(() => expect(result.current.detail?.dirName).toBe('b'));
+    bridge.getIntents.mockResolvedValue({ intents: [intents[0], { dirName: 'b', status: 'archived', active: false }], warning: null });
+    await act(async () => listeners.change({ projectId: 'p1', space: 'default', dirNames: [], indexChanged: true }));
+    expect(result.current.selected).toBe('b');
+    expect(result.current.lastIntentChangeAt).toBeNull(); // AC1.2.4: nothing is in flight
+  });
+
   it('shows a list error without the IPC prefix', async () => {
     bridge.getIntents.mockRejectedValueOnce(new Error("Error invoking remote method 'project:intents': Error: kaputt"));
     const { result } = renderHook(() => useProject('p1', 'default'));

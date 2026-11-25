@@ -69,6 +69,12 @@ describe('parseState', () => {
     expect(s).toMatchObject({ scope: 'bugfix', plan: 'i18n-express' });
   });
 
+  it('reads what an archived intent was before, and null for any other (US-0513 FR6.2)', () => {
+    const archived = '## Current Status\n- **Status**: Archived\n- **Archived From**: Completed\n';
+    expect(parseState(archived)).toMatchObject({ currentStatus: 'Archived', archivedFrom: 'Completed' });
+    expect(parseState('## Current Status\n- **Status**: Running\n').archivedFrom).toBeNull();
+  });
+
   it('reads depth, test strategy and every checkbox status (FR3.1, FR3.2)', () => {
     const s = parseState(read(path.join(epic29, 'aidlc-state.md')));
     expect(s).toMatchObject({ depth: 'Minimal', testStrategy: 'Minimal', scope: 'express', plan: null, currentStage: 'build-and-test' });
@@ -104,6 +110,13 @@ describe('mergePipeline', () => {
       stages: graph.stages.map((g) => (g.slug === 'build-and-test' ? { ...g, completedAt: '2026-11-12T22:01:05Z', outcome: 'approved' } : g))
     };
     expect(stage(mergePipeline(state, disagreeing), 'build-and-test')).toMatchObject({ status: 'in-progress', mismatch: true });
+  });
+
+  it('no stage is current in an archived intent, and the counts stay (US-0513 FR1.6, AC1.2.4)', () => {
+    const p = mergePipeline({ ...state, currentStatus: 'Archived' }, graph);
+    expect(p.phases.flatMap((ph) => ph.stages).some((s) => s.current)).toBe(false);
+    expect(stage(p, 'build-and-test').status).toBe('in-progress'); // the record is shown as it is
+    expect([p.done, p.executed]).toEqual([6, 9]);
   });
 
   it('a stage built unit by unit is done when every unit is approved, timed from its units (US-0011)', () => {

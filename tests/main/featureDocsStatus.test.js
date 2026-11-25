@@ -10,6 +10,7 @@ import path from 'node:path';
 import { parseEpic, parseOverview, statusOf } from '../../src/main/parsers/features.js';
 import { releaseOf } from '../../src/main/parsers/releases.js';
 import { parseState } from '../../src/main/parsers/state.js';
+import { isArchived, isFinished } from '../../src/shared/intentArchive.js';
 
 const ROOT = path.resolve(__dirname, '../..');
 const INTENTS = path.join(ROOT, 'aidlc/spaces/default/intents');
@@ -84,21 +85,22 @@ export function checkFeatureDocs({ overview, epics, built, delivered = new Set()
 }
 
 /**
- * Built and delivered story ids from intents ({description, stateText, complete}). A story is built when its intent
- * finished Code Generation, and delivered when that intent is also complete: a finished intent that never ran Code
- * Generation (an Ideation-only check) delivers nothing (v0.2.11 Step 3b).
+ * Built and delivered story ids from intents ({description, stateText, status}, status as in intents.json). A story is
+ * built when its intent finished Code Generation, and delivered when that intent is also complete: a finished intent
+ * that never ran Code Generation (an Ideation-only check) delivers nothing (v0.2.11 Step 3b). US-0513 FR6.2: an archived
+ * intent counts as complete when it was, and otherwise builds and delivers nothing.
  */
 export function storiesFromIntents(intents) {
   const built = new Set();
   const delivered = new Set();
-  for (const { description, stateText, complete } of intents) {
-    const codeGen = parseState(stateText)
-      .phases.flatMap((p) => p.stages)
-      .find((st) => st.slug === 'code-generation');
-    if (codeGen?.status !== 'done') continue;
+  for (const { description, stateText, status } of intents) {
+    const state = parseState(stateText);
+    const codeGen = state.phases.flatMap((p) => p.stages).find((st) => st.slug === 'code-generation');
+    const intent = { status, stateStatus: state.currentStatus, archivedFrom: state.archivedFrom };
+    if (codeGen?.status !== 'done' || (isArchived(intent) && !isFinished(intent))) continue;
     const ids = intentStoryIds(description);
     ids.forEach((id) => built.add(id));
-    if (complete) ids.forEach((id) => delivered.add(id));
+    if (isFinished(intent)) ids.forEach((id) => delivered.add(id));
   }
   return { built, delivered };
 }
@@ -106,7 +108,7 @@ export function storiesFromIntents(intents) {
 function intentStories() {
   if (!existsSync(INTENTS)) return { built: new Set(), delivered: new Set() };
   const index = existsSync(path.join(INTENTS, 'intents.json')) ? JSON.parse(readFileSync(path.join(INTENTS, 'intents.json'), 'utf8')) : [];
-  const complete = new Set(index.filter((e) => e.status === 'complete').map((e) => e.dirName));
+  const statusOfDir = new Map(index.map((e) => [e.dirName, e.status]));
   const intents = [];
   for (const dir of readdirSync(INTENTS, { withFileTypes: true }).filter((d) => d.isDirectory())) {
     const base = path.join(INTENTS, dir.name);
@@ -116,7 +118,7 @@ function intentStories() {
     intents.push({
       description: JSON.parse(readFileSync(descFile, 'utf8')),
       stateText: readFileSync(stateFile, 'utf8'),
-      complete: complete.has(dir.name)
+      status: statusOfDir.get(dir.name)
     });
   }
   return storiesFromIntents(intents);
@@ -189,13 +191,26 @@ describe('feature docs status', () => {
   it('counts a finished intent as delivered only when its Code Generation ran (v0.2.11 Step 3b)', () => {
     const state = (mark) => `### CONSTRUCTION PHASE\n- [${mark}] code-generation — EXECUTE\n`;
     const { built, delivered } = storiesFromIntents([
-      { description: 'US-0001: fix', stateText: state('x'), complete: true },
-      { description: 'Ideation check for US-1401–US-1403', stateText: state(' '), complete: true },
-      { description: 'US-0002: skipped build', stateText: state('S'), complete: true },
-      { description: 'US-0003: in flight', stateText: state('x'), complete: false }
+      { description: 'US-0001: fix', stateText: state('x'), status: 'complete' },
+      { description: 'Ideation check for US-1401–US-1403', stateText: state(' '), status: 'complete' },
+      { description: 'US-0002: skipped build', stateText: state('S'), status: 'complete' },
+      { description: 'US-0003: in flight', stateText: state('x'), status: 'in-flight' }
     ]);
     expect([...delivered]).toEqual(['US-0001']);
     expect([...built].sort()).toEqual(['US-0001', 'US-0003']);
+  });
+
+  it('an archived intent that was complete delivers its stories; any other archived one neither builds nor delivers (US-0513 AC6.1.2, AC6.1.3)', () => {
+    const state = (status, from) =>
+      `## Current Status\n- **Status**: ${status}\n${from ? `- **Archived From**: ${from}\n` : ''}\n### CONSTRUCTION PHASE\n- [x] code-generation — EXECUTE\n`;
+    const { built, delivered } = storiesFromIntents([
+      { description: 'US-0001: done, then archived', stateText: state('Archived', 'Completed'), status: 'archived' },
+      { description: 'US-0002: given up', stateText: state('Archived', 'Running'), status: 'archived' },
+      { description: 'US-0003: archived in the index only', stateText: state('Running'), status: 'archived' },
+      { description: 'US-0004: in flight', stateText: state('Running'), status: 'in-flight' }
+    ]);
+    expect([...delivered]).toEqual(['US-0001']);
+    expect([...built].sort()).toEqual(['US-0001', 'US-0004']);
   });
 
   it('passes ranges and uniform released epics', () => {

@@ -1,6 +1,7 @@
 // Merges aidlc-state.md stage checkboxes with runtime-graph.json timings.
 // The state file wins; a disagreement about "done" is flagged as a mismatch.
 // US-0411 FR2.1, FR3.4: each stage also carries its unit counts for the level bar and a failed outcome.
+import { isArchived } from '../../shared/intentArchive.js';
 
 const ACTIVE = new Set(['in-progress', 'awaiting-approval', 'revising']);
 // US-0411 FR3.4: any other runtime outcome (e.g. `rejected`) is a failure; `pending` is a stage still running.
@@ -22,6 +23,7 @@ export function mergePipeline(state, graph) {
   // US-0411 FR2.1: units in the plan (bolt_dag), else the instances seen; null for a stage not built unit by unit.
   const unitsOf = (g) => (g?.unitsSeen ? { approved: g.unitsApproved, total: planned || g.unitsSeen } : null);
   const inFlight = state && !/^complete/i.test(state.currentStatus ?? '');
+  const archived = isArchived({ stateStatus: state?.currentStatus }); // US-0513 FR1.6: nothing in it runs
 
   const phases = (state?.phases ?? []).map((phase) => ({
     name: phase.name,
@@ -41,7 +43,7 @@ export function mergePipeline(state, graph) {
         units: unitsOf(g),
         failed: !!g?.outcome && !NOT_FAILED.has(g.outcome), // US-0411 FR3.4
         graphStatus: g ? graphStatus(g) : null,
-        current: ACTIVE.has(s.status) || (inFlight && s.slug === state.currentStage)
+        current: !archived && (ACTIVE.has(s.status) || (inFlight && s.slug === state.currentStage))
       };
     })
   }));

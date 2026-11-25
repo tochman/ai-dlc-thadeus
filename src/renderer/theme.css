@@ -934,12 +934,27 @@ button.lcars-nb:hover:not(:disabled), a.lcars-nb:hover { filter: brightness(1.15
    readout (parked is an outline, not a colour). */
 .intent-parked { align-self: center; padding: 0 8px; border: 1px solid var(--slate-5); border-radius: 0; background: none; color: var(--text-2); font-size: 11px; letter-spacing: 0.04em; text-transform: uppercase; white-space: nowrap; }
 /* US-0037 FR3.1, FR3.6: Park beside Resume in one group that wraps as one piece; Park takes Resume's height, with room around its label. */
-.intent-head-actions { display: flex; align-items: flex-start; gap: var(--gap); }
 .intent-park { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }
 /* US-0508: the rename field, inline in the head beside Park and Resume. */
 .intent-rename { display: flex; flex-direction: column; gap: 4px; min-width: 240px; max-width: 360px; }
 .intent-rename-actions { display: flex; gap: var(--gap); }
 .intent-park .lcars-block { height: 56px; padding: 0 16px 8px; font-size: 15px; }
+/* US-0513: archiving. Select mode's bar above the rows, a checkbox beside each complete row, the run's outcome as text,
+   and Archive greyed (aria-disabled, so it keeps focus and its tooltip) while an agent has the intent. */
+.intent-select { display: flex; flex-wrap: wrap; align-items: center; gap: var(--gap); }
+.intent-select .lcars-pill { height: 26px; padding: 0 12px; font-size: 13px; }
+.intent-rows:focus-visible { outline: 2px solid var(--amber); outline-offset: 2px; }
+.intent-rows li.has-check { display: flex; align-items: center; gap: var(--gap); }
+.intent-rows li.has-check input { flex: none; }
+.archive-outcome { flex: 1 1 100%; }
+.archive-outcome p { margin: 0 0 4px; overflow-wrap: anywhere; }
+.archive-outcome ul { margin: 0 0 4px; padding-left: 18px; overflow-wrap: anywhere; }
+.archive-form { display: flex; flex-direction: column; gap: var(--gap-m); }
+.archive-form p { margin: 0; }
+.archive-names { max-height: 200px; margin: 0; padding-left: 18px; overflow-y: auto; color: var(--white); }
+.intent-park > p, .intent-park > .archive-outcome { margin: 0; max-width: 360px; text-align: right; } /* not the dialog inside it */
+.intent-archive-space { margin: 0; max-width: 280px; }
+.intent-park .lcars-pill[aria-disabled='true'] { cursor: default; background: var(--slate-0); color: var(--slate-4); filter: none; }
 .intent-cost { margin-left: auto; font-size: 16px; color: var(--steel-text); font-variant-numeric: tabular-nums; white-space: nowrap; }
 .intent-row-meta { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 12px; color: var(--muted); text-transform: uppercase; }
 .intent-steps { display: inline-flex; align-items: center; gap: 6px; font-variant-numeric: tabular-nums; }
@@ -2020,13 +2035,15 @@ a.lcars-pill { text-decoration: none; }
 .detail-tabs { gap: var(--gap); flex-wrap: nowrap; flex: none; }
 .detail-tabs .lcars-tile { flex: 1 1 0; min-width: 0; max-width: 150px; min-height: 52px; margin-left: 0; padding-top: 10px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .lcars-tile::before { left: 0; right: 0; top: 0; bottom: auto; width: auto; height: 4px; background: var(--strip, var(--slate-2)); }
-.intent-head-actions { align-items: center; }
+.intent-head-actions, .intent-head-work { display: flex; align-items: center; gap: var(--gap); }
+.intent-head-actions { flex-wrap: wrap; }
+.intent-head-work:empty { display: none; }
 /* US-0044 AC3: the head starts just under the top bar, beside the elbow's diagonal (clear of it from x 306), so no empty
    band; the tab content keeps the usual space under the tabs. */
 .intent-df .lcars-df-in { --df-top: 104px; }
-.intent-df .intent-head { margin-left: 100px; }
+.intent-df .intent-head, .intent-df .intent-progress { margin-left: 100px; } /* the step row too: the thin line's curve crossed its text (US-0513) */
 .intent-df .detail-tabs { margin-bottom: 16px; }
-@container (max-width: 560px) { .intent-df .intent-head { margin-left: 0; } }
+@container (max-width: 560px) { .intent-df .intent-head, .intent-df .intent-progress { margin-left: 0; } }
 /* Section switches (Diagram | Table, Tokens | $, Week | Month): square blocks side by side. */
 .token-detail-switch, .velocity-units { display: inline-flex; gap: var(--gap); }
 .velocity-units .lcars-nb { margin-left: 0; min-width: 72px; }

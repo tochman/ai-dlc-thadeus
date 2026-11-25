@@ -18,6 +18,7 @@ import {
   elbowRadii,
   useEntrance
 } from '../../src/renderer/Lcars.jsx';
+import LcarsDialog from '../../src/renderer/LcarsDialog.jsx';
 import { HOVER_DELAY_MS } from '../../src/renderer/Tooltip.jsx';
 
 let stored;
@@ -321,6 +322,43 @@ describe('curved diagonal frame', () => {
     } finally {
       vi.useRealTimers();
     }
+  });
+});
+
+describe('dialog focus (US-0417, US-0513 FR7.2)', () => {
+  /** A dialog opened from `opener`, with a list to fall back to. */
+  function renderDialog({ gone = false, disabled = false } = {}) {
+    const list = { current: null };
+    const ui = (open, hasOpener, isDisabled) => (
+      <>
+        {hasOpener && (
+          <button data-testid="opener" disabled={isDisabled}>
+            o
+          </button>
+        )}
+        <ul ref={list} tabIndex={-1} data-testid="fallback" />
+        <LcarsDialog open={open} onClose={() => {}} title="T" testId="dlg" fallbackFocus={() => list.current}>
+          <button data-testid="inside">x</button>
+        </LcarsDialog>
+      </>
+    );
+    const { rerender } = render(ui(false, true, false));
+    screen.getByTestId('opener').focus();
+    rerender(ui(true, true, false));
+    screen.getByTestId('inside').focus();
+    rerender(ui(true, !gone, disabled));
+    rerender(ui(false, !gone, disabled));
+    return document.activeElement;
+  }
+
+  it('goes back to the control that opened it', () => {
+    expect(renderDialog()).toBe(screen.getByTestId('opener'));
+  });
+
+  it('goes to the fallback when that control is gone, or can no longer take it', () => {
+    expect(renderDialog({ gone: true })).toBe(screen.getByTestId('fallback'));
+    cleanup();
+    expect(renderDialog({ disabled: true })).toBe(screen.getByTestId('fallback'));
   });
 });
 

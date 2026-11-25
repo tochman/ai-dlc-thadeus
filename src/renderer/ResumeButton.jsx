@@ -6,13 +6,22 @@ import { useTranslation } from 'react-i18next';
 import { useTerminal } from './TerminalContext.jsx';
 import { t as translate } from '../shared/i18n.js';
 import { harnessCommand } from '../shared/harnesses.js';
+import { ELSEWHERE_MS, workBlock } from '../shared/intentArchive.js';
 import Tooltip from './Tooltip.jsx';
 import { stageTitle } from './format.js';
 
 const SAFE_DIR_NAME = /^[A-Za-z0-9][A-Za-z0-9._-]*$/;
-// ponytail: a quiet log for this long means the outside agent stopped; a long silent step can re-enable Resume early.
-// The button re-checks on the next refresh, not on a timer.
-export const ELSEWHERE_MS = 10 * 60_000;
+export { ELSEWHERE_MS };
+
+/** US-0513 FR1.4: the rule Resume and Archive share, asked of the project's agent tabs as they are now. */
+export const workBlockOf = (terminal, activeIntent) =>
+  workBlock({
+    busy: terminal?.anyBusy?.() ?? terminal?.state('agent') === 'busy',
+    asking: terminal?.asking?.() ?? false,
+    running: terminal?.running?.() ?? false,
+    activeIntent,
+    now: Date.now()
+  });
 
 /**
  * "Fortsätt vid <stage>", or "Fortsätt" without pipeline data (FR2.5). US-0037 FR3.2, FR3.4: a parked intent reads
@@ -45,21 +54,11 @@ export default function ResumeButton({ projectId, intent, activeDirName, activeI
   const noProject = intent.parked && !projectId ? t('intents.parked', { stage: intent.parkedStage ? stageTitle(intent.parkedStage) : '–' }) : null;
   const unavailable = missing ?? noProject ?? workingReason();
 
+  // A live agent session with the active intent in flight is running the work, even while it is quiet (waiting on a
+  // subagent, between steps). Every Resume in the project waits: a switch typed into it is wrong too (US-0007).
   function workingReason() {
-    if (terminal.anyBusy?.() ?? terminal.state('agent') === 'busy') return t('intents.resume.busy', { harness: harnessName });
-    if (terminal.asking?.()) return t('intents.resume.asking', { harness: harnessName });
-    if (activeIntent?.parked) return null; // parked: no agent runs it, though parking just wrote its audit
-    // A live agent session with the active intent in flight is running the work, even while it is quiet (waiting
-    // on a subagent, between steps). Every Resume in the project waits: a switch typed into it is wrong too (US-0007).
-    if (terminal.running?.() && activeIntent?.status === 'in-flight') {
-      return t('intents.resume.running', { harness: harnessName, intent: activeIntent.slug ?? activeIntent.dirName });
-    }
-    // An agent outside the app (another terminal) is running the active intent: AI-DLC wrote its audit log within
-    // the last few minutes. The app cannot see that session, so it goes by the log (US-0009).
-    if (activeIntent?.status === 'in-flight' && Date.now() - (activeIntent.activityAt ?? 0) < ELSEWHERE_MS) {
-      return t('intents.resume.elsewhere', { intent: activeIntent.slug ?? activeIntent.dirName });
-    }
-    return null;
+    const block = workBlockOf(terminal, activeIntent);
+    return block && t(`intents.resume.${block}`, { harness: harnessName, intent: activeIntent?.slug ?? activeIntent?.dirName ?? '' });
   }
 
   function resume(e) {

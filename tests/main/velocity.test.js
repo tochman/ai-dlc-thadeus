@@ -98,6 +98,16 @@ describe('intentMetrics (US-0303 FR1.1–FR1.4, FR4.1)', () => {
     expect(intentMetrics(running, { finished: true }).finished).toBe(true);
     expect(intentMetrics([])).toMatchObject({ finished: false, totalMs: null, activeMs: null, parkedMs: 0, stages: [], phases: [] });
   });
+
+  it('archiving and unarchiving later change no figure, whether it was complete, running or parked (US-0513 AC6.1.1)', () => {
+    const running = [ev(0, 'WORKFLOW_STARTED'), ev(1, 'STAGE_STARTED', { Stage: 'x' })];
+    const parked = [...running, ev(2, 'WORKFLOW_PARKED', { Stage: 'x' })];
+    for (const events of [FINISHED, running, parked]) {
+      const archived = [...events, ev(100, 'WORKFLOW_ARCHIVED', { Stage: 'x' })];
+      expect(intentMetrics(archived)).toEqual(intentMetrics(events));
+      expect(intentMetrics([...archived, ev(200, 'WORKFLOW_UNARCHIVED', { Stage: 'x' })])).toEqual(intentMetrics(events));
+    }
+  });
 });
 
 describe('storyMetrics (US-0303 FR2.1–FR2.3)', () => {
@@ -190,6 +200,11 @@ describe('projectMetrics (US-0303 FR3.1–FR3.4, FR4.1)', () => {
       { key: '2026-11', intents: 2, stories: 1, avgActiveMs: 3 * H },
       { key: '2027-01', intents: 1, stories: 0, avgActiveMs: 6 * H }
     ]);
+  });
+
+  it('an archived intent that was not complete is neither finished nor running (US-0513 AC6.1.3)', () => {
+    const open = { dirName: 'e', finished: false, archived: true, endMs: at(2026, 10, 16, 10), activeMs: H };
+    expect(projectMetrics([...rows, open], stories)).toEqual(p);
   });
 
   it('averages the finished intents only (FR3.2, FR4.1)', () => {

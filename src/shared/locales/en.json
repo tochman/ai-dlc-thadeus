@@ -221,6 +221,52 @@
       "taken": "\"{name}\" is already used by another intent in this space.",
       "unknown": "There is no intent {name} in this space."
     },
+    "archive": {
+      "open": "Archive",
+      "mark": "Archived",
+      "unarchive": "Unarchive",
+      "unarchived": "The intent is back in the list.",
+      "filter": "Archived ({n})",
+      "allArchived": "Every intent is archived. Pick \"Archived ({n})\" in the status filter to see them.",
+      "title": "{n, plural, one {Archive intent} other {Archive # intents}}",
+      "nothingDeleted": "{n, plural, one {Nothing is deleted. The record stays on disk, and you can unarchive it at any time.} other {Nothing is deleted. The records stay on disk, and you can unarchive them at any time.}}",
+      "warnUnfinished": "{name} is not finished.",
+      "warnActive": "{name} is the active intent. No intent is active afterwards.",
+      "reason": "Reason (optional)",
+      "reasonHint": "One line, at most 200 characters.",
+      "reasonError": {
+        "tooLong": "The reason is longer than 200 characters.",
+        "dash": "The reason cannot start with a hyphen."
+      },
+      "confirm": "{n, plural, one {Archive} other {Archive #}}",
+      "progress": "Archiving {n} of {total}…",
+      "running": "An archiving is already running in this project.",
+      "onlyComplete": "Only complete intents can be archived several at a time.",
+      "otherSpace": "AI-DLC works in the space {active} and archives only there. This is {space}.",
+      "blocked": {
+        "busy": "An agent tab is working. Wait, or interrupt it first.",
+        "asking": "An agent is waiting for your answer. Answer it first.",
+        "running": "An agent session is open. Close it or park the intent first.",
+        "elsewhere": "An agent outside the app wrote to this intent in the last 10 minutes."
+      },
+      "done": "{n, plural, =0 {No intent was archived.} one {# intent archived.} other {# intents archived.}}",
+      "refused": "{n, plural, one {# was refused:} other {# were refused:}}",
+      "commit": {
+        "waiting": "The changed files are committed on main. The planning sync pushes the commit.",
+        "syncOff": "The changed files are committed on main. The planning sync is off in this project, so the commit stays local until you push it.",
+        "noRemote": "The changed files are committed on main. There is no remote, so the commit stays local.",
+        "protected": "The changed files are committed on main. main is protected, so the commit stays local until you bring it to origin.",
+        "offline": "The changed files are committed on main. You are offline, so the commit stays local for now.",
+        "notMain": "The files are changed but not committed, because main is not checked out. They need a commit.",
+        "dirtyIndex": "The files are changed but not committed, because intents.json already had uncommitted changes. They need a commit.",
+        "refused": "The files are changed, but git refused the commit: {reason}"
+      },
+      "select": "Select",
+      "selectEnd": "Stop selecting",
+      "selectAll": "Select all",
+      "selectOne": "Select {name}",
+      "chosen": "{n} selected"
+    },
     "unknownStatus": "unknown status",
     "doneOfExecuted": "Done of executed stages",
     "missingInIndex": "Missing in intents.json",
@@ -239,7 +285,8 @@
     "tabsLabel": "Intent views",
     "mode": {
       "live": "Live",
-      "complete": "Done"
+      "complete": "Done",
+      "archived": "Archived"
     },
     "showMore": "Show more",
     "showLess": "Show less",
@@ -1589,6 +1636,7 @@
     "ledgerMissing": "{path} does not exist. AI-DLC writes it once a session has run on this machine.",
     "ledgerShape": "{path} has an unexpected shape.",
     "timeout": "timed out after 10 s",
+    "timeoutAfter": "timed out after {seconds} s",
     "missingField": "the reply has no {field}",
     "pluginsFailed": "The plugins could not be read: {error}",
     "previewFailed": "The preview failed: {error}",
