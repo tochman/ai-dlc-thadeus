@@ -8,7 +8,7 @@
 
 **Stories:** US-0501–US-0513
 
-**Status (2026-11-25):** ✅ US-0501–US-0503, US-0505 and US-0506 released (v0.2.0–v0.2.5). ✅ US-0504 released in v0.2.7. ✅ US-0507 released in v0.2.8. ✅ US-0508 released in v0.2.15. 📋 US-0509 planned, for v0.3.1. ✅ US-0510 released in v0.2.13. 📋 US-0511 and US-0512 planned, for v0.3.4. ✅ US-0513 done, for v0.3.1. Each story names its release.
+**Status (2026-11-25):** ✅ US-0501–US-0503, US-0505 and US-0506 released (v0.2.0–v0.2.5). ✅ US-0504 released in v0.2.7. ✅ US-0507 released in v0.2.8. ✅ US-0508 released in v0.2.15. 🚧 US-0509 in progress, for v0.3.1. ✅ US-0510 released in v0.2.13. 📋 US-0511 and US-0512 planned, for v0.3.4. ✅ US-0513 done, for v0.3.1. Each story names its release.
 
 ---
 
@@ -171,7 +171,7 @@
 - **Notes:** AI-DLC 2.11.3 lists `intent switch`, `archive` and `unarchive`, but no rename, so the name is a display name kept beside the slug.
 - **Dependencies:** US-0501
 
-**US-0509: Change the plan of an intent that has started** 📋 Planned, for v0.3.1
+**US-0509: Change the plan of an intent that has started** 🚧 In progress, for v0.3.1
 - As a **developer whose work turned out bigger or smaller than planned**, in order to **keep the right amount of process without starting over**, I would like to **change the plan AI-DLC follows for a running intent**.
 - **Epic:** EPIC-05
 - **Priority:** Medium
