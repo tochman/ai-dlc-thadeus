@@ -75,6 +75,12 @@ describe('parseState', () => {
     expect(parseState('## Current Status\n- **Status**: Running\n').archivedFrom).toBeNull();
   });
 
+  it('reads the project type and how Construction is built, or null for each (US-0509 FR2.5, FR4.1)', () => {
+    const s = parseState('## Project Information\n- **Project Type**: Greenfield\n## Runtime State\n- **Construction Iteration**: unit-major\n');
+    expect(s).toMatchObject({ projectType: 'Greenfield', constructionIteration: 'unit-major' });
+    expect(parseState('## Project Information\n- **Project Type**:\n')).toMatchObject({ projectType: null, constructionIteration: null });
+  });
+
   it('reads depth, test strategy and every checkbox status (FR3.1, FR3.2)', () => {
     const s = parseState(read(path.join(epic29, 'aidlc-state.md')));
     expect(s).toMatchObject({ depth: 'Minimal', testStrategy: 'Minimal', scope: 'express', plan: null, currentStage: 'build-and-test' });
@@ -183,6 +189,63 @@ describe('mergePipeline', () => {
     expect(stage(p, 'code-generation')).toMatchObject({ mode: 'EXECUTE', status: 'skipped' });
     expect(p.executed).toBe(8); // planned to run, but jumped over: not a stage left to do
     expect(p.done).toBe(5);
+  });
+
+  describe('after a plan switch (US-0509 FR4.1)', () => {
+    /** A state as AI-DLC leaves it: the stages' marks and suffixes, and where the work stands. */
+    const switched = ({ current = 'code-generation', iteration = null, units = ' ] units-generation — SKIP' } = {}) =>
+      parseState(
+        [
+          ...(iteration ? ['## Runtime State', `- **Construction Iteration**: ${iteration}`] : []),
+          '## Stage Progress',
+          '### INCEPTION PHASE',
+          '- [x] requirements-analysis — EXECUTE',
+          '- [x] user-stories — SKIP', // done, and the new plan drops it
+          '- [ ] domain-design — EXECUTE', // the new plan has it, and the work has passed it
+          `- [${units}`,
+          '### CONSTRUCTION PHASE',
+          '- [ ] functional-design — EXECUTE',
+          '- [-] code-generation — EXECUTE',
+          '- [ ] build-and-test — EXECUTE',
+          '### OPERATION PHASE',
+          '- [ ] deployment-pipeline — SKIP',
+          '## Current Status',
+          ...(current ? [`- **Current Stage**: ${current}`] : []),
+          '- **Status**: Running'
+        ].join('\n')
+      );
+    const behind = (p) =>
+      p.phases
+        .flatMap((ph) => ph.stages)
+        .filter((s) => s.behind)
+        .map((s) => s.slug);
+
+    it('counts a done stage the new plan drops, and not a not-started one behind the current stage', () => {
+      const p = mergePipeline(switched(), null);
+      expect(behind(p)).toEqual(['requirements-analysis', 'user-stories', 'domain-design', 'units-generation', 'functional-design']);
+      expect([p.done, p.executed]).toEqual([2, 4]); // requirements-analysis, user-stories; code-generation, build-and-test
+    });
+
+    it('a stage the work goes back to unit by unit is not behind, so it is counted', () => {
+      const p = mergePipeline(switched({ iteration: 'unit-major', units: 'x] units-generation — EXECUTE' }), null);
+      expect(behind(p)).toEqual(['requirements-analysis', 'user-stories', 'domain-design', 'units-generation']);
+      expect([p.done, p.executed]).toEqual([3, 6]);
+    });
+
+    it('is behind all the same when the work has left Construction, or has no units, or is built stage by stage', () => {
+      const units = 'x] units-generation — EXECUTE';
+      expect(behind(mergePipeline(switched({ iteration: 'unit-major', units, current: 'deployment-pipeline' }), null))).toContain('functional-design');
+      expect(behind(mergePipeline(switched({ iteration: 'unit-major' }), null))).toContain('functional-design');
+      expect(behind(mergePipeline(switched({ iteration: 'stage-major', units }), null))).toContain('functional-design');
+    });
+
+    it('without a current stage, or with one the state file does not list, nothing is behind', () => {
+      for (const current of [null, 'none', 'a-plugin-stage']) {
+        const p = mergePipeline(switched({ current }), null);
+        expect(behind(p), String(current)).toEqual([]);
+        expect([p.done, p.executed]).toEqual([2, 6]);
+      }
+    });
   });
 });
 

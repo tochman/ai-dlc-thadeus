@@ -209,6 +209,38 @@ describe('IntentDetail head, one control per state (US-0037)', () => {
     });
   });
 
+  describe('a changed plan (US-0509)', () => {
+    /** The detail with its state's plan and scope, and its counts. */
+    const changed = (state, counts = {}) => {
+      const d = detailOf();
+      return { ...d, state: { ...d.state, ...state }, pipeline: { ...d.pipeline, ...counts } };
+    };
+    const ui = (detail, intent = base) => <IntentDetail projectId="p1" detail={detail} intent={intent} activeDirName={DIR} cost={null} models={null} />;
+    const chip = () => screen.getByTestId('intent-detail').querySelector('.lcars-chips .lcars-chip');
+
+    it('shows the new plan after a switch from a tailored one, while the list still has the old scope (FR4.2)', () => {
+      const { rerender } = render(ui(changed({ plan: 'i18n-express', scope: 'feature' })));
+      expect(chip().textContent).toBe('i18n-express');
+      rerender(ui(changed({ plan: null, scope: 'express' }))); // base.scope is still feature
+      expect(chip().textContent).toBe('express');
+      expect(screen.getByTestId('intent-detail').textContent).not.toMatch(/i18n-express|feature/);
+      rerender(ui(changed({})));
+      expect(chip().textContent).toBe('feature'); // a state without a scope: the list's
+    });
+
+    it('"Steg n av m" and the stage count follow a new detail (FR4.1)', () => {
+      const { rerender } = render(ui(changed({})));
+      rerender(ui(changed({}, { done: 2, executed: 7 })));
+      expect(screen.getByTestId('intent-progress').textContent).toMatch(/steg 3 av 7/i);
+      expect(screen.getByTestId('intent-detail-stages').textContent).toBe('Klara stages 2/7');
+    });
+
+    it('"Byt plan" sits in the head’s actions (FR1.1)', () => {
+      render(ui(changed({ scope: 'feature' })));
+      expect(screen.getByTestId('intent-head-actions').contains(screen.getByTestId('plan-change-open'))).toBe(true);
+    });
+  });
+
   it('gives the cost pair the compact readout size so it fits its column (FR3.5)', () => {
     show(base);
     const value = screen.getByTestId('intent-detail-cost');

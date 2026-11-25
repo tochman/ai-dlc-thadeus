@@ -8,7 +8,7 @@
 
 **Stories:** US-0501–US-0513
 
-**Status (2026-11-25):** ✅ US-0501–US-0503, US-0505 and US-0506 released (v0.2.0–v0.2.5). ✅ US-0504 released in v0.2.7. ✅ US-0507 released in v0.2.8. ✅ US-0508 released in v0.2.15. 🚧 US-0509 in progress, for v0.3.1. ✅ US-0510 released in v0.2.13. 📋 US-0511 and US-0512 planned, for v0.3.4. ✅ US-0513 done, for v0.3.1. Each story names its release.
+**Status (2026-11-25):** ✅ US-0501–US-0503, US-0505 and US-0506 released (v0.2.0–v0.2.5). ✅ US-0504 released in v0.2.7. ✅ US-0507 released in v0.2.8. ✅ US-0508 released in v0.2.15. ✅ US-0509 done, for v0.3.1. ✅ US-0510 released in v0.2.13. 📋 US-0511 and US-0512 planned, for v0.3.4. ✅ US-0513 done, for v0.3.1. Each story names its release.
 
 ---
 
@@ -171,18 +171,18 @@
 - **Notes:** AI-DLC 2.11.3 lists `intent switch`, `archive` and `unarchive`, but no rename, so the name is a display name kept beside the slug.
 - **Dependencies:** US-0501
 
-**US-0509: Change the plan of an intent that has started** 🚧 In progress, for v0.3.1
+**US-0509: Change the plan of an intent that has started** ✅ Done, for v0.3.1
 - As a **developer whose work turned out bigger or smaller than planned**, in order to **keep the right amount of process without starting over**, I would like to **change the plan AI-DLC follows for a running intent**.
 - **Epic:** EPIC-05
 - **Priority:** Medium
 - **Complexity:** Medium
 - **Background:** Asked for 2026-11-15: "is it possible to change what plan AI-DLC is using on a intent even though it has started. that might also prove useful."
 - **Acceptance Criteria:**
-  - [ ] An intent's detail offers "Change plan". It shows the current plan and the stages already done, which stay done.
-  - [ ] The choice is a ready-made plan, or a plan tailored to a description. Both go through AI-DLC (`/aidlc compose "<task>"` mid-workflow, or the scope switch), typed into the agent tab for the person to send, as with Resume.
-  - [ ] The approval stays with the person in the agent tab: AI-DLC asks for it on a tailored plan, and switches to a ready-made plan at once when the person sends the line, which the app says before. The app only shows the result.
-  - [ ] The pipeline shows the new stages once AI-DLC has recorded them.
-  - [ ] Every text goes through `t()` in Swedish and English.
+  - [x] An intent's detail offers "Change plan". It shows the current plan and the stages already done, which stay done.
+  - [x] The choice is a ready-made plan, or a plan tailored to a description. Both go through AI-DLC (`/aidlc compose "<task>"` mid-workflow, or the scope switch), typed into the agent tab for the person to send, as with Resume.
+  - [x] The approval stays with the person in the agent tab: AI-DLC asks for it on a tailored plan, and switches to a ready-made plan at once when the person sends the line, which the app says before. The app only shows the result.
+  - [x] The pipeline shows the new stages once AI-DLC has recorded them.
+  - [x] Every text goes through `t()` in Swedish and English.
 - **Notes:** AI-DLC 2.11.3 has `compose "<task>"`, which suggests a plan for the stages not yet run and stops at an approve/edit/reject gate.
 - **Dependencies:** US-0501, US-0901
 

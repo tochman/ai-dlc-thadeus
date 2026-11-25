@@ -526,5 +526,13 @@
     "scope": "quick-fix",
     "status": "complete",
     "request": "0c51dfe0"
+  },
+  {
+    "uuid": "01a212da-aaa0-7840-a30c-c629627b52a9",
+    "slug": "change-intent-plan",
+    "dirName": "261125-change-intent-plan",
+    "scope": "ultra-express",
+    "status": "complete",
+    "request": "7199e150"
   }
 ]

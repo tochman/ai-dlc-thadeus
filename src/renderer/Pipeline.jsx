@@ -1,13 +1,23 @@
 // The intent's pipeline: phases of stages, each stage an LCARS card with a unit level bar (US-0411 FR1–FR5).
 // US-0028: the note about runtime-graph.json shows only when stages are done and the file is not on this machine.
+// US-0509 FR4.1: after a plan switch a done stage stays done, and one the work has passed is "not run".
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { formatCost, formatDuration, formatTime, shortModel, stageStatusLabel, tokenBreakdown } from './format.js';
 import { t as translate } from '../shared/i18n.js';
+import { stageRuns } from '../shared/planChange.js';
 import Tooltip from './Tooltip.jsx';
 
 const filesForStage = (groups, slug) => groups.filter((g) => g.dir === slug || g.dir.endsWith(`/${slug}`));
-export const isSkipped = (s) => s.mode === 'SKIP' || s.status === 'skipped';
+/** Not a stage of the work: not in the plan, skipped, or passed without starting (the counts' rule, US-0509 FR4.1). */
+export const isSkipped = (s) => !stageRuns(s);
+
+/** US-0509 FR4.1: a stage's status as text. A done one is done whatever the plan says; one the work has passed is not run. */
+function statusTextOf(t, s) {
+  if (s.status !== 'done' && s.mode === 'SKIP') return t('pipeline.notIncluded');
+  if (s.status === 'not-started' && s.behind) return t('pipeline.notRun');
+  return stageStatusLabel(s.status) ?? s.status;
+}
 
 const DOT_OF = { done: 'done', 'in-progress': 'current', revising: 'current', 'awaiting-approval': 'attn' };
 // In progress breathes, "needs you" pulses coral (FR3.4, FR4.1).
@@ -77,7 +87,7 @@ function LevelBar({ stage }) {
  */
 function StageBlock({ stage, index, open, onToggle, stageCost, stageModels, details }) {
   const { t } = useTranslation();
-  const statusText = stage.mode === 'SKIP' ? t('pipeline.notIncluded') : (stageStatusLabel(stage.status) ?? stage.status);
+  const statusText = statusTextOf(t, stage);
   const extra = stage.current && stage.status !== 'in-progress' ? ` · ${t('pipeline.current')}` : '';
   const models = stage.current && stageModels?.length ? `${stageModels.map(shortModel).join(', ')} · ` : '';
   const code = [stage.agent ? agentShort(stage.agent) : null, stage.durationMs != null ? formatDuration(stage.durationMs) : null].filter(Boolean).join(' · ');

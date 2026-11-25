@@ -4,7 +4,7 @@ import { selectableHarness } from '../../src/shared/harnesses.js';
 
 let terminal;
 vi.mock('../../src/renderer/TerminalContext.jsx', () => ({ useTerminal: () => terminal }));
-const { default: PlansView, quoted } = await import('../../src/renderer/PlansView.jsx');
+const { default: PlansView } = await import('../../src/renderer/PlansView.jsx');
 
 // The shape plans:list returns (src/main/plans.js listPlans plus the active intent).
 const DEFAULTS = {
@@ -93,7 +93,14 @@ describe('PlansView (EPIC-09 US-0903)', () => {
     fireEvent.change(screen.getByTestId('plans-start-ask-input'), { target: { value: 'a dark mode' } });
     fireEvent.click(screen.getByTestId('plans-start-ask-send'));
     expect(terminal.type).toHaveBeenLastCalledWith('agent', '/aidlc --scope spare "a dark mode"', { submit: false });
-    expect(quoted('back\\slash')).toBe('"back\\\\slash"');
+  });
+
+  it('types no control character from the person’s text (US-0509 NFR1)', async () => {
+    renderView();
+    fireEvent.click(await screen.findByTestId('plans-new'));
+    fireEvent.change(screen.getByTestId('plans-new-ask-input'), { target: { value: 'a\u001bb\u009bc back\\slash' } });
+    fireEvent.click(screen.getByTestId('plans-new-ask-send'));
+    expect(terminal.type).toHaveBeenLastCalledWith('agent', '/aidlc compose "a b c back\\\\slash"', { submit: false });
   });
 
   it('refuses an invalid plan name before calling the bridge, and saves a valid one', async () => {

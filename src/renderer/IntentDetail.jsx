@@ -7,6 +7,7 @@ import ArtifactReader from './ArtifactReader.jsx';
 import CostTab from './CostTab.jsx';
 import ResumeButton from './ResumeButton.jsx';
 import ArchiveControls from './ArchiveControls.jsx'; // US-0513
+import PlanChange from './PlanChange.jsx'; // US-0509
 import { ArchivedMark, ParkedMark } from './IntentList.jsx';
 import TokenView from './TokenView.jsx';
 import TokenDetail from './TokenDetail.jsx';
@@ -284,7 +285,9 @@ export default function IntentDetail({
     );
   }
 
-  const plan = state?.plan ?? intent?.scope ?? state?.scope ?? '–';
+  // US-0509 FR4.2: the state file's scope first; AI-DLC runs on it and writes it before intents.json.
+  const scope = state?.scope ?? intent?.scope ?? '–';
+  const plan = state?.plan ?? scope;
   // Live tokens under the readouts while the work runs (EPIC-02 US-0207); a finished intent opens Activity from a block (US-0208 FR5).
   const arm = live ? (
     <TokenView cost={cost} dirName={detail.dirName} live onOpen={openTokens('side')} ref={tokensRef} />
@@ -311,8 +314,8 @@ export default function IntentDetail({
         <header className="intent-head">
           <div className="intent-head-main">
             <div className="lcars-chips">
-              <Tooltip text={state?.plan ? t('intents.basedOn', { scope: intent?.scope ?? state?.scope ?? '–' }) : t('intents.scopeLabel')} focusable>
-                <span className="lcars-chip">{state?.plan ?? intent?.scope ?? state?.scope ?? '–'}</span>
+              <Tooltip text={state?.plan ? t('intents.basedOn', { scope }) : t('intents.scopeLabel')} focusable>
+                <span className="lcars-chip">{plan}</span>
               </Tooltip>
               <span className="lcars-chip">{t('intents.depth', { depth: state?.depth ?? '–' })}</span>
               <span className="lcars-chip">{t('intents.test', { strategy: state?.testStrategy ?? '–' })}</span>
@@ -334,6 +337,15 @@ export default function IntentDetail({
             <div className="intent-head-actions" data-testid="intent-head-actions">
               <RenameControl key={`rename:${intent.dirName}`} projectId={projectId} intent={intent} />
               <ArchiveControls key={`archive:${intent.dirName}`} projectId={projectId} intent={intent} space={space} activeSpace={activeSpace} />
+              <PlanChange
+                key={`plan:${intent.dirName}`}
+                projectId={projectId}
+                intent={intent}
+                detail={detail}
+                space={space}
+                activeSpace={activeSpace}
+                activeIntent={activeIntent}
+              />
               <div className="intent-head-work">
                 <ParkControls key={intent.dirName} projectId={projectId} intent={intent} activeDirName={activeDirName} />
                 <ResumeButton projectId={projectId} intent={intent} activeDirName={activeDirName} activeIntent={activeIntent} position={position} />

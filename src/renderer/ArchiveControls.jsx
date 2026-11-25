@@ -12,6 +12,12 @@ import { isArchived } from '../shared/intentArchive.js';
 
 const errorText = (err) => String(err?.message ?? err).replace(/^Error invoking remote method '[^']+': (Error: )?/, '');
 
+/** US-0513 FR7.2, US-0509: the project's own intent list, or what opens it while it is folded: focus when a control is gone. */
+export function intentListNear(el) {
+  const body = el?.closest('.project-body');
+  return body?.querySelector('.is-folded [data-testid="list-drawer-open"]') ?? body?.querySelector('[data-testid="intent-list-rows"]');
+}
+
 /**
  * ponytail: `activeSpace` is AI-DLC's active space as it was when the project was opened; main reads it again and is the
  * one that decides.
@@ -82,16 +88,7 @@ export default function ArchiveControls({ projectId, intent, space, activeSpace 
         </p>
       )}
       {!open && (run.busy || run.result !== null || run.error !== null) && <ArchiveOutcome run={run} />} {/* FR1.5: closed while it ran */}
-      <ArchiveDialog
-        open={open}
-        intents={[intent]}
-        run={run}
-        onClose={() => setOpen(false)}
-        fallbackFocus={() => {
-          const body = ref.current?.closest('.project-body'); // this project's own list, or what opens it while it is folded
-          return body?.querySelector('.is-folded [data-testid="list-drawer-open"]') ?? body?.querySelector('[data-testid="intent-list-rows"]');
-        }}
-      />
+      <ArchiveDialog open={open} intents={[intent]} run={run} onClose={() => setOpen(false)} fallbackFocus={() => intentListNear(ref.current)} />
     </div>
   );
 }

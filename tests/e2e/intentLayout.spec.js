@@ -2,6 +2,8 @@
 // gaps, overflow) that jsdom cannot measure, so the built app is opened on a temp copy of the fixture project whose
 // in-flight intent has a long name, twelve stories, a nine-unit graph in three columns, a NOT-READY review and live
 // tokens, at window widths 1280 and 1920. Tool paths point nowhere, so no agent starts (as planning.spec.js does).
+// US-0509 FR5.3, NFR2: the same at 1280 with "Change plan" and its dialog open on a plan with many stages.
+// US-0509 FR3.1, FR5.2: the line lands unsent in an agent tab that runs a stand-in CLI, which records what it is typed.
 import { _electron as electron, expect, test } from '@playwright/test';
 import { execFileSync } from 'node:child_process';
 import { promises as fs, readFileSync, writeFileSync } from 'node:fs';
@@ -33,11 +35,40 @@ const AUDIT = [
 
 const tokens = { input: 48000, output: 22000, cacheCreate5m: 2000, cacheCreate1h: 1000, cacheRead: 800000 };
 
+// US-0509: a plan of the project's own with more stages than fit beside each other, and a long description.
+const MANY = [
+  'requirements-analysis',
+  'code-generation',
+  'ci-pipeline',
+  ...Array.from({ length: 30 }, (_, i) => `an-extra-stage-with-quite-a-long-name-${i + 1}`)
+];
+const PLAN = [
+  '---',
+  'name: everything-and-more',
+  'depth: Comprehensive',
+  `description: ${'A plan with a long description that tells what it is for. '.repeat(4).trim()}`,
+  '---',
+  '',
+  '# everything-and-more scope',
+  '',
+  '<!-- BEGIN aidlc composed-scope-grid -->',
+  '',
+  '```json',
+  JSON.stringify({ stages: Object.fromEntries(MANY.map((s) => [s, 'EXECUTE'])) }),
+  '```',
+  '',
+  '<!-- END aidlc composed-scope-grid -->',
+  ''
+].join('\n');
+
+// US-0509: stands in for the agent's CLI; in raw mode it records every byte typed, Enter included, as it comes.
+const AGENT = ['#!/bin/sh', '[ "$1" = --version ] && echo 1.0.0 && exit', 'stty raw -echo', 'printf ready', 'exec cat > "$0.typed"', ''].join('\n');
+
 let tmp;
 let app;
 
 /** The fixture project, its in-flight intent widened as the screenshots of v0.2.14 show it, and settings that open it. */
-async function setup() {
+async function setup({ agent = false } = {}) {
   tmp = await fs.realpath(await fs.mkdtemp(path.join(os.tmpdir(), 'thadeus-e2e-layout-')));
   const project = path.join(tmp, 'project');
   await fs.cp(path.resolve('tests/fixtures/project'), project, { recursive: true });
@@ -58,6 +89,11 @@ async function setup() {
   writeFileSync(path.join(base, 'runtime-graph.json'), JSON.stringify(graph));
   await fs.mkdir(path.join(base, 'audit'), { recursive: true });
   writeFileSync(path.join(base, 'audit/e2e.md'), AUDIT);
+  const quiet = new Date(Date.now() - 60 * 60_000); // US-0509 FR1.3: no agent elsewhere wrote to it lately
+  await fs.utimes(path.join(base, 'audit/e2e.md'), quiet, quiet);
+  await fs.mkdir(path.join(project, 'aidlc/scopes'), { recursive: true });
+  writeFileSync(path.join(project, 'aidlc/scopes/everything-and-more.md'), PLAN);
+  await fs.mkdir(path.join(project, '.claude'), { recursive: true }); // the harness whose plans are read
   await fs.mkdir(path.join(project, 'aidlc/.aidlc-sessions'), { recursive: true });
   writeFileSync(
     path.join(project, 'aidlc/.aidlc-sessions/usage-ledger.json'),
@@ -78,6 +114,8 @@ async function setup() {
   const userData = path.join(tmp, 'userData');
   await fs.mkdir(userData, { recursive: true });
   const nowhere = path.join(tmp, 'no-tool');
+  const cli = path.join(tmp, 'agent');
+  if (agent) writeFileSync(cli, AGENT, { mode: 0o755 });
   writeFileSync(
     path.join(userData, 'settings.json'),
     JSON.stringify({
@@ -85,15 +123,15 @@ async function setup() {
       activeProject: project,
       language: 'en',
       updates: { lastCheckMs: Date.now() },
-      toolPaths: { aidlc: nowhere, claude: nowhere, opencode: nowhere, gh: nowhere, glab: nowhere },
+      toolPaths: { aidlc: nowhere, claude: agent ? cli : nowhere, opencode: nowhere, gh: nowhere, glab: nowhere },
       projectSettings: { [project]: { featureDocs: 'show' } }
     })
   );
   return userData;
 }
 
-async function open(width) {
-  app = await electron.launch({ args: [path.resolve('out/main/index.js')], env: { ...process.env, THADEUS_E2E_USER_DATA: await setup() } });
+async function open(width, options) {
+  app = await electron.launch({ args: [path.resolve('out/main/index.js')], env: { ...process.env, THADEUS_E2E_USER_DATA: await setup(options) } });
   const page = await app.firstWindow();
   await app.evaluate(({ BrowserWindow }, w) => BrowserWindow.getAllWindows()[0].setSize(w, 900), width);
   await page.getByTestId('project-view-switch-intents').click();
@@ -109,6 +147,74 @@ test.afterEach(async () => {
   await app?.close().catch(() => {});
   app = null;
   await fs.rm(tmp, { recursive: true, force: true });
+});
+
+test('US-0509 at 1280: Change plan is inside the frame, and its dialog fits with a plan of many stages', async () => {
+  const page = await open(1280);
+  const control = page.getByTestId('plan-change-open');
+  await expect(control).toHaveAttribute('aria-disabled', 'false');
+  const right = (await box(page.getByTestId('lcars-diagonal-frame'))).right;
+  for (const r of await page
+    .getByTestId('intent-head-actions')
+    .locator('button')
+    .evaluateAll((els) => els.map((e) => e.getBoundingClientRect().right)))
+    expect(r).toBeLessThanOrEqual(right + 1);
+
+  await control.click();
+  const dialog = page.getByTestId('plan-change-dialog');
+  const select = page.getByTestId('plan-change-plan');
+  await select.click(); // Escape closes the open list only, not the dialog with the choice in it
+  const list = await select.evaluate((el) => ({ open: el.matches(':open'), right: Math.max(...[...el.options].map((o) => o.getBoundingClientRect().right)) }));
+  expect(list.open).toBe(true);
+  expect(list.right).toBeLessThanOrEqual((await box(dialog)).right);
+  await page.keyboard.press('Escape');
+  expect(await select.evaluate((el) => el.matches(':open'))).toBe(false);
+  await expect(dialog).toBeVisible();
+
+  await select.selectOption('everything-and-more');
+  await expect(page.getByTestId('plan-change-added').locator('li')).toHaveCount(31); // ci-pipeline and the 30 extra
+  await expect(page.getByTestId('plan-change-kept')).toBeVisible();
+
+  /** Nothing is wider than the dialog, and its buttons can be reached. */
+  async function fits() {
+    const size = await dialog.evaluate((el) => ({ scroll: el.scrollWidth, client: el.clientWidth, right: el.getBoundingClientRect().right }));
+    expect(size.scroll).toBeLessThanOrEqual(size.client);
+    for (const r of await dialog.locator('.plan-change-form *').evaluateAll((els) => els.map((e) => e.getBoundingClientRect().right)))
+      expect(r).toBeLessThanOrEqual(size.right);
+    for (const id of ['plan-change-confirm', 'plan-change-cancel']) {
+      await page.getByTestId(id).scrollIntoViewIfNeeded();
+      const b = await box(page.getByTestId(id));
+      expect(b.top).toBeGreaterThanOrEqual(0);
+      expect(b.bottom).toBeLessThanOrEqual(await page.locator('html').evaluate((el) => el.clientHeight));
+    }
+  }
+  await fits();
+  await page.getByTestId('plan-change-way-tailored').check();
+  await page.getByTestId('plan-change-description').fill('x'.repeat(600));
+  await page.getByTestId('plan-change-confirm').click();
+  await expect(page.getByTestId('plan-change-error')).toBeVisible();
+  await fits();
+
+  await page.keyboard.press('Escape');
+  await expect(dialog).toBeHidden();
+  await expect(control).toBeFocused();
+});
+
+test('US-0509: the chosen plan is typed unsent into the agent tab, which then has the focus', async () => {
+  const page = await open(1280, { agent: true });
+  const control = page.getByTestId('plan-change-open');
+  await expect(control).toHaveAttribute('aria-disabled', 'false', { timeout: 15_000 });
+  await control.click();
+  await page.getByTestId('plan-change-plan').selectOption('everything-and-more');
+  await expect(page.getByTestId('plan-change-added')).toBeVisible();
+  await page.getByTestId('plan-change-confirm').click();
+  await expect(page.getByTestId('plan-change-dialog')).toBeHidden();
+
+  const typed = () => fs.readFile(path.join(tmp, 'agent.typed'), 'utf8').catch(() => '');
+  await expect.poll(typed, { timeout: 25_000 }).toBe('/aidlc --scope everything-and-more');
+  await expect(page.locator('.xterm :focus')).toHaveCount(1);
+  await page.waitForTimeout(1000); // no Enter follows
+  expect(await typed()).toBe('/aidlc --scope everything-and-more');
 });
 
 for (const width of [1280, 1920]) {
