@@ -1395,3 +1395,10 @@
 **Recovery steps**: failing test in exec.test.js first, then an error listener on the child stdin in defaultExec; recorded in construction/build-and-test/test-results.md.
 
 ---
+
+## Recovery: unstable layout test in CI
+**Timestamp**: 2026-11-25T16:07:11Z
+**Issue**: the second CI run on PR #153 failed one built-app test of US-0509 (intentLayout.spec.js): it measured the Change plan dialog while it slid in.
+**Recovery steps**: the overflow measured frame by frame (10 px at about 100 ms, 0 from 137 ms); the test waits for the entrance to finish; recorded in construction/build-and-test/test-results.md.
+
+---

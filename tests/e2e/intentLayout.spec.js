@@ -163,6 +163,8 @@ test('US-0509 at 1280: Change plan is inside the frame, and its dialog fits with
 
   await control.click();
   const dialog = page.getByTestId('plan-change-dialog');
+  // The frame slides in from the right, and until it stops the dialog is wider than it will be.
+  await dialog.evaluate((el) => Promise.all(el.getAnimations({ subtree: true }).map((a) => a.finished.catch(() => {}))));
   const select = page.getByTestId('plan-change-plan');
   await select.click(); // Escape closes the open list only, not the dialog with the choice in it
   const list = await select.evaluate((el) => ({ open: el.matches(':open'), right: Math.max(...[...el.options].map((o) => o.getBoundingClientRect().right)) }));

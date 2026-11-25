@@ -27,3 +27,9 @@ CI on pull request #153 (Linux, 2026-11-25) failed after this stage was approved
 - **Fix:** a listener on the child's stdin; the exit code stays the answer. Test first: a 4 MB input to a command that reads none of it gave two uncaught errors before the fix and none after (`exec.test.js`). Commit: `fix(US-0804): a command that exits before its input is read is no uncaught error`.
 - **Results after the fix:** `exec`, `signIn` and `updater` tests 55 passed; ESLint and Prettier clean on the changed files. The full suite runs again in CI.
 - **Lesson:** a child process given input needs an error listener on stdin, and a test that forces the broken pipe.
+
+The next CI run passed the whole unit suite, then failed one built-app test of US-0509 (`intentLayout.spec.js`, "Change plan" at 1280): the dialog was 10 px wider than its frame.
+
+- **Cause:** the test measured while the dialog slid in. Measured frame by frame here, the overflow goes 64, 47, 32, 19, 10, 3, 0 px in the first 137 ms. US-0804 changes none of the dialog's styles.
+- **Fix:** the test waits until the dialog's entrance has finished; what it checks is unchanged. Commit: `test(US-0804): the Change plan layout test waits for the dialog's entrance`.
+- **Lesson:** a layout test waits for the entrance to finish before it measures.
