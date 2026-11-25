@@ -180,7 +180,7 @@
 - **Acceptance Criteria:**
   - [ ] An intent's detail offers "Change plan". It shows the current plan and the stages already done, which stay done.
   - [ ] The choice is a ready-made plan, or a plan tailored to a description. Both go through AI-DLC (`/aidlc compose "<task>"` mid-workflow, or the scope switch), typed into the agent tab for the person to send, as with Resume.
-  - [ ] AI-DLC's own approval of the new plan stays with the person in the agent tab; the app only shows the result.
+  - [ ] The approval stays with the person in the agent tab: AI-DLC asks for it on a tailored plan, and switches to a ready-made plan at once when the person sends the line, which the app says before. The app only shows the result.
   - [ ] The pipeline shows the new stages once AI-DLC has recorded them.
   - [ ] Every text goes through `t()` in Swedish and English.
 - **Notes:** AI-DLC 2.11.3 has `compose "<task>"`, which suggests a plan for the stages not yet run and stops at an approve/edit/reject gate.
