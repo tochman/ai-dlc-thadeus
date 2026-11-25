@@ -1,0 +1,10 @@
+{
+  "stage": "code-generation",
+  "upstream_ids": ["US-0047-AC1", "US-0047-AC2", "US-0047-AC3", "US-0047-AC4"],
+  "coverage": [
+    { "id": "US-0047-AC1", "status": "OK", "target": "src/main/planningRecord.js" },
+    { "id": "US-0047-AC2", "status": "OK", "target": "src/main/thadeusSync.js" },
+    { "id": "US-0047-AC3", "status": "OK", "target": "src/main/planningRecord.js" },
+    { "id": "US-0047-AC4", "status": "OK", "target": "tests/main/thadeusSync.test.js" }
+  ]
+}

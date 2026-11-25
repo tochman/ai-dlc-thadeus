@@ -4,12 +4,13 @@
 // their times from a counter (the injected clock).
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { execFileSync } from 'node:child_process';
+import { randomUUID } from 'node:crypto';
 import { promises as fs, chmodSync, readFileSync, writeFileSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { defaultExec } from '../../src/main/exec.js';
 import { splice } from '../../src/main/agentHooks.js';
-import { addThadeus, readRecord } from '../../src/main/planningRecord.js';
+import { addThadeus, readRecord, recordFile } from '../../src/main/planningRecord.js';
 import { isThadeusPath, syncCycle } from '../../src/main/thadeusSync.js';
 
 const env = { ...process.env, GIT_AUTHOR_NAME: 'T', GIT_AUTHOR_EMAIL: 't@example.com', GIT_COMMITTER_NAME: 'T', GIT_COMMITTER_EMAIL: 't@example.com' };
@@ -19,6 +20,7 @@ const run = (cwd, ...args) => execFileSync('git', ['-c', 'init.defaultBranch=mai
 vi.setConfig({ testTimeout: 20_000 });
 
 const LOG = '.thadeus/tokens/261120-i.json';
+const TEMP = `.thadeus/tokens/.i.json.${randomUUID()}.tmp`; // as writeAtomic names it
 const SETTINGS = '.claude/settings.json';
 const PLUGIN = '.opencode/plugins/thadeus-dialog.js';
 const PERSON_SETTINGS = '{\n  "permissions": {\n    "allow": []\n  }\n}\n';
@@ -85,6 +87,12 @@ describe('which files are the app’s (US-0609 AC3.1.1)', () => {
     for (const junk of ['.thadeus/.DS_Store', '.thadeus/tokens/.i.json.swp', '.thadeus/tokens/i.json~', '.thadeus/tokens/.#i.json', 'src/a.js', '.thadeus']) {
       expect(isThadeusPath(junk)).toBe(false);
     }
+  });
+
+  it('skips the atomic write’s temporary files, but not another .tmp file (US-0047 AC1)', () => {
+    expect(isThadeusPath(TEMP)).toBe(false);
+    expect(isThadeusPath('.thadeus/notes.tmp')).toBe(true);
+    expect(isThadeusPath('.thadeus/.notes.tmp')).toBe(true);
   });
 });
 
@@ -197,6 +205,42 @@ describe('the sync cycle (US-0609 FR3)', () => {
     expect(originLog('docs/planning')[0]).toBe('chore: sync .thadeus');
     expect(originLog()).toEqual(['start']);
     expect((await readRecord(userData, clone)).protectedMain).toBe(true);
+  });
+
+  it('pushes the other files and clears an entry that is neither on disk nor at origin (US-0047 AC2)', async () => {
+    await write(LOG, JSON.stringify([reading()]));
+    await waiting('.thadeus/gone.txt');
+    await waiting(PLUGIN, 'opencode'); // a harness file on neither side
+    await waiting(LOG);
+
+    expect(await syncCycle(ctx)).toMatchObject({ pushed: true, pending: 0 });
+
+    expect(atOrigin(LOG)).toBe(read(LOG));
+    expect(run(origin, 'show', '--name-only', '--format=', 'main')).toBe(LOG);
+    expect((await readRecord(userData, clone)).actions).toEqual([]);
+  });
+
+  it('commits nothing when only a file that is on neither side waits (US-0047 AC2)', async () => {
+    await waiting('.thadeus/gone.txt');
+
+    expect(await syncCycle(ctx)).toEqual({ pending: 0 });
+
+    expect(originLog()).toEqual(['start']);
+    expect((await readRecord(userData, clone)).actions).toEqual([]);
+  });
+
+  it('clears a temporary file an earlier version recorded, and pushes the rest (US-0047 AC3)', async () => {
+    await write(LOG, JSON.stringify([reading()]));
+    const entry = (id, file) => ({ id, kind: 'thadeus', file, at: '2026-11-24T10:00:00.000Z', state: 'pending' });
+    const file = recordFile(userData, clone);
+    await fs.mkdir(path.dirname(file), { recursive: true });
+    writeFileSync(file, JSON.stringify({ actions: [entry('a', TEMP), entry('b', LOG)] }));
+    expect((await readRecord(userData, clone)).actions.map((a) => a.file)).toEqual([LOG]);
+
+    expect(await syncCycle(ctx)).toMatchObject({ pushed: true, pending: 0 });
+
+    expect(atOrigin(LOG)).toBe(read(LOG));
+    expect(JSON.parse(readFileSync(file, 'utf8')).actions).toEqual([]);
   });
 
   it('does nothing, not even a fetch, when no entry waits', async () => {

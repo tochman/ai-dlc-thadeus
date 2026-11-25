@@ -1,0 +1,1 @@
+"US-0047: a temporary file that is gone does not stop the planning sync. Ignore the atomic-write temporary files under .thadeus, and let a sync cycle skip and clear a waiting file that is neither on disk nor at the target."

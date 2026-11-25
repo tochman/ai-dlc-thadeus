@@ -35,8 +35,9 @@ export const HARNESS_FILES = [
   { harness: 'claude', path: '.claude/settings.json', splice: true },
   { harness: 'opencode', path: '.opencode/plugins/thadeus-dialog.js', splice: false }
 ];
-const JUNK = /^(\.DS_Store|\.#.*|.*\.swp|.*~)$/;
-/** US-0609 FR3.1: a file under `.thadeus/` the app syncs; editor swap files and `.DS_Store` are not. */
+// US-0047: the last one is writeAtomic's temporary file, `.<name>.<uuid>.tmp` (fileWrite.js).
+const JUNK = /^(\.DS_Store|\.#.*|.*\.swp|.*~|\..+\.[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}\.tmp)$/;
+/** US-0609 FR3.1, US-0047: a file under `.thadeus/` the app syncs; editor swap files, `.DS_Store` and temporary files are not. */
 export const isThadeusPath = (f) => relPath(f) && f.startsWith('.thadeus/') && !JUNK.test(path.posix.basename(f));
 const validThadeus = (a) => (isThadeusPath(a.file) || HARNESS_FILES.some((h) => h.path === a.file)) && typeof a.at === 'string';
 
