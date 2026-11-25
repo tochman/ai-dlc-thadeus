@@ -165,10 +165,11 @@ describe('App shell', () => {
         .map((b) => b.dataset.testid);
     const shownView = () => screen.getByTestId('project-view-p1').dataset.view;
 
+    expect(screen.getByTestId('arm-github').textContent).toBe('Version control'); // US-0049: no platform's name, and English in both languages (the Swedish word does not fit the arm)
     fireEvent.click(screen.getByTestId('arm-github'));
     expect(current()).toEqual(['arm-github', 'team-section-refresh']); // US-1201 AC-3: Update | Machines under the block
     expect(shownView()).toBe('github');
-    expect(screen.getByRole('heading', { level: 1 }).textContent).toMatch(/aidlc-dash-a.*Github/);
+    expect(screen.getByRole('heading', { level: 1 }).textContent).toMatch(/aidlc-dash-a.*Version control/);
     expect(screen.getByTestId('arm-github').hasAttribute('aria-expanded')).toBe(false); // a view, no longer a fold-out
     fireEvent.click(screen.getByTestId('team-section-machines'));
     expect(current()).toEqual(['arm-github', 'team-section-machines']);
