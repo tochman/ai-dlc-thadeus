@@ -188,6 +188,9 @@ describe('ConfigView', () => {
       expect(row.textContent).toMatch(/3 min/);
       expect(row.textContent).toMatch(/config-view · code-generation/);
 
+      // US-0052: the row can be in the DOM before React has run the effect that starts the counter's interval.
+      await act(async () => {});
+      expect(vi.getTimerCount()).toBe(1);
       await act(async () => vi.advanceTimersByTime(60 * 1000));
       expect(row.textContent).toMatch(/4 min/);
 

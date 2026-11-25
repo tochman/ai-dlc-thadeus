@@ -1,0 +1,9 @@
+{
+  "stage": "code-generation",
+  "upstream_ids": ["US-0052-AC1", "US-0052-AC2", "US-0052-AC3"],
+  "coverage": [
+    { "id": "US-0052-AC1", "status": "OK", "target": "tests/renderer/ConfigView.test.jsx" },
+    { "id": "US-0052-AC2", "status": "OK", "target": "tests/renderer/ConfigView.test.jsx" },
+    { "id": "US-0052-AC3", "status": "OK", "target": "tests/renderer/TokenDetail.test.jsx" }
+  ]
+}
