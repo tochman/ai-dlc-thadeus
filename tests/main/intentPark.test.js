@@ -79,7 +79,7 @@ describe('unpark', () => {
     const { exec, calls } = fakeExec();
     expect(await unpark('/p', '261120-b', { activeDirName: '261120-a', known: KNOWN, exec })).toEqual({ ok: true, switched: true });
     expect(calls).toEqual([
-      ['intent', '261120-b'],
+      ['engine', 'intent', 'switch', '261120-b'],
       ['engine', 'state', 'unpark']
     ]);
   });

@@ -80,7 +80,7 @@ export async function unpark(root, dirName, { activeDirName, known, exec = defau
   assertKnownIntent(dirName, known);
   let switched = false;
   if (dirName !== activeDirName) {
-    const res = await aidlc(root, ['intent', dirName], exec);
+    const res = await aidlc(root, ['engine', 'intent', 'switch', dirName], exec);
     if (!res.ok) return { ...res, switched };
     switched = true;
   }

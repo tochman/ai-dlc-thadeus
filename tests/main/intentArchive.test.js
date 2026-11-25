@@ -44,7 +44,7 @@ function fakeExec(answer = write) {
   const exec = vi.fn(async (file, args, options) => {
     if (args[0] === '-l') return '__AIDLC_DASH_PATH__/usr/bin';
     calls.push({ args, timeout: options.timeout, cwd: options.cwd });
-    await answer(args[2]);
+    await answer(args[3]);
     return 'ok';
   });
   return { exec, calls, argsOf: () => calls.map((c) => c.args) };
@@ -53,7 +53,7 @@ const filesOf = (dirName) => [`${INTENTS}/${dirName}/aidlc-state.md`, `${INTENTS
 const archive = (dirNames, reason, opts) => archiveIntents(root, dirNames, reason, { space: 'default', intents, ...opts });
 
 describe('archiveIntents, one intent (AC1.1.3–AC1.1.6)', () => {
-  it('runs exactly aidlc intent archive <dirName>, in the project with a 20 s limit, and names the files it changed', async () => {
+  it('runs exactly aidlc engine intent archive <dirName>, in the project with a 20 s limit, and names the files it changed', async () => {
     const { exec, calls } = fakeExec();
     expect(await archive(['261120-a'], undefined, { exec })).toEqual({
       ok: true,
@@ -61,7 +61,7 @@ describe('archiveIntents, one intent (AC1.1.3–AC1.1.6)', () => {
       refused: [],
       files: [`${INTENTS}/intents.json`, ...filesOf('261120-a')].sort()
     });
-    expect(calls).toEqual([{ args: ['intent', 'archive', '261120-a'], timeout: 20000, cwd: root }]);
+    expect(calls).toEqual([{ args: ['engine', 'intent', 'archive', '261120-a'], timeout: 20000, cwd: root }]);
   });
 
   it('sends --reason only when the trimmed one-line reason is not empty', async () => {
@@ -69,8 +69,8 @@ describe('archiveIntents, one intent (AC1.1.3–AC1.1.6)', () => {
     await archive(['261120-a'], '  done\nwith it ', { exec });
     await archive(['261120-a'], '   ', { exec });
     expect(argsOf()).toEqual([
-      ['intent', 'archive', '261120-a', '--reason', 'done with it'],
-      ['intent', 'archive', '261120-a']
+      ['engine', 'intent', 'archive', '261120-a', '--reason', 'done with it'],
+      ['engine', 'intent', 'archive', '261120-a']
     ]);
   });
 
@@ -141,7 +141,7 @@ describe('archiveIntents, several (AC4.1.3, AC4.1.4)', () => {
     const progress = [];
     const res = await archive([...all, '261122-c'], 'tidy', { exec, onProgress: (p) => progress.push(p) }); // a name twice runs once
     expect(res.archived).toEqual(all);
-    expect(argsOf()).toEqual(all.map((dirName) => ['intent', 'archive', dirName, '--reason', 'tidy']));
+    expect(argsOf()).toEqual(all.map((dirName) => ['engine', 'intent', 'archive', dirName, '--reason', 'tidy']));
     expect(progress).toEqual([
       { n: 1, total: 3 },
       { n: 2, total: 3 },
@@ -156,7 +156,7 @@ describe('archiveIntents, several (AC4.1.3, AC4.1.4)', () => {
       await write(dirName);
     });
     const res = await archive(all, '', { exec });
-    expect(argsOf().map((a) => a[2])).toEqual(all);
+    expect(argsOf().map((a) => a[3])).toEqual(all);
     expect(res).toMatchObject({ ok: true, archived: ['261122-c', '261121-b'], refused: [{ dirName: '261120-a', error: 'no' }] });
 
     const second = await archive(all, '', { ...fakeExec(), blocked: async (dirName) => (dirName === '261122-c' ? 'busy' : null) });
@@ -181,10 +181,10 @@ describe('archiveIntents, several (AC4.1.3, AC4.1.4)', () => {
 describe('unarchiveIntent (AC2.1.2, AC2.1.4)', () => {
   const unarchive = (dirName, exec) => unarchiveIntent(root, dirName, { space: 'default', intents, exec });
 
-  it('runs exactly aidlc intent unarchive <dirName> and names the files it changed', async () => {
+  it('runs exactly aidlc engine intent unarchive <dirName> and names the files it changed', async () => {
     const { exec, calls } = fakeExec();
     expect(await unarchive('261120-a', exec)).toEqual({ ok: true, files: [`${INTENTS}/intents.json`, ...filesOf('261120-a')].sort() });
-    expect(calls).toEqual([{ args: ['intent', 'unarchive', '261120-a'], timeout: 20000, cwd: root }]);
+    expect(calls).toEqual([{ args: ['engine', 'intent', 'unarchive', '261120-a'], timeout: 20000, cwd: root }]);
   });
 
   it('a refusal comes back with AI-DLC’s words, and an unknown name throws', async () => {

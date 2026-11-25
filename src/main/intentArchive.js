@@ -72,7 +72,7 @@ export async function archiveIntents(root, dirNames, reason, { space, intents, b
   const changed = new Set();
   for (const [i, dirName] of names.entries()) {
     onProgress?.({ n: i + 1, total: names.length });
-    const args = ['intent', 'archive', dirName, ...(checked.reason ? ['--reason', checked.reason] : [])];
+    const args = ['engine', 'intent', 'archive', dirName, ...(checked.reason ? ['--reason', checked.reason] : [])];
     let res;
     try {
       const why = await blocked(dirName);
@@ -92,6 +92,6 @@ export async function unarchiveIntent(root, dirName, { space, intents, exec = de
   const error = await refusedAtOnce(root, space, [dirName], intents);
   if (error) return { ok: false, error };
   const changed = new Set();
-  const res = await runOne({ root, space, dirName, args: ['intent', 'unarchive', dirName], exec }, changed);
+  const res = await runOne({ root, space, dirName, args: ['engine', 'intent', 'unarchive', dirName], exec }, changed);
   return { ...res, files: [...changed].sort() };
 }
