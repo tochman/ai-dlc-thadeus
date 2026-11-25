@@ -8,7 +8,7 @@
 
 **Stories:** US-0001, US-0002, US-0003, US-0004, US-0005, US-0006, US-0007, US-0008, US-0009, US-0010, US-0011, US-0012, US-0013, US-0014, US-0015, US-0016, US-0017, US-0018, US-0019, US-0020, US-0021, US-0022, US-0023, US-0024, US-0025, US-0026, US-0027, US-0028, US-0029, US-0030, US-0031, US-0032, US-0033, US-0034, US-0035, US-0036, US-0037, US-0038, US-0039, US-0040, US-0041, US-0042, US-0043, US-0044, US-0045, US-0046, US-0047, US-0048
 
-**Status (2026-11-25):** ✅ US-0001–US-0020 released (v0.2.3–v0.2.6). ✅ US-0021–US-0023 released in v0.2.7. ✅ US-0024 released in v0.2.8. ✅ US-0025 released in v0.2.9. ✅ US-0026 released in v0.2.9. ✅ US-0027 released in v0.2.9. ✅ US-0028 released in v0.2.10. ✅ US-0029 released in v0.2.10. ✅ US-0030 released in v0.2.10. ✅ US-0031 released in v0.2.10. ✅ US-0032 released in v0.2.11. ✅ US-0033 released in v0.2.11. ✅ US-0034 released in v0.2.12. ✅ US-0035 and US-0036 released in v0.2.13. ✅ US-0037, US-0038, US-0039, US-0040, US-0041 and US-0042 released in v0.2.14. ✅ US-0043 released in v0.2.15. ✅ US-0044 released in v0.2.15. ✅ US-0045 released in v0.2.15. ✅ US-0046 released in v0.2.15. ✅ US-0047 done, for v0.3.0. 📋 US-0048 planned, for v0.3.0. Each story names its release.
+**Status (2026-11-25):** ✅ US-0001–US-0020 released (v0.2.3–v0.2.6). ✅ US-0021–US-0023 released in v0.2.7. ✅ US-0024 released in v0.2.8. ✅ US-0025 released in v0.2.9. ✅ US-0026 released in v0.2.9. ✅ US-0027 released in v0.2.9. ✅ US-0028 released in v0.2.10. ✅ US-0029 released in v0.2.10. ✅ US-0030 released in v0.2.10. ✅ US-0031 released in v0.2.10. ✅ US-0032 released in v0.2.11. ✅ US-0033 released in v0.2.11. ✅ US-0034 released in v0.2.12. ✅ US-0035 and US-0036 released in v0.2.13. ✅ US-0037, US-0038, US-0039, US-0040, US-0041 and US-0042 released in v0.2.14. ✅ US-0043 released in v0.2.15. ✅ US-0044 released in v0.2.15. ✅ US-0045 released in v0.2.15. ✅ US-0046 released in v0.2.15. ✅ US-0047 done, for v0.3.0. ✅ US-0048 done, for v0.3.0. Each story names its release.
 
 ---
 
@@ -773,19 +773,19 @@
 - **Notes:** A code fix, so it runs on the `quick-fix` plan (`fix/US-0047`).
 - **Dependencies:** US-0609 ✅
 
-**US-0048: The Spec Kit views show the right count and tags, and nothing is squeezed** 📋 Planned, for v0.3.0
+**US-0048: The Spec Kit views show the right count and tags, and nothing is squeezed** ✅ Done, for v0.3.0
 - As a **developer**, in order to **trust and read the Spec Kit views**, I would like **them to show the right feature count and hook modes, with room around every part**.
 - **Epic:** EPIC-00
 - **Priority:** High
 - **Complexity:** Small
 - **Background:** Found 2026-11-25 when the Spec Kit views were looked at in the built app (Build and Test of EPIC-14, faults L1–L6 in its `test-results.md`). jsdom cannot show layout, so the suite did not catch them.
 - **Acceptance Criteria:**
-  - [ ] **Given** a Spec Kit project with two features, **then** the foot of the left arm says "2 features", and it follows when a feature is added or removed (L1).
-  - [ ] **Given** mandatory, optional and turned-off hooks in Configuration › Spec Kit, **then** each mode's tag has its own colour (L2).
-  - [ ] **Given** a feature with a long name in the Specs list, **then** its number and its Active tag each stay on one line (L3).
-  - [ ] **Given** the Specs view, **then** there is a gap below Commands and below the next command (L4).
-  - [ ] **Given** the first-open choice at 1280 and 1920, **then** the two options stand side by side (L5).
-  - [ ] **Given** a disabled accent button in Configuration, **then** it has the disabled look of the other buttons (L6).
-  - [ ] A test fails without each change and passes with it, layout ones in the built app; the existing suite stays green.
+  - [x] **Given** a Spec Kit project with two features, **then** the foot of the left arm says "2 features", and it follows when a feature is added or removed (L1).
+  - [x] **Given** mandatory, optional and turned-off hooks in Configuration › Spec Kit, **then** each mode's tag has its own colour (L2).
+  - [x] **Given** a feature with a long name in the Specs list, **then** its number and its Active tag each stay on one line (L3).
+  - [x] **Given** the Specs view, **then** there is a gap below Commands and below the next command (L4).
+  - [x] **Given** the first-open choice at 1280 and 1920, **then** the two options stand side by side (L5).
+  - [x] **Given** a disabled accent button in Configuration, **then** it has the disabled look of the other buttons (L6).
+  - [x] A test fails without each change and passes with it, layout ones in the built app; the existing suite stays green.
 - **Notes:** A code fix, so it runs on the `quick-fix` plan (`fix/US-0048`). L6 affects every accent button in Configuration.
 - **Dependencies:** US-1402 ✅, US-1404 ✅, US-1406 ✅, US-1407 ✅

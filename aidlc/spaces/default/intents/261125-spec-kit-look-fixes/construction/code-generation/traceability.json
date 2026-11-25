@@ -1,0 +1,13 @@
+{
+  "stage": "code-generation",
+  "upstream_ids": ["US-0048-AC1", "US-0048-AC2", "US-0048-AC3", "US-0048-AC4", "US-0048-AC5", "US-0048-AC6", "US-0048-AC7"],
+  "coverage": [
+    { "id": "US-0048-AC1", "status": "OK", "target": "src/renderer/SpeckitFeatures.jsx" },
+    { "id": "US-0048-AC2", "status": "OK", "target": "src/renderer/theme.css" },
+    { "id": "US-0048-AC3", "status": "OK", "target": "src/renderer/theme.css" },
+    { "id": "US-0048-AC4", "status": "OK", "target": "src/renderer/theme.css" },
+    { "id": "US-0048-AC5", "status": "OK", "target": "src/renderer/theme.css" },
+    { "id": "US-0048-AC6", "status": "OK", "target": "src/renderer/theme.css" },
+    { "id": "US-0048-AC7", "status": "OK", "target": "tests/e2e/speckitLayout.spec.js" }
+  ]
+}

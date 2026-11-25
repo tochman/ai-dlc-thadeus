@@ -1293,13 +1293,15 @@ button.lcars-nb:hover:not(:disabled), a.lcars-nb:hover { filter: brightness(1.15
 /* US-1402 FR6: the Spec Kit features list and detail, in the US-0417 LCARS language: gaps from the scale, no boxed
    cards (content floats on black), square blocks with a left state strip (Shape rule), selection by brightness, slate
    structure and steel live values (Colour rule). */
+.speckit-features, .speckit-feature { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--gap-m); } /* US-0048 L4: the parts never touch */
 .speckit-layout { display: grid; grid-template-columns: 260px minmax(0, 1fr); gap: var(--gap-l); align-items: start; }
 .speckit-layout > nav { padding: 0 var(--gap-m); border-left: var(--gap) solid var(--slate-3); }
 .speckit-list, .speckit-tasks, .speckit-files { list-style: none; margin: 0 0 var(--gap-m); padding: 0; }
 .speckit-list .link, .speckit-files .link { display: flex; gap: var(--gap); align-items: baseline; width: 100%; padding: 2px var(--gap); text-align: left; overflow-wrap: anywhere; }
 .speckit-list .link.is-selected, .speckit-files .link.is-selected { background: var(--slate-5); color: var(--on-light); text-decoration: none; }
 .speckit-tag { padding: 0 var(--gap); background: var(--slate-2); color: var(--text-2); font-size: 12px; }
-.speckit-list .speckit-tag { margin-left: auto; background: var(--steel); color: var(--on-light); } /* the active feature is a live value */
+.speckit-list .link .speckit-tag { margin-left: auto; background: var(--steel); color: var(--on-light); } /* the active feature is a live value; US-0048 L2: never a hook's tag */
+.speckit-list .link code, .speckit-list .link .speckit-tag { flex: none; } /* US-0048 L3: only the name wraps */
 .speckit-detail { display: grid; gap: var(--gap-m); min-width: 0; }
 .speckit-flow { display: flex; flex-wrap: wrap; gap: var(--gap); margin: 0 0 var(--gap); padding: 0; list-style: none; }
 .speckit-flow li { display: grid; padding: var(--gap) var(--gap-m); background: var(--slate-1); border-left: var(--gap) solid var(--slate-3); }
@@ -1439,8 +1441,9 @@ a.md-link:hover { color: var(--steel-light); }
 .setup-advanced fieldset { border: 1px solid var(--slate-2); margin: 6px 0; display: flex; flex-direction: column; gap: 4px; }
 .setup-advanced legend, .settings-group legend { color: var(--muted); font-size: 12px; letter-spacing: 0.05em; text-transform: uppercase; padding: 0 8px 0 0; }
 .setup-actions { display: flex; gap: var(--gap); align-items: flex-end; }
-/* US-1406: the first-open choice, two LCARS option blocks side by side, the last one rounded off. */
-.framework-choice-options { display: flex; gap: 3px; flex-wrap: wrap; }
+/* US-1406: the first-open choice, two LCARS option blocks side by side, the last one rounded off. US-0048 L5: full
+   width, or the row shrinks to its blocks' content and their 220px basis wraps them. */
+.framework-choice-options { display: flex; gap: 3px; flex-wrap: wrap; width: 100%; }
 .framework-choice-option { flex: 1 1 220px; max-width: 320px; height: auto; min-height: 96px; flex-direction: column; align-items: flex-start; justify-content: flex-end; gap: 2px; padding: 10px 14px; text-align: left; }
 .framework-choice-option:last-child { border-radius: 0 24px 24px 0; }
 .framework-choice-option strong { font-size: 20px; }
@@ -1628,7 +1631,7 @@ dialog.lcars-dlg::backdrop { background: var(--backdrop); }
 .config-frame .project-settings > :first-child > .settings-frame:first-child > .lcars-card-head,
 .config-frame .project-settings > :first-child > .settings-frame:first-child > .lcars-card-head::after { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
 .config-frame .btn { align-items: center; justify-content: center; min-height: var(--bar-med); padding: 0 16px; border-radius: 999px; font-weight: 600; font-size: 14px; }
-.config-frame .btn-accent { background: var(--slate-5); }
+.config-frame .btn-accent:not(:disabled) { background: var(--slate-5); } /* US-0048 L6: a disabled one keeps .btn:disabled */
 .config-frame .btn-quiet { background: none; border: 1px solid var(--slate-4); color: var(--text-2); font-weight: 400; }
 .config-frame :is(input[type='text'], input[type='number'], textarea) { min-height: 32px; padding: 5px 10px; background: var(--slate-1); border: 0; border-left: var(--gap) solid var(--slate-4); color: var(--text); font-family: var(--font-mono); font-size: 13px; letter-spacing: 0; }
 .config-frame .field-label { color: var(--muted); font-size: 13px; letter-spacing: 0.08em; }

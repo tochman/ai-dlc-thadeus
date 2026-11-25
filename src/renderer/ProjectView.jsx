@@ -437,7 +437,7 @@ function ProjectContent({
           {justSetUp && <SetupDone onClose={() => setJustSetUp(false)} onFeatureDocs={featureDocsChoice ? setupDocs : undefined} />}
           {/* Kept mounted while Features or Configuration is shown, so the intents view keeps its state (FR2.1). */}
           <div className="project-mode" hidden={['features', 'config', 'editor'].includes(view)}>
-            {framework === 'speckit' && <SpeckitShell projectId={project.projectId} />}
+            {framework === 'speckit' && <SpeckitShell projectId={project.projectId} onMeta={onMeta} />}
             {onAidlc && (
               <AidlcProject
                 project={project}

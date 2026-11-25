@@ -494,5 +494,13 @@
     "scope": "quick-fix",
     "status": "complete",
     "request": "c962fa3c"
+  },
+  {
+    "uuid": "01a2115e-6294-769a-83a1-f3020ad227f2",
+    "slug": "spec-kit-look-fixes",
+    "dirName": "261125-spec-kit-look-fixes",
+    "scope": "quick-fix",
+    "status": "complete",
+    "request": "4b75e237"
   }
 ]

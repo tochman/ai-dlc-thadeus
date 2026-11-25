@@ -10,8 +10,8 @@ import SpeckitQuickCommands from './SpeckitQuickCommands.jsx';
 
 const errorText = (err) => String(err?.message ?? err).replace(/^Error invoking remote method '[^']+': (Error: )?/, '');
 
-/** @param {{projectId: string}} props */
-export default function SpeckitFeatures({ projectId }) {
+/** @param {{projectId: string, onMeta?: (projectId: string, partial: object) => void}} props */
+export default function SpeckitFeatures({ projectId, onMeta }) {
   const { t } = useTranslation();
   const [result, setResult] = useState(null);
   const [error, setError] = useState(null);
@@ -47,6 +47,12 @@ export default function SpeckitFeatures({ projectId }) {
       off?.();
     };
   }, [projectId, load]);
+
+  // US-0048 L1: "N features" at the foot of the left arm; a failed read keeps the last count.
+  const featureCount = result?.features.length;
+  useEffect(() => {
+    if (featureCount !== undefined) onMeta?.(projectId, { featureCount });
+  }, [projectId, featureCount, onMeta]);
 
   const select = (dir) => {
     setSelected(dir);
