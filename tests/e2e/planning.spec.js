@@ -97,6 +97,7 @@ async function plan(page) {
   await page.getByTestId('features-view-release-picker').selectOption('v1.1.0');
   await expect(page.getByTestId('features-view-release-picker')).toHaveValue('v1.1.0');
   await page.getByTestId('features-view-tab-releases').click();
+  await expect(release(page, 'v1.0.0').getByRole('button', { name: /US-0101/ })).toHaveCount(0); // the move is read back before the one left is removed
   await release(page, 'v1.0.0').getByTestId('releases-remove-story').click();
   await expect(release(page, 'v1.0.0').getByRole('button', { name: /US-0102/ })).toHaveCount(0);
 }

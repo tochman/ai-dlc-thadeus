@@ -6,9 +6,9 @@
 
 > Small fixes the person reports while using the app: something looks off, behaves wrongly or is missing a detail. Each fix becomes a story here, so nothing reported in passing gets lost. A fix that grows into a feature moves to its topic's epic.
 
-**Stories:** US-0001, US-0002, US-0003, US-0004, US-0005, US-0006, US-0007, US-0008, US-0009, US-0010, US-0011, US-0012, US-0013, US-0014, US-0015, US-0016, US-0017, US-0018, US-0019, US-0020, US-0021, US-0022, US-0023, US-0024, US-0025, US-0026, US-0027, US-0028, US-0029, US-0030, US-0031, US-0032, US-0033, US-0034, US-0035, US-0036, US-0037, US-0038, US-0039, US-0040, US-0041, US-0042, US-0043, US-0044, US-0045, US-0046, US-0047, US-0048
+**Stories:** US-0001, US-0002, US-0003, US-0004, US-0005, US-0006, US-0007, US-0008, US-0009, US-0010, US-0011, US-0012, US-0013, US-0014, US-0015, US-0016, US-0017, US-0018, US-0019, US-0020, US-0021, US-0022, US-0023, US-0024, US-0025, US-0026, US-0027, US-0028, US-0029, US-0030, US-0031, US-0032, US-0033, US-0034, US-0035, US-0036, US-0037, US-0038, US-0039, US-0040, US-0041, US-0042, US-0043, US-0044, US-0045, US-0046, US-0047, US-0048, US-0049
 
-**Status (2026-11-25):** ✅ US-0001–US-0020 released (v0.2.3–v0.2.6). ✅ US-0021–US-0023 released in v0.2.7. ✅ US-0024 released in v0.2.8. ✅ US-0025 released in v0.2.9. ✅ US-0026 released in v0.2.9. ✅ US-0027 released in v0.2.9. ✅ US-0028 released in v0.2.10. ✅ US-0029 released in v0.2.10. ✅ US-0030 released in v0.2.10. ✅ US-0031 released in v0.2.10. ✅ US-0032 released in v0.2.11. ✅ US-0033 released in v0.2.11. ✅ US-0034 released in v0.2.12. ✅ US-0035 and US-0036 released in v0.2.13. ✅ US-0037, US-0038, US-0039, US-0040, US-0041 and US-0042 released in v0.2.14. ✅ US-0043 released in v0.2.15. ✅ US-0044 released in v0.2.15. ✅ US-0045 released in v0.2.15. ✅ US-0046 released in v0.2.15. ✅ US-0047 released in v0.3.0. ✅ US-0048 released in v0.3.0. Each story names its release.
+**Status (2026-11-25):** ✅ US-0001–US-0020 released (v0.2.3–v0.2.6). ✅ US-0021–US-0023 released in v0.2.7. ✅ US-0024 released in v0.2.8. ✅ US-0025 released in v0.2.9. ✅ US-0026 released in v0.2.9. ✅ US-0027 released in v0.2.9. ✅ US-0028 released in v0.2.10. ✅ US-0029 released in v0.2.10. ✅ US-0030 released in v0.2.10. ✅ US-0031 released in v0.2.10. ✅ US-0032 released in v0.2.11. ✅ US-0033 released in v0.2.11. ✅ US-0034 released in v0.2.12. ✅ US-0035 and US-0036 released in v0.2.13. ✅ US-0037, US-0038, US-0039, US-0040, US-0041 and US-0042 released in v0.2.14. ✅ US-0043 released in v0.2.15. ✅ US-0044 released in v0.2.15. ✅ US-0045 released in v0.2.15. ✅ US-0046 released in v0.2.15. ✅ US-0047 released in v0.3.0. ✅ US-0048 released in v0.3.0. ✅ US-0049 released in v0.3.0. Each story names its release.
 
 ---
 
@@ -789,3 +789,16 @@
   - [x] A test fails without each change and passes with it, layout ones in the built app; the existing suite stays green.
 - **Notes:** A code fix, so it runs on the `quick-fix` plan (`fix/US-0048`). L6 affects every accent button in Configuration.
 - **Dependencies:** US-1402 ✅, US-1404 ✅, US-1406 ✅, US-1407 ✅
+
+**US-0049: The menu item Github is called Version control** ✅ Released in v0.3.0
+- As a **developer**, in order to **find the view whichever platform my project is on**, I would like **the menu item to be called Version control**.
+- **Epic:** EPIC-00
+- **Priority:** Medium
+- **Complexity:** Small
+- **Background:** Asked for 2026-11-25, before v0.3.0. The view also covers GitLab and Bitbucket.
+- **Acceptance Criteria:**
+  - [x] **Given** the left arm, the view's heading and the View menu, **then** they say "Version control".
+  - [x] **Given** the app in Swedish, **then** it says "Version control" there too: the Swedish word does not fit the arm on one line (the person's call).
+  - [x] A test fails without the change and passes with it; the existing suite stays green.
+- **Notes:** Made directly, without an AI-DLC workflow, at the person's request (`fix/US-0049`).
+- **Dependencies:** none
