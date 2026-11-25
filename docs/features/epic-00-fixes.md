@@ -819,5 +819,5 @@
   - [ ] Reduced gives static effects and Off no motion, as the animations setting does everywhere. Nothing flashes more than 3 times per second, only transform, opacity, `filter` and `box-shadow` animate, and no animation blocks a click or moves focus.
   - [ ] The app stays at 60 fps with a project of 25 intents and 2 000 timeline events.
   - [ ] A test fails without each added animation and passes with it, the ones that depend on layout in the built app; the existing suite stays green.
-- **Notes:** The pipeline's stage cards are US-0412 (v0.3.2): the audit lists them but leaves them to that story. If the approved list grows past a fix, the story moves to EPIC-04 (the project's rule).
+- **Notes:** The pipeline's stage cards are US-0412, in the same release: the audit lists them but leaves them to that story. If the approved list grows past a fix, the story moves to EPIC-04 (the project's rule).
 - **Dependencies:** US-0402 ✅, US-0417 ✅

@@ -129,8 +129,9 @@ Open projects are restored on the next start. **Full screen:** `Ctrl+Cmd+F` on m
 
 Plans can change; [docs/FEATURES.md](docs/FEATURES.md) and [docs/releases/](docs/releases/) always have the current state.
 
-- **v0.3.1, steer the work and see what it costs:** rename an intent or change the plan of one that has started; see whether your tools are signed in and sign in from the app; a start-screen health check; cost per story, epic and release, with hints on where to save.
-- **v0.3.2, what the work delivered:** delivery metrics (lead time, release frequency, failure rate, recovery time), quality next to cost, the AI's share of delivered code, insights per person and machine, any harness in the agent terminal, and more motion in the pipeline cards.
+- **v0.3.1, steer the work, and a livelier console:** change the plan of an intent that has started; archive intents and Spec Kit features you are done with; see whether your tools are signed in and sign in from the app; a start-screen health check; motion in every view and on the pipeline cards.
+- **v0.3.2, what the work cost and what it delivered:** rework cost, hints on where to save, cost per story, epic and release, delivery metrics (lead time, release frequency, failure rate, recovery time), quality next to cost, and any harness in the agent terminal.
+- **v0.3.3, shape the plan, and insights for a team:** a visual plan designer, the AI's share of delivered code, and insights per person and machine.
 - **Later:** add your own language with a translation file.
 
 ## Development
