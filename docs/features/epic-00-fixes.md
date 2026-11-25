@@ -834,15 +834,16 @@
 - **Notes:** A code fix, so it runs on the `quick-fix` plan (`fix/US-0051`).
 - **Dependencies:** US-1404 ✅, US-0048 ✅
 
-**US-0052: The test of the agents working now passes every time** 📋 Planned, for v0.3.1
-- As a **developer**, in order to **trust a red test**, I would like **the test of the agents working now not to depend on timing**.
+**US-0052: The tests of the agents working now and of the token detail pass every time** 📋 Planned, for v0.3.1
+- As a **developer**, in order to **trust a red test**, I would like **the tests of the agents working now and of the token detail not to depend on timing**.
 - **Epic:** EPIC-00
 - **Priority:** Low
 - **Complexity:** Small
-- **Background:** Found in v0.3.0, added 2026-11-25 at the person's request. `ConfigView.test.jsx`, "lists the agents working now …", failed once locally: the fake timer moved before the view had started its interval.
+- **Background:** Found in v0.3.0, added 2026-11-25 at the person's request. `ConfigView.test.jsx`, "lists the agents working now …", failed once locally: the fake timer moved before the view had started its interval. Widened 2026-11-25 at the person's request: `TokenDetail.test.jsx`, "click or Enter on the small view opens the detail …", failed in two full local runs of US-0513, the second time over its 5 s limit (the first error was not kept). Alone it takes about 0.8 s, on `main` too; the machine's load average was near 10.
 - **Acceptance Criteria:**
   - [ ] **Given** the test, **when** it moves the clock, **then** the view's interval has started.
   - [ ] It passes 50 times in a row, and still fails when the counter does not update.
+  - [ ] **Given** the token detail test, **when** the full suite runs on a loaded machine, **then** it stays within its limit, and the limit is not raised to get there. It passes 50 times in a row, and still fails when focus does not come back.
 - **Notes:** Only the test changes, unless the cause turns out to be in the view. It runs on the `quick-fix` plan (`fix/US-0052`).
 - **Dependencies:** none
 
