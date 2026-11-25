@@ -1,6 +1,7 @@
 // Characterisation tests of the IPC surface (US-0506 Step 3a, K17): today's behaviour of each handler, with
 // electron, node-pty and every service ipc.js wires mocked. Later steps extend the mocks, never the behaviour pinned here.
 import { afterAll, beforeEach, describe, expect, it, vi } from 'vitest';
+import { t } from '../../src/shared/i18n.js';
 
 const m = vi.hoisted(() => {
   const handlers = new Map();
@@ -163,7 +164,13 @@ const m = vi.hoisted(() => {
       loadOpenQuestions: vi.fn(async () => [{ text: 'Q2. Open?', file: 'q.md', time: null }]),
       loadAuditEvents: vi.fn(async () => []),
       inflightCount: vi.fn(async () => 0),
-      writeProjectFile: vi.fn(async () => ({ ok: true, file: '.thadeus/project.json', replaced: false })) // US-1407: U2's write
+      writeProjectFile: vi.fn(async () => ({ ok: true, file: '.thadeus/project.json', replaced: false })), // US-1407: U2's write
+      // US-0513: the archive run and its commit, each tested on its own.
+      archiveIntents: vi.fn(async () => ({ ok: true, archived: [], refused: [], files: [] })),
+      unarchiveIntent: vi.fn(async () => ({ ok: true, files: ['f'] })),
+      beforeArchive: vi.fn(async () => ({ branch: 'main', dirtyIndex: false })),
+      commitArchive: vi.fn(async () => ({ state: 'waiting' })),
+      hasAgentSession: vi.fn(() => false)
     }
   };
 });
@@ -171,7 +178,12 @@ const platformError = (code) => Object.assign(new Error(`GitHub: ${code}`), { na
 
 vi.mock('electron', () => m.electron);
 vi.mock('node-pty', () => ({ spawn: vi.fn() }));
-vi.mock('../../src/main/projectAccess.js', () => ({ openRoot: m.svc.openRoot, readText: m.svc.readText, resolveInRoot: m.svc.resolveInRoot }));
+vi.mock('../../src/main/projectAccess.js', () => ({
+  openRoot: m.svc.openRoot,
+  readText: m.svc.readText,
+  resolveInRoot: m.svc.resolveInRoot,
+  readJsonSafe: async () => ({ ok: false, missing: true }) // US-0513: no stored token readings
+}));
 vi.mock('../../src/main/projectService.js', () => ({
   INFLIGHT_PATH: 'aidlc/.aidlc-subagent-inflight',
   LEDGER_PATH: 'aidlc/ledger.jsonl',
@@ -287,6 +299,7 @@ vi.mock('../../src/main/agentEvents.js', async (importOriginal) => {
     createAgentEventStore: (deps) => {
       m.storeDeps = deps;
       const store = real.createAgentEventStore(deps);
+      m.store = store; // US-0513: its activity rows are faked below
       const onAdded = store.onAdded;
       store.onAdded = (fn) => {
         m.onAdded = fn;
@@ -338,7 +351,10 @@ vi.mock('../../src/main/agentIpc.js', async (importOriginal) => {
     }
   };
 });
+vi.mock('../../src/main/intentArchive.js', () => ({ archiveIntents: m.svc.archiveIntents, unarchiveIntent: m.svc.unarchiveIntent }));
+vi.mock('../../src/main/archiveCommit.js', () => ({ beforeArchive: m.svc.beforeArchive, commitArchive: m.svc.commitArchive }));
 vi.mock('../../src/main/pty.js', () => ({
+  hasAgentSession: m.svc.hasAgentSession,
   killAllSessions: m.svc.killAllSessions,
   killProjectSessions: m.svc.killProjectSessions,
   killSession: m.svc.killSession,
@@ -1556,6 +1572,177 @@ describe('intents:rename (US-0508)', () => {
     expect(sender.send).not.toHaveBeenCalledWith('project:changed', expect.anything());
     await onChange([{ file: '.thadeus/intent-names.json' }]);
     expect(sender.send).toHaveBeenCalledWith(...changed(projectId));
+  });
+});
+
+describe('archive and unarchive (US-0513)', () => {
+  const row = (dirName, over = {}) => ({ dirName, slug: `shown-${dirName}`, aidlcSlug: `slug-${dirName}`, status: 'complete', active: false, ...over });
+  const changed = (projectId) => ['project:changed', { projectId, space: 'default', dirNames: [], indexChanged: true, costChanged: false }];
+  beforeEach(() => {
+    for (const f of ['archiveIntents', 'unarchiveIntent', 'beforeArchive', 'commitArchive']) svc[f].mockClear();
+    svc.loadIntentList.mockResolvedValue({ intents: [row('a'), row('b')] });
+  });
+  afterAll(() => svc.loadIntentList.mockResolvedValue({ intents: [] }));
+
+  it('archives the names against the space list, commits what changed, and reloads the list (FR1.3, FR5.1)', async () => {
+    const { projectId, sender } = await openProject('/work/archive');
+    svc.archiveIntents.mockResolvedValueOnce({ ok: true, archived: ['b'], refused: [{ dirName: 'a', error: 'no' }], files: ['x'] });
+    sender.send.mockClear();
+    expect(await call('intents:archive', {}, projectId, ['b', 'a'], 'done')).toEqual({
+      ok: true,
+      archived: ['b'],
+      refused: [{ dirName: 'a', error: 'no' }],
+      commit: { state: 'waiting' }
+    });
+    const [root, dirNames, reason, opts] = svc.archiveIntents.mock.calls[0];
+    expect([root, dirNames, reason, opts.space, opts.intents.length]).toEqual(['/work/archive', ['b', 'a'], 'done', 'default', 2]);
+    expect(svc.beforeArchive.mock.invocationCallOrder[0]).toBeLessThan(svc.archiveIntents.mock.invocationCallOrder[0]);
+    expect(svc.commitArchive).toHaveBeenCalledWith(
+      expect.objectContaining({ root: '/work/archive', planningOff: false, online: expect.any(Function) }),
+      { branch: 'main', dirtyIndex: false },
+      { verb: 'archive', slugs: ['slug-b'], files: ['x'] } // AI-DLC's own slug of the archived one only
+    );
+    expect(sender.send).toHaveBeenCalledWith(...changed(projectId));
+  });
+
+  it('sends the progress to its window, and says when the planning sync is off in the project', async () => {
+    const { projectId, sender } = await openProject('/work/archive-progress');
+    svc.getProjectSettings.mockResolvedValue({ featureDocs: 'hide', featuresPath: 'docs/FEATURES.md' });
+    svc.archiveIntents.mockImplementationOnce(async (_root, _names, _reason, { onProgress }) => {
+      onProgress({ n: 1, total: 2 });
+      return { ok: true, archived: ['a'], refused: [], files: ['x'] };
+    });
+    await call('intents:archive', {}, projectId, ['a', 'b']);
+    svc.getProjectSettings.mockResolvedValue({ featureDocs: 'show', featuresPath: 'docs/FEATURES.md' });
+    expect(sender.send).toHaveBeenCalledWith('intents:archiveProgress', { projectId, n: 1, total: 2 });
+    expect(svc.commitArchive.mock.calls[0][0].planningOff).toBe(true);
+  });
+
+  it('main itself checks the active in-flight intent before its command, from what it sees now (FR1.5, AC1.2.3)', async () => {
+    const { projectId } = await openProject('/work/archive-blocked');
+    let blocked;
+    svc.archiveIntents.mockImplementationOnce(async (_root, _names, _reason, opts) => {
+      blocked = opts.blocked;
+      return { ok: true, archived: [], refused: [], files: [] };
+    });
+    await call('intents:archive', {}, projectId, ['a']);
+    const active = (over = {}) =>
+      svc.loadIntentList.mockResolvedValue({ intents: [row('a', { status: 'in-flight', active: true, activityAt: 0, ...over }), row('b')] });
+    const rows = vi.spyOn(m.store, 'activity').mockReturnValue([]);
+    const why = (code) => t(`intents.archive.blocked.${code}`);
+
+    active();
+    expect(await blocked('a')).toBeNull();
+    expect(svc.loadIntentList).toHaveBeenLastCalledWith('/work/archive-blocked', 'default', ['a']); // a fresh read
+    active({ activityAt: Date.now() });
+    expect(await blocked('a')).toBe(why('elsewhere'));
+    svc.hasAgentSession.mockReturnValue(true);
+    expect(await blocked('a')).toBe(why('running'));
+    active({ parked: true, activityAt: Date.now() });
+    expect(await blocked('a')).toBeNull(); // parked: an open session does not run it
+    rows.mockReturnValue([{ state: 'idle' }, { state: 'tool' }]);
+    expect(await blocked('a')).toBe(why('busy'));
+    expect(await blocked('b')).toBeNull(); // a complete one is not blocked
+    active({ active: false });
+    expect(await blocked('a')).toBeNull(); // nor one that is not active
+    rows.mockRestore();
+    svc.hasAgentSession.mockReturnValue(false);
+  });
+
+  it('a question that came while the app ran blocks it while a session is open, one from the start does not', async () => {
+    svc.loadPendingQuestions.mockResolvedValueOnce([{ id: 'arch-early', timeMs: 1 }]);
+    const { projectId } = await openProject('/work/archive-asking');
+    let blocked;
+    svc.archiveIntents.mockImplementationOnce(async (_root, _names, _reason, opts) => {
+      blocked = opts.blocked;
+      return { ok: true, archived: [], refused: [], files: [] };
+    });
+    await call('intents:archive', {}, projectId, ['a']);
+    svc.loadIntentList.mockResolvedValue({ intents: [row('a', { status: 'in-flight', active: true, parked: true })] });
+    svc.hasAgentSession.mockReturnValue(true);
+    expect(await blocked('a')).toBeNull();
+    svc.loadPendingQuestions.mockResolvedValueOnce([
+      { id: 'arch-early', timeMs: 1 },
+      { id: 'arch-late', timeMs: 2 }
+    ]);
+    svc.watchIntents.mock.calls.at(-1)[0].onChange({ dirNames: ['a'], indexChanged: false });
+    await flush();
+    expect(await blocked('a')).toBe(t('intents.archive.blocked.asking'));
+    svc.hasAgentSession.mockReturnValue(false);
+    expect(await blocked('a')).toBeNull();
+  });
+
+  it('a second start in the same project is refused, and the lock is freed after a run and after a failure (AC4.1.5)', async () => {
+    const { projectId } = await openProject('/work/archive-lock');
+    const again = await openProject('/work/archive-lock'); // a second window on the same project
+    let finish;
+    svc.archiveIntents.mockImplementationOnce(() => new Promise((resolve) => (finish = resolve)));
+    const first = call('intents:archive', {}, projectId, ['a']);
+    await flush();
+    const refused = { ok: false, error: t('intents.archive.running') };
+    expect(await call('intents:archive', {}, projectId, ['b'])).toEqual(refused);
+    expect(await call('intents:unarchive', {}, again.projectId, 'b')).toEqual(refused);
+    finish({ ok: true, archived: ['a'], refused: [], files: ['x'] });
+    expect((await first).ok).toBe(true);
+
+    svc.archiveIntents.mockRejectedValueOnce(new Error('boom'));
+    await expect(call('intents:archive', {}, projectId, ['b'])).rejects.toThrow('boom');
+    expect((await call('intents:unarchive', {}, projectId, 'b')).ok).toBe(true);
+  });
+
+  it('a project closed or a space changed during the run does not break it', async () => {
+    const { projectId } = await openProject('/work/archive-close');
+    let finish;
+    svc.archiveIntents.mockImplementationOnce(() => new Promise((resolve) => (finish = resolve)));
+    const run = call('intents:archive', {}, projectId, ['a']);
+    await flush();
+    await call('project:close', {}, projectId);
+    finish({ ok: true, archived: ['a'], refused: [], files: ['x'] });
+    expect(await run).toMatchObject({ ok: true, commit: { state: 'waiting' } });
+    expect(svc.commitArchive.mock.calls[0][0].root).toBe('/work/archive-close');
+  });
+
+  it('a failed commit never hides what was archived', async () => {
+    const { projectId } = await openProject('/work/archive-commit');
+    svc.archiveIntents.mockResolvedValueOnce({ ok: true, archived: ['a'], refused: [], files: ['x'] });
+    svc.commitArchive.mockRejectedValueOnce(new Error('git is gone'));
+    expect(await call('intents:archive', {}, projectId, ['a'])).toMatchObject({ archived: ['a'], commit: { state: 'refused', reason: 'git is gone' } });
+  });
+
+  it('takes names and a reason only, and runs nothing for anything else (NFR1)', async () => {
+    const { projectId } = await openProject('/work/archive-input');
+    for (const args of [['a'], [[]], [['a', 7]], [['a'], { text: 'x' }], [undefined]]) {
+      await expect(call('intents:archive', {}, projectId, ...args)).rejects.toThrow();
+    }
+    await expect(call('intents:unarchive', {}, projectId, ['a'])).rejects.toThrow();
+    expect(svc.archiveIntents).not.toHaveBeenCalled();
+    expect(svc.unarchiveIntent).not.toHaveBeenCalled();
+  });
+
+  it('unarchives one, commits it and reloads; a refusal commits nothing (FR2.2)', async () => {
+    const { projectId, sender } = await openProject('/work/unarchive');
+    sender.send.mockClear();
+    expect(await call('intents:unarchive', {}, projectId, 'a')).toEqual({ ok: true, commit: { state: 'waiting' } });
+    expect(svc.unarchiveIntent).toHaveBeenCalledWith('/work/unarchive', 'a', expect.objectContaining({ space: 'default' }));
+    expect(svc.commitArchive.mock.calls[0][2]).toEqual({ verb: 'unarchive', slugs: ['slug-a'], files: ['f'] });
+    expect(sender.send).toHaveBeenCalledWith(...changed(projectId));
+
+    svc.commitArchive.mockClear();
+    svc.unarchiveIntent.mockResolvedValueOnce({ ok: false, error: 'not archived', files: [] });
+    expect(await call('intents:unarchive', {}, projectId, 'a')).toEqual({ ok: false, error: 'not archived' });
+    expect(svc.commitArchive).not.toHaveBeenCalled();
+  });
+
+  it('an archived intent that was not complete keeps its recorded readings only, as before it was archived (AC6.1.1)', async () => {
+    const { projectId } = await openProject('/work/archive-tokens');
+    svc.loadIntentList.mockResolvedValue({ intents: [row('a', { status: 'archived', stateStatus: 'Archived', archivedFrom: 'Running' })] });
+    svc.loadAuditEvents.mockClear();
+    expect(await call('tokens:readings', {}, projectId, 'a', 'default')).toEqual({ source: 'recorded', readings: [], wallMs: null, gap: null });
+    expect(svc.loadAuditEvents).not.toHaveBeenCalled(); // nothing is rebuilt for work that may go on
+
+    svc.loadIntentList.mockResolvedValue({ intents: [row('a', { status: 'archived', stateStatus: 'Archived', archivedFrom: 'Completed' })] });
+    expect(await call('tokens:readings', {}, projectId, 'a', 'default')).toMatchObject({ source: 'none' });
+    expect(svc.loadAuditEvents).toHaveBeenCalled(); // a finished one is, as a complete intent
   });
 });
 

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { t } from '../shared/i18n.js';
+import { isArchived } from '../shared/intentArchive.js';
 import { inFlightIntent } from './workflowBusy.js';
 
 const bridge = window.bridge;
@@ -36,7 +37,8 @@ export function useProject(projectId, initialSpace) {
         setIntents(res.intents);
         setListWarning(res.warning);
         setError(null);
-        setSelected((cur) => cur ?? res.intents.find((i) => i.active)?.dirName ?? res.intents[0]?.dirName ?? null);
+        // US-0513 FR3.1: the list leaves archived intents out, so the first selection does too.
+        setSelected((cur) => cur ?? (res.intents.find((i) => i.active) ?? res.intents.find((i) => !isArchived(i)))?.dirName ?? null);
       } catch (err) {
         setError(t('intents.loadFailed', { error: errorText(err) }));
       }

@@ -6,7 +6,7 @@ import { t } from '../shared/i18n.js';
 import { selectableHarness } from '../shared/harnesses.js';
 import { setToolPaths, shellPath, toolPath } from './tools.js';
 
-const sessions = new Map(); // id -> { proc, projectId, sender }
+const sessions = new Map(); // id -> { proc, projectId, kind, sender, taps }
 let ptyModule = null; // cached only after a successful load, so a failed load is retried next spawn
 
 async function loadPty() {
@@ -73,7 +73,7 @@ export async function spawnSession({ projectId, root, kind, harness, cols, rows,
   });
   const id = randomUUID();
   const taps = new Set();
-  sessions.set(id, { proc, projectId, sender, taps });
+  sessions.set(id, { proc, projectId, kind, sender, taps });
   const send = (channel, payload) => {
     if (!sender.isDestroyed()) sender.send(channel, payload);
   };
@@ -88,6 +88,9 @@ export async function spawnSession({ projectId, root, kind, harness, cols, rows,
   });
   return id;
 }
+
+/** US-0513 FR1.4: whether the project has an agent tab running, whatever it does. */
+export const hasAgentSession = (projectId) => [...sessions.values()].some((s) => s.projectId === projectId && s.kind === 'agent');
 
 /** US-0506 u1 PD2: calls `fn` with each chunk of the session's output until the returned remover runs. */
 export function tapOutput(id, fn) {

@@ -56,6 +56,7 @@ export function parseState(text) {
     testStrategy: scopeCfg['Test Strategy'] ?? null,
     currentStage: current['Current Stage'] ?? null,
     currentStatus: current.Status ?? null,
+    archivedFrom: current['Archived From'] ?? null, // US-0513 FR6.2: the Status an archive replaced
     lastUpdated: current['Last Updated'] ?? null,
     phases
   };

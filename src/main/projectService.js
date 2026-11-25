@@ -15,6 +15,7 @@ import { localClone, readSnapshots } from './usageSnapshot.js';
 import { intentMetrics, parseMarkerHistory, projectMetrics, storyMetrics } from './parsers/velocity.js';
 import { parkedFromAudit } from './intentPark.js';
 import { t } from '../shared/i18n.js';
+import { isArchived, isFinished } from '../shared/intentArchive.js';
 import { viewFields } from '../shared/frameworkViews.js';
 import { PROJECT_FILE, readProjectFile } from './projectFile.js';
 
@@ -91,9 +92,14 @@ export async function detectProject(root) {
   const detection = { framework, source, found, reason, ...viewFields(framework), activeSpace: null, spaces: [] };
   if (framework !== 'aidlc') return detection;
   const spaces = await listSpaces(root);
+  return { ...detection, activeSpace: await readActiveSpace(root, spaces), spaces };
+}
+
+/** The space AI-DLC works in now; US-0513 Constraints: it archives only there, so main reads it again before a run. */
+export async function readActiveSpace(root, spaces) {
+  const known = spaces ?? (await listSpaces(root));
   const named = (await readTextOrNull(root, 'aidlc/active-space'))?.trim();
-  const activeSpace = spaces.includes(named) ? named : spaces.includes('default') ? 'default' : spaces[0];
-  return { ...detection, activeSpace, spaces };
+  return known.includes(named) ? named : known.includes('default') ? 'default' : known[0];
 }
 
 async function loadDescription(root, base) {
@@ -118,6 +124,7 @@ async function summarizeIntent(root, space, dirName) {
     request: await loadDescription(root, base),
     currentStage: state?.currentStage ?? null,
     stateStatus: state?.currentStatus ?? null,
+    archivedFrom: state?.archivedFrom ?? null, // US-0513 FR6.2
     done: pipeline.done,
     executed: pipeline.executed,
     // When AI-DLC last wrote the intent's audit log: an agent outside the app is working on it (US-0009).
@@ -154,7 +161,10 @@ export async function loadIntentList(root, space, onlyDirs) {
           extra = { ...extra, error: err.message, stale: !!extra };
         }
       }
-      return { ...intent, ...extra, scope: intent.scope ?? extra?.stateScope ?? null };
+      const row = { ...intent, ...extra, scope: intent.scope ?? extra?.stateScope ?? null };
+      // US-0513 FR1.6, FR3.1: the one place that says archived, so every reader of `status` and `active` follows. An
+      // archived intent is never active (also when active-intent still names it) and not parked while it is archived.
+      return isArchived(row) ? { ...row, status: 'archived', active: false, parked: false } : row;
     })
   );
   listCache.set(key, { index, summaries });
@@ -234,7 +244,7 @@ export async function loadWorkingAgents(root, space, dirName) {
 
 /**
  * US-0213 FR2.2, FR2.3: the active intent's state text and audit events (the space's `active-intent` cursor), as a
- * one-item list; [] when there is no cursor or its intent is finished. Read only.
+ * one-item list; [] when there is no cursor or its intent is finished or archived (US-0513 FR1.6). Read only.
  */
 export async function loadHandoffInputs(root, space) {
   const cursor = (await readTextOrNull(root, `${intentsDir(space)}/active-intent`))?.trim();
@@ -242,13 +252,15 @@ export async function loadHandoffInputs(root, space) {
   const base = `${intentsDir(space)}/${cursor}`;
   const stateText = await readTextOrNull(root, `${base}/aidlc-state.md`);
   if (!stateText || /\*\*Status\*\*:\s*complete/i.test(stateText)) return [];
+  const index = await readJsonSafe(root, `${intentsDir(space)}/intents.json`);
+  const row = Array.isArray(index.value) ? index.value.find((e) => e?.dirName === cursor) : null;
+  if (isArchived({ status: row?.status, stateStatus: parseState(stateText).currentStatus })) return [];
   return [{ dirName: cursor, stateText, events: await loadAuditEvents(root, base) }];
 }
 
 /** An intent is in progress unless intents.json or aidlc-state.md says it is finished (US-0505 FR1.1). */
 export function inProgress(intent) {
-  if (intent.missingOnDisk || intent.status === 'complete' || intent.status === 'archived') return false;
-  if (/^complete/i.test(intent.stateStatus ?? '')) return false;
+  if (intent.missingOnDisk || isArchived(intent) || isFinished(intent)) return false;
   return !(intent.executed > 0 && intent.done >= intent.executed);
 }
 
@@ -401,9 +413,6 @@ export async function loadCrossMachineCost(root, space, intents, ledger, rates =
   return { summary, local };
 }
 
-/** US-0303 FR4.1: finished by its audit (WORKFLOW_COMPLETED, in intentMetrics) or by intents.json / aidlc-state.md; archived is not finished. */
-const stateFinished = (intent) => intent.status === 'complete' || /^complete/i.test(intent.stateStatus ?? '');
-
 /**
  * US-0303 FR1–FR4, NFR4: the project's velocity. Every intent's audit is read, archived ones included (FR3.4), each on
  * its own: no `audit/` folder is "missing", a read error is "unreadable", and an audit without events is a row marked
@@ -434,9 +443,11 @@ export async function loadVelocity(root, space, intents, features, { tags = [], 
     slug: intent.slug ?? intent.dirName,
     scope: intent.scope ?? null,
     status: intent.status ?? null,
-    archived: intent.status === 'archived',
+    archived: isArchived(intent),
     empty: events.length === 0,
-    ...intentMetrics(events, { finished: stateFinished(intent) })
+    // US-0303 FR4.1: finished by its audit (WORKFLOW_COMPLETED, in intentMetrics) or by intents.json / aidlc-state.md;
+    // US-0513 FR6.2: an archived intent that was complete is finished.
+    ...intentMetrics(events, { finished: isFinished(intent) })
   }));
 
   const epics = features?.available ? features.epics : [];

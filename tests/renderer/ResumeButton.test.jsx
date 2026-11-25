@@ -5,7 +5,14 @@ import { HARNESSES } from '../../src/shared/harnesses.js';
 const CLAUDE = HARNESSES.find((h) => h.id === 'claude');
 const terminal = { state: vi.fn(() => 'idle'), type: vi.fn(), sequence: vi.fn(), harness: CLAUDE };
 vi.mock('../../src/renderer/TerminalContext.jsx', () => ({ useTerminal: () => terminal }));
-const { default: ResumeButton } = await import('../../src/renderer/ResumeButton.jsx');
+// US-0513: the real shared rule; `seen` records what it is asked.
+const sharedRule = vi.hoisted(() => ({ seen: [] }));
+vi.mock('../../src/shared/intentArchive.js', async (importOriginal) => {
+  const real = await importOriginal();
+  sharedRule.ELSEWHERE_MS = real.ELSEWHERE_MS;
+  return { ...real, workBlock: (seen) => (sharedRule.seen.push(seen), real.workBlock(seen)) };
+});
+const { default: ResumeButton, ELSEWHERE_MS } = await import('../../src/renderer/ResumeButton.jsx');
 const BUSY_MESSAGE = 'Claude arbetar — vänta eller avbryt först'; // sv.json intents.resume.busy with {harness} (EPIC-07, US-0801)
 
 // Same shape as an intent row from loadIntentList.
@@ -181,6 +188,19 @@ describe('ResumeButton while an agent outside the app runs the work (EPIC-00 US-
     expect(tip(button())).toBe(ELSEWHERE);
     fireEvent.click(button());
     expect(terminal.type).not.toHaveBeenCalled();
+  });
+
+  it('uses the rule it shares with Archive, with its limit (US-0513 FR1.4)', () => {
+    expect(sharedRule.ELSEWHERE_MS).toBe(ELSEWHERE_MS);
+    const spy = vi.spyOn(sharedRule.seen, 'push');
+    terminal.running = vi.fn(() => true);
+    render(<ResumeButton intent={intent} activeDirName={intent.dirName} activeIntent={intent} />);
+    expect(spy).toHaveBeenCalledWith(expect.objectContaining({ busy: false, asking: false, running: true, activeIntent: intent }));
+  });
+
+  it('is absent on an archived intent (US-0513 AC2.1.1)', () => {
+    render(<ResumeButton intent={{ ...intent, status: 'archived', active: false }} activeDirName={null} />);
+    expect(screen.queryByTestId('intent-resume')).toBeNull();
   });
 
   it('is available when the log has been quiet for over 10 minutes, or the intent is not in flight', () => {

@@ -2,7 +2,7 @@
 // RoundFrame: the app's brand corner (the amber mark and the name, as in the shell), the title on the 30 px bar with
 // Close as its last pill, readout blocks in the arm, a circular bottom elbow. Esc and a click on the backdrop close
 // it, and focus goes back to where it was. The shared entrance runs each time it opens.
-import { useEffect, useId, useRef } from 'react';
+import { useEffect, useEffectEvent, useId, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import AuctumMark from './AuctumMark.jsx';
 import { BARS, Pill, RoundFrame, useEntrance } from './Lcars.jsx';
@@ -11,17 +11,20 @@ import { APP_NAME } from '../shared/appName.js';
 /**
  * @param {{open: boolean, onClose: () => void, title: import('react').ReactNode, sub?: import('react').ReactNode,
  *          readouts?: Array<{k: import('react').ReactNode, v: import('react').ReactNode, key?: boolean}>,
- *          footer?: import('react').ReactNode, testId: string, className?: string, children?: import('react').ReactNode}} props
+ *          footer?: import('react').ReactNode, testId: string, className?: string, children?: import('react').ReactNode,
+ *          fallbackFocus?: () => HTMLElement|null|undefined}} props
  *   readouts: the arm's blocks; `key` marks the one key value (white on steel)
+ *   fallbackFocus: where focus goes on close when the control that opened the dialog is gone (US-0513 FR7.2)
  *   testId: the dialog's data-testid; its Close pill is `${testId}-close`
  */
-export default function LcarsDialog({ open, onClose, title, sub, readouts = [], footer, testId, className = '', children }) {
+export default function LcarsDialog({ open, onClose, title, sub, readouts = [], footer, testId, className = '', children, fallbackFocus }) {
   const { t } = useTranslation();
   const ref = useRef(null);
   const returnFocus = useRef(null);
   const titleId = useId();
   const entering = useEntrance(open ? 'open' : 'shut');
 
+  const focusFallback = useEffectEvent(() => fallbackFocus?.()?.focus());
   useEffect(() => {
     const d = ref.current;
     if (!d) return;
@@ -31,7 +34,9 @@ export default function LcarsDialog({ open, onClose, title, sub, readouts = [], 
     }
     if (!open && d.open) {
       d.close ? d.close() : d.removeAttribute('open');
-      if (returnFocus.current?.isConnected) returnFocus.current.focus();
+      const opener = returnFocus.current;
+      if (opener?.isConnected && !opener.disabled) opener.focus();
+      else focusFallback();
       returnFocus.current = null;
     }
   }, [open]);

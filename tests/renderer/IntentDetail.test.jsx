@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 
 vi.mock('../../src/renderer/TerminalContext.jsx', () => ({ useTerminal: () => ({ state: () => 'idle', type: () => {}, sequence: () => {} }) }));
@@ -139,6 +139,74 @@ describe('IntentDetail head, one control per state (US-0037)', () => {
     const actions = screen.getByTestId('intent-head-actions');
     expect(actions.contains(screen.getByTestId('intent-park'))).toBe(true);
     expect(actions.contains(screen.getByTestId('intent-resume'))).toBe(true);
+  });
+
+  describe('an archived intent (US-0513 AC2.1.1, AC2.1.3)', () => {
+    const archived = { ...base, status: 'archived', active: false, stateStatus: 'Archived', archivedFrom: 'Completed' };
+    /** The detail as main gives it: no stage is current. */
+    const archivedDetail = () => {
+      const d = detailOf();
+      d.state = { ...d.state, currentStatus: 'Archived', archivedFrom: 'Completed' };
+      for (const s of d.pipeline.phases[0].stages) s.current = false;
+      return d;
+    };
+    const showArchived = (over = {}) =>
+      render(
+        <IntentDetail
+          projectId="p1"
+          detail={archivedDetail()}
+          intent={{ ...archived, ...over }}
+          activeDirName={null}
+          cost={null}
+          models={null}
+          activeSpace="default"
+        />
+      );
+    beforeEach(() => {
+      window.bridge = { getStoryComments: vi.fn(() => new Promise(() => {})) };
+    });
+
+    it('has the Archived mark in its progress row and its mode, and Unarchive; no Archive, Resume, Park or Unpark', () => {
+      showArchived();
+      const row = screen.getByTestId('intent-progress');
+      expect(row.contains(screen.getByTestId('intent-archived'))).toBe(true);
+      expect(screen.getByTestId('intent-archived').textContent).toBe('Arkiverad');
+      expect(row.textContent).not.toMatch(/Pågår/);
+      expect(screen.getAllByText('Arkiverad')).toHaveLength(2); // the mark and the Mode readout
+      expect(screen.getByTestId('intent-unarchive')).toBeTruthy();
+      for (const id of ['intent-archive', 'intent-resume', 'intent-park', 'intent-unpark', 'intent-parked']) expect(screen.queryByTestId(id)).toBeNull();
+    });
+
+    it('shows nothing as running: no current step, no breathing stage (AC1.2.4)', () => {
+      showArchived();
+      expect(screen.getByTestId('intent-progress').querySelector('.lcars-dot--current')).toBeNull();
+      expect(screen.getByTestId('pipeline').querySelector('.is-breathing')).toBeNull();
+    });
+
+    it('opens every tab, and counts as finished in its velocity when it was complete (AC6.1.2)', () => {
+      showArchived();
+      for (const id of ['timeline', 'units', 'cost', 'comments', 'files', 'velocity']) {
+        fireEvent.click(screen.getByTestId(`intent-detail-tab-${id}`));
+        expect(screen.getByTestId(`intent-detail-tab-${id}`).getAttribute('aria-selected')).toBe('true');
+      }
+      expect(screen.queryByTestId('velocity-intent-unfinished')).toBeNull();
+    });
+
+    it('shows as parked again after it was unarchived, with Archive beside Resume', () => {
+      const { rerender } = showArchived();
+      rerender(<IntentDetail projectId="p1" detail={detailOf()} intent={parkedIntent} activeDirName={null} cost={null} models={null} activeSpace="default" />);
+      expect(screen.getByTestId('intent-parked').textContent).toBe('Parkerad vid Functional Design');
+      expect(screen.queryByTestId('intent-archived')).toBeNull();
+      expect(screen.getByTestId('intent-head-actions').contains(screen.getByTestId('intent-archive'))).toBe(true);
+    });
+
+    it('in another space than AI-DLC’s active one offers neither action', () => {
+      render(
+        <IntentDetail projectId="p1" space="default" detail={detailOf()} intent={base} activeDirName={DIR} cost={null} models={null} activeSpace="team" />
+      );
+      expect(screen.getByTestId('intent-archive-space')).toBeTruthy();
+      expect(screen.queryByTestId('intent-archive')).toBeNull();
+    });
   });
 
   it('gives the cost pair the compact readout size so it fits its column (FR3.5)', () => {

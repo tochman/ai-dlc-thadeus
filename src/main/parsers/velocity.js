@@ -3,6 +3,7 @@
 // renderer computes the intent tab from `detail.events` with the same code (NFR5, FR4.4: every number is computed).
 // A number the records cannot support is null, shown as "unknown", never 0 (FR2.2, FR4.2).
 import { statusOf } from './features.js';
+import { isArchiveEvent } from '../../shared/intentArchive.js';
 
 const HEAD_LINE = /^\+\*\*(US-\d{4})\s*[:–-].*?\*\*\s*(.*)$/;
 const RELEASED = /released in (v\d+\.\d+\.\d+)/i;
@@ -75,7 +76,8 @@ function spanTracker() {
  * @param {{finished?: boolean}} [opts] finished: intents.json or aidlc-state.md says the workflow is complete
  */
 export function intentMetrics(events, { finished: stateFinished = false } = {}) {
-  const list = (Array.isArray(events) ? events : []).filter((e) => Number.isFinite(e?.timeMs));
+  // US-0513 FR6.1: archiving is no work; its event would otherwise be an open intent's end.
+  const list = (Array.isArray(events) ? events : []).filter((e) => Number.isFinite(e?.timeMs) && !isArchiveEvent(e));
   const phases = spanTracker();
   const stages = spanTracker();
   const stats = new Map(); // stage -> {waitingMs, reviews, rejections}
@@ -260,7 +262,7 @@ export function projectMetrics(rows, stories) {
   const done = stories.filter((s) => Number.isFinite(s.doneMs));
   return {
     finished: finished.length,
-    running: rows.filter((r) => !r.finished).length,
+    running: rows.filter((r) => !r.finished && !r.archived).length, // US-0513 FR6.2: archived work is not in progress
     storiesDone: done.length,
     avgActiveMs: average(finished.map((r) => r.activeMs).filter(Number.isFinite)),
     week: buckets(finished, done, isoWeek),

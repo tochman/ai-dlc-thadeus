@@ -221,6 +221,52 @@
       "taken": "\"{name}\" används redan av ett annat intent i det här spacet.",
       "unknown": "Det finns inget intent {name} i det här spacet."
     },
+    "archive": {
+      "open": "Arkivera",
+      "mark": "Arkiverad",
+      "unarchive": "Avarkivera",
+      "unarchived": "Intenten är tillbaka i listan.",
+      "filter": "Arkiverade ({n})",
+      "allArchived": "Alla intents är arkiverade. Välj \"Arkiverade ({n})\" i statusfiltret för att se dem.",
+      "title": "{n, plural, one {Arkivera intent} other {Arkivera # intents}}",
+      "nothingDeleted": "{n, plural, one {Inget raderas. Underlaget ligger kvar på disk, och du kan avarkivera intenten när du vill.} other {Inget raderas. Underlaget ligger kvar på disk, och du kan avarkivera dem när du vill.}}",
+      "warnUnfinished": "{name} är inte klar.",
+      "warnActive": "{name} är den aktiva intenten. Efteråt är ingen intent aktiv.",
+      "reason": "Skäl (valfritt)",
+      "reasonHint": "En rad, högst 200 tecken.",
+      "reasonError": {
+        "tooLong": "Skälet är längre än 200 tecken.",
+        "dash": "Skälet kan inte börja med ett bindestreck."
+      },
+      "confirm": "{n, plural, one {Arkivera} other {Arkivera #}}",
+      "progress": "Arkiverar {n} av {total}…",
+      "running": "En arkivering pågår redan i det här projektet.",
+      "onlyComplete": "Bara klara intents kan arkiveras flera på en gång.",
+      "otherSpace": "AI-DLC arbetar i spacet {active} och arkiverar bara där. Det här är {space}.",
+      "blocked": {
+        "busy": "En agentflik arbetar. Vänta eller avbryt den först.",
+        "asking": "En agent väntar på ditt svar. Svara först.",
+        "running": "En agentsession är öppen. Stäng den eller parkera intenten först.",
+        "elsewhere": "En agent utanför appen har skrivit till den här intenten de senaste 10 minuterna."
+      },
+      "done": "{n, plural, =0 {Ingen intent arkiverades.} one {# intent arkiverad.} other {# intents arkiverade.}}",
+      "refused": "{n, plural, one {# nekades:} other {# nekades:}}",
+      "commit": {
+        "waiting": "De ändrade filerna är committade på main. Planeringssynken pushar committen.",
+        "syncOff": "De ändrade filerna är committade på main. Planeringssynken är av i det här projektet, så committen är lokal tills du pushar den.",
+        "noRemote": "De ändrade filerna är committade på main. Det finns inget fjärrarkiv, så committen är lokal.",
+        "protected": "De ändrade filerna är committade på main. main är skyddad, så committen är lokal tills du för den till origin.",
+        "offline": "De ändrade filerna är committade på main. Du är offline, så committen är lokal så länge.",
+        "notMain": "Filerna är ändrade men inte committade, för main är inte utcheckad. De behöver en commit.",
+        "dirtyIndex": "Filerna är ändrade men inte committade, för intents.json hade redan ändringar utan commit. De behöver en commit.",
+        "refused": "Filerna är ändrade, men git nekade committen: {reason}"
+      },
+      "select": "Markera",
+      "selectEnd": "Sluta markera",
+      "selectAll": "Markera alla",
+      "selectOne": "Markera {name}",
+      "chosen": "{n} markerade"
+    },
     "unknownStatus": "okänd status",
     "doneOfExecuted": "Klara av körda stages",
     "missingInIndex": "Saknas i intents.json",
@@ -239,7 +285,8 @@
     "tabsLabel": "Intent-vyer",
     "mode": {
       "live": "Live",
-      "complete": "Klar"
+      "complete": "Klar",
+      "archived": "Arkiverad"
     },
     "showMore": "Visa mer",
     "showLess": "Visa mindre",
@@ -1589,6 +1636,7 @@
     "ledgerMissing": "{path} finns inte. AI-DLC skriver den när en session har körts på den här maskinen.",
     "ledgerShape": "{path} har oväntad form.",
     "timeout": "timeout efter 10 s",
+    "timeoutAfter": "timeout efter {seconds} s",
     "missingField": "svaret saknar {field}",
     "pluginsFailed": "Plugins kunde inte läsas: {error}",
     "previewFailed": "Förhandsvisningen misslyckades: {error}",

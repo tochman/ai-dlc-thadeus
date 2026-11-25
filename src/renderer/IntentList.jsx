@@ -1,11 +1,14 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { currentTip, formatCost, isInFlight, stagePosition, stageTitle } from './format.js';
+import ArchiveDialog, { ArchiveOutcome, useArchiveRun } from './ArchiveDialog.jsx'; // US-0513
 import ResumeButton from './ResumeButton.jsx';
-import { Dots, ListDrawer, progressStates } from './Lcars.jsx';
+import { Dots, ListDrawer, Pill, progressStates } from './Lcars.jsx';
 import Tooltip from './Tooltip.jsx';
+import { isArchived } from '../shared/intentArchive.js';
 
 const ALL = '';
+const ARCHIVED = 'archived';
 const SORTS = ['date', 'cost', 'name'];
 
 const usdOf = (costs, i) => costs?.[i.dirName]?.total.usd ?? null;
@@ -27,11 +30,12 @@ export function sortIntents(intents, sort, costs) {
 /** A custom plan's own name, else its scope: what the row and the filter show. */
 export const planName = (i) => i.plan ?? i.scope ?? null;
 
+/** US-0513 FR3.2: archived intents show under their own status choice only; "all statuses" leaves them out too. */
 export function filterIntents(intents, { status, scope, query }) {
   const q = query.trim().toLowerCase();
   return intents.filter(
     (i) =>
-      (status === ALL || i.status === status) &&
+      (status === ARCHIVED ? isArchived(i) : !isArchived(i) && (status === ALL || i.status === status)) &&
       (scope === ALL || planName(i) === scope) &&
       (q === '' || i.slug.toLowerCase().includes(q) || (i.request ?? '').toLowerCase().includes(q))
   );
@@ -76,22 +80,125 @@ export function ParkedMark({ stage }) {
   );
 }
 
+/** US-0513 FR2.1: the "Archived" mark of an intent's detail, as text like the parked one. */
+export function ArchivedMark() {
+  const { t } = useTranslation();
+  return (
+    <span className="intent-parked" data-testid="intent-archived">
+      {t('intents.archive.mark')}
+    </span>
+  );
+}
+
 const unique = (values) => [...new Set(values.filter(Boolean))].sort();
 
+/** US-0513 FR4.1: only a complete intent can be archived with others. */
+const canChoose = (i) => i.status === 'complete' && !i.missingOnDisk && !i.missingInIndex;
+
 /**
- * @param {{cost?: {available: boolean, perIntent?: object}|null, projectId?: string}} props cost hidden entirely when
- *   unavailable (FR1.5); projectId lets Resume unpark a parked intent (US-0510 FR4.4); children sit above the filters
+ * US-0513 FR4: Select mode and the run it starts. The choice is a set of dir names, so it outlives a search or a filter;
+ * `chosen` is what is still complete of it, in the list's own order. The run lives here, so a closed dialog does not stop it.
  */
-export default function IntentList({ intents, selected, onSelect, cost, projectId, children }) {
+function useSelection(projectId, sorted) {
+  const [on, setOn] = useState(false);
+  const [names, setNames] = useState(() => new Set());
+  const [open, setOpen] = useState(false); // the confirmation
+  const set = (value) => {
+    setOn(value);
+    setNames(new Set());
+  };
+  const run = useArchiveRun(projectId, () => set(false));
+  return {
+    on,
+    toggle: () => set(!on),
+    chosen: sorted.filter((i) => names.has(i.dirName) && canChoose(i)),
+    has: (i) => names.has(i.dirName),
+    choose: (i, yes) =>
+      setNames((cur) => {
+        const next = new Set(cur);
+        if (yes) next.add(i.dirName);
+        else next.delete(i.dirName);
+        return next;
+      }),
+    chooseAll: (list) => setNames((cur) => new Set([...cur, ...list.filter(canChoose).map((i) => i.dirName)])),
+    run,
+    open,
+    ask: () => {
+      run.reset();
+      setOpen(true);
+    },
+    close: () => setOpen(false)
+  };
+}
+
+/**
+ * US-0513 FR4.1–FR4.4: Select, Select all, how many are chosen and "Archive N"; the run's progress and result once the
+ * dialog is closed. Always mounted, so a run and its dialog outlive the last complete intent; `offered` shows Select.
+ */
+function SelectBar({ selection, offered, visible, rowsRef }) {
+  const { t } = useTranslation();
+  const { run, chosen } = selection;
+  const closedRun = !selection.open && (run.busy || run.result !== null || run.error !== null);
+  return (
+    <>
+      {(offered || selection.on) && (
+        <div className="intent-select">
+          <Pill tone="quiet" aria-pressed={selection.on} onClick={selection.toggle} data-testid="intent-list-select">
+            {selection.on ? t('intents.archive.selectEnd') : t('intents.archive.select')}
+          </Pill>
+          {selection.on && (
+            <>
+              <Pill tone="quiet" onClick={() => selection.chooseAll(visible)} data-testid="intent-list-select-all">
+                {t('intents.archive.selectAll')}
+              </Pill>
+              <span className="muted" role="status" data-testid="intent-list-chosen">
+                {t('intents.archive.chosen', { n: chosen.length })}
+              </span>
+              <Pill tone="primary" disabled={chosen.length === 0 || run.busy} onClick={selection.ask} data-testid="intent-list-archive">
+                {t('intents.archive.confirm', { n: chosen.length })}
+              </Pill>
+            </>
+          )}
+        </div>
+      )}
+      {closedRun && (
+        <div className="intent-select">
+          <ArchiveOutcome run={run} />
+          {!run.busy && (
+            <Pill tone="quiet" onClick={run.reset} data-testid="intent-list-archive-close">
+              {t('common.close')}
+            </Pill>
+          )}
+        </div>
+      )}
+      <ArchiveDialog open={selection.open} intents={chosen} run={run} onClose={selection.close} fallbackFocus={() => rowsRef.current} />
+    </>
+  );
+}
+
+/**
+ * @param {{cost?: {available: boolean, perIntent?: object}|null, projectId?: string, space?: string, activeSpace?: string|null}} props
+ *   cost hidden entirely when unavailable (FR1.5); projectId lets Resume unpark a parked intent (US-0510 FR4.4);
+ *   archiving is offered in AI-DLC's active space only (US-0513); children sit above the filters
+ */
+export default function IntentList({ intents, selected, onSelect, cost, projectId, space, activeSpace, children }) {
   const { t } = useTranslation();
   const [status, setStatus] = useState(ALL);
   const [scope, setScope] = useState(ALL);
   const [query, setQuery] = useState('');
   const [sort, setSort] = useState('date');
-  const statuses = useMemo(() => unique(intents.map((i) => i.status)), [intents]);
+  const statuses = useMemo(() => unique(intents.filter((i) => !isArchived(i)).map((i) => i.status)), [intents]);
   const scopes = useMemo(() => unique(intents.map(planName)), [intents]);
   const costs = cost?.available ? cost.perIntent : null;
-  const visible = sortIntents(filterIntents(intents, { status, scope, query }), sort, costs);
+  const archivedCount = intents.filter(isArchived).length;
+  const count = intents.length - archivedCount; // US-0513 FR3.1
+  // US-0513 FR3.3: a status nothing has any more (the last archived intent came back, or the last complete one went) is
+  // no choice, so the filter itself goes back to all statuses.
+  if (status !== ALL && !(status === ARCHIVED ? archivedCount > 0 : statuses.includes(status))) setStatus(ALL);
+  const sorted = sortIntents(intents, sort, costs);
+  const visible = filterIntents(sorted, { status, scope, query });
+  const rowsRef = useRef(null);
+  const selection = useSelection(projectId, sorted);
   const activeIntent = intents.find((i) => i.active) ?? null;
   const activeDirName = activeIntent?.dirName ?? null;
 
@@ -110,7 +217,7 @@ export default function IntentList({ intents, selected, onSelect, cost, projectI
     <ListDrawer
       viewId="intents"
       title={t('intents.title')}
-      count={intents.length}
+      count={count}
       live={intents.some((i) => isInFlight(i.status))}
       controls={sortSelect}
       className="intent-drawer"
@@ -139,6 +246,7 @@ export default function IntentList({ intents, selected, onSelect, cost, projectI
                 {s}
               </option>
             ))}
+            {archivedCount > 0 && <option value={ARCHIVED}>{t('intents.archive.filter', { n: archivedCount })}</option>}
           </select>
           <select
             className="lcars-select"
@@ -156,9 +264,20 @@ export default function IntentList({ intents, selected, onSelect, cost, projectI
           </select>
         </div>
 
-        <ul className="intent-rows" role="listbox" aria-label={t('intents.title')}>
+        <SelectBar selection={selection} offered={(!activeSpace || activeSpace === space) && intents.some(canChoose)} visible={visible} rowsRef={rowsRef} />
+
+        <ul ref={rowsRef} className="intent-rows" role="listbox" aria-label={t('intents.title')} tabIndex={-1} data-testid="intent-list-rows">
           {visible.map((i) => (
-            <li key={i.dirName}>
+            <li key={i.dirName} className={selection.on && canChoose(i) ? 'has-check' : undefined}>
+              {selection.on && canChoose(i) && (
+                <input
+                  type="checkbox"
+                  checked={selection.has(i)}
+                  aria-label={t('intents.archive.selectOne', { name: i.slug })}
+                  onChange={(e) => selection.choose(i, e.target.checked)}
+                  data-testid="intent-list-check"
+                />
+              )}
               <Tooltip text={i.date} focusText={rowTips(t, i, costs)}>
                 <button
                   role="option"
@@ -219,7 +338,11 @@ export default function IntentList({ intents, selected, onSelect, cost, projectI
             </li>
           ))}
         </ul>
-        {visible.length === 0 && <p className="muted">{t('intents.noMatch')}</p>}
+        {visible.length === 0 && (
+          <p className="muted" data-testid="intent-list-empty">
+            {count === 0 && archivedCount > 0 && status !== ARCHIVED ? t('intents.archive.allArchived', { n: archivedCount }) : t('intents.noMatch')}
+          </p>
+        )}
       </div>
     </ListDrawer>
   );

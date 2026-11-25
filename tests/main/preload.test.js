@@ -128,6 +128,26 @@ describe('preload bridge (US-0506 u1)', () => {
   });
 });
 
+describe('preload bridge (US-0513)', () => {
+  it('has archive, unarchive and the progress; only names and a reason cross the bridge', async () => {
+    const bridge = await load(false);
+    await bridge.archiveIntents('p1', ['a', 'b'], 'done');
+    await bridge.unarchiveIntent('p1', 'a');
+    expect(m.ipcRenderer.invoke.mock.calls).toEqual([
+      ['intents:archive', 'p1', ['a', 'b'], 'done'],
+      ['intents:unarchive', 'p1', 'a']
+    ]);
+    const cb = vi.fn();
+    const off = bridge.onArchiveProgress(cb);
+    const [[channel, listener]] = m.ipcRenderer.on.mock.calls;
+    expect(channel).toBe('intents:archiveProgress');
+    listener({}, { projectId: 'p1', n: 1, total: 2 });
+    expect(cb).toHaveBeenCalledWith({ projectId: 'p1', n: 1, total: 2 });
+    off();
+    expect(m.ipcRenderer.removeListener).toHaveBeenCalledWith('intents:archiveProgress', listener);
+  });
+});
+
 describe('preload bridge (US-0212)', () => {
   it('has the cost rule calls on their channels; only {on, lines} cross the bridge', async () => {
     const bridge = await load(false);

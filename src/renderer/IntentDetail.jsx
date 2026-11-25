@@ -6,7 +6,8 @@ import BoltDag from './BoltDag.jsx';
 import ArtifactReader from './ArtifactReader.jsx';
 import CostTab from './CostTab.jsx';
 import ResumeButton from './ResumeButton.jsx';
-import { ParkedMark } from './IntentList.jsx';
+import ArchiveControls from './ArchiveControls.jsx'; // US-0513
+import { ArchivedMark, ParkedMark } from './IntentList.jsx';
 import TokenView from './TokenView.jsx';
 import TokenDetail from './TokenDetail.jsx';
 import StoryComments from './StoryComments.jsx';
@@ -14,6 +15,7 @@ import { IntentVelocity } from './VelocityView.jsx';
 import { Block, DiagonalFrame, Dots, Pill, useEntrance } from './Lcars.jsx';
 import Tooltip from './Tooltip.jsx';
 import { formatCostPair, isInFlight, shortModel, stagePosition, stageStatusLabel, stageTitle } from './format.js';
+import { isArchived, isFinished } from '../shared/intentArchive.js';
 
 // US-0417: the tiles' tones vary as in the mockup (Block tones; none is the plain slate block).
 const TABS = [
@@ -25,7 +27,7 @@ const TABS = [
   { id: 'comments' }, // US-1201 AC-4
   { id: 'files', tone: 'steel' }
 ];
-const MODE_KEY = { 'in-flight': 'live', complete: 'complete' };
+const MODE_KEY = { 'in-flight': 'live', complete: 'complete', archived: 'archived' };
 
 /** "Pågår · Reverse Engineering", or the current stage's own status when it is not in progress (FR3.3). */
 function currentText(pipeline, slug) {
@@ -218,6 +220,7 @@ export function RenameControl({ projectId, intent }) {
 export default function IntentDetail({
   projectId,
   space = 'default',
+  activeSpace = null,
   detail,
   intent,
   activeDirName,
@@ -236,6 +239,7 @@ export default function IntentDetail({
   const position = stagePosition(state?.currentStage, pipeline.done, pipeline.executed);
   const steps = pipelineSteps(pipeline);
   const now = state?.currentStage ? currentText(pipeline, state.currentStage) : null;
+  const archived = isArchived(intent); // US-0513 FR2.1
   // The token detail replaces the main panel; closing it gives focus back to the small view (US-0208 FR1).
   // US-0022: the header has its own Tokens button for windows where the readout column is hidden; focus goes back to
   // whichever button opened the view.
@@ -324,12 +328,16 @@ export default function IntentDetail({
               {detail.stale && <span className="lcars-chip lcars-chip--warn">{t('intents.stale')}</span>}
             </div>
           </div>
-          {/* US-0037 FR3.1, FR3.6: Park and Resume as one group, the same height, wrapping together. */}
+          {/* US-0513: the actions wrap in a narrow frame. US-0037 FR3.1, FR3.6: Park and Resume as one group, the same
+              height, wrapping together. */}
           {intent && (
             <div className="intent-head-actions" data-testid="intent-head-actions">
               <RenameControl key={`rename:${intent.dirName}`} projectId={projectId} intent={intent} />
-              <ParkControls key={intent.dirName} projectId={projectId} intent={intent} activeDirName={activeDirName} />
-              <ResumeButton projectId={projectId} intent={intent} activeDirName={activeDirName} activeIntent={activeIntent} position={position} />
+              <ArchiveControls key={`archive:${intent.dirName}`} projectId={projectId} intent={intent} space={space} activeSpace={activeSpace} />
+              <div className="intent-head-work">
+                <ParkControls key={intent.dirName} projectId={projectId} intent={intent} activeDirName={activeDirName} />
+                <ResumeButton projectId={projectId} intent={intent} activeDirName={activeDirName} activeIntent={activeIntent} position={position} />
+              </div>
             </div>
           )}
           {/* US-0022: the way into Activity where the frame's arm is hidden (narrow windows). */}
@@ -346,12 +354,15 @@ export default function IntentDetail({
           </Block>
         </header>
 
-        {steps.length > 0 && (
+        {(steps.length > 0 || archived) && (
           <div className="intent-progress" data-testid="intent-progress">
             {position && <span className="intent-progress-step">{t('intents.step', { step: position.step, total: position.total })}</span>}
             <Dots states={steps} />
-            {/* US-0037 FR3.2, FR3.3: a parked intent shows its parked mark here, once, in place of "Pågår · <stage>". */}
-            {intent?.parked ? (
+            {/* US-0037 FR3.2, FR3.3: a parked intent shows its parked mark here, once, in place of "Pågår · <stage>"; an
+                archived one its archived mark (US-0513 FR2.1). */}
+            {archived ? (
+              <ArchivedMark />
+            ) : intent?.parked ? (
               <ParkedMark stage={intent.parkedStage} />
             ) : (
               now && <span className={`intent-progress-now ${now.needsYou ? 'is-you' : ''}`}>{now.text}</span>
@@ -391,7 +402,10 @@ export default function IntentDetail({
           {tab === 'pipeline' && <Pipeline pipeline={pipeline} files={detail.files} hasGraph={!!detail.graph} onOpenFile={showFile} cost={intentCost} />}
           {tab === 'cost' && <CostTab cost={cost} intentCost={intentCost} pipeline={pipeline} models={models} />}
           {tab === 'velocity' && (
-            <IntentVelocity events={detail.events} finished={intent?.status === 'complete' || /^complete/i.test(state?.currentStatus ?? '')} />
+            <IntentVelocity
+              events={detail.events}
+              finished={isFinished({ status: intent?.status, stateStatus: state?.currentStatus, archivedFrom: state?.archivedFrom })}
+            />
           )}
           {tab === 'timeline' && <Timeline events={detail.events} newKeys={newKeys} />}
           {tab === 'units' && <BoltDag dag={detail.graph?.boltDag ?? null} statuses={detail.units} />}

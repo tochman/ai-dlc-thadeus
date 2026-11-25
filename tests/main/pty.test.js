@@ -67,6 +67,19 @@ describe('pty lazy loading (FR2)', () => {
     pty.killAllSessions();
   });
 
+  it('knows whether a project has an agent session open; a shell tab is none (US-0513 FR1.4)', async () => {
+    vi.doMock('node-pty', fakePty);
+    const pty = await import('../../src/main/pty.js');
+    await pty.spawnSession(spawnArgs);
+    expect(pty.hasAgentSession('p1')).toBe(false);
+    const id = await pty.spawnSession({ ...spawnArgs, kind: 'agent', harness: 'claude' });
+    expect(pty.hasAgentSession('p1')).toBe(true);
+    expect(pty.hasAgentSession('p2')).toBe(false);
+    pty.killSession(id);
+    expect(pty.hasAgentSession('p1')).toBe(false);
+    pty.killAllSessions();
+  });
+
   it('does not load node-pty when pty.js is imported', async () => {
     const factory = vi.fn(fakePty);
     vi.doMock('node-pty', factory);

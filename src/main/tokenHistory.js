@@ -4,6 +4,7 @@
 import { promises as fs } from 'node:fs';
 import { insideDir } from './contextSize.js';
 import { MAX_READINGS, readReadings } from './tokenReadings.js';
+import { isArchiveEvent } from '../shared/intentArchive.js';
 
 const count = (n) => (Number.isFinite(n) && n >= 0 ? n : 0);
 const KINDS = ['input', 'output', 'cacheWrite5m', 'cacheWrite1h', 'cacheRead'];
@@ -58,7 +59,7 @@ const CLOSES = new Set(['STAGE_COMPLETED', 'STAGE_SKIPPED', 'STAGE_JUMPED', 'WOR
  * @returns {{start: number, end: number}[]}
  */
 export function stageWindows(events) {
-  const timed = events.filter((e) => Number.isFinite(e.timeMs));
+  const timed = events.filter((e) => Number.isFinite(e.timeMs) && !isArchiveEvent(e)); // US-0513 FR6.1: archiving is no work
   if (!timed.length) return [];
   if (!timed.some((e) => e.event === 'STAGE_STARTED')) return [{ start: timed[0].timeMs, end: timed.at(-1).timeMs }];
   const windows = [];

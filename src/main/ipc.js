@@ -66,6 +66,9 @@ import { syncCycle, watchThadeus } from './thadeusSync.js';
 import { storyIdsIn } from './parsers/features.js';
 import { runFixed } from './exec.js';
 import { park, readParkStatus, unpark, withParkStatus } from './intentPark.js';
+import { archiveIntents, unarchiveIntent } from './intentArchive.js'; // US-0513
+import { beforeArchive, commitArchive } from './archiveCommit.js'; // US-0513
+import { isArchived, isFinished, workBlock } from '../shared/intentArchive.js';
 import { NAMES_PATH, setIntentName } from './intentNames.js';
 import { DELIVERY_DEFAULT } from './parsers/releases.js';
 import { getSetupInfo, runSetup } from './setup.js';
@@ -82,7 +85,7 @@ import { featureWatchPaths, loadFeatures, loadPlanningFeatures, loadStoryLinks }
 import { SPECKIT_WATCH_PATHS, loadSpeckitFeatures } from './speckitFeatures.js';
 import { loadSpeckitRules } from './speckitRules.js'; // US-1404
 import { switchFramework, switchPreview, switchTarget } from './frameworkSwitch.js'; // US-1407
-import { killAllSessions, killProjectSessions, killSession, resizeSession, spawnSession, tapOutput, writeSession } from './pty.js';
+import { hasAgentSession, killAllSessions, killProjectSessions, killSession, resizeSession, spawnSession, tapOutput, writeSession } from './pty.js';
 import { createAgentChannel } from './agentChannel.js';
 import { createHookInstaller, hooksHandlers, statusPusher } from './agentHooks.js';
 import { adapters } from './agentAdapters.js';
@@ -803,6 +806,59 @@ async function planningAction(projectId, action, hashes) {
   return res;
 }
 
+// Archive and unarchive (US-0513). One run at a time per project folder, whichever window started it (FR4.4).
+const archiving = new Set(); // roots with a run going on
+const WORKING_STATES = new Set(['working', 'tool', 'writing', 'thinking']); // agentActivity.js: a chat at work now
+
+/**
+ * US-0513 FR1.4, FR1.5: why `dirName` cannot be archived now, from what main itself sees (agent tabs, waiting
+ * questions, hook activity and a fresh read of the audit's time), or null. Only the active in-flight intent is blocked.
+ */
+async function archiveBlock(projectId, p, space, dirName) {
+  const { intents } = withParkStatus(await loadIntentList(p.root, space, [dirName]), p.parkStatus);
+  const intent = intents.find((i) => i.dirName === dirName);
+  if (!intent?.active || intent.status !== 'in-flight') return null;
+  const running = hasAgentSession(projectId);
+  const code = workBlock({
+    busy: (agentStore?.activity(projectId) ?? []).some((r) => WORKING_STATES.has(r.state)),
+    asking: running && (p.questions ?? []).some((q) => !startedWith.has(q.id)),
+    running,
+    activeIntent: intent,
+    now: Date.now()
+  });
+  return code && t(`intents.archive.blocked.${code}`);
+}
+
+/**
+ * US-0513 FR4.4, FR5: one archive or unarchive run and its commit. `run(space, intents)` gives AI-DLC's answer, with the
+ * changed files and `done`, the dir names that came through. Root, space and the commit's context are taken before the
+ * run, so a project closed or a space changed meanwhile does not break it. A failed commit never hides the run's answer.
+ */
+async function archiveRun(projectId, verb, dirNames, run) {
+  const p = project(projectId);
+  const { root, space } = p;
+  if (archiving.has(root)) return { ok: false, error: t('intents.archive.running') };
+  archiving.add(root);
+  try {
+    const { intents } = await loadIntentList(root, space, dirNames);
+    const ctx = { ...(await planningCtx(projectId)), planningOff: planningOff(await getProjectSettings(root)) };
+    const before = await beforeArchive(ctx, space);
+    const { files = [], done = [], ...res } = await run(p, space, intents);
+    sendListChanged(projectId, p); // the files say what they say, also after a refusal
+    refreshParkStatus(projectId); // not awaited; never throws
+    if (!res.ok) return res;
+    const slugs = done.map((dirName) => intents.find((i) => i.dirName === dirName)?.aidlcSlug ?? dirName);
+    const commit = await commitArchive(ctx, before, { verb, slugs, files }).catch((err) => {
+      console.warn('Arkiveringens commit misslyckades:', err.message);
+      return { state: 'refused', reason: err.message };
+    });
+    if (commit?.state === 'waiting') planning.kick(projectId); // FR5.2: the sync's own push, when the app is idle
+    return { ...res, commit };
+  } finally {
+    archiving.delete(root);
+  }
+}
+
 // Team collaboration (US-1201). The platform of the project's origin remote is read once per opened project; null is
 // plain git. Bitbucket's app password is read here in main only and never crosses the bridge (AC-1).
 const PLATFORM_DEPS = { credentials: loadBitbucket };
@@ -966,6 +1022,31 @@ const handlers = {
     await refreshParkStatus(projectId);
     return res;
   },
+  // US-0513 FR1.3, FR4.3: names and one reason cross the bridge, never a command; every name is checked against the list.
+  'intents:archive': async (_event, projectId, dirNames, reason) => {
+    const valid = Array.isArray(dirNames) && dirNames.length > 0 && dirNames.every((d) => typeof d === 'string');
+    if (!valid || !['string', 'undefined'].includes(typeof (reason ?? undefined)))
+      throw new Error(t('errors.invalidValue', { what: 'intent', value: String(dirNames) }));
+    return archiveRun(projectId, 'archive', dirNames, async (p, space, intents) => {
+      const res = await archiveIntents(p.root, dirNames, reason, {
+        space,
+        intents,
+        blocked: (dirName) => archiveBlock(projectId, p, space, dirName),
+        onProgress: (progress) => {
+          if (!p.sender.isDestroyed()) p.sender.send('intents:archiveProgress', { projectId, ...progress });
+        }
+      });
+      return { ...res, done: res.archived };
+    });
+  },
+  // US-0513 FR2.2
+  'intents:unarchive': async (_event, projectId, dirName) => {
+    if (typeof dirName !== 'string') throw new Error(t('errors.invalidValue', { what: 'intent', value: String(dirName) }));
+    return archiveRun(projectId, 'unarchive', [dirName], async (p, space, intents) => ({
+      ...(await unarchiveIntent(p.root, dirName, { space, intents })),
+      done: [dirName]
+    }));
+  },
   // US-0508 FR1.3, FR1.5: an intent's display name, checked against the space's list; allowed while its work runs.
   'intents:rename': async (_event, projectId, dirName, name) => {
     const p = project(projectId);
@@ -1017,7 +1098,9 @@ const handlers = {
     const p = project(projectId);
     if (space == null) return readReadings(p.root, dirName); // the older caller: a bare array
     const intent = (await loadIntentList(p.root, space, [])).intents.find((i) => i.dirName === dirName); // a real intent folder, never a typed path
-    if (!intent || intent.status === 'in-flight') return { source: 'recorded', readings: await readReadings(p.root, dirName), wallMs: null, gap: null };
+    // US-0513 FR6.1: an archived intent that was not complete may go on later, so it counts as live here, as before.
+    if (!intent || intent.status === 'in-flight' || (isArchived(intent) && !isFinished(intent)))
+      return { source: 'recorded', readings: await readReadings(p.root, dirName), wallMs: null, gap: null };
     try {
       const [cost, events] = await Promise.all([loadCost(p.root), loadAuditEvents(p.root, `${intentsDir(space)}/${dirName}`)]);
       return await loadTokenHistory({ root: p.root, dirName, uuid: intent.uuid, ledger: cost.ledger ?? null, events, projectsDir: CLAUDE_PROJECTS });

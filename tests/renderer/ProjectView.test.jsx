@@ -107,6 +107,15 @@ describe('ProjectView: one view at a time', () => {
     expect(window.bridge.getGitStatus).not.toHaveBeenCalled(); // the closed GitHub view reads nothing
   });
 
+  it('the left arm counts the intents that are not archived (US-0513 FR3.1)', async () => {
+    projectHook.extra = { intents: [...intents, { dirName: '261101-old', slug: 'old', status: 'archived', active: false }] };
+    const onMeta = vi.fn();
+    renderView('intents', { onMeta });
+    await screen.findByTestId('intent-list');
+    projectHook.extra = {};
+    expect(onMeta).toHaveBeenCalledWith('p1', { intentCount: 1 });
+  });
+
   it('GitHub shows only the GitHub panel, open, with the intent list and the cost panel hidden', async () => {
     const { show } = renderView('github');
     await screen.findByTestId('refresh-panel-status');

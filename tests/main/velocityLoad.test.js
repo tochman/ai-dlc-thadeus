@@ -77,4 +77,16 @@ describe('loadVelocity (US-0303 FR3.4, FR4.2, FR4.3)', () => {
     expect(v.sources).toMatchObject({ intents: 3, shards: 2, epicFiles: ['docs/features/epic-03.md'], git: null });
     expect(v.stories.map((s) => s.id)).toEqual(['US-0301']);
   });
+
+  it('an archived intent is finished when it was complete, else neither finished nor running (US-0513 AC6.1.2, AC6.1.3)', async () => {
+    const rowOf = async (over) => {
+      const v = await loadVelocity(root, 'default', [{ ...intents[1], ...over }], features); // an audit without WORKFLOW_COMPLETED
+      return { ...v.intents[0], running: v.project.running };
+    };
+    const archived = { status: 'archived', stateStatus: 'Archived' };
+    expect(await rowOf({ ...archived, archivedFrom: 'Completed' })).toMatchObject({ finished: true, archived: true, running: 0 });
+    expect(await rowOf({ ...archived, archivedFrom: 'Running' })).toMatchObject({ finished: false, archived: true, running: 0 });
+    expect(await rowOf({ status: 'complete' })).toMatchObject({ finished: true, archived: false });
+    expect(await rowOf({})).toMatchObject({ finished: false, archived: false, running: 1 });
+  });
 });

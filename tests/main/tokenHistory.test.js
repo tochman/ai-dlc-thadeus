@@ -124,6 +124,16 @@ describe('stageWindows (FR2.3)', () => {
     ]);
   });
 
+  it('an archive and an unarchive stretch no window, with or without stage events (US-0513 AC6.1.1)', () => {
+    const later = [ev('WORKFLOW_ARCHIVED', 1000), ev('WORKFLOW_UNARCHIVED', 2000)];
+    for (const events of [
+      [ev('STAGE_STARTED', 10), ev('STAGE_AWAITING_APPROVAL', 45)],
+      [ev('WORKFLOW_STARTED', 5), ev('WORKFLOW_COMPLETED', 90)]
+    ]) {
+      expect(stageWindows([...events, ...later])).toEqual(stageWindows(events));
+    }
+  });
+
   it('an audit without stage events gives one first-to-last window; no events give none', () => {
     expect(stageWindows([ev('WORKFLOW_STARTED', 5), ev('SESSION_STARTED', 7), ev('WORKFLOW_COMPLETED', 90)])).toEqual([{ start: 5, end: 90 }]);
     expect(stageWindows([])).toEqual([]);

@@ -24,9 +24,11 @@ export function parkedFromStatus(text) {
 }
 
 /** A refusal's own words: AI-DLC answers on stdout, execFile puts stderr in the message. */
-const reason = (err) => (err.killed ? t('errors.timeout') : String(err.stdout ?? '').trim() || String(err.message ?? err).trim());
+const reason = (err) =>
+  err.killed ? t('errors.timeoutAfter', { seconds: TIMEOUT_MS / 1000 }) : String(err.stdout ?? '').trim() || String(err.message ?? err).trim();
 
-async function aidlc(root, args, exec) {
+/** Runs one `aidlc` command in the project (NFR4); never throws: `{ok}` or `{ok: false, error}`. Also US-0513's. */
+export async function aidlc(root, args, exec) {
   try {
     await runFixed(toolPath('aidlc'), args, { cwd: root, timeout: TIMEOUT_MS, exec });
     return { ok: true };
@@ -64,13 +66,18 @@ export function park(root, { exec = defaultExec } = {}) {
   return aidlc(root, ['engine', 'orchestrate', 'park', '--person-asked'], exec);
 }
 
+/** NFR4, US-0513 NFR1: throws unless `dirName` is a valid name, no option, and one of `known`, the space's own intents. */
+export function assertKnownIntent(dirName, known) {
+  assertName(dirName, 'intent');
+  if (dirName.startsWith('-') || !Array.isArray(known) || !known.includes(dirName)) throw new Error(t('errors.invalidName', { what: 'intent', name: dirName }));
+}
+
 /**
  * US-0510 FR4.3, FR4.5: unparks `dirName`, first making it the active intent when it is not. Throws before running
  * anything when the name is not valid or not in `known` (NFR4); otherwise `{ok, switched}` or `{ok: false, error, switched}`.
  */
 export async function unpark(root, dirName, { activeDirName, known, exec = defaultExec } = {}) {
-  assertName(dirName, 'intent');
-  if (dirName.startsWith('-') || !Array.isArray(known) || !known.includes(dirName)) throw new Error(t('errors.invalidName', { what: 'intent', name: dirName }));
+  assertKnownIntent(dirName, known);
   let switched = false;
   if (dirName !== activeDirName) {
     const res = await aidlc(root, ['intent', dirName], exec);
