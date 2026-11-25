@@ -161,7 +161,8 @@ export async function loadIntentList(root, space, onlyDirs) {
           extra = { ...extra, error: err.message, stale: !!extra };
         }
       }
-      const row = { ...intent, ...extra, scope: intent.scope ?? extra?.stateScope ?? null };
+      // US-0509 FR4.2: AI-DLC runs on the state file's scope and writes it first, so it is the plan shown.
+      const row = { ...intent, ...extra, scope: extra?.stateScope ?? intent.scope ?? null };
       // US-0513 FR1.6, FR3.1: the one place that says archived, so every reader of `status` and `active` follows. An
       // archived intent is never active (also when active-intent still names it) and not parked while it is archived.
       return isArchived(row) ? { ...row, status: 'archived', active: false, parked: false } : row;

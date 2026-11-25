@@ -5,6 +5,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { harnessCommand } from '../shared/harnesses.js';
+import { quoted } from '../shared/planChange.js'; // US-0509 NFR1: no control character reaches the agent line
 import { validPlanName } from '../shared/planName.js';
 import { ChangePanel } from './ConfigEdit.jsx';
 import { useTerminal } from './TerminalContext.jsx';
@@ -13,11 +14,6 @@ const DEPTHS = ['Minimal', 'Standard', 'Comprehensive'];
 const DEFAULT_KEYS = ['review_cap', 'sensors', 'learnings', 'summary_confirmation', 'plan_approval', 'guard_policy', 'collaborators'];
 const SAVE_COMMAND = ['aidlc', 'engine', 'scope', 'save', '--name']; // shown before main runs it
 const errorText = (err) => String(err?.message ?? err).replace(/^Error invoking remote method '[^']+': (Error: )?/, '');
-
-/** The person's text as one quoted argument on the agent line: one line, `\` and `"` escaped. */
-export function quoted(text) {
-  return `"${String(text).replace(/\s+/g, ' ').trim().replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`;
-}
 
 /** One text field with a send button; `check` returns an error text or null and disables the button. */
 function Ask({ label, check, button, onSend, onCancel, testid }) {

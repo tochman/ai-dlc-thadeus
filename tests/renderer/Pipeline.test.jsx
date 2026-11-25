@@ -2,7 +2,7 @@
 // US-0028: the runtime-graph note (FR1, FR2, FR4).
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
-import Pipeline, { levelBar } from '../../src/renderer/Pipeline.jsx';
+import Pipeline, { levelBar, pipelineSteps } from '../../src/renderer/Pipeline.jsx';
 
 afterEach(cleanup);
 
@@ -109,6 +109,41 @@ describe('Pipeline cards', () => {
     expect(button.getAttribute('aria-expanded')).toBe('true');
     fireEvent.click(screen.getByTestId('pipeline-stage-file'));
     expect(onOpenFile).toHaveBeenCalledWith('construction/code-generation/plan.md');
+  });
+});
+
+describe('after a plan switch (US-0509 FR4.1)', () => {
+  const SWITCHED = {
+    phases: [
+      {
+        name: 'inception',
+        stages: [
+          stageOf('user-stories', 'done', { mode: 'SKIP', behind: true }), // done, and the new plan drops it
+          stageOf('domain-design', 'not-started', { behind: true }), // the new plan has it, and the work has passed it
+          stageOf('refined-mockups', 'not-started', { mode: 'SKIP', behind: true })
+        ]
+      },
+      { name: 'construction', stages: [stageOf('code-generation', 'in-progress', { current: true }), stageOf('build-and-test', 'not-started')] }
+    ]
+  };
+  const bodyOf = (slug) =>
+    screen
+      .getAllByTestId('pipeline-stage')
+      .find((b) => within(b).queryByText(slug))
+      ?.querySelector('.lcars-card-body').textContent;
+
+  it('shows a done stage the plan no longer has as done, and one the work has passed as "Körs inte"', () => {
+    render(<Pipeline pipeline={SWITCHED} files={[]} hasGraph onOpenFile={vi.fn()} cost={null} />);
+    expect(bodyOf('user-stories')).toBe('01 · Klar');
+    expect(bodyOf('code-generation')).toMatch(/^02 · /);
+    expect(bodyOf('domain-design')).toBeUndefined(); // with the others that do not run, behind "Visa"
+    fireEvent.click(screen.getByRole('button', { name: 'Visa' }));
+    expect(bodyOf('domain-design')).toBe('— · Körs inte');
+    expect(bodyOf('refined-mockups')).toBe('— · Ingår inte');
+  });
+
+  it('the dots agree: one per stage that counts, the done one included', () => {
+    expect(pipelineSteps(SWITCHED)).toEqual(['done', 'current', 'todo']);
   });
 });
 

@@ -13,6 +13,22 @@ import { stageTitle } from './format.js';
 const SAFE_DIR_NAME = /^[A-Za-z0-9][A-Za-z0-9._-]*$/;
 export { ELSEWHERE_MS };
 
+/** The intent switch is submitted with Enter, so the folder name must not carry anything a terminal would act on. US-0509 FR3.2. */
+export const unsafeNameReason = (dirName) => (SAFE_DIR_NAME.test(dirName) ? null : translate('intents.resume.invalidName', { name: dirName }));
+
+/** The last agent tab's harness, as the texts name it. */
+const harnessNameOf = (terminal) => terminal.harness?.name ?? translate('terminal.agent');
+
+/** Why nothing can be typed: the harness table lacks the AI-DLC command, or detection runs (US-0801 FR4.2, US-0509 FR1.5). */
+export function missingCommandReason(terminal) {
+  if (harnessCommand(terminal.harness)) return null;
+  return terminal.harness ? translate('terminal.noCommand', { harness: harnessNameOf(terminal) }) : translate('terminal.checking');
+}
+
+/** The text for a block of the shared rule on the active intent's work (US-0501 FR2.4, US-0509 FR1.3, FR1.4). */
+export const blockReason = (terminal, block, activeIntent) =>
+  block && translate(`intents.resume.${block}`, { harness: harnessNameOf(terminal), intent: activeIntent?.slug ?? activeIntent?.dirName ?? '' });
+
 /** US-0513 FR1.4: the rule Resume and Archive share, asked of the project's agent tabs as they are now. */
 export const workBlockOf = (terminal, activeIntent) =>
   workBlock({
@@ -44,10 +60,9 @@ export default function ResumeButton({ projectId, intent, activeDirName, activeI
   const terminal = useTerminal();
   const [message, setMessage] = useState(null);
   if (!terminal || intent?.status !== 'in-flight') return null;
-  const harnessName = terminal.harness?.name ?? t('terminal.agent');
+  const harnessName = harnessNameOf(terminal);
   const command = harnessCommand(terminal.harness); // the harness's AI-DLC command (US-0801 FR4.1)
-  // Nothing is typed when the table lacks the command, or while detection runs (FR4.2).
-  const missing = command ? null : terminal.harness ? t('terminal.noCommand', { harness: harnessName }) : t('terminal.checking');
+  const missing = missingCommandReason(terminal);
   // Only an idle agent can pick up the work. While any agent tab works ("Arbetar"), or one waits on the person's answer,
   // the work is already running: the button waits, with the reason (FR2.4, EPIC-00 US-0005).
   // US-0510 FR4.4: a parked intent is unparked through main first, which needs the project.
@@ -57,8 +72,7 @@ export default function ResumeButton({ projectId, intent, activeDirName, activeI
   // A live agent session with the active intent in flight is running the work, even while it is quiet (waiting on a
   // subagent, between steps). Every Resume in the project waits: a switch typed into it is wrong too (US-0007).
   function workingReason() {
-    const block = workBlockOf(terminal, activeIntent);
-    return block && t(`intents.resume.${block}`, { harness: harnessName, intent: activeIntent?.slug ?? activeIntent?.dirName ?? '' });
+    return blockReason(terminal, workBlockOf(terminal, activeIntent), activeIntent);
   }
 
   function resume(e) {
@@ -69,8 +83,8 @@ export default function ResumeButton({ projectId, intent, activeDirName, activeI
     setMessage(null);
     if (intent.parked) return unparkThenResume();
     if (intent.dirName === activeDirName) return terminal.type('agent', command, { submit: false });
-    // The name is submitted with Enter, so it must not carry anything a terminal would act on.
-    if (!SAFE_DIR_NAME.test(intent.dirName)) return setMessage(t('intents.resume.invalidName', { name: intent.dirName }));
+    const unsafe = unsafeNameReason(intent.dirName);
+    if (unsafe) return setMessage(unsafe);
     return terminal.sequence('agent', [
       { text: `${command} intent ${intent.dirName}`, submit: true },
       { text: command, submit: false }

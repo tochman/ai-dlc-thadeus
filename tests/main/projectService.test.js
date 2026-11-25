@@ -295,6 +295,15 @@ describe('projectService archived intents (US-0513)', () => {
     expect(await readsOf('archived')).toEqual(plain);
   });
 
+  it('the list’s scope is the state file’s, and the index’s when there is no state file (US-0509 FR4.2)', async () => {
+    const root = await projectWith({ '261120-a': { row: 'in-flight', state: 'Running' }, '261120-b': { row: 'in-flight', state: 'Running' } });
+    await fs.writeFile(path.join(root, INTENTS, '261120-a/aidlc-state.md'), `## Project Information\n- **Scope**: express\n\n${stateText('Running')}`);
+    await fs.rm(path.join(root, INTENTS, '261120-b/aidlc-state.md'));
+    const list = await byName(root);
+    expect(list['261120-a']).toMatchObject({ scope: 'express', plan: null }); // intents.json still says feature
+    expect(list['261120-b'].scope).toBe('feature');
+  });
+
   it('reads the active space that AI-DLC is in (Constraints)', async () => {
     const root = await projectWith({ '261120-a': { row: 'complete', state: 'Completed' } });
     expect(await readActiveSpace(root)).toBe('default');
