@@ -8,9 +8,9 @@
 >
 > Decided 2026-11-19: a project follows **one** framework, AI-DLC or Spec Kit, never both. The shared shell (the LCARS frame, the agent terminal, dialogs and hooks, the editor, git and the platform connection, the Features view, project settings and the token log) stays the same. Each framework gets its own set of views. Where the two have the same kind of thing (a list of work, its detail, its rules), it sits in the same place in the left arm but has its own components, so no component has to know both frameworks. The app also runs the `/speckit-*` commands, as it does `/aidlc`. The person chooses the framework when a project is opened, and can switch a project from one to the other later.
 
-**Stories:** US-1401–US-1410
+**Stories:** US-1401–US-1411
 
-**Status (2026-11-25):** ✅ US-1401, US-1402, US-1403, US-1404, US-1405, US-1406, US-1407, US-1408, US-1409, US-1410 released in v0.3.0.
+**Status (2026-11-25):** ✅ US-1401, US-1402, US-1403, US-1404, US-1405, US-1406, US-1407, US-1408, US-1409, US-1410 released in v0.3.0. 📋 US-1411 planned.
 
 ---
 
@@ -149,3 +149,20 @@
   - [x] **Given** nothing can be told, **then** they say so rather than show an empty or wrong state.
   - [x] Every text goes through `t()` in Swedish and English, in the LCARS look.
 - **Dependencies:** US-1401, US-1402
+
+**US-1411: Archive and unarchive a Spec Kit feature in the app** 📋 Planned
+- As a **developer with many Spec Kit features**, in order to **see only the features that still matter**, I would like to **archive a feature in the app and bring it back when I need it**.
+- **Epic:** EPIC-14
+- **Priority:** Low
+- **Complexity:** Small
+- **Background:** Asked for 2026-11-25 with US-0513. Spec Kit has no archive command and no state file, so a feature folder stays in the list for as long as it exists. Archiving here is therefore only the app's own mark: it hides the feature, and Spec Kit does not know about it.
+- **Acceptance Criteria:**
+  - [ ] **Given** a feature that is not the active one, **then** its detail offers "Archive". The confirmation says that only the app hides it, that its files stay where they are, and, when tasks are open, how many.
+  - [ ] **Given** the feature named in `.specify/feature.json`, **then** Archive is unavailable and says why. An archived feature that becomes active shows again.
+  - [ ] The mark is kept in the app's own file under `.thadeus/`, in the repository, so it follows to every clone. Nothing is written in `.specify/` or `specs/`.
+  - [ ] **Given** archived features, **then** the list leaves them out, and says how many there are with a "Show archived" choice. Shown, they carry an "Archived" mark, offer "Unarchive" and no next command.
+  - [ ] **Given** an archived feature whose folder is gone, **then** its mark is ignored and nothing fails.
+  - [ ] An archived feature's files and token log still open, and its cost still counts in the totals.
+  - [ ] Every text goes through `t()` in Swedish and English, in the LCARS look; the buttons carry `data-testid`s and work from the keyboard.
+- **Notes:** The community extension `archive` (v1.4.0, `stn1slv/spec-kit-archive`) does something else: it merges finished features into the project memory. If a project has it installed, US-1403 already offers its commands.
+- **Dependencies:** US-1402, US-1403, US-1409, US-0513
