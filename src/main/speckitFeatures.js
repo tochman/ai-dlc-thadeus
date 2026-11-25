@@ -1,15 +1,18 @@
 // US-1402 FR6: a Spec Kit project's features, read from `specs/*`, `.specify/feature.json` and each `tasks.md`
 // (contract C5). Read-only (BR6.6, NFR3.1): this module only calls readFile, readdir, lstat, stat and realpath.
 // Paths stay in the project (NFR3.3, NFR3.4): linked entries are skipped, and feature.json is real-path checked.
+// US-1411 FR2.3, FR4: a feature with the app's archive mark is `archived`, unless it is the active one.
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import { parseTasks } from './parsers/speckitTasks.js';
+import { readMarks } from './speckitArchive.js';
 import { t } from '../shared/i18n.js';
 
 export const MAX_READ_BYTES = 1024 * 1024; // NFR5.1: larger files go in errors, unread
 /**
  * BR6.7: what the Spec Kit watcher follows; fixed, so a new feature folder is seen without a resync. US-1404 BR7.8 adds
- * the constitution, extensions.yml and the extension folders, so the rules section refreshes too.
+ * the constitution, extensions.yml and the extension folders, so the rules section refreshes too. US-1411 FR3.6 adds the
+ * archive marks, so a pull or another window that changes them shows.
  */
 export const SPECKIT_WATCH_PATHS = [
   'specs/**',
@@ -17,7 +20,8 @@ export const SPECKIT_WATCH_PATHS = [
   '.specify/init-options.json',
   '.specify/memory/constitution.md',
   '.specify/extensions.yml',
-  '.specify/extensions/**'
+  '.specify/extensions/**',
+  '.thadeus/archived/**'
 ];
 const FEATURE_JSON = '.specify/feature.json';
 const VERSION_FILES = [
@@ -178,25 +182,43 @@ async function listFeatureDirs(root, errors) {
 }
 
 /**
+ * US-1411 FR1.4, NFR1 (contract C5): the listed feature folders and the active one, without reading the features;
+ * failed reads are added to `errors`.
+ * @returns {Promise<{dirs: string[], active: string|null}>}
+ */
+export async function listedFeatures(root, errors = []) {
+  const realRoot = await fs.realpath(root);
+  const dirs = await listFeatureDirs(root, errors);
+  return { dirs, active: await readActive(root, realRoot, dirs, errors) };
+}
+
+/**
  * US-1409 BR2.1 (contract C5): only the active feature folder, as loadSpeckitFeatures resolves it; null when
  * feature.json is missing, unreadable, linked or names a folder that is not listed under `specs/`.
  */
 export async function activeFeature(root) {
-  const errors = [];
-  return readActive(root, await fs.realpath(root), await listFeatureDirs(root, errors), errors);
+  return (await listedFeatures(root)).active;
 }
 
 /**
- * US-1402 FR6 (contract C5): `{ version: { found, supported }, features: [...], active, errors: [{ path, reason }] }`.
- * Every failed read goes in errors and never hides the rest (BR6.10). Nothing is written (BR6.6).
+ * US-1402 FR6 (contract C5): `{ version: { found, supported }, features: [...], active, activeMarked, errors: [{ path,
+ * reason }] }`. Every failed read goes in errors and never hides the rest (BR6.10). Nothing is written (BR6.6).
+ * US-1411 FR2.3: `activeMarked` is true when the active feature has an archive mark; the feature itself is not `archived`.
  * @param {string} root the project root
  */
 export async function loadSpeckitFeatures(root) {
   const errors = [];
-  const realRoot = await fs.realpath(root);
   const version = await readVersion(root, errors);
-  const dirs = await listFeatureDirs(root, errors);
-  const active = await readActive(root, realRoot, dirs, errors);
+  const { dirs, active } = await listedFeatures(root, errors);
+  const { marked, error } = await readMarks(root);
+  if (error) errors.push(error);
+  const isMarked = (dir) => marked.has(dir.normalize('NFC'));
   const read = await Promise.all(dirs.map((d) => readFeature(root, d, active)));
-  return { version, features: read.map((r) => r.feature), active, errors: [...errors, ...read.flatMap((r) => r.errors)] };
+  return {
+    version,
+    features: read.map(({ feature }) => ({ ...feature, archived: !feature.active && isMarked(feature.dir) })),
+    active,
+    activeMarked: active !== null && isMarked(active),
+    errors: [...errors, ...read.flatMap((r) => r.errors)]
+  };
 }

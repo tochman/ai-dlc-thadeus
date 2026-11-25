@@ -135,6 +135,46 @@ test('L4: there is a gap below Commands and below the next command', async () =>
   expect.soft(flow.top - next.bottom, 'below the next command').toBeGreaterThan(0);
 });
 
+test('US-1411: from the keyboard, a feature is archived, found under the filter and unarchived, and focus goes to the list', async () => {
+  const page = await open();
+  const mark = path.join(project(), '.thadeus/archived/001-notes.json');
+  const rows = page.getByTestId('speckit-features-row');
+  const list = page.getByTestId('speckit-features-list');
+  await rows.filter({ hasText: 'notes' }).focus();
+  await page.keyboard.press('Enter');
+  await page.getByTestId('speckit-archive-open').focus();
+  await page.keyboard.press('Enter');
+  await expect(page.getByTestId('speckit-archive-dialog')).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(page.getByTestId('speckit-archive-dialog')).toBeHidden();
+  await expect(page.getByTestId('speckit-archive-open')).toBeFocused();
+  await page.keyboard.press('Enter');
+  await page.getByTestId('speckit-archive-confirm').focus();
+  await page.keyboard.press('Enter');
+  await expect(rows).toHaveCount(1);
+  await expect(list).toBeFocused();
+  await expect(page.locator('.arm-foot-label')).toHaveText('1 feature');
+  expect(await fs.readFile(mark, 'utf8')).toBe('{"version": 1}\n');
+
+  await page.getByTestId('speckit-features-filter').selectOption('archived');
+  const tag = page.getByTestId('speckit-features-archived');
+  await expect(tag).toHaveCount(1);
+  expect.soft(await lines(tag), 'archived mark').toBe(1);
+  const title = await box(page.locator('.speckit-feature-head .section-title'));
+  const pill = await box(page.getByTestId('speckit-archive-remove'));
+  expect.soft(pill.left, 'Unarchive beside the title').toBeGreaterThanOrEqual(title.right);
+
+  await page.getByTestId('speckit-archive-remove').focus();
+  await page.keyboard.press('Enter');
+  await expect(rows).toHaveCount(2);
+  await expect(page.getByTestId('speckit-features-filter')).toHaveCount(0);
+  await expect(list).toBeFocused();
+  await expect(fs.access(mark)).rejects.toThrow();
+
+  await write(project(), { '.thadeus/archived/001-notes.json': '{"version": 1}\n' }); // as a pull does
+  await expect(rows).toHaveCount(1);
+});
+
 test('L5: the two options of the first-open choice stand side by side at 1280 and 1920', async () => {
   const page = await open({ choice: true });
   for (const width of [1280, 1920]) {

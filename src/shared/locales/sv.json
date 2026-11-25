@@ -56,6 +56,7 @@
       "tooLarge": "Större än 1 MB, så den läses inte.",
       "notUtf8": "Inte giltig UTF-8-text.",
       "notFile": "Inte en fil, så den läses inte.",
+      "notFolder": "Inte en mapp, så den läses inte.",
       "yaml": "Inte giltig YAML: {error}",
       "notMapping": "Översta nivån är inte en lista med nycklar, så inget i den läses.",
       "noManifest": "Saknas, så tilläggets kommandon är okända.",
@@ -85,6 +86,17 @@
       "round": "Varv {round}",
       "noPhase": "Före första fasen",
       "files": "Filer"
+    },
+    "archive": {
+      "title": "Arkivera feature",
+      "hidden": "Den döljs bara i THADEUS. Featurens filer ligger kvar där de är, och du kan avarkivera den när du vill.",
+      "openTasks": "{n, plural, one {# uppgift är inte klar.} other {# uppgifter är inte klara.}}",
+      "active": "Det här är den aktiva featuren, så den kan inte arkiveras.",
+      "notListed": "Featuren finns inte längre bland mapparna under specs/.",
+      "notSpeckit": "Projektet följer inte Spec Kit, så det har inga features att arkivera.",
+      "filterLabel": "Vilka features som visas",
+      "all": "Alla features",
+      "allArchived": "Alla features är arkiverade. Välj \"Arkiverade ({n})\" i filtret för att se dem."
     },
     "rules": {
       "constitution": "Konstitution",

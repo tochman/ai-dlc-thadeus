@@ -148,6 +148,18 @@ describe('preload bridge (US-0513)', () => {
   });
 });
 
+describe('preload bridge (US-1411)', () => {
+  it('has archive and unarchive of a Spec Kit feature; only the project and the folder name cross the bridge', async () => {
+    const bridge = await load(false);
+    await bridge.archiveSpeckitFeature('p1', '001-a');
+    await bridge.unarchiveSpeckitFeature('p1', '001-a');
+    expect(m.ipcRenderer.invoke.mock.calls).toEqual([
+      ['speckit:archive', 'p1', '001-a'],
+      ['speckit:unarchive', 'p1', '001-a']
+    ]);
+  });
+});
+
 describe('preload bridge (US-0212)', () => {
   it('has the cost rule calls on their channels; only {on, lines} cross the bridge', async () => {
     const bridge = await load(false);

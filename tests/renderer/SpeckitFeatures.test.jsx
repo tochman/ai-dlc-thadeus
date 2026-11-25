@@ -215,6 +215,115 @@ describe('SpeckitFeatures: empty state, version and errors (AC4.1.6, BR6.8–BR6
   });
 });
 
+// US-1411 FR2.1, FR3.1–FR3.6, FR5.1: archived features in the list and the detail.
+describe('SpeckitFeatures: archived features (US-1411)', () => {
+  const hidden = { ...search, archived: true, files: ['specs/002-search/spec.md'] };
+  const tags = { ...search, dir: '003-tags', number: '003', name: 'tags' };
+  const filter = () => screen.queryByTestId('speckit-features-filter');
+  const choose = (value) => fireEvent.change(filter(), { target: { value } });
+  const names = () => screen.queryAllByTestId('speckit-features-row').map((r) => r.querySelector('span').textContent);
+  const push = () => act(async () => changed({ projectId: 'p1', paths: ['.thadeus/archived/x.json'] }));
+  const serve = (...features) => window.bridge.speckitFeatures.mockResolvedValue(result({ features, active: features.find((f) => f.active)?.dir ?? null }));
+  async function show(...features) {
+    serve(...features);
+    const onMeta = vi.fn();
+    render(<SpeckitFeatures projectId="p1" onMeta={onMeta} />);
+    await screen.findByTestId('speckit-features-list');
+    return onMeta;
+  }
+
+  it('leaves them out of the list and the count, and shows no filter when there are none', async () => {
+    const onMeta = await show(albums, hidden, tags);
+    expect(names()).toEqual(['albums', 'tags']);
+    expect(onMeta).toHaveBeenLastCalledWith('p1', { featureCount: 2 });
+    serve(albums, tags);
+    await push();
+    expect(filter()).toBeNull();
+  });
+
+  it('shows them alone under "Archived (N)", each with its mark as text', async () => {
+    await show(albums, hidden, { ...tags, archived: true });
+    expect([...filter().options].map((o) => o.textContent)).toEqual([t('speckit.archive.all'), t('intents.archive.filter', { n: 2 })]);
+    expect(screen.queryByTestId('speckit-features-archived')).toBeNull();
+    choose('archived');
+    expect(names()).toEqual(['search', 'tags']);
+    expect(screen.getAllByTestId('speckit-features-archived').map((m) => m.textContent)).toEqual(Array(2).fill(t('intents.archive.mark')));
+    expect(selectedRow()).toBeUndefined(); // the active feature's detail stays open meanwhile
+    expect(screen.getByTestId('speckit-feature-detail').textContent).toContain('albums');
+  });
+
+  it('opens one with its flow, tasks, files and mark: no Archive, next command or note on the active one', async () => {
+    await show(albums, hidden);
+    choose('archived');
+    fireEvent.click(rows()[0]);
+    expect(screen.getByTestId('speckit-feature-archived').textContent).toBe(t('intents.archive.mark'));
+    expect(screen.getByTestId('speckit-archive-remove')).toBeTruthy();
+    for (const id of ['speckit-archive-open', 'speckit-commands-next', 'speckit-commands-not-active']) expect(screen.queryByTestId(id)).toBeNull();
+    expect(screen.getByTestId('speckit-feature-flow')).toBeTruthy();
+    expect(screen.getByTestId('speckit-feature-tasks')).toBeTruthy();
+    fireEvent.click(screen.getByTestId('speckit-feature-file'));
+    await waitFor(() => expect(window.bridge.readFile).toHaveBeenCalledWith('p1', 'specs/002-search/spec.md'));
+  });
+
+  it('archives the selected feature with its detail kept open, reads again, and gives the list focus', async () => {
+    window.bridge.archiveSpeckitFeature = vi.fn(async () => {
+      serve(albums, hidden);
+      return { ok: true };
+    });
+    const onMeta = await show(albums, search);
+    fireEvent.click(rows()[1]);
+    screen.getByTestId('speckit-archive-open').focus();
+    fireEvent.click(screen.getByTestId('speckit-archive-open'));
+    await act(async () => fireEvent.click(screen.getByTestId('speckit-archive-confirm')));
+    await waitFor(() => expect(names()).toEqual(['albums']));
+    expect(window.bridge.archiveSpeckitFeature).toHaveBeenCalledWith('p1', '002-search');
+    expect(onMeta).toHaveBeenLastCalledWith('p1', { featureCount: 1 });
+    expect(screen.getByTestId('speckit-feature-detail').textContent).toContain('search');
+    expect(screen.getByTestId('speckit-archive-remove')).toBeTruthy();
+    expect(document.activeElement).toBe(screen.getByTestId('speckit-features-list'));
+  });
+
+  it('goes back to all features when the last archived one comes back, with its detail kept open', async () => {
+    window.bridge.unarchiveSpeckitFeature = vi.fn(async () => {
+      serve(albums, search);
+      return { ok: true };
+    });
+    await show(albums, hidden);
+    choose('archived');
+    fireEvent.click(rows()[0]);
+    await act(async () => fireEvent.click(screen.getByTestId('speckit-archive-remove')));
+    await waitFor(() => expect(names()).toEqual(['albums', 'search']));
+    expect(filter()).toBeNull();
+    expect(selectedRow().textContent).toContain('search');
+    serve(albums, hidden); // archived again elsewhere: the filter is still on all features
+    await push();
+    expect(names()).toEqual(['albums']);
+    expect(filter().value).toBe('');
+  });
+
+  it('says that every feature is archived and points at the filter, instead of "no features yet"', async () => {
+    const onMeta = await show(hidden, { ...tags, archived: true });
+    expect(screen.getByTestId('speckit-features-all-archived').textContent).toBe(t('speckit.archive.allArchived', { n: 2 }));
+    expect(screen.queryByTestId('speckit-features-empty')).toBeNull();
+    expect(screen.queryByTestId('speckit-feature-detail')).toBeNull();
+    expect(onMeta).toHaveBeenLastCalledWith('p1', { featureCount: 0 });
+    choose('archived');
+    expect(screen.queryByTestId('speckit-features-all-archived')).toBeNull();
+    expect(names()).toEqual(['search', 'tags']);
+  });
+
+  it('follows a mark that a pull or another window changes, and the active feature shows as active', async () => {
+    await show(albums, search);
+    serve(albums, hidden);
+    await push();
+    expect(names()).toEqual(['albums']);
+    serve({ ...albums, active: false }, { ...search, active: true });
+    await push();
+    expect(names()).toEqual(['albums', 'search']);
+    expect(within(rows()[1]).getByTestId('speckit-features-active')).toBeTruthy();
+  });
+});
+
 const allDone = {
   ...albums,
   flow: { ...albums.flow, implement: true, converge: true },

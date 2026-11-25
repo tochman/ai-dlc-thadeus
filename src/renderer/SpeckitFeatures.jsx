@@ -2,12 +2,16 @@
 // `speckit:changed` push (NFR7.4), shows the version warning (BR6.9), the list with the active mark (BR6.1, BR6.2)
 // or the empty state (BR6.8), the selected feature's detail, its file read-only (NFR3.2), and what could not be read (BR6.10).
 // US-1403 FR5.2: the quick commands above the list, also in the empty state, where specify starts the first feature (BR5.9).
+// US-1411 FR3: the list and the count leave archived features out; the "Archived (N)" filter shows them alone.
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { FileView } from './ArtifactReader.jsx';
+import SpeckitArchive from './SpeckitArchive.jsx';
 import SpeckitFeatureDetail from './SpeckitFeatureDetail.jsx';
 import SpeckitQuickCommands from './SpeckitQuickCommands.jsx';
 
+const ALL = '';
+const ARCHIVED = 'archived';
 const errorText = (err) => String(err?.message ?? err).replace(/^Error invoking remote method '[^']+': (Error: )?/, '');
 
 /** @param {{projectId: string, onMeta?: (projectId: string, partial: object) => void}} props */
@@ -17,6 +21,8 @@ export default function SpeckitFeatures({ projectId, onMeta }) {
   const [error, setError] = useState(null);
   const [selected, setSelected] = useState(null);
   const [openFile, setOpenFile] = useState(null);
+  const [filter, setFilter] = useState(ALL);
+  const listRef = useRef(null);
   const alive = useRef(true);
 
   const load = useCallback(
@@ -48,8 +54,14 @@ export default function SpeckitFeatures({ projectId, onMeta }) {
     };
   }, [projectId, load]);
 
-  // US-0048 L1: "N features" at the foot of the left arm; a failed read keeps the last count.
-  const featureCount = result?.features.length;
+  const archived = result?.features.filter((f) => f.archived) ?? [];
+  if (filter === ARCHIVED && archived.length === 0) setFilter(ALL); // US-1411 FR3.3: the last one came back
+  const visible = filter === ARCHIVED ? archived : (result?.features.filter((f) => !f.archived) ?? []);
+  const getList = useCallback(() => listRef.current, []);
+
+  // US-0048 L1: "N features" at the foot of the left arm, without the archived ones (US-1411 FR3.1); a failed read keeps
+  // the last count.
+  const featureCount = result ? result.features.length - archived.length : undefined;
   useEffect(() => {
     if (featureCount !== undefined) onMeta?.(projectId, { featureCount });
   }, [projectId, featureCount, onMeta]);
@@ -88,8 +100,27 @@ export default function SpeckitFeatures({ projectId, onMeta }) {
         <div className="speckit-layout">
           <nav aria-label={t('speckit.features.title')}>
             <h3 className="section-title">{t('speckit.features.title')}</h3>
-            <ul className="speckit-list">
-              {result.features.map((f) => (
+            {archived.length > 0 && (
+              <div className="filters">
+                <select
+                  className="lcars-select"
+                  aria-label={t('speckit.archive.filterLabel')}
+                  value={filter}
+                  onChange={(e) => setFilter(e.target.value)}
+                  data-testid="speckit-features-filter"
+                >
+                  <option value={ALL}>{t('speckit.archive.all')}</option>
+                  <option value={ARCHIVED}>{t('intents.archive.filter', { n: archived.length })}</option>
+                </select>
+              </div>
+            )}
+            {visible.length === 0 && (
+              <p className="muted" data-testid="speckit-features-all-archived">
+                {t('speckit.archive.allArchived', { n: archived.length })}
+              </p>
+            )}
+            <ul ref={listRef} className="speckit-list" tabIndex={-1} aria-label={t('speckit.features.title')} data-testid="speckit-features-list">
+              {visible.map((f) => (
                 <li key={f.dir}>
                   <button
                     className={`link ${selected === f.dir ? 'is-selected' : ''}`}
@@ -103,6 +134,11 @@ export default function SpeckitFeatures({ projectId, onMeta }) {
                         {t('speckit.features.active')}
                       </span>
                     )}
+                    {f.archived && (
+                      <span className="intent-parked" data-testid="speckit-features-archived">
+                        {t('intents.archive.mark')}
+                      </span>
+                    )}
                   </button>
                 </li>
               ))}
@@ -110,7 +146,13 @@ export default function SpeckitFeatures({ projectId, onMeta }) {
           </nav>
           {feature && (
             <div className="speckit-detail">
-              <SpeckitFeatureDetail feature={feature} activeName={activeName} openFile={openFile} onOpenFile={setOpenFile} />
+              <SpeckitFeatureDetail
+                feature={feature}
+                activeName={activeName}
+                openFile={openFile}
+                onOpenFile={setOpenFile}
+                actions={<SpeckitArchive key={feature.dir} projectId={projectId} feature={feature} onChanged={load} getList={getList} />}
+              />
               {openFile && <FileView projectId={projectId} rel={openFile} editable={false} html="text" />}
             </div>
           )}

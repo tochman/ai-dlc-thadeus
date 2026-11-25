@@ -124,6 +124,10 @@ const m = vi.hoisted(() => {
       writeFileSafe: vi.fn(async () => ({ ok: true })),
       featureWatchPaths: vi.fn(() => ['docs/FEATURES.md']),
       loadSpeckitFeatures: vi.fn(async () => ({ version: { found: '1.4.3', supported: true }, features: [], active: null, errors: [] })),
+      // US-1411: the archive marks, and main's own check of the feature.
+      listedFeatures: vi.fn(async () => ({ dirs: ['001-a', '002-b'], active: '001-a' })),
+      addMark: vi.fn(async () => {}),
+      removeMark: vi.fn(async () => {}),
       loadSpeckitRules: vi.fn(async () => ({
         constitution: { path: '.specify/memory/constitution.md', exists: false },
         extensions: [],
@@ -324,7 +328,12 @@ vi.mock('../../src/main/features.js', () => ({
   loadStoryLinks: m.svc.loadStoryLinks
 }));
 vi.mock('../../src/main/releases.js', () => ({ setStoryRelease: m.svc.setStoryRelease, readRuleStatus: m.svc.readRuleStatus }));
-vi.mock('../../src/main/speckitFeatures.js', async (importOriginal) => ({ ...(await importOriginal()), loadSpeckitFeatures: m.svc.loadSpeckitFeatures }));
+vi.mock('../../src/main/speckitFeatures.js', async (importOriginal) => ({
+  ...(await importOriginal()),
+  loadSpeckitFeatures: m.svc.loadSpeckitFeatures,
+  listedFeatures: m.svc.listedFeatures
+}));
+vi.mock('../../src/main/speckitArchive.js', async (importOriginal) => ({ ...(await importOriginal()), addMark: m.svc.addMark, removeMark: m.svc.removeMark }));
 vi.mock('../../src/main/speckitRules.js', () => ({ loadSpeckitRules: m.svc.loadSpeckitRules }));
 vi.mock('../../src/main/projectFile.js', async (importOriginal) => ({ ...(await importOriginal()), writeProjectFile: m.svc.writeProjectFile }));
 // US-0606/US-0607: the planning sync runs real git; here only its calls are checked, with the real scheduler.
@@ -847,7 +856,8 @@ describe('Spec Kit features', () => {
       '.specify/init-options.json',
       '.specify/memory/constitution.md',
       '.specify/extensions.yml',
-      '.specify/extensions/**'
+      '.specify/extensions/**',
+      '.thadeus/archived/**'
     ]);
     opts.onChange(['specs/001-a/tasks.md']);
     expect(sender.send).toHaveBeenCalledWith('speckit:changed', { projectId, paths: ['specs/001-a/tasks.md'] });
@@ -863,6 +873,88 @@ describe('Spec Kit features', () => {
     svc.detectProject.mockResolvedValueOnce(KIT);
     await svc.watchForAidlc.mock.calls.at(-1)[0].onFound();
     expect(speckitWatch('/work/kit-later')).toBeDefined();
+  });
+});
+
+// US-1411 FR1.4, FR2.2, FR2.3, NFR1: archive and unarchive a Spec Kit feature; main checks the folder itself.
+describe('Spec Kit archive', () => {
+  const KIT = { framework: 'speckit', isAidlc: false, views: ['specs'], activeSpace: null, spaces: [] };
+  const CHANNELS = { 'speckit:archive': 'addMark', 'speckit:unarchive': 'removeMark' };
+  beforeEach(() => {
+    for (const fn of [svc.listedFeatures, svc.addMark, svc.removeMark]) fn.mockClear();
+  });
+
+  it('marks a listed feature that is not active, and unmarks a listed one, by the project’s own root', async () => {
+    const { projectId } = await openProject('/work/kit-archive', KIT);
+    expect(await call('speckit:archive', {}, projectId, '002-b', '/etc')).toEqual({ ok: true });
+    expect(svc.listedFeatures).toHaveBeenLastCalledWith('/work/kit-archive');
+    expect(svc.addMark.mock.calls).toEqual([['/work/kit-archive', '002-b']]);
+    expect(svc.removeMark).not.toHaveBeenCalled();
+    expect(await call('speckit:unarchive', {}, projectId, '002-b')).toEqual({ ok: true });
+    expect(svc.removeMark.mock.calls).toEqual([['/work/kit-archive', '002-b']]);
+  });
+
+  it('refuses a folder that is not listed, a path out, and anything but a string, before it becomes a path', async () => {
+    const { projectId } = await openProject('/work/kit-archive-bad', KIT);
+    for (const channel of Object.keys(CHANNELS)) {
+      for (const dir of ['009-gone', '../x', '/etc', '', undefined, null, 1, ['002-b'], { dir: '002-b' }]) {
+        expect(await call(channel, {}, projectId, dir)).toEqual({ ok: false, error: expect.stringMatching(/\S/) });
+      }
+    }
+    expect(svc.addMark).not.toHaveBeenCalled();
+    expect(svc.removeMark).not.toHaveBeenCalled();
+  });
+
+  it('refuses to archive the feature that is active now; unarchiving it is allowed', async () => {
+    const { projectId } = await openProject('/work/kit-archive-active', KIT);
+    expect(await call('speckit:archive', {}, projectId, '001-a')).toEqual({ ok: false, error: t('speckit.archive.active') });
+    expect(svc.addMark).not.toHaveBeenCalled();
+    expect(await call('speckit:unarchive', {}, projectId, '001-a')).toEqual({ ok: true });
+  });
+
+  it('writes nothing in a project that does not follow Spec Kit, and rejects an unknown project', async () => {
+    const { projectId } = await openProject('/work/kit-archive-other');
+    for (const channel of Object.keys(CHANNELS)) {
+      expect(await call(channel, {}, projectId, '002-b')).toEqual({ ok: false, error: t('speckit.archive.notSpeckit') });
+      await expect(call(channel, {}, 'nope', '002-b')).rejects.toThrow('Okänt projekt: nope');
+    }
+    expect(svc.listedFeatures).not.toHaveBeenCalled();
+    expect(svc.addMark).not.toHaveBeenCalled();
+    expect(svc.removeMark).not.toHaveBeenCalled();
+  });
+
+  it('answers a failed read or write with its reason', async () => {
+    const { projectId } = await openProject('/work/kit-archive-fail', KIT);
+    for (const [channel, fn] of Object.entries(CHANNELS)) {
+      svc[fn].mockRejectedValueOnce(Object.assign(new Error('EACCES: no'), { code: 'EACCES' }));
+      const failed = { file: '.thadeus/archived/002-b.json', reason: 'EACCES' };
+      expect(await call(channel, {}, projectId, '002-b')).toEqual({ ok: false, error: t('projectFile.errors.writeFailed', failed) });
+      svc.listedFeatures.mockRejectedValueOnce(new Error('disk gone'));
+      expect(await call(channel, {}, projectId, '002-b')).toEqual({ ok: false, error: expect.stringContaining('disk gone') });
+    }
+  });
+
+  it('speckit:features removes the active feature’s mark once, and still answers when that fails (FR2.3)', async () => {
+    const { projectId } = await openProject('/work/kit-archive-mark', KIT);
+    const result = { features: [], active: '001-a', activeMarked: true, errors: [] };
+    svc.loadSpeckitFeatures.mockResolvedValueOnce(result);
+    expect(await call('speckit:features', {}, projectId)).toBe(result);
+    expect(svc.removeMark.mock.calls).toEqual([['/work/kit-archive-mark', '001-a']]);
+    svc.loadSpeckitFeatures.mockResolvedValueOnce({ ...result, activeMarked: false });
+    await call('speckit:features', {}, projectId);
+    expect(svc.removeMark).toHaveBeenCalledTimes(1);
+    console.error.mockClear();
+    svc.removeMark.mockRejectedValueOnce(new Error('read-only'));
+    svc.loadSpeckitFeatures.mockResolvedValueOnce(result);
+    expect(await call('speckit:features', {}, projectId)).toBe(result);
+    expect(console.error).toHaveBeenCalledTimes(1);
+  });
+
+  it('speckit:features removes no mark in a project that does not follow Spec Kit', async () => {
+    const { projectId } = await openProject('/work/kit-archive-mark-other');
+    svc.loadSpeckitFeatures.mockResolvedValueOnce({ features: [], active: '001-a', activeMarked: true, errors: [] });
+    await call('speckit:features', {}, projectId);
+    expect(svc.removeMark).not.toHaveBeenCalled();
   });
 });
 

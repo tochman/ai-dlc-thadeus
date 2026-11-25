@@ -1317,6 +1317,16 @@ button.lcars-nb:hover:not(:disabled), a.lcars-nb:hover { filter: brightness(1.15
 .speckit-tag { padding: 0 var(--gap); background: var(--slate-2); color: var(--text-2); font-size: 12px; }
 .speckit-list .link .speckit-tag { margin-left: auto; background: var(--steel); color: var(--on-light); } /* the active feature is a live value; US-0048 L2: never a hook's tag */
 .speckit-list .link code, .speckit-list .link .speckit-tag { flex: none; } /* US-0048 L3: only the name wraps */
+/* US-1411: the filter above the list, the archived mark (US-0510's outlined readout, so never the active tag's live steel),
+   and Archive or Unarchive beside the feature's title. */
+.speckit-layout > nav .filters { margin-bottom: var(--gap-m); }
+.speckit-layout > nav .filters .lcars-select { flex: 1; min-width: 0; }
+.speckit-list:focus-visible { outline: 2px solid var(--amber); outline-offset: 2px; }
+.speckit-list .link .intent-parked { flex: none; margin-left: auto; }
+.speckit-list .link.is-selected .intent-parked { border-color: currentColor; color: inherit; }
+.speckit-feature-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-start; gap: var(--gap); }
+.speckit-feature-head .section-title { min-width: 0; overflow-wrap: anywhere; }
+.speckit-archive-name { color: var(--white); overflow-wrap: anywhere; }
 .speckit-detail { display: grid; gap: var(--gap-m); min-width: 0; }
 .speckit-flow { display: flex; flex-wrap: wrap; gap: var(--gap); margin: 0 0 var(--gap); padding: 0; list-style: none; }
 .speckit-flow li { display: grid; padding: var(--gap) var(--gap-m); background: var(--slate-1); border-left: var(--gap) solid var(--slate-3); }
