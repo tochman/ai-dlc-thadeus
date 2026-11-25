@@ -160,3 +160,22 @@
 **Message Id**: 6b4d38e9
 
 ---
+
+## Subagent Completed
+**Timestamp**: 2026-11-25T11:14:40Z
+**Event**: SUBAGENT_COMPLETED
+**Agent Type**: unknown
+**Agent ID**: af8a32212b323963f
+**Message**: /clear
+
+---
+
+## Human Turn
+**Timestamp**: 2026-11-25T11:16:28Z
+**Event**: HUMAN_TURN
+**Session**: 9a2dd185-bef2-43a0-ad1e-8957c2dd35fe
+**Origin**: person
+**Source**: typed
+**Message Id**: 223bb776
+
+---

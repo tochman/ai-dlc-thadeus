@@ -63,22 +63,35 @@ describe('opening and closing (US-0208 FR1)', () => {
     units: {}
   };
 
-  it('click or Enter on the small view opens the detail in place of the main panel; Back and Esc return focus to it', async () => {
+  // US-0052: two short tests, and the heading by its text: a lookup by role reads the whole document, the slowest part
+  // of the one long test that went over its limit on a loaded machine.
+  const open = () => {
     window.bridge = bridge(READINGS);
     render(<IntentDetail projectId="p1" detail={detail} intent={intentOf('in-flight')} activeDirName={DIR} cost={cost()} models={null} />);
-    const small = () => screen.getByTestId('token-view');
-    expect(small().getAttribute('role')).toBe('button');
+  };
+  const small = () => screen.getByTestId('token-view');
+  /** The opened detail's heading (US-0417: renamed Activity). */
+  async function openedHeading() {
+    const heading = within(await screen.findByTestId('token-detail')).getByText('Aktivitet · live');
+    expect(heading.tagName).toBe('H2');
+    return heading;
+  }
 
+  it('a click on the small view opens the detail in place of the main panel, and Back returns focus to it', async () => {
+    open();
+    expect(small().getAttribute('role')).toBe('button');
     fireEvent.click(small());
-    const heading = await screen.findByRole('heading', { level: 2, name: 'Aktivitet · live' }); // US-0417: renamed Activity
-    expect(document.activeElement).toBe(heading);
+    expect(document.activeElement).toBe(await openedHeading());
     expect(screen.queryByTestId('intent-detail-tab-pipeline')).toBeNull();
     fireEvent.click(screen.getByTestId('token-detail-back'));
     await waitFor(() => expect(document.activeElement).toBe(small()));
     expect(screen.getByTestId('intent-detail-tab-pipeline')).toBeTruthy();
+  });
 
+  it('Enter and Space on the small view open the detail, and Esc returns focus to it', async () => {
+    open();
     fireEvent.keyDown(small(), { key: 'Enter' });
-    fireEvent.keyDown(await screen.findByRole('heading', { level: 2 }), { key: 'Escape' });
+    fireEvent.keyDown(await openedHeading(), { key: 'Escape' });
     await waitFor(() => expect(document.activeElement).toBe(small()));
     fireEvent.keyDown(small(), { key: ' ' });
     expect(await screen.findByTestId('token-detail')).toBeTruthy();
