@@ -10,7 +10,7 @@
 
 **Stories:** US-1401–US-1411
 
-**Status (2026-11-25):** ✅ US-1401, US-1402, US-1403, US-1404, US-1405, US-1406, US-1407, US-1408, US-1409, US-1410 released in v0.3.0. 📋 US-1411 planned.
+**Status (2026-11-25):** ✅ US-1401, US-1402, US-1403, US-1404, US-1405, US-1406, US-1407, US-1408, US-1409, US-1410 released in v0.3.0. 📋 US-1411 planned, for v0.3.1.
 
 ---
 
@@ -150,7 +150,7 @@
   - [x] Every text goes through `t()` in Swedish and English, in the LCARS look.
 - **Dependencies:** US-1401, US-1402
 
-**US-1411: Archive and unarchive a Spec Kit feature in the app** 📋 Planned
+**US-1411: Archive and unarchive a Spec Kit feature in the app** 📋 Planned, for v0.3.1
 - As a **developer with many Spec Kit features**, in order to **see only the features that still matter**, I would like to **archive a feature in the app and bring it back when I need it**.
 - **Epic:** EPIC-14
 - **Priority:** Low

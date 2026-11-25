@@ -6,9 +6,9 @@
 
 > Small fixes the person reports while using the app: something looks off, behaves wrongly or is missing a detail. Each fix becomes a story here, so nothing reported in passing gets lost. A fix that grows into a feature moves to its topic's epic.
 
-**Stories:** US-0001, US-0002, US-0003, US-0004, US-0005, US-0006, US-0007, US-0008, US-0009, US-0010, US-0011, US-0012, US-0013, US-0014, US-0015, US-0016, US-0017, US-0018, US-0019, US-0020, US-0021, US-0022, US-0023, US-0024, US-0025, US-0026, US-0027, US-0028, US-0029, US-0030, US-0031, US-0032, US-0033, US-0034, US-0035, US-0036, US-0037, US-0038, US-0039, US-0040, US-0041, US-0042, US-0043, US-0044, US-0045, US-0046, US-0047, US-0048, US-0049
+**Stories:** US-0001, US-0002, US-0003, US-0004, US-0005, US-0006, US-0007, US-0008, US-0009, US-0010, US-0011, US-0012, US-0013, US-0014, US-0015, US-0016, US-0017, US-0018, US-0019, US-0020, US-0021, US-0022, US-0023, US-0024, US-0025, US-0026, US-0027, US-0028, US-0029, US-0030, US-0031, US-0032, US-0033, US-0034, US-0035, US-0036, US-0037, US-0038, US-0039, US-0040, US-0041, US-0042, US-0043, US-0044, US-0045, US-0046, US-0047, US-0048, US-0049, US-0050
 
-**Status (2026-11-25):** ✅ US-0001–US-0020 released (v0.2.3–v0.2.6). ✅ US-0021–US-0023 released in v0.2.7. ✅ US-0024 released in v0.2.8. ✅ US-0025 released in v0.2.9. ✅ US-0026 released in v0.2.9. ✅ US-0027 released in v0.2.9. ✅ US-0028 released in v0.2.10. ✅ US-0029 released in v0.2.10. ✅ US-0030 released in v0.2.10. ✅ US-0031 released in v0.2.10. ✅ US-0032 released in v0.2.11. ✅ US-0033 released in v0.2.11. ✅ US-0034 released in v0.2.12. ✅ US-0035 and US-0036 released in v0.2.13. ✅ US-0037, US-0038, US-0039, US-0040, US-0041 and US-0042 released in v0.2.14. ✅ US-0043 released in v0.2.15. ✅ US-0044 released in v0.2.15. ✅ US-0045 released in v0.2.15. ✅ US-0046 released in v0.2.15. ✅ US-0047 released in v0.3.0. ✅ US-0048 released in v0.3.0. ✅ US-0049 released in v0.3.0. Each story names its release.
+**Status (2026-11-25):** ✅ US-0001–US-0020 released (v0.2.3–v0.2.6). ✅ US-0021–US-0023 released in v0.2.7. ✅ US-0024 released in v0.2.8. ✅ US-0025 released in v0.2.9. ✅ US-0026 released in v0.2.9. ✅ US-0027 released in v0.2.9. ✅ US-0028 released in v0.2.10. ✅ US-0029 released in v0.2.10. ✅ US-0030 released in v0.2.10. ✅ US-0031 released in v0.2.10. ✅ US-0032 released in v0.2.11. ✅ US-0033 released in v0.2.11. ✅ US-0034 released in v0.2.12. ✅ US-0035 and US-0036 released in v0.2.13. ✅ US-0037, US-0038, US-0039, US-0040, US-0041 and US-0042 released in v0.2.14. ✅ US-0043 released in v0.2.15. ✅ US-0044 released in v0.2.15. ✅ US-0045 released in v0.2.15. ✅ US-0046 released in v0.2.15. ✅ US-0047 released in v0.3.0. ✅ US-0048 released in v0.3.0. ✅ US-0049 released in v0.3.0. 📋 US-0050 planned, for v0.3.1. Each story names its release.
 
 ---
 
@@ -802,3 +802,22 @@
   - [x] A test fails without the change and passes with it; the existing suite stays green.
 - **Notes:** Made directly, without an AI-DLC workflow, at the person's request (`fix/US-0049`).
 - **Dependencies:** none
+
+**US-0050: Every view is audited for motion, and elements that lack animation get it** 📋 Planned, for v0.3.1
+- As a **developer who lives in the console**, in order to **see what changed and feel the same living console everywhere**, I would like **every view gone through for motion, and animations added to the elements that lack them**.
+- **Epic:** EPIC-00
+- **Priority:** Medium
+- **Complexity:** Medium
+- **Background:** Asked for 2026-11-25. US-0402 and US-0417 gave the app its motion language, and the shared entrance (`useEntrance` in `Lcars.jsx`) runs each time a view is entered. But it moves only the pieces with an `lcars-e-*` class, and nearly all of those are the shared ones in `Lcars.jsx` (frames, elbows, section headings, readout tables, meters). Most views' own elements, such as the rows in the intent list, the timeline, Plans, Machines and the Spec Kit features, have none and simply appear. US-0402 also left the tab transitions unbuilt.
+- **Acceptance Criteria:**
+  - [ ] **Audit first:** every view, dialog and panel, AI-DLC and Spec Kit, is listed with its elements and what moves today: on entering, on switching tab, on fold and unfold, when a row arrives, changes or leaves, on hover and focus, and while loading. Each gap is marked "add" or "leave still", with the reason. The person approves the list before any code.
+  - [ ] **Given** any view in the list marked "add", **when** I enter it, **then** its marked elements join the one shared entrance sequence.
+  - [ ] **Given** tabs inside a view (Pipeline, Timeline, Units, Files, Cost and the like), **when** I switch, **then** the content changes with a short slide or fade of 150–250 ms (left over from US-0402).
+  - [ ] **Given** a live change (a new row, a changed status, a new count), **then** the changed element shows it once, and nothing else on the screen moves.
+  - [ ] **Given** an update that changes nothing on the screen, **then** nothing animates again, and no list replays its entrance.
+  - [ ] Motion comes from the shared keyframes and classes in `theme.css`; a new one is added there once, not per view.
+  - [ ] Reduced gives static effects and Off no motion, as the animations setting does everywhere. Nothing flashes more than 3 times per second, only transform, opacity, `filter` and `box-shadow` animate, and no animation blocks a click or moves focus.
+  - [ ] The app stays at 60 fps with a project of 25 intents and 2 000 timeline events.
+  - [ ] A test fails without each added animation and passes with it, the ones that depend on layout in the built app; the existing suite stays green.
+- **Notes:** The pipeline's stage cards are US-0412 (v0.3.2): the audit lists them but leaves them to that story. If the approved list grows past a fix, the story moves to EPIC-04 (the project's rule).
+- **Dependencies:** US-0402 ✅, US-0417 ✅
