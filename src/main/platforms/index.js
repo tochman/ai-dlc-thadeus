@@ -12,13 +12,15 @@ import * as bitbucket from './bitbucket.js';
 export const PLATFORM_TIMEOUT_MS = 15000;
 const MODULES = { github, gitlab, bitbucket };
 const CLI = { github: 'gh', gitlab: 'glab' };
+// A refused login's own text. GitHub's names Settings › Tools (US-0804 FR4.4). Bitbucket has no CLI to log in with: it
+// is about the saved app password.
+const LOGIN_TEXT = { github: 'not-logged-in-github', bitbucket: 'bad-credentials' };
 const BITBUCKET_API = 'https://api.bitbucket.org/2.0/';
 
 /** A failure with a code the views can act on: cli-missing, not-logged-in, no-credentials, timeout, failed, unknown-platform. */
 export class PlatformError extends Error {
   constructor(code, platform, cause) {
-    // Bitbucket has no CLI to log in with: a refused login is about the saved app password.
-    const key = code === 'not-logged-in' && platform?.id === 'bitbucket' ? 'bad-credentials' : code;
+    const key = code === 'not-logged-in' ? (LOGIN_TEXT[platform?.id] ?? code) : code;
     super(t(`team.errors.${key}`, { platform: platform?.name ?? '–', cli: CLI[platform?.id] ?? '', error: cause?.message ?? '' }));
     this.name = 'PlatformError';
     this.code = code;

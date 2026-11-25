@@ -620,6 +620,7 @@
     "errors": {
       "cli-missing": "{platform} kan inte läsas: {cli} finns inte. Installera {cli}, eller välj var den ligger i Inställningar › Verktyg.",
       "not-logged-in": "{platform} kan inte läsas: du är inte inloggad. Kör {cli} auth login i shell-fliken.",
+      "not-logged-in-github": "{platform} kan inte läsas: du är inte inloggad. Kör {cli} auth login i shell-fliken, eller logga in från Inställningar › Verktyg.",
       "bad-credentials": "Bitbucket nekade användarnamnet eller app-lösenordet. Ändra dem i Inställningar › Verktyg.",
       "no-credentials": "Bitbucket kan inte läsas utan användarnamn och app-lösenord. Lägg in dem i Inställningar › Verktyg.",
       "timeout": "{platform} svarade inte inom 15 sekunder. Försök igen om en stund.",
@@ -704,6 +705,33 @@
       "noStory": "Intenten är inte kopplad till någon story, så ingen pull request kan hittas.",
       "loading": "Läser…",
       "loadFailed": "Granskningen kunde inte läsas: {error}"
+    }
+  },
+  "signIn": {
+    "state": {
+      "checking": "Kontrollerar inloggning…",
+      "in": "Inloggad",
+      "out": "Inte inloggad",
+      "none": "Inget konto anslutet",
+      "unknown": "Inloggning okänd"
+    },
+    "again": "Kontrollerar igen…",
+    "announce": "{tool}: {state}.",
+    "signIn": "Logga in",
+    "signInTo": "Logga in i {tool}",
+    "byHand": "Appen kontrollerar det inte. Kontrollera för hand: {command}",
+    "anyTerminal": "Kör det här i valfri terminal:",
+    "copy": "Kopiera",
+    "copied": "Kopierat",
+    "copyFailed": "Kommandot kunde inte kopieras: {error}",
+    "line": "{tool} är inte inloggad.",
+    "openTools": "Inställningar › Verktyg",
+    "dismiss": "Stäng",
+    "reason": {
+      "timeout": "Kontrollen stoppades efter 20 sekunder utan svar.",
+      "failed": "Kontrollen misslyckades.",
+      "unreadable": "Verktygets svar kunde inte läsas.",
+      "otherProvider": "Claude Code är inställt för en annan leverantör, vars inloggning inte kontrolleras."
     }
   },
   "terminal": {
@@ -1452,7 +1480,7 @@
   },
   "update": {
     "ghMissing": "Uppdateringskontrollen behöver GitHubs gh-verktyg, som inte hittades på den här datorn.",
-    "ghLoggedOut": "Uppdateringskontrollen behöver att gh är inloggat: kör gh auth login i en terminal.",
+    "ghLoggedOut": "Uppdateringskontrollen behöver att gh är inloggat: kör gh auth login i en terminal, eller logga in från Inställningar › Verktyg.",
     "rateLimited": "GitHub begränsar anropen just nu, så uppdateringskontrollen försöker igen senare.",
     "offline": "GitHub gick inte att nå: kontrollera internetanslutningen.",
     "tryLater": "GitHub svarar inte på anrop just nu: försök igen senare.",

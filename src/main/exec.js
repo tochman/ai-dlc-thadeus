@@ -14,9 +14,13 @@ let readInFlight = null;
 export function defaultExec(file, args, options = {}) {
   const { input, ...opts } = options;
   return new Promise((resolve, reject) => {
-    // A non-zero exit keeps its stdout on the error: `aidlc update --check` answers with exit 5 (US-0504 FR1.2).
-    const child = execFile(file, args, opts, (err, stdout) => (err ? reject(Object.assign(err, { stdout: String(stdout ?? '') })) : resolve(String(stdout))));
-    // US-0034: `input` (the sudo password) goes to stdin only, never into args or the environment.
+    // A non-zero exit keeps its stdout on the error: `aidlc update --check` answers with exit 5 (US-0504 FR1.2). Its
+    // stderr too: that is where `gh` says why (US-0804 FR1.3).
+    const child = execFile(file, args, opts, (err, stdout, stderr) =>
+      err ? reject(Object.assign(err, { stdout: String(stdout ?? ''), stderr: String(stderr ?? '') })) : resolve(String(stdout))
+    );
+    // US-0034: `input` (the sudo password) goes to stdin only, never into args or the environment. An empty one closes
+    // stdin, so the command can neither prompt nor wait (US-0804 FR1.1).
     if (input != null) child.stdin.end(input);
   });
 }
@@ -65,13 +69,18 @@ export async function loginPath(exec = defaultExec) {
  * Rejects before running anything when an argument is not a string. `env` adds fixed variables on top of the login
  * shell's PATH (US-0021: `AIDLC_HARNESS_DIR` for a compile per harness). `maxBuffer` raises execFile's 1 MB stdout
  * limit for a command with long output (US-0303: the epic files' `git log -p`). `path` is a PATH the caller already
- * read and skips the login-shell read, so one Tools scan reads the shell once (US-0035 FR1.5).
+ * read and skips the login-shell read, so one Tools scan reads the shell once (US-0035 FR1.5). `killSignal` is what the
+ * timeout sends, SIGTERM when left out (US-0804 FR1.6).
  */
-export async function runFixed(file, args, { cwd, timeout = DEFAULT_TIMEOUT_MS, exec = defaultExec, env: extraEnv = {}, maxBuffer, input, path } = {}) {
+export async function runFixed(
+  file,
+  args,
+  { cwd, timeout = DEFAULT_TIMEOUT_MS, exec = defaultExec, env: extraEnv = {}, maxBuffer, input, path, killSignal } = {}
+) {
   if (!Array.isArray(args) || args.some((a) => typeof a !== 'string')) {
     throw new Error(`Ogiltiga argument till ${file}`);
   }
   const env = { ...process.env, PATH: path ?? (await loginPath(exec)), ...extraEnv };
-  const options = maxBuffer ? { cwd, timeout, env, maxBuffer } : { cwd, timeout, env };
+  const options = { cwd, timeout, env, ...(maxBuffer && { maxBuffer }), ...(killSignal && { killSignal }) };
   return exec(file, args, input == null ? options : { ...options, input });
 }

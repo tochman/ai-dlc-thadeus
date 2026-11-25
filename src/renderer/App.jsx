@@ -452,6 +452,11 @@ export default function App() {
     setSettingsTab(id);
     bridge.setSettings({ settingsTab: id }).catch((err) => setError(t('app.settingsSaveFailed', { error: errorText(err) })));
   }
+  /** "Settings › Tools" in the terminal panel's sign-in line (US-0804 FR4.1). */
+  function openToolSettings() {
+    chooseSettingsTab('tools');
+    openAppSettings();
+  }
   /** A project's own settings are its Configuration view (US-0012): ⚙, the menu and Settings › Project all go there. */
   function openProjectSettings(projectId) {
     if (!projectId) return;
@@ -790,6 +795,7 @@ export default function App() {
                 terminalCommand={terminalCommand}
                 editRequest={editRequest}
                 onOpenReply={openReply}
+                onOpenTools={openToolSettings}
                 askingIntents={questions.filter((q) => !q.early && q.projectId === tab.projectId).map((q) => q.intent)}
               />
             </div>

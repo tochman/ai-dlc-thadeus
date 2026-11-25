@@ -11,11 +11,12 @@ vi.mock('../../src/renderer/ProjectView.jsx', async () => {
   const { default: LatestMessageStrip } = await import('../../src/renderer/LatestMessageStrip.jsx');
   const { default: SpeckitFeatures } = await import('../../src/renderer/SpeckitFeatures.jsx');
   return {
-    default: function ProjectViewStub({ project, view, section, aidlcTab, onMeta, onOpenReply }) {
+    default: function ProjectViewStub({ project, view, section, aidlcTab, onMeta, onOpenReply, onOpenTools }) {
       useEffect(() => onMeta(project.projectId, { showFeatures: true, intentCount: 7 }), [project.projectId, onMeta]);
       return (
         <div data-testid={`project-view-${project.projectId}`} data-view={view} data-section={section} data-aidlc-tab={aidlcTab}>
           <LatestMessageStrip projectId={project.projectId} onOpenReply={onOpenReply} />
+          <button onClick={onOpenTools} data-testid={`project-view-tools-${project.projectId}`} />
           {project.detection.framework === 'speckit' && <SpeckitFeatures projectId={project.projectId} onMeta={onMeta} />}
         </div>
       );
@@ -317,6 +318,14 @@ describe('App shell', () => {
 
     fireEvent.keyDown(screen.getByTestId('settings-view'), { key: 'Escape' });
     expect(screen.queryByTestId('app-settings-tab-notifications')).toBeNull();
+  });
+
+  it("opens Settings on Tools from the terminal panel's link, whatever tab was shown last (US-0804 FR4.1)", async () => {
+    await renderApp({ openProjects: ['/p/aidlc-dash-a'], activeProject: '/p/aidlc-dash-a', settingsTab: 'about' });
+    fireEvent.click(await screen.findByTestId('project-view-tools-p1'));
+    expect(await screen.findByTestId('settings-view-tools')).toBeTruthy();
+    expect(screen.queryByTestId('settings-view-about')).toBeNull();
+    expect(screen.getByTestId('app-settings-tab-tools').getAttribute('aria-current')).toBe('page');
   });
 
   it('opens Settings on the saved tab, and on Tools for an unknown one (US-0410 FR5.1)', async () => {

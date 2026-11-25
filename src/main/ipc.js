@@ -76,6 +76,7 @@ import { getSpeckitSetupInfo, runSpeckitSetup } from './speckitSetup.js';
 import { chooseFramework, frameworkScan } from './frameworkChoice.js';
 import { detectHarnesses } from './harness.js';
 import { TOOL_IDS, getTools, setToolPaths, validateTool } from './tools.js';
+import { checkSignIn } from './signIn.js'; // US-0804
 import { checkProgram, errorText as checkError, programCommand, projectCommand, projectPlan } from './aidlcUpdate.js';
 import { setupHarness } from '../shared/harnesses.js';
 import { PLANNING_BRANCH_DEFAULT, PLANNING_PUSH_DEFAULT, getProjectSettings, getSettings, setProjectSettings, setSettings, settingsNow } from './settings.js';
@@ -1506,6 +1507,8 @@ const handlers = {
   },
   // The three tools with their path, source and version (US-0405 FR2.1); getTools never rejects.
   'tools:info': async () => getTools(),
+  // US-0804 NFR1: only the tool's id crosses the bridge; main picks the command and refuses any other id.
+  'signIn:check': async (_event, id) => checkSignIn(id),
   // US-0504 FR1, FR3: the program check from start-up, run again when `force` is set (the button).
   'aidlc:updateStatus': async (_event, force) => ({ ...(await startAidlcCheck({ force: force === true })), command: programCommand() }),
   // US-0504 FR2, FR5: a dry run per installed harness; one that fails comes back with its reason, never rejects the rest.

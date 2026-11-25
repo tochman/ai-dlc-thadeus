@@ -22,6 +22,32 @@ describe('exec input (US-0034)', () => {
   });
 });
 
+// US-0804 FR1.1, FR1.3, FR1.6: what the sign-in checks need of a fixed command.
+describe('exec for the sign-in checks (US-0804)', () => {
+  it('an empty input closes stdin, so a command that reads it gets the end at once, and a missing one still rejects', async () => {
+    expect(await defaultExec('cat', [], { input: '', timeout: 5000 })).toBe('');
+    await expect(defaultExec('/nonexistent/tool', [], { input: '' })).rejects.toMatchObject({ code: 'ENOENT' });
+  });
+
+  it('a failed command keeps its stderr and its exit code on the error, beside its stdout', async () => {
+    const run = defaultExec('/bin/sh', ['-c', 'echo out; echo first >&2; echo second >&2; exit 4']);
+    await expect(run).rejects.toMatchObject({ code: 4, stdout: 'out\n', stderr: 'first\nsecond\n' });
+  });
+
+  it('runFixed passes killSignal on, and leaves it out when none is given', async () => {
+    const exec = vi.fn(async () => 'ok');
+    await runFixed('gh', [], { exec, path: '/usr/bin', killSignal: 'SIGKILL' });
+    expect(exec.mock.calls[0][2].killSignal).toBe('SIGKILL');
+    await runFixed('gh', [], { exec, path: '/usr/bin' });
+    expect('killSignal' in exec.mock.calls[1][2]).toBe(false);
+  });
+
+  it('SIGKILL stops a command that ignores SIGTERM', async () => {
+    const run = runFixed('/bin/sh', ['-c', "trap '' TERM; while :; do sleep 0.1; done"], { path: process.env.PATH, timeout: 300, killSignal: 'SIGKILL' });
+    await expect(run).rejects.toMatchObject({ killed: true });
+  });
+});
+
 // US-0035 FR1.1-FR1.4: the login shell's PATH, read within 20 s, shared while it runs, a fallback never kept.
 describe('loginPath (US-0035)', () => {
   let m;

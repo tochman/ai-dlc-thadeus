@@ -22,7 +22,7 @@ async function loadPty() {
 }
 
 /** A bare command stays a bare word; a path with a space or a quote is wrapped so the login shell reads it as one. */
-function shellCommand(file) {
+export function shellCommand(file) {
   return /^[A-Za-z0-9_./-]+$/.test(file) ? file : `'${file.replace(/'/g, `'\\''`)}'`;
 }
 

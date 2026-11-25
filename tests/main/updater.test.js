@@ -177,7 +177,7 @@ describe('update check (EPIC-04 US-0407)', () => {
   it('a missing, logged-out or offline gh gives unavailable in one sentence and never throws (NFR5)', async () => {
     const cases = [
       [Object.assign(new Error('spawn gh ENOENT'), { code: 'ENOENT' }), /.+/], // the public reason, see US-0413 FR5
-      [new Error('To get started with GitHub CLI, please run:  gh auth login'), /gh auth login/],
+      [new Error('To get started with GitHub CLI, please run:  gh auth login'), /gh auth login.*Inställningar › Verktyg/], // US-0804 FR4.4
       [new Error('error connecting to api.github.com'), /.+/],
       [new Error('API rate limit exceeded'), /.+/]
     ];
