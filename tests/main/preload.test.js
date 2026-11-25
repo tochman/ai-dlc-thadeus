@@ -75,6 +75,12 @@ describe('preload bridge (US-0506 u1)', () => {
     expect(bridge.onQuestionFocus).toBeUndefined();
   });
 
+  it('checkSignIn passes only the tool id (US-0804 NFR1)', async () => {
+    const bridge = await load(false);
+    await bridge.checkSignIn('gh', { timeout: 1 }, '/bin/rm');
+    expect(m.ipcRenderer.invoke.mock.calls).toEqual([['signIn:check', 'gh']]);
+  });
+
   it('has named team methods on the US-1201 channels; the Bitbucket password only ever goes in, with save', async () => {
     const bridge = await load(false);
     await bridge.getPlatform('p1');

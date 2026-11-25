@@ -265,7 +265,8 @@ function ProjectContent({
   onMeta,
   terminalCommand,
   editRequest,
-  onOpenReply
+  onOpenReply,
+  onOpenTools
 }) {
   const { t } = useTranslation();
   const terminal = useTerminal();
@@ -561,7 +562,7 @@ function ProjectContent({
         </div>
         {onAidlc && <AddHarnessDialog open={addingHarness} onClose={() => setAddingHarness(false)} setupProps={setupProps} />}
         <LatestMessageStrip projectId={project.projectId} onOpenReply={onOpenReply} />
-        <TerminalPanel projectId={project.projectId} visible={visible} onChooseHarness={() => openAgentSettings(false)} />
+        <TerminalPanel projectId={project.projectId} visible={visible} onChooseHarness={() => openAgentSettings(false)} onOpenTools={onOpenTools} />
       </div>
     </EditorCtx.Provider>
   );
@@ -580,7 +581,8 @@ export default function ProjectView({
   terminalCommand,
   editRequest,
   askingIntents,
-  onOpenReply
+  onOpenReply,
+  onOpenTools
 }) {
   return (
     <TerminalProvider askingIntents={askingIntents}>
@@ -597,6 +599,7 @@ export default function ProjectView({
         terminalCommand={terminalCommand}
         editRequest={editRequest}
         onOpenReply={onOpenReply}
+        onOpenTools={onOpenTools}
       />
     </TerminalProvider>
   );

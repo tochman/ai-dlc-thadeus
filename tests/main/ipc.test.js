@@ -382,6 +382,12 @@ vi.mock('../../src/main/i18n.js', () => ({ currentLanguage: m.svc.currentLanguag
 vi.mock('../../src/main/intentNames.js', () => ({ NAMES_PATH: '.thadeus/intent-names.json', setIntentName: m.svc.setIntentName }));
 vi.mock('../../src/main/thadeusSync.js', async (importOriginal) => ({ ...(await importOriginal()), watchThadeus: m.svc.watchThadeus }));
 
+// US-0804: the real check, so an unknown id meets its real refusal; a test answers for a known one.
+vi.mock('../../src/main/signIn.js', async (importOriginal) => {
+  m.svc.checkSignIn = vi.fn((await importOriginal()).checkSignIn);
+  return { checkSignIn: m.svc.checkSignIn };
+});
+
 const ipc = await import('../../src/main/ipc.js');
 ipc.registerIpc();
 
@@ -1306,6 +1312,17 @@ describe('setup, settings and tools', () => {
     svc.setSettings.mockImplementationOnce(async (p) => p);
     expect(await call('tools:reset', {}, 'aidlc')).toEqual({ git: '/g' });
     await expect(call('tools:reset', {}, 'rm')).rejects.toThrow();
+  });
+
+  it('checks a sign-in by tool id only, and runs nothing for an unknown one (US-0804 NFR1)', async () => {
+    const answer = { state: 'in', account: 'octo-dana', reason: null };
+    svc.checkSignIn.mockResolvedValueOnce(answer);
+    expect(await call('signIn:check', { sender: {} }, 'gh', { timeout: 1 }, '/bin/rm')).toEqual(answer);
+    expect(svc.checkSignIn.mock.calls.at(-1)).toEqual(['gh']);
+    svc.spawnSession.mockClear();
+    for (const id of ['glab', 'rm -rf ~', undefined])
+      await expect(call('signIn:check', { sender: {} }, id)).rejects.toThrow(t('errors.unknownTool', { id: String(id) }));
+    expect(svc.spawnSession).not.toHaveBeenCalled();
   });
 
   it('picks and clears the default project folder', async () => {

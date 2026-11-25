@@ -7,6 +7,7 @@ import { createActivity, dropText } from './terminalControl.js';
 import { isAgentTab, useTerminal } from './TerminalContext.jsx';
 import AuctumMark from './AuctumMark.jsx';
 import { Bar, Pill } from './Lcars.jsx';
+import { SignInNotice, useTabSignIn } from './SignIn.jsx'; // US-0804
 import Tooltip from './Tooltip.jsx';
 import { xtermTheme } from './tokens.js';
 import { t as translate } from '../shared/i18n.js';
@@ -22,9 +23,10 @@ const errorText = (err) => String(err?.message ?? err).replace(/^Error invoking 
  * `onInput` is told when the person types, which clears "Väntar på din Enter" (EPIC-04 FR3.6).
  * The agent tab passes its harness id (main looks up the command) and the harness's `quietMs` (US-0801 FR4.3);
  * `name` is what the texts call the tab. `tab` is the key it registers under (`agent:<id>` or `shell`, US-0803)
- * and `testId` the suffix of its data-testids.
+ * and `testId` the suffix of its data-testids. `onStart` is called after each successful start, Restart included, and
+ * is not waited for (US-0804 FR4.1).
  */
-function TermSession({ projectId, kind, tab = kind, testId = kind, harness, quietMs, name, shown, register, onInput }) {
+function TermSession({ projectId, kind, tab = kind, testId = kind, harness, quietMs, name, shown, register, onInput, onStart }) {
   const { t } = useTranslation();
   const hostRef = useRef(null);
   const termRef = useRef(null);
@@ -32,6 +34,8 @@ function TermSession({ projectId, kind, tab = kind, testId = kind, harness, quie
   const idRef = useRef(null);
   const onInputRef = useRef(onInput);
   onInputRef.current = onInput;
+  const onStartRef = useRef(onStart);
+  onStartRef.current = onStart;
   const [activity] = useState(() => createActivity({ quietMs }));
   const [exited, setExited] = useState(null);
   const [error, setError] = useState(null);
@@ -67,6 +71,7 @@ function TermSession({ projectId, kind, tab = kind, testId = kind, harness, quie
     try {
       idRef.current = await bridge.ptySpawn({ projectId, kind, harness, cols: term.cols, rows: term.rows });
       activity.onData(); // counts as busy until the first quiet period
+      onStartRef.current?.();
       return true;
     } catch (err) {
       setError(errorText(err));
@@ -250,7 +255,7 @@ export function screenLines(term) {
   return lines;
 }
 
-export default function TerminalPanel({ projectId, visible, onChooseHarness }) {
+export default function TerminalPanel({ projectId, visible, onChooseHarness, onOpenTools }) {
   const { t } = useTranslation();
   const terminal = useTerminal();
   const { open, active } = terminal.view;
@@ -277,6 +282,9 @@ export default function TerminalPanel({ projectId, visible, onChooseHarness }) {
   const clampHeight = (h) => Math.round(Math.min(window.innerHeight * 0.6, Math.max(180, h)));
   const currentHeight = () => height ?? panelRef.current?.offsetHeight ?? 220;
   const pendingTabs = tabs.filter((tab) => terminal.pending(tab));
+  // US-0804 FR4.1: the shown agent tab's tool is not signed in.
+  const signIn = useTabSignIn(terminal);
+  const signedOut = open && activeHarness && signIn.lineFor(active) ? activeHarness.label : null;
 
   function startDrag(e) {
     e.preventDefault();
@@ -394,6 +402,7 @@ export default function TerminalPanel({ projectId, visible, onChooseHarness }) {
                   shown={visible && open && active === tab}
                   register={terminal.register}
                   onInput={() => terminal.input(tab)}
+                  onStart={() => signIn.start(tab, h.id)}
                 />
               );
             })}
@@ -407,10 +416,25 @@ export default function TerminalPanel({ projectId, visible, onChooseHarness }) {
             onInput={() => terminal.input('shell')}
           />
         </div>
+        {/* US-0804 FR5.2: always there, so a line that appears is announced without moving focus. */}
+        <span className="sr-only" aria-live="polite" data-testid="terminal-panel-signin-status">
+          {signedOut && t('signIn.line', { tool: signedOut })}
+        </span>
         {/* Only while something waits for Enter or went wrong, so the terminal keeps the height otherwise. */}
         {/* US-0019: no "two agents at once" notice; busy is guessed from output timing and the guess confused people. */}
-        {(pendingTabs.length > 0 || terminal.error) && (
+        {(pendingTabs.length > 0 || terminal.error || signedOut) && (
           <div className="terminal-foot" data-testid="terminal-panel-foot">
+            {signedOut && (
+              <SignInNotice
+                tool={signedOut}
+                onSignIn={() => signIn.signIn(active)}
+                onOpenTools={onOpenTools}
+                onDismiss={() => {
+                  signIn.dismiss(active);
+                  terminal.show(active); // the line goes, so the focus moves to its terminal
+                }}
+              />
+            )}
             {pendingTabs.map((tab) => (
               <span key={tab} className="term-pending-row">
                 <span className="term-pending is-attn" data-testid={`terminal-panel-pending-${testId(tab)}`}>

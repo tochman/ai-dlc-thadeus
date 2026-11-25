@@ -8,7 +8,7 @@
 
 **Stories:** US-0801, US-0802, US-0803, US-0804, US-0805, US-0806
 
-**Status (2026-11-18):** ✅ US-0801–US-0803 released (v0.2.1–v0.2.3). 📋 US-0804 and US-0805 planned, for v0.3.1. 📋 US-0806 planned, for v0.3.2. Each story names its release.
+**Status (2026-11-25):** ✅ US-0801–US-0803 released (v0.2.1–v0.2.3). ✅ US-0804 done, for v0.3.1. 📋 US-0805 planned, for v0.3.1. 📋 US-0806 planned, for v0.3.2. Each story names its release.
 
 ---
 
@@ -57,19 +57,19 @@
 - **Notes:** Added 2026-11-14 at the person's request ("I see no reason why not"). Today the agent tab is a single `agent` session whose harness can be switched (US-0801).
 - **Dependencies:** US-0801, US-0802
 
-**US-0804: See whether each tool is signed in, and sign in from the app** 📋 Planned, for v0.3.1
+**US-0804: See whether each tool is signed in, and sign in from the app** ✅ Done, for v0.3.1
 - As a **developer setting up a project**, in order to **avoid an agent tab or a GitHub feature failing on a missing sign-in**, I would like to **see whether Claude Code, opencode and the GitHub CLI are signed in, and start the sign-in from the app**.
 - **Epic:** EPIC-08
 - **Priority:** Medium
 - **Complexity:** Medium
 - **Background:** Asked for 2026-11-15: "we should try to detect if the user is logged in and authenticated with the installed tools and harnesses (if that is an option) Like Claude code, GH CLI and open code... and try to trigger the authentication from the interface."
 - **Acceptance Criteria:**
-  - [ ] Settings › Tools shows each tool's sign-in state next to its version: signed in (with the account where the tool shows one), not signed in, or unknown when the tool offers no way to check.
-  - [ ] The state comes from each tool's own command, run without prompting (for example `gh auth status`). The app never reads token or credential files.
-  - [ ] A tool that is not signed in offers "Sign in". It starts the tool's own sign-in in the Shell tab (for example `gh auth login`, or `/login` in a Claude Code agent tab), where the person finishes it; the app never handles a password or token.
-  - [ ] The state refreshes after a sign-in and when Settings opens; a check that fails or hangs is named, not shown as signed in.
-  - [ ] An agent tab or GitHub feature that fails on a missing sign-in points to this.
-  - [ ] Every text goes through `t()` in Swedish and English.
+  - [x] Settings › Tools shows each tool's sign-in state next to its version: signed in (with the account where the tool shows one), not signed in, or unknown when the tool offers no way to check.
+  - [x] The state comes from each tool's own command, run without prompting (for example `gh auth status`). The app never reads token or credential files.
+  - [x] A tool that is not signed in offers "Sign in". It starts the tool's own sign-in in the Shell tab (for example `gh auth login`, or `/login` in a Claude Code agent tab), where the person finishes it; the app never handles a password or token.
+  - [x] The state refreshes after a sign-in and when Settings opens; a check that fails or hangs is named, not shown as signed in.
+  - [x] An agent tab or GitHub feature that fails on a missing sign-in points to this.
+  - [x] Every text goes through `t()` in Swedish and English.
 - **Notes:** Find out first which tools can report their sign-in without starting it: `gh auth status` can; Claude Code and opencode need checking (a status command, or a harmless call that fails clearly when signed out).
 - **Dependencies:** US-0410, US-0801
 

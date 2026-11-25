@@ -8,6 +8,7 @@ import i18n, { LANGUAGE_SETTINGS } from '../shared/i18n.js';
 import AuctumMark from './AuctumMark.jsx';
 import AidlcUpdate from './AidlcUpdate.jsx';
 import { Pill, useEntrance } from './Lcars.jsx';
+import { SignInLine, SignInStatus, useSignIn } from './SignIn.jsx'; // US-0804
 import { ToolGroup, ToolLine, ToolRow, groupStrip, toolState } from './ToolRows.jsx';
 
 /** The tabs in rail order (US-0410 FR1.1); main keeps the same list as SETTINGS_TABS. */
@@ -210,7 +211,8 @@ const TOOL_GROUPS = [
 /**
  * Verktyg: every tool with its path, where that path came from and the version it reports (FR2.1), grouped by purpose
  * since US-0416. "Check for updates" calls the shell's `onCheckUpdates` (the Update dialog) when given, and always checks
- * AI-DLC again; Rescan reads the tools again.
+ * AI-DLC again; Rescan reads the tools again. Claude Code, opencode and GitHub also show whether they are signed in, with
+ * a way to sign in (US-0804 FR2, FR3).
  */
 function Tools({ settings, onReload, motion, activeProjectId = null, terminal = null, lastIntentChangeAt = null, onCheckUpdates }) {
   const { t } = useTranslation();
@@ -218,15 +220,27 @@ function Tools({ settings, onReload, motion, activeProjectId = null, terminal = 
   const [error, setError] = useState(null);
   const [rowError, setRowError] = useState({});
   const [checkRequest, setCheckRequest] = useState(0);
+  const [scanning, setScanning] = useState(false);
+  const scan = useRef(0);
+  const signIn = useSignIn(rows, scanning);
+  const { read: readSignIns } = signIn;
   const entering = useEntrance('settings-tools');
 
+  // US-0804 FR2.4, FR2.5: the sign-in checks follow the versions, and only those of the newest scan.
   const refresh = useCallback(async () => {
+    const n = ++scan.current;
+    setScanning(true);
     try {
-      setRows(await window.bridge.getTools());
+      const next = await window.bridge.getTools();
+      if (n !== scan.current) return;
+      setRows(next);
+      readSignIns(next);
     } catch (err) {
-      setError(t('settings.tools.loadFailed', { error: errorText(err) }));
+      if (n === scan.current) setError(t('settings.tools.loadFailed', { error: errorText(err) }));
+    } finally {
+      if (n === scan.current) setScanning(false);
     }
-  }, [t]);
+  }, [t, readSignIns]);
 
   // The saved paths show at once; the checks fill in versions and errors afterwards (NFR4).
   useEffect(() => {
@@ -296,12 +310,20 @@ function Tools({ settings, onReload, motion, activeProjectId = null, terminal = 
             id={group}
             title={t(`settings.tools.groups.${group}`)}
             count={ids.length + (group === 'git' ? 1 : 0)}
-            strip={groupStrip(ids.map((id) => (byId[id] ? toolState(byId[id]) : 'checking')))}
+            strip={groupStrip(ids.flatMap((id) => (byId[id] ? [toolState(byId[id]), signIn.of(byId[id])?.state] : 'checking')))}
           >
-            {ids.map((id) => byId[id] && <ToolLine key={id} row={byId[id]} error={rowError[id]} onChoose={choose} onReset={reset} />)}
+            {ids.map(
+              (id) =>
+                byId[id] && (
+                  <ToolLine key={id} row={byId[id]} error={rowError[id]} onChoose={choose} onReset={reset}>
+                    <SignInLine row={byId[id]} shown={signIn.of(byId[id])} terminal={terminal} />
+                  </ToolLine>
+                )
+            )}
             {group === 'git' && <BitbucketRow />}
           </ToolGroup>
         ))}
+        <SignInStatus rows={rows} signIn={signIn} />
         {/* FR2.5: running sessions are left alone. */}
         <p className="muted settings-help">{t('settings.tools.nextStart')}</p>
         {error && (

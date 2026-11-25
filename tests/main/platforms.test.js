@@ -211,6 +211,25 @@ describe('listPulls, listComments, listReviews (US-1201 AC-1)', () => {
     await expect(listPulls(bitbucket, { fetch: denied, credentials })).rejects.toMatchObject({ code: 'not-logged-in' });
   });
 
+  it("a missing login names Settings › Tools for GitHub only; GitLab's and Bitbucket's texts do not change (US-0804 FR4.4)", async () => {
+    const loggedOut = async (file) => {
+      if (file !== 'gh' && file !== 'glab') return '__AIDLC_DASH_PATH__/usr/bin';
+      throw new Error(`To get started, please run: ${file} auth login`);
+    };
+    const message = (platform, deps) => listPulls(platform, deps).catch((err) => `${err.code}: ${err.message}`);
+    expect(await message(detectPlatform('https://github.com/tochman/ai-dlc-thadeus'), { exec: loggedOut })).toBe(
+      'not-logged-in: GitHub kan inte läsas: du är inte inloggad. Kör gh auth login i shell-fliken, eller logga in från Inställningar › Verktyg.'
+    );
+    expect(await message(detectPlatform('https://gitlab.com/team/dash.git'), { exec: loggedOut })).toBe(
+      'not-logged-in: GitLab kan inte läsas: du är inte inloggad. Kör glab auth login i shell-fliken.'
+    );
+    const denied = async () => ({ ok: false, status: 401, json: async () => ({}) });
+    const credentials = async () => ({ username: 'dana', appPassword: 'x' });
+    expect(await message(detectPlatform('git@bitbucket.org:team/dash.git'), { fetch: denied, credentials })).toBe(
+      'not-logged-in: Bitbucket nekade användarnamnet eller app-lösenordet. Ändra dem i Inställningar › Verktyg.'
+    );
+  });
+
   it('refuses a pull request number that is not a positive whole number before anything runs', async () => {
     const { exec, calls } = cliExec('gh', fixture('github'));
     const github = detectPlatform('https://github.com/tochman/ai-dlc-thadeus');

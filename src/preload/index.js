@@ -53,6 +53,7 @@ contextBridge.exposeInMainWorld('bridge', {
   getLanguage: call('i18n:language'), // the language in effect, auto resolved (EPIC-07 FR4.4)
   // The Settings view (EPIC-04 US-0405): the three tools, their native file dialog, and the Om information.
   getTools: call('tools:info'),
+  checkSignIn: (id) => ipcRenderer.invoke('signIn:check', id), // a tool id, never a command (US-0804 NFR1)
   pickTool: call('tools:pick'),
   saveTool: call('tools:save'),
   resetTool: call('tools:reset'),

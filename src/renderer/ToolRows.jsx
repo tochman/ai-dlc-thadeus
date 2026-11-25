@@ -129,10 +129,9 @@ export function ToolLine({ row: r, error, onChoose, onReset, state = toolState(r
   );
 }
 
-/** The strip a group's block carries: its worst row (missing before newer), none when all is well. */
+/** The strip a group's block carries: its worst row (missing, then not signed in (US-0804 FR2.6), then newer), none when all is well. */
 export function groupStrip(states) {
-  if (states.includes('missing')) return 'missing';
-  return states.includes('newer') ? 'newer' : null;
+  return ['missing', 'out', 'newer'].find((state) => states.includes(state)) ?? null;
 }
 
 /** US-0416 AC1: a group as an LCARS section: the tall block (count, name) on the left, the rows beside it. */

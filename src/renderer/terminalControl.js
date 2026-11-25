@@ -1,5 +1,6 @@
 // Activity signal and command sequencing for a terminal tab (FR1.2, FR1.3, FR2.3). Pure: no React, no bridge.
 import { t } from '../shared/i18n.js';
+import { shellQuote } from '../shared/signIn.js'; // US-0804: shared with the sign-in command
 
 export const QUIET_MS = 1500;
 export const READY_TIMEOUT_MS = 20000;
@@ -8,8 +9,7 @@ const ENTER = '\r';
 
 export const withEnter = (text, submit) => (submit ? text + ENTER : text);
 
-/** A path as a shell word: every character outside letters, digits and `_@%+=:,./-` backslash-escaped, as a drop in Terminal.app types it. */
-export const shellQuote = (path) => String(path).replace(/[^\p{L}\p{N}_@%+=:,./-]/gu, '\\$&');
+export { shellQuote };
 
 /** Dropped files' paths as one line for the prompt: quoted, space-separated, a trailing space and no Enter. */
 export const dropText = (paths) => (paths.length ? paths.map(shellQuote).join(' ') + ' ' : '');

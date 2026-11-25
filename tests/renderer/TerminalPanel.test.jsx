@@ -238,6 +238,211 @@ describe('TerminalPanel', () => {
   });
 });
 
+describe('A tool that is not signed in (EPIC-08 US-0804 FR4.1–FR4.3)', () => {
+  const answer = (state) => ({ state, account: null, reason: null });
+  const ownIds = async ({ kind, harness: h }) => `pty-${h ?? kind}`;
+  const line = () => screen.queryByTestId('terminal-panel-signin');
+  const checks = () => window.bridge.checkSignIn.mock.calls.map(([id]) => id);
+  const start = (tab = 'agent') => act(() => terminal.restart(tab));
+  /** The panel with a Claude agent tab whose check gives `state`. */
+  async function renderSignedOut(state = 'out', agent, props) {
+    window.bridge.checkSignIn = vi.fn(async () => answer(state));
+    await renderPanel(agent, props);
+    await act(async () => {});
+  }
+  afterEach(() => {
+    delete window.bridge.checkSignIn;
+    delete window.bridge.getSettings;
+    window.bridge.ptySpawn.mockImplementation(async ({ kind }) => `pty-${kind}`);
+  });
+
+  it('shows one line that names the tool, and announces it, after one check of its own tool (AC3.1.1, AC3.1.6, NFR3)', async () => {
+    await renderSignedOut();
+    expect(checks()).toEqual(['claude']); // the Shell tab checks nothing
+    expect(line().closest('[data-testid="terminal-panel-foot"]')).toBeTruthy();
+    expect(line().textContent).toContain('Claude Code är inte inloggad.');
+    const region = screen.getByTestId('terminal-panel-signin-status');
+    expect(region.getAttribute('aria-live')).toBe('polite');
+    expect(region.textContent).toBe('Claude Code är inte inloggad.');
+  });
+
+  it.each(['in', 'none', 'unknown'])('shows no line for %s (AC3.1.2)', async (state) => {
+    await renderSignedOut(state);
+    expect(checks()).toEqual(['claude']);
+    expect(line()).toBeNull();
+    expect(screen.queryByTestId('terminal-panel-foot')).toBeNull(); // the terminal keeps its height
+  });
+
+  it('shows no line for a tool that is not found, or for a check that fails', async () => {
+    window.bridge.checkSignIn = vi.fn(async () => null);
+    await renderPanel();
+    await act(async () => {});
+    expect(line()).toBeNull();
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    window.bridge.checkSignIn.mockRejectedValueOnce(new Error('boom'));
+    await start();
+    await act(async () => {});
+    expect(line()).toBeNull();
+    expect(warn).toHaveBeenCalled();
+    warn.mockRestore();
+  });
+
+  it('does not delay the start, and shows no line while the check runs (AC3.1.1, AC3.1.2)', async () => {
+    window.bridge.checkSignIn = vi.fn(() => new Promise(() => {}));
+    await renderPanel(); // waits for the agent tab to be running
+    expect(terminal.running()).toBe(true);
+    expect(line()).toBeNull();
+    await act(() => terminal.type('agent', '/aidlc'));
+    expect(window.bridge.ptyWrite).toHaveBeenCalledWith('pty-agent', '/aidlc');
+  });
+
+  it('checks nothing when the start fails', async () => {
+    window.bridge.checkSignIn = vi.fn(async () => answer('out'));
+    window.bridge.ptySpawn.mockImplementation(async ({ kind }) => {
+      if (kind === 'agent') throw new Error('no shell');
+      return 'pty-shell';
+    });
+    render(
+      <TerminalProvider>
+        <Grab />
+        <TerminalPanel projectId="p1" visible />
+      </TerminalProvider>
+    );
+    act(() => terminal.setAgent({ harness: harness('claude') }));
+    await screen.findByTestId('terminal-panel-restart-agent');
+    expect(checks()).toEqual([]);
+  });
+
+  it('shows only while its tab is shown and the panel is open (AC3.1.1)', async () => {
+    await renderSignedOut();
+    fireEvent.click(screen.getByTestId('terminal-panel-tab-shell'));
+    expect(line()).toBeNull();
+    fireEvent.click(screen.getByTestId('terminal-panel-tab-agent'));
+    expect(line()).toBeTruthy();
+    fireEvent.click(screen.getByTestId('terminal-panel-toggle'));
+    expect(line()).toBeNull();
+    fireEvent.click(screen.getByTestId('terminal-panel-toggle'));
+    expect(line()).toBeTruthy();
+  });
+
+  it("each of two agent tabs has its own tool's line (AC3.1.6)", async () => {
+    window.bridge.ptySpawn.mockImplementation(ownIds);
+    window.bridge.checkSignIn = vi.fn(async (id) => answer(id === 'opencode' ? 'out' : 'in'));
+    await renderPanel({ harness: harness('claude'), extras: [harness('opencode')] });
+    await waitFor(() => expect(checks().sort()).toEqual(['claude', 'opencode']));
+    expect(line()).toBeNull(); // Claude is shown
+    fireEvent.click(screen.getByTestId('terminal-panel-tab-agent-opencode'));
+    await waitFor(() => expect(line().textContent).toContain('opencode är inte inloggad.'));
+    await start('agent:opencode');
+    expect(checks().filter((id) => id === 'claude')).toHaveLength(1); // the other tab's start checks its own tool only
+    expect(checks().filter((id) => id === 'opencode')).toHaveLength(2);
+  });
+
+  it('Sign in types the command into the Shell tab without Enter, with the path chosen at that time (AC3.1.3)', async () => {
+    await renderSignedOut();
+    window.bridge.getSettings = vi.fn(async () => ({ toolPaths: { claude: '/opt/my tools/claude' } }));
+    await act(async () => fireEvent.click(screen.getByTestId('terminal-panel-signin-start')));
+    await waitFor(() => expect(window.bridge.ptyWrite).toHaveBeenCalledWith('pty-shell', '/opt/my\\ tools/claude auth login'));
+    expect(terminal.view.active).toBe('shell');
+    expect(window.bridge.ptyWrite.mock.calls.flat().join('')).not.toMatch(/[\r\n]/);
+  });
+
+  it('Sign in falls back to the tool name when the settings cannot be read', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    await renderSignedOut();
+    window.bridge.getSettings = vi.fn(async () => {
+      throw new Error('EACCES');
+    });
+    await act(async () => fireEvent.click(screen.getByTestId('terminal-panel-signin-start')));
+    await waitFor(() => expect(window.bridge.ptyWrite).toHaveBeenCalledWith('pty-shell', 'claude auth login'));
+    expect(warn).toHaveBeenCalled();
+    warn.mockRestore();
+  });
+
+  it('Settings › Tools asks for that tab of Settings (AC3.1.3)', async () => {
+    const onOpenTools = vi.fn();
+    await renderSignedOut('out', undefined, { onOpenTools });
+    const button = screen.getByTestId('terminal-panel-signin-tools');
+    expect(button.textContent).toBe('Inställningar › Verktyg');
+    fireEvent.click(button);
+    expect(onOpenTools).toHaveBeenCalledTimes(1);
+  });
+
+  it('dismissed, the line stays away until the tab is started again (AC3.1.4)', async () => {
+    await renderSignedOut();
+    fireEvent.click(screen.getByTestId('terminal-panel-signin-dismiss'));
+    expect(line()).toBeNull();
+    fireEvent.click(screen.getByTestId('terminal-panel-tab-shell'));
+    fireEvent.click(screen.getByTestId('terminal-panel-tab-agent'));
+    expect(line()).toBeNull();
+    await start();
+    await waitFor(() => expect(line()).toBeTruthy());
+    expect(checks()).toEqual(['claude', 'claude']);
+  });
+
+  it('a start forgets the earlier answer at once, and signed in shows no line (AC3.1.5)', async () => {
+    await renderSignedOut();
+    let reply;
+    window.bridge.checkSignIn.mockImplementation(() => new Promise((resolve) => (reply = resolve)));
+    await start();
+    expect(line()).toBeNull();
+    await act(async () => reply(answer('in')));
+    expect(line()).toBeNull();
+  });
+
+  it('a late answer from before a restart changes nothing', async () => {
+    const replies = [];
+    window.bridge.checkSignIn = vi.fn(() => new Promise((resolve) => replies.push(resolve)));
+    await renderPanel();
+    await start();
+    expect(replies).toHaveLength(2);
+    await act(async () => replies[1](answer('in')));
+    await act(async () => replies[0](answer('out')));
+    expect(line()).toBeNull();
+  });
+
+  describe('checked again when the Shell tab goes quiet (FR4.3, AC3.1.5)', () => {
+    const shellOutput = () => act(async () => window.bridge.onPtyData.mock.calls.forEach(([cb]) => cb({ id: 'pty-shell', data: '$ ' })));
+    const shellState = (text) => waitFor(() => expect(screen.getByTestId('terminal-panel-state-shell').textContent).toBe(text), { timeout: 4000 });
+
+    it('after Sign in only, each time, and signed in removes the line', { timeout: 20_000 }, async () => {
+      await renderSignedOut();
+      await shellState('Ledig');
+      await shellOutput();
+      await shellState('Arbetar');
+      await shellState('Ledig');
+      expect(checks()).toEqual(['claude']); // nothing was asked for yet
+
+      await act(async () => fireEvent.click(screen.getByTestId('terminal-panel-signin-start')));
+      await shellOutput();
+      await shellState('Ledig');
+      await waitFor(() => expect(checks()).toHaveLength(2));
+      fireEvent.click(screen.getByTestId('terminal-panel-tab-agent'));
+      expect(line()).toBeTruthy(); // still not signed in: the line stays, and the next quiet checks again
+
+      window.bridge.checkSignIn.mockResolvedValue(answer('in'));
+      await shellOutput();
+      await shellState('Ledig');
+      await waitFor(() => expect(checks()).toHaveLength(3));
+      await waitFor(() => expect(line()).toBeNull());
+
+      await shellOutput(); // no line shows any more: nothing is checked
+      await shellState('Ledig');
+      expect(checks()).toHaveLength(3);
+    });
+
+    it('not for a dismissed line', { timeout: 15_000 }, async () => {
+      await renderSignedOut();
+      await act(async () => fireEvent.click(screen.getByTestId('terminal-panel-signin-start')));
+      fireEvent.click(screen.getByTestId('terminal-panel-tab-agent'));
+      fireEvent.click(screen.getByTestId('terminal-panel-signin-dismiss'));
+      await shellOutput();
+      await shellState('Ledig');
+      expect(checks()).toEqual(['claude']);
+    });
+  });
+});
+
 describe('Claude Code and opencode side by side (EPIC-08 US-0803)', () => {
   const both = { harness: harness('claude'), extras: [harness('opencode')] };
   /** Each agent session gets its own pty id, so the test can tell which tab was written to. */
