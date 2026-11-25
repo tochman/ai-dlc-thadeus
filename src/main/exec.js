@@ -21,7 +21,12 @@ export function defaultExec(file, args, options = {}) {
     );
     // US-0034: `input` (the sudo password) goes to stdin only, never into args or the environment. An empty one closes
     // stdin, so the command can neither prompt nor wait (US-0804 FR1.1).
-    if (input != null) child.stdin.end(input);
+    if (input != null) {
+      // A command that exits without reading its input breaks the pipe. Its exit code is the answer (the callback above),
+      // and without a listener the error would end the app.
+      child.stdin.on('error', () => {});
+      child.stdin.end(input);
+    }
   });
 }
 

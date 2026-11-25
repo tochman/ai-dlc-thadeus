@@ -18,3 +18,12 @@ Run 2026-11-25 on `feat/US-0804` (macOS), on the uncommitted final code. `origin
 - **Not run:** the real `gh`, `claude` and `opencode` through the app. That is owed by hand, once.
 
 The finished target matrix is in `build-and-test-summary.md`.
+
+## After the pull request's CI run
+
+CI on pull request #153 (Linux, 2026-11-25) failed after this stage was approved: 2892 tests passed, but vitest stopped on one uncaught `write EPIPE` from `src/main/exec.js` during `signIn.test.js`.
+
+- **Cause:** `defaultExec` closes stdin with the input and had no error listener on it. A command that exits before that write breaks the pipe. In the app this would have been an uncaught error in the main process. The macOS runs here never hit the timing.
+- **Fix:** a listener on the child's stdin; the exit code stays the answer. Test first: a 4 MB input to a command that reads none of it gave two uncaught errors before the fix and none after (`exec.test.js`). Commit: `fix(US-0804): a command that exits before its input is read is no uncaught error`.
+- **Results after the fix:** `exec`, `signIn` and `updater` tests 55 passed; ESLint and Prettier clean on the changed files. The full suite runs again in CI.
+- **Lesson:** a child process given input needs an error listener on stdin, and a test that forces the broken pipe.

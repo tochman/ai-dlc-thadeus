@@ -29,6 +29,23 @@ describe('exec for the sign-in checks (US-0804)', () => {
     await expect(defaultExec('/nonexistent/tool', [], { input: '' })).rejects.toMatchObject({ code: 'ENOENT' });
   });
 
+  it('a command that exits without reading its input decides the answer, and the broken pipe is not an uncaught error', async () => {
+    const uncaught = vi.fn();
+    const saved = process.listeners('uncaughtException');
+    process.removeAllListeners('uncaughtException');
+    process.on('uncaughtException', uncaught);
+    try {
+      const input = 'x'.repeat(4 * 1024 * 1024); // more than a pipe holds, so the write is cut off every time
+      expect(await defaultExec('/bin/sh', ['-c', 'echo done'], { input })).toBe('done\n');
+      await expect(defaultExec('/bin/sh', ['-c', 'exit 3'], { input })).rejects.toMatchObject({ code: 3 });
+      await new Promise((resolve) => setTimeout(resolve, 50));
+    } finally {
+      process.removeAllListeners('uncaughtException');
+      saved.forEach((listener) => process.on('uncaughtException', listener));
+    }
+    expect(uncaught).not.toHaveBeenCalled();
+  });
+
   it('a failed command keeps its stderr and its exit code on the error, beside its stdout', async () => {
     const run = defaultExec('/bin/sh', ['-c', 'echo out; echo first >&2; echo second >&2; exit 4']);
     await expect(run).rejects.toMatchObject({ code: 4, stdout: 'out\n', stderr: 'first\nsecond\n' });

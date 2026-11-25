@@ -1388,3 +1388,10 @@
 **Tokens By Agent**: main=166/96.8k/38M/612.8k; aidlc-developer-agent=68/100k/9.4M/399.3k
 
 ---
+
+## Recovery: CI failure after approval
+**Timestamp**: 2026-11-25T15:56:18Z
+**Issue**: CI on PR #153 failed on an uncaught write EPIPE in src/main/exec.js (the tests themselves passed) after Build and Test was approved.
+**Recovery steps**: failing test in exec.test.js first, then an error listener on the child stdin in defaultExec; recorded in construction/build-and-test/test-results.md.
+
+---
