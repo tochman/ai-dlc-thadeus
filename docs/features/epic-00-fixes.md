@@ -852,7 +852,7 @@
 - **Priority:** High
 - **Complexity:** Small
 - **Background:** Reported 2026-11-25 with ten changes shown as waiting. Two faults in `src/main/planningSync.js`:
-  - A change the app had recorded was committed and pushed outside the app (`05f124f`). `commitIn` then found nothing to commit, so the entries stayed pending (five of the ten were such files). They joined the app's next commit, which named their stories without holding any change to them (`011b158`).
+  - A change the app had recorded was committed and pushed outside the app (`05f124f`). `commitIn` then found nothing to commit, so the entries stayed pending (six of the ten were such files). They joined the app's next commit, which named their stories without holding any change to them (`011b158`).
   - The app committed on `main`, and the checkout moved to a story branch before the push. `sourcesOf` looks at the target only while it is checked out, so the commit was never pushed. `pushStep` then reads "nothing is ahead of origin" and drops the committed entries, though `main` is ahead.
 - **Acceptance Criteria:**
   - [ ] **Given** a recorded change whose text is already on the target, **when** a cycle runs, **then** its entry is cleared, and no later commit names its stories.
