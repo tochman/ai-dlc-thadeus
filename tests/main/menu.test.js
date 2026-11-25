@@ -37,7 +37,7 @@ describe('app menu (EPIC-04 US-0404)', () => {
 
   it('turns project items off without a project and Kostnad/Github off outside AI-DLC (FR2.5)', () => {
     const none = build({ state: { hasProject: false, framework: null, showFeatures: false } }).template;
-    for (const label of ['Stäng projekt', 'Projektinställningar…', 'Intents', 'Kostnad', 'Github', 'Agent', 'Shell', 'Starta om flik']) {
+    for (const label of ['Stäng projekt', 'Projektinställningar…', 'Intents', 'Kostnad', 'Version control', 'Agent', 'Shell', 'Starta om flik']) {
       expect(byLabel(none, label).enabled, label).toBe(false);
     }
     expect(byLabel(none, 'Features').visible).toBe(false);
@@ -46,7 +46,7 @@ describe('app menu (EPIC-04 US-0404)', () => {
 
     const plain = build({ state: { hasProject: true, framework: null, showFeatures: true } }).template;
     expect(byLabel(plain, 'Kostnad').enabled).toBe(false);
-    expect(byLabel(plain, 'Github').enabled).toBe(false);
+    expect(byLabel(plain, 'Version control').enabled).toBe(false);
     expect(byLabel(plain, 'Stäng projekt').enabled).toBe(true);
     expect(byLabel(plain, 'Features').visible).toBe(true);
 
@@ -61,7 +61,7 @@ describe('app menu (EPIC-04 US-0404)', () => {
   it('US-1401 BR1.8: carries the framework, and shows Kostnad and Github only for AI-DLC (AC1.1.2, AC1.1.5)', () => {
     const speckit = build({ state: { hasProject: true, framework: 'speckit', showFeatures: false } }).template;
     expect(byLabel(speckit, 'Kostnad').enabled).toBe(false);
-    expect(byLabel(speckit, 'Github').enabled).toBe(false);
+    expect(byLabel(speckit, 'Version control').enabled).toBe(false);
     expect(byLabel(speckit, 'Intents').enabled).toBe(true); // goes to the framework's first view
     expect(byLabel(build().template, 'Kostnad').enabled).toBe(true);
 
