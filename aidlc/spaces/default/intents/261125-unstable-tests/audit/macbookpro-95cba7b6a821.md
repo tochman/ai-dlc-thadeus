@@ -312,3 +312,101 @@
 **Question Shows**: sha256:3f68c23b3ae5276ca4d2416d15e17f94e81cceded30693f74dc5ceb1a6fe6910
 
 ---
+
+## Workflow Parked
+**Timestamp**: 2026-11-25T11:34:07Z
+**Event**: WORKFLOW_PARKED
+**Stage**: build-and-test
+**Person Reply**: THADEUS: the person asked for a fresh session. At your next safe point, run `aidlc engine orchestrate park --person-asked` and end your turn.
+**Message Id**: 0d299b99
+
+---
+
+## Subagent Completed
+**Timestamp**: 2026-11-25T11:34:12Z
+**Event**: SUBAGENT_COMPLETED
+**Agent Type**: unknown
+**Agent ID**: a712501c8e06b0832
+**Message**: /clear
+
+---
+
+## Human Turn
+**Timestamp**: 2026-11-25T11:35:25Z
+**Event**: HUMAN_TURN
+**Session**: 9a2dd185-bef2-43a0-ad1e-8957c2dd35fe
+**Origin**: person
+**Source**: typed
+**Message Id**: 2091f74e
+**Open Questions**: 2af514af
+
+---
+
+## Workflow Unparked
+**Timestamp**: 2026-11-25T11:35:34Z
+**Event**: WORKFLOW_UNPARKED
+
+---
+
+## Gate Approved
+**Timestamp**: 2026-11-25T11:35:36Z
+**Event**: GATE_APPROVED
+**Stage**: build-and-test
+**User Input**: Approve
+**Person Reply**: THADEUS: the person asked for a fresh session. At your next safe point, run `aidlc engine orchestrate park --person-asked` and end your turn.\njust erge it and ove on to the spec kit archive intent.
+**Message Id**: 2091f74e
+**Message Ids**: 0d299b99,2091f74e
+**Brief Digest**: none
+
+---
+
+## Stage Completion
+**Timestamp**: 2026-11-25T11:35:36Z
+**Event**: STAGE_COMPLETED
+**Stage**: build-and-test
+**Validation Basis**: {"graphContract":"sha256:1aed809bd5f1f235d6ab1b1495c41997dd8cc201478d4991c474c4f1638a2b55","inputs":[{"artifact":"code-generation-plan","contentHash":"sha256:d35f153a52cac4b64122b679be617c8c6474ad5cf04b76cb471f632f28319061","instanceCount":1,"presentCount":1,"producer":"code-generation","required":true,"structureHash":"sha256:0b8d7f5ae2ba3697a0d22c909c48683430ddc860ebaa35c7cf446ccc6bb327ea"},{"artifact":"code-summary","contentHash":"sha256:5f9c3ea6869eea2d928678ca21f85154d93c3da62ad842dbec8e958a19739bc9","instanceCount":1,"presentCount":1,"producer":"code-generation","required":true,"structureHash":"sha256:f0282785dfd97a07bc1fdc16607f5a9537c7ea327fef4a396d9ccc162f8bd620"},{"artifact":"unit-test-instructions","contentHash":"sha256:d3022183f681a62d89d6b8f334e31520b6dbea9eb97d3155756e6eac81eb712d","instanceCount":1,"presentCount":1,"producer":"code-generation","required":true,"structureHash":"sha256:0274a115e8bdaf305ff733012b1300695daa56f8ea550d2e5ef0d6d34d33bf9c"}],"outputs":[{"artifact":"build-and-test-summary","contentHash":"sha256:7933f799ee698526a7d7e06b174e84de9df77be1958dc22b0d7646263a37364b","instanceCount":1,"presentCount":1,"producer":"build-and-test","required":true,"structureHash":"sha256:bd58f4a3ce7cb157b1433f17a85c8d7be5a54570c7005f19b47c513cfcaf8811"},{"artifact":"build-instructions","contentHash":"sha256:f282e9f7943065f20cd078639a96c15ae482c9c967d85d1528e72773b3354f89","instanceCount":1,"presentCount":1,"producer":"build-and-test","required":true,"structureHash":"sha256:8799f555750248639bb71196ea1c26138d24e6cdbf70dcbb91f4f9d034fafabf"},{"artifact":"build-test-results","contentHash":"sha256:f10edc6b6043987ad62e6348b8405ada48935a162a4ae20f7bb6bd3f2fdcf3dc","instanceCount":1,"presentCount":1,"producer":"build-and-test","required":true,"structureHash":"sha256:63c753d2af1411b13a90d6b63edcaa1e19ff8e88a635363ec17d30e430025fba"},{"artifact":"cross-unit-traceability","contentHash":"sha256:bc595aae091ca9d7cb6a390fc34047a3fbb47856412f1956e5e40be69199a75e","instanceCount":1,"presentCount":1,"producer":"build-and-test","required":true,"structureHash":"sha256:e21272b8b680dc83678bd2fb8e84b6842c9e8560a2cbf53074c5aa827bc5160f"}],"projectType":"brownfield","schema":3}
+**Details**: Stage Build and Test approved by gate
+**Tokens In**: 10
+**Tokens Out**: 4103
+**Cache Read**: 3416083
+**Cache Write**: 6098
+**Cost USD**: 0.81
+**By Model**: opus-5-5=0.81
+**By Agent**: main=0.81
+**Tokens By Model**: opus-5-5=10/4.1k/3.4M/6.1k
+**Tokens By Agent**: main=10/4.1k/3.4M/6.1k
+
+---
+
+## Phase Completion
+**Timestamp**: 2026-11-25T11:35:36Z
+**Event**: PHASE_COMPLETED
+**From phase**: construction
+**To phase**: (end)
+**Stages completed**: 5
+
+---
+
+## Phase Verification
+**Timestamp**: 2026-11-25T11:35:36Z
+**Event**: PHASE_VERIFIED
+**Phase boundary**: construction → end
+
+---
+
+## Workflow Completion
+**Timestamp**: 2026-11-25T11:35:36Z
+**Event**: WORKFLOW_COMPLETED
+**Scope**: quick-fix
+**Details**: Scope: quick-fix, 5 stages completed
+**Tokens In**: 32
+**Tokens Out**: 15743
+**Cache Read**: 10727961
+**Cache Write**: 39087
+**Cost USD**: 2.77
+**By Model**: opus-5-5=2.77
+**By Agent**: main=2.77
+**Tokens By Model**: opus-5-5=32/15.7k/10.7M/39.1k
+**Tokens By Agent**: main=32/15.7k/10.7M/39.1k
+
+---

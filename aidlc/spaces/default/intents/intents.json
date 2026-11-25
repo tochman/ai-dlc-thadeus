@@ -524,7 +524,7 @@
     "slug": "unstable-tests",
     "dirName": "261125-unstable-tests",
     "scope": "quick-fix",
-    "status": "in-flight",
+    "status": "complete",
     "request": "0c51dfe0"
   }
 ]
