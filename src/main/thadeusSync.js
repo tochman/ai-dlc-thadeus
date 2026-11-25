@@ -84,14 +84,16 @@ const pushedOf = (ctx, file) => pushed.get(`${ctx.root}\0${file}`);
 
 /**
  * One waiting file into the worktree `wt`, which is at origin's target. Returns `{conflict}` when origin moved on from
- * the copy the app's file came from, `{left}` when the working tree keeps other edits than the app's (ADR-003).
+ * the copy the app's file came from, `{left}` when the working tree keeps other edits than the app's (ADR-003), and
+ * `{gone}` when the file is neither on disk nor at the target (US-0047): `git add` fails on such a path.
  */
 async function copyIn(ctx, wt, file) {
   const disk = await readOrNull(ctx.root, file);
   const theirs = await readOrNull(wt, file);
   const row = rowOf(file);
   if (disk === null) {
-    if (theirs !== null && !row) await git(wt, ['rm', '--quiet', '--', file], ctx); // ponytail: a harness file removed by hand stays at origin
+    if (theirs === null) return { gone: true };
+    if (!row) await git(wt, ['rm', '--quiet', '--', file], ctx); // ponytail: a harness file removed by hand stays at origin
     return {};
   }
   if (row?.splice) {
@@ -119,13 +121,15 @@ async function copyIn(ctx, wt, file) {
 async function commitAndPush(ctx, wt, files, record) {
   const conflicts = [];
   const left = [];
+  const toAdd = []; // US-0047: without the files that are gone
   for (const file of files) {
     const res = await copyIn(ctx, wt, file);
+    if (!res.gone) toAdd.push(file);
     if (res.conflict) conflicts.push(file);
     if (res.left) left.push(file);
   }
   if (conflicts.length) return { error: { kind: 'conflict', files: conflicts } }; // FR3.6: nothing is pushed
-  await git(wt, ['add', '-A', '--', ...files], ctx);
+  if (toAdd.length) await git(wt, ['add', '-A', '--', ...toAdd], ctx);
   if (await gitOk(wt, ['diff', '--cached', '--quiet'], ctx)) return { empty: true, left };
   try {
     await git(wt, ['commit', '--quiet', '-m', SUBJECT], ctx);
