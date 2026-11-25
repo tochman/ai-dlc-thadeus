@@ -56,6 +56,7 @@
       "tooLarge": "Larger than 1 MB, so it is not read.",
       "notUtf8": "Not valid UTF-8 text.",
       "notFile": "Not a file, so it is not read.",
+      "notFolder": "Not a folder, so it is not read.",
       "yaml": "Not valid YAML: {error}",
       "notMapping": "The top level is not a list of keys, so nothing in it is read.",
       "noManifest": "Missing, so the extension's commands are not known.",
@@ -85,6 +86,17 @@
       "round": "Round {round}",
       "noPhase": "Before the first phase",
       "files": "Files"
+    },
+    "archive": {
+      "title": "Archive feature",
+      "hidden": "Only THADEUS hides it. The feature's files stay where they are, and you can unarchive it at any time.",
+      "openTasks": "{n, plural, one {# task is not done.} other {# tasks are not done.}}",
+      "active": "This is the active feature, so it cannot be archived.",
+      "notListed": "The feature is not among the folders under specs/ any more.",
+      "notSpeckit": "This project does not follow Spec Kit, so it has no features to archive.",
+      "filterLabel": "Which features to show",
+      "all": "All features",
+      "allArchived": "Every feature is archived. Pick \"Archived ({n})\" in the filter to see them."
     },
     "rules": {
       "constitution": "Constitution",

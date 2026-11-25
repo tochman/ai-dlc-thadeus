@@ -111,6 +111,13 @@ describe('switchPreview (BR8.2, BR8.3, NFR3.4)', () => {
     expect(preview.inProgress).toEqual([{ kind: 'feature', name: '001-open' }]);
   });
 
+  it('leaves out an archived feature with open tasks (US-1411 FR3.7)', async () => {
+    await speckitProject();
+    await put('specs/003-hidden/tasks.md', '- [ ] T001 open\n');
+    await put('.thadeus/archived/003-hidden.json', '{"version": 1}\n');
+    expect((await switchPreview(root, 'speckit', 'aidlc')).inProgress).toEqual([{ kind: 'feature', name: '001-open' }]);
+  });
+
   it('names a features list it could not read, logs it and does not throw', async () => {
     await speckitProject();
     const loadFeatures = vi.fn(async () => {

@@ -1,10 +1,11 @@
 // US-1402 FR6, BR6.1–BR6.10, NFR3.3, NFR3.4, NFR5.1, NFR7.3: Spec Kit's features read from real temp folders (contract C5).
-import { afterEach, describe, expect, it } from 'vitest';
+// US-1411 FR2.3, FR3.6, FR4.2–FR4.4, NFR2, NFR3: which features are archived, from the marks in .thadeus/archived/.
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { promises as fs } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { t } from '../../src/shared/i18n.js';
-import { MAX_READ_BYTES, SPECKIT_WATCH_PATHS, activeFeature, loadSpeckitFeatures } from '../../src/main/speckitFeatures.js';
+import { MAX_READ_BYTES, SPECKIT_WATCH_PATHS, activeFeature, listedFeatures, loadSpeckitFeatures } from '../../src/main/speckitFeatures.js';
 import { spyWrites } from './fsWriteSpy.js';
 
 const roots = [];
@@ -57,6 +58,7 @@ describe('loadSpeckitFeatures: the list (BR6.1)', () => {
       version: { found: null, supported: false },
       features: [],
       active: null,
+      activeMarked: false,
       errors: []
     });
   });
@@ -276,15 +278,84 @@ describe('activeFeature (US-1409 BR2.1)', () => {
   });
 });
 
+describe('the archive marks (US-1411)', () => {
+  const archived = (r) => r.features.filter((f) => f.archived).map((f) => f.dir);
+  const mark = (dir) => ({ [`.thadeus/archived/${dir}.json`]: '{"version": 1}\n' });
+
+  it('gives each feature archived from its mark, with the same flow, tasks and files as before', async () => {
+    const tree = { 'specs/001-a/spec.md': '# Spec\n', 'specs/001-a/tasks.md': '- [ ] T001 One\n', 'specs/002-b/': null };
+    const [plain] = (await loadSpeckitFeatures(await project(tree))).features;
+    expect(plain.archived).toBe(false);
+    const r = await loadSpeckitFeatures(await project({ ...tree, ...mark('001-a') }));
+    expect(r.features).toHaveLength(2);
+    expect(r.features[0]).toEqual({ ...plain, archived: true });
+    expect(archived(r)).toEqual(['001-a']);
+    expect(r).toMatchObject({ activeMarked: false, errors: [] });
+  });
+
+  it('shows the active feature as not archived, and says that it is marked (FR2.3)', async () => {
+    const tree = { 'specs/001-a/': null, 'specs/002-b/': null, '.specify/feature.json': featureJson('specs/001-a') };
+    const r = await loadSpeckitFeatures(await project({ ...tree, ...mark('001-a'), ...mark('002-b') }));
+    expect(archived(r)).toEqual(['002-b']);
+    expect(r).toMatchObject({ active: '001-a', activeMarked: true });
+    expect((await loadSpeckitFeatures(await project({ ...tree, ...mark('002-b') }))).activeMarked).toBe(false);
+  });
+
+  it('ignores a mark whose feature folder is gone, and uses it again when the folder is back (FR4.3)', async () => {
+    const root = await project({ 'specs/001-a/': null, ...mark('009-gone') });
+    expect(await loadSpeckitFeatures(root)).toMatchObject({ features: [{ dir: '001-a', archived: false }], errors: [] });
+    await fs.mkdir(path.join(root, 'specs/009-gone'));
+    expect(archived(await loadSpeckitFeatures(root))).toEqual(['009-gone']);
+  });
+
+  it('matches a folder and its mark in NFC, whichever form each is stored in', async () => {
+    const dir = '001-fotoalbum-å';
+    const r = await loadSpeckitFeatures(await project({ [`specs/${dir.normalize('NFD')}/`]: null, ...mark(dir.normalize('NFC')) }));
+    expect(r.features.map((f) => f.archived)).toEqual([true]);
+  });
+
+  it('shows every feature, with the reason, when the marks cannot be read (FR4.4)', async () => {
+    const r = await loadSpeckitFeatures(await project({ 'specs/001-a/': null, '.thadeus/archived': 'a file' }));
+    expect(archived(r)).toEqual([]);
+    expect(r.errors).toEqual([{ path: '.thadeus/archived', reason: reason('notFolder') }]);
+  });
+
+  it('lists the marks once and reads none of them, and writes nothing (NFR2, FR4.2)', async () => {
+    const tree = { 'specs/001-a/': null, 'specs/002-b/': null, 'specs/003-c/': null, '.specify/feature.json': featureJson('specs/003-c') };
+    const root = await project({ ...tree, ...mark('001-a'), ...mark('002-b'), ...mark('003-c') });
+    const reads = vi.spyOn(fs, 'readFile');
+    const lists = vi.spyOn(fs, 'readdir');
+    const writes = spyWrites();
+    try {
+      expect(archived(await loadSpeckitFeatures(root))).toEqual(['001-a', '002-b']);
+      const inThadeus = (spy) => spy.mock.calls.filter(([p]) => String(p).includes('.thadeus'));
+      expect(inThadeus(reads)).toEqual([]);
+      expect(inThadeus(lists)).toHaveLength(1);
+      expect(writes.calls()).toEqual([]);
+    } finally {
+      writes.restore();
+      reads.mockRestore();
+      lists.mockRestore();
+    }
+  });
+
+  it('listedFeatures gives the folders and the active one, as the list has them', async () => {
+    const root = await project({ 'specs/002-b/': null, 'specs/001-a/': null, 'specs/.hidden/': null, '.specify/feature.json': featureJson('specs/002-b') });
+    expect(await listedFeatures(root)).toEqual({ dirs: ['001-a', '002-b'], active: '002-b' });
+    expect(await listedFeatures(await project())).toEqual({ dirs: [], active: null });
+  });
+});
+
 describe('SPECKIT_WATCH_PATHS (US-1404 BR7.8)', () => {
-  it("keeps U6's paths and also follows the constitution, extensions.yml and every extension folder", () => {
+  it("keeps U6's paths and also follows the constitution, extensions.yml, every extension folder and the archive marks (US-1411 FR3.6)", () => {
     expect(SPECKIT_WATCH_PATHS).toEqual([
       'specs/**',
       '.specify/feature.json',
       '.specify/init-options.json',
       '.specify/memory/constitution.md',
       '.specify/extensions.yml',
-      '.specify/extensions/**'
+      '.specify/extensions/**',
+      '.thadeus/archived/**'
     ]);
   });
 });

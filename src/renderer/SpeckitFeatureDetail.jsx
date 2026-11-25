@@ -1,6 +1,7 @@
 // US-1402 FR6.2–FR6.4: one Spec Kit feature: its flow worked out from the files (BR6.3), its tasks by phase with
 // Convergence rounds (BR6.4), and its files, each opened read-only through `onOpenFile` (BR6.5).
 // US-1403 FR5.1: the next command for the active feature (BR5.2, BR5.4), and the converge note (BR5.3).
+// US-1411 FR2.1: an archived feature shows its mark in place of the next command.
 import { useTranslation } from 'react-i18next';
 import { nextCommand } from '../shared/speckitCommands.js';
 import SpeckitCommandButton from './SpeckitCommandButton.jsx';
@@ -32,17 +33,30 @@ function NextCommand({ feature, activeName }) {
 }
 
 /**
- * @param {{feature: object, activeName?: string|null, onOpenFile: (rel: string) => void, openFile?: string|null}} props
- * a feature from speckit:features (C5) and the active feature's name, or null when none is active
+ * @param {{feature: object, activeName?: string|null, onOpenFile: (rel: string) => void, openFile?: string|null,
+ *          actions?: import('react').ReactNode}} props
+ * a feature from speckit:features (C5), the active feature's name, or null when none is active, and what stands beside
+ * the title (US-1411: Archive or Unarchive)
  */
-export default function SpeckitFeatureDetail({ feature, activeName = null, onOpenFile, openFile = null }) {
+export default function SpeckitFeatureDetail({ feature, activeName = null, onOpenFile, openFile = null, actions = null }) {
   const { t } = useTranslation();
   const { flow, tasks, files, dir } = feature;
   const prefix = `specs/${dir}/`;
   return (
     <div className="speckit-feature" data-testid="speckit-feature-detail">
-      <h3 className="section-title">{feature.number ? `${feature.number} · ${feature.name}` : feature.name}</h3>
-      <NextCommand feature={feature} activeName={activeName} />
+      <div className="speckit-feature-head">
+        <h3 className="section-title">{feature.number ? `${feature.number} · ${feature.name}` : feature.name}</h3>
+        {actions}
+      </div>
+      {feature.archived ? (
+        <div className="speckit-commands-row">
+          <span className="intent-parked" data-testid="speckit-feature-archived">
+            {t('intents.archive.mark')}
+          </span>
+        </div>
+      ) : (
+        <NextCommand feature={feature} activeName={activeName} />
+      )}
 
       <ol className="speckit-flow" data-testid="speckit-feature-flow">
         {STEPS.map((step) => (

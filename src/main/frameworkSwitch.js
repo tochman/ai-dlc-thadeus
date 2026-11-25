@@ -31,10 +31,10 @@ async function openIntents(root, unread) {
   return lists.flatMap(({ intents }) => intents.filter(inProgress).map((i) => ({ kind: 'intent', name: i.slug ?? i.dirName })));
 }
 
-/** BR8.3: the Spec Kit features with open tasks (done < total). */
+/** BR8.3: the Spec Kit features with open tasks (done < total); US-1411 FR3.7: not the archived ones. */
 async function openFeatures(root, loadFeatures) {
   const { features } = await loadFeatures(root);
-  return features.filter((f) => f.tasks.done < f.tasks.total).map((f) => ({ kind: 'feature', name: f.dir }));
+  return features.filter((f) => !f.archived && f.tasks.done < f.tasks.total).map((f) => ({ kind: 'feature', name: f.dir }));
 }
 
 /**

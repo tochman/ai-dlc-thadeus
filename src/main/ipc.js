@@ -82,7 +82,8 @@ import { PLANNING_BRANCH_DEFAULT, PLANNING_PUSH_DEFAULT, getProjectSettings, get
 import { watchFiles, watchForAidlc, watchIntents, watchOpenFiles } from './watcher.js';
 import { listTree, readForEdit, writeFileSafe } from './fileWrite.js';
 import { featureWatchPaths, loadFeatures, loadPlanningFeatures, loadStoryLinks } from './features.js';
-import { SPECKIT_WATCH_PATHS, loadSpeckitFeatures } from './speckitFeatures.js';
+import { SPECKIT_WATCH_PATHS, listedFeatures, loadSpeckitFeatures } from './speckitFeatures.js';
+import { addMark, markFile, removeMark } from './speckitArchive.js'; // US-1411
 import { loadSpeckitRules } from './speckitRules.js'; // US-1404
 import { switchFramework, switchPreview, switchTarget } from './frameworkSwitch.js'; // US-1407
 import { hasAgentSession, killAllSessions, killProjectSessions, killSession, resizeSession, spawnSession, tapOutput, writeSession } from './pty.js';
@@ -236,6 +237,27 @@ function watchSpeckit(projectId) {
     });
   } catch (err) {
     console.error(`Bevakning av Spec Kit-filerna kunde inte startas för ${p.root}:`, err);
+  }
+}
+
+/**
+ * US-1411 FR1.4, FR2.2, NFR1: archives or unarchives (`write` is addMark or removeMark) the feature folder `dir` of a Spec
+ * Kit project. The name is checked against the folders listed now before it becomes a path, and the active one is not archived.
+ * @returns {Promise<{ok: true} | {ok: false, error: string}>}
+ */
+async function writeMark(projectId, dir, write) {
+  const p = project(projectId);
+  const refuse = (key) => ({ ok: false, error: t(`speckit.archive.${key}`) });
+  if (p.framework !== 'speckit') return refuse('notSpeckit');
+  if (typeof dir !== 'string') return refuse('notListed');
+  try {
+    const { dirs, active } = await listedFeatures(p.root);
+    if (!dirs.includes(dir)) return refuse('notListed');
+    if (write === addMark && dir === active) return refuse('active');
+    await write(p.root, dir);
+    return { ok: true };
+  } catch (err) {
+    return { ok: false, error: t('projectFile.errors.writeFailed', { file: markFile(dir), reason: err.code ?? err.message }) };
   }
 }
 
@@ -1335,8 +1357,19 @@ const handlers = {
     const p = project(projectId);
     return readForEdit(p.root, rel, { framework: p.framework });
   },
-  // US-1402 FR6 (contract C5): read-only, so it needs no framework check.
-  'speckit:features': async (_event, projectId) => loadSpeckitFeatures(project(projectId).root),
+  // US-1402 FR6 (contract C5): the reader writes nothing, so it needs no framework check. US-1411 FR2.3: an archived
+  // feature that became active loses its mark here, so it also stays in the list when another becomes active.
+  'speckit:features': async (_event, projectId) => {
+    const p = project(projectId);
+    const result = await loadSpeckitFeatures(p.root);
+    if (result.activeMarked && p.framework === 'speckit') {
+      await removeMark(p.root, result.active).catch((err) => console.error(`Arkivmärket för ${result.active} kunde inte tas bort:`, err.message));
+    }
+    return result;
+  },
+  // US-1411 FR1.4, FR2.2: the feature's folder name only; main checks it.
+  'speckit:archive': async (_event, projectId, dir) => writeMark(projectId, dir, addMark),
+  'speckit:unarchive': async (_event, projectId, dir) => writeMark(projectId, dir, removeMark),
   // US-1404 FR7 (contract C6): read-only; offered only where the section is, in a Spec Kit project (BR7.9).
   'speckit:rules': async (_event, projectId) => {
     const p = project(projectId);
