@@ -152,6 +152,22 @@ describe('SpeckitFeatures: live updates (AC4.1.5, NFR7.4)', () => {
     unmount();
     expect(unsubscribe).toHaveBeenCalled();
   });
+
+  it('reports the feature count for the arm on load, on each change, and keeps the last one after a failed read (US-0048 L1)', async () => {
+    const onMeta = vi.fn();
+    render(<SpeckitFeatures projectId="p1" onMeta={onMeta} />);
+    await waitFor(() => expect(onMeta).toHaveBeenLastCalledWith('p1', { featureCount: 2 }));
+    window.bridge.speckitFeatures.mockResolvedValueOnce(result({ features: [albums, search, { ...search, dir: '003-tags', number: '003', name: 'tags' }] }));
+    await act(async () => changed({ projectId: 'p1', paths: ['specs/003-tags'] }));
+    await waitFor(() => expect(onMeta).toHaveBeenLastCalledWith('p1', { featureCount: 3 }));
+    window.bridge.speckitFeatures.mockRejectedValueOnce(new Error('boom'));
+    await act(async () => changed({ projectId: 'p1', paths: ['specs/003-tags'] }));
+    expect((await screen.findByRole('alert')).textContent).toBe('boom');
+    expect(onMeta).toHaveBeenCalledTimes(2);
+    window.bridge.speckitFeatures.mockResolvedValueOnce(result({ features: [], active: null }));
+    await act(async () => changed({ projectId: 'p1', paths: ['specs'] }));
+    await waitFor(() => expect(onMeta).toHaveBeenLastCalledWith('p1', { featureCount: 0 }));
+  });
 });
 
 describe('SpeckitFeatures: empty state, version and errors (AC4.1.6, BR6.8–BR6.10)', () => {

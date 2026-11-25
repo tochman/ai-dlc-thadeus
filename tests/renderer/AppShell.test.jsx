@@ -5,15 +5,18 @@ import { t } from '../../src/shared/i18n.js';
 import { viewFields } from '../../src/shared/frameworkViews.js';
 
 // The project view has its own tests; here it only reports what the left arm needs, as the real one does.
-// It renders the real latest-message strip (US-0506 u3), as the real one does above its terminal.
+// It renders the real latest-message strip (US-0506 u3), as the real one does above its terminal, and in a Spec Kit
+// project the real features view, which reports the count the arm shows (US-0048 L1).
 vi.mock('../../src/renderer/ProjectView.jsx', async () => {
   const { default: LatestMessageStrip } = await import('../../src/renderer/LatestMessageStrip.jsx');
+  const { default: SpeckitFeatures } = await import('../../src/renderer/SpeckitFeatures.jsx');
   return {
     default: function ProjectViewStub({ project, view, section, aidlcTab, onMeta, onOpenReply }) {
       useEffect(() => onMeta(project.projectId, { showFeatures: true, intentCount: 7 }), [project.projectId, onMeta]);
       return (
         <div data-testid={`project-view-${project.projectId}`} data-view={view} data-section={section} data-aidlc-tab={aidlcTab}>
           <LatestMessageStrip projectId={project.projectId} onOpenReply={onOpenReply} />
+          {project.detection.framework === 'speckit' && <SpeckitFeatures projectId={project.projectId} onMeta={onMeta} />}
         </div>
       );
     }
@@ -221,6 +224,12 @@ describe('App shell', () => {
   it('US-1401: a Spec Kit project shows the specs view and no Intents, Kostnad, Velocity, Planer or Github (AC1.1.2)', async () => {
     mockBridge({ openProjects: ['/p/kit-a'], activeProject: '/p/kit-a' });
     openAs('speckit');
+    const features = ['001-notes', '002-search'].map((dir) => ({ dir, number: dir.slice(0, 3), name: dir.slice(4), active: false, files: [] }));
+    Object.assign(window.bridge, {
+      speckitFeatures: vi.fn(async () => ({ version: { found: '1.4.3', supported: true }, features, active: null, errors: [] })),
+      speckitRules: vi.fn(async () => ({ extensions: [], errors: [], hooksChecked: true })),
+      onSpeckitChanged: vi.fn(() => () => {})
+    });
     render(<App />);
     const specs = await screen.findByTestId('project-view-switch-specs');
     expect(specs.textContent).toBe(t('app.specs'));
@@ -229,7 +238,7 @@ describe('App shell', () => {
     for (const id of ['project-view-switch-intents', 'project-view-switch-plans', 'arm-cost', 'arm-velocity', 'arm-github']) {
       expect(screen.queryByTestId(id), id).toBeNull();
     }
-    expect(within(screen.getByTestId('project-tabs')).getByText(t('app.featureCount', { n: 0 }))).toBeTruthy(); // U6 counts them
+    expect(await within(screen.getByTestId('project-tabs')).findByText(t('app.featureCount', { n: 2 }))).toBeTruthy(); // US-0048 L1
     await waitFor(() => expect(window.bridge.sendMenuState).toHaveBeenLastCalledWith({ hasProject: true, framework: 'speckit', showFeatures: true }));
 
     act(() => push.menuCommand({ command: 'panel', panel: 'cost' })); // AI-DLC's menu items do nothing here
