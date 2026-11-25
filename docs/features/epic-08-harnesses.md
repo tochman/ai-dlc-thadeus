@@ -8,7 +8,7 @@
 
 **Stories:** US-0801, US-0802, US-0803, US-0804, US-0805, US-0806
 
-**Status (2026-11-18):** ✅ US-0801–US-0803 released (v0.2.1–v0.2.3). 📋 US-0804 and US-0805 planned, for v0.3.1. 📋 US-0806 planned, for v0.3.2. Each story names its release.
+**Status (2026-11-18):** ✅ US-0801–US-0803 released (v0.2.1–v0.2.3). 🚧 US-0804 in progress, for v0.3.1. 📋 US-0805 planned, for v0.3.1. 📋 US-0806 planned, for v0.3.2. Each story names its release.
 
 ---
 
@@ -57,7 +57,7 @@
 - **Notes:** Added 2026-11-14 at the person's request ("I see no reason why not"). Today the agent tab is a single `agent` session whose harness can be switched (US-0801).
 - **Dependencies:** US-0801, US-0802
 
-**US-0804: See whether each tool is signed in, and sign in from the app** 📋 Planned, for v0.3.1
+**US-0804: See whether each tool is signed in, and sign in from the app** 🚧 In progress, for v0.3.1
 - As a **developer setting up a project**, in order to **avoid an agent tab or a GitHub feature failing on a missing sign-in**, I would like to **see whether Claude Code, opencode and the GitHub CLI are signed in, and start the sign-in from the app**.
 - **Epic:** EPIC-08
 - **Priority:** Medium
