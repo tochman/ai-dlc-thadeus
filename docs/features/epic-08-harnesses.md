@@ -8,7 +8,7 @@
 
 **Stories:** US-0801, US-0802, US-0803, US-0804, US-0805, US-0806
 
-**Status (2026-11-25):** ✅ US-0801–US-0803 released (v0.2.1–v0.2.3). ✅ US-0804 done, for v0.3.1. 📋 US-0805 planned, for v0.3.1. 📋 US-0806 planned, for v0.3.2. Each story names its release.
+**Status (2026-11-25):** ✅ US-0801–US-0803 released (v0.2.1–v0.2.3). ✅ US-0804 done, for v0.3.1. 🚧 US-0805 in progress, for v0.3.1. 📋 US-0806 planned, for v0.3.2. Each story names its release.
 
 ---
 
@@ -75,7 +75,7 @@
 
 ---
 
-**US-0805: A health check on the start screen, with install commands for what is missing** 📋 Planned, for v0.3.1
+**US-0805: A health check on the start screen, with install commands for what is missing** 🚧 In progress, for v0.3.1
 - As a **new user opening the app for the first time**, in order to **get from install to a working project without guessing**, I would like to **see on the start screen whether the tools the app needs are found and signed in, with a command to copy for each one that is missing**.
 - **Epic:** EPIC-08
 - **Priority:** Medium
