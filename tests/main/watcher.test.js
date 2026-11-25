@@ -297,6 +297,54 @@ describe('watchFiles with a specs/** target', { retry: 2 }, () => {
     expect(at).toHaveLength(3);
   }, 10000); // three 1.5 s waits; the 2 s limit is per change, above
 
+  // US-1402, US-1404 NFR7.2: an agent writing continuously does not push once per write.
+  it.each([
+    ['feature files', (i) => `specs/001-a/contracts/f${i}.md`],
+    ['rule files', (i) => `.specify/extensions/git/f${i}.yml`]
+  ])('sends at most two pushes for 20 writes to %s within 1 s, and names every file', async (_name, rel) => {
+    const root = await specProject();
+    await fs.mkdir(path.join(root, '.specify/extensions/git'), { recursive: true });
+    await wait(300);
+    const seen = [];
+    watcher = watchFiles({ root, paths: SPECKIT_WATCH_PATHS, onChange: (changed) => seen.push(changed) });
+    await watcher.ready;
+    const start = Date.now();
+    for (let i = 0; i < 20; i++) {
+      await wait(Math.max(0, start + i * 50 - Date.now())); // against the clock, so a slow write does not stretch the burst
+      await fs.writeFile(path.join(root, rel(i)), 'x');
+    }
+    await wait(1500);
+    expect(seen.length).toBeGreaterThan(0);
+    expect(seen.length).toBeLessThanOrEqual(2);
+    expect(new Set(seen.flat())).toEqual(new Set(Array.from({ length: 20 }, (_, i) => rel(i))));
+  });
+
+  // US-1402 NFR7.1: a removed feature folder, empty or not, leaves the list without a restart.
+  it('sees a removed feature folder and an empty one within 2 s each', async () => {
+    const root = await specProject();
+    await fs.writeFile(path.join(root, 'specs/001-a/spec.md'), '# Spec');
+    await fs.mkdir(path.join(root, 'specs/002-empty'));
+    await wait(300);
+    const at = [];
+    const seen = [];
+    watcher = watchFiles({
+      root,
+      paths: SPECKIT_WATCH_PATHS,
+      onChange: (changed) => {
+        at.push(Date.now());
+        seen.push(changed);
+      }
+    });
+    await watcher.ready;
+    for (const rel of ['specs/001-a', 'specs/002-empty']) {
+      const start = Date.now();
+      await fs.rm(path.join(root, rel), { recursive: true });
+      await wait(1500);
+      expect(seen.at(-1), rel).toContain(rel);
+      expect(at.at(-1) - start, rel).toBeLessThan(2000);
+    }
+  });
+
   it('keeps a plain folder target to its direct .md files', async () => {
     const root = path.join(TMP, 'docs-only');
     await fs.mkdir(path.join(root, 'docs/features/sub'), { recursive: true });
