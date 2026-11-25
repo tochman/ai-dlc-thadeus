@@ -6,7 +6,7 @@
 
 *AI-driven software development, under human direction.*
 
-T.H.A.D.E.U.S. is a desktop bridge console for [AI-DLC](https://github.com/awslabs/aidlc-workflows) projects. It shows what the AI agents are doing as it happens: the work in progress, every stage and decision, cost, and the feature roadmap. An embedded agent terminal lets you steer the work from the same window. It is built by Auctum Solutions AB (repository: `aidlc-dash`).
+T.H.A.D.E.U.S. is a desktop bridge console for [AI-DLC](https://github.com/awslabs/aidlc-workflows) projects. It shows what the AI agents are doing as it happens: the work in progress, every stage and decision, cost, and the feature roadmap. An embedded agent terminal lets you steer the work from the same window. It also follows [Spec Kit](https://github.com/github/spec-kit) projects, as an alternative to AI-DLC. It is built by Auctum Solutions AB (repository: `aidlc-dash`).
 
 **[Download the latest release →](https://github.com/tochman/ai-dlc-thadeus/releases/latest)** · [All releases](https://github.com/tochman/ai-dlc-thadeus/releases)
 
@@ -58,6 +58,14 @@ That isn't AI's fault. An AI coding agent is an incredibly capable tool, and lik
 - **Configuration:** see and change a project's AI-DLC settings, make your own plans (Configuration → AI-DLC → Plans), and pick a model and effort per agent.
 - **Editor:** edit project files, docs and code in the app.
 
+**Or use Spec Kit instead**
+- **One framework per project:** the app sees what a project has, asks you once, and shows only that framework's views. Switch later under **Configuration → Framework**; the other framework's files stay untouched.
+- **Set up Spec Kit** in a folder from the app.
+- **Specs:** the project's features, where each one stands, its tasks and its files, live as the agent writes, with what the agent waits on.
+- **Commands:** the Spec Kit commands as buttons that type into the Claude Code or opencode tab.
+- **Constitution, extensions and hooks** under **Configuration → Spec Kit**.
+- **A token log per feature**, kept in the project.
+
 **Know what it costs, and spend less**
 - **Cost** per intent, stage, agent and model, live while a workflow runs, with token charts. These are estimates at API prices, not invoices; recorded tokens can be repriced with a current price table.
 - **Spend less:** a cost rule pack on top of AI-DLC, a prompt to compact or start fresh when the context grows (it asks AI-DLC to park at its next safe point, then clears and resumes), and a stronger model profile only for the intents that need it.
@@ -92,6 +100,7 @@ The screenshots and the animation show an invented demo project. `npm run screen
 ## Prerequisites
 
 - **[AI-DLC](https://github.com/awslabs/aidlc-workflows)** with its `aidlc` command on your login shell's `PATH`. The app reads AI-DLC projects and runs the `aidlc` CLI; it does not install it.
+- **[Spec Kit](https://github.com/github/spec-kit)**, only for Spec Kit projects: its `specify` command on your login shell's `PATH`. The app is made for v1.4.x and warns about other versions.
 - **An agent CLI** for the terminal: [Claude Code](https://docs.claude.com/en/docs/claude-code) (`claude`), [opencode](https://opencode.ai) (`opencode`), Codex or Kiro.
 - **[GitHub CLI](https://cli.github.com)** (`gh`), signed in, for Refresh from GitHub and the pull request panel on GitHub. Updates do not need it.
 - **To build from source:** macOS or Linux, Node.js in the version named in [`.nvmrc`](.nvmrc), npm and git.
@@ -107,7 +116,7 @@ The app expects the tools under [Prerequisites](#prerequisites) to be available 
 
 ## Usage
 
-1. **Open a project** with **+ Open** in the left arm, or **File → Open project…** (`Cmd/Ctrl+O`). Any folder that contains `aidlc/spaces/` works, and so does a folder where you want to set AI-DLC up.
+1. **Open a project** with **+ Open** in the left arm, or **File → Open project…** (`Cmd/Ctrl+O`). Any folder that contains `aidlc/spaces/` or `.specify/` works, and so does a folder where you want to set AI-DLC or Spec Kit up. The app asks which framework to follow.
 2. **Set up AI-DLC** if the folder has none: choose the harness, look at the preview, and click **Apply**. The project's harness for the agent terminal is under **Configuration → Agent**.
 3. **Start an intent** by describing what you want in the agent terminal (`/aidlc <what to build>`), or **Resume** one from the Intents view. Follow it in the pipeline and the timeline.
 4. **Answer the agent** in the pop-up when it asks a question or waits for your approval.
@@ -120,7 +129,6 @@ Open projects are restored on the next start. **Full screen:** `Ctrl+Cmd+F` on m
 
 Plans can change; [docs/FEATURES.md](docs/FEATURES.md) and [docs/releases/](docs/releases/) always have the current state.
 
-- **v0.3.0, Spec Kit:** use [Spec Kit](https://github.com/github/spec-kit) instead of AI-DLC in a project. Set it up, switch a project between the two, see its features and their status, run its commands, and keep its constitution and extensions, with cost, questions and agent progress as for AI-DLC.
 - **v0.3.1, steer the work and see what it costs:** rename an intent or change the plan of one that has started; see whether your tools are signed in and sign in from the app; a start-screen health check; cost per story, epic and release, with hints on where to save.
 - **v0.3.2, what the work delivered:** delivery metrics (lead time, release frequency, failure rate, recovery time), quality next to cost, the AI's share of delivered code, insights per person and machine, any harness in the agent terminal, and more motion in the pipeline cards.
 - **Later:** add your own language with a translation file.
