@@ -8,7 +8,7 @@
 
 **Stories:** US-0401, US-0402, US-0403, US-0404, US-0405, US-0406, US-0407, US-0408, US-0409, US-0410, US-0411, US-0412, US-0413, US-0414, US-0415, US-0416, US-0417
 
-**Status (2026-11-26):** ✅ US-0401–US-0411 released (v0.1.1–v0.2.5). 🚧 US-0412 in progress, for v0.3.1. ✅ US-0413 released in v0.2.7. ✅ US-0414 released in v0.2.8. ✅ US-0415 released in v0.2.13. ✅ US-0416 released in v0.2.14. ✅ US-0417 released in v0.2.14. Each story names its release.
+**Status (2026-11-26):** ✅ US-0401–US-0411 released (v0.1.1–v0.2.5). ✅ US-0412 done, for v0.3.1. ✅ US-0413 released in v0.2.7. ✅ US-0414 released in v0.2.8. ✅ US-0415 released in v0.2.13. ✅ US-0416 released in v0.2.14. ✅ US-0417 released in v0.2.14. Each story names its release.
 
 ---
 
@@ -257,17 +257,18 @@
   - The reference image is not stored in the repository (third-party artwork); this story describes the card instead.
 - **Dependencies:** US-0410
 
-**US-0412: Pipeline cards with more LCARS feeling and motion** 🚧 In progress, for v0.3.1
+**US-0412: Pipeline cards with more LCARS feeling and motion** ✅ Done, for v0.3.1
 - As a **developer following a workflow**, in order to **feel the pipeline is a living console**, I would like to **the stage cards from US-0411 to look and move more like LCARS**.
 - **Epic:** EPIC-04
 - **Priority:** Medium
 - **Complexity:** Medium
 - **Background:** After US-0411 (2026-11-15): "I was hoping for more LCARS feeling and animations. But let's add that to the next time we iterate over this story."
 - **Acceptance Criteria:**
-  - [ ] The cards have more LCARS character than US-0411's first version (details to settle when the story starts, for example bolder header strips, elbows or segment blocks).
-  - [ ] Purposeful animations on the cards, for example a power-up when the pipeline opens, a sweep when a stage changes state, a flash when a stage completes (the leftover from US-0402).
-  - [ ] Reduced gives static effects and Off no motion, as the animations setting does everywhere; nothing flashes more than 3 times per second; only transform, opacity, `filter` and `box-shadow` animate.
+  - [x] The cards have more LCARS character than US-0411's first version (details to settle when the story starts, for example bolder header strips, elbows or segment blocks).
+  - [x] Purposeful animations on the cards, for example a power-up when the pipeline opens, a sweep when a stage changes state, a flash when a stage completes (the leftover from US-0402).
+  - [x] Reduced gives static effects and Off no motion, as the animations setting does everywhere; nothing flashes more than 3 times per second; only transform, opacity, `filter` and `box-shadow` animate.
 - **Notes:**
+  - **Built (2026-11-26).** Each card has an LCARS elbow with its number in the top block; cards power up in order when the view opens or shows another intent; a status change sweeps the card, a stage that becomes done flashes twice in 800 ms, and newly approved units grow into the level bar. All only with animations on Full.
   - **Where.** `src/renderer/Pipeline.jsx`, the `stage-card` rules in `src/renderer/theme.css`.
 - **Dependencies:** US-0411
 
