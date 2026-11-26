@@ -107,7 +107,7 @@ export default function SpeckitRules({ projectId }) {
           <section className="speckit-rules-part">
             <h3 className="section-title">{t('speckit.rules.constitution')}</h3>
             {exists && (
-              <div data-testid="speckit-rules-constitution">
+              <div className="speckit-rules-constitution" data-testid="speckit-rules-constitution">
                 {editor && (
                   <button className="btn btn-accent" onClick={() => editor.open(CONSTITUTION)} data-testid="speckit-rules-edit">
                     {t('speckit.rules.edit')}

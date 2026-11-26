@@ -186,6 +186,19 @@ test('L5: the two options of the first-open choice stand side by side at 1280 an
   }
 });
 
+test('L7 (US-0051): there is a gap between the Edit button and the constitution panel at 1280 and 1920', async () => {
+  const page = await open();
+  await openConfig(page, 'speckit');
+  const panel = page.getByTestId('speckit-rules-constitution').locator('.file-view');
+  await expect(panel).toBeVisible();
+  for (const width of [1280, 1920]) {
+    await resize(width);
+    await page.waitForTimeout(500); // the new width settles
+    const edit = await box(page.getByTestId('speckit-rules-edit'));
+    expect.soft((await box(panel)).top - edit.bottom, `at ${width}`).toBeGreaterThan(0);
+  }
+});
+
 test('L6: a disabled accent button in Configuration looks like any other disabled button', async () => {
   const page = await open();
   await openConfig(page, 'framework');

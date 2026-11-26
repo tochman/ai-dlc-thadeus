@@ -187,6 +187,7 @@ async function applyContent(cwd, ctx, entry) {
 async function replayIn(cwd, ctx, entries, tags) {
   const changed = [];
   const conflicts = [];
+  const failed = [];
   const ordered = [...entries.filter((e) => e.kind === 'content'), ...entries.filter((e) => e.kind !== 'content')];
   for (const e of ordered) {
     let res;
@@ -194,13 +195,16 @@ async function replayIn(cwd, ctx, entries, tags) {
       res = e.kind === 'content' ? await applyContent(cwd, ctx, e) : await applyAction(cwd, e, { featuresPath: ctx.featuresPath, tags });
     } catch (err) {
       console.warn(`Planeringsändringen ${e.kind} ${e.version ?? e.file} kunde inte göras igen:`, err.message);
+      failed.push(e.id);
       continue;
     }
     if (res.conflict && e.kind === 'content') conflicts.push(e.id);
-    else if (res.conflict) console.warn(`Planeringsåtgärden ${e.kind} ${e.version} krockar med ${res.conflict}; den görs vid nästa cykel.`);
-    else if (res.changed) changed.push(e);
+    else if (res.conflict) {
+      console.warn(`Planeringsåtgärden ${e.kind} ${e.version} krockar med ${res.conflict}; den görs vid nästa cykel.`);
+      failed.push(e.id);
+    } else if (res.changed) changed.push(e);
   }
-  return { changed, conflicts };
+  return { changed, conflicts, failed };
 }
 
 /** US-0033 AC4: ids joined by ", ", cut after five with "and N more". */
@@ -526,7 +530,8 @@ async function dropTagged(ctx, record, tags) {
 /**
  * US-0607 FR1.3, US-0608 FR4, FR5.2, FR6: every waiting change again, where it belongs; once the window has passed since
  * the last change, one commit. A content entry whose file moved on is marked a conflict and left alone, unless it only
- * holds an older copy of the file, which is dropped (US-0036 FR2.3).
+ * holds an older copy of the file, which is dropped (US-0036 FR2.3). A change already at HEAD is marked committed, not
+ * named in the commit (US-0053 FR1).
  */
 async function replayStep(ctx) {
   const tags = await listReleaseTags(ctx.root, { exec: ctx.exec });
@@ -538,20 +543,29 @@ async function replayStep(ctx) {
   if (!place.inPlace && !(quiet && pending.length)) return { reapplied: 0 };
   const readRef = await targetRef(ctx, place.target);
   const work = async (cwd) => {
-    const { changed, conflicts: clashes } = await replayIn(cwd, ctx, live, tags);
+    // US-0053 FR1: a waiting change whose text is already at HEAD was committed outside the app; it is not replayed or named.
+    const done = [];
+    for (const a of live) {
+      if (a.kind === 'content' && a.state === 'pending' && (await git(cwd, ['show', `HEAD:./${a.file}`], ctx).catch(() => null)) === a.content) done.push(a);
+    }
+    const rest = live.filter((a) => !done.includes(a));
+    const { changed, conflicts: clashes, failed } = await replayIn(cwd, ctx, rest, tags);
     const entryOf = (id) => live.find((a) => a.id === id);
     const stale = [];
     for (const id of clashes) if (await olderCopy(ctx, readRef, entryOf(id))) stale.push(id);
     const conflicts = clashes.filter((id) => !stale.includes(id));
     if (stale.length) await removeActions(ctx.userData, ctx.root, stale);
     if (conflicts.length) await markConflict(ctx.userData, ctx.root, conflicts);
-    const going = live.filter((a) => !clashes.includes(a.id) && (a.state === 'pending' || changed.includes(a)));
+    const going = rest.filter((a) => !clashes.includes(a.id) && (a.state === 'pending' || changed.includes(a)));
     const commit = quiet ? await commitIn(cwd, ctx, subjectOf(going)) : { committed: false };
-    if (commit.committed)
+    // US-0053 FR1: nothing to commit means every replayed change is already at HEAD (an action applied outside the app).
+    const already = quiet && !commit.committed && !commit.error ? going.filter((a) => a.state === 'pending' && !failed.includes(a.id)) : [];
+    const committed = [...done, ...(commit.committed ? going : already)];
+    if (committed.length)
       await markCommitted(
         ctx.userData,
         ctx.root,
-        going.map((a) => a.id)
+        committed.map((a) => a.id)
       );
     // In a worktree a waiting change is always new there; only a committed one was lost.
     const reapplied = place.inPlace ? changed.length : changed.filter((a) => a.state === 'committed').length;
@@ -607,13 +621,31 @@ export async function waitingList(ctx) {
 
 const aheadOf = async (ctx, ref, base) => !base || Number(await git(ctx.root, ['rev-list', '--count', `${base}..${ref}`], ctx)) > 0;
 
-/** The app's branch, and the target itself when it is checked out here, each when it has commits origin lacks. */
+/**
+ * The app's branch, and the local target, each when it has commits origin lacks. US-0053 FR2: the local target counts
+ * whether or not it is checked out here, so an app commit on `main` is pushed after a switch to a story branch too.
+ */
 async function sourcesOf(ctx, target) {
   const base = await remoteBase(ctx, target);
   const list = [];
   if ((await refExists(ctx, `refs/heads/${BRANCH}`)) && (await aheadOf(ctx, BRANCH, base))) list.push({ branch: BRANCH });
-  if ((await currentBranch(ctx.root, { exec: ctx.exec })) === target && (await aheadOf(ctx, target, base))) list.push({ base: target, detach: true });
+  if ((await refExists(ctx, `refs/heads/${target}`)) && (await aheadOf(ctx, target, base))) {
+    list.push({ base: target, detach: true, checkedOut: (await currentBranch(ctx.root, { exec: ctx.exec })) === target });
+  }
   return list;
+}
+
+/**
+ * US-0053 FR2: the local target follows its pushed commit: a checked-out one fast-forwards, one that is not moves its
+ * ref only when it is an ancestor of the push. After a rebase it keeps its own copy of the commits.
+ * ponytail: a rebased local target stays apart from origin until the person pulls with --rebase (git drops the copies then).
+ */
+async function followPush(ctx, source, target, head) {
+  const moved = source.checkedOut
+    ? await gitOk(ctx.root, ['merge', '--ff-only', '--quiet', head], ctx)
+    : (await gitOk(ctx.root, ['merge-base', '--is-ancestor', target, head], ctx)) &&
+      (await gitOk(ctx.root, ['update-ref', `refs/heads/${target}`, head, (await git(ctx.root, ['rev-parse', target], ctx)).trim()], ctx));
+  if (!moved) console.info(`${target} här är inte i fas med origin efter planeringens push; en pull --rebase rättar det.`);
 }
 
 /**
@@ -684,11 +716,7 @@ async function pushAll(ctx, target) {
     const res = await withWorktree(ctx, source, (wt) => pushFrom(ctx, wt, target));
     if (res.error || res.protected) return res;
     subjects.push(...res.subjects);
-    // ponytail: the checked-out target only fast-forwards; after a rebase it keeps its own copy of the commit until the
-    // person pulls with --rebase (git drops it then as already applied).
-    if (source.detach && !(await gitOk(ctx.root, ['merge', '--ff-only', '--quiet', res.head], ctx))) {
-      console.info(`${target} här är inte i fas med origin efter planeringens push; en pull --rebase rättar det.`);
-    }
+    if (source.detach) await followPush(ctx, source, target, res.head);
   }
   return { pushed: sources.length > 0, subjects };
 }
