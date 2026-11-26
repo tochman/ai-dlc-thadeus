@@ -88,3 +88,15 @@ describe('MachinesView (US-1201 AC-3)', () => {
     expect((await screen.findByRole('alert')).textContent).toBe('Datorerna kunde inte läsas: nope');
   });
 });
+
+// US-0050 item 5: the heading, the intents and the branches join the view's entrance.
+describe('MachinesView entrance (US-0050)', () => {
+  it('lets the heading, each intent and each branch rise with the entrance, staggered', async () => {
+    setup();
+    const intents = await screen.findAllByTestId('machines-view-intent');
+    expect(screen.getByTestId('machines-view').querySelector('.lcars-heading').classList.contains('lcars-e-rise')).toBe(true);
+    expect(intents.every((el) => el.classList.contains('lcars-e-rise'))).toBe(true);
+    expect(intents[0].style.getPropertyValue('--i')).toBe('1');
+    expect(screen.getAllByTestId('machines-view-branch').every((el) => el.classList.contains('lcars-e-rise'))).toBe(true);
+  });
+});

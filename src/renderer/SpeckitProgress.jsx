@@ -4,6 +4,7 @@
 // NFR7.2); pushes during a call give one more call, not one each (NFR7.4). The texts are plain text nodes (NFR5.1).
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { stagger } from './Lcars.jsx';
 
 /** @param {{projectId: string}} props */
 export default function SpeckitProgress({ projectId }) {
@@ -59,14 +60,15 @@ export default function SpeckitProgress({ projectId }) {
           {t('speckit.progress.failed')}
         </p>
       )}
+      {/* US-0050 item 6: the parts rise with the view's entrance. */}
       {waiting && (
-        <p className="speckit-progress-part is-waiting" data-testid="speckit-progress-waiting">
+        <p className="speckit-progress-part is-waiting lcars-e-rise" data-testid="speckit-progress-waiting">
           <span>{t('speckit.progress.waiting', waiting)}</span>
           <span className="speckit-tag">{t('speckit.progress.fromHooks')}</span>
         </p>
       )}
       {feature && (
-        <p className="speckit-progress-part" data-testid="speckit-progress-feature">
+        <p className="speckit-progress-part lcars-e-rise" style={stagger(1)} data-testid="speckit-progress-feature">
           <span>{t('speckit.progress.feature', feature)}</span>
           <span className="speckit-tag">{t('speckit.progress.fromTasks')}</span>
         </p>

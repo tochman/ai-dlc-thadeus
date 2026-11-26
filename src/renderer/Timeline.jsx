@@ -25,7 +25,9 @@ function EventRow({ e, pos, total, isNew, open, onToggle }) {
         <span className="event-title">{e.fields.Stage ? `${e.fields.Stage}` : e.title}</span>
       </button>
       {open && (
-        <dl className="event-fields">
+        // US-0050 item 7: the fields open with the shared fold. ponytail: an open row scrolled back into view
+        // remounts and unfolds once more (virtualized); track the last toggled key if that ever bothers anyone.
+        <dl className="event-fields lcars-reveal">
           <div>
             <dt>{t('intents.timeline.titleField')}</dt>
             <dd>{e.title ?? '–'}</dd>

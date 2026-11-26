@@ -24,6 +24,7 @@ import { isSettled } from '../shared/agentOrder.js';
 import { cleanBody, visibleText } from '../shared/agentText.js';
 import { FileContent } from './ArtifactReader.jsx';
 import ReplyPage from './ReplyPage.jsx'; // US-0506 u3: the MESSAGE page
+import { TabIn } from './Lcars.jsx';
 import { formatTokens, formatUsd } from './format.js';
 
 export const OVERDUE_MS = 20_000;
@@ -746,17 +747,20 @@ export default function AgentDialog({
               {t('agentDialog.sourceHooks')}
             </p>
           )}
-          {handoffPage ? (
-            <HandoffPage key={ev.eventId} ev={ev} keysRef={keysRef} guarded={guarded} onHandoff={onHandoff} />
-          ) : permPage ? (
-            <PermissionPage key={ev.eventId} ev={ev} keysRef={keysRef} guarded={guarded} />
-          ) : reply ? (
-            <ReplyPage key={ev.eventId} ev={ev} harnessLabel={harnessLabel} keysRef={keysRef} guarded={guarded} onSent={onClose} />
-          ) : hook ? (
-            <HookPage key={ev.eventId} ev={ev} keysRef={keysRef} guarded={guarded} />
-          ) : (
-            <AuditPage key={ev.eventId} ev={ev} harness={harnessOf(ev.projectId)} onSend={onAuditSend} guarded={guarded} />
-          )}
+          {/* US-0050 item 3: another page slides in (TabIn, keyed by the event). */}
+          <TabIn tab={ev.eventId} data-testid="agent-dialog-page">
+            {handoffPage ? (
+              <HandoffPage key={ev.eventId} ev={ev} keysRef={keysRef} guarded={guarded} onHandoff={onHandoff} />
+            ) : permPage ? (
+              <PermissionPage key={ev.eventId} ev={ev} keysRef={keysRef} guarded={guarded} />
+            ) : reply ? (
+              <ReplyPage key={ev.eventId} ev={ev} harnessLabel={harnessLabel} keysRef={keysRef} guarded={guarded} onSent={onClose} />
+            ) : hook ? (
+              <HookPage key={ev.eventId} ev={ev} keysRef={keysRef} guarded={guarded} />
+            ) : (
+              <AuditPage key={ev.eventId} ev={ev} harness={harnessOf(ev.projectId)} onSend={onAuditSend} guarded={guarded} />
+            )}
+          </TabIn>
           <div className="question-popup-foot">
             {/* US-0018: paging only when there is something to page to. */}
             <div className="question-popup-pager">

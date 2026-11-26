@@ -13,7 +13,7 @@ import TokenView from './TokenView.jsx';
 import TokenDetail from './TokenDetail.jsx';
 import StoryComments from './StoryComments.jsx';
 import { IntentVelocity } from './VelocityView.jsx';
-import { Block, DiagonalFrame, Dots, Pill, useEntrance } from './Lcars.jsx';
+import { Block, DiagonalFrame, Dots, Pill, TabIn, useEntrance } from './Lcars.jsx';
 import Tooltip from './Tooltip.jsx';
 import { formatCostPair, isInFlight, shortModel, stagePosition, stageStatusLabel, stageTitle } from './format.js';
 import { isArchived, isFinished } from '../shared/intentArchive.js';
@@ -57,7 +57,8 @@ export function RequestText({ text }) {
 
   return (
     <div className="request">
-      <p ref={ref} className={`request-text ${expanded ? '' : 'is-clamped'}`} data-testid="intent-detail-description">
+      {/* US-0050 item 7: the whole request opens with the shared fold. */}
+      <p ref={ref} className={`request-text ${expanded ? 'lcars-reveal' : 'is-clamped'}`} data-testid="intent-detail-description">
         {text}
       </p>
       {(overflows || expanded) && (
@@ -410,7 +411,8 @@ export default function IntentDetail({
           ))}
         </div>
 
-        <div className="detail-body" role="tabpanel">
+        {/* US-0050 item 2: the tab's content slides in on a switch (TabIn, keyed by the tab). */}
+        <TabIn tab={tab} className="detail-body" role="tabpanel" data-testid="intent-detail-tab-content">
           {/* US-0412 FR2.2: keyed by intent, so another intent's pipeline mounts fresh and powers up without a sweep. */}
           {tab === 'pipeline' && (
             <Pipeline key={detail.dirName} pipeline={pipeline} files={detail.files} hasGraph={!!detail.graph} onOpenFile={showFile} cost={intentCost} />
@@ -426,7 +428,7 @@ export default function IntentDetail({
           {tab === 'units' && <BoltDag dag={detail.graph?.boltDag ?? null} statuses={detail.units} />}
           {tab === 'comments' && <StoryComments projectId={projectId} space={space} dirName={detail.dirName} files={detail.files} onOpenFile={showFile} />}
           {tab === 'files' && <ArtifactReader projectId={projectId} groups={detail.files} selected={openFile} onSelect={setOpenFile} />}
-        </div>
+        </TabIn>
       </DiagonalFrame>
     </article>
   );

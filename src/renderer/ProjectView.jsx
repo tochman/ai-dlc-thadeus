@@ -25,7 +25,7 @@ import { sectionsFor, shownViews } from '../shared/frameworkViews.js';
 import CostRulesSection from './CostRulesSection.jsx';
 import ModelProfilesSection from './ModelProfilesSection.jsx'; // US-0210
 import ProfileSwitchDialog from './ProfileSwitchDialog.jsx'; // US-0210
-import { Frame, RoundFrame } from './Lcars.jsx';
+import { Frame, RoundFrame, useChanged } from './Lcars.jsx';
 import { featureDocsPrompt, lifecycleRulePrompt } from './featureDocsPrompt.js';
 import { DELIVERY_DEFAULT } from '../main/parsers/releases.js';
 import { TerminalProvider, useTerminal } from './TerminalContext.jsx';
@@ -107,12 +107,15 @@ function AidlcProject({ project, view, teamSection = 'refresh', onView, focusInt
 
   // Folding a view's panel in goes back to the intents view.
   const back = () => onView?.('intents');
+  // US-0050 item 4: the GitHub section switched to slides in. ponytail: a second switch within 600 ms does not replay
+  // on the kept-mounted Refresh panel (its class is still on); key it if that ever matters.
+  const teamIn = useChanged(teamSection) ? 'lcars-tab-in' : '';
   return (
     <>
       {view === 'cost' && <CostPanel cost={p.cost} models={p.models} open onToggle={back} />}
       {view === 'velocity' && <VelocityView projectId={projectId} space={p.space} />}
       {/* Kept mounted, so the fetched status and changes survive a switch to another view. */}
-      <div hidden={view !== 'github' || teamSection === 'machines'}>
+      <div hidden={view !== 'github' || teamSection === 'machines'} className={teamIn || undefined}>
         <RefreshPanel
           projectId={projectId}
           space={p.space}
@@ -123,7 +126,7 @@ function AidlcProject({ project, view, teamSection = 'refresh', onView, focusInt
         />
       </div>
       {/* Who does what across my machines, the team view's second section in the arm (US-1201 AC-3). */}
-      {view === 'github' && teamSection === 'machines' && <MachinesView projectId={projectId} space={p.space} />}
+      {view === 'github' && teamSection === 'machines' && <MachinesView projectId={projectId} space={p.space} className={teamIn} />}
       <div className="project-body" hidden={view !== 'intents'}>
         {/* US-0417 with US-0415: the list column is the shared drawer (IntentList), folding to its slim stack. */}
         <aside className="intents-col" aria-label={t('intents.overview')}>
@@ -403,6 +406,9 @@ function ProjectContent({
   const settingsShown = aidlcShown && !plansShown;
   // The AI-DLC configuration mounts the first time it is chosen, so its CLI reads wait until then, and then stays (FR6.1).
   const [configShown, setConfigShown] = useState(false);
+  // US-0050 items 3 and 4: a section or Settings | Plans switch slides the frame's body in. ponytail: the body stays
+  // mounted (it holds the kept AI-DLC configuration), so a second switch within 600 ms does not replay.
+  const configIn = useChanged(`${configSection}:${plansShown}`) ? 'lcars-tab-in' : '';
   useEffect(() => {
     if (settingsShown) setConfigShown(true);
   }, [settingsShown]);
@@ -498,6 +504,7 @@ function ProjectContent({
             <div className="config-pane" hidden={view !== 'config'}>
               <RoundFrame
                 className="config-frame"
+                bodyClassName={configIn}
                 title={t(`settings.project.sections.${configSection}`)}
                 sub={t('config.frameSub', { project: project.name })}
                 footer={selectableHarness(harnessId)?.label}

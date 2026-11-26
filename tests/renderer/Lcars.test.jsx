@@ -16,6 +16,7 @@ import {
   SegBar,
   SegMeter,
   elbowRadii,
+  useChanged,
   useEntrance
 } from '../../src/renderer/Lcars.jsx';
 import LcarsDialog from '../../src/renderer/LcarsDialog.jsx';
@@ -274,6 +275,35 @@ describe('the shared entrance sequence', () => {
       const { result, rerender, unmount } = renderHook(({ view }) => useEntrance(view), { initialProps: { view: 'a' } });
       expect(result.current).toBe(false);
       rerender({ view: 'b' });
+      expect(result.current).toBe(false);
+      unmount();
+    }
+  });
+});
+
+// US-0050 item 8: a live change shows once, on the element whose value changed.
+describe('the one-shot live-change glow', () => {
+  it('is on for 600 ms after the value changes, never on mount or on a re-render with the same value', () => {
+    vi.useFakeTimers();
+    const { result, rerender } = renderHook(({ value }) => useChanged(value), { initialProps: { value: 'running' } });
+    expect(result.current).toBe(false);
+    rerender({ value: 'running' });
+    expect(result.current).toBe(false);
+    rerender({ value: 'done' });
+    expect(result.current).toBe(true);
+    act(() => vi.advanceTimersByTime(599));
+    expect(result.current).toBe(true);
+    act(() => vi.advanceTimersByTime(1));
+    expect(result.current).toBe(false);
+    rerender({ value: 'done' });
+    expect(result.current).toBe(false);
+  });
+
+  it('never glows with reduced or no motion', () => {
+    for (const motion of ['reduced', 'off']) {
+      document.documentElement.dataset.motion = motion;
+      const { result, rerender, unmount } = renderHook(({ value }) => useChanged(value), { initialProps: { value: 1 } });
+      rerender({ value: 2 });
       expect(result.current).toBe(false);
       unmount();
     }

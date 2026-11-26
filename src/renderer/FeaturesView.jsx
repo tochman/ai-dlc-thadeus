@@ -6,7 +6,7 @@ import { useEffect, useEffectEvent, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { FileContent } from './ArtifactReader.jsx';
 import { useEditor } from './editor/EditorContext.jsx';
-import { Block, Frame, ListDrawer, Pill, SectionHeading, useEntrance } from './Lcars.jsx';
+import { Block, Changed, Frame, ListDrawer, Pill, SectionHeading, useEntrance } from './Lcars.jsx';
 import Tooltip from './Tooltip.jsx';
 import { withSlots } from './format.js';
 import { STATUS_MARKER } from '../main/parsers/features.js';
@@ -28,9 +28,10 @@ export function StatusBadge({ status, text, focusable = false }) {
   const { t } = useTranslation();
   return (
     <Tooltip text={text || undefined} focusable={focusable}>
-      <span className={STATUS_CLASS[status] ?? 'tag'}>
+      {/* US-0050 item 8: a story's new status glows once on its badge. */}
+      <Changed value={status} className={STATUS_CLASS[status] ?? 'tag'}>
         {status ? `${STATUS_MARKER[status]} ${t(`features.status.${status}`)}` : text || t('features.unknownStatus')}
-      </span>
+      </Changed>
     </Tooltip>
   );
 }

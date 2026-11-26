@@ -456,3 +456,37 @@ describe('IntentList parked mark (US-0510)', () => {
     expect(screen.queryByTestId('intent-parked')).toBeNull();
   });
 });
+
+// US-0050 item 1: the rows join the view's entrance (rise, stagger capped at 12); new data replays nothing.
+describe('IntentList entrance (US-0050)', () => {
+  it('lets each row rise with the entrance, staggered and capped at 12, and keeps the rows on an update', () => {
+    const many = Array.from({ length: 15 }, (_, n) => ({ ...base, dirName: `2611${String(n).padStart(2, '0')}-i${n}`, slug: `i${n}`, status: 'complete' }));
+    const { rerender, container } = render(<IntentList intents={many} selected={null} onSelect={vi.fn()} />);
+    const items = () => screen.getAllByTestId('intent-list-row').map((r) => r.closest('li'));
+    expect(items().every((li) => li.classList.contains('lcars-e-rise'))).toBe(true);
+    expect(items()[0].style.getPropertyValue('--i')).toBe('0');
+    expect(items()[14].style.getPropertyValue('--i')).toBe('12');
+    const first = items()[0];
+    rerender(<IntentList intents={[...many, { ...base, dirName: '261199-new', slug: 'new', status: 'in-flight' }]} selected={null} onSelect={vi.fn()} />);
+    expect(items()).toContain(first); // the shown rows stay mounted, so nothing replays
+    expect(container.querySelector('.is-entering')).toBeNull(); // the list never starts an entrance of its own
+  });
+});
+
+// US-0050 item 8: a changed status glows once on its own row; an update with the same values glows nowhere.
+describe('IntentList live change (US-0050)', () => {
+  afterEach(() => delete document.documentElement.dataset.motion);
+
+  it('glows the status that changed, only there, and nothing on an update with the same values', () => {
+    document.documentElement.dataset.motion = 'full';
+    const ui = (list) => <IntentList intents={list} selected={null} onSelect={vi.fn()} />;
+    const { rerender, container } = render(ui(intents));
+    rerender(ui(intents.map((i) => ({ ...i }))));
+    expect(container.querySelector('.lcars-changed')).toBeNull();
+    rerender(ui(intents.map((i) => (i.dirName === '261112-epic29-small-k2-fixes' ? { ...i, status: 'complete' } : { ...i }))));
+    const glowing = [...container.querySelectorAll('.lcars-changed')];
+    expect(glowing).toHaveLength(1);
+    expect(glowing[0].dataset.testid).toBe('intent-list-row-status');
+    expect(glowing[0].textContent).toBe('complete');
+  });
+});

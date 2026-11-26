@@ -82,6 +82,13 @@ describe('PlansView (EPIC-09 US-0903)', () => {
     expect(screen.getByTestId('plans-stages-skip').textContent).toBe('Hoppas över (1)market-research');
   });
 
+  // US-0050 item 7: an opened plan's stages unfold with the shared fold.
+  it('unfolds an opened plan’s stages with the shared fold', async () => {
+    renderView();
+    fireEvent.click(within(await plan('bugfix')).getByTestId('plans-open'));
+    expect((await screen.findByTestId('plans-stages')).closest('.lcars-reveal')).toBeTruthy();
+  });
+
   it('types New plan and Start with plan into the agent tab without Enter, quotes escaped', async () => {
     renderView();
     fireEvent.click(await screen.findByTestId('plans-new'));

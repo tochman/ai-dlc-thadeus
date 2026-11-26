@@ -38,6 +38,15 @@ describe('IntentDetail description (F-01)', () => {
     expect(toggle.getAttribute('aria-expanded')).toBe('false');
   });
 
+  // US-0050 item 7: the whole request opens with the shared fold.
+  it('opens the whole request with the shared fold', () => {
+    restore = fakeHeights(126);
+    render(<RequestText text={'rad\n'.repeat(6)} />);
+    expect(screen.getByTestId('intent-detail-description').classList.contains('lcars-reveal')).toBe(false);
+    fireEvent.click(screen.getByTestId('intent-detail-description-toggle'));
+    expect(screen.getByTestId('intent-detail-description').classList.contains('lcars-reveal')).toBe(true);
+  });
+
   it('shows no toggle when the description fits in two lines', () => {
     restore = fakeHeights(42);
     render(<RequestText text="Kort beställning" />);
@@ -250,6 +259,27 @@ describe('IntentDetail head, one control per state (US-0037)', () => {
     expect(screen.getByTestId('pipeline')).toBe(first);
     rerender(ui('261120-other'));
     expect(screen.getByTestId('pipeline')).not.toBe(first);
+  });
+
+  // US-0050 item 2: a switched tab's content fades and slides in once; the first tab rides the view's entrance.
+  it('slides a switched tab’s content in, keyed by its tab, with full motion only', () => {
+    const content = () => screen.getByTestId('intent-detail-tab-content');
+    try {
+      document.documentElement.dataset.motion = 'full';
+      show(base);
+      const first = content();
+      expect(first.classList.contains('lcars-tab-in')).toBe(false);
+      fireEvent.click(screen.getByTestId('intent-detail-tab-timeline'));
+      expect(content()).not.toBe(first);
+      expect(content().classList.contains('lcars-tab-in')).toBe(true);
+      cleanup();
+      document.documentElement.dataset.motion = 'reduced';
+      show(base);
+      fireEvent.click(screen.getByTestId('intent-detail-tab-timeline'));
+      expect(content().classList.contains('lcars-tab-in')).toBe(false);
+    } finally {
+      delete document.documentElement.dataset.motion;
+    }
   });
 
   it('gives the cost pair the compact readout size so it fits its column (FR3.5)', () => {

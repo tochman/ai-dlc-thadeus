@@ -40,6 +40,13 @@ describe('CostPanel', () => {
     expect(focusTip(screen.getByTestId('model-mismatch'))).toBe('Konfigurerad för opus'); // developer ran on sonnet
   });
 
+  // US-0050 item 7: Show opens the tables with the shared fold.
+  it('opens the tables with the shared fold', () => {
+    const { container } = render(<CostPanel cost={cost} models={models} />);
+    fireEvent.click(screen.getByTestId('cost-panel-toggle'));
+    expect(container.querySelector('.cost-panel-body').classList.contains('lcars-reveal')).toBe(true);
+  });
+
   it('makes the plain-text tooltips focusable and shows them on focus (US-0414 FR2.2)', () => {
     const { container } = render(<CostPanel cost={cost} models={models} />);
     fireEvent.click(screen.getByTestId('cost-panel-toggle'));

@@ -10,7 +10,7 @@ import AboutDialog from './AboutDialog.jsx';
 import AgentDialog from './AgentDialog.jsx';
 import { HealthLine, HealthPanel, HealthStatus, useHealth } from './HealthCheck.jsx'; // US-0805
 import UpdateNotice, { openUpdateDialog } from './UpdateNotice.jsx';
-import { Block, Frame, Pill, SegBar, useEntrance } from './Lcars.jsx';
+import { Block, Changed, Frame, Pill, SegBar, useEntrance } from './Lcars.jsx';
 import Tooltip from './Tooltip.jsx';
 import { APP_NAME } from '../shared/appName.js';
 import { selectableHarness } from '../shared/harnesses.js';
@@ -29,6 +29,15 @@ function footLabel(framework, meta, t) {
   if (framework === 'speckit') return t('app.featureCount', { n: meta.featureCount ?? 0 });
   return 'Auctum';
 }
+/** US-0050 item 8: the arm's intent or feature count, glowing once when it changes; keyed by project, so a switch does not. */
+const liveCount = (projectId, n) =>
+  n == null ? (
+    n
+  ) : (
+    <Changed key={projectId} value={n}>
+      {n}
+    </Changed>
+  );
 // The view and, for Features and Configuration, the section chosen in the arm (US-0012).
 const UI_DEFAULT = { view: 'intents', configSection: 'docs', aidlcTab: 'settings', featuresTab: 'epics', teamSection: 'refresh' };
 const TEAM_SECTIONS = ['refresh', 'machines']; // the team view's sections under its arm block (US-1201 AC-3)
@@ -635,7 +644,7 @@ export default function App() {
             {/* US-0417: the count as the block's figure, a live strip while an agent works. US-1401: the framework's default view. */}
             <ArmBlock
               current={!settingsView && view === defaultView}
-              figure={{ aidlc: activeMeta.intentCount, speckit: activeMeta.featureCount }[framework]}
+              figure={liveCount(activeId, { aidlc: activeMeta.intentCount, speckit: activeMeta.featureCount }[framework])}
               strip={activeMeta.busy ? 'live' : undefined}
               onClick={() => showView(defaultView)}
               data-testid={`project-view-switch-${defaultView}`}

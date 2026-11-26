@@ -385,3 +385,56 @@ describe('SpeckitFeatures: the next command (US-1403 AC3.1.1, BR5.2–BR5.4)', (
     expect(called.map(([name]) => name).sort()).toEqual(['onSpeckitChanged', 'speckitFeatures', 'speckitRules']);
   });
 });
+
+// US-0050 item 6: the rows block in and the flow steps rise with the entrance; another feature slides in as a tab.
+describe('SpeckitFeatures motion (US-0050)', () => {
+  it('blocks the rows in and lets the flow steps rise, staggered', async () => {
+    render(<SpeckitFeatures projectId="p1" />);
+    const flow = await screen.findByTestId('speckit-feature-flow');
+    const items = rows().map((r) => r.closest('li'));
+    expect(items.every((li) => li.classList.contains('lcars-e-block'))).toBe(true);
+    expect(items[1].style.getPropertyValue('--i')).toBe('1');
+    const steps = within(flow).getAllByRole('listitem');
+    expect(steps.every((s) => s.classList.contains('lcars-e-rise'))).toBe(true);
+    expect(steps[5].style.getPropertyValue('--i')).toBe('5');
+  });
+
+  it('slides another feature’s detail in when it is selected, with full motion only', async () => {
+    const detail = () => screen.getByTestId('speckit-feature-detail').parentElement;
+    try {
+      document.documentElement.dataset.motion = 'full';
+      render(<SpeckitFeatures projectId="p1" />);
+      await screen.findByTestId('speckit-feature-flow');
+      expect(detail().classList.contains('lcars-tab-in')).toBe(false);
+      fireEvent.click(rows().find((r) => r !== selectedRow()));
+      expect(detail().classList.contains('lcars-tab-in')).toBe(true);
+      cleanup();
+      document.documentElement.dataset.motion = 'reduced';
+      render(<SpeckitFeatures projectId="p1" />);
+      await screen.findByTestId('speckit-feature-flow');
+      fireEvent.click(rows().find((r) => r !== selectedRow()));
+      expect(detail().classList.contains('lcars-tab-in')).toBe(false);
+    } finally {
+      delete document.documentElement.dataset.motion;
+    }
+  });
+});
+
+// US-0050 item 8: a task that becomes done on a reload glows once; the others, and a reload with nothing new, do not.
+describe('SpeckitFeatures live change (US-0050)', () => {
+  afterEach(() => delete document.documentElement.dataset.motion);
+
+  it('glows the task whose done state changed, only that one', async () => {
+    document.documentElement.dataset.motion = 'full';
+    const { container } = render(<SpeckitFeatures projectId="p1" />);
+    await screen.findByTestId('speckit-feature-tasks');
+    await act(async () => changed({ projectId: 'p1', paths: ['specs/001-albums/tasks.md'] }));
+    expect(container.querySelector('.lcars-changed')).toBeNull();
+    const done = structuredClone(albums);
+    done.tasks.phases[1].items[0].done = true;
+    window.bridge.speckitFeatures.mockResolvedValueOnce(result({ features: [done, search] }));
+    await act(async () => changed({ projectId: 'p1', paths: ['specs/001-albums/tasks.md'] }));
+    await waitFor(() => expect(container.querySelectorAll('.lcars-changed')).toHaveLength(1));
+    expect(container.querySelector('.lcars-changed').textContent).toContain('T002');
+  });
+});

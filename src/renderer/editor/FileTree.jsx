@@ -18,9 +18,9 @@ export function buildTree(files) {
   return root;
 }
 
-function Folder({ node, prefix, opened, toggle, onOpen }) {
+function Folder({ node, prefix, opened, toggle, onOpen, className = '' }) {
   return (
-    <ul className="file-tree-list">
+    <ul className={`file-tree-list ${className}`.trim()}>
       {Object.keys(node.dirs)
         .sort()
         .map((name) => {
@@ -31,7 +31,8 @@ function Folder({ node, prefix, opened, toggle, onOpen }) {
               <button className="file-tree-dir" aria-expanded={open} onClick={() => toggle(rel)}>
                 {open ? '▾' : '▸'} {name}
               </button>
-              {open && <Folder node={node.dirs[name]} prefix={`${rel}/`} opened={opened} toggle={toggle} onOpen={onOpen} />}
+              {/* US-0050 item 7: an opened folder unfolds with the shared fold. */}
+              {open && <Folder node={node.dirs[name]} prefix={`${rel}/`} opened={opened} toggle={toggle} onOpen={onOpen} className="lcars-reveal" />}
             </li>
           );
         })}

@@ -104,6 +104,13 @@ describe('StoryComments as the Review tab (US-1203)', () => {
     expect(cells).toEqual(['#61', 'Öppen · ändringar begärda', 'bo (Bad om ändringar), anna (Godkände)']);
   });
 
+  // US-0050 item 7: the resolved threads open with the shared fold (theme.css: details.lcars-reveal[open]).
+  it('folds the resolved threads with the shared fold', async () => {
+    setup();
+    await screen.findByTestId('review');
+    expect(screen.getByTestId('review-resolved').classList.contains('lcars-reveal')).toBe(true);
+  });
+
   it('groups review comments by thread with file and line, newest first, and folds the resolved ones', async () => {
     setup();
     await screen.findByTestId('review');

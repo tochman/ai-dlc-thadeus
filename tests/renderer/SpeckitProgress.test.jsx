@@ -123,3 +123,12 @@ describe('SpeckitProgress', () => {
     expect(pushes.offSpeckit).toHaveBeenCalledTimes(1);
   });
 });
+
+// US-0050 item 6: the progress parts rise with the view's entrance.
+describe('SpeckitProgress entrance (US-0050)', () => {
+  it('lets the waiting and the feature part rise', async () => {
+    shows({ source: 'hooks', waiting: WAITING, feature: FEATURE });
+    expect((await screen.findByTestId('speckit-progress-waiting')).classList.contains('lcars-e-rise')).toBe(true);
+    expect(screen.getByTestId('speckit-progress-feature').classList.contains('lcars-e-rise')).toBe(true);
+  });
+});

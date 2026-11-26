@@ -118,3 +118,14 @@ describe('SpeckitQuickCommands: specify with a description (BR5.6)', () => {
     expect(terminal.type).toHaveBeenCalledWith('agent', '/speckit-git-commit', { submit: true });
   });
 });
+
+// US-0050 item 6: the command rows rise with the view's entrance.
+describe('SpeckitQuickCommands entrance (US-0050)', () => {
+  it('lets each command row rise', async () => {
+    render(<SpeckitQuickCommands projectId="p1" />);
+    await waitFor(() => expect(screen.getAllByTestId('speckit-commands-extension').length).toBeGreaterThan(0));
+    const rowsShown = [...document.querySelectorAll('.speckit-commands-row')];
+    expect(rowsShown.length).toBeGreaterThan(1);
+    expect(rowsShown.every((r) => r.classList.contains('lcars-e-rise'))).toBe(true);
+  });
+});

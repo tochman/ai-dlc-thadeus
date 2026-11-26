@@ -76,6 +76,13 @@ describe('Timeline', () => {
     expect(screen.queryByTestId('timeline-new-counter')).toBeNull();
   });
 
+  // US-0050 item 7: an event's fields open with the shared fold.
+  it('opens an event’s fields with the shared fold', () => {
+    render(<Timeline events={toEvents([shard('a.md', [10, 20])])} newKeys={null} />);
+    fireEvent.click(screen.getAllByTestId('timeline-event')[1]);
+    expect(document.querySelector('.event-fields').classList.contains('lcars-reveal')).toBe(true);
+  });
+
   it('keeps an expanded row expanded when events update (FR1.3)', () => {
     const a = shard('a.md', [10, 20]);
     const { rerender } = render(<Timeline events={toEvents([a])} newKeys={null} />);

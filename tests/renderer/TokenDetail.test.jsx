@@ -234,6 +234,17 @@ describe('switches (US-0208 FR4)', () => {
     expect([...stage.querySelectorAll('.token-detail-row-value')].map((n) => n.textContent)).toEqual(['$2.50', '$1.50']);
   });
 
+  // US-0050 item 3: Diagram | Table changes the body with the shared tab transition (full motion here).
+  it('slides the over-time body in on a Diagram | Table switch, keyed by the choice', async () => {
+    await renderDetail();
+    const body = () => screen.getByTestId('token-detail-over-time-content');
+    const diagram = body();
+    expect(diagram.classList.contains('lcars-tab-in')).toBe(false);
+    fireEvent.click(screen.getByTestId('token-detail-over-time-table'));
+    expect(body()).not.toBe(diagram);
+    expect(body().classList.contains('lcars-tab-in')).toBe(true);
+  });
+
   it('sums agents past the top 12 as Övriga', async () => {
     const many = structuredClone(ledger);
     const wf = many.workflows[`intent:${UUID}`];

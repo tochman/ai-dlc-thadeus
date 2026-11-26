@@ -170,6 +170,16 @@ describe('EditorPanel (EPIC-10 US-1001)', () => {
     expect(screen.getByTestId('file-tree-file')).toBeTruthy();
   });
 
+  // US-0050 item 7: an opened folder's contents unfold with the shared fold.
+  it('unfolds an opened folder with the shared fold', async () => {
+    window.bridge.listTree = vi.fn(async () => ({ files: ['docs/a.md', 'README.md'], truncated: false }));
+    render(<FileTree projectId="p1" onOpen={() => {}} />);
+    await screen.findByTestId('file-tree-file');
+    fireEvent.click(screen.getByRole('button', { name: /docs/ }));
+    const inner = screen.getAllByTestId('file-tree-file').find((b) => b.textContent === 'a.md');
+    expect(inner.closest('ul').classList.contains('lcars-reveal')).toBe(true);
+  });
+
   it('the file tree keeps its folded state as the editor view (US-0415, US-0417)', async () => {
     window.bridge.listTree = vi.fn(async () => ({ files: ['README.md'], truncated: false }));
     window.bridge.getSettings = vi.fn(async () => ({ listFolded: { features: true } }));
