@@ -241,6 +241,17 @@ describe('IntentDetail head, one control per state (US-0037)', () => {
     });
   });
 
+  // US-0412 AC2.1.2: another intent's pipeline mounts fresh, so it powers up and plays no sweep from the last one.
+  it('mounts a new pipeline for another intent, and keeps it for the same one', () => {
+    const ui = (dirName) => <IntentDetail projectId="p1" detail={{ ...detailOf(), dirName }} intent={base} activeDirName={DIR} cost={null} models={null} />;
+    const { rerender } = render(ui(DIR));
+    const first = screen.getByTestId('pipeline');
+    rerender(ui(DIR));
+    expect(screen.getByTestId('pipeline')).toBe(first);
+    rerender(ui('261120-other'));
+    expect(screen.getByTestId('pipeline')).not.toBe(first);
+  });
+
   it('gives the cost pair the compact readout size so it fits its column (FR3.5)', () => {
     show(base);
     const value = screen.getByTestId('intent-detail-cost');

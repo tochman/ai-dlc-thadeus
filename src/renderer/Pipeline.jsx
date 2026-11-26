@@ -1,7 +1,8 @@
 // The intent's pipeline: phases of stages, each stage an LCARS card with a unit level bar (US-0411 FR1–FR5).
 // US-0028: the note about runtime-graph.json shows only when stages are done and the file is not on this machine.
 // US-0509 FR4.1: after a plan switch a done stage stays done, and one the work has passed is "not run".
-import { useState } from 'react';
+// US-0412 FR1–FR3, FR5: the elbow card with its number, the power-up order, and the sweep, flash and level fill on a change.
+import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { formatCost, formatDuration, formatTime, shortModel, stageStatusLabel, tokenBreakdown } from './format.js';
 import { t as translate } from '../shared/i18n.js';
@@ -50,6 +51,29 @@ export function levelBar(stage) {
   return { segments: Array.from({ length: count }, (_, i) => i < on), label: translate('pipeline.levelUnits', { approved: u.approved, total: u.total }) };
 }
 
+const litCount = (stage) => levelBar(stage).segments.filter(Boolean).length;
+
+/**
+ * US-0412 FR3.1–FR3.3: what changed in each stage since the previous render, by slug. A status change to done flashes,
+ * any other status change sweeps, and more lit level segments fill from the old count. No previous render, or a stage
+ * new to the list, gives nothing, so a first render plays only the power-up.
+ */
+export function stageChanges(prev, stages) {
+  if (!prev) return {};
+  const before = new Map(prev.map((s) => [s.slug, s]));
+  const changes = {};
+  for (const s of stages) {
+    const old = before.get(s.slug);
+    if (!old) continue;
+    const change = {};
+    const wasLit = litCount(old);
+    if (old.status !== s.status) change.effect = s.status === 'done' ? 'flash' : 'sweep';
+    if (litCount(s) > wasLit) change.litFrom = wasLit;
+    if (Object.keys(change).length) changes[s.slug] = change;
+  }
+  return changes;
+}
+
 function stageDetails(stage, stageModels, fileCount) {
   return [
     [stage.agent, stageModels?.length ? stageModels.map(shortModel).join(', ') : null].filter(Boolean).join(' · ') || null,
@@ -67,14 +91,14 @@ const agentShort = (agent) =>
     .replace(/^aidlc-/, '')
     .replace(/-agent$/, '');
 
-/** US-0411 FR2.4: the level bar's segments, read out by its label. */
-function LevelBar({ stage }) {
+/** US-0411 FR2.4: the level bar's segments, read out by its label. US-0412 FR3.3: segments lit since `litFrom` fill in. */
+function LevelBar({ stage, litFrom }) {
   const bar = levelBar(stage);
   return (
     <Tooltip text={bar.label}>
       <span className="stage-level" role="img" aria-label={bar.label}>
         {bar.segments.map((on, i) => (
-          <span key={i} className={`stage-level-seg ${on ? 'is-lit' : ''}`} />
+          <span key={i} className={['stage-level-seg', on && 'is-lit', on && litFrom != null && i >= litFrom && 'is-new'].filter(Boolean).join(' ')} />
         ))}
       </span>
     </Tooltip>
@@ -82,10 +106,12 @@ function LevelBar({ stage }) {
 }
 
 /**
- * US-0411 FR1, FR3, FR5: a stage as an LCARS card. Name in the head; "NN · Status", flags, model and cost in the body;
+ * US-0411 FR1, FR3, FR5: a stage as an LCARS card. Name in the head; status, flags, model and cost in the body;
  * agent, duration and the level bar in the foot. The card's colour comes from its state classes on the <li>.
+ * US-0412 FR1.2: the number sits in the elbow, first in the text. FR2.1: `order` staggers the power-up.
+ * FR3: `change` (from stageChanges) adds the sweep band, the flash or the level fill; `run` restarts a repeated sweep.
  */
-function StageBlock({ stage, index, open, onToggle, stageCost, stageModels, details }) {
+function StageBlock({ stage, index, order, change, run, open, onToggle, stageCost, stageModels, details }) {
   const { t } = useTranslation();
   const statusText = statusTextOf(t, stage);
   const extra = stage.current && stage.status !== 'in-progress' ? ` · ${t('pipeline.current')}` : '';
@@ -103,20 +129,27 @@ function StageBlock({ stage, index, open, onToggle, stageCost, stageModels, deta
   // US-0414 FR2.3: the parts' tooltips are hover-only; keyboard focus on the card shows them all.
   const focusText = [details, mismatchTip, costTip, levelBar(stage).label].filter(Boolean).join('\n');
   return (
-    <li className={['stage', ...states].filter(Boolean).join(' ')}>
+    <li className={['stage', ...states].filter(Boolean).join(' ')} style={{ '--i': order }}>
       <Tooltip text={details} focusText={focusText}>
         <button
-          className={`lcars-card stage-card ${atRest(stage) ? '' : (EFFECT[stage.status] ?? (stage.current ? 'is-breathing' : ''))}`}
+          className={[
+            'lcars-card stage-card',
+            !atRest(stage) && (EFFECT[stage.status] ?? (stage.current && 'is-breathing')),
+            change?.effect === 'flash' && 'is-flashing'
+          ]
+            .filter(Boolean)
+            .join(' ')}
           onClick={onToggle}
           aria-expanded={open}
           data-testid="pipeline-stage"
         >
+          <span className="stage-num">{index ?? '—'}</span>
           <span className="lcars-card-head">
             <span className="stage-name">{stage.slug}</span>
           </span>
           <span className="lcars-card-body stage-top">
             <span>
-              {index ?? '—'} · {statusText}
+              {statusText}
               {extra}
               {stage.mismatch && (
                 <Tooltip text={mismatchTip}>
@@ -133,8 +166,9 @@ function StageBlock({ stage, index, open, onToggle, stageCost, stageModels, deta
           </span>
           <span className="lcars-card-foot">
             <span className="stage-code">{code}</span>
-            <LevelBar stage={stage} />
+            <LevelBar stage={stage} litFrom={change?.litFrom} />
           </span>
+          {change?.effect === 'sweep' && <span key={run} className="stage-sweep" aria-hidden="true" />}
         </button>
       </Tooltip>
     </li>
@@ -165,10 +199,34 @@ function StageFiles({ files, details, onOpenFile }) {
   );
 }
 
+const EFFECT_MS = 900; // US-0412: longer than the longest effect (the 800 ms flash)
+
+/**
+ * US-0412 FR3: the changes since the previous pipeline, kept for EFFECT_MS. The first render has no previous one, and
+ * IntentDetail keys the pipeline by intent, so another intent starts fresh and plays only the power-up (FR2.2).
+ */
+function useStageEffects(pipeline) {
+  const prev = useRef(null);
+  const [fx, setFx] = useState({ changes: {}, run: 0 });
+  useEffect(() => {
+    const stages = pipeline.phases.flatMap((p) => p.stages);
+    const changes = stageChanges(prev.current, stages);
+    prev.current = stages;
+    if (Object.keys(changes).length) setFx((f) => ({ changes, run: f.run + 1 }));
+  }, [pipeline]);
+  useEffect(() => {
+    if (!fx.run) return undefined;
+    const timer = setTimeout(() => setFx((f) => ({ ...f, changes: {} })), EFFECT_MS);
+    return () => clearTimeout(timer);
+  }, [fx.run]);
+  return fx;
+}
+
 export default function Pipeline({ pipeline, files, hasGraph, onOpenFile, cost }) {
   const { t } = useTranslation();
   const [openSlug, setOpenSlug] = useState(null);
   const [showSkipped, setShowSkipped] = useState(false);
+  const fx = useStageEffects(pipeline);
   const stageCost = new Map((cost?.byStage ?? []).map((r) => [r.name, r]));
   if (pipeline.phases.length === 0) return <p className="muted">{t('pipeline.noStages')}</p>;
 
@@ -178,6 +236,9 @@ export default function Pipeline({ pipeline, files, hasGraph, onOpenFile, cost }
     .flatMap((p) => p.stages)
     .filter((s) => !isSkipped(s))
     .forEach((s, i) => numbers.set(s.slug, String(i + 1).padStart(2, '0')));
+  const shown = (phase) => (showSkipped ? phase.stages : phase.stages.filter((s) => !isSkipped(s)));
+  // US-0412 FR2.1: each shown card's place across phases staggers its power-up.
+  const order = new Map(pipeline.phases.flatMap(shown).map((s, i) => [s.slug, i]));
   const skipped = pipeline.phases.map((p) => [p.name, p.stages.filter(isSkipped).length]).filter(([, n]) => n > 0);
   const skippedTotal = skipped.reduce((sum, [, n]) => sum + n, 0);
   const fileCount = (slug) => filesForStage(files, slug).reduce((n, g) => n + g.files.length, 0);
@@ -193,7 +254,7 @@ export default function Pipeline({ pipeline, files, hasGraph, onOpenFile, cost }
         </p>
       )}
       {pipeline.phases.map((phase) => {
-        const stages = showSkipped ? phase.stages : phase.stages.filter((s) => !isSkipped(s));
+        const stages = shown(phase);
         if (stages.length === 0) return null;
         const opened = stages.find((s) => s.slug === openSlug);
         return (
@@ -206,6 +267,9 @@ export default function Pipeline({ pipeline, files, hasGraph, onOpenFile, cost }
                     key={s.slug}
                     stage={s}
                     index={numbers.get(s.slug)}
+                    order={order.get(s.slug)}
+                    change={fx.changes[s.slug]}
+                    run={fx.run}
                     open={openSlug === s.slug}
                     onToggle={() => setOpenSlug((cur) => (cur === s.slug ? null : s.slug))}
                     stageCost={stageCost.get(s.slug)}

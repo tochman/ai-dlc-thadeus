@@ -255,6 +255,68 @@ describe('the US-0417 LCARS language', () => {
   });
 });
 
+// US-0412: the elbow stage card and its four effects, with full motion only.
+describe('the LCARS pipeline cards (US-0412)', () => {
+  /** The body of `@keyframes name { … }`, braces balanced. */
+  const keyframes = (name) => {
+    const start = css.indexOf(`@keyframes ${name} {`);
+    if (start < 0) return '';
+    let depth = 0;
+    for (let i = css.indexOf('{', start); i < css.length; i++) {
+      depth += css[i] === '{' ? 1 : css[i] === '}' ? -1 : 0;
+      if (depth === 0) return css.slice(css.indexOf('{', start) + 1, i);
+    }
+    return '';
+  };
+  const EFFECTS = ['stage-power', 'stage-sweep', 'stage-flash', 'stage-fill'];
+  /** Every rule whose animation uses one of the effects: [selector, body]. */
+  const uses = () => [...css.matchAll(/([^{}]+)\{([^{}]*animation:[^;}]*\bstage-(?:power|sweep|flash|fill)\b[^{}]*)\}/g)].map((m) => [m[1].trim(), m[2]]);
+  const use = (name) => uses().find(([, body]) => new RegExp(`animation:[^;]*\\b${name}\\b`).test(body))?.[1] ?? '';
+
+  it('widens the side bar into a 36 px elbow with the number in it (AC1.1.1)', () => {
+    expect(rule('.stage-card')).toMatch(/border-left: 0;/);
+    expect(rule('.stage-card')).toMatch(/padding: 0 0 0 36px;/);
+    expect(rule('.stage-card')).toMatch(/min-height: 84px;/);
+    expect(rule('.stage-num')).toMatch(/width: 36px;/);
+    expect(rule('.stage-num')).toMatch(/font-variant-numeric: tabular-nums;/);
+  });
+
+  it('lets a long stage name wrap inside the head row (AC1.1.4)', () => {
+    expect(rule('.stage-name')).toMatch(/overflow-wrap: anywhere;/);
+    expect(rule('.stage-name')).not.toMatch(/nowrap/);
+  });
+
+  it('defines the four effects with transform, opacity and filter only (AC4.1.4, NFR1)', () => {
+    for (const name of EFFECTS) {
+      const body = keyframes(name);
+      expect([name, body.length > 0]).toEqual([name, true]);
+      const props = [...body.matchAll(/([a-z-]+)\s*:/g)].map((m) => m[1]);
+      expect(props.filter((p) => !['transform', 'opacity', 'filter'].includes(p))).toEqual([]);
+    }
+  });
+
+  it('plays them with full motion only (AC4.1.1–AC4.1.3)', () => {
+    const rules = uses();
+    expect(rules.length).toBeGreaterThanOrEqual(EFFECTS.length);
+    for (const [selector] of rules) expect(selector).toMatch(/^:root\[data-motion='full'\] /);
+  });
+
+  it('staggers the power-up so the last card is in by 600 ms (AC2.1.3)', () => {
+    const [, ms, cap, step] = /stage-power (\d+)ms[^;]*min\(var\(--i, 0\), (\d+)\) \* (\d+)ms/.exec(use('stage-power')) ?? [];
+    expect(ms).toBeTruthy();
+    expect(Number(cap) * Number(step) + Number(ms)).toBeLessThanOrEqual(600);
+  });
+
+  it('flashes twice in 800 ms (AC3.2.3), sweeps once in 600 ms and fills in 300 ms', () => {
+    expect(use('stage-flash')).toMatch(/stage-flash 800ms/);
+    const peaks = [...keyframes('stage-flash').matchAll(/([^{}]+)\{[^}]*brightness\(1\.\d+\)/g)].flatMap((m) => m[1].split(','));
+    expect(peaks).toHaveLength(2);
+    expect(use('stage-sweep')).toMatch(/stage-sweep 600ms/);
+    expect(use('stage-sweep')).not.toMatch(/infinite/);
+    expect(use('stage-fill')).toMatch(/stage-fill 300ms/);
+  });
+});
+
 // US-0417: the intent tabs stay one row of tiles, so the tab content never draws over a wrapped second row.
 describe('intent tab tiles (US-0417)', () => {
   it('keeps the tab row on one line, unshrunk, with tiles that may narrow', () => {
