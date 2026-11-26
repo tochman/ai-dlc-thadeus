@@ -328,3 +328,49 @@ describe('CostPanel: not linked to a story (US-1303 FR5)', () => {
     expect(screen.queryByTestId('story-cost-not-linked')).toBeNull();
   });
 });
+
+// US-1305 FR2.2, FR4, NFR3: cost against trouble count, one focusable dot per intent, and the same rows as a table.
+describe('CostPanel cost and quality (US-1305)', () => {
+  const q = (trouble) => ({ revisions: { total: 0, byStage: {} }, loopBacks: null, findings: null, failedRuns: null, postMerge: null, trouble });
+  const [first, second] = cost.timeline;
+  const withQuality = {
+    ...cost,
+    perIntent: {
+      ...cost.perIntent,
+      [first.dirName]: { ...cost.perIntent[first.dirName], quality: q(5) },
+      [second.dirName]: { ...cost.perIntent[second.dirName], quality: q(0) }
+    }
+  };
+  const usd = (x) => '$' + x.usd.toFixed(2);
+  const open = (c) => {
+    render(<CostPanel cost={c} models={models} />);
+    fireEvent.click(screen.getByTestId('cost-panel-toggle'));
+  };
+
+  it('draws one dot per intent with a cost, its tooltip naming the intent, cost and trouble count on focus (FR4.1, FR4.2)', () => {
+    open(withQuality);
+    const dots = within(screen.getByTestId('cost-quality-chart')).getAllByTestId('cost-quality-dot');
+    expect(dots.length).toBe(2);
+    expect(dots[0].tabIndex).toBe(0);
+    expect(focusTip(dots[0])).toBe(`${first.slug}: ${usd(first)}, problemtal 5`);
+    // position carries the meaning: more trouble is higher up (a smaller y)
+    expect(Number(dots[0].getAttribute('cy'))).toBeLessThan(Number(dots[1].getAttribute('cy')));
+  });
+
+  it('lists the same rows in a table, each intent with its cost and trouble count (FR2.2, FR4.2)', () => {
+    open(withQuality);
+    const rows = within(screen.getByTestId('cost-quality-table'))
+      .getAllByRole('row')
+      .slice(1)
+      .map((r) => [...r.querySelectorAll('td, th')].map((c) => c.textContent));
+    expect(rows).toEqual([
+      [first.slug, usd(first), '5'],
+      [second.slug, usd(second), '0']
+    ]);
+  });
+
+  it('shows no chart before main sent any quality', () => {
+    open(cost);
+    expect(screen.queryByTestId('cost-quality-chart')).toBeNull();
+  });
+});

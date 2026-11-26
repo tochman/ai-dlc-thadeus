@@ -578,6 +578,27 @@
       "agent-files": "agentfiler",
       "none": "ingen källa"
     },
+    "quality": {
+      "title": "Kvalitet",
+      "trouble": "Problemtal: {value}",
+      "troubleHelp": "Revideringsvarv + loop-backs + öppna granskningsfynd + misslyckade testkörningar + fynd efter merge. En del utan uppgift räknas inte.",
+      "revisions": "Revideringsvarv: {value}",
+      "loopBacks": "Loop-backs: {value}",
+      "findings": "Granskningsfynd: {value}",
+      "findingsValue": "{open} öppna, {fixed} åtgärdade",
+      "failedRuns": "Misslyckade testkörningar: {value}",
+      "postMerge": "Fynd efter merge: {value}",
+      "noRecord": "ingen uppgift",
+      "stagesCaption": "Revideringsvarv per steg",
+      "count": "Antal",
+      "chartTitle": "Kostnad och kvalitet",
+      "chartLabel": "Punktdiagram: kostnad i USD åt höger, problemtal uppåt, en punkt per intent",
+      "dot": "{name}: {usd}, problemtal {trouble}",
+      "xAxis": "Kostnad (USD)",
+      "yAxis": "Problemtal",
+      "tableCaption": "Kostnad och problemtal per intent",
+      "intent": "Intent"
+    },
     "rework": {
       "title": "Omarbete",
       "total": "{usd} · {tokens} tokens · {share} % av intentens kostnad",
@@ -953,7 +974,9 @@
       "planned": "Planerad",
       "releasedOn": "Släppt {date}",
       "released": "Släppt",
-      "storyCount": "{n, plural, one {# story} other {# storys}}"
+      "storyCount": "{n, plural, one {# story} other {# storys}}",
+      "fixes": "{n, plural, one {# rättelse} other {# rättelser}}: {list}",
+      "prerelease": "prerelease"
     },
     "planning": {
       "title": "Planeringssynk",

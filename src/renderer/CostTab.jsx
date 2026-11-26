@@ -1,6 +1,7 @@
 // The "Kostnad" tab of one intent, plus the cost and model tables the project panel reuses.
 // US-0211 FR3: each figure is the recorded one, with the current-price one beside it when a rate table was loaded.
 // US-1302 FR7: the Savings section, shown here for one intent and in the project panel for all.
+// US-1305 FR2.1: the Quality section beside the cost.
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { compareModels } from '../main/parsers/ledger.js';
@@ -255,6 +256,61 @@ export function ReworkSection({ rework }) {
   );
 }
 
+/**
+ * US-1305 FR2.1, FR1.7, NFR3: the intent's quality beside its cost: the trouble count, each signal ("no record" where its
+ * source is missing, never 0) and the revision cycles per stage. Nothing shows before main sends `quality`.
+ * @param {{quality?: {revisions: {total: number, byStage: Record<string, number>}, loopBacks: number|null,
+ *   findings: {bySeverity: Record<string, number>, open: number, fixed: number}|null, failedRuns: number|null,
+ *   postMerge: number|null, trouble: number}|null}} props
+ */
+export function QualitySection({ quality }) {
+  const { t } = useTranslation();
+  if (!quality) return null;
+  const value = (n) => (n == null ? t('cost.quality.noRecord') : String(n));
+  const { revisions, findings } = quality;
+  const severities = Object.entries(findings?.bySeverity ?? {}).map(([s, n]) => `${s} ${n}`);
+  const findingsText = findings
+    ? [t('cost.quality.findingsValue', { open: findings.open, fixed: findings.fixed }), severities.join(', ')].filter(Boolean).join(' · ')
+    : t('cost.quality.noRecord');
+  const stages = Object.entries(revisions.byStage);
+  return (
+    <section className="cost-quality" data-testid="cost-quality">
+      <h3 className="section-title">{t('cost.quality.title')}</h3>
+      <p className="cost-rework-total">
+        <Tooltip text={t('cost.quality.troubleHelp')} focusable>
+          <span data-testid="cost-quality-trouble">{t('cost.quality.trouble', { value: String(quality.trouble) })}</span>
+        </Tooltip>
+      </p>
+      <ul className="cost-quality-signals">
+        <li>{t('cost.quality.revisions', { value: String(revisions.total) })}</li>
+        <li>{t('cost.quality.loopBacks', { value: value(quality.loopBacks) })}</li>
+        <li data-testid="cost-quality-findings">{t('cost.quality.findings', { value: findingsText })}</li>
+        <li>{t('cost.quality.failedRuns', { value: value(quality.failedRuns) })}</li>
+        <li>{t('cost.quality.postMerge', { value: value(quality.postMerge) })}</li>
+      </ul>
+      {stages.length > 0 && (
+        <table className="cost-table" data-testid="cost-quality-stages">
+          <caption>{t('cost.quality.stagesCaption')}</caption>
+          <thead>
+            <tr>
+              <th scope="col">{t('cost.rework.stage')}</th>
+              <th scope="col">{t('cost.quality.count')}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {stages.map(([stage, n]) => (
+              <tr key={stage}>
+                <td>{stage}</td>
+                <td>{n}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+    </section>
+  );
+}
+
 // US-1302 FR2.5, FR4, NFR1: each link only opens a view; nothing is changed from a hint.
 const SAVINGS_LINKS = {
   models: { testId: 'models', view: ['config', { configSection: 'aidlc', aidlcTab: 'settings' }] }, // model per agent, US-0904
@@ -460,6 +516,7 @@ export default function CostTab({ cost, intentCost, pipeline, models, rework = n
         totalUsd={total.usd}
       />
       <ReworkSection rework={rework} />
+      <QualitySection quality={intentCost.quality} />
       <SavingsSection projectId={projectId} space={space} intent={dirName} stages={intentCost.byStage.map((r) => r.name)} onView={onView} />
       <CostTable title={t('cost.perStage')} rows={inPipelineOrder(intentCost.byStage, pipeline)} totalUsd={total.usd} testId="cost-tab-stages" />
       <CostTable title={t('cost.perAgent')} rows={intentCost.byAgent} totalUsd={total.usd} testId="cost-tab-agents" />

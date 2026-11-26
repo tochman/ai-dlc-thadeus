@@ -578,6 +578,27 @@
       "agent-files": "agent files",
       "none": "no source"
     },
+    "quality": {
+      "title": "Quality",
+      "trouble": "Trouble count: {value}",
+      "troubleHelp": "Revision cycles + loop-backs + open review findings + failed test runs + post-merge findings. A part with no record is left out.",
+      "revisions": "Revision cycles: {value}",
+      "loopBacks": "Loop-backs: {value}",
+      "findings": "Review findings: {value}",
+      "findingsValue": "{open} open, {fixed} fixed",
+      "failedRuns": "Failed test runs: {value}",
+      "postMerge": "Post-merge findings: {value}",
+      "noRecord": "no record",
+      "stagesCaption": "Revision cycles per stage",
+      "count": "Count",
+      "chartTitle": "Cost and quality",
+      "chartLabel": "Scatter plot: cost in USD to the right, trouble count upwards, one dot per intent",
+      "dot": "{name}: {usd}, trouble count {trouble}",
+      "xAxis": "Cost (USD)",
+      "yAxis": "Trouble count",
+      "tableCaption": "Cost and trouble count per intent",
+      "intent": "Intent"
+    },
     "rework": {
       "title": "Rework",
       "total": "{usd} · {tokens} tokens · {share} % of the intent's cost",
@@ -953,7 +974,9 @@
       "planned": "Planned",
       "releasedOn": "Released {date}",
       "released": "Released",
-      "storyCount": "{n, plural, one {# story} other {# stories}}"
+      "storyCount": "{n, plural, one {# story} other {# stories}}",
+      "fixes": "{n, plural, one {# fix story} other {# fix stories}}: {list}",
+      "prerelease": "prerelease"
     },
     "planning": {
       "title": "Planning sync",

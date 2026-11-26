@@ -1,6 +1,7 @@
 // The project's Cost view (FR3, FR4.6, FR6). US-0417: in the curved diagonal frame, summary figures as readout blocks,
 // the token mix as flat meters and the share per scope as a segmented meter, all read-only.
 // US-0211 FR3.2: totals show "recorded · at current prices"; chart points carry the current figure in their tooltip.
+// US-1305 FR4: the cost-and-quality scatter plot with its table.
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { CostLabel, CostNotes, CostTable, MachinesLine, ModelTable, SavingsSection } from './CostTab.jsx'; // US-1302: SavingsSection
@@ -42,6 +43,69 @@ function CostChart({ timeline }) {
       </svg>
       <figcaption className="muted">{t('cost.chartCaption', { from: timeline[0].date ?? '–', to: timeline.at(-1).date ?? '–' })}</figcaption>
     </figure>
+  );
+}
+
+const SCATTER_W = 320;
+const SCATTER_H = 160;
+const SCATTER_PAD = 24;
+
+/**
+ * US-1305 FR2.2, FR4, NFR3: cost (across) against trouble count (up), one focusable dot per intent with a cost and a
+ * quality, archived ones included; the tooltip names the intent, its cost and trouble count. Meaning is carried by the
+ * dot's position and by the table of the same rows, never by colour. Nothing shows before main sends any quality.
+ */
+function QualityChart({ timeline, perIntent }) {
+  const { t } = useTranslation();
+  const rows = timeline.filter((x) => perIntent?.[x.dirName]?.quality).map((x) => ({ ...x, trouble: perIntent[x.dirName].quality.trouble }));
+  if (rows.length === 0) return null;
+  const maxUsd = Math.max(...rows.map((r) => r.usd), 0.01);
+  const maxTrouble = Math.max(...rows.map((r) => r.trouble), 1);
+  const span = (n) => n - 2 * SCATTER_PAD;
+  const x = (r) => SCATTER_PAD + (r.usd / maxUsd) * span(SCATTER_W);
+  const y = (r) => SCATTER_H - SCATTER_PAD - (r.trouble / maxTrouble) * span(SCATTER_H);
+  const tip = (r) => t('cost.quality.dot', { name: r.slug, usd: formatUsd(r.usd), trouble: String(r.trouble) });
+  const foot = SCATTER_H - SCATTER_PAD;
+  return (
+    <div className="cost-quality-chart" data-testid="cost-quality-chart">
+      <SectionHeading as="h3" title={t('cost.quality.chartTitle')} />
+      <figure className="cost-chart cost-scatter">
+        <svg viewBox={`0 0 ${SCATTER_W} ${SCATTER_H}`} width="100%" role="img" aria-label={t('cost.quality.chartLabel')}>
+          <line className="cost-scatter-axis" x1={SCATTER_PAD} y1={foot} x2={SCATTER_W - SCATTER_PAD} y2={foot} />
+          <line className="cost-scatter-axis" x1={SCATTER_PAD} y1={SCATTER_PAD} x2={SCATTER_PAD} y2={foot} />
+          <text className="cost-scatter-label" x={SCATTER_W - SCATTER_PAD} y={SCATTER_H - 6} textAnchor="end">
+            {t('cost.quality.xAxis')} · {formatUsd(maxUsd)}
+          </text>
+          <text className="cost-scatter-label" x={SCATTER_PAD} y={SCATTER_PAD - 8}>
+            {t('cost.quality.yAxis')} · {maxTrouble}
+          </text>
+          {rows.map((r) => (
+            <Tooltip key={r.dirName} text={tip(r)} focusable>
+              <circle className="cost-scatter-dot" cx={x(r)} cy={y(r)} r={5} aria-label={tip(r)} data-testid="cost-quality-dot" />
+            </Tooltip>
+          ))}
+        </svg>
+      </figure>
+      <table className="cost-table" data-testid="cost-quality-table">
+        <caption>{t('cost.quality.tableCaption')}</caption>
+        <thead>
+          <tr>
+            <th scope="col">{t('cost.quality.intent')}</th>
+            <th scope="col">{t('cost.usd')}</th>
+            <th scope="col">{t('cost.quality.yAxis')}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((r) => (
+            <tr key={r.dirName}>
+              <td>{r.slug}</td>
+              <td>{formatUsd(r.usd)}</td>
+              <td>{r.trouble}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
   );
 }
 
@@ -227,6 +291,7 @@ export default function CostPanel({ cost, models, open: openProp, onToggle, proj
               </Tooltip>
             )}
             <CostChart timeline={cost.timeline} />
+            <QualityChart timeline={cost.timeline} perIntent={cost.perIntent} />
             <CostTable title={t('cost.perModel')} rows={project.byModel} totalUsd={project.total.usd} testId="cost-panel-models" />
             <CostTable title={t('cost.perAgent')} rows={project.byAgent} totalUsd={project.total.usd} testId="cost-panel-agents" />
             <ScopeTable scopes={scopes} />

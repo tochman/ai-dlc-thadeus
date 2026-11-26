@@ -155,6 +155,58 @@ describe('loadCrossMachineCost (US-0209 FR1.4, FR2, FR4.2)', () => {
     expect(await snapshot()).toEqual(before);
   });
 
+  describe('quality beside the cost (US-1305 FR1.7, FR2, NFR2)', () => {
+    const base = (dir) => path.join(root, 'aidlc/spaces/default/intents', dir);
+    const write = async (dir, rel, text) => {
+      await fs.mkdir(path.dirname(path.join(base(dir), rel)), { recursive: true });
+      await fs.writeFile(path.join(base(dir), rel), text);
+    };
+    const REVIEW = '### Findings\n\n| ID | Severity | Location | Finding | Required action | Status |\n|---|---|---|---|---|---|\n';
+    const row = (id, sev, status) => `| ${id} | ${sev} | x | y | z | ${status} |\n`;
+    const REJECTED = '\n## Gate\n**Timestamp**: 2026-11-16T12:00:00Z\n**Event**: GATE_REJECTED\n**Stage**: code-generation\n\n---\n';
+
+    it('gives every intent with a cost its quality from test-results.md, review files and the audit (FR2)', async () => {
+      await fs.appendFile(path.join(base('261116-two-machines'), 'audit/hosta-aaaaaaaaaaaa.md'), REJECTED);
+      await write('261116-two-machines', 'construction/build-and-test/test-results.md', '## Loop-Back Log\n\n### Loop-back 1\n\n## After merge with main\n');
+      await write(
+        '261116-two-machines',
+        'inception/requirements-analysis/reviews/review-01.md',
+        REVIEW + row('R-01', 'Major', 'Fixed') + row('R-02', 'Minor', 'New')
+      );
+      const { summary } = await loadCrossMachineCost(root, 'default', intents, ledger);
+      const q = summary.perIntent['261116-two-machines'].quality;
+      expect(q.revisions).toEqual({ total: 1, byStage: { 'code-generation': 1 } });
+      expect([q.loopBacks, q.failedRuns, q.postMerge]).toEqual([1, 1, 1]);
+      expect(q.findings).toEqual({ bySeverity: { Major: 1, Minor: 1 }, open: 1, fixed: 1 });
+      expect(q.trouble).toBe(1 + 1 + 1 + 1 + 1);
+    });
+
+    it('gives null parts, never 0, to an intent without test-results.md or review files (FR1.7)', async () => {
+      const { summary } = await loadCrossMachineCost(root, 'default', intents, ledger);
+      const q = summary.perIntent['261116-no-uuid'].quality;
+      expect([q.loopBacks, q.failedRuns, q.postMerge, q.findings]).toEqual([null, null, null, null]);
+      expect(q.trouble).toBe(0);
+    });
+
+    it('reads review files at any depth, units included, and only reviews/review-*.md (FR1.3)', async () => {
+      await write('261116-no-uuid', 'construction/u1-core/code-generation/reviews/review-02.md', REVIEW + row('R-01', 'Major', 'New'));
+      await write('261116-no-uuid', 'construction/u1-core/code-generation/reviews/notes.md', REVIEW + row('R-09', 'Major', 'New'));
+      await write('261116-no-uuid', '.aidlc-engine/reviews/review-01.md', REVIEW + row('R-08', 'Major', 'New'));
+      const { summary } = await loadCrossMachineCost(root, 'default', intents, ledger);
+      expect(summary.perIntent['261116-no-uuid'].quality.findings).toEqual({ bySeverity: { Major: 1 }, open: 1, fixed: 0 });
+    });
+
+    it('names an unreadable file and counts it as missing; the cost still loads (NFR2)', async () => {
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      await fs.mkdir(path.join(base('261116-two-machines'), 'construction/build-and-test/test-results.md'), { recursive: true });
+      const { summary } = await loadCrossMachineCost(root, 'default', intents, ledger);
+      const two = summary.perIntent['261116-two-machines'];
+      expect(two.total.usd).toBe(7);
+      expect(two.quality.loopBacks).toBeNull();
+      expect(warn.mock.calls.some((c) => String(c[0]).includes('test-results.md'))).toBe(true);
+    });
+  });
+
   it('gives no summary when there is no ledger and no cost row anywhere', async () => {
     await fs.rm(path.join(root, 'aidlc/spaces'), { recursive: true });
     expect((await loadCrossMachineCost(root, 'default', intents, null)).summary).toBeNull();

@@ -20,6 +20,7 @@ import { viewFields } from '../shared/frameworkViews.js';
 import { PROJECT_FILE, readProjectFile } from './projectFile.js';
 import { readReadings } from './tokenReadings.js';
 import { overviewRework } from './rework.js'; // US-1301
+import { qualityOf } from './parsers/quality.js'; // US-1305
 
 const PHASE_DIRS = ['initialization', 'ideation', 'inception', 'construction', 'operation', 'verification'];
 // ponytail: unbounded per-process cache keyed by root/space/intent; fine for a handful of projects.
@@ -416,7 +417,47 @@ export async function loadCrossMachineCost(root, space, intents, ledger, rates =
   summary.project.auditFiveMinute = parts.some((m) => m.machines.some((x) => x.source === 'audit'));
   const readings = await Promise.all(intents.map((i) => readReadings(root, i.dirName).catch(() => [])));
   addRework(summary, intents, events, readings);
+  await addQuality(root, space, summary, intents, events);
   return { summary, local };
+}
+
+/** US-1305 FR1.7, NFR2: a file that cannot be read is named in the log and counts as missing; it never breaks the view. */
+async function readOrMissing(root, rel) {
+  try {
+    return await readTextOrNull(root, rel);
+  } catch (err) {
+    console.warn(`Kunde inte läsa ${rel}:`, err.message);
+    return null;
+  }
+}
+
+/** US-1305 FR1.3: the intent's review files (any `reviews/review-NN.md`), dot folders (`.aidlc-engine/`) and `audit/` left out. */
+async function reviewFiles(root, dir) {
+  let entries;
+  try {
+    entries = await listDir(root, dir);
+  } catch (err) {
+    console.warn(`Kunde inte läsa ${dir}:`, err.message);
+    return [];
+  }
+  const inReviews = dir.endsWith('/reviews');
+  const found = entries.filter((e) => !e.isDir && inReviews && /^review-.*\.md$/.test(e.name)).map((e) => `${dir}/${e.name}`);
+  const subs = entries.filter((e) => e.isDir && !e.name.startsWith('.') && e.name !== 'audit');
+  return found.concat(...(await Promise.all(subs.map((e) => reviewFiles(root, `${dir}/${e.name}`)))));
+}
+
+/** US-1305 FR1, FR2: each intent with a cost gets `quality` (qualityOf's shape) from the audit events already read. */
+async function addQuality(root, space, summary, intents, events) {
+  await Promise.all(
+    intents.map(async (i, n) => {
+      const cost = summary.perIntent[i.dirName];
+      if (!cost) return;
+      const base = `${intentsDir(space)}/${i.dirName}`;
+      const testResults = await readOrMissing(root, `${base}/construction/build-and-test/test-results.md`);
+      const reviews = (await Promise.all((await reviewFiles(root, base)).map((rel) => readOrMissing(root, rel)))).filter((t) => t != null);
+      cost.quality = qualityOf({ events: events[n], testResults, reviews });
+    })
+  );
 }
 
 /**

@@ -914,6 +914,15 @@ button.lcars-nb:hover:not(:disabled), a.lcars-nb:hover { filter: brightness(1.15
 .cost-savings-working { margin: 0; padding-left: 18px; font-size: 13px; color: var(--muted); }
 .cost-savings-dismissed li { display: flex; align-items: center; gap: 8px; font-size: 13px; }
 .cost-chart figcaption { font-size: 12px; }
+/* US-1305 FR2, FR4: the quality signals as a steel-edged list, the scatter's dots carry meaning by position, not colour. */
+.cost-quality { display: flex; flex-direction: column; gap: 6px; }
+.cost-quality-signals { list-style: none; margin: 0; padding: 0 0 0 12px; border-left: 6px solid var(--steel); font-size: 14px; color: var(--text-2); font-variant-numeric: tabular-nums; }
+.cost-scatter-axis { stroke: var(--steel-mid); stroke-width: 1; }
+.cost-scatter-label { fill: var(--muted); font-size: 10px; font-family: var(--font-head); letter-spacing: 0.04em; text-transform: uppercase; }
+.cost-chart .cost-scatter-dot { fill: var(--steel-light); }
+.cost-chart .cost-scatter-dot:hover { fill: var(--steel); }
+.cost-chart .cost-scatter-dot:focus-visible { outline: none; stroke: var(--amber); stroke-width: 2; }
+.features-release-quality { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; font-size: 13px; color: var(--text-2); }
 .cost-tab { display: flex; flex-direction: column; gap: 14px; }
 .cost-tab .lcars-readout { max-width: 420px; }
 .cost-table { border-collapse: collapse; width: 100%; font-size: 14px; font-variant-numeric: tabular-nums; }

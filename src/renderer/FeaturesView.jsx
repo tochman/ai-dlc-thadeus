@@ -2,6 +2,7 @@
 // story's release, which main writes as a "for vX.Y.Z" marker (US-0603 FR2). With the Releases delivery setting
 // the view also lists releases (US-0603 FR3), where releases are made, filled and deleted by hand (US-0605); with
 // Continuous deployment all of it is hidden (FR4.1, US-0605 FR5).
+// US-1305 FR3: each release's fix stories and prerelease mark beside its cost.
 import { useEffect, useEffectEvent, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { FileContent } from './ArtifactReader.jsx';
@@ -373,9 +374,10 @@ const storiesWithoutRelease = (epics) =>
  * go through the view's shared lock (`locked`, `lockedWrite`, US-0608 FR1.2); a refusal or failure is said in one
  * sentence (NFR3).
  */
-function ReleasesView({ projectId, features, onOpenStory, locked, lockedWrite, costs }) {
+function ReleasesView({ projectId, space, features, onOpenStory, locked, lockedWrite, costs }) {
   const { t } = useTranslation();
   const [error, setError] = useState(null);
+  const delivery = useDelivery(projectId, space);
   const releases = buildReleases(features.epics, features.tags, features.plans);
   const unassigned = storiesWithoutRelease(features.epics);
   const bridge = window.bridge;
@@ -424,15 +426,54 @@ function ReleasesView({ projectId, features, onOpenStory, locked, lockedWrite, c
         {releases.length === 0 ? (
           <p className="muted">{t('features.releases.empty')}</p>
         ) : (
-          <ReleaseRows {...{ releases, unassigned, locked, setStory, write, projectId, onOpenStory, costs }} />
+          <ReleaseRows {...{ releases, unassigned, locked, setStory, write, projectId, onOpenStory, costs, delivery }} />
         )}
       </ListDrawer>
     </aside>
   );
 }
 
+/**
+ * US-1305 FR3: US-1304's delivery figures, read once when the Releases view opens (`space` null: not an AI-DLC project,
+ * nothing is read). A failed read is logged and the rows show no quality line; the view itself keeps working.
+ */
+function useDelivery(projectId, space) {
+  const [delivery, setDelivery] = useState(null);
+  useEffect(() => {
+    if (!projectId || !space || !window.bridge?.getVelocity) return undefined;
+    let live = true;
+    window.bridge.getVelocity(projectId, space).then(
+      (v) => live && setDelivery(v?.delivery ?? null),
+      (err) => console.error('project:velocity', err?.message ?? err)
+    );
+    return () => {
+      live = false;
+    };
+  }, [projectId, space]);
+  return delivery;
+}
+
+/**
+ * US-1305 FR3.1, FR3.2, NFR3: beside a release's cost, the fix stories that name it (count and IDs) and "prerelease"
+ * when GitHub marks it; without the platform's release list the prerelease part is named missing.
+ */
+function ReleaseQuality({ delivery, version }) {
+  const { t } = useTranslation();
+  const row = delivery?.releases?.find((r) => r.release === version);
+  if (!row) return null;
+  const noReleases = delivery.missing?.some((m) => m.kind === 'releases');
+  if (!row.fixes.length && !row.prerelease && !noReleases) return null;
+  return (
+    <span className="features-release-quality" data-testid="features-view-release-quality">
+      {row.fixes.length > 0 && <span>{t('features.releases.fixes', { n: row.fixes.length, list: row.fixes.join(', ') })}</span>}
+      {row.prerelease && <span className="lcars-chip lcars-chip--warn">{t('features.releases.prerelease')}</span>}
+      {noReleases && <span className="lcars-chip lcars-chip--warn">{t('velocity.missing.releases')}</span>}
+    </span>
+  );
+}
+
 /** US-0603 FR3, US-0605: the release rows, square blocks whose strip carries the state (planned live, released done). */
-function ReleaseRows({ releases, unassigned, locked, setStory, write, projectId, onOpenStory, costs }) {
+function ReleaseRows({ releases, unassigned, locked, setStory, write, projectId, onOpenStory, costs, delivery }) {
   const { t } = useTranslation();
   const bridge = window.bridge;
   return (
@@ -448,6 +489,7 @@ function ReleaseRows({ releases, unassigned, locked, setStory, write, projectId,
           </span>
           <span className="muted">{t('features.releases.storyCount', { n: r.stories.length })}</span>
           <CostDetail figure={costs?.releases[r.version]} testId="features-view-release-cost" />
+          <ReleaseQuality delivery={delivery} version={r.version} />
           {r.stories.length > 0 && (
             <ul className="features-release-stories">
               {r.stories.map(({ epicId, story, stale }) => (
@@ -710,7 +752,8 @@ export default function FeaturesView({
   tab = 'epics',
   onTab,
   cost = null,
-  delivered = null
+  delivered = null,
+  space = null // US-1305 FR3: the AI-DLC space whose delivery figures the Releases view reads
 }) {
   const { t } = useTranslation();
   const epics = features?.available ? features.epics : [];
@@ -884,7 +927,15 @@ export default function FeaturesView({
     if (showReleases) {
       body = (
         <Frame>
-          <ReleasesView projectId={projectId} features={features} onOpenStory={openStory} locked={locked} lockedWrite={lockedWrite} costs={costs} />
+          <ReleasesView
+            projectId={projectId}
+            space={space}
+            features={features}
+            onOpenStory={openStory}
+            locked={locked}
+            lockedWrite={lockedWrite}
+            costs={costs}
+          />
         </Frame>
       );
     }

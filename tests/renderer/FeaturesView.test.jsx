@@ -235,6 +235,34 @@ describe('FeaturesView: cost per story, epic and release (US-1303 FR6)', () => {
   });
 });
 
+// US-1305 FR3: each release's fix stories and the prerelease mark beside its cost, from US-1304's delivery rows.
+describe('FeaturesView: quality per release (US-1305 FR3)', () => {
+  const row = (release, fixes, prerelease) => ({ release, fixes, prerelease, failed: fixes.length > 0 || prerelease });
+  const renderReleases = (delivery) => {
+    window.bridge.getVelocity = vi.fn(async () => ({ delivery }));
+    render(<FeaturesView projectId="p1" space="default" features={releaseDocs()} delivery="releases" tab="releases" />);
+  };
+  const quality = (v) => {
+    const el = screen.getAllByTestId('features-view-release').find((r) => r.textContent.startsWith(v));
+    return within(el).queryByTestId('features-view-release-quality')?.textContent ?? null;
+  };
+  afterEach(() => delete window.bridge.getVelocity);
+
+  it('names the fix stories with their IDs and "prerelease", read once for the view (FR3.1)', async () => {
+    renderReleases({ releases: [row('v0.2.0', ['US-0001', 'US-0002'], true), row('v0.2.4', [], false)], missing: [] });
+    await waitFor(() => expect(quality('v0.2.0')).toBe('2 rättelser: US-0001, US-0002prerelease'));
+    expect(quality('v0.2.4')).toBeNull();
+    expect(window.bridge.getVelocity).toHaveBeenCalledTimes(1);
+    expect(window.bridge.getVelocity).toHaveBeenCalledWith('p1', 'default');
+  });
+
+  it('names the prerelease part missing without a platform connection; the fix stories still show (FR3.2)', async () => {
+    renderReleases({ releases: [row('v0.2.0', ['US-0001'], false), row('v0.2.4', [], false)], missing: [{ kind: 'releases', path: 'origin', error: null }] });
+    await waitFor(() => expect(quality('v0.2.0')).toBe('1 rättelse: US-0001GitHubs releaselista saknas (prereleaser läses bara från GitHub)'));
+    expect(quality('v0.2.4')).toBe('GitHubs releaselista saknas (prereleaser läses bara från GitHub)');
+  });
+});
+
 describe('FeaturesView: releases (US-0603)', () => {
   it('a story picks a release among the planned and next versions, or None, through the bridge (FR2.1, FR2.2)', async () => {
     window.bridge.setStoryRelease = vi.fn(async () => ({ ok: true }));
