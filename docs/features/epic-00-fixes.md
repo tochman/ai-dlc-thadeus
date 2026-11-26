@@ -6,9 +6,9 @@
 
 > Small fixes the person reports while using the app: something looks off, behaves wrongly or is missing a detail. Each fix becomes a story here, so nothing reported in passing gets lost. A fix that grows into a feature moves to its topic's epic.
 
-**Stories:** US-0001, US-0002, US-0003, US-0004, US-0005, US-0006, US-0007, US-0008, US-0009, US-0010, US-0011, US-0012, US-0013, US-0014, US-0015, US-0016, US-0017, US-0018, US-0019, US-0020, US-0021, US-0022, US-0023, US-0024, US-0025, US-0026, US-0027, US-0028, US-0029, US-0030, US-0031, US-0032, US-0033, US-0034, US-0035, US-0036, US-0037, US-0038, US-0039, US-0040, US-0041, US-0042, US-0043, US-0044, US-0045, US-0046, US-0047, US-0048, US-0049, US-0050, US-0051, US-0052, US-0053, US-0054
+**Stories:** US-0001, US-0002, US-0003, US-0004, US-0005, US-0006, US-0007, US-0008, US-0009, US-0010, US-0011, US-0012, US-0013, US-0014, US-0015, US-0016, US-0017, US-0018, US-0019, US-0020, US-0021, US-0022, US-0023, US-0024, US-0025, US-0026, US-0027, US-0028, US-0029, US-0030, US-0031, US-0032, US-0033, US-0034, US-0035, US-0036, US-0037, US-0038, US-0039, US-0040, US-0041, US-0042, US-0043, US-0044, US-0045, US-0046, US-0047, US-0048, US-0049, US-0050, US-0051, US-0052, US-0053, US-0054, US-0055
 
-**Status (2026-11-26):** ✅ US-0001–US-0020 released (v0.2.3–v0.2.6). ✅ US-0021–US-0023 released in v0.2.7. ✅ US-0024 released in v0.2.8. ✅ US-0025 released in v0.2.9. ✅ US-0026 released in v0.2.9. ✅ US-0027 released in v0.2.9. ✅ US-0028 released in v0.2.10. ✅ US-0029 released in v0.2.10. ✅ US-0030 released in v0.2.10. ✅ US-0031 released in v0.2.10. ✅ US-0032 released in v0.2.11. ✅ US-0033 released in v0.2.11. ✅ US-0034 released in v0.2.12. ✅ US-0035 and US-0036 released in v0.2.13. ✅ US-0037, US-0038, US-0039, US-0040, US-0041 and US-0042 released in v0.2.14. ✅ US-0043 released in v0.2.15. ✅ US-0044 released in v0.2.15. ✅ US-0045 released in v0.2.15. ✅ US-0046 released in v0.2.15. ✅ US-0047 released in v0.3.0. ✅ US-0048 released in v0.3.0. ✅ US-0049 released in v0.3.0. ✅ US-0050, US-0051, US-0052, US-0053 and US-0054 released in v0.3.1. Each story names its release.
+**Status (2026-11-26):** ✅ US-0001–US-0020 released (v0.2.3–v0.2.6). ✅ US-0021–US-0023 released in v0.2.7. ✅ US-0024 released in v0.2.8. ✅ US-0025 released in v0.2.9. ✅ US-0026 released in v0.2.9. ✅ US-0027 released in v0.2.9. ✅ US-0028 released in v0.2.10. ✅ US-0029 released in v0.2.10. ✅ US-0030 released in v0.2.10. ✅ US-0031 released in v0.2.10. ✅ US-0032 released in v0.2.11. ✅ US-0033 released in v0.2.11. ✅ US-0034 released in v0.2.12. ✅ US-0035 and US-0036 released in v0.2.13. ✅ US-0037, US-0038, US-0039, US-0040, US-0041 and US-0042 released in v0.2.14. ✅ US-0043 released in v0.2.15. ✅ US-0044 released in v0.2.15. ✅ US-0045 released in v0.2.15. ✅ US-0046 released in v0.2.15. ✅ US-0047 released in v0.3.0. ✅ US-0048 released in v0.3.0. ✅ US-0049 released in v0.3.0. ✅ US-0050, US-0051, US-0052, US-0053 and US-0054 released in v0.3.1. 📋 US-0055 planned, for v0.3.2. Each story names its release.
 
 ---
 
@@ -878,3 +878,16 @@
   - [x] A test fails without each change and passes with it; the existing suite stays green.
 - **Notes:** A code fix, so it runs on the `quick-fix` plan. A queued task that no agent takes within about a minute is dropped. Both limits carry a `ponytail:` comment.
 - **Dependencies:** US-0030 ✅, US-0214 ✅
+
+**US-0055: An action that failed to replay is kept after a real planning commit** 📋 Planned, for v0.3.2
+- As a **developer**, in order to **not lose a planning change without notice**, I would like **the planning sync to keep an action that failed in the replay waiting, also when the same cycle made a real commit**.
+- **Epic:** EPIC-00
+- **Priority:** Medium
+- **Complexity:** Small
+- **Background:** Found 2026-11-26 during US-0053. In `replayStep` (`src/main/planningSync.js`), the "nothing to commit" path leaves out the actions that failed or clashed in the replay, but the path after a real commit still marks every action in the cycle as committed, failed ones included. `pushStep` then drops them after the push, so the change is lost.
+- **Acceptance Criteria:**
+  - [ ] **Given** a cycle where one action replays and another fails, **when** the commit is made, **then** only the replayed action is marked committed, and the failed one stays waiting with its reason.
+  - [ ] **Given** that cycle, **when** the push has gone through, **then** the failed action is still shown as waiting.
+  - [ ] An action that clashed in the replay is handled the same way.
+- **Dependencies:** US-0053
+
