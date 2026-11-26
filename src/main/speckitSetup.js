@@ -5,8 +5,9 @@ import { runFixed } from './exec.js';
 import { probeTool, toolPath } from './tools.js';
 import { listDir } from './projectAccess.js';
 import { t } from '../shared/i18n.js';
+import { installFor } from '../shared/installCommands.js';
 
-export const INSTALL_HINT = 'uv tool install specify-cli'; // text only: the app never installs specify (BR3.6)
+export const INSTALL_HINT = installFor('specify', process.platform).command; // text only: the app never installs specify (BR3.6); one place since US-0805 FR4.3
 export const SPECKIT_HARNESSES = ['claude', 'opencode'];
 const TIMEOUT_MS = 120000; // as the AI-DLC setup step (STEP_TIMEOUT_MS in setup.js)
 

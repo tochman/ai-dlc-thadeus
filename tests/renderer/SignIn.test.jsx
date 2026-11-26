@@ -1,8 +1,9 @@
 // US-0804 FR2, FR3, FR5.2: the sign-in state and "Sign in" in Settings › Tools, with a mocked check, in Swedish.
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, renderHook, screen, waitFor, within } from '@testing-library/react';
 import { t } from '../../src/shared/i18n.js';
 import SettingsView from '../../src/renderer/SettingsView.jsx';
+import { CopyCommand, useSignIn } from '../../src/renderer/SignIn.jsx';
 import { groupStrip } from '../../src/renderer/ToolRows.jsx';
 
 const found = (id, over) => ({ id, path: `/usr/local/bin/${id}`, source: 'auto', found: true, version: '1.0.0', ...over });
@@ -261,6 +262,61 @@ describe('A state that keeps up (US-0804 FR2.5, FR5.2)', () => {
     await slow.resolve(answer('none'));
     expect(region.textContent).toContain(t('signIn.announce', { tool: 'GitHub CLI (gh)', state: stateText('none') }));
     expect(document.activeElement).toBe(rescan);
+  });
+});
+
+describe('What the health check uses (US-0805)', () => {
+  it('read resolves when its checks have, also when one failed (FR1.4)', async () => {
+    const slow = held();
+    window.bridge = { checkSignIn: vi.fn((id) => (id === 'gh' ? slow.promise : Promise.reject(new Error('boom')))) };
+    const { result } = renderHook(() => useSignIn(ALL, false));
+    let done = false;
+    act(() => {
+      result.current.read(ALL).then(() => (done = true));
+    });
+    await act(async () => {});
+    expect(result.current.of(found('claude')).state).toBe('unknown');
+    expect(done).toBe(false);
+    await slow.resolve(answer('in'));
+    expect(done).toBe(true);
+  });
+
+  it("without the focus option the window's focus starts no check (FR1.4)", async () => {
+    window.bridge = { checkSignIn: vi.fn(async (id) => IN[id]) };
+    renderHook(() => useSignIn(ALL, false, { onFocus: false }));
+    fireEvent.focus(window);
+    await act(async () => {});
+    expect(window.bridge.checkSignIn).not.toHaveBeenCalled();
+  });
+
+  const command = 'one \\\n\t&& two';
+  const copyable = (writeText) => {
+    Object.defineProperty(navigator, 'clipboard', { value: { writeText }, configurable: true });
+    render(<CopyCommand id="gh" command={command} label="Kör det här:" copyLabel="Kopiera för gh" testId="some" />);
+    return screen.getByTestId('some-copy-gh');
+  };
+
+  it('CopyCommand shows and copies a text with line breaks unchanged (FR5.3)', async () => {
+    const writeText = vi.fn(async () => {});
+    const button = copyable(writeText);
+    expect(screen.getByTestId('some-command-gh').querySelector('code').textContent).toBe(command);
+    expect(screen.getByTestId('some-command-gh').textContent).toContain('Kör det här:');
+    expect(button.getAttribute('aria-label')).toBe('Kopiera för gh');
+    fireEvent.click(button);
+    await waitFor(() => expect(button.textContent).toBe(t('signIn.copied')));
+    expect(button.hasAttribute('aria-label')).toBe(false); // "Copied" is what it says now
+    expect(writeText.mock.calls).toEqual([[command]]);
+  });
+
+  it('CopyCommand says when the clipboard refuses (FR4.1)', async () => {
+    fireEvent.click(
+      copyable(
+        vi.fn(async () => {
+          throw new Error('denied');
+        })
+      )
+    );
+    expect((await screen.findByRole('alert')).textContent).toBe(t('signIn.copyFailed', { error: 'denied' }));
   });
 });
 

@@ -1,0 +1,33 @@
+{
+  "stage": "code-generation",
+  "upstream_ids": [
+    "FR1.1", "FR1.2", "FR1.3", "FR1.4", "FR2.1", "FR2.2", "FR2.3", "FR3.1", "FR3.2", "FR3.3", "FR3.4", "FR4.1",
+    "FR4.2", "FR4.3", "FR4.4", "FR4.5", "FR4.6", "FR4.7", "FR5.1", "FR5.2", "FR5.3", "NFR1", "NFR2", "NFR3"
+  ],
+  "coverage": [
+    { "id": "FR1.1", "status": "OK", "target": "src/shared/installCommands.js" },
+    { "id": "FR1.2", "status": "OK", "target": "src/shared/health.js" },
+    { "id": "FR1.3", "status": "OK", "target": "src/renderer/HealthCheck.jsx" },
+    { "id": "FR1.4", "status": "OK", "target": "src/renderer/App.jsx" },
+    { "id": "FR2.1", "status": "OK", "target": "src/shared/health.js" },
+    { "id": "FR2.2", "status": "OK", "target": "src/shared/health.js" },
+    { "id": "FR2.3", "status": "OK", "target": "src/renderer/HealthCheck.jsx" },
+    { "id": "FR3.1", "status": "OK", "target": "src/renderer/App.jsx" },
+    { "id": "FR3.2", "status": "OK", "target": "src/renderer/HealthCheck.jsx" },
+    { "id": "FR3.3", "status": "OK", "target": "src/renderer/ProjectView.jsx" },
+    { "id": "FR3.4", "status": "OK", "target": "src/renderer/HealthCheck.jsx" },
+    { "id": "FR4.1", "status": "OK", "target": "src/renderer/SignIn.jsx" },
+    { "id": "FR4.2", "status": "OK", "target": "src/shared/installCommands.js" },
+    { "id": "FR4.3", "status": "OK", "target": "src/main/speckitSetup.js" },
+    { "id": "FR4.4", "status": "OK", "target": "tests/e2e/healthCheck.spec.js" },
+    { "id": "FR4.5", "status": "OK", "target": "src/renderer/HealthCheck.jsx" },
+    { "id": "FR4.6", "status": "OK", "target": "tests/main/toolsNoAnswer.test.js" },
+    { "id": "FR4.7", "status": "OK", "target": "src/main/tools.js" },
+    { "id": "FR5.1", "status": "OK", "target": "src/shared/locales/sv.json" },
+    { "id": "FR5.2", "status": "OK", "target": "tests/renderer/HealthCheck.test.jsx" },
+    { "id": "FR5.3", "status": "OK", "target": "src/renderer/theme.css" },
+    { "id": "NFR1", "status": "OK", "target": "src/main/ipc.js" },
+    { "id": "NFR2", "status": "OK", "target": "src/renderer/HealthCheck.jsx" },
+    { "id": "NFR3", "status": "OK", "target": "tests/main/health.test.js" }
+  ]
+}

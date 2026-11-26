@@ -107,6 +107,17 @@ describe('ProjectView: one view at a time', () => {
     expect(window.bridge.getGitStatus).not.toHaveBeenCalled(); // the closed GitHub view reads nothing
   });
 
+  it('shows a banner first above the project, in every view, and works without one (US-0805 FR3.3)', async () => {
+    const { show } = renderView('intents', { banner: <p data-testid="a-banner" /> });
+    await screen.findByTestId('intent-list');
+    for (const view of ['intents', 'config']) {
+      show(view);
+      const banner = screen.getByTestId('a-banner');
+      expect(banner.parentElement.className).toBe('project-main');
+      expect(banner.previousElementSibling).toBeNull();
+    }
+  });
+
   it('the left arm counts the intents that are not archived (US-0513 FR3.1)', async () => {
     projectHook.extra = { intents: [...intents, { dirName: '261101-old', slug: 'old', status: 'archived', active: false }] };
     const onMeta = vi.fn();

@@ -1342,6 +1342,23 @@ describe('setup, settings and tools', () => {
     expect(electron.shell.openExternal).toHaveBeenLastCalledWith('https://docs.example/aidlc');
     expect(await call('i18n:language', {})).toBe('sv');
   });
+
+  it.each([
+    ['aidlc', 'https://github.com/awslabs/aidlc-workflows'],
+    ['claude', 'https://code.claude.com/docs/en/setup'],
+    ['opencode', 'https://opencode.ai/docs'],
+    ['specify', 'https://github.com/github/spec-kit'],
+    ['gh', 'https://cli.github.com']
+  ])("opens %s's install page by its key (US-0805 FR4.1, NFR1)", async (id, page) => {
+    await call('app:openExternal', {}, `install-${id}`);
+    expect(electron.shell.openExternal).toHaveBeenLastCalledWith(page);
+  });
+
+  it('refuses an install page that is not in the table, and an address (US-0805 NFR1)', async () => {
+    electron.shell.openExternal.mockClear();
+    for (const key of ['install-glab', 'install-', 'https://cli.github.com', { id: 'gh' }]) await expect(call('app:openExternal', {}, key)).rejects.toThrow();
+    expect(electron.shell.openExternal).not.toHaveBeenCalled();
+  });
 });
 
 describe('velocity (US-0303 FR3.5)', () => {

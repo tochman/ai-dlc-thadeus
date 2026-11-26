@@ -98,7 +98,8 @@ export async function probeTool(file, { exec, path } = {}) {
 
 /**
  * One row of the Verktyg section: the saved path wins, the shell falls back to $SHELL, the rest to PATH (FR2.1).
- * A row looked up on a fallback PATH carries `pathFallback: true` (US-0035 FR1.5).
+ * A row looked up on a fallback PATH carries `pathFallback: true` (US-0035 FR1.5), and one whose file is there and
+ * executable but gave no version `noAnswer: true` (US-0805 FR4.7).
  */
 async function toolRow(id, exec, read) {
   try {
@@ -108,7 +109,10 @@ async function toolRow(id, exec, read) {
     const source = saved ? 'saved' : 'auto';
     const mark = onPath && read.fromFallback ? { pathFallback: true } : {};
     if (!file) return { id, path: null, source, found: false, version: null, error: t('errors.toolNotOnPath', { name: id }), ...mark };
-    return { id, path: file, source, ...(await probeTool(file, { exec, path: read.path })), ...mark };
+    const probe = await probeTool(file, { exec, path: read.path });
+    // US-0805 FR4.7: installed, so installing it again is not what it needs.
+    const noAnswer = !probe.found && (await isExecutable(file)) ? { noAnswer: true } : {};
+    return { id, path: file, source, ...probe, ...noAnswer, ...mark };
   } catch (err) {
     // A row never rejects: the view always gets every row to show (NFR4).
     return { id, path: null, source: 'auto', found: false, version: null, error: err.message };
@@ -120,7 +124,7 @@ async function toolRow(id, exec, read) {
  * All run in parallel and never reject (FR2.1, NFR4; five tools since US-0410 FR4.1). `exec` is injectable for tests.
  * Each scan reads the login shell's PATH again, once, for every row and its `--version` check (US-0035 FR1.2, FR1.5).
  * @returns {Promise<Array<{id: string, path: string|null, source: 'saved'|'auto', found: boolean,
- *   version: string|null, error?: string, pathFallback?: true}>>}
+ *   version: string|null, error?: string, noAnswer?: true, pathFallback?: true}>>}
  */
 export async function getTools({ exec } = {}) {
   refreshLoginPath();

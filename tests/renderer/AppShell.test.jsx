@@ -11,10 +11,11 @@ vi.mock('../../src/renderer/ProjectView.jsx', async () => {
   const { default: LatestMessageStrip } = await import('../../src/renderer/LatestMessageStrip.jsx');
   const { default: SpeckitFeatures } = await import('../../src/renderer/SpeckitFeatures.jsx');
   return {
-    default: function ProjectViewStub({ project, view, section, aidlcTab, onMeta, onOpenReply, onOpenTools }) {
+    default: function ProjectViewStub({ project, view, section, aidlcTab, onMeta, onOpenReply, onOpenTools, banner }) {
       useEffect(() => onMeta(project.projectId, { showFeatures: true, intentCount: 7 }), [project.projectId, onMeta]);
       return (
         <div data-testid={`project-view-${project.projectId}`} data-view={view} data-section={section} data-aidlc-tab={aidlcTab}>
+          {banner}
           <LatestMessageStrip projectId={project.projectId} onOpenReply={onOpenReply} />
           <button onClick={onOpenTools} data-testid={`project-view-tools-${project.projectId}`} />
           {project.detection.framework === 'speckit' && <SpeckitFeatures projectId={project.projectId} onMeta={onMeta} />}
@@ -543,6 +544,78 @@ describe('App shell in the US-0417 language', () => {
     await renderApp(open);
     fireEvent.click(await screen.findByTestId('project-view-switch-features'));
     expect(document.querySelector('.app-main').classList.contains('is-entering')).toBe(false);
+  });
+});
+
+describe('App shell: the health check (US-0805)', () => {
+  const rows = (...missing) =>
+    ['aidlc', 'claude', 'opencode', 'gh', 'glab', 'specify', 'shell'].map((id) => ({
+      id,
+      path: missing.includes(id) ? null : `/usr/local/bin/${id}`,
+      source: 'auto',
+      found: !missing.includes(id),
+      version: missing.includes(id) ? null : '1.0.0'
+    }));
+  /** The app with these settings, these tools missing, and openProject held when asked for. */
+  async function start(settings, { missing = [], openProject } = {}) {
+    mockBridge(settings);
+    window.bridge.getTools = vi.fn(async () => rows(...missing));
+    if (openProject) window.bridge.openProject = openProject;
+    render(<App />);
+    await act(async () => {});
+  }
+
+  it('scans after the restore and never before, and shows no panel while a project is open (FR1.4)', async () => {
+    let opened;
+    await start({ openProjects: ['/p/aidlc-dash-a'] }, { openProject: vi.fn(() => new Promise((resolve) => (opened = resolve))) });
+    expect(window.bridge.getTools).not.toHaveBeenCalled();
+    await act(async () => opened(projectInfo('/p/aidlc-dash-a', 'p1')));
+    await waitFor(() => expect(window.bridge.getTools).toHaveBeenCalledTimes(1));
+    expect(screen.queryByTestId('health-panel')).toBeNull();
+    expect(screen.queryByTestId('health-line')).toBeNull(); // ready
+  });
+
+  it('shows the panel on the empty screen, with Open project usable whatever it says, and not in Settings (FR3.1)', async () => {
+    await start({});
+    window.bridge.getTools.mockImplementation(() => new Promise(() => {})); // a scan that never ends
+    expect(screen.getByTestId('health-panel')).toBeTruthy();
+    await act(async () => fireEvent.click(screen.getByTestId('health-check-again')));
+    fireEvent.click(screen.getByTestId('empty-state-open'));
+    expect(window.bridge.pickProject).toHaveBeenCalledTimes(1);
+    fireEvent.click(screen.getByTestId('app-settings-open'));
+    expect(screen.queryByTestId('health-panel')).toBeNull();
+    expect(screen.getByTestId('health-status')).toBeTruthy();
+  });
+
+  it('shows the line in the active project only, for its framework, until it is dismissed (FR3.3)', async () => {
+    await start(
+      { openProjects: ['/p/aidlc-dash-a', '/p/spec-b'], activeProject: '/p/aidlc-dash-a' },
+      {
+        missing: ['aidlc'],
+        openProject: vi.fn(async (dir) => (dir.endsWith('a') ? projectInfo(dir, 'p1') : { ...projectInfo(dir, 'p2'), detection: detectionOf('speckit') }))
+      }
+    );
+    const line = await within(screen.getByTestId('project-view-p1')).findByTestId('health-line');
+    expect(line.textContent).toContain(t('health.missing', { tools: t('settings.tools.aidlc') }));
+    expect(screen.getAllByTestId('health-line')).toHaveLength(1);
+    const [first, second] = screen.getAllByTestId('project-tabs-tab');
+    fireEvent.click(second);
+    expect(screen.queryByTestId('health-line')).toBeNull(); // Spec Kit needs no AI-DLC CLI
+    fireEvent.click(first);
+    fireEvent.click(screen.getByTestId('health-line-dismiss'));
+    expect(screen.queryByTestId('health-line')).toBeNull();
+  });
+
+  it('a path saved or reset in Settings starts a scan (FR1.4)', async () => {
+    await start({});
+    window.bridge.pickTool = vi.fn(async () => '/opt/claude');
+    fireEvent.click(screen.getByTestId('app-settings-open'));
+    await screen.findByTestId('settings-tool-chip-claude');
+    await act(async () => {});
+    const before = window.bridge.getTools.mock.calls.length; // the start's scan and Settings' own
+    expect(before).toBe(2);
+    await act(async () => fireEvent.click(screen.getByTestId('settings-tool-pick-claude')));
+    await waitFor(() => expect(window.bridge.getTools).toHaveBeenCalledTimes(before + 2)); // Settings' own and the health check's
   });
 });
 

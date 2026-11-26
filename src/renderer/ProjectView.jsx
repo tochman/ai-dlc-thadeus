@@ -266,7 +266,8 @@ function ProjectContent({
   terminalCommand,
   editRequest,
   onOpenReply,
-  onOpenTools
+  onOpenTools,
+  banner
 }) {
   const { t } = useTranslation();
   const terminal = useTerminal();
@@ -433,6 +434,7 @@ function ProjectContent({
     <EditorCtx.Provider value={editorCtx}>
       <div className="project-view">
         <div className="project-main">
+          {banner}
           <AgentHooksStrip projectId={project.projectId} onDetails={() => openAgentSettings(true)} />
           {ruleNotice && (
             <p className="banner banner-warn" role="status" data-testid="lifecycle-rule-notice">
@@ -582,7 +584,8 @@ export default function ProjectView({
   editRequest,
   askingIntents,
   onOpenReply,
-  onOpenTools
+  onOpenTools,
+  banner = null // US-0805 FR3.3: the health check's line, above the project
 }) {
   return (
     <TerminalProvider askingIntents={askingIntents}>
@@ -600,6 +603,7 @@ export default function ProjectView({
         editRequest={editRequest}
         onOpenReply={onOpenReply}
         onOpenTools={onOpenTools}
+        banner={banner}
       />
     </TerminalProvider>
   );

@@ -1,7 +1,7 @@
 // US-0044 AC1-AC4: the intent view fits the window and its parts stay inside their frames. Layout faults (widths,
 // gaps, overflow) that jsdom cannot measure, so the built app is opened on a temp copy of the fixture project whose
 // in-flight intent has a long name, twelve stories, a nine-unit graph in three columns, a NOT-READY review and live
-// tokens, at window widths 1280 and 1920. Tool paths point nowhere, so no agent starts (as planning.spec.js does).
+// tokens, at window widths 1280 and 1920. The tools are stand-ins, so no real agent starts (as planning.spec.js does).
 // US-0509 FR5.3, NFR2: the same at 1280 with "Change plan" and its dialog open on a plan with many stages.
 // US-0509 FR3.1, FR5.2: the line lands unsent in an agent tab that runs a stand-in CLI, which records what it is typed.
 import { _electron as electron, expect, test } from '@playwright/test';
@@ -10,6 +10,7 @@ import { promises as fs, readFileSync, writeFileSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import process from 'node:process';
+import { standInTools } from './standInTools.js';
 
 const DIR = '261112-epic29-small-k2-fixes';
 const UUID = '01a1d000-0000-7000-8000-000000000003';
@@ -114,7 +115,7 @@ async function setup({ agent = false } = {}) {
   git(project, 'commit', '-q', '-m', 'start');
   const userData = path.join(tmp, 'userData');
   await fs.mkdir(userData, { recursive: true });
-  const nowhere = path.join(tmp, 'no-tool');
+  const tools = standInTools(tmp); // found and signed in, so the health check's line (US-0805) is never in the layout
   const cli = path.join(tmp, 'agent');
   if (agent) writeFileSync(cli, AGENT, { mode: 0o755 });
   writeFileSync(
@@ -124,7 +125,7 @@ async function setup({ agent = false } = {}) {
       activeProject: project,
       language: 'en',
       updates: { lastCheckMs: Date.now() },
-      toolPaths: { aidlc: nowhere, claude: agent ? cli : nowhere, opencode: nowhere, gh: nowhere, glab: nowhere },
+      toolPaths: agent ? { ...tools, claude: cli } : tools,
       projectSettings: { [project]: { featureDocs: 'show' } }
     })
   );
