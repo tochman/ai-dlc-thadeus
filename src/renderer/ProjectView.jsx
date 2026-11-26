@@ -529,6 +529,7 @@ function ProjectContent({
               onSetup={offerSetup}
               cost={onAidlc ? cost : null}
               delivered={delivered}
+              space={onAidlc ? project.detection.activeSpace : null}
             />
           )}
           <ProfileSwitchDialog

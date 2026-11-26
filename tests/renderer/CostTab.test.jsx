@@ -233,3 +233,50 @@ describe('CostTab savings hints (US-1302 FR7)', () => {
     expect(await screen.findByTestId('cost-savings-none')).toBeTruthy();
   });
 });
+
+// US-1305 FR2.1, FR1.7, NFR3: the intent's quality signals beside its cost, "no record" where a source is missing.
+describe('CostTab quality (US-1305)', () => {
+  const intent = { dirName: '261112-b', uuid: '01a1d000-0000-7000-8000-000000000003', slug: 'b', scope: 'express', date: '2026-11-12' };
+  const base = summarizeLedger(ledger, [intent]).perIntent[intent.dirName];
+  const quality = {
+    revisions: { total: 3, byStage: { 'requirements-analysis': 2, 'code-generation': 1 } },
+    loopBacks: 2,
+    findings: { bySeverity: { Major: 1, Minor: 2 }, open: 1, fixed: 2 },
+    failedRuns: 4,
+    postMerge: 1,
+    trouble: 11
+  };
+  const renderTab = (q) => render(<CostTab cost={{ available: true }} intentCost={{ ...base, quality: q }} pipeline={{ phases: [] }} models={null} />);
+
+  it('shows the trouble count and each signal beside the cost, with revision cycles per stage (FR2.1)', () => {
+    renderTab(quality);
+    const section = screen.getByTestId('cost-quality');
+    expect(screen.getByTestId('cost-quality-trouble').textContent).toBe('Problemtal: 11');
+    expect(section.textContent).toContain('Revideringsvarv: 3');
+    expect(section.textContent).toContain('Loop-backs: 2');
+    expect(section.textContent).toContain('Misslyckade testkörningar: 4');
+    expect(section.textContent).toContain('Fynd efter merge: 1');
+    const rows = within(screen.getByTestId('cost-quality-stages'))
+      .getAllByRole('row')
+      .slice(1)
+      .map((r) => r.textContent);
+    expect(rows).toEqual(['requirements-analysis2', 'code-generation1']);
+  });
+
+  it('shows the review findings open and fixed, and per severity (FR1.3)', () => {
+    renderTab(quality);
+    expect(screen.getByTestId('cost-quality-findings').textContent).toBe('Granskningsfynd: 1 öppna, 2 åtgärdade · Major 1, Minor 2');
+  });
+
+  it('says "ingen uppgift", never 0, for a signal without a source, and shows nothing before main answers (FR1.7)', () => {
+    const none = { revisions: { total: 0, byStage: {} }, loopBacks: null, findings: null, failedRuns: null, postMerge: null, trouble: 0 };
+    const { rerender } = renderTab(none);
+    const section = screen.getByTestId('cost-quality');
+    expect(section.textContent).toContain('Loop-backs: ingen uppgift');
+    expect(screen.getByTestId('cost-quality-findings').textContent).toBe('Granskningsfynd: ingen uppgift');
+    expect(section.textContent).toContain('Revideringsvarv: 0');
+    expect(screen.queryByTestId('cost-quality-stages')).toBeNull();
+    rerender(<CostTab cost={{ available: true }} intentCost={base} pipeline={{ phases: [] }} models={null} />);
+    expect(screen.queryByTestId('cost-quality')).toBeNull();
+  });
+});

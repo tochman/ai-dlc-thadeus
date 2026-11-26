@@ -8,7 +8,7 @@
 
 **Stories:** US-1301–US-1307
 
-**Status (2026-11-26):** ✅ US-1301 to US-1304 done, for v0.3.2. 📋 US-1305 planned, for v0.3.2. 📋 US-1306 and US-1307 planned, for v0.3.3.
+**Status (2026-11-26):** ✅ US-1301 to US-1305 done, for v0.3.2. 📋 US-1306 and US-1307 planned, for v0.3.3.
 
 ---
 
@@ -73,17 +73,17 @@
   - [x] Each figure shows its source, and says so when data is missing (for example, no platform connection). Every text goes through `t()` in Swedish and English, in the LCARS look.
 - **Dependencies:** US-0303, US-0605, US-1201
 
-**US-1305: Quality signals next to cost** 📋 Planned, for v0.3.2
+**US-1305: Quality signals next to cost** ✅ Done, for v0.3.2
 - As a **developer or team lead**, in order to **see whether cheaper or faster work costs quality**, I would like **each intent and release to show its quality signals beside its cost**.
 - **Epic:** EPIC-13
 - **Priority:** Medium
 - **Complexity:** Medium
 - **Background:** Asked for 2026-11-18. Harness asks leaders to measure AI's effect on quality and regressions, without naming the metrics. The AI-DLC record names them.
 - **Acceptance Criteria:**
-  - [ ] Per intent: revision cycles per stage, loop-backs from Build and Test, review findings and whether they were fixed, failed test runs, and "Efter merge med main" findings in `test-results.md`.
-  - [ ] Per release: EPIC-00 fix stories that trace back to it, and whether it was marked as a prerelease.
-  - [ ] A chart puts cost and quality side by side per intent, so that an expensive and troubled intent stands out.
-  - [ ] Every text goes through `t()` in Swedish and English, in the LCARS look.
+  - [x] Per intent: revision cycles per stage, loop-backs from Build and Test, review findings and whether they were fixed, failed test runs, and "Efter merge med main" findings in `test-results.md`.
+  - [x] Per release: EPIC-00 fix stories that trace back to it, and whether it was marked as a prerelease.
+  - [x] A chart puts cost and quality side by side per intent, so that an expensive and troubled intent stands out.
+  - [x] Every text goes through `t()` in Swedish and English, in the LCARS look.
 - **Dependencies:** US-1301, US-1304
 
 **US-1306: The AI share of delivered code** 📋 Planned, for v0.3.3
