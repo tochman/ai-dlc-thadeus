@@ -581,6 +581,33 @@
         "ledger": "Stegets kostnad i ledgern delad lika på dess försök"
       }
     },
+    "savings": {
+      "title": "Besparingar",
+      "reading": "Räknar fram sparförslagen…",
+      "none": "Inga sparförslag: inget hittades som samma arbete kunde göra billigare.",
+      "model": "{stage} körde på den dyraste modellen med lite utdata per körning. {to} kunde göra det billigare.",
+      "modelAgent": "{stage} ({agent}) körde på den dyraste modellen med lite utdata per körning. {to} kunde göra det billigare.",
+      "cache": "{intent} läste lite från cachen: {share} % mot de vanliga {median} %. Troligen en ny session mitt i ett steg, eller en lång kontext.",
+      "turns": "{stage} i {intent} tog {turns} turer, minst dubbelt så många som de vanliga {median}.",
+      "saving": "Uppskattning: cirka {total} sparat, {perRun} per körning, med {to}s aktuella priser.",
+      "working": "Så räknades det fram",
+      "hideWorking": "Dölj uträkningen",
+      "workingRuns": "{runs} körningar, {rejections} avvisade; ett förslag kräver minst {minRuns} körningar och högst {maxRejected} % avvisade.",
+      "workingOutput": "Utdata per körning: {output} tokens, under medianen {median} för alla steg.",
+      "workingPrices": "Priser per miljon tokens: {from} {fromIn} in, {fromOut} ut; {to} {toIn} in, {toOut} ut.",
+      "workingNoPrice": "Stegets modell saknar pris, så ingen besparing räknas fram.",
+      "workingCache": "Andel cacheläsning {share} % mot projektets median {median} %; ett förslag från {points} procentenheter under.",
+      "workingTurns": "{turns} turer mot medianen {median} för {runs} tidigare körningar; ett förslag från {factor} gånger medianen efter {minRuns} körningar.",
+      "dismiss": "Avfärda",
+      "showDismissed": "Visa avfärdade ({n})",
+      "hideDismissed": "Dölj avfärdade",
+      "restore": "Ta tillbaka",
+      "link": {
+        "models": "Modell per agent",
+        "costRules": "THADEUS regelpaket",
+        "handoff": "Sessionsöverlämning"
+      }
+    },
     "reprice": {
       "pair": "registrerat {recorded} · till dagens priser {current}",
       "tip": "Till dagens priser: {current}",

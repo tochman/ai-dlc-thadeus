@@ -231,7 +231,8 @@ export default function IntentDetail({
   cost,
   models,
   stories = [],
-  onOpenStory
+  onOpenStory,
+  onView // US-1302 FR2.5, FR4: the savings hints' links open a Configuration section
 }) {
   const { t } = useTranslation();
   const [tab, setTab] = useState('pipeline');
@@ -432,7 +433,17 @@ export default function IntentDetail({
             <Pipeline key={detail.dirName} pipeline={pipeline} files={detail.files} hasGraph={!!detail.graph} onOpenFile={showFile} cost={intentCost} />
           )}
           {tab === 'cost' && (
-            <CostTab cost={cost} intentCost={intentCost} pipeline={pipeline} models={models} rework={rework.dirName === detail.dirName ? rework.value : null} />
+            <CostTab
+              cost={cost}
+              intentCost={intentCost}
+              pipeline={pipeline}
+              models={models}
+              rework={rework.dirName === detail.dirName ? rework.value : null}
+              projectId={projectId}
+              space={space}
+              dirName={detail.dirName}
+              onView={onView}
+            />
           )}
           {tab === 'velocity' && (
             <IntentVelocity

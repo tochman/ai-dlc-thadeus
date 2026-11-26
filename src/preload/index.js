@@ -36,6 +36,8 @@ contextBridge.exposeInMainWorld('bridge', {
   // from the transcripts for a finished intent without stored readings (US-0215 FR6).
   getTokenReadings: call('tokens:readings'),
   getRework: call('intent:rework'), // US-1301 FR4: a project id, an intent folder name and a space
+  getSavings: call('project:savings'), // US-1302 FR7: a project id and a space; `{hints, dismissed}`
+  dismissSaving: call('project:savings-dismiss'), // US-1302 FR6: a project id, a hint id and on/off; the dismissed ids
 
   getModels: call('project:models'),
   detectHarnesses: call('harness:detect'), // installed harnesses and CLI versions (EPIC-08 US-0801)

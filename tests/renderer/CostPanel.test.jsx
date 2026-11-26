@@ -1,5 +1,5 @@
-import { afterEach, describe, expect, it } from 'vitest';
-import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import CostPanel from '../../src/renderer/CostPanel.jsx';
 import { summarizeLedger } from '../../src/main/parsers/ledger.js';
 import ledger from '../fixtures/ledger/usage-ledger.json';
@@ -139,5 +139,129 @@ describe('CostPanel rework (US-1301)', () => {
     expect(parts[0].getAttribute('x')).toBe(bar.getAttribute('x')); // the first bar, the earliest intent
     expect(Number(parts[0].getAttribute('height'))).toBeCloseTo(Number(bar.getAttribute('height')) / 2);
     expect(parts[0].querySelector('title').textContent).toMatch(/^Omarbete: \$\d+\.\d\d$/);
+  });
+});
+
+// US-1302: the Savings section, fed by project:savings (hints sorted in main, largest saving first).
+describe('CostPanel savings hints (US-1302 FR2.5, FR4–FR7, NFR1–NFR3)', () => {
+  const working = (figures, thresholds, prices = null, extra = {}) => ({ figures, thresholds, prices, ...extra });
+  const priced = {
+    id: 'model:requirements-analysis',
+    kind: 'model',
+    intent: null,
+    stage: 'requirements-analysis',
+    agent: 'developer',
+    saving: { total: 3, perRun: 1 },
+    working: working(
+      { runs: 3, rejections: 0, outputPerRun: 100, medianOutputPerRun: 1000 },
+      { minRuns: 3, maxRejectedShare: 0.1 },
+      { from: { model: 'opus-5-5', input: 5, output: 25 }, to: { model: 'sonnet-5-5', input: 2, output: 10 } },
+      { to: 'sonnet-5-5' }
+    ),
+    links: ['models']
+  };
+  const unpriced = {
+    ...priced,
+    id: 'model:units-generation',
+    stage: 'units-generation',
+    agent: null,
+    saving: null,
+    working: { ...priced.working, prices: { from: null, to: priced.working.prices.to } }
+  };
+  const turns = {
+    id: 'turns:261120-a:code-generation',
+    kind: 'turns',
+    intent: '261120-a',
+    stage: 'code-generation',
+    agent: null,
+    saving: null,
+    working: working({ turns: 8, medianTurns: 4, earlierRuns: 5 }, { factor: 2, minEarlierRuns: 5 }),
+    links: ['costRules', 'handoff']
+  };
+  const cache = {
+    id: 'cache:261120-b',
+    kind: 'cache',
+    intent: '261120-b',
+    stage: null,
+    agent: null,
+    saving: null,
+    working: working({ share: 0.4, medianShare: 0.8 }, { pointsBelow: 20 }),
+    links: []
+  };
+  let onView;
+
+  function renderPanel(result) {
+    window.bridge = {
+      getSavings: vi.fn(async () => result),
+      dismissSaving: vi.fn(async (_p, id, on) => (on ? [...result.dismissed, id] : result.dismissed.filter((d) => d !== id)))
+    };
+    onView = vi.fn();
+    return render(<CostPanel cost={cost} models={models} projectId="p1" space="default" onView={onView} />);
+  }
+  afterEach(() => {
+    delete window.bridge;
+  });
+  const ids = () => screen.queryAllByTestId('cost-savings-hint').map((li) => li.dataset.hint);
+
+  it('lists the hints in their order, each saving an estimate, "no price" where a model has none', async () => {
+    renderPanel({ hints: [priced, unpriced, turns, cache], dismissed: [] });
+    await screen.findAllByTestId('cost-savings-hint');
+    expect(window.bridge.getSavings).toHaveBeenCalledWith('p1', 'default');
+    expect(ids()).toEqual([priced.id, unpriced.id, turns.id, cache.id]);
+    const [first, second] = screen.getAllByTestId('cost-savings-hint');
+    expect(within(first).getByTestId('cost-savings-saving').textContent).toMatch(/Uppskattning.*\$3\.00.*\$1\.00/);
+    expect(within(second).getByTestId('cost-savings-no-price').textContent).toBe('pris saknas');
+    expect(within(second).queryByTestId('cost-savings-saving')).toBeNull();
+  });
+
+  it('unfolds a hint’s working: figures, thresholds and prices (FR5)', async () => {
+    renderPanel({ hints: [priced], dismissed: [] });
+    const hint = await screen.findByTestId('cost-savings-hint');
+    expect(within(hint).queryByTestId('cost-savings-working')).toBeNull();
+    fireEvent.click(within(hint).getByTestId('cost-savings-working-toggle'));
+    const text = within(hint).getByTestId('cost-savings-working').textContent;
+    expect(text).toMatch(/1000/);
+    expect(text).toMatch(/opus-5-5/);
+    expect(text).toMatch(/sonnet-5-5/);
+  });
+
+  it('dismisses a hint, lists it under "show dismissed" and brings it back (FR6)', async () => {
+    renderPanel({ hints: [priced, cache], dismissed: [] });
+    const [first] = await screen.findAllByTestId('cost-savings-hint');
+    fireEvent.click(within(first).getByTestId('cost-savings-dismiss'));
+    expect(window.bridge.dismissSaving).toHaveBeenCalledWith('p1', priced.id, true);
+    await waitFor(() => expect(ids()).toEqual([cache.id]));
+    fireEvent.click(screen.getByTestId('cost-savings-show-dismissed'));
+    const list = screen.getByTestId('cost-savings-dismissed');
+    fireEvent.click(within(list).getByTestId('cost-savings-restore'));
+    expect(window.bridge.dismissSaving).toHaveBeenLastCalledWith('p1', priced.id, false);
+    await waitFor(() => expect(ids()).toEqual([priced.id, cache.id]));
+  });
+
+  it('keeps hints dismissed earlier hidden, and says so in one line when there are none', async () => {
+    renderPanel({ hints: [cache], dismissed: [cache.id] });
+    expect((await screen.findByTestId('cost-savings-none')).textContent).toMatch(/^Inga sparförslag/);
+    expect(ids()).toEqual([]);
+    expect(screen.getByTestId('cost-savings-show-dismissed')).toBeTruthy();
+  });
+
+  it('each link only opens its view and changes nothing (FR2.5, FR4, NFR1)', async () => {
+    renderPanel({ hints: [priced, turns], dismissed: [] });
+    await screen.findAllByTestId('cost-savings-hint');
+    fireEvent.click(screen.getByTestId('cost-savings-link-models'));
+    fireEvent.click(screen.getByTestId('cost-savings-link-cost-rules'));
+    fireEvent.click(screen.getByTestId('cost-savings-link-handoff'));
+    expect(onView.mock.calls).toEqual([
+      ['config', { configSection: 'aidlc', aidlcTab: 'settings' }],
+      ['config', { configSection: 'costRules' }],
+      ['config', { configSection: 'agent' }]
+    ]);
+    expect(window.bridge.dismissSaving).not.toHaveBeenCalled();
+    expect(window.bridge.getSavings).toHaveBeenCalledOnce();
+  });
+
+  it('shows no section without a project id (the panel alone)', () => {
+    render(<CostPanel cost={cost} models={models} />);
+    expect(screen.queryByTestId('cost-savings')).toBeNull();
   });
 });

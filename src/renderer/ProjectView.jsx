@@ -112,7 +112,7 @@ function AidlcProject({ project, view, teamSection = 'refresh', onView, focusInt
   const teamIn = useChanged(teamSection) ? 'lcars-tab-in' : '';
   return (
     <>
-      {view === 'cost' && <CostPanel cost={p.cost} models={p.models} open onToggle={back} />}
+      {view === 'cost' && <CostPanel cost={p.cost} models={p.models} open onToggle={back} projectId={projectId} space={p.space} onView={onView} />}
       {view === 'velocity' && <VelocityView projectId={projectId} space={p.space} />}
       {/* Kept mounted, so the fetched status and changes survive a switch to another view. */}
       <div hidden={view !== 'github' || teamSection === 'machines'} className={teamIn || undefined}>
@@ -178,6 +178,7 @@ function AidlcProject({ project, view, teamSection = 'refresh', onView, focusInt
               models={p.models}
               stories={storiesByIntent?.[p.detail.dirName] ?? []}
               onOpenStory={onOpenStory}
+              onView={onView}
             />
           ) : (
             <Frame>

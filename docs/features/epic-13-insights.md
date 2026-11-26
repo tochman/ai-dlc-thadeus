@@ -8,7 +8,7 @@
 
 **Stories:** US-1301–US-1307
 
-**Status (2026-11-26):** ✅ US-1301 done, for v0.3.2. 🚧 US-1302 in progress, for v0.3.2. 📋 US-1303–US-1305 planned, for v0.3.2. 📋 US-1306 and US-1307 planned, for v0.3.3.
+**Status (2026-11-26):** ✅ US-1301 and US-1302 done, for v0.3.2. 📋 US-1303–US-1305 planned, for v0.3.2. 📋 US-1306 and US-1307 planned, for v0.3.3.
 
 ---
 
@@ -29,18 +29,18 @@
 - **Notes:** Rework is not blame. A rejection the person asked for is the workflow working as intended. The view names the cause, not a person.
 - **Dependencies:** US-0201, US-0202, US-0209
 
-**US-1302: Savings hints: where the same work could cost less** 🚧 In progress, for v0.3.2
+**US-1302: Savings hints: where the same work could cost less** ✅ Done, for v0.3.2
 - As a **developer**, in order to **spend less without losing quality**, I would like **the app to point out spend that could be cut, with what it would save and a link to the setting that changes it**.
 - **Epic:** EPIC-13
 - **Priority:** High
 - **Complexity:** Medium
 - **Background:** Asked for 2026-11-18. Harness calls this "optimizable spend". The ledger already has tokens per model, stage and agent, and the cache reads.
 - **Acceptance Criteria:**
-  - [ ] **Given** a stage whose runs use a top-tier model, while its output is small and its runs rarely get rejected, **then** a hint suggests a lighter model for that agent, with the estimated saving from the current price table (US-0211). It links to the agent's model setting (US-0904).
-  - [ ] **Given** a low share of cache reads in a run compared with the project's usual share, **then** a hint names the run and the likely causes: a fresh session started mid-stage, or a long context.
-  - [ ] **Given** a stage that needs many more turns than its own median, **then** a hint names it and links to the THADEUS rule pack (US-0212) or to the compact and fresh-session offer (US-0213).
-  - [ ] Each hint shows how it was worked out, can be dismissed per project, and never changes a setting by itself.
-  - [ ] Every text goes through `t()` in Swedish and English, in the LCARS look.
+  - [x] **Given** a stage whose runs use a top-tier model, while its output is small and its runs rarely get rejected, **then** a hint suggests a lighter model for that agent, with the estimated saving from the current price table (US-0211). It links to the agent's model setting (US-0904).
+  - [x] **Given** a low share of cache reads in a run compared with the project's usual share, **then** a hint names the run and the likely causes: a fresh session started mid-stage, or a long context.
+  - [x] **Given** a stage that needs many more turns than its own median, **then** a hint names it and links to the THADEUS rule pack (US-0212) or to the compact and fresh-session offer (US-0213).
+  - [x] Each hint shows how it was worked out, can be dismissed per project, and never changes a setting by itself.
+  - [x] Every text goes through `t()` in Swedish and English, in the LCARS look.
 - **Dependencies:** US-0204, US-0211, US-0212, US-0904
 
 **US-1303: Cost per story, epic and release** 📋 Planned, for v0.3.2

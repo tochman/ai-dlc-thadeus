@@ -1,0 +1,22 @@
+{
+  "stage": "code-generation",
+  "upstream_ids": ["FR1", "FR2.1", "FR2.2", "FR2.3", "FR2.4", "FR2.5", "FR3", "FR4", "FR5", "FR6", "FR7", "NFR1", "NFR2", "NFR3", "NFR4", "NFR5"],
+  "coverage": [
+    { "id": "FR1", "status": "OK", "target": "src/main/savings.js" },
+    { "id": "FR2.1", "status": "OK", "target": "src/main/savings.js" },
+    { "id": "FR2.2", "status": "OK", "target": "src/main/savings.js" },
+    { "id": "FR2.3", "status": "OK", "target": "src/main/savings.js" },
+    { "id": "FR2.4", "status": "OK", "target": "src/main/savings.js" },
+    { "id": "FR2.5", "status": "OK", "target": "src/renderer/CostTab.jsx" },
+    { "id": "FR3", "status": "OK", "target": "src/main/savings.js" },
+    { "id": "FR4", "status": "OK", "target": "src/main/savings.js" },
+    { "id": "FR5", "status": "OK", "target": "src/renderer/CostTab.jsx" },
+    { "id": "FR6", "status": "OK", "target": "src/main/savings.js" },
+    { "id": "FR7", "status": "OK", "target": "src/renderer/CostPanel.jsx" },
+    { "id": "NFR1", "status": "OK", "target": "tests/main/savings.test.js" },
+    { "id": "NFR2", "status": "OK", "target": "tests/renderer/CostTab.test.jsx" },
+    { "id": "NFR3", "status": "OK", "target": "src/shared/locales/sv.json" },
+    { "id": "NFR4", "status": "OK", "target": "src/main/ipc.js" },
+    { "id": "NFR5", "status": "OK", "target": "tests/main/savings.test.js" }
+  ]
+}

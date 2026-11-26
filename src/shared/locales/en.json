@@ -581,6 +581,33 @@
         "ledger": "The stage's ledger cost shared evenly over its attempts"
       }
     },
+    "savings": {
+      "title": "Savings",
+      "reading": "Working out the savings hints…",
+      "none": "No savings hints: nothing found that the same work could do for less.",
+      "model": "{stage} ran on the dearest model with little output per run. {to} could do it for less.",
+      "modelAgent": "{stage} ({agent}) ran on the dearest model with little output per run. {to} could do it for less.",
+      "cache": "{intent} read little from the cache: {share} % against the usual {median} %. Likely a fresh session started mid-stage, or a long context.",
+      "turns": "{stage} in {intent} took {turns} turns, at least twice the usual {median}.",
+      "saving": "Estimate: about {total} saved, {perRun} per run, at {to}'s current prices.",
+      "working": "How it was worked out",
+      "hideWorking": "Hide the working",
+      "workingRuns": "{runs} runs, {rejections} rejected; a hint needs at least {minRuns} runs and at most {maxRejected} % rejected.",
+      "workingOutput": "Output per run: {output} tokens, below the median {median} of all stages.",
+      "workingPrices": "Prices per million tokens: {from} {fromIn} in, {fromOut} out; {to} {toIn} in, {toOut} out.",
+      "workingNoPrice": "The stage's model has no price, so no saving is worked out.",
+      "workingCache": "Cache-read share {share} % against the project's median {median} %; a hint from {points} points below.",
+      "workingTurns": "{turns} turns against the median {median} of {runs} earlier runs; a hint from {factor} times the median after {minRuns} runs.",
+      "dismiss": "Dismiss",
+      "showDismissed": "Show dismissed ({n})",
+      "hideDismissed": "Hide dismissed",
+      "restore": "Bring back",
+      "link": {
+        "models": "Model per agent",
+        "costRules": "THADEUS rule pack",
+        "handoff": "Session handoff"
+      }
+    },
     "reprice": {
       "pair": "recorded {recorded} · at current prices {current}",
       "tip": "At current prices: {current}",

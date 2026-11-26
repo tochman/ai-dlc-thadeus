@@ -1,6 +1,6 @@
 // US-0414 FR2.2: the cost label's ⓘ, its warning tag and the token figures are plain text with a tooltip, so they take
 // focus and show it on focus as well as on hover.
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import CostTab, { CostLabel, CostTable } from '../../src/renderer/CostTab.jsx';
 import { summarizeLedger } from '../../src/main/parsers/ledger.js';
@@ -170,5 +170,66 @@ describe('CostTab rework (US-1301)', () => {
       'Steget gjordes om',
       'Arkiverad innan den blev klar'
     ]);
+  });
+});
+
+// US-1302 FR7: the intent's cost tab shows the hints for that intent: its own, and the stage hints of stages it ran.
+describe('CostTab savings hints (US-1302 FR7)', () => {
+  const intent = { dirName: '261112-b', uuid: '01a1d000-0000-7000-8000-000000000003', slug: 'b', scope: 'express', date: '2026-11-12' };
+  const intentCost = summarizeLedger(ledger, [intent]).perIntent[intent.dirName];
+  const ran = intentCost.byStage[0].name;
+  const figures = { turns: 8, medianTurns: 4, share: 0.4, medianShare: 0.8 };
+  const hint = (id, kind, extra) => ({
+    id,
+    kind,
+    intent: null,
+    stage: null,
+    agent: null,
+    saving: null,
+    working: { figures, thresholds: {}, prices: null, to: 'sonnet-5-5' },
+    links: [],
+    ...extra
+  });
+  const hints = [
+    hint(`model:${ran}`, 'model', { stage: ran }),
+    hint('model:never-ran-here', 'model', { stage: 'never-ran-here' }),
+    hint(`turns:${intent.dirName}:code-generation`, 'turns', { intent: intent.dirName, stage: 'code-generation' }),
+    hint('cache:261120-other', 'cache', { intent: '261120-other' })
+  ];
+  afterEach(() => {
+    delete window.bridge;
+  });
+
+  it('shows only this intent’s hints', async () => {
+    window.bridge = { getSavings: vi.fn(async () => ({ hints, dismissed: [] })), dismissSaving: vi.fn() };
+    render(
+      <CostTab
+        cost={{ available: true }}
+        intentCost={intentCost}
+        pipeline={{ phases: [] }}
+        models={null}
+        projectId="p1"
+        space="default"
+        dirName={intent.dirName}
+      />
+    );
+    await screen.findAllByTestId('cost-savings-hint');
+    expect(screen.getAllByTestId('cost-savings-hint').map((li) => li.dataset.hint)).toEqual([`model:${ran}`, `turns:${intent.dirName}:code-generation`]);
+  });
+
+  it('says so in one line when the intent has none', async () => {
+    window.bridge = { getSavings: vi.fn(async () => ({ hints: hints.slice(1, 2), dismissed: [] })), dismissSaving: vi.fn() };
+    render(
+      <CostTab
+        cost={{ available: true }}
+        intentCost={intentCost}
+        pipeline={{ phases: [] }}
+        models={null}
+        projectId="p1"
+        space="default"
+        dirName={intent.dirName}
+      />
+    );
+    expect(await screen.findByTestId('cost-savings-none')).toBeTruthy();
   });
 });

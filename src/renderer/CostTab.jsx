@@ -1,9 +1,11 @@
 // The "Kostnad" tab of one intent, plus the cost and model tables the project panel reuses.
 // US-0211 FR3: each figure is the recorded one, with the current-price one beside it when a rate table was loaded.
+// US-1302 FR7: the Savings section, shown here for one intent and in the project panel for all.
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { compareModels } from '../main/parsers/ledger.js';
 import { formatCostPair, formatTokens, formatUsd, shortModel, tokenBreakdown } from './format.js';
-import { Readout } from './Lcars.jsx';
+import { Pill, Readout } from './Lcars.jsx';
 import Tooltip from './Tooltip.jsx';
 import i18n, { t as translate } from '../shared/i18n.js';
 
@@ -253,7 +255,176 @@ export function ReworkSection({ rework }) {
   );
 }
 
-export default function CostTab({ cost, intentCost, pipeline, models, rework = null }) {
+// US-1302 FR2.5, FR4, NFR1: each link only opens a view; nothing is changed from a hint.
+const SAVINGS_LINKS = {
+  models: { testId: 'models', view: ['config', { configSection: 'aidlc', aidlcTab: 'settings' }] }, // model per agent, US-0904
+  costRules: { testId: 'cost-rules', view: ['config', { configSection: 'costRules' }] }, // the THADEUS rule pack, US-0212
+  handoff: { testId: 'handoff', view: ['config', { configSection: 'agent' }] } // the session handoff, US-0213
+};
+const pct = (x) => String(Math.round(x * 100));
+const whole = (x) => String(Math.round(x));
+
+/** US-1302 FR2.5, FR3, FR4: what a hint suggests, in one sentence. */
+function hintText(h, t) {
+  const f = h.working.figures;
+  if (h.kind === 'model') return t(h.agent ? 'cost.savings.modelAgent' : 'cost.savings.model', { stage: h.stage, agent: h.agent ?? '', to: h.working.to });
+  if (h.kind === 'cache') return t('cost.savings.cache', { intent: h.intent, share: pct(f.share), median: pct(f.medianShare) });
+  return t('cost.savings.turns', { stage: h.stage, intent: h.intent, turns: whole(f.turns), median: whole(f.medianTurns) });
+}
+
+/** US-1302 FR5: how a hint was worked out: the figures it compared, the thresholds and the prices used. */
+function workingLines(h, t) {
+  const { figures: f, thresholds: th, prices } = h.working;
+  if (h.kind === 'cache') return [t('cost.savings.workingCache', { share: pct(f.share), median: pct(f.medianShare), points: whole(th.pointsBelow) })];
+  if (h.kind === 'turns')
+    return [
+      t('cost.savings.workingTurns', {
+        turns: whole(f.turns),
+        median: whole(f.medianTurns),
+        runs: whole(f.earlierRuns),
+        factor: whole(th.factor),
+        minRuns: whole(th.minEarlierRuns)
+      })
+    ];
+  const runs = { runs: whole(f.runs), rejections: whole(f.rejections), maxRejected: pct(th.maxRejectedShare), minRuns: whole(th.minRuns) };
+  const output = { output: whole(f.outputPerRun), median: whole(f.medianOutputPerRun) };
+  const { from, to } = prices ?? {};
+  const price =
+    from && to
+      ? t('cost.savings.workingPrices', {
+          from: from.model,
+          fromIn: String(from.input),
+          fromOut: String(from.output),
+          to: to.model,
+          toIn: String(to.input),
+          toOut: String(to.output)
+        })
+      : t('cost.savings.workingNoPrice');
+  return [t('cost.savings.workingRuns', runs), t('cost.savings.workingOutput', output), price];
+}
+
+/** US-1302 FR2.5, FR5, FR6, NFR2: one hint, its saving as an estimate ("no price" without a rate), working, links, dismiss. */
+function SavingsHint({ hint: h, open, onOpen, onView, onDismiss }) {
+  const { t } = useTranslation();
+  return (
+    <li className="cost-savings-hint" data-testid="cost-savings-hint" data-hint={h.id}>
+      <p className="cost-savings-text">{hintText(h, t)}</p>
+      {h.kind === 'model' &&
+        (h.saving ? (
+          <p className="cost-savings-saving" data-testid="cost-savings-saving">
+            {t('cost.savings.saving', { total: formatUsd(h.saving.total), perRun: formatUsd(h.saving.perRun), to: h.working.to })}
+          </p>
+        ) : (
+          <span className="tag tag-warn" data-testid="cost-savings-no-price">
+            {t('cost.missingPrice')}
+          </span>
+        ))}
+      <div className="cost-savings-actions">
+        <Pill tone="quiet" onClick={onOpen} aria-expanded={open} data-testid="cost-savings-working-toggle">
+          {open ? `▾ ${t('cost.savings.hideWorking')}` : `▸ ${t('cost.savings.working')}`}
+        </Pill>
+        {h.links.map((l) => (
+          <Pill key={l} tone="notice" onClick={() => onView?.(...SAVINGS_LINKS[l].view)} data-testid={`cost-savings-link-${SAVINGS_LINKS[l].testId}`}>
+            {t(`cost.savings.link.${l}`)}
+          </Pill>
+        ))}
+        <Pill tone="quiet" onClick={onDismiss} data-testid="cost-savings-dismiss">
+          {t('cost.savings.dismiss')}
+        </Pill>
+      </div>
+      {open && (
+        <ul className="cost-savings-working lcars-reveal" data-testid="cost-savings-working">
+          {workingLines(h, t).map((line) => (
+            <li key={line}>{line}</li>
+          ))}
+        </ul>
+      )}
+    </li>
+  );
+}
+
+/**
+ * US-1302 FR6, FR7, NFR4: the Savings section. Asks main for the hints when it shows (never during the overview load);
+ * with `intent`, only that intent's hints and the stage hints of the `stages` it ran. Dismissed hints hide; "show
+ * dismissed" lists them, each with a way back. Nothing shows without a project id.
+ */
+export function SavingsSection({ projectId, space, intent = null, stages = [], onView }) {
+  const { t } = useTranslation();
+  const [hints, setHints] = useState(null);
+  const [dismissed, setDismissed] = useState([]);
+  const [showDismissed, setShowDismissed] = useState(false);
+  const [open, setOpen] = useState(null);
+  useEffect(() => {
+    if (!projectId || !window.bridge?.getSavings) return undefined;
+    let live = true;
+    window.bridge.getSavings(projectId, space).then(
+      (r) => {
+        if (!live) return;
+        setHints(r?.hints ?? []);
+        setDismissed(r?.dismissed ?? []);
+      },
+      (err) => console.error('project:savings', err?.message ?? err) // the panel keeps its other figures
+    );
+    return () => {
+      live = false;
+    };
+  }, [projectId, space]);
+  if (!projectId) return null;
+  const dismiss = (id, on) => {
+    setDismissed((d) => (on ? [...d, id] : d.filter((x) => x !== id)));
+    window.bridge.dismissSaving(projectId, id, on).then(
+      (ids) => Array.isArray(ids) && setDismissed(ids),
+      (err) => console.error('project:savings-dismiss', err?.message ?? err)
+    );
+  };
+  const mine = (hints ?? []).filter((h) => intent == null || h.intent === intent || (h.intent == null && stages.includes(h.stage)));
+  const shown = mine.filter((h) => !dismissed.includes(h.id));
+  const hidden = mine.filter((h) => dismissed.includes(h.id));
+  return (
+    <section className="cost-savings" data-testid="cost-savings">
+      <h3 className="section-title">{t('cost.savings.title')}</h3>
+      {hints == null && <p className="muted">{t('cost.savings.reading')}</p>}
+      {hints != null && !shown.length && (
+        <p className="muted" data-testid="cost-savings-none">
+          {t('cost.savings.none')}
+        </p>
+      )}
+      {shown.length > 0 && (
+        <ul className="cost-savings-list">
+          {shown.map((h) => (
+            <SavingsHint
+              key={h.id}
+              hint={h}
+              open={open === h.id}
+              onOpen={() => setOpen((o) => (o === h.id ? null : h.id))}
+              onView={onView}
+              onDismiss={() => dismiss(h.id, true)}
+            />
+          ))}
+        </ul>
+      )}
+      {hidden.length > 0 && (
+        <Pill tone="quiet" onClick={() => setShowDismissed((s) => !s)} aria-expanded={showDismissed} data-testid="cost-savings-show-dismissed">
+          {showDismissed ? t('cost.savings.hideDismissed') : t('cost.savings.showDismissed', { n: hidden.length })}
+        </Pill>
+      )}
+      {showDismissed && hidden.length > 0 && (
+        <ul className="cost-savings-dismissed" data-testid="cost-savings-dismissed">
+          {hidden.map((h) => (
+            <li key={h.id}>
+              <span className="muted">{hintText(h, t)}</span>
+              <Pill tone="quiet" onClick={() => dismiss(h.id, false)} data-testid="cost-savings-restore">
+                {t('cost.savings.restore')}
+              </Pill>
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
+  );
+}
+
+export default function CostTab({ cost, intentCost, pipeline, models, rework = null, projectId = null, space, dirName = null, onView }) {
   const { t } = useTranslation();
   if (!cost) return <p className="muted">{t('cost.reading')}</p>;
   if (!cost.available)
@@ -289,6 +460,7 @@ export default function CostTab({ cost, intentCost, pipeline, models, rework = n
         totalUsd={total.usd}
       />
       <ReworkSection rework={rework} />
+      <SavingsSection projectId={projectId} space={space} intent={dirName} stages={intentCost.byStage.map((r) => r.name)} onView={onView} />
       <CostTable title={t('cost.perStage')} rows={inPipelineOrder(intentCost.byStage, pipeline)} totalUsd={total.usd} testId="cost-tab-stages" />
       <CostTable title={t('cost.perAgent')} rows={intentCost.byAgent} totalUsd={total.usd} testId="cost-tab-agents" />
       <CostTable title={t('cost.perModel')} rows={intentCost.byModel} totalUsd={total.usd} testId="cost-tab-models" />
