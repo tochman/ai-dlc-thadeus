@@ -8,7 +8,7 @@
 
 **Stories:** US-1301–US-1307
 
-**Status (2026-11-26):** ✅ US-1301 to US-1303 done, for v0.3.2. 📋 US-1304 and US-1305 planned, for v0.3.2. 📋 US-1306 and US-1307 planned, for v0.3.3.
+**Status (2026-11-26):** ✅ US-1301 to US-1303 done, for v0.3.2. 🚧 US-1304 in progress, for v0.3.2. 📋 US-1305 planned, for v0.3.2. 📋 US-1306 and US-1307 planned, for v0.3.3.
 
 ---
 
@@ -58,7 +58,7 @@
 - **Notes:** CSV export of these figures picks up the export deferred in US-0203.
 - **Dependencies:** US-0201, US-0209, US-0303, US-0604
 
-**US-1304: Delivery metrics from AI-DLC and git: lead time, release frequency, failure rate and recovery time** 📋 Planned, for v0.3.2
+**US-1304: Delivery metrics from AI-DLC and git: lead time, release frequency, failure rate and recovery time** 🚧 In progress, for v0.3.2
 - As a **team lead**, in order to **see whether the AI work makes delivery faster and safer**, I would like **the four DORA metrics, worked out from the feature docs, the audit, the tags and the pull requests**.
 - **Epic:** EPIC-13
 - **Priority:** Medium
