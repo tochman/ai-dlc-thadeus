@@ -8,7 +8,7 @@
 
 **Stories:** US-1301–US-1307
 
-**Status (2026-11-26):** ✅ US-1301 and US-1302 done, for v0.3.2. 📋 US-1303–US-1305 planned, for v0.3.2. 📋 US-1306 and US-1307 planned, for v0.3.3.
+**Status (2026-11-26):** ✅ US-1301 to US-1303 done, for v0.3.2. 📋 US-1304 and US-1305 planned, for v0.3.2. 📋 US-1306 and US-1307 planned, for v0.3.3.
 
 ---
 
@@ -43,18 +43,18 @@
   - [x] Every text goes through `t()` in Swedish and English, in the LCARS look.
 - **Dependencies:** US-0204, US-0211, US-0212, US-0904
 
-**US-1303: Cost per story, epic and release** 📋 Planned, for v0.3.2
+**US-1303: Cost per story, epic and release** ✅ Done, for v0.3.2
 - As a **product owner or team lead**, in order to **know what a feature or a release cost to build**, I would like **intent costs rolled up to the stories, epics and releases they delivered**.
 - **Epic:** EPIC-13
 - **Priority:** High
 - **Complexity:** Medium
 - **Background:** Asked for 2026-11-18. Harness calls this "cost per work item", from issue trackers. Here the work items are the stories in `docs/FEATURES.md` and the epic files, and the releases are the `vX.Y.Z` tags.
 - **Acceptance Criteria:**
-  - [ ] **Given** intents that name their stories (in their record, their branch `feat/<story>` or their pull request title), **then** each story shows its cost and tokens, summed over every intent and machine that worked on it (US-0209).
-  - [ ] An epic shows the sum of its stories, and a release shows the sum of the stories it includes, with the split by stage, agent and model, and the rework in it (US-1301).
-  - [ ] An intent that covers several stories splits its cost evenly between them, and the view says so.
-  - [ ] An intent that names no story is listed as "not linked to a story", with a way to link it.
-  - [ ] The epic and story views in the app (EPIC-06) show the cost next to the status. Every text goes through `t()` in Swedish and English, in the LCARS look.
+  - [x] **Given** intents that name their stories (in their record, their branch `feat/<story>` or their pull request title), **then** each story shows its cost and tokens, summed over every intent and machine that worked on it (US-0209). Read from the record and a hand link; branch and pull request scanning left out (decided 2026-11-26 in requirements).
+  - [x] An epic shows the sum of its stories, and a release shows the sum of the stories it includes, with the split by stage, agent and model, and the rework in it (US-1301).
+  - [x] An intent that covers several stories splits its cost evenly between them, and the view says so.
+  - [x] An intent that names no story is listed as "not linked to a story", with a way to link it.
+  - [x] The epic and story views in the app (EPIC-06) show the cost next to the status. Every text goes through `t()` in Swedish and English, in the LCARS look.
 - **Notes:** CSV export of these figures picks up the export deferred in US-0203.
 - **Dependencies:** US-0201, US-0209, US-0303, US-0604
 

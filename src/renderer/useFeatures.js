@@ -52,11 +52,24 @@ export function useFeatures(projectId, space) {
     }
   }, [projectId, space]);
 
+  // US-1303 FR1, FR5: the stories each intent delivered, for the cost roll-up; null without a space or on a failed read.
+  const [delivered, setDelivered] = useState(null);
+  const loadDelivered = useCallback(async () => {
+    if (!space) return setDelivered(null);
+    try {
+      setDelivered(await window.bridge.getDeliveredStories(projectId, space));
+    } catch (err) {
+      console.error('Levererade storys kunde inte läsas:', err); // the views show no cost per story then
+      setDelivered(null);
+    }
+  }, [projectId, space]);
+
   useEffect(() => {
     loadDocs();
     loadLinks();
     loadRule();
-  }, [loadDocs, loadLinks, loadRule]);
+    loadDelivered();
+  }, [loadDocs, loadLinks, loadRule, loadDelivered]);
 
   // A setting change sends features:changed, so the rule is checked again for the new setting (US-0603 FR5.3);
   // a project change may be the agent saving the rule.
@@ -66,18 +79,22 @@ export function useFeatures(projectId, space) {
       if (c.projectId !== projectId) return;
       loadDocs();
       loadRule();
+      loadDelivered(); // a hand link changed (US-1303 FR5)
     });
     const offProject = bridge.onProjectChanged?.((c) => {
       if (c.projectId !== projectId) return;
-      if (c.indexChanged) loadLinks();
+      if (c.indexChanged) {
+        loadLinks();
+        loadDelivered();
+      }
       loadRule();
     });
     return () => {
       offFeatures?.();
       offProject?.();
     };
-  }, [projectId, loadDocs, loadLinks, loadRule]);
+  }, [projectId, loadDocs, loadLinks, loadRule, loadDelivered]);
 
   // settingsLoaded: the agent tab waits for the saved harness choice before it starts anything (US-0801).
-  return { features, settings: settings ?? DEFAULT_SETTINGS, settingsLoaded: settings !== null, links, ruleStatus };
+  return { features, settings: settings ?? DEFAULT_SETTINGS, settingsLoaded: settings !== null, links, ruleStatus, delivered };
 }

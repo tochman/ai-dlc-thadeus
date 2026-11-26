@@ -12,6 +12,7 @@ beforeEach(() => {
     loadFeatures: vi.fn(async () => ({ available: true, epics: [] })),
     getStoryLinks: vi.fn(async () => ({ 'US-1': 'd1' })),
     getLifecycleRuleStatus: vi.fn(async () => 'missing'),
+    getDeliveredStories: vi.fn(async () => ({ stories: { d1: ['US-1303'] }, hand: {} })), // US-1303
     onFeaturesChanged: vi.fn((fn) => {
       listeners.features = fn;
       return vi.fn();
@@ -28,6 +29,19 @@ beforeEach(() => {
 afterEach(() => vi.restoreAllMocks());
 
 describe('useFeatures', () => {
+  // US-1303 FR1, FR5: the stories each intent delivered, again after a link change (features:changed); none without a space.
+  it('loads the delivered stories for the space and reloads them on features:changed', async () => {
+    const { result } = renderHook(() => useFeatures('p1', 'default'));
+    await waitFor(() => expect(result.current.delivered).toEqual({ stories: { d1: ['US-1303'] }, hand: {} }));
+    expect(bridge.getDeliveredStories).toHaveBeenCalledWith('p1', 'default');
+    bridge.getDeliveredStories.mockResolvedValueOnce({ stories: { d1: ['US-1304'] }, hand: { d1: ['US-1304'] } });
+    await act(async () => listeners.features({ projectId: 'p1' }));
+    await waitFor(() => expect(result.current.delivered.hand).toEqual({ d1: ['US-1304'] }));
+    const none = renderHook(() => useFeatures('p2', null));
+    await waitFor(() => expect(none.result.current.settingsLoaded).toBe(true));
+    expect(none.result.current.delivered).toBeNull();
+  });
+
   it('starts with the default settings, not loaded, then loads settings, features and links', async () => {
     const { result } = renderHook(() => useFeatures('p1', 'default'));
     expect(result.current.settingsLoaded).toBe(false);

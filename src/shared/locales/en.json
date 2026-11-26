@@ -850,6 +850,25 @@
     "noResponse": "{name} did not respond within {seconds} s",
     "timeout": "The tab did not become {target} within {seconds} s"
   },
+  "storyCost": {
+    "label": "Cost",
+    "shared": "shared with {n} stories",
+    "total": "{usd} · {tokens} tokens",
+    "rework": "Rework: {usd} · {share} % of the cost",
+    "incomplete": "Incomplete: a model has no price",
+    "split": "Split by stage, agent and model",
+    "reworkColumn": "Rework",
+    "intents": "Intents",
+    "noCost": "no cost recorded",
+    "reworkUnknown": "rework not known",
+    "notLinked": {
+      "title": "Not linked to a story",
+      "pick": "Link to a story",
+      "linked": "Linked by hand",
+      "unlink": "Remove link",
+      "failed": "The link could not be saved: {error}"
+    }
+  },
   "features": {
     "source": {
       "remote": "Planning from {ref}",

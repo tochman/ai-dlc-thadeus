@@ -184,6 +184,25 @@ export async function loadRework({ intent, events, total, loadHistory }) {
  */
 export function overviewRework({ events, readings, archived, finished, cost }) {
   if (!cost) return null;
+  // US-1303 FR4: per stage, for the story split; with no audit and no readings the rework is not known (constraint).
+  const unknown = !events?.length && !readings?.length;
+  const r = overviewAttempts({ events, readings, archived, finished, cost });
+  return { ...r, byStage: reworkByStage(r.attempts), unknown };
+}
+
+/** US-1303 FR4: the thrown-away attempts' cost summed per stage; an attempt without a stage (archived whole) is left out. */
+function reworkByStage(attempts) {
+  const out = {};
+  for (const a of attempts) {
+    if (!a.stage) continue;
+    const s = (out[a.stage] ??= { usd: 0, tokens: 0 });
+    s.usd += num(a.usd);
+    s.tokens += num(a.tokens);
+  }
+  return out;
+}
+
+function overviewAttempts({ events, readings, archived, finished, cost }) {
   const total = { usd: num(cost.total?.usd), tokens: num(cost.total?.totalTokens) };
   if (readings?.length || (archived && !finished)) return reworkOf({ events, readings, source: 'recorded', archived, finished, total });
   const attempts = stageAttempts(events ?? []);

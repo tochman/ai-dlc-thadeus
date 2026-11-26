@@ -74,7 +74,20 @@ function invertLinks(links) {
 }
 
 /** Intents (list and detail), Kostnad or Github: one at a time, all fed by the same project data (FR2.2). */
-function AidlcProject({ project, view, teamSection = 'refresh', onView, focusIntent, storiesByIntent, onOpenStory, onMeta, onActiveRecord }) {
+function AidlcProject({
+  project,
+  view,
+  teamSection = 'refresh',
+  onView,
+  focusIntent,
+  storiesByIntent,
+  onOpenStory,
+  onMeta,
+  onActiveRecord,
+  onCost,
+  features = null,
+  delivered = null
+}) {
   const { t } = useTranslation();
   const { detection, projectId } = project;
   const p = useProject(projectId, detection.activeSpace);
@@ -87,6 +100,12 @@ function AidlcProject({ project, view, teamSection = 'refresh', onView, focusInt
   useEffect(() => {
     reportRecord(activeDirName && p.space ? `aidlc/spaces/${p.space}/intents/${activeDirName}/` : null);
   }, [activeDirName, p.space]);
+
+  // US-1303 NFR4: the Features view rolls up this same cost, so it is handed up, never loaded twice.
+  const reportCost = useEffectEvent((cost) => onCost?.(cost));
+  useEffect(() => {
+    reportCost(p.cost);
+  }, [p.cost]);
 
   // A story's link to an intent selects that intent (FR2.6).
   const selectIntent = useEffectEvent((dirName) => p.setSelected(dirName));
@@ -112,7 +131,19 @@ function AidlcProject({ project, view, teamSection = 'refresh', onView, focusInt
   const teamIn = useChanged(teamSection) ? 'lcars-tab-in' : '';
   return (
     <>
-      {view === 'cost' && <CostPanel cost={p.cost} models={p.models} open onToggle={back} projectId={projectId} space={p.space} onView={onView} />}
+      {view === 'cost' && (
+        <CostPanel
+          cost={p.cost}
+          models={p.models}
+          open
+          onToggle={back}
+          projectId={projectId}
+          space={p.space}
+          onView={onView}
+          features={features}
+          delivered={delivered}
+        />
+      )}
       {view === 'velocity' && <VelocityView projectId={projectId} space={p.space} />}
       {/* Kept mounted, so the fetched status and changes survive a switch to another view. */}
       <div hidden={view !== 'github' || teamSection === 'machines'} className={teamIn || undefined}>
@@ -340,7 +371,8 @@ function ProjectContent({
   }, [onAidlc]); // only the switch from "not AI-DLC" to AI-DLC matters here
 
   // Feature docs (EPIC-06): the view follows the project setting and whether the overview exists (FR2.1, FR3.2).
-  const { features, settings, settingsLoaded, links, ruleStatus } = useFeatures(project.projectId, onAidlc ? project.detection.activeSpace : null);
+  const { features, settings, settingsLoaded, links, ruleStatus, delivered } = useFeatures(project.projectId, onAidlc ? project.detection.activeSpace : null);
+  const [cost, setCost] = useState(null); // US-1303: the intents view's project:cost result, for the Features view
   const delivery = settings.delivery ?? DELIVERY_DEFAULT; // US-0603 FR1.1
 
   // The agent tab's harness (US-0801 FR2.2): known once the saved choice and the detection are both in.
@@ -470,6 +502,9 @@ function ProjectContent({
                 onOpenStory={showFeatures ? openStory : undefined}
                 onMeta={onMeta}
                 onActiveRecord={setActiveRecord}
+                onCost={setCost}
+                features={features}
+                delivered={delivered}
               />
             )}
             {/* US-1406: a project with no framework opens on the choice screen, which shows a setup when one is needed. */}
@@ -492,6 +527,8 @@ function ProjectContent({
               onTab={(id) => onView?.('features', { featuresTab: id })}
               onOpenIntent={onAidlc ? openIntent : undefined}
               onSetup={offerSetup}
+              cost={onAidlc ? cost : null}
+              delivered={delivered}
             />
           )}
           <ProfileSwitchDialog

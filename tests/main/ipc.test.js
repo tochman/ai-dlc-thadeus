@@ -137,6 +137,8 @@ const m = vi.hoisted(() => {
       })),
       loadFeatures: vi.fn(async () => ({ epics: [] })),
       loadStoryLinks: vi.fn(async () => ({})),
+      loadDelivered: vi.fn(async () => ({ stories: {}, hand: {} })), // US-1303
+      setHandLink: vi.fn(async () => ({})),
       killAllSessions: vi.fn(),
       killProjectSessions: vi.fn(),
       killSession: vi.fn(),
@@ -327,6 +329,7 @@ vi.mock('../../src/main/features.js', () => ({
   loadPlanningFeatures: (ctx) => m.svc.loadFeatures(ctx.root, ctx.featuresPath),
   loadStoryLinks: m.svc.loadStoryLinks
 }));
+vi.mock('../../src/main/storyLinks.js', () => ({ loadDelivered: m.svc.loadDelivered, setHandLink: m.svc.setHandLink }));
 vi.mock('../../src/main/releases.js', () => ({ setStoryRelease: m.svc.setStoryRelease, readRuleStatus: m.svc.readRuleStatus }));
 vi.mock('../../src/main/speckitFeatures.js', async (importOriginal) => ({
   ...(await importOriginal()),
@@ -1400,6 +1403,30 @@ describe('feature docs and project settings', () => {
     svc.loadIntentList.mockResolvedValueOnce({ intents: [{ dirName: 'a' }, { dirName: 'b', missingOnDisk: true }] });
     await call('features:storyLinks', {}, projectId, 'default');
     expect(svc.loadStoryLinks).toHaveBeenLastCalledWith('/work/feat', 'default', ['a']);
+  });
+
+  it('loads the stories each intent delivered, intents missing on disk left out (US-1303 FR1)', async () => {
+    const { projectId } = await openProject('/work/delivered');
+    expect(await call('features:delivered', {}, projectId, null)).toEqual({ stories: {}, hand: {} });
+    expect(svc.loadDelivered).not.toHaveBeenCalled();
+    svc.loadIntentList.mockResolvedValueOnce({ intents: [{ dirName: 'a' }, { dirName: 'b', missingOnDisk: true }] });
+    svc.loadDelivered.mockResolvedValueOnce({ stories: { a: ['US-1303'] }, hand: {} });
+    expect(await call('features:delivered', {}, projectId, 'default')).toEqual({ stories: { a: ['US-1303'] }, hand: {} });
+    expect(svc.loadIntentList).toHaveBeenLastCalledWith('/work/delivered', 'default', []);
+    expect(svc.loadDelivered).toHaveBeenLastCalledWith('/work/delivered', 'default', ['a']);
+  });
+
+  it('links an intent to stories by hand, only an intent of the space, and reloads the views (US-1303 FR5)', async () => {
+    const { projectId, sender } = await openProject('/work/link');
+    svc.loadIntentList.mockResolvedValueOnce({ intents: [{ dirName: '261126-a' }] });
+    svc.setHandLink.mockResolvedValueOnce({ '261126-a': ['US-1303'] });
+    expect(await call('features:setStoryLink', {}, projectId, 'default', '261126-a', ['US-1303'])).toEqual({ '261126-a': ['US-1303'] });
+    expect(svc.setHandLink).toHaveBeenLastCalledWith('/work/link', '261126-a', ['US-1303']);
+    expect(sender.send).toHaveBeenCalledWith('features:changed', { projectId });
+    svc.setHandLink.mockClear();
+    svc.loadIntentList.mockResolvedValueOnce({ intents: [{ dirName: '261126-a' }] });
+    await expect(call('features:setStoryLink', {}, projectId, 'default', '../elsewhere', ['US-1303'])).rejects.toThrow();
+    expect(svc.setHandLink).not.toHaveBeenCalled();
   });
 
   it('saves only the known project settings and stops the feature watch when hidden', async () => {

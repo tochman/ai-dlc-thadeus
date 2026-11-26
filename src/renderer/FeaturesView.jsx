@@ -12,6 +12,8 @@ import { withSlots } from './format.js';
 import { STATUS_MARKER } from '../main/parsers/features.js';
 import { DELIVERY_DEFAULT, buildReleases, canDelete, newReleaseError, nextVersions, releaseOf, releaseOptions } from '../main/parsers/releases.js';
 import { EMPTY_FILTERS, NO_RELEASE, filterOptions, isActive, matches, storyRows } from './storyFilter.js';
+import { rollUp } from '../main/parsers/storyCost.js'; // US-1303
+import { CostBadge, CostDetail } from './StoryCost.jsx';
 
 const errorText = (err) => String(err?.message ?? err).replace(/^Error invoking remote method '[^']+': (Error: )?/, '');
 // Pågår is steel (active), Klar and Driftsatt a light slate block, Planerad an outline (FR1.3, US-0603 FR6).
@@ -371,7 +373,7 @@ const storiesWithoutRelease = (epics) =>
  * go through the view's shared lock (`locked`, `lockedWrite`, US-0608 FR1.2); a refusal or failure is said in one
  * sentence (NFR3).
  */
-function ReleasesView({ projectId, features, onOpenStory, locked, lockedWrite }) {
+function ReleasesView({ projectId, features, onOpenStory, locked, lockedWrite, costs }) {
   const { t } = useTranslation();
   const [error, setError] = useState(null);
   const releases = buildReleases(features.epics, features.tags, features.plans);
@@ -422,7 +424,7 @@ function ReleasesView({ projectId, features, onOpenStory, locked, lockedWrite })
         {releases.length === 0 ? (
           <p className="muted">{t('features.releases.empty')}</p>
         ) : (
-          <ReleaseRows {...{ releases, unassigned, locked, setStory, write, projectId, onOpenStory }} />
+          <ReleaseRows {...{ releases, unassigned, locked, setStory, write, projectId, onOpenStory, costs }} />
         )}
       </ListDrawer>
     </aside>
@@ -430,7 +432,7 @@ function ReleasesView({ projectId, features, onOpenStory, locked, lockedWrite })
 }
 
 /** US-0603 FR3, US-0605: the release rows, square blocks whose strip carries the state (planned live, released done). */
-function ReleaseRows({ releases, unassigned, locked, setStory, write, projectId, onOpenStory }) {
+function ReleaseRows({ releases, unassigned, locked, setStory, write, projectId, onOpenStory, costs }) {
   const { t } = useTranslation();
   const bridge = window.bridge;
   return (
@@ -442,8 +444,10 @@ function ReleaseRows({ releases, unassigned, locked, setStory, write, projectId,
             <span className={r.released ? 'tag tag-done' : 'tag'}>
               {!r.released ? t('features.releases.planned') : r.date ? t('features.releases.releasedOn', { date: r.date }) : t('features.releases.released')}
             </span>
+            <CostBadge figure={costs?.releases[r.version]} />
           </span>
           <span className="muted">{t('features.releases.storyCount', { n: r.stories.length })}</span>
+          <CostDetail figure={costs?.releases[r.version]} testId="features-view-release-cost" />
           {r.stories.length > 0 && (
             <ul className="features-release-stories">
               {r.stories.map(({ epicId, story, stale }) => (
@@ -508,10 +512,11 @@ function ReleaseRows({ releases, unassigned, locked, setStory, write, projectId,
   );
 }
 
-function StoryDetail({ id, story, links, onOpenIntent, release }) {
+function StoryDetail({ id, story, links, onOpenIntent, release, figure }) {
   const { t } = useTranslation();
   return (
     <div id={id} className="file-view features-story" role="region" aria-label={story.id} data-testid="features-view-story-detail">
+      <CostDetail figure={figure} />
       {release && <ReleasePicker {...release} story={story} />}
       {release && <PlanningSync projectId={release.projectId} features={release.features} reapply={false} />}
       {links.length > 0 && (
@@ -590,7 +595,7 @@ function StoryFilters({ prefix, filters, setFilters, options, count }) {
  * `features`: given with the Releases delivery setting, so each story gets its release picker (US-0603 FR2).
  * `releases`: the release filter's values, or null to hide it (US-0604 FR2, FR4.2).
  */
-function EpicDetail({ projectId, epic, links, storyId, setStoryId, onOpenIntent, features, releases, lock }) {
+function EpicDetail({ projectId, epic, links, storyId, setStoryId, onOpenIntent, features, releases, lock, costs }) {
   const { t } = useTranslation();
   const [filters, setFilters] = useState(EMPTY_FILTERS);
   const stories = epic.parsed?.stories ?? [];
@@ -615,6 +620,7 @@ function EpicDetail({ projectId, epic, links, storyId, setStoryId, onOpenIntent,
             <FileContent rel="intro.md" content={epic.parsed.intro} />
           </div>
         )}
+        <CostDetail figure={costs?.epics[epic.id]} testId="features-view-epic-cost" />
         {epic.file && <FileActions projectId={projectId} rel={epic.file} />}
         {(epic.parsed?.warnings ?? []).map((w) => (
           <p key={w} className="tag-warn" role="note">
@@ -654,6 +660,7 @@ function EpicDetail({ projectId, epic, links, storyId, setStoryId, onOpenIntent,
                         {s.id}: {s.title}
                       </span>
                       <StatusBadge status={s.status} text={s.statusText} />
+                      <CostBadge figure={costs?.stories[s.id]} />
                     </span>
                     <span className="intent-row-meta">
                       {s.priority && <span>{t('features.priorityValue', { value: s.priority })}</span>}
@@ -670,6 +677,7 @@ function EpicDetail({ projectId, epic, links, storyId, setStoryId, onOpenIntent,
                         links={links[s.id] ?? []}
                         onOpenIntent={onOpenIntent}
                         release={features ? { projectId, features, epic, ...lock } : null}
+                        figure={costs?.stories[s.id]}
                       />
                     </div>
                   )}
@@ -689,6 +697,7 @@ function EpicDetail({ projectId, epic, links, storyId, setStoryId, onOpenIntent,
  *          delivery?: 'releases'|'continuous', onOpenIntent?: (dirName: string) => void, onSetup?: () => void,
  *          tab?: 'epics'|'releases', onTab?: (id: string) => void}} props
  *   tab, onTab: Epics | Releases, chosen in the left arm like every other section (US-0012)
+ *   cost, delivered: US-1303 the project:cost result and the stories each intent delivered; without them no figures
  */
 export default function FeaturesView({
   projectId,
@@ -699,7 +708,9 @@ export default function FeaturesView({
   onOpenIntent,
   onSetup,
   tab = 'epics',
-  onTab
+  onTab,
+  cost = null,
+  delivered = null
 }) {
   const { t } = useTranslation();
   const epics = features?.available ? features.epics : [];
@@ -710,6 +721,12 @@ export default function FeaturesView({
   const setTab = (id) => id !== tab && onTab?.(id); // Epics | Releases (US-0603 FR3.1)
   const releases = delivery === 'releases';
   const showReleases = releases && tab === 'releases';
+  // US-1303 FR2–FR4, NFR4: rolled up from the cost already loaded for the cost panel; no read of its own.
+  // ponytail: recomputed on every render (a few hundred intents and stories at most); memoise if it ever shows.
+  const costs =
+    cost?.available && delivered
+      ? rollUp({ delivered: delivered.stories, perIntent: cost.perIntent, epics, releases: buildReleases(epics, features?.tags, features?.plans) })
+      : null;
 
   // US-0608 FR1.2: one lock for the release list and the story picker. A write that changed the docs here keeps it
   // until a load whose hashes differ from those it went out with; any other answer unlocks at once.
@@ -834,6 +851,7 @@ export default function FeaturesView({
                         <span className="muted">{e.topic}</span>
                         <span className="intent-row-meta">
                           <StatusBadge status={e.statusKind} text={e.status} />
+                          <CostBadge figure={costs?.epics[e.id]} />
                           <span>{e.parsed ? t('features.storiesDone', { done: storiesDone(e), total }) : t('features.unreadable')}</span>
                         </span>
                       </Block>
@@ -857,6 +875,7 @@ export default function FeaturesView({
               features={releases ? features : null}
               releases={options.releases}
               lock={{ locked, write: lockedWrite }}
+              costs={costs}
             />
           </Frame>
         </section>
@@ -865,7 +884,7 @@ export default function FeaturesView({
     if (showReleases) {
       body = (
         <Frame>
-          <ReleasesView projectId={projectId} features={features} onOpenStory={openStory} locked={locked} lockedWrite={lockedWrite} />
+          <ReleasesView projectId={projectId} features={features} onOpenStory={openStory} locked={locked} lockedWrite={lockedWrite} costs={costs} />
         </Frame>
       );
     }
