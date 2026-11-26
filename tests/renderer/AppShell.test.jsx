@@ -18,6 +18,7 @@ vi.mock('../../src/renderer/ProjectView.jsx', async () => {
           {banner}
           <LatestMessageStrip projectId={project.projectId} onOpenReply={onOpenReply} />
           <button onClick={onOpenTools} data-testid={`project-view-tools-${project.projectId}`} />
+          <button onClick={() => onMeta(project.projectId, { intentCount: 8 })} data-testid={`project-view-recount-${project.projectId}`} />
           {project.detection.framework === 'speckit' && <SpeckitFeatures projectId={project.projectId} onMeta={onMeta} />}
         </div>
       );
@@ -531,6 +532,17 @@ describe('App shell in the US-0417 language', () => {
     const intents = await screen.findByTestId('project-view-switch-intents');
     await waitFor(() => expect(intents.querySelector('.lcars-nb-fig')?.textContent).toBe('7'));
     expect(intents.className).toContain('lcars-nb');
+  });
+
+  // US-0050 item 8: a new intent count glows once on the Intents block, never on its first report or another project.
+  it('glows the Intents block figure once when the count changes, not when it is first shown', async () => {
+    await renderApp(open);
+    const intents = await screen.findByTestId('project-view-switch-intents');
+    await waitFor(() => expect(intents.querySelector('.lcars-nb-fig')?.textContent).toBe('7'));
+    expect(intents.querySelector('.lcars-changed')).toBeNull();
+    fireEvent.click(screen.getAllByTestId(/^project-view-recount-/)[0]);
+    await waitFor(() => expect(intents.querySelector('.lcars-nb-fig')?.textContent).toBe('8'));
+    expect(intents.querySelector('.lcars-nb-fig .lcars-changed')?.textContent).toBe('8');
   });
 
   it('runs the entrance on entering a view, not under reduced motion', async () => {

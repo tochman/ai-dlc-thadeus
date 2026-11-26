@@ -8,7 +8,7 @@ import { useTranslation } from 'react-i18next';
 import { intentMetrics } from '../main/parsers/velocity.js';
 import { locale } from '../shared/i18n.js';
 import Tooltip from './Tooltip.jsx';
-import { Block, DiagonalFrame, useEntrance } from './Lcars.jsx';
+import { Block, DiagonalFrame, TabIn, useEntrance } from './Lcars.jsx';
 import { formatDuration, stageTitle } from './format.js';
 
 const errorText = (err) => String(err?.message ?? err).replace(/^Error invoking remote method '[^']+': (Error: )?/, '');
@@ -260,7 +260,10 @@ export default function VelocityView({ projectId, space }) {
                 </Block>
               ))}
             </div>
-            <VelocityChart buckets={p[unit]} />
+            {/* US-0050 item 3: Week | Month slides the chart in. */}
+            <TabIn tab={unit} data-testid="velocity-unit-content">
+              <VelocityChart buckets={p[unit]} />
+            </TabIn>
             <IntentTable rows={data.intents} />
             <StoryTable stories={data.stories} />
             {data.releases.length > 0 && (

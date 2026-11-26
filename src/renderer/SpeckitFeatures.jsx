@@ -9,6 +9,7 @@ import { FileView } from './ArtifactReader.jsx';
 import SpeckitArchive from './SpeckitArchive.jsx';
 import SpeckitFeatureDetail from './SpeckitFeatureDetail.jsx';
 import SpeckitQuickCommands from './SpeckitQuickCommands.jsx';
+import { TabIn, stagger } from './Lcars.jsx';
 
 const ALL = '';
 const ARCHIVED = 'archived';
@@ -120,8 +121,9 @@ export default function SpeckitFeatures({ projectId, onMeta }) {
               </p>
             )}
             <ul ref={listRef} className="speckit-list" tabIndex={-1} aria-label={t('speckit.features.title')} data-testid="speckit-features-list">
-              {visible.map((f) => (
-                <li key={f.dir}>
+              {/* US-0050 item 6: the rows block in with the view's entrance, staggered. */}
+              {visible.map((f, n) => (
+                <li key={f.dir} className="lcars-e-block" style={stagger(n)}>
                   <button
                     className={`link ${selected === f.dir ? 'is-selected' : ''}`}
                     aria-current={selected === f.dir}
@@ -144,8 +146,9 @@ export default function SpeckitFeatures({ projectId, onMeta }) {
               ))}
             </ul>
           </nav>
+          {/* US-0050 item 6: another feature's detail slides in as a tab does. */}
           {feature && (
-            <div className="speckit-detail">
+            <TabIn tab={feature.dir} className="speckit-detail">
               <SpeckitFeatureDetail
                 feature={feature}
                 activeName={activeName}
@@ -154,7 +157,7 @@ export default function SpeckitFeatures({ projectId, onMeta }) {
                 actions={<SpeckitArchive key={feature.dir} projectId={projectId} feature={feature} onChanged={load} getList={getList} />}
               />
               {openFile && <FileView projectId={projectId} rel={openFile} editable={false} html="text" />}
-            </div>
+            </TabIn>
           )}
         </div>
       )}

@@ -184,8 +184,9 @@ export default function CostPanel({ cost, models, open: openProp, onToggle }) {
             <Mix total={project.total} scopes={scopes} totalUsd={project.total.usd} />
           </>
         )}
+        {/* US-0050 item 7: the tables open with the shared fold. */}
         {open && project && (
-          <div className="cost-panel-body">
+          <div className="cost-panel-body lcars-reveal">
             {cost.stale && (
               <p className="banner banner-warn" role="status">
                 {t('cost.stale', { warning: cost.warning })}

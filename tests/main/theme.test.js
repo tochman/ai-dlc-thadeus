@@ -325,3 +325,71 @@ describe('intent tab tiles (US-0417)', () => {
     expect(css).toMatch(/\.detail-tabs \.lcars-tile\s*\{[^}]*min-width:\s*0[^}]*\}/);
   });
 });
+
+// US-0050 (motion audit items 2-4, 7-11): the shared pieces each added motion uses, defined once in the theme.
+describe('the US-0050 shared motion', () => {
+  /** The body of `@keyframes name { … }`, braces balanced. */
+  const keyframes = (name) => {
+    const start = css.indexOf(`@keyframes ${name} {`);
+    if (start < 0) return '';
+    let depth = 0;
+    for (let i = css.indexOf('{', start); i < css.length; i++) {
+      depth += css[i] === '{' ? 1 : css[i] === '}' ? -1 : 0;
+      if (depth === 0) return css.slice(css.indexOf('{', start) + 1, i);
+    }
+    return '';
+  };
+  /** Every rule that plays `name`: [selector, body]. */
+  const players = (name) =>
+    [...css.matchAll(/([^{}]+)\{([^{}]*animation:[^;}]*[^{}]*)\}/g)]
+      .filter((m) => new RegExp(`animation:[^;]*\\b${name}\\b`).test(m[2]))
+      .map((m) => [m[1].trim(), m[2]]);
+
+  it('defines lcars-tab-in (200 ms), lcars-reveal and lcars-changed (one glow, 600 ms) with transform, opacity, filter or box-shadow only', () => {
+    for (const name of ['lcars-tab-in', 'lcars-reveal', 'lcars-changed']) {
+      const body = keyframes(name);
+      expect([name, body.length > 0]).toEqual([name, true]);
+      const props = [...body.matchAll(/([a-z-]+)\s*:/g)].map((m) => m[1]);
+      expect([name, props.filter((p) => !['transform', 'opacity', 'filter', 'box-shadow'].includes(p))]).toEqual([name, []]);
+    }
+    expect(
+      players('lcars-tab-in')
+        .map(([, body]) => body)
+        .join()
+    ).toMatch(/lcars-tab-in 200ms/);
+    expect(
+      players('lcars-changed')
+        .map(([, body]) => body)
+        .join()
+    ).toMatch(/lcars-changed 600ms/);
+    expect(
+      players('lcars-changed')
+        .map(([, body]) => body)
+        .join()
+    ).not.toMatch(/infinite/);
+  });
+
+  it('plays them with full motion only, and the Features story reveal uses the shared fold', () => {
+    for (const name of ['lcars-tab-in', 'lcars-reveal', 'lcars-changed']) {
+      const rules = players(name);
+      expect([name, rules.length > 0]).toEqual([name, true]);
+      for (const [selector] of rules) expect(selector).toMatch(/^:root\[data-motion='full'\]/);
+    }
+    expect(players('lcars-reveal').some(([selector]) => /features-story-reveal/.test(selector))).toBe(true);
+    expect(rule('.features-story-reveal')).not.toMatch(/grid-template-rows/);
+  });
+
+  it('gives the update dialog its static ring under Reduced and Off (item 11)', () => {
+    expect(css).toMatch(/:root:is\(\[data-motion='reduced'\], \[data-motion='off'\]\) \.update-dialog-run\s*\{[^}]*box-shadow:/);
+  });
+
+  it('eases the hover filter of arm blocks, pills, tiles and chips in 150 ms (item 9)', () => {
+    for (const selector of ['.lcars-nb', '.lcars-pill', '.lcars-tile', '.lcars-chip'])
+      expect([selector, rule(selector)]).toEqual([selector, expect.stringMatching(/transition:[^;]*filter 150ms/)]);
+  });
+
+  it('fades the raw dialogs in on open, with full motion only (item 10)', () => {
+    expect(css).toMatch(/@starting-style\s*\{\s*:root\[data-motion='full'\] \.settings-dialog:not\(\.agent-dialog\)\[open\]\s*\{[^}]*opacity: 0;/);
+    expect(css).toMatch(/:root\[data-motion='full'\] \.settings-dialog:not\(\.agent-dialog\)\s*\{[^}]*transition:[^}]*opacity/);
+  });
+});

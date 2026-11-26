@@ -5,6 +5,7 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { formatTime, stageTitle } from './format.js';
+import { stagger } from './Lcars.jsx';
 
 const errorText = (err) => String(err?.message ?? err).replace(/^Error invoking remote method '[^']+': (Error: )?/, '');
 const FLAG_KEY = { machines: 'team.machines.onMachines', branches: 'team.machines.onBranches' };
@@ -19,10 +20,10 @@ function Flag({ flag }) {
   );
 }
 
-function IntentMachines({ intent, flagged }) {
+function IntentMachines({ intent, flagged, n }) {
   const { t } = useTranslation();
   return (
-    <div className="lcars-card machines-intent" data-testid="machines-view-intent">
+    <div className="lcars-card machines-intent lcars-e-rise" style={stagger(n)} data-testid="machines-view-intent">
       <div className="lcars-card-head">
         <h3>{intent.slug ?? intent.dirName}</h3>
         {intent.stories.map((s) => (
@@ -62,8 +63,8 @@ function IntentMachines({ intent, flagged }) {
   );
 }
 
-/** @param {{projectId: string, space: string}} props */
-export default function MachinesView({ projectId, space }) {
+/** @param {{projectId: string, space: string, className?: string}} props `className` adds to the root (US-0050: tab-in) */
+export default function MachinesView({ projectId, space, className = '' }) {
   const { t } = useTranslation();
   const [data, setData] = useState(null);
   const [error, setError] = useState(null);
@@ -82,8 +83,9 @@ export default function MachinesView({ projectId, space }) {
   const withShards = data?.intents.filter((i) => i.machines.length > 0) ?? [];
   const flaggedStories = new Set((data?.flags ?? []).map((f) => f.story));
   return (
-    <section className="machines-view" data-testid="machines-view">
-      <div className="lcars-heading">
+    <section className={`machines-view ${className}`.trim()} data-testid="machines-view">
+      {/* US-0050 item 5: the heading, the intents and the branches rise with the view's entrance. */}
+      <div className="lcars-heading lcars-e-rise">
         <span className="section-title">{t('team.machines.title')}</span>
         <span className="lcars-heading-line" aria-hidden="true" />
         <span className="lcars-heading-meta">{t('team.machines.meta')}</span>
@@ -104,14 +106,14 @@ export default function MachinesView({ projectId, space }) {
             </ul>
           )}
           {withShards.length === 0 && <p className="muted">{t('team.machines.none')}</p>}
-          {withShards.map((i) => (
-            <IntentMachines key={i.dirName} intent={i} flagged={i.inProgress && i.stories.some((s) => flaggedStories.has(s))} />
+          {withShards.map((i, n) => (
+            <IntentMachines key={i.dirName} n={n + 1} intent={i} flagged={i.inProgress && i.stories.some((s) => flaggedStories.has(s))} />
           ))}
           <h3 className="section-title">{t('team.machines.branches')}</h3>
           {data.branches.length === 0 && <p className="muted">{t('team.machines.noBranches')}</p>}
           <ul className="refresh-list">
-            {data.branches.map((b) => (
-              <li key={b.branch} data-testid="machines-view-branch">
+            {data.branches.map((b, n) => (
+              <li key={b.branch} className="lcars-e-rise" style={stagger(withShards.length + 1 + n)} data-testid="machines-view-branch">
                 <code>{b.branch}</code> · {t('team.machines.branchAhead', { n: b.ahead })}
               </li>
             ))}

@@ -116,6 +116,27 @@ describe('VelocityView (US-0303 FR3.3, FR3.5)', () => {
     expect(window.bridge.getVelocity).toHaveBeenCalledTimes(2);
   });
 
+  // US-0050 item 3: Week | Month changes the chart with the shared tab transition.
+  it('slides the chart in on a Week | Month switch, with full motion only', async () => {
+    const chart = () => screen.getByTestId('velocity-unit-content');
+    try {
+      document.documentElement.dataset.motion = 'full';
+      await renderView();
+      expect(chart().classList.contains('lcars-tab-in')).toBe(false);
+      const week = chart();
+      fireEvent.click(screen.getByTestId('velocity-unit-month'));
+      expect(chart()).not.toBe(week);
+      expect(chart().classList.contains('lcars-tab-in')).toBe(true);
+      cleanup();
+      document.documentElement.dataset.motion = 'reduced';
+      await renderView();
+      fireEvent.click(screen.getByTestId('velocity-unit-month'));
+      expect(chart().classList.contains('lcars-tab-in')).toBe(false);
+    } finally {
+      delete document.documentElement.dataset.motion;
+    }
+  });
+
   it('marks an unfinished intent in text, shows an unknown span as unknown and names each missing record with its path (FR4.1, FR4.2, NFR2)', async () => {
     await renderView();
     const [a, b] = screen.getAllByTestId('velocity-intent-row');

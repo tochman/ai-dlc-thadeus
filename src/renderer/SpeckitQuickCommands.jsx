@@ -49,9 +49,10 @@ export default function SpeckitQuickCommands({ projectId }) {
   const args = specifyText(description);
 
   return (
+    // US-0050 item 6: the command rows rise with the view's entrance.
     <section className="speckit-commands" data-testid="speckit-commands-root">
       <h3 className="section-title">{t('speckit.commands.title')}</h3>
-      <div className="speckit-commands-row">
+      <div className="speckit-commands-row lcars-e-rise">
         <input
           type="text"
           value={description}
@@ -68,7 +69,7 @@ export default function SpeckitQuickCommands({ projectId }) {
           onSent={(ok) => ok && setDescription('')}
         />
       </div>
-      <div className="speckit-commands-row">
+      <div className="speckit-commands-row lcars-e-rise">
         {CORE.map((name) => (
           <SpeckitCommandButton key={name} name={name} />
         ))}
@@ -76,7 +77,7 @@ export default function SpeckitQuickCommands({ projectId }) {
       {extensions
         .filter((x) => x.commands.length > 0)
         .map((x) => (
-          <div key={x.id} className="speckit-commands-row" data-testid="speckit-commands-extension">
+          <div key={x.id} className="speckit-commands-row lcars-e-rise" data-testid="speckit-commands-extension">
             <span className="field-label">{x.id}</span>
             {x.commands.map((c) => (
               <SpeckitCommandButton key={c} name={c} />

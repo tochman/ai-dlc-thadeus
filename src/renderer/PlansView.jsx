@@ -351,7 +351,12 @@ export default function PlansView({ projectId, visible, harness }) {
                 )}
                 {mine?.kind === 'edit' && <EditForm plan={p} onPreview={(edit) => previewEdit(p, edit)} onCancel={() => setAction(null)} />}
                 {mine?.kind === 'editRun' && <ChangePanel {...mine.calls} onClose={() => setAction(null)} />}
-                {open?.name === p.name && <Stages stages={open.stages} />}
+                {/* US-0050 item 7: the stages unfold with the shared fold. */}
+                {open?.name === p.name && (
+                  <div className="lcars-reveal">
+                    <Stages stages={open.stages} />
+                  </div>
+                )}
               </li>
             );
           })}

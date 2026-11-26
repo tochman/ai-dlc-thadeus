@@ -137,3 +137,14 @@ describe('RefreshPanel', () => {
     expect(screen.getByTestId('collision-panel-merge-note')).toBeTruthy();
   });
 });
+
+// US-0050 item 5: the heading and the body join the view's entrance.
+describe('RefreshPanel entrance (US-0050)', () => {
+  it('lets the heading rise with the entrance, and the open body unfold', async () => {
+    render(<RefreshPanel projectId="p1" space="default" lastIntentChangeAt={null} open />);
+    await screen.findByTestId('refresh-panel-status');
+    expect(screen.getByTestId('refresh-panel-toggle').classList.contains('lcars-e-rise')).toBe(true);
+    // US-0050 item 7: the body is the Refresh fold, so it opens (and enters with the view) with the shared fold.
+    expect(screen.getByTestId('refresh-panel-status').closest('.refresh-body').classList.contains('lcars-reveal')).toBe(true);
+  });
+});

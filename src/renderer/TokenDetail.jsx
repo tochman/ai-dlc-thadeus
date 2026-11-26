@@ -11,7 +11,7 @@ import { AxisBottom, AxisLeft } from '@visx/axis';
 import { GridColumns, GridRows } from '@visx/grid';
 import { Tooltip as ChartTooltip, useTooltip } from '@visx/tooltip';
 import { ParentSize } from '@visx/responsive';
-import { Block, DiagonalFrame, Pill, SectionHeading, useEntrance } from './Lcars.jsx';
+import { Block, DiagonalFrame, Pill, SectionHeading, TabIn, useEntrance } from './Lcars.jsx';
 import { formatCost, formatCostPair, formatTokens, formatUsd, shortModel, stageTitle } from './format.js';
 import { agentName } from '../main/parsers/ledger.js';
 import { SPLIT_KINDS, STACK_KINDS, elapsedLabel, rateSeries, runFigures, splitRows, stackSeries, toggleKind } from './tokenChart.js';
@@ -315,7 +315,10 @@ function OverTime({ readings, live, shown, onToggle, source, gap }) {
         </p>
       )}
       {gap && <GapLine gap={gap} />}
-      {body}
+      {/* US-0050 item 3: Diagram | Table slides the body in. */}
+      <TabIn tab={mode} data-testid="token-detail-over-time-content">
+        {body}
+      </TabIn>
     </section>
   );
 }

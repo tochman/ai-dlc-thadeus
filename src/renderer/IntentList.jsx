@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { currentTip, formatCost, isInFlight, stagePosition, stageTitle } from './format.js';
 import ArchiveDialog, { ArchiveOutcome, useArchiveRun } from './ArchiveDialog.jsx'; // US-0513
 import ResumeButton from './ResumeButton.jsx';
-import { Dots, ListDrawer, Pill, progressStates } from './Lcars.jsx';
+import { Changed, Dots, ListDrawer, Pill, progressStates, stagger } from './Lcars.jsx';
 import Tooltip from './Tooltip.jsx';
 import { isArchived } from '../shared/intentArchive.js';
 
@@ -267,8 +267,9 @@ export default function IntentList({ intents, selected, onSelect, cost, projectI
         <SelectBar selection={selection} offered={(!activeSpace || activeSpace === space) && intents.some(canChoose)} visible={visible} rowsRef={rowsRef} />
 
         <ul ref={rowsRef} className="intent-rows" role="listbox" aria-label={t('intents.title')} tabIndex={-1} data-testid="intent-list-rows">
-          {visible.map((i) => (
-            <li key={i.dirName} className={selection.on && canChoose(i) ? 'has-check' : undefined}>
+          {/* US-0050 item 1: the rows rise with the view's entrance, staggered; a row that arrives later just appears. */}
+          {visible.map((i, n) => (
+            <li key={i.dirName} className={`lcars-e-rise${selection.on && canChoose(i) ? ' has-check' : ''}`} style={stagger(n)}>
               {selection.on && canChoose(i) && (
                 <input
                   type="checkbox"
@@ -299,10 +300,10 @@ export default function IntentList({ intents, selected, onSelect, cost, projectI
                       <Tooltip text={i.plan && t('intents.basedOn', { scope: i.scope ?? '–' })}>
                         <span>{planName(i) ?? '–'}</span>
                       </Tooltip>{' '}
-                      ·{' '}
-                      <span className="status-text" data-testid="intent-list-row-status">
+                      · {/* US-0050 item 8: a new status glows once on its own row. */}
+                      <Changed value={i.status} className="status-text" data-testid="intent-list-row-status">
                         {i.status ?? t('intents.unknownStatus')}
-                      </span>
+                      </Changed>
                     </span>
                     <span className="intent-steps">
                       <Dots states={progressStates(i.done ?? 0, i.executed ?? 0, isInFlight(i.status))} small />

@@ -123,8 +123,9 @@ function PullSection({ data }) {
           <Thread key={th.id} thread={th} platform={data.platform} />
         ))}
       </ul>
+      {/* US-0050 item 7: the resolved threads open with the shared fold. */}
       {resolved.length > 0 && (
-        <details className="review-resolved" data-testid="review-resolved">
+        <details className="review-resolved lcars-reveal" data-testid="review-resolved">
           <summary>{t('team.review.resolved', { n: resolved.length })}</summary>
           <ul className="review-list">
             {resolved.map((th) => (

@@ -728,6 +728,21 @@ describe('FeaturesView: the US-0417 look', () => {
     expect(strips).toEqual(['lcars-strip--live', 'lcars-strip--done', 'lcars-strip--done']);
   });
 
+  // US-0050 item 8: a story whose status changes glows once on its badge; a reload with the same docs glows nothing.
+  it('glows the status of the story that changed, only that one', () => {
+    document.documentElement.dataset.motion = 'full';
+    const { rerender, container } = render(<FeaturesView projectId="p1" features={features} />);
+    rerender(<FeaturesView projectId="p1" features={structuredClone(features)} />);
+    expect(container.querySelector('.lcars-changed')).toBeNull();
+    const next = structuredClone(features);
+    const story = next.epics[0].parsed.stories.find((s) => s.id === 'US-0102');
+    story.status = 'done';
+    rerender(<FeaturesView projectId="p1" features={next} />);
+    const glowing = [...container.querySelectorAll('.lcars-changed')];
+    expect(glowing).toHaveLength(1);
+    expect(glowing[0].closest('[data-testid="features-view-story"]').textContent).toMatch(/^US-0102/);
+  });
+
   it('runs the entrance when the view is entered and again on a switch to Releases, only with full motion', () => {
     vi.useFakeTimers();
     try {

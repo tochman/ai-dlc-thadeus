@@ -385,6 +385,27 @@ describe('AgentDialog: audit fallback (US-0505, BR3.6, ADR-006)', () => {
     expect(agentEvents.close).not.toHaveBeenCalled();
   });
 
+  // US-0050 item 3: paging to another question slides the new page in, with full motion only.
+  it('slides the next page in when paging, with full motion only', () => {
+    const page = () => screen.getByTestId('agent-dialog-page');
+    try {
+      document.documentElement.dataset.motion = 'full';
+      show(<AgentDialog {...base()} events={[audit(), audit({ id: 'q0', text: 'Äldre fråga?' })]} />);
+      const first = page();
+      expect(first.classList.contains('lcars-tab-in')).toBe(false);
+      fireEvent.click(screen.getByTestId('agent-dialog-next'));
+      expect(page()).not.toBe(first);
+      expect(page().classList.contains('lcars-tab-in')).toBe(true);
+      cleanup();
+      document.documentElement.dataset.motion = 'reduced';
+      show(<AgentDialog {...base()} events={[audit(), audit({ id: 'q0', text: 'Äldre fråga?' })]} />);
+      fireEvent.click(screen.getByTestId('agent-dialog-next'));
+      expect(page().classList.contains('lcars-tab-in')).toBe(false);
+    } finally {
+      delete document.documentElement.dataset.motion;
+    }
+  });
+
   it('an option sends its number to that project and says so, staying on the question until it leaves', async () => {
     const props = base({ harnessOf: (id) => (id === 'p2' ? harness('claude') : null) });
     const q = audit({ projectId: 'p2' });

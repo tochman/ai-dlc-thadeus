@@ -5,6 +5,7 @@
 import { useTranslation } from 'react-i18next';
 import { nextCommand } from '../shared/speckitCommands.js';
 import SpeckitCommandButton from './SpeckitCommandButton.jsx';
+import { Changed, stagger } from './Lcars.jsx';
 
 const STEPS = ['spec', 'clarify', 'plan', 'tasks', 'implement', 'converge'];
 
@@ -59,8 +60,9 @@ export default function SpeckitFeatureDetail({ feature, activeName = null, onOpe
       )}
 
       <ol className="speckit-flow" data-testid="speckit-feature-flow">
-        {STEPS.map((step) => (
-          <li key={step} className={flow[step] ? 'is-done' : 'is-todo'} data-done={flow[step]}>
+        {/* US-0050 item 6: the flow steps rise with the view's entrance, staggered. */}
+        {STEPS.map((step, n) => (
+          <li key={step} className={`${flow[step] ? 'is-done' : 'is-todo'} lcars-e-rise`} style={stagger(n)} data-done={flow[step]}>
             <span className="speckit-flow-step">{t(`speckit.features.step.${step}`)}</span>
             <span className="speckit-flow-state">{t(flow[step] ? 'speckit.features.done' : 'speckit.features.notDone')}</span>
           </li>
@@ -82,8 +84,9 @@ export default function SpeckitFeatureDetail({ feature, activeName = null, onOpe
               {phase.round !== null && ` · ${t('speckit.features.round', { round: phase.round })}`}
             </h4>
             <ul className="speckit-tasks">
+              {/* US-0050 item 8: a task that becomes done (or not) glows once. */}
               {phase.items.map((item) => (
-                <li key={item.id}>
+                <Changed as="li" key={item.id} value={item.done}>
                   <label>
                     {/* Shown, never ticked from the app: Spec Kit's files are read-only (BR6.6). */}
                     <input type="checkbox" checked={item.done} disabled readOnly />
@@ -92,7 +95,7 @@ export default function SpeckitFeatureDetail({ feature, activeName = null, onOpe
                     {item.story && <span className="speckit-tag">[{item.story}]</span>}
                     <span>{item.text}</span>
                   </label>
-                </li>
+                </Changed>
               ))}
             </ul>
           </div>

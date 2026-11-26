@@ -98,7 +98,7 @@ export function Block({ as: Tag = 'div', strip, figure, selected = false, tone, 
     .join(' ');
   const button = Tag === 'button' && rest.type === undefined ? { type: 'button' } : {};
   return (
-    <Tag className={cls} style={index == null ? style : { ...style, '--i': Math.min(index, 12) }} {...button} {...rest}>
+    <Tag className={cls} style={index == null ? style : { ...style, ...stagger(index) }} {...button} {...rest}>
       {figure != null && figure !== '' && <span className="lcars-nb-fig">{figure}</span>}
       <span className="lcars-nb-label">{children}</span>
     </Tag>
@@ -278,6 +278,13 @@ export function ListDrawer({ viewId, title, count, live = false, controls, label
   );
 }
 
+/**
+ * US-0050 (entrance): the `--i` style that staggers the n-th piece of a view's entrance, capped at 12 so a long list
+ * is in by ~0.6 s whatever its length (as Block does).
+ * @param {number} n the piece's place, from 0
+ */
+export const stagger = (n) => ({ '--i': Math.min(n, 12) });
+
 /** How long a view's entrance class stays on: the sequence ends by ~0.8 s (theme.css, Entrance). */
 export const ENTRANCE_MS = 1000;
 const motionFull = () => typeof document !== 'undefined' && document.documentElement.dataset.motion === 'full';
@@ -298,6 +305,60 @@ export function useEntrance(viewKey) {
     return () => clearTimeout(timer);
   }, [viewKey]);
   return entering;
+}
+
+/** How long a changed element glows (theme.css, lcars-changed). */
+export const CHANGED_MS = 600;
+
+/**
+ * US-0050 item 8 (live change): true for CHANGED_MS after `value` changes, so the element showing it can carry
+ * `lcars-changed` and glow once. Never on mount, never on a re-render with the same value, never with reduced or no
+ * motion. Compares with Object.is, so pass a primitive (a status, a count, a done flag).
+ * @param {unknown} value what the element shows
+ * @returns {boolean}
+ */
+export function useChanged(value) {
+  const [changed, setChanged] = useState(false);
+  const last = useRef(value);
+  useLayoutEffect(() => {
+    if (Object.is(last.current, value)) return undefined;
+    last.current = value;
+    if (!motionFull()) return undefined;
+    setChanged(true);
+    const timer = setTimeout(() => setChanged(false), CHANGED_MS);
+    return () => clearTimeout(timer);
+  }, [value]);
+  return changed;
+}
+
+/**
+ * US-0050 item 8 (live change): an element (`as`, a span by default) that glows once, `lcars-changed`, when `value`
+ * changes while it stays mounted; never on mount. Key it by what it shows (a row, a project) so another one is a mount.
+ * @param {{value: unknown, as?: string, className?: string, children?: import('react').ReactNode}} props plus attributes
+ */
+export function Changed({ value, as: Tag = 'span', className = '', children, ...rest }) {
+  const changed = useChanged(value);
+  const cls = [className, changed && 'lcars-changed'].filter(Boolean).join(' ');
+  return (
+    <Tag className={cls || undefined} {...rest}>
+      {children}
+    </Tag>
+  );
+}
+
+/**
+ * US-0050 items 2-4 and 6 (tab transitions): a switched tab's content, keyed by `tab` so another tab mounts fresh, that
+ * carries `lcars-tab-in` only after a switch: the first tab rides the view's entrance, and Reduced and Off stay still.
+ * @param {{tab: unknown, className?: string, children?: import('react').ReactNode}} props plus any div attributes
+ */
+export function TabIn({ tab, className = '', children, ...rest }) {
+  const switched = useChanged(tab);
+  const cls = [className, switched && 'lcars-tab-in'].filter(Boolean).join(' ');
+  return (
+    <div key={String(tab)} className={cls || undefined} {...rest}>
+      {children}
+    </div>
+  );
 }
 
 // The diagonal corner's geometry, fixed in px (360 x 280) as in the approved mockup: a band wide where it leaves the
@@ -402,10 +463,11 @@ const BAR_LEVEL = { [BARS.thin]: 'section', [BARS.medium]: 'window', [BARS.large
  * from elbowRadii (outer 0.7 x arm, inner 1.4 x bar); the title heads the top bar (`top` px: 42 frame, 30 window) with
  * `sub` and `trailing` pills as its last segments; `footer` labels the bottom bar. The arm is filled, or a column of
  * readout blocks when `armContent` is given; `corner` (the dialogs' brand block) takes the arm column of the top elbow.
+ * `bodyClassName` goes on the body (US-0050: `lcars-tab-in` after a section switch).
  * @param {{title: import('react').ReactNode, titleId?: string, as?: string, sub?: import('react').ReactNode,
  *          trailing?: import('react').ReactNode, footer?: import('react').ReactNode, corner?: import('react').ReactNode,
  *          armContent?: import('react').ReactNode, arm?: number, top?: number, bottom?: number, className?: string,
- *          children?: import('react').ReactNode}} props
+ *          bodyClassName?: string, children?: import('react').ReactNode}} props
  */
 export function RoundFrame({
   title,
@@ -420,6 +482,7 @@ export function RoundFrame({
   top = BARS.large,
   bottom = BARS.thin,
   className = '',
+  bodyClassName = '',
   children
 }) {
   const upper = elbowRadii(arm, top);
@@ -445,7 +508,7 @@ export function RoundFrame({
       <div className="lcars-rf-arm" aria-hidden={armContent == null ? 'true' : undefined}>
         {armContent}
       </div>
-      <div className="lcars-rf-body" data-testid="lcars-round-body">
+      <div className={`lcars-rf-body ${bodyClassName}`.trim()} data-testid="lcars-round-body">
         {children}
       </div>
       <div className="lcars-rf-bl lcars-e-wipe" aria-hidden="true" />

@@ -204,6 +204,40 @@ describe('ProjectView: one view at a time', () => {
     await waitFor(() => expect(shown('config-view')).toBe(true));
   });
 
+  // US-0050 items 3 and 4: a Configuration section, Settings | Plans and a GitHub section slide in as a tab does.
+  it('slides the Configuration body in on a section or Settings | Plans switch, and a GitHub section in, with full motion only', async () => {
+    window.bridge.listPlans = vi.fn(async () => ({ plans: [], errors: {} }));
+    const body = () => screen.getByTestId('lcars-round-body');
+    const el = (p) => <ProjectView project={project} visible onView={() => {}} onMeta={() => {}} {...p} />;
+    try {
+      document.documentElement.dataset.motion = 'full';
+      const { rerender } = render(el({ view: 'config', section: 'docs' }));
+      expect(body().classList.contains('lcars-tab-in')).toBe(false);
+      rerender(el({ view: 'config', section: 'aidlc' }));
+      expect(body().classList.contains('lcars-tab-in')).toBe(true);
+      cleanup();
+      const plans = render(el({ view: 'config', section: 'aidlc' }));
+      await waitFor(() => expect(shown('config-view')).toBe(true));
+      plans.rerender(el({ view: 'config', section: 'aidlc', aidlcTab: 'plans' }));
+      expect((await screen.findByTestId('plans-view')).closest('.lcars-tab-in')).toBeTruthy();
+      cleanup();
+      const team = render(el({ view: 'github' }));
+      await screen.findByTestId('refresh-panel-status');
+      expect(screen.getByTestId('refresh-panel').closest('.lcars-tab-in')).toBeNull();
+      team.rerender(el({ view: 'github', teamSection: 'machines' }));
+      expect((await screen.findByTestId('machines-view')).classList.contains('lcars-tab-in')).toBe(true);
+      team.rerender(el({ view: 'github' }));
+      expect(screen.getByTestId('refresh-panel').closest('.lcars-tab-in')).toBeTruthy();
+      cleanup();
+      document.documentElement.dataset.motion = 'reduced';
+      const still = render(el({ view: 'config', section: 'docs' }));
+      still.rerender(el({ view: 'config', section: 'aidlc' }));
+      expect(body().classList.contains('lcars-tab-in')).toBe(false);
+    } finally {
+      delete document.documentElement.dataset.motion;
+    }
+  });
+
   it('splits Configuration › AI-DLC into Settings and Plans tabs, Plans alone when chosen, none without AI-DLC (US-0905)', async () => {
     window.bridge.listPlans = vi.fn(async () => ({ plans: [], errors: {} }));
     const { onView } = renderView('config', { section: 'aidlc' });

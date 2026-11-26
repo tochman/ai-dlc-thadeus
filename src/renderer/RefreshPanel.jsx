@@ -156,7 +156,8 @@ export default function RefreshPanel({ projectId, space, lastIntentChangeAt, ope
 
   return (
     <section className="refresh-panel" data-testid="refresh-panel">
-      <button className="cost-panel-toggle lcars-heading" onClick={toggle} aria-expanded={open} data-testid="refresh-panel-toggle">
+      {/* US-0050 item 5: the heading rises with the view's entrance; item 7: the body is the fold, and unfolds. */}
+      <button className="cost-panel-toggle lcars-heading lcars-e-rise" onClick={toggle} aria-expanded={open} data-testid="refresh-panel-toggle">
         <span className="section-title">{platform ? t('github.titleOn', { platform: platform.name }) : t('github.titleGit')}</span>
         <span className="lcars-heading-line" aria-hidden="true" />
         {badge && <span className="tag tag-active">{t('github.newCount', { n: changes.aidlcCommits })}</span>}
@@ -166,7 +167,7 @@ export default function RefreshPanel({ projectId, space, lastIntentChangeAt, ope
         </span>
       </button>
       {open && (
-        <div className="refresh-body">
+        <div className="refresh-body lcars-reveal">
           {error && (
             <p className="refresh-error" role="alert">
               {error}

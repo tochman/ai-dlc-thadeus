@@ -348,6 +348,7 @@ button.lcars-block:hover:not(:disabled), label.lcars-block:hover { filter: brigh
   line-height: 1.3;
   text-transform: uppercase;
   white-space: nowrap;
+  transition: filter 150ms ease-out, border-color 150ms ease-out, color 150ms ease-out; /* US-0050 item 9 */
 }
 .lcars-chip--active { border-color: var(--steel); color: var(--steel-text); }
 .lcars-chip--quiet { border-color: var(--slate-2); color: var(--muted); text-transform: none; }
@@ -431,6 +432,7 @@ button.lcars-chip:hover { border-color: var(--steel-text); color: var(--steel-li
   letter-spacing: 0.04em;
   text-transform: uppercase;
   white-space: nowrap;
+  transition: filter 150ms ease-out; /* US-0050 item 9 */
 }
 .lcars-pill:hover:not(:disabled) { filter: brightness(1.15); }
 .lcars-pill:disabled { background: var(--slate-0); color: var(--slate-4); }
@@ -513,6 +515,7 @@ button.lcars-chip:hover { border-color: var(--steel-text); color: var(--steel-li
   text-decoration: none;
   overflow-wrap: anywhere;
   hyphens: auto;
+  transition: filter 150ms ease-out; /* US-0050 item 9 */
 }
 .lcars-nb::before { content: ''; position: absolute; left: -11px; top: 0; bottom: 0; width: 5px; background: var(--strip, transparent); }
 button.lcars-nb:hover:not(:disabled), a.lcars-nb:hover { filter: brightness(1.15); }
@@ -1534,11 +1537,8 @@ a.md-link:hover { color: var(--steel-light); }
 .features-epic-intro .markdown hr { border: 0; border-top: 1px solid var(--slate-2); margin: 12px 0; }
 .features-epic-intro .markdown table { width: 100%; }
 .features-epic-intro .markdown ol, .features-epic-intro .markdown ul { padding-left: 22px; }
-/* A story opens under its own row (accordion); it grows in from zero height on mount. */
-.features-story-reveal { display: grid; grid-template-rows: 1fr; opacity: 1; margin-top: var(--gap); transition: grid-template-rows 220ms ease-out, opacity 220ms ease-out; }
-@starting-style { .features-story-reveal { grid-template-rows: 0fr; opacity: 0; } }
-.features-story-reveal > * { min-height: 0; overflow: hidden; }
-:root[data-motion='reduced'] .features-story-reveal { transition: none; }
+/* A story opens under its own row (accordion) with the shared fold, lcars-reveal (US-0050 item 7). */
+.features-story-reveal { margin-top: var(--gap); }
 .features-empty { display: flex; flex-direction: column; gap: 10px; align-items: flex-start; max-width: 680px; }
 .features-empty h2, .features-empty p { margin: 0; }
 
@@ -1651,6 +1651,11 @@ a.md-link:hover { color: var(--steel-light); }
   border-radius: 40px 0 0 40px;
 }
 .settings-dialog::backdrop { background: var(--backdrop); }
+/* US-0050 item 10: a raw dialog fades in on open, full motion only; closing stays instant (audit item 14). */
+:root[data-motion='full'] .settings-dialog:not(.agent-dialog) { transition: opacity 200ms ease-out; }
+@starting-style {
+  :root[data-motion='full'] .settings-dialog:not(.agent-dialog)[open] { opacity: 0; }
+}
 .settings-dialog h2 { margin: 0 0 14px; font-size: 28px; }
 /* US-0417: the one LCARS dialog frame (LcarsDialog.jsx) for About and Update: a native modal over the dimmed app, the
    round frame with the brand corner, the title on the 30 px bar and Close as its last pill. The padding sits on the
@@ -1732,6 +1737,7 @@ dialog.lcars-dlg::backdrop { background: var(--backdrop); }
   font: 600 16px/1.1 var(--font-head);
   letter-spacing: 0.03em;
   text-transform: uppercase;
+  transition: filter 150ms ease-out; /* US-0050 item 9 */
 }
 .lcars-tile::before { content: ''; position: absolute; left: 0; right: 0; top: 0; height: 4px; background: var(--slate-3); }
 .lcars-tile:hover:not(.is-sel) { filter: brightness(1.15); }
@@ -2054,12 +2060,29 @@ button.tool-row-path:hover { color: var(--steel-text); }
 :root[data-motion='full'] .is-entering .lcars-e-growx { transform-origin: 0 50%; animation: lcars-e-grow 420ms var(--e-ease) 300ms both; }
 :root[data-motion='full'] .is-entering .lcars-e-fade { animation: lcars-e-fade var(--e-dur) ease-out 420ms both; }
 
+/* US-0050 (motion audit): three more shared pieces, full motion only. lcars-tab-in is a switched tab's or section's
+   content (keyed by its tab, so it plays once per switch, items 2-4 and 6); lcars-reveal is a fold's content as it
+   opens (item 7; on a <details>, its content when [open] is set); lcars-changed is one steel glow on the element whose
+   value just changed (item 8, set by useChanged for 600 ms). Transform, opacity and box-shadow only; one flash. */
+@keyframes lcars-tab-in { from { opacity: 0; transform: translateX(12px); } to { opacity: 1; transform: none; } }
+@keyframes lcars-reveal { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: none; } }
+@keyframes lcars-changed {
+  0%, 100% { box-shadow: 0 0 0 0 var(--steel-a0); }
+  35% { box-shadow: 0 0 0 1px var(--steel-a60), 0 0 14px var(--steel-a25); }
+}
+:root[data-motion='full'] .lcars-tab-in { animation: lcars-tab-in 200ms var(--e-ease) both; }
+:root[data-motion='full'] .lcars-reveal:not(details),
+:root[data-motion='full'] details.lcars-reveal[open] > :not(summary),
+:root[data-motion='full'] .features-story-reveal { animation: lcars-reveal 220ms ease-out both; }
+:root[data-motion='full'] .lcars-changed { animation: lcars-changed 600ms ease-out; }
+
 /* Animationer: Dämpad = static glow, no loops, no sweep; Av = no animations or transitions. App.jsx sets
    data-motion from the saved choice, or Dämpad under prefers-reduced-motion (FR4.2). */
 :root[data-motion='reduced'] *, :root[data-motion='reduced'] *::before, :root[data-motion='reduced'] *::after { animation: none !important; }
 :root[data-motion='off'] *, :root[data-motion='off'] *::before, :root[data-motion='off'] *::after { animation: none !important; transition: none !important; }
 :root:is([data-motion='reduced'], [data-motion='off']) .is-breathing { box-shadow: inset 0 0 0 1px var(--steel-a55), 0 0 12px var(--steel-a25); }
 :root:is([data-motion='reduced'], [data-motion='off']) .is-attn { box-shadow: 0 0 0 2px var(--coral-a90); }
+:root:is([data-motion='reduced'], [data-motion='off']) .update-dialog-run { box-shadow: inset 0 0 0 1px var(--steel-a55), 0 0 12px var(--steel-a25); } /* US-0050 item 11 */
 :root:is([data-motion='reduced'], [data-motion='off']) .lcars-dot--current,
 :root:is([data-motion='reduced'], [data-motion='off']) .lcars-live-dot { box-shadow: 0 0 0 3px var(--steel-a25); }
 :root:is([data-motion='reduced'], [data-motion='off']) .splash-mark { filter: drop-shadow(0 0 12px var(--amber-a45)); }
