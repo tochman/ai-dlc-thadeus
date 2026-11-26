@@ -139,12 +139,14 @@ test("FR4, FR5.3: the agent tab's line fits, opens Settings on Tools, and Sign i
   const line = page.getByTestId('terminal-panel-signin');
   await expect(line).toContainText('Claude Code is not signed in.', SLOW);
   await fits(page.getByTestId('terminal-panel-foot'));
-  expect(
-    ran('claude')
+  // The tab's start checks its own tool, once; the health check at the app's start checks each tool once (US-0805), and
+  // two checks of one tool at the same time are one (US-0804 NFR3).
+  const checks = (name, args) =>
+    ran(name)
       .split('\n')
-      .filter((args) => args === 'auth status')
-  ).toHaveLength(1);
-  expect(ran('gh')).not.toContain('api user'); // a start checks its own tool only
+      .filter((line) => line === args).length;
+  expect([1, 2]).toContain(checks('claude', 'auth status'));
+  expect(checks('gh', 'api user --hostname github.com --jq .login')).toBeLessThanOrEqual(1);
   await page.screenshot({ path: 'tests/.tmp/e2e-results/signin-line.png' });
 
   await page.getByTestId('terminal-panel-signin-tools').click();

@@ -48,24 +48,24 @@ function useAnswers() {
 /**
  * US-0804 FR2: the sign-ins of Settings › Tools. `read(rows)` follows a scan: each found tool is checked, each alone, and
  * a missing one has no state (FR2.4). `rows` are the rows shown and `scanning` is true while they are read again. The
- * window's focus reads the sign-ins again while the tab shows (FR2.5).
+ * window's focus reads the sign-ins again while the tab shows (FR2.5), unless `onFocus` is false: the health check reads
+ * them only with its scan (US-0805 FR1.4), and `read` resolves when its checks have.
  */
-export function useSignIn(rows, scanning) {
+export function useSignIn(rows, scanning, { onFocus: readsOnFocus = true } = {}) {
   const { answers, checking, check, forget } = useAnswers();
   const read = useCallback(
-    (scanned) => {
-      for (const { id, found } of scanned) if (SIGN_IN_IDS.includes(id)) (found ? check : forget)(id, id);
-    },
+    (scanned) => Promise.all(scanned.filter(({ id }) => SIGN_IN_IDS.includes(id)).map(({ id, found }) => (found ? check : forget)(id, id))),
     [check, forget]
   );
   const onFocus = useEffectEvent(() => {
     if (!scanning) read(rows.filter((r) => r.found)); // a scan under way checks when it is done
   });
   useEffect(() => {
+    if (!readsOnFocus) return undefined;
     const listener = () => onFocus();
     window.addEventListener('focus', listener);
     return () => window.removeEventListener('focus', listener);
-  }, []);
+  }, [readsOnFocus]);
 
   /** What a row shows: {state, account, reason, again}, or null for none (FR2.1, FR2.3). */
   function of(row) {
@@ -97,8 +97,11 @@ export function SignInStatus({ rows, signIn }) {
   );
 }
 
-/** FR3.3: with no project open, the command with a copy button. */
-function CopyCommand({ id, command }) {
+/**
+ * FR3.3: with no project open, the command with a copy button. The health check shows its commands with it (US-0805
+ * FR4.1, FR4.5), with its own `label`, `copyLabel` (the button's name, as its list has several) and test id prefix.
+ */
+export function CopyCommand({ id, command, label, copyLabel, testId = 'settings-signin' }) {
   const { t } = useTranslation();
   const [copied, setCopied] = useState(false);
   const [error, setError] = useState(null);
@@ -117,10 +120,10 @@ function CopyCommand({ id, command }) {
     }
   }
   return (
-    <div className="tool-signin-command" data-testid={`settings-signin-command-${id}`}>
-      <span className="muted">{t('signIn.anyTerminal')}</span>
+    <div className="tool-signin-command" data-testid={`${testId}-command-${id}`}>
+      <span className="muted">{label ?? t('signIn.anyTerminal')}</span>
       <code>{command}</code>
-      <Pill tone="quiet" onClick={copy} data-testid={`settings-signin-copy-${id}`}>
+      <Pill tone="quiet" aria-label={copied ? undefined : copyLabel} onClick={copy} data-testid={`${testId}-copy-${id}`}>
         {copied ? t('signIn.copied') : t('signIn.copy')}
       </Pill>
       {error && (

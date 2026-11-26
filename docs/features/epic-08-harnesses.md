@@ -8,7 +8,7 @@
 
 **Stories:** US-0801, US-0802, US-0803, US-0804, US-0805, US-0806
 
-**Status (2026-11-25):** ✅ US-0801–US-0803 released (v0.2.1–v0.2.3). ✅ US-0804 done, for v0.3.1. 🚧 US-0805 in progress, for v0.3.1. 📋 US-0806 planned, for v0.3.2. Each story names its release.
+**Status (2026-11-26):** ✅ US-0801–US-0803 released (v0.2.1–v0.2.3). ✅ US-0804 done, for v0.3.1. ✅ US-0805 done, for v0.3.1. 📋 US-0806 planned, for v0.3.2. Each story names its release.
 
 ---
 
@@ -75,19 +75,19 @@
 
 ---
 
-**US-0805: A health check on the start screen, with install commands for what is missing** 🚧 In progress, for v0.3.1
+**US-0805: A health check on the start screen, with install commands for what is missing** ✅ Done, for v0.3.1 (intent `261125-health-check`)
 - As a **new user opening the app for the first time**, in order to **get from install to a working project without guessing**, I would like to **see on the start screen whether the tools the app needs are found and signed in, with a command to copy for each one that is missing**.
 - **Epic:** EPIC-08
 - **Priority:** Medium
 - **Complexity:** Medium
 - **Background:** Asked for 2026-11-15: "an interactive onboarding / health check screen: on the start screen, a quick environment diagnostic check (which aidlc, which claude, gh auth status) with actionable copy-paste install commands if a dependency is missing from the login shell PATH."
 - **Acceptance Criteria:**
-  - [ ] **Given** the start screen, **then** a health check lists the AI-DLC CLI, Claude Code, opencode and the GitHub CLI, each as found (with its version), not found, or not signed in, from the same check as Settings › Tools (US-0410) and, once built, the sign-in state (US-0804).
-  - [ ] **Given** a tool that is not found on the login shell's PATH, **then** its row shows the install command for this platform, with a Copy button, and says what the tool is needed for. A tool that is optional (opencode, `gh`) says so and never blocks the rest.
-  - [ ] **Given** the person installed a tool, **when** they choose Check again, **then** the list is checked once more without restarting the app.
-  - [ ] When everything needed is found, the check folds down to one line ("Everything is ready") and stays out of the way.
-  - [ ] The app only shows commands; it never runs an install itself.
-  - [ ] Every text goes through `t()` in Swedish and English.
+  - [x] **Given** the start screen, **then** a health check lists the AI-DLC CLI, Claude Code, opencode and the GitHub CLI, each as found (with its version), not found, or not signed in, from the same check as Settings › Tools (US-0410) and, once built, the sign-in state (US-0804).
+  - [x] **Given** a tool that is not found on the login shell's PATH, **then** its row shows the install command for this platform, with a Copy button, and says what the tool is needed for. A tool that is optional (opencode, `gh`) says so and never blocks the rest.
+  - [x] **Given** the person installed a tool, **when** they choose Check again, **then** the list is checked once more without restarting the app.
+  - [x] When everything needed is found, the check folds down to one line ("Everything is ready") and stays out of the way.
+  - [x] The app only shows commands; it never runs an install itself.
+  - [x] Every text goes through `t()` in Swedish and English.
 - **Notes:**
   - **Where.** The start screen (`docs/screenshots/splash.png`), `checkTools` and `TOOL_IDS` in `src/main/tools.js`. Install commands per platform are kept in one table, with a link to each tool's own install page.
   - Overlaps US-0804 (sign-in state): build the check once and show it in both places.

@@ -1,7 +1,7 @@
 // US-0048 L1-L6: the Spec Kit views show the right count and tags, and nothing is squeezed. Colours, gaps and line
 // breaks that jsdom cannot measure, so the built app is opened on a temp Spec Kit project (and, for the first-open
-// choice, one with both frameworks and no saved choice). Tool paths point nowhere, so no agent starts (as intentLayout
-// and planning do).
+// choice, one with both frameworks and no saved choice). The tools are stand-ins, so no real agent starts (as
+// intentLayout and planning do).
 /* global document, getComputedStyle -- in the functions that run in the page */
 import { _electron as electron, expect, test } from '@playwright/test';
 import { execFileSync } from 'node:child_process';
@@ -9,6 +9,7 @@ import { promises as fs } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import process from 'node:process';
+import { standInTools } from './standInTools.js';
 
 const LONG = 'specs/002-a-feature-with-a-rather-long-name-for-the-list';
 const HOOKS = [
@@ -56,13 +57,12 @@ async function open({ choice = false } = {}) {
   await write(project(), TREE);
   if (!choice) await write(project(), { '.thadeus/project.json': JSON.stringify({ version: 1, framework: 'speckit' }) });
   execFileSync('git', ['init', '-q'], { cwd: project() });
-  const nowhere = path.join(tmp, 'no-tool');
   const settings = {
     openProjects: [project()],
     activeProject: project(),
     language: 'en',
     updates: { lastCheckMs: Date.now() },
-    toolPaths: { aidlc: nowhere, claude: nowhere, opencode: nowhere, gh: nowhere, glab: nowhere }
+    toolPaths: standInTools(tmp) // found and signed in, so the health check's line (US-0805) is never in the layout
   };
   await write(tmp, { 'userData/settings.json': JSON.stringify(settings) });
   app = await electron.launch({ args: [path.resolve('out/main/index.js')], env: { ...process.env, THADEUS_E2E_USER_DATA: path.join(tmp, 'userData') } });

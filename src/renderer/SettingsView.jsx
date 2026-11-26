@@ -214,7 +214,7 @@ const TOOL_GROUPS = [
  * AI-DLC again; Rescan reads the tools again. Claude Code, opencode and GitHub also show whether they are signed in, with
  * a way to sign in (US-0804 FR2, FR3).
  */
-function Tools({ settings, onReload, motion, activeProjectId = null, terminal = null, lastIntentChangeAt = null, onCheckUpdates }) {
+function Tools({ settings, onReload, motion, activeProjectId = null, terminal = null, lastIntentChangeAt = null, onCheckUpdates, onToolsChanged }) {
   const { t } = useTranslation();
   const [rows, setRows] = useState(() => TOOL_IDS.map((id) => emptyRow(id, null)));
   const [error, setError] = useState(null);
@@ -262,11 +262,13 @@ function Tools({ settings, onReload, motion, activeProjectId = null, terminal = 
       const file = await window.bridge.pickTool(id);
       if (!file) return; // cancelled: nothing changes
       await window.bridge.saveTool(id, file); // main checks it first, so an invalid path is never stored (FR2.3)
+      onToolsChanged?.(); // the health check scans again (US-0805 FR1.4)
       await onReload();
     });
   const reset = (id) =>
     run(id, async () => {
       await window.bridge.resetTool(id);
+      onToolsChanged?.();
       await onReload();
     });
 
@@ -622,7 +624,8 @@ const PANELS = { tools: Tools, appearance: Appearance, notifications: Notificati
  *          onAlertSettings: (partial: {questionAlerts?: string, replyAlerts?: string, notificationSound?: boolean}) => Promise<unknown>,
  *          recentProjects?: string[], onRemoveRecent?: (dir: string) => Promise<unknown>,
  *          projects?: Array<{projectId: string, name: string}>, onProjectSettings?: (projectId: string) => void,
- *          activeProjectId?: string|null, terminal?: {type: Function, anyBusy: Function}|null, lastIntentChangeAt?: number|null}} props
+ *          activeProjectId?: string|null, terminal?: {type: Function, anyBusy: Function}|null, lastIntentChangeAt?: number|null,
+ *          onToolsChanged?: () => void}} props
  *   tab: the one panel shown (US-0410 FR1.2, default Tools); animations: the mode in effect, which also picks the
  *   panel's motion (FR3.2, FR3.3); fullscreen: the saved "Helskärm vid start" state; projects: the open tabs;
  *   terminal: the active project's shell for the AI-DLC update commands (US-0504 FR1.3, FR2.3)

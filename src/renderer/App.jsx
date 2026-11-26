@@ -8,6 +8,7 @@ import { withSlots } from './format.js';
 import DocsDialog from './DocsDialog.jsx';
 import AboutDialog from './AboutDialog.jsx';
 import AgentDialog from './AgentDialog.jsx';
+import { HealthLine, HealthPanel, HealthStatus, useHealth } from './HealthCheck.jsx'; // US-0805
 import UpdateNotice, { openUpdateDialog } from './UpdateNotice.jsx';
 import { Block, Frame, Pill, SegBar, useEntrance } from './Lcars.jsx';
 import Tooltip from './Tooltip.jsx';
@@ -417,6 +418,7 @@ export default function App() {
   const activeMeta = (active && meta[active.projectId]) || {};
   // US-1401 FR1.2: one value, the framework, and the shared views table decide the arm (AC1.1.5).
   const framework = active?.detection.framework ?? null;
+  const health = useHealth({ ready: restored, framework }); // US-0805: the one scan, after the tabs are restored
   const showFeatures = activeMeta.showFeatures === true;
   // One view at a time. Features needs the feature docs (US-0901 FR1.1); a view not offered falls back to the default (R-01).
   const views = shownViews(active?.detection.views, showFeatures);
@@ -749,6 +751,7 @@ export default function App() {
               <button className="btn btn-accent" onClick={openProject} data-testid="empty-state-open">
                 {t('app.openProject')}
               </button>
+              <HealthPanel health={health} />
             </Frame>
           </div>
         )}
@@ -775,6 +778,7 @@ export default function App() {
             activeProjectId={active?.projectId ?? null}
             terminal={active ? { type: (_tab, text) => typeInActiveShell(text), anyBusy: () => activeMeta.busy === true } : null}
             lastIntentChangeAt={activeMeta.lastIntentChangeAt ?? null}
+            onToolsChanged={health.refresh}
           />
         )}
         {/* Every tab stays mounted so its terminals and watchers survive tab switches (FR8.4). */}
@@ -796,6 +800,7 @@ export default function App() {
                 editRequest={editRequest}
                 onOpenReply={openReply}
                 onOpenTools={openToolSettings}
+                banner={tab.projectId === activeId ? <HealthLine health={health} /> : null}
                 askingIntents={questions.filter((q) => !q.early && q.projectId === tab.projectId).map((q) => q.intent)}
               />
             </div>
@@ -830,6 +835,7 @@ export default function App() {
         onClose={closePopup}
         onNotice={setNotice}
       />
+      <HealthStatus health={health} />
       {notice && (
         <p className="app-notice" role="status" data-testid="app-notice">
           {notice}

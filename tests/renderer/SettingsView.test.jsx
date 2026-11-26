@@ -196,6 +196,25 @@ describe('Inställningar as a view in the content frame (EPIC-04 US-0405)', () =
     await waitFor(() => expect(saved.resetTool).toHaveBeenCalledWith('claude'));
   });
 
+  it('reports a saved and a reset tool path, and neither a cancelled choice nor a refused one (US-0805 FR1.4)', async () => {
+    const onToolsChanged = vi.fn();
+    const { bridge } = stubBridge({ tools: TOOLS });
+    renderView({ onToolsChanged });
+    const pick = await screen.findByTestId('settings-tool-pick-claude');
+    bridge.pickTool.mockResolvedValueOnce(null);
+    fireEvent.click(pick);
+    await waitFor(() => expect(bridge.pickTool).toHaveBeenCalledTimes(1));
+    bridge.saveTool.mockRejectedValueOnce(new Error('nej'));
+    fireEvent.click(pick);
+    await screen.findByTestId('settings-tool-error-claude');
+    expect(onToolsChanged).not.toHaveBeenCalled();
+
+    fireEvent.click(pick);
+    await waitFor(() => expect(onToolsChanged).toHaveBeenCalledTimes(1));
+    fireEvent.click(await screen.findByTestId('settings-tool-reset-claude'));
+    await waitFor(() => expect(onToolsChanged).toHaveBeenCalledTimes(2));
+  });
+
   it('names every file button and field for screen readers (NFR1)', async () => {
     stubBridge({ tools: TOOLS });
     renderView();

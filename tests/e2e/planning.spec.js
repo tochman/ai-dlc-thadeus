@@ -1,13 +1,14 @@
 // US-0608 FR9.1, FR9.2: the built app plans releases against a real repository and its bare origin, all in a temp
 // folder: create a release, assign, move, remove, see the waiting list, Push now, find the commit on origin/main. On a
 // story branch the same run leaves the branch, its index and its tree as they were. The app gets a temp userData
-// (THADEUS_E2E_USER_DATA) whose settings open the temp project, and tool paths that point nowhere, so no agent starts.
+// (THADEUS_E2E_USER_DATA) whose settings open the temp project, and stand-in tools, so no real agent starts.
 import { _electron as electron, expect, test } from '@playwright/test';
 import { execFileSync } from 'node:child_process';
 import { promises as fs, readFileSync, writeFileSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import process from 'node:process';
+import { standInTools } from './standInTools.js';
 
 const env = { ...process.env, GIT_AUTHOR_NAME: 'T', GIT_AUTHOR_EMAIL: 't@example.com', GIT_COMMITTER_NAME: 'T', GIT_COMMITTER_EMAIL: 't@example.com' };
 const git = (cwd, ...args) => execFileSync('git', ['-c', 'init.defaultBranch=main', ...args], { cwd, env, encoding: 'utf8' }).trim();
@@ -58,13 +59,12 @@ async function setup() {
   git(clone, 'tag', 'v0.9.0'); // so the picker offers the next versions (v0.10.0 among them)
   git(clone, 'push', '-q', '-u', 'origin', 'main');
   await fs.mkdir(userData, { recursive: true });
-  const nowhere = path.join(tmp, 'no-tool');
   const settings = {
     openProjects: [clone],
     activeProject: clone,
     language: 'en',
     updates: { lastCheckMs: Date.now() },
-    toolPaths: { aidlc: nowhere, claude: nowhere, opencode: nowhere, gh: nowhere, glab: nowhere },
+    toolPaths: standInTools(tmp), // found and signed in, so the health check's line (US-0805) is never in the way
     projectSettings: { [clone]: { featureDocs: 'show', delivery: 'releases' } }
   };
   writeFileSync(path.join(userData, 'settings.json'), JSON.stringify(settings));

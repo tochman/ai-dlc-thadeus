@@ -99,6 +99,7 @@ import { AIDLC_DOCS_URL, applyMenu, parseMenuState, setMenuState } from './menu.
 import { currentLanguage, setLanguageFromSettings } from './i18n.js';
 import { t } from '../shared/i18n.js';
 import { APP_REPO_URL } from '../shared/appName.js';
+import { HEALTH_IDS, installFor } from '../shared/installCommands.js';
 
 // US-0213 FR1.1, US-0215 FR2.1: Claude Code transcripts are read only under this folder.
 const CLAUDE_PROJECTS = path.join(os.homedir(), '.claude', 'projects');
@@ -108,7 +109,8 @@ const REPO_URL = APP_REPO_URL; // US-0027
 const EXTERNAL_URLS = {
   repo: REPO_URL,
   features: `${REPO_URL}/tree/main/docs/features`,
-  docs: AIDLC_DOCS_URL
+  docs: AIDLC_DOCS_URL,
+  ...Object.fromEntries(HEALTH_IDS.map((id) => [`install-${id}`, installFor(id, process.platform).page])) // US-0805 FR4.1
 };
 // projectId -> { root, framework, space, watcher, setupWatcher, speckitWatcher, featuresWatcher, featuresKey, configWatcher, sender,
 //   models, setupInfo, harnesses, modelOptions, guardLock }

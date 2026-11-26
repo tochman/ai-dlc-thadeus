@@ -734,6 +734,33 @@
       "otherProvider": "Claude Code är inställt för en annan leverantör, vars inloggning inte kontrolleras."
     }
   },
+  "health": {
+    "title": "Verktygskontroll",
+    "checking": "Kontrollerar verktygen…",
+    "ready": "Allt är klart",
+    "notChecked": "Verktygen kunde inte kontrolleras.",
+    "missing": "Saknas: {tools}.",
+    "noAnswer": "Svarar inte: {tools}.",
+    "out": "Inte inloggad: {tools}.",
+    "either": "{a} eller {b}",
+    "need": {
+      "needed": "Krävs.",
+      "either": "Ett av AI-DLC och Spec Kit räcker.",
+      "optional": "Valfritt."
+    },
+    "chipNoAnswer": "Svarar inte",
+    "chipNotChecked": "Inte kontrollerad",
+    "install": "Installera med det här kommandot i valfri terminal:",
+    "installNeeds": "Installera med det här kommandot i valfri terminal ({needs} behövs först):",
+    "copyInstall": "Kopiera installationskommandot för {tool}",
+    "page": "Installationssida",
+    "pageFor": "Installationssida för {tool}",
+    "signIn": "Logga in med det här kommandot i valfri terminal:",
+    "copySignIn": "Kopiera inloggningskommandot för {tool}",
+    "checkAgain": "Kontrollera igen",
+    "show": "Visa",
+    "hide": "Dölj"
+  },
   "terminal": {
     "label": "Terminal",
     "agent": "Agent",

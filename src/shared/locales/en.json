@@ -734,6 +734,33 @@
       "otherProvider": "Claude Code is set up for another provider, whose sign-in is not checked."
     }
   },
+  "health": {
+    "title": "Tool check",
+    "checking": "Checking the tools…",
+    "ready": "Everything is ready",
+    "notChecked": "The tools could not be checked.",
+    "missing": "Missing: {tools}.",
+    "noAnswer": "Not answering: {tools}.",
+    "out": "Not signed in: {tools}.",
+    "either": "{a} or {b}",
+    "need": {
+      "needed": "Required.",
+      "either": "Either AI-DLC or Spec Kit is enough.",
+      "optional": "Optional."
+    },
+    "chipNoAnswer": "Not answering",
+    "chipNotChecked": "Not checked",
+    "install": "Install it with this command in any terminal:",
+    "installNeeds": "Install it with this command in any terminal ({needs} is needed first):",
+    "copyInstall": "Copy the install command for {tool}",
+    "page": "Install page",
+    "pageFor": "Install page for {tool}",
+    "signIn": "Sign in with this command in any terminal:",
+    "copySignIn": "Copy the sign-in command for {tool}",
+    "checkAgain": "Check again",
+    "show": "Show",
+    "hide": "Hide"
+  },
   "terminal": {
     "label": "Terminal",
     "agent": "Agent",
