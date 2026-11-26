@@ -8,13 +8,13 @@
 
 **Stories:** US-1301–US-1307
 
-**Status (2026-11-25):** 📋 US-1301–US-1305 planned, for v0.3.2. 📋 US-1306 and US-1307 planned, for v0.3.3.
+**Status (2026-11-26):** 🚧 US-1301 in progress, for v0.3.2. 📋 US-1302–US-1305 planned, for v0.3.2. 📋 US-1306 and US-1307 planned, for v0.3.3.
 
 ---
 
 ## User Stories
 
-**US-1301: Rework cost: what was spent on work that was thrown away** 📋 Planned, for v0.3.2
+**US-1301: Rework cost: what was spent on work that was thrown away** 🚧 In progress, for v0.3.2
 - As a **developer or team lead**, in order to **see where AI spend produced nothing and cut it**, I would like **every intent, stage and release to show its rework cost: the tokens and estimated cost of attempts that were redone or dropped**.
 - **Epic:** EPIC-13
 - **Priority:** High
@@ -23,7 +23,7 @@
 - **Acceptance Criteria:**
   - [ ] **Given** an intent whose audit has rejected gates, loop-backs, backward jumps or redone stages, **when** I open its cost view, **then** a "Rework" figure shows the tokens and estimated cost of each thrown-away attempt, with its reason (rejected, loop-back, redone, jumped back) and the stage it belongs to.
   - [ ] **Given** an archived intent that never finished, **then** its whole cost counts as rework, labelled "archived unfinished".
-  - [ ] The project overview shows rework as a share of total cost, per intent and per release, and over time.
+  - [ ] The project overview shows rework as a share of total cost, per intent and over time. Rework per release comes with US-1303's release roll-up (decided 2026-11-26 in requirements).
   - [ ] An attempt is placed in time by its audit rows, and its tokens come from the readings and the ledger in that window. When a window cannot be placed exactly, the figure is labelled as an estimate and says why.
   - [ ] Nothing is written in `aidlc/`. Every text goes through `t()` in Swedish and English, in the LCARS look.
 - **Notes:** Rework is not blame. A rejection the person asked for is the workflow working as intended. The view names the cause, not a person.
@@ -51,7 +51,7 @@
 - **Background:** Asked for 2026-11-18. Harness calls this "cost per work item", from issue trackers. Here the work items are the stories in `docs/FEATURES.md` and the epic files, and the releases are the `vX.Y.Z` tags.
 - **Acceptance Criteria:**
   - [ ] **Given** intents that name their stories (in their record, their branch `feat/<story>` or their pull request title), **then** each story shows its cost and tokens, summed over every intent and machine that worked on it (US-0209).
-  - [ ] An epic shows the sum of its stories, and a release shows the sum of the stories it includes, with the split by stage, agent and model.
+  - [ ] An epic shows the sum of its stories, and a release shows the sum of the stories it includes, with the split by stage, agent and model, and the rework in it (US-1301).
   - [ ] An intent that covers several stories splits its cost evenly between them, and the view says so.
   - [ ] An intent that names no story is listed as "not linked to a story", with a way to link it.
   - [ ] The epic and story views in the app (EPIC-06) show the cost next to the status. Every text goes through `t()` in Swedish and English, in the LCARS look.
