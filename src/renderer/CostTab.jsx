@@ -2,7 +2,7 @@
 // US-0211 FR3: each figure is the recorded one, with the current-price one beside it when a rate table was loaded.
 import { useTranslation } from 'react-i18next';
 import { compareModels } from '../main/parsers/ledger.js';
-import { formatCostPair, formatTokens, shortModel, tokenBreakdown } from './format.js';
+import { formatCostPair, formatTokens, formatUsd, shortModel, tokenBreakdown } from './format.js';
 import { Readout } from './Lcars.jsx';
 import Tooltip from './Tooltip.jsx';
 import i18n, { t as translate } from '../shared/i18n.js';
@@ -188,7 +188,72 @@ function inPipelineOrder(rows, pipeline) {
   return [...rows].sort((a, b) => pos(a) - pos(b));
 }
 
-export default function CostTab({ cost, intentCost, pipeline, models }) {
+/** US-1301 FR3: an estimate mark whose tooltip names why the figure is one. */
+function EstimateMark({ why, testId }) {
+  const { t } = useTranslation();
+  return (
+    <Tooltip text={why ? t(`cost.rework.why.${why.key}`, { date: why.date ?? '' }) : t('cost.rework.estimate')} focusable>
+      <span className="tag tag-warn" data-testid={testId}>
+        {t('cost.rework.estimate')}
+      </span>
+    </Tooltip>
+  );
+}
+
+/**
+ * US-1301 FR4, NFR2: the intent's rework: its total and share of the intent's cost, then one row per thrown-away attempt
+ * with stage, the cause (never a person), tokens, cost and the estimate mark. Nothing shows before main answers.
+ * @param {{rework: {total: {tokens: number, usd: number}, share: number, why: object|null, attempts: object[]}|null}} props
+ */
+export function ReworkSection({ rework }) {
+  const { t } = useTranslation();
+  if (!rework) return null;
+  const { total, attempts } = rework;
+  return (
+    <section className="cost-rework" data-testid="cost-rework">
+      <h3 className="section-title">{t('cost.rework.title')}</h3>
+      {attempts.length === 0 ? (
+        <p className="muted" data-testid="cost-rework-none">
+          {t('cost.rework.none')}
+        </p>
+      ) : (
+        <>
+          <p className="cost-rework-total">
+            <span data-testid="cost-rework-total">
+              {t('cost.rework.total', { usd: formatUsd(total.usd), tokens: formatTokens(total.tokens), share: Math.round(rework.share * 100) })}
+            </span>
+            {rework.why && <EstimateMark why={rework.why} testId="cost-rework-total-estimate" />}
+          </p>
+          <table className="cost-table cost-rework-rows" data-testid="cost-rework-rows">
+            <caption>{t('cost.rework.rowsCaption')}</caption>
+            <thead>
+              <tr>
+                <th scope="col">{t('cost.rework.stage')}</th>
+                <th scope="col">{t('cost.rework.reasonHeader')}</th>
+                <th scope="col">{t('cost.tokensHeader')}</th>
+                <th scope="col">{t('cost.usd')}</th>
+                <th scope="col">{t('cost.rework.estimate')}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {attempts.map((a, i) => (
+                <tr key={`${a.stage}:${a.unit}:${a.from ?? i}`}>
+                  <td>{a.stage ? `${a.stage}${a.unit ? ` (${a.unit})` : ''}` : t('cost.rework.wholeIntent')}</td>
+                  <td>{t(`cost.rework.reason.${a.reason}`)}</td>
+                  <td>{formatTokens(a.tokens)}</td>
+                  <td>{formatUsd(a.usd)}</td>
+                  <td>{a.estimate && <EstimateMark why={a.why} testId="cost-rework-estimate" />}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </>
+      )}
+    </section>
+  );
+}
+
+export default function CostTab({ cost, intentCost, pipeline, models, rework = null }) {
   const { t } = useTranslation();
   if (!cost) return <p className="muted">{t('cost.reading')}</p>;
   if (!cost.available)
@@ -223,6 +288,7 @@ export default function CostTab({ cost, intentCost, pipeline, models }) {
         rows={[...intentCost.byModel].sort((a, b) => b.usd - a.usd).map((r, i) => ({ ...r, label: shortModel(r.name), key: i === 0 ? 'steel' : 'light' }))}
         totalUsd={total.usd}
       />
+      <ReworkSection rework={rework} />
       <CostTable title={t('cost.perStage')} rows={inPipelineOrder(intentCost.byStage, pipeline)} totalUsd={total.usd} testId="cost-tab-stages" />
       <CostTable title={t('cost.perAgent')} rows={intentCost.byAgent} totalUsd={total.usd} testId="cost-tab-agents" />
       <CostTable title={t('cost.perModel')} rows={intentCost.byModel} totalUsd={total.usd} testId="cost-tab-models" />

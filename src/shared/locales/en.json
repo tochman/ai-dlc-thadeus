@@ -554,6 +554,33 @@
       "agent-files": "agent files",
       "none": "no source"
     },
+    "rework": {
+      "title": "Rework",
+      "total": "{usd} · {tokens} tokens · {share} % of the intent's cost",
+      "none": "No rework: no attempt was thrown away.",
+      "projectShare": "Rework: {usd} · {share} % of the project's cost",
+      "chartPart": "Rework: {usd}",
+      "rowsCaption": "Thrown-away attempts",
+      "stage": "Stage",
+      "reasonHeader": "Reason",
+      "estimate": "Estimate",
+      "wholeIntent": "The whole intent",
+      "reason": {
+        "rejected": "The gate was rejected; the revision took over",
+        "loopBack": "Build and Test looped back",
+        "jumpedBack": "A jump back in the workflow",
+        "redone": "The stage was redone",
+        "archived": "Archived unfinished"
+      },
+      "why": {
+        "noReadings": "No readings for the intent",
+        "noReadingsBefore": "No readings before {date}",
+        "rebuilt": "Rebuilt from the transcripts",
+        "parallel": "Shared evenly with attempts running at the same time",
+        "capped": "Capped at the intent's total cost",
+        "ledger": "The stage's ledger cost shared evenly over its attempts"
+      }
+    },
     "reprice": {
       "pair": "recorded {recorded} · at current prices {current}",
       "tip": "At current prices: {current}",

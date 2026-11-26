@@ -23,10 +23,19 @@ function CostChart({ timeline }) {
       <svg viewBox={`0 0 ${width} ${CHART_H}`} width="100%" height={CHART_H} preserveAspectRatio="none" role="img" aria-label={t('cost.chartLabel')}>
         {timeline.map((x, i) => {
           const h = Math.max(1, (x.usd / max) * (CHART_H - 2));
+          // US-1301 FR5: the intent's rework as its own part, at the foot of its bar.
+          const r = x.reworkUsd > 0 ? Math.min(h, (x.reworkUsd / max) * (CHART_H - 2)) : 0;
           return (
-            <rect key={x.dirName} x={i * (BAR_W + BAR_GAP)} y={CHART_H - h} width={BAR_W} height={h}>
-              <title>{[`${x.date ?? '–'} ${x.slug}: ${formatUsd(x.usd)}`, currentTip(x)].filter(Boolean).join('\n')}</title>
-            </rect>
+            <g key={x.dirName}>
+              <rect x={i * (BAR_W + BAR_GAP)} y={CHART_H - h} width={BAR_W} height={h}>
+                <title>{[`${x.date ?? '–'} ${x.slug}: ${formatUsd(x.usd)}`, currentTip(x)].filter(Boolean).join('\n')}</title>
+              </rect>
+              {r > 0 && (
+                <rect className="cost-chart-rework" x={i * (BAR_W + BAR_GAP)} y={CHART_H - r} width={BAR_W} height={r}>
+                  <title>{t('cost.rework.chartPart', { usd: formatUsd(x.reworkUsd) })}</title>
+                </rect>
+              )}
+            </g>
           );
         })}
       </svg>
@@ -180,6 +189,11 @@ export default function CostPanel({ cost, models, open: openProp, onToggle }) {
               <span className="cost-big-tokens">{t('cost.tokens', { amount: formatTokens(project.total.totalTokens) })}</span>
             </p>
             <MachinesLine machines={project.machines} partial={project.partial} />
+            {project.rework && (
+              <p className="cost-rework-share" data-testid="cost-rework-share">
+                {t('cost.rework.projectShare', { usd: formatUsd(project.rework.usd), share: Math.round(project.rework.share * 100) })}
+              </p>
+            )}
             <Readout rows={readoutRows(project)} totalUsd={project.total.usd} />
             <Mix total={project.total} scopes={scopes} totalUsd={project.total.usd} />
           </>

@@ -8,24 +8,24 @@
 
 **Stories:** US-1301–US-1307
 
-**Status (2026-11-26):** 🚧 US-1301 in progress, for v0.3.2. 📋 US-1302–US-1305 planned, for v0.3.2. 📋 US-1306 and US-1307 planned, for v0.3.3.
+**Status (2026-11-26):** ✅ US-1301 done, for v0.3.2. 📋 US-1302–US-1305 planned, for v0.3.2. 📋 US-1306 and US-1307 planned, for v0.3.3.
 
 ---
 
 ## User Stories
 
-**US-1301: Rework cost: what was spent on work that was thrown away** 🚧 In progress, for v0.3.2
+**US-1301: Rework cost: what was spent on work that was thrown away** ✅ Done, for v0.3.2
 - As a **developer or team lead**, in order to **see where AI spend produced nothing and cut it**, I would like **every intent, stage and release to show its rework cost: the tokens and estimated cost of attempts that were redone or dropped**.
 - **Epic:** EPIC-13
 - **Priority:** High
 - **Complexity:** Medium
 - **Background:** Asked for 2026-11-18. Harness calls this "wasted spend" (sessions with no committed code). The AI-DLC record says more precisely what was thrown away: a stage attempt that was rejected at its gate, a Build and Test run that ended in a loop-back, a stage that was redone or jumped back over, and an intent that was archived unfinished. The US-0214 intent is an example: its first Build and Test run failed and was repeated after a loop-back.
 - **Acceptance Criteria:**
-  - [ ] **Given** an intent whose audit has rejected gates, loop-backs, backward jumps or redone stages, **when** I open its cost view, **then** a "Rework" figure shows the tokens and estimated cost of each thrown-away attempt, with its reason (rejected, loop-back, redone, jumped back) and the stage it belongs to.
-  - [ ] **Given** an archived intent that never finished, **then** its whole cost counts as rework, labelled "archived unfinished".
-  - [ ] The project overview shows rework as a share of total cost, per intent and over time. Rework per release comes with US-1303's release roll-up (decided 2026-11-26 in requirements).
-  - [ ] An attempt is placed in time by its audit rows, and its tokens come from the readings and the ledger in that window. When a window cannot be placed exactly, the figure is labelled as an estimate and says why.
-  - [ ] Nothing is written in `aidlc/`. Every text goes through `t()` in Swedish and English, in the LCARS look.
+  - [x] **Given** an intent whose audit has rejected gates, loop-backs, backward jumps or redone stages, **when** I open its cost view, **then** a "Rework" figure shows the tokens and estimated cost of each thrown-away attempt, with its reason (rejected, loop-back, redone, jumped back) and the stage it belongs to.
+  - [x] **Given** an archived intent that never finished, **then** its whole cost counts as rework, labelled "archived unfinished".
+  - [x] The project overview shows rework as a share of total cost, per intent and over time. Rework per release comes with US-1303's release roll-up (decided 2026-11-26 in requirements).
+  - [x] An attempt is placed in time by its audit rows, and its tokens come from the readings and the ledger in that window. When a window cannot be placed exactly, the figure is labelled as an estimate and says why.
+  - [x] Nothing is written in `aidlc/`. Every text goes through `t()` in Swedish and English, in the LCARS look.
 - **Notes:** Rework is not blame. A rejection the person asked for is the workflow working as intended. The view names the cause, not a person.
 - **Dependencies:** US-0201, US-0202, US-0209
 

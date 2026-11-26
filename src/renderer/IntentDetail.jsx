@@ -245,6 +245,20 @@ export default function IntentDetail({
   // The token detail replaces the main panel; closing it gives focus back to the small view (US-0208 FR1).
   // US-0022: the header has its own Tokens button for windows where the readout column is hidden; focus goes back to
   // whichever button opened the view.
+  // US-1301 FR4: the intent's rework, asked for while the cost tab shows; kept with its folder so another intent's never shows.
+  const [rework, setRework] = useState({ dirName: null, value: null });
+  useEffect(() => {
+    if (tab !== 'cost' || !window.bridge?.getRework) return undefined;
+    let current = true;
+    const dirName = detail.dirName;
+    window.bridge.getRework(projectId, dirName, space).then(
+      (value) => current && setRework({ dirName, value: value ?? null }),
+      (err) => console.error('intent:rework', err?.message ?? err) // the tab keeps its other figures
+    );
+    return () => {
+      current = false;
+    };
+  }, [tab, projectId, space, detail.dirName, cost]);
   const [showTokens, setShowTokens] = useState(false);
   const tokensRef = useRef(null);
   const headTokensRef = useRef(null);
@@ -417,7 +431,9 @@ export default function IntentDetail({
           {tab === 'pipeline' && (
             <Pipeline key={detail.dirName} pipeline={pipeline} files={detail.files} hasGraph={!!detail.graph} onOpenFile={showFile} cost={intentCost} />
           )}
-          {tab === 'cost' && <CostTab cost={cost} intentCost={intentCost} pipeline={pipeline} models={models} />}
+          {tab === 'cost' && (
+            <CostTab cost={cost} intentCost={intentCost} pipeline={pipeline} models={models} rework={rework.dirName === detail.dirName ? rework.value : null} />
+          )}
           {tab === 'velocity' && (
             <IntentVelocity
               events={detail.events}

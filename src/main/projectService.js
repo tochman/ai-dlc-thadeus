@@ -18,6 +18,8 @@ import { t } from '../shared/i18n.js';
 import { isArchived, isFinished } from '../shared/intentArchive.js';
 import { viewFields } from '../shared/frameworkViews.js';
 import { PROJECT_FILE, readProjectFile } from './projectFile.js';
+import { readReadings } from './tokenReadings.js';
+import { overviewRework } from './rework.js'; // US-1301
 
 const PHASE_DIRS = ['initialization', 'ideation', 'inception', 'construction', 'operation', 'verification'];
 // ponytail: unbounded per-process cache keyed by root/space/intent; fine for a handful of projects.
@@ -377,7 +379,8 @@ function projectMachines(parts, hasLedger, local) {
  */
 export async function loadCrossMachineCost(root, space, intents, ledger, rates = null) {
   assertName(space, 'space');
-  const shards = await Promise.all(intents.map(async (i) => shardCosts(await auditEventsOrEmpty(root, `${intentsDir(space)}/${i.dirName}`))));
+  const events = await Promise.all(intents.map((i) => auditEventsOrEmpty(root, `${intentsDir(space)}/${i.dirName}`)));
+  const shards = events.map(shardCosts);
   const local = await localClone(
     root,
     shards.flat().map((s) => s.source)
@@ -411,7 +414,30 @@ export async function loadCrossMachineCost(root, space, intents, ledger, rates =
   summary.project.partial = parts.some((m) => m.partial);
   // US-0211 FR2.2, AC1.2.3: audit rows have no 5m/1h split, so their cache writes are priced as 5m; the view says so.
   summary.project.auditFiveMinute = parts.some((m) => m.machines.some((x) => x.source === 'audit'));
+  const readings = await Promise.all(intents.map((i) => readReadings(root, i.dirName).catch(() => [])));
+  addRework(summary, intents, events, readings);
   return { summary, local };
+}
+
+/**
+ * US-1301 FR5, NFR4: each intent's rework from its stored readings only (the ledger split when it has none), the
+ * project's rework and its share of the total, and each timeline bar's rework part (`reworkUsd`).
+ */
+function addRework(summary, intents, events, readings) {
+  const project = { usd: 0, tokens: 0, share: 0, estimate: false };
+  intents.forEach((i, n) => {
+    const cost = summary.perIntent[i.dirName];
+    const r = overviewRework({ events: events[n], readings: readings[n], archived: isArchived(i), finished: isFinished(i), cost });
+    if (!r) return;
+    cost.rework = { total: r.total, share: r.share, estimate: r.estimate };
+    project.usd += r.total.usd;
+    project.tokens += r.total.tokens;
+    project.estimate ||= r.estimate;
+  });
+  const all = summary.project.total.usd;
+  project.share = all > 0 ? Math.min(1, project.usd / all) : 0;
+  summary.project.rework = project;
+  for (const x of summary.timeline) x.reworkUsd = summary.perIntent[x.dirName]?.rework?.total.usd ?? 0;
 }
 
 /**

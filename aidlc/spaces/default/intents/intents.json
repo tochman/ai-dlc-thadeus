@@ -574,5 +574,13 @@
     "scope": "quick-fix",
     "status": "complete",
     "request": "131d9d48"
+  },
+  {
+    "uuid": "01a2187a-f96b-73f1-a806-e8d69cea7e82",
+    "slug": "rework-cost",
+    "dirName": "261126-rework-cost",
+    "scope": "ultra-express",
+    "status": "complete",
+    "request": "3b3c00cf"
   }
 ]

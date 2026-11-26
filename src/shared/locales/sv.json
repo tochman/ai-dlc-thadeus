@@ -554,6 +554,33 @@
       "agent-files": "agentfiler",
       "none": "ingen källa"
     },
+    "rework": {
+      "title": "Omarbete",
+      "total": "{usd} · {tokens} tokens · {share} % av intentens kostnad",
+      "none": "Inget omarbete: inget försök kastades.",
+      "projectShare": "Omarbete: {usd} · {share} % av projektets kostnad",
+      "chartPart": "Omarbete: {usd}",
+      "rowsCaption": "Kastade försök",
+      "stage": "Steg",
+      "reasonHeader": "Orsak",
+      "estimate": "Uppskattning",
+      "wholeIntent": "Hela intenten",
+      "reason": {
+        "rejected": "Grinden avvisades; revideringen tog vid",
+        "loopBack": "Build and Test loopade tillbaka",
+        "jumpedBack": "Hopp bakåt i arbetsflödet",
+        "redone": "Steget gjordes om",
+        "archived": "Arkiverad innan den blev klar"
+      },
+      "why": {
+        "noReadings": "Inga avläsningar för intenten",
+        "noReadingsBefore": "Inga avläsningar före {date}",
+        "rebuilt": "Återskapad från transkripten",
+        "parallel": "Delad lika med försök som pågick samtidigt",
+        "capped": "Begränsad till intentens totala kostnad",
+        "ledger": "Stegets kostnad i ledgern delad lika på dess försök"
+      }
+    },
     "reprice": {
       "pair": "registrerat {recorded} · till dagens priser {current}",
       "tip": "Till dagens priser: {current}",
