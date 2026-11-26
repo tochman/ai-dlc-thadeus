@@ -219,7 +219,8 @@ describe('writeAtomic (US-0506 u4 RD33)', () => {
   // US-0508 FR1.1 adds intentNames.js: one fixed file, .thadeus/intent-names.json, its folder resolved in the root.
   // US-1409 NFR3.5 adds speckitTokens.js: its cursor file in the app's userData only; buckets go through tokenReadings.js.
   // US-1411 NFR1 adds speckitArchive.js: only .thadeus/archived/<folder>.json, for a folder main finds listed, its own folders plain.
-  it('is imported only by fileWrite.js, agentHooks.js, tokenReadings.js, usageSnapshot.js, credentials.js, costRules.js, planningRecord.js, planningSync.js, projectFile.js, thadeusSync.js, intentNames.js, speckitTokens.js and speckitArchive.js (SD36)', () => {
+  // US-1302 NFR1 adds savings.js: one fixed file, .thadeus/savings-dismissed.json, its folder resolved in the root.
+  it('is imported only by fileWrite.js, agentHooks.js, tokenReadings.js, usageSnapshot.js, credentials.js, costRules.js, planningRecord.js, planningSync.js, projectFile.js, thadeusSync.js, intentNames.js, speckitTokens.js, speckitArchive.js and savings.js (SD36)', () => {
     const src = path.resolve(__dirname, '../../src');
     const users = readdirSync(src, { recursive: true })
       .filter((f) => /\.jsx?$/.test(f))
@@ -235,6 +236,7 @@ describe('writeAtomic (US-0506 u4 RD33)', () => {
       'main/planningRecord.js',
       'main/planningSync.js',
       'main/projectFile.js',
+      'main/savings.js',
       'main/speckitArchive.js',
       'main/speckitTokens.js',
       'main/thadeusSync.js',
