@@ -16,6 +16,12 @@
 export const IDLE_MS = 30000;
 /** US-0030 FR5.1: a row with no new event for this long says when it was last seen. */
 export const STALE_MS = 30000;
+// US-0054 AC1: an agent row with no event this long is gone (its end event never came); a waiting one stays.
+// ponytail: an agent silent for 10 min (one long command) loses its row until its next event, without its task.
+export const GONE_MS = 600000;
+// US-0054 AC2: an agent starts seconds after its Agent call; a task no agent took within this was a refused launch.
+// ponytail: an agent that takes over a minute to start shows no task.
+const TASK_MS = 60000;
 const QUESTION_TOOL = 'AskUserQuestion';
 const DEFAULT_AGENT_TYPE = 'general-purpose'; // what Claude Code starts for an Agent call with no subagent_type
 const text = (v) => (typeof v === 'string' && v ? v : null);
@@ -76,7 +82,9 @@ function apply(row, ev) {
  */
 function trackTasks(session, ev) {
   session.tasks ??= [];
-  if (ev.name === 'toolStart' && text(ev.task)) session.tasks.push({ toolId: ev.toolId ?? null, task: ev.task, type: ev.taskType ?? DEFAULT_AGENT_TYPE });
+  session.tasks = session.tasks.filter((t) => !(ev.atMs - t.atMs >= TASK_MS)); // US-0054 AC2: a refused launch's task; old records have no atMs
+  if (ev.name === 'toolStart' && text(ev.task))
+    session.tasks.push({ toolId: ev.toolId ?? null, task: ev.task, type: ev.taskType ?? DEFAULT_AGENT_TYPE, atMs: ev.atMs });
   else if (ev.name === 'toolEnd' && ev.toolId) session.tasks = session.tasks.filter((t) => t.toolId !== ev.toolId);
 }
 function takeTask(session, agentType) {
@@ -173,7 +181,9 @@ export function activityRows(state, nowMs = Date.now()) {
     const base = { sessionId, tabId: s.tabId, harness: s.harness };
     const key = `main:${sessionId}`;
     const sorted = Object.values(s.agents).sort((a, b) => a.startedMs - b.startedMs);
-    const agents = sorted.map((a) => view(a, { ...base, key: `agent:${sessionId}:${a.agentId}`, kind: 'agent', parent: key }, nowMs));
+    const agents = sorted
+      .map((a) => view(a, { ...base, key: `agent:${sessionId}:${a.agentId}`, kind: 'agent', parent: key }, nowMs))
+      .filter((a) => a.state === 'waiting' || nowMs - a.lastMs < GONE_MS); // US-0054 AC1
     const waitsOn = agents.find((a) => a.state === 'waiting') ?? null;
     return [view(s.main, { ...base, key, kind: 'main', parent: null }, nowMs, waitsOn), ...agents];
   });

@@ -197,3 +197,37 @@ describe('honest agent progress (US-0030)', () => {
     expect(agent(reduceActivity(st, claude(40, 'answered', { agentId: 'ag1' })), 40).stale).toBe(false);
   });
 });
+
+// US-0054: an agent whose end event never came drops off, and a refused launch never lends its task to a later agent.
+describe('only agents that are there, each with its own task (US-0054)', () => {
+  const dev = 'aidlc-developer-agent';
+  const dispatch = (s, toolId, task) => claude(s, 'toolStart', { tool: 'Agent', toolId, task, taskType: dev });
+  const agent = (state, s, id) => rowsAt(state, s).find((r) => r.agentId === id);
+
+  it('AC1: drops an agent row with no event for 10 minutes; one heard from since stays', () => {
+    const st = run([claude(0, 'agentStart', { agentId: 'web', agentType: 'web-fetch' }), claude(1, 'agentStart', { agentId: 'dev', agentType: dev })]);
+    expect(agent(st, 599, 'web')).toBeDefined();
+    expect(agent(st, 600, 'web')).toBeUndefined();
+    const heard = reduceActivity(st, claude(590, 'toolStart', { tool: 'Bash', toolId: 'b', agentId: 'dev' }));
+    expect(agent(heard, 900, 'dev')).toBeDefined();
+  });
+
+  it('AC1: keeps an agent that waits for permission, however long', () => {
+    const st = run([claude(0, 'agentStart', { agentId: 'dev', agentType: dev }), claude(1, 'waiting', { reason: 'permission', agentId: 'dev' })]);
+    expect(agent(st, 3600, 'dev')).toMatchObject({ state: 'waiting' });
+  });
+
+  it('AC2: a refused launch (no tool end) does not lend its task to the next agent of its type', () => {
+    const st = run([
+      dispatch(0, 'old', 'Build the LCARS pipeline cards'), // refused: no toolEnd, no agent
+      dispatch(3600, 'new', 'Build US-0051 and US-0053 fixes'),
+      claude(3602, 'agentStart', { agentId: 'dev', agentType: dev })
+    ]);
+    expect(agent(st, 3602, 'dev').task).toBe('Build US-0051 and US-0053 fixes');
+  });
+
+  it('AC2: a task taken within the minute still goes to its agent', () => {
+    const st = run([dispatch(0, 'm1', 'Write the code'), claude(59, 'agentStart', { agentId: 'dev', agentType: dev })]);
+    expect(agent(st, 59, 'dev').task).toBe('Write the code');
+  });
+});
