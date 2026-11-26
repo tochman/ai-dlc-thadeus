@@ -25,6 +25,7 @@ import {
 import os from 'node:os';
 import { readTranscriptContext } from './contextSize.js';
 import { loadTokenHistory } from './tokenHistory.js';
+import { loadRework } from './rework.js'; // US-1301
 import { HANDOFF_DEFAULTS, createHandoffController } from './sessionHandoff.js';
 import { loadAgentProgress, loadSpeckitProgress } from './agentProgress.js';
 import { notifyEvent, notifyQuestions } from './notify.js';
@@ -1133,6 +1134,22 @@ const handlers = {
       console.error(`Kunde inte bygga tokenhistorik för ${dirName}:`, err.message); // NFR1: the view keeps the ledger figures
       return { source: 'none', readings: [], wallMs: null, gap: null };
     }
+  },
+  // US-1301 FR4: an intent's rework, priced from its readings (a finished intent without stored readings is rebuilt from
+  // its transcripts, as tokens:readings does [Q4]) against its cross-machine total. Read only (NFR1); null for no intent.
+  // ponytail: the intent's audit is read twice (events and the cross-machine total); one read if it ever shows.
+  'intent:rework': async (_event, projectId, dirName, space) => {
+    const p = project(projectId);
+    const intent = (await loadIntentList(p.root, space, [])).intents.find((i) => i.dirName === dirName); // a real intent folder, never a typed path
+    if (!intent) return null;
+    const [cost, events] = await Promise.all([loadCost(p.root), loadAuditEvents(p.root, `${intentsDir(space)}/${dirName}`)]);
+    const ledger = cost.ledger ?? null;
+    const total = (await loadCrossMachineCost(p.root, space, [intent], ledger, null)).summary?.perIntent?.[dirName]?.total;
+    const live = intent.status === 'in-flight' || (isArchived(intent) && !isFinished(intent));
+    const loadHistory = live
+      ? async () => ({ source: 'recorded', readings: await readReadings(p.root, dirName) })
+      : () => loadTokenHistory({ root: p.root, dirName, uuid: intent.uuid, ledger, events, projectsDir: CLAUDE_PROJECTS });
+    return loadRework({ intent, events, total: total && { usd: total.usd, tokens: total.totalTokens }, loadHistory });
   },
   // Cached per opened project (a reopen gets a new projectId); getConfiguredModels never rejects.
   'project:models': async (_event, projectId) => {

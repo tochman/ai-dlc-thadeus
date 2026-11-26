@@ -35,6 +35,8 @@ contextBridge.exposeInMainWorld('bridge', {
   // An intent's token readings by dir name (EPIC-02 US-0208); with a space, `{source, readings, wallMs, gap}`, rebuilt
   // from the transcripts for a finished intent without stored readings (US-0215 FR6).
   getTokenReadings: call('tokens:readings'),
+  getRework: call('intent:rework'), // US-1301 FR4: a project id, an intent folder name and a space
+
   getModels: call('project:models'),
   detectHarnesses: call('harness:detect'), // installed harnesses and CLI versions (EPIC-08 US-0801)
   readFile: call('project:file'),

@@ -114,3 +114,30 @@ describe('CostPanel current prices (US-0211)', () => {
     expect(screen.queryByTestId('cost-notes')).toBeNull();
   });
 });
+
+// US-1301 FR5: rework as a share of the project's cost, and each intent's rework as its own part of the bar.
+describe('CostPanel rework (US-1301)', () => {
+  const withRework = {
+    ...cost,
+    project: { ...cost.project, rework: { usd: 0.3, tokens: 500, share: 0.12, estimate: false } },
+    timeline: cost.timeline.map((x, i) => ({ ...x, reworkUsd: i === 0 ? x.usd / 2 : 0 }))
+  };
+
+  it('shows rework as a share of the project’s total, and nothing without a figure', () => {
+    const { rerender } = render(<CostPanel cost={withRework} models={models} />);
+    expect(screen.getByTestId('cost-rework-share').textContent).toBe('Omarbete: $0.30 · 12 % av projektets kostnad');
+    rerender(<CostPanel cost={cost} models={models} />);
+    expect(screen.queryByTestId('cost-rework-share')).toBeNull();
+  });
+
+  it('draws each intent’s rework as its own part of its bar, in date order', () => {
+    const { container } = render(<CostPanel cost={withRework} models={models} />);
+    fireEvent.click(screen.getByTestId('cost-panel-toggle'));
+    const parts = container.querySelectorAll('.cost-chart rect.cost-chart-rework');
+    expect(parts.length).toBe(1);
+    const bar = container.querySelector('.cost-chart rect:not(.cost-chart-rework)');
+    expect(parts[0].getAttribute('x')).toBe(bar.getAttribute('x')); // the first bar, the earliest intent
+    expect(Number(parts[0].getAttribute('height'))).toBeCloseTo(Number(bar.getAttribute('height')) / 2);
+    expect(parts[0].querySelector('title').textContent).toMatch(/^Omarbete: \$\d+\.\d\d$/);
+  });
+});

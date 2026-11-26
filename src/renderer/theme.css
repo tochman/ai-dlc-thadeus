@@ -887,8 +887,14 @@ button.lcars-nb:hover:not(:disabled), a.lcars-nb:hover { filter: brightness(1.15
 .cost-legacy { margin: 0; font-size: 14px; color: var(--text-2); }
 .cost-chart { margin: 0; }
 .cost-chart rect { fill: var(--steel-mid); }
-.cost-chart rect:last-child { fill: var(--steel-light); } /* US-0417: the newest intent, lit */
+.cost-chart g:last-of-type rect:first-child { fill: var(--steel-light); } /* US-0417: the newest intent, lit */
 .cost-chart rect:hover { fill: var(--steel); }
+/* US-1301 FR5: rework, the spend that produced nothing, as the coral foot of each bar. */
+.cost-chart rect.cost-chart-rework { fill: var(--coral); }
+.cost-chart rect.cost-chart-rework:hover { fill: var(--coral-soft); }
+.cost-rework { display: flex; flex-direction: column; gap: 6px; }
+.cost-rework-total { display: flex; align-items: baseline; gap: 8px; margin: 0; font-variant-numeric: tabular-nums; }
+.cost-rework-share { margin: 4px 0 0; color: var(--coral-soft); font-family: var(--font-head); letter-spacing: 0.04em; text-transform: uppercase; font-size: 13px; }
 .cost-chart figcaption { font-size: 12px; }
 .cost-tab { display: flex; flex-direction: column; gap: 14px; }
 .cost-tab .lcars-readout { max-width: 420px; }

@@ -5,6 +5,7 @@ import { cleanup, fireEvent, render, screen, within } from '@testing-library/rea
 import CostTab, { CostLabel, CostTable } from '../../src/renderer/CostTab.jsx';
 import { summarizeLedger } from '../../src/main/parsers/ledger.js';
 import i18n from '../../src/shared/i18n.js';
+import { formatTokens } from '../../src/renderer/format.js';
 import ledger from '../fixtures/ledger/usage-ledger.json';
 
 afterEach(cleanup);
@@ -99,5 +100,75 @@ describe('CostTab current prices (US-0211)', () => {
     } finally {
       await i18n.changeLanguage('sv');
     }
+  });
+});
+
+// US-1301 FR4, NFR2, NFR3: the Rework section of the intent's cost tab.
+describe('CostTab rework (US-1301)', () => {
+  const intent = { dirName: '261112-b', uuid: '01a1d000-0000-7000-8000-000000000003', slug: 'b', scope: 'express', date: '2026-11-12' };
+  const intentCost = summarizeLedger(ledger, [intent]).perIntent[intent.dirName];
+  const rework = {
+    total: { tokens: 1200, usd: 0.5 },
+    share: 0.25,
+    estimate: true,
+    why: null,
+    attempts: [
+      { stage: 'code-generation', unit: null, reason: 'rejected', tokens: 1000, usd: 0.4, estimate: false, why: null },
+      {
+        stage: 'build-and-test',
+        unit: 'u1-api',
+        reason: 'loopBack',
+        tokens: 200,
+        usd: 0.1,
+        estimate: true,
+        why: { key: 'noReadingsBefore', date: '2026-11-15' }
+      }
+    ]
+  };
+  const renderTab = (r) => render(<CostTab cost={{ available: true }} intentCost={intentCost} pipeline={{ phases: [] }} models={null} rework={r} />);
+
+  it('shows the total, its share of the intent’s cost and one row per thrown-away attempt (FR4)', () => {
+    renderTab(rework);
+    expect(screen.getByTestId('cost-rework-total').textContent).toBe(`$0.50 · ${formatTokens(1200)} tokens · 25 % av intentens kostnad`);
+    const rows = within(screen.getByTestId('cost-rework-rows')).getAllByRole('row').slice(1);
+    expect(rows.map((r) => [...r.querySelectorAll('td')].map((c) => c.textContent))).toEqual([
+      ['code-generation', 'Grinden avvisades; revideringen tog vid', formatTokens(1000), '$0.40', ''],
+      ['build-and-test (u1-api)', 'Build and Test loopade tillbaka', '200', '$0.10', 'Uppskattning']
+    ]);
+  });
+
+  it('marks an estimate with its reason on focus', () => {
+    renderTab(rework);
+    const mark = screen.getByTestId('cost-rework-estimate');
+    expect(mark.tabIndex).toBe(0);
+    fireEvent.focus(mark);
+    expect(screen.getByRole('tooltip').textContent).toBe('Inga avläsningar före 2026-11-15');
+  });
+
+  it('says there is no rework in one line, and shows nothing before it is read', () => {
+    const { rerender } = renderTab({ total: { tokens: 0, usd: 0 }, share: 0, estimate: false, why: null, attempts: [] });
+    expect(screen.getByTestId('cost-rework-none').textContent).toBe('Inget omarbete: inget försök kastades.');
+    expect(screen.queryByTestId('cost-rework-rows')).toBeNull();
+    rerender(<CostTab cost={{ available: true }} intentCost={intentCost} pipeline={{ phases: [] }} models={null} rework={null} />);
+    expect(screen.queryByTestId('cost-rework')).toBeNull();
+  });
+
+  it('every reason names its cause, never a person (NFR2)', () => {
+    const reasons = ['rejected', 'loopBack', 'jumpedBack', 'redone', 'archived'];
+    renderTab({
+      ...rework,
+      attempts: reasons.map((reason) => ({ stage: reason === 'archived' ? null : 's', unit: null, reason, tokens: 1, usd: 0, estimate: false, why: null }))
+    });
+    const texts = within(screen.getByTestId('cost-rework-rows'))
+      .getAllByRole('row')
+      .slice(1)
+      .map((r) => r.querySelectorAll('td')[1].textContent);
+    expect(texts).toEqual([
+      'Grinden avvisades; revideringen tog vid',
+      'Build and Test loopade tillbaka',
+      'Hopp bakåt i arbetsflödet',
+      'Steget gjordes om',
+      'Arkiverad innan den blev klar'
+    ]);
   });
 });
