@@ -558,5 +558,13 @@
     "scope": "visual-express",
     "status": "complete",
     "request": "92405762"
+  },
+  {
+    "uuid": "01a216fc-4007-7443-a490-afa5dd692d87",
+    "slug": "edit-gap-planning-sync",
+    "dirName": "261126-edit-gap-planning-sync",
+    "scope": "quick-fix",
+    "status": "in-flight",
+    "request": "e3dead5d"
   }
 ]
