@@ -1,8 +1,9 @@
 // US-0411: pipeline stages as LCARS cards with a unit level bar (FR1–FR3, FR5).
 // US-0028: the runtime-graph note (FR1, FR2, FR4).
+// US-0412: the elbow card and its effects (FR1–FR3, FR5).
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
-import Pipeline, { levelBar, pipelineSteps } from '../../src/renderer/Pipeline.jsx';
+import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/react';
+import Pipeline, { levelBar, pipelineSteps, stageChanges } from '../../src/renderer/Pipeline.jsx';
 
 afterEach(cleanup);
 
@@ -44,6 +45,50 @@ const stageOf = (slug, status, extra = {}) => ({
   ...extra
 });
 
+describe('stageChanges (US-0412 FR3)', () => {
+  const units = (approved, total = 5) => ({ units: { approved, total } });
+  const before = [stageOf('a', 'in-progress'), stageOf('b', 'not-started'), stageOf('c', 'in-progress', units(2))];
+
+  it('gives nothing on the first render (AC3.1.2, AC3.3.2)', () => {
+    expect(stageChanges(null, before)).toEqual({});
+  });
+
+  it('gives nothing when no stage changed', () => {
+    expect(
+      stageChanges(
+        before,
+        before.map((s) => ({ ...s }))
+      )
+    ).toEqual({});
+  });
+
+  it('gives a sweep for a status change that is not to done (AC3.1.1)', () => {
+    const after = [stageOf('a', 'awaiting-approval'), before[1], before[2]];
+    expect(stageChanges(before, after)).toEqual({ a: { effect: 'sweep' } });
+  });
+
+  it('gives a flash, not a sweep, for a change to done (AC3.2.1, AC3.2.2)', () => {
+    const after = [stageOf('a', 'done'), before[1], before[2]];
+    expect(stageChanges(before, after).a.effect).toBe('flash');
+  });
+
+  it('gives every change in one update (AC3.1.3)', () => {
+    const after = [stageOf('a', 'done'), stageOf('b', 'in-progress'), before[2]];
+    const changes = stageChanges(before, after);
+    expect(Object.keys(changes).sort()).toEqual(['a', 'b']);
+    expect(changes.b).toEqual({ effect: 'sweep' });
+  });
+
+  it('gives the old lit count when more level segments are lit (AC3.3.1)', () => {
+    const after = [before[0], before[1], stageOf('c', 'in-progress', units(3))];
+    expect(stageChanges(before, after)).toEqual({ c: { litFrom: 2 } });
+  });
+
+  it('gives nothing for a stage new to the list', () => {
+    expect(stageChanges(before, [...before, stageOf('d', 'in-progress')])).toEqual({});
+  });
+});
+
 const PIPELINE = {
   phases: [
     {
@@ -75,7 +120,8 @@ describe('Pipeline cards', () => {
     const part = (cls) => done.querySelector(cls)?.textContent ?? null;
     expect([...done.classList]).toEqual(expect.arrayContaining(['lcars-card', 'stage-card']));
     expect(part('.lcars-card-head')).toBe('requirements-analysis');
-    expect(part('.lcars-card-body')).toContain('01 · ');
+    expect(part('.stage-num')).toBe('01'); // US-0412 AC1.1.2: the number sits in the elbow
+    expect(part('.lcars-card-body')).toMatch(/^Klar/);
     expect(part('.lcars-card-foot')).toContain('product');
     expect(part('.lcars-card-foot')).toContain('1 min 30 s');
     expect(part('.lcars-card-foot')).not.toContain('aidlc-');
@@ -112,6 +158,71 @@ describe('Pipeline cards', () => {
   });
 });
 
+describe('card effects (US-0412 FR2, FR3)', () => {
+  const pipelineOf = (...stages) => ({
+    phases: [
+      { name: 'inception', stages: stages.slice(0, 1) },
+      { name: 'construction', stages: stages.slice(1) }
+    ]
+  });
+  const FIRST = [
+    stageOf('user-stories', 'done'),
+    stageOf('code-generation', 'in-progress', { units: { approved: 1, total: 3 } }),
+    stageOf('build-and-test', 'not-started')
+  ];
+  const ui = (stages) => <Pipeline pipeline={pipelineOf(...stages)} files={[]} hasGraph onOpenFile={vi.fn()} cost={null} />;
+  const card = (slug) => screen.getAllByTestId('pipeline-stage').find((b) => within(b).queryByText(slug));
+  const effects = () => document.querySelectorAll('.stage-sweep, .stage-card.is-flashing, .stage-level-seg.is-new').length;
+  const withStatus = (slug, status, extra = {}) => FIRST.map((s) => (s.slug === slug ? { ...s, status, ...extra } : s));
+  afterEach(() => vi.useRealTimers());
+
+  it('gives each card its order across phases for the power-up (AC2.1.1)', () => {
+    render(ui(FIRST));
+    const order = screen.getAllByTestId('pipeline-stage').map((b) => b.closest('li').style.getPropertyValue('--i'));
+    expect(order).toEqual(['0', '1', '2']);
+  });
+
+  it('marks nothing on the first render (AC3.1.2)', () => {
+    render(ui(FIRST));
+    expect(effects()).toBe(0);
+  });
+
+  it('sweeps only the card whose status changed, and adds no text (AC3.1.1, AC1.1.5)', () => {
+    const { rerender } = render(ui(FIRST));
+    const text = card('build-and-test').textContent;
+    rerender(ui(withStatus('build-and-test', 'in-progress')));
+    expect(card('build-and-test').querySelectorAll('.stage-sweep')).toHaveLength(1);
+    expect(card('build-and-test').querySelector('.stage-sweep').getAttribute('aria-hidden')).toBe('true');
+    expect(document.querySelectorAll('.stage-sweep')).toHaveLength(1);
+    expect(card('build-and-test').textContent).toBe(text.replace('Ej startad', 'Pågår'));
+  });
+
+  it('flashes a card that becomes done instead of sweeping it, and clears the effect after 900 ms (AC3.2.2)', () => {
+    vi.useFakeTimers();
+    const { rerender } = render(ui(FIRST));
+    rerender(ui(withStatus('code-generation', 'done')));
+    expect(card('code-generation').classList.contains('is-flashing')).toBe(true);
+    expect(card('code-generation').querySelector('.stage-sweep')).toBeNull();
+    act(() => vi.advanceTimersByTime(900));
+    expect(effects()).toBe(0);
+  });
+
+  it('marks every card that changed in one update (AC3.1.3)', () => {
+    const { rerender } = render(ui(FIRST));
+    rerender(ui(FIRST.map((s) => (s.slug === 'user-stories' ? s : { ...s, status: s.status === 'not-started' ? 'in-progress' : 'awaiting-approval' }))));
+    expect(card('code-generation').querySelector('.stage-sweep')).toBeTruthy();
+    expect(card('build-and-test').querySelector('.stage-sweep')).toBeTruthy();
+    expect(card('user-stories').querySelector('.stage-sweep')).toBeNull();
+  });
+
+  it('fills the newly lit level segment (AC3.3.1)', () => {
+    const { rerender } = render(ui(FIRST));
+    rerender(ui(withStatus('code-generation', 'in-progress', { units: { approved: 2, total: 3 } })));
+    const segs = [...card('code-generation').querySelectorAll('.stage-level-seg')].map((s) => s.classList.contains('is-new'));
+    expect(segs).toEqual([false, true, false]);
+  });
+});
+
 describe('after a plan switch (US-0509 FR4.1)', () => {
   const SWITCHED = {
     phases: [
@@ -126,20 +237,20 @@ describe('after a plan switch (US-0509 FR4.1)', () => {
       { name: 'construction', stages: [stageOf('code-generation', 'in-progress', { current: true }), stageOf('build-and-test', 'not-started')] }
     ]
   };
-  const bodyOf = (slug) =>
-    screen
-      .getAllByTestId('pipeline-stage')
-      .find((b) => within(b).queryByText(slug))
-      ?.querySelector('.lcars-card-body').textContent;
+  // US-0412 AC1.1.2: the number (or "—") in the elbow, then the body starting with the status.
+  const bodyOf = (slug) => {
+    const card = screen.getAllByTestId('pipeline-stage').find((b) => within(b).queryByText(slug));
+    return card && `${card.querySelector('.stage-num').textContent} | ${card.querySelector('.lcars-card-body').textContent}`;
+  };
 
   it('shows a done stage the plan no longer has as done, and one the work has passed as "Körs inte"', () => {
     render(<Pipeline pipeline={SWITCHED} files={[]} hasGraph onOpenFile={vi.fn()} cost={null} />);
-    expect(bodyOf('user-stories')).toBe('01 · Klar');
-    expect(bodyOf('code-generation')).toMatch(/^02 · /);
+    expect(bodyOf('user-stories')).toBe('01 | Klar');
+    expect(bodyOf('code-generation')).toMatch(/^02 \| /);
     expect(bodyOf('domain-design')).toBeUndefined(); // with the others that do not run, behind "Visa"
     fireEvent.click(screen.getByRole('button', { name: 'Visa' }));
-    expect(bodyOf('domain-design')).toBe('— · Körs inte');
-    expect(bodyOf('refined-mockups')).toBe('— · Ingår inte');
+    expect(bodyOf('domain-design')).toBe('— | Körs inte');
+    expect(bodyOf('refined-mockups')).toBe('— | Ingår inte');
   });
 
   it('the dots agree: one per stage that counts, the done one included', () => {

@@ -1200,8 +1200,11 @@ button.lcars-nb:hover:not(:disabled), a.lcars-nb:hover { filter: brightness(1.15
 /* US-0411: each stage is an .lcars-card (FR1). Head: name; body: "NN · Status"; foot: agent, duration, level bar (FR2).
    Colour by state on the <li> (FR3): current steel fill, awaiting approval coral fill, done grey outline, skipped muted,
    mismatch or failure soft coral outline and flag (US-0417). Black text on steel (7.6:1) and coral (7.0:1) keeps AA (NFR2).
-   The glow is the shared is-breathing / is-attn, so Dämpad and Av apply through data-motion (FR4, NFR1). */
-.stage-card { width: 100%; min-height: 76px; padding: 0; color: var(--muted); text-align: left; transition: filter 150ms ease-out; }
+   The glow is the shared is-breathing / is-attn, so Dämpad and Av apply through data-motion (FR4, NFR1).
+   US-0412 FR1: the side bar is a 36 px elbow, the card's own --card-tone showing through the left padding, with the
+   number in its top block; the body's rounded corner is the inner bend. Done and skipped outline the elbow. */
+.stage-card { width: 100%; min-height: 84px; padding: 0 0 0 36px; border-left: 0; color: var(--muted); text-align: left; transition: filter 150ms ease-out; }
+.stage-num { position: absolute; top: 0; left: 0; width: 36px; padding: 5px 6px 0 0; box-sizing: border-box; font-size: 15px; line-height: 1; font-variant-numeric: tabular-nums; text-align: right; color: var(--steel-light); }
 .stage-card:hover { filter: brightness(1.15); }
 .stage-card[aria-expanded='true'] { outline: 1px solid var(--slate-5); outline-offset: 2px; }
 .stage-card > .lcars-card-head { min-height: 22px; padding: 4px 14px 2px; }
@@ -1211,31 +1214,45 @@ button.lcars-nb:hover:not(:disabled), a.lcars-nb:hover { filter: brightness(1.15
 .stage-top > span:first-child { overflow: hidden; text-overflow: ellipsis; }
 .stage-cost { text-transform: none; }
 .stage-flag { color: var(--coral-soft); }
-.stage-name { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 14px; letter-spacing: 0.05em; color: var(--steel-light); }
+.stage-name { max-width: 100%; min-width: 0; overflow-wrap: anywhere; font-size: 14px; letter-spacing: 0.05em; text-align: right; text-transform: uppercase; color: var(--steel-light); }
 .stage-code { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 11px; text-transform: uppercase; color: var(--text-2); }
 .stage-level { display: flex; gap: 2px; flex-shrink: 0; }
 .stage-level-seg { width: 8px; height: 6px; background: var(--slate-3); }
 .stage-level-seg.is-lit { background: var(--steel); }
 
-.stage.status-done .stage-card { background: transparent; border-color: var(--slate-4); }
-.stage.status-done .stage-card > :is(.lcars-card-head, .lcars-card-body, .lcars-card-foot) { background: transparent; }
-.stage.status-done .stage-name { color: var(--text-2); }
+.stage.status-done .stage-card { background: transparent; box-shadow: inset 0 0 0 1px var(--slate-4); }
+.stage.status-done .stage-card > :is(.lcars-card-head, .lcars-card-body, .lcars-card-foot) { background: transparent; box-shadow: inset 1px 0 0 var(--slate-4); }
+.stage.status-done :is(.stage-name, .stage-num) { color: var(--text-2); }
 
 .stage:is(.is-current, .status-awaiting-approval) .stage-card { background: var(--steel); border-color: transparent; color: var(--on-light); }
 .stage.status-awaiting-approval .stage-card { background: var(--coral); }
 .stage:is(.is-current, .status-awaiting-approval) .stage-card::before { background: var(--on-light); }
 .stage:is(.is-current, .status-awaiting-approval) .stage-card > :is(.lcars-card-head, .lcars-card-body, .lcars-card-foot) { background: transparent; }
-.stage:is(.is-current, .status-awaiting-approval) :is(.stage-name, .stage-code, .stage-flag) { color: var(--on-light); }
+.stage:is(.is-current, .status-awaiting-approval) :is(.stage-name, .stage-code, .stage-flag, .stage-num) { color: var(--on-light); }
 .stage:is(.is-current, .status-awaiting-approval) .stage-name { font-weight: 600; }
 .stage:is(.is-current, .status-awaiting-approval) .stage-level-seg { background: var(--steel-deep); }
 .stage:is(.is-current, .status-awaiting-approval) .stage-level-seg.is-lit { background: var(--on-light); }
 
 .stage.is-muted .stage-card { background: transparent; border: 1px dashed var(--slate-2); color: var(--muted); }
 .stage.is-muted .stage-card::before { content: none; }
-.stage.is-muted .stage-card > :is(.lcars-card-head, .lcars-card-body, .lcars-card-foot) { background: transparent; }
-.stage.is-muted :is(.stage-name, .stage-code) { color: var(--muted); }
+.stage.is-muted .stage-card > :is(.lcars-card-head, .lcars-card-body, .lcars-card-foot) { background: transparent; border-left: 1px dashed var(--slate-2); }
+.stage.is-muted :is(.stage-name, .stage-code, .stage-num) { color: var(--muted); }
 
 .stage:is(.is-mismatch, .is-failed, .status-failed) .stage-card { border: 2px solid var(--coral-soft); }
+
+/* US-0412 FR2, FR3, FR5: the power-up, sweep, flash and level fill, with full motion only (FR6). The base rules above are
+   the final look, so Dämpad and Av show every card at once; only transform, opacity and filter animate (NFR1). The
+   power-up moves the <li>, so the card keeps its own is-breathing / is-attn animation. The sweep band sits left of the
+   card, clipped, until it runs. */
+.stage-sweep { position: absolute; inset: 0 auto 0 0; width: 25%; pointer-events: none; background: linear-gradient(90deg, transparent, var(--steel-a55), transparent); transform: translateX(-100%); }
+:root[data-motion='full'] .stage-grid > .stage { animation: stage-power 240ms ease-out calc(min(var(--i, 0), 9) * 40ms) both; }
+:root[data-motion='full'] .stage-card > .stage-sweep { animation: stage-sweep 600ms ease-out 1; }
+:root[data-motion='full'] .stage-card.is-flashing { animation: stage-flash 800ms linear 1; }
+:root[data-motion='full'] .stage-level-seg.is-new { transform-origin: left; animation: stage-fill 300ms ease-out both; }
+@keyframes stage-power { from { opacity: 0; transform: translateX(-12px); } to { opacity: 1; transform: none; } }
+@keyframes stage-sweep { from { transform: translateX(-100%); } to { transform: translateX(400%); } }
+@keyframes stage-flash { 0%, 50%, 100% { filter: brightness(1); } 25%, 75% { filter: brightness(1.6); } }
+@keyframes stage-fill { from { transform: scaleX(0); } to { transform: scaleX(1); } }
 .stage-files { margin: 0 0 4px calc(var(--arm) + var(--gap)); padding: 8px 12px; background: var(--slate-1); display: flex; flex-direction: column; gap: 4px; }
 .stage-files-meta { margin: 0; color: var(--muted); font-size: 13px; }
 .stage-file-list { list-style: none; margin: 0; padding: 0; }

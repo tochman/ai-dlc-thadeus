@@ -411,7 +411,10 @@ export default function IntentDetail({
         </div>
 
         <div className="detail-body" role="tabpanel">
-          {tab === 'pipeline' && <Pipeline pipeline={pipeline} files={detail.files} hasGraph={!!detail.graph} onOpenFile={showFile} cost={intentCost} />}
+          {/* US-0412 FR2.2: keyed by intent, so another intent's pipeline mounts fresh and powers up without a sweep. */}
+          {tab === 'pipeline' && (
+            <Pipeline key={detail.dirName} pipeline={pipeline} files={detail.files} hasGraph={!!detail.graph} onOpenFile={showFile} cost={intentCost} />
+          )}
           {tab === 'cost' && <CostTab cost={cost} intentCost={intentCost} pipeline={pipeline} models={models} />}
           {tab === 'velocity' && (
             <IntentVelocity
