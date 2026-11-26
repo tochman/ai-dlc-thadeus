@@ -8,7 +8,7 @@
 
 **Stories:** US-1301–US-1307
 
-**Status (2026-11-26):** ✅ US-1301 done, for v0.3.2. 📋 US-1302–US-1305 planned, for v0.3.2. 📋 US-1306 and US-1307 planned, for v0.3.3.
+**Status (2026-11-26):** ✅ US-1301 done, for v0.3.2. 🚧 US-1302 in progress, for v0.3.2. 📋 US-1303–US-1305 planned, for v0.3.2. 📋 US-1306 and US-1307 planned, for v0.3.3.
 
 ---
 
@@ -29,7 +29,7 @@
 - **Notes:** Rework is not blame. A rejection the person asked for is the workflow working as intended. The view names the cause, not a person.
 - **Dependencies:** US-0201, US-0202, US-0209
 
-**US-1302: Savings hints: where the same work could cost less** 📋 Planned, for v0.3.2
+**US-1302: Savings hints: where the same work could cost less** 🚧 In progress, for v0.3.2
 - As a **developer**, in order to **spend less without losing quality**, I would like **the app to point out spend that could be cut, with what it would save and a link to the setting that changes it**.
 - **Epic:** EPIC-13
 - **Priority:** High
