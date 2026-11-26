@@ -1402,3 +1402,10 @@
 **Recovery steps**: the overflow measured frame by frame (10 px at about 100 ms, 0 from 137 ms); the test waits for the entrance to finish; recorded in construction/build-and-test/test-results.md.
 
 ---
+
+## Workflow Archived
+**Timestamp**: 2026-11-26T16:12:53Z
+**Event**: WORKFLOW_ARCHIVED
+**Stage**: deployment-pipeline
+
+---

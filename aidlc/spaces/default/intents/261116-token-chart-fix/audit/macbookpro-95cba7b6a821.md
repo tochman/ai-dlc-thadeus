@@ -638,3 +638,10 @@
 **Error**: scope-save does not accept --help.\nUsage: scope-save --name <name> [--keywords <word,...>] [--intent <slug>] [--space <name>] [--project-dir <path>]
 
 ---
+
+## Workflow Archived
+**Timestamp**: 2026-11-26T16:12:43Z
+**Event**: WORKFLOW_ARCHIVED
+**Stage**: deployment-pipeline
+
+---

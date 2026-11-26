@@ -2991,3 +2991,10 @@
 **Tokens By Agent**: main=380/153.3k/34.1M/936.3k; aidlc-developer-agent=362/284.1k/31.7M/1.1M
 
 ---
+
+## Workflow Archived
+**Timestamp**: 2026-11-26T16:12:47Z
+**Event**: WORKFLOW_ARCHIVED
+**Stage**: observability-setup
+
+---

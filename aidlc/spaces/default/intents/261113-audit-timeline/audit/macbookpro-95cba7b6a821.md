@@ -1272,3 +1272,10 @@
 **Error**: intent-create refused: --request requires a nonblank value.
 
 ---
+
+## Workflow Archived
+**Timestamp**: 2026-11-26T16:12:36Z
+**Event**: WORKFLOW_ARCHIVED
+**Stage**: observability-setup
+
+---

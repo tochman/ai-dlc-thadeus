@@ -468,3 +468,10 @@
 **Tokens By Agent**: main=70/24.1k/12M/88.3k
 
 ---
+
+## Workflow Archived
+**Timestamp**: 2026-11-26T16:12:51Z
+**Event**: WORKFLOW_ARCHIVED
+**Stage**: build-and-test
+
+---

@@ -4,7 +4,7 @@
     "slug": "bridge-console-mvp",
     "dirName": "261113-bridge-console-mvp",
     "scope": "express",
-    "status": "complete",
+    "status": "archived",
     "request": "59c21099"
   },
   {
@@ -12,7 +12,7 @@
     "slug": "cost-and-models",
     "dirName": "261113-cost-and-models",
     "scope": "express",
-    "status": "complete",
+    "status": "archived",
     "request": "cd3e517e"
   },
   {
@@ -20,7 +20,7 @@
     "slug": "linux-compat-icon",
     "dirName": "261113-linux-compat-icon",
     "scope": "bugfix",
-    "status": "complete",
+    "status": "archived",
     "request": "4b9100de"
   },
   {
@@ -28,7 +28,7 @@
     "slug": "workflow-control",
     "dirName": "261113-workflow-control",
     "scope": "express",
-    "status": "complete",
+    "status": "archived",
     "request": "2af448e9"
   },
   {
@@ -36,7 +36,7 @@
     "slug": "audit-timeline",
     "dirName": "261113-audit-timeline",
     "scope": "express",
-    "status": "complete",
+    "status": "archived",
     "request": "b8b77c80"
   },
   {
@@ -44,7 +44,7 @@
     "slug": "feature-docs",
     "dirName": "261113-feature-docs",
     "scope": "express",
-    "status": "complete",
+    "status": "archived",
     "request": "ce6a447a"
   },
   {
@@ -52,7 +52,7 @@
     "slug": "living-lcars",
     "dirName": "261113-living-lcars",
     "scope": "express",
-    "status": "complete",
+    "status": "archived",
     "request": "54be1d4d"
   },
   {
@@ -60,7 +60,7 @@
     "slug": "fullscreen-menu",
     "dirName": "261113-fullscreen-menu",
     "scope": "express",
-    "status": "complete",
+    "status": "archived",
     "request": "65bb96d5"
   },
   {
@@ -68,7 +68,7 @@
     "slug": "question-popup",
     "dirName": "261113-question-popup",
     "scope": "express",
-    "status": "complete",
+    "status": "archived",
     "request": "cb4955ea"
   },
   {
@@ -76,7 +76,7 @@
     "slug": "thadeus-name",
     "dirName": "261113-thadeus-name",
     "scope": "express",
-    "status": "complete",
+    "status": "archived",
     "request": "1bc33c06"
   },
   {
@@ -84,7 +84,7 @@
     "slug": "i18n-foundation",
     "dirName": "261113-i18n-foundation",
     "scope": "bugfix",
-    "status": "complete",
+    "status": "archived",
     "request": "07a6382f"
   },
   {
@@ -92,7 +92,7 @@
     "slug": "harness-choice",
     "dirName": "261113-harness-choice",
     "scope": "express",
-    "status": "complete",
+    "status": "archived",
     "request": "abb719e0"
   },
   {
@@ -100,7 +100,7 @@
     "slug": "harness-setup",
     "dirName": "261113-harness-setup",
     "scope": "ultra-express",
-    "status": "complete",
+    "status": "archived",
     "request": "c14c9140"
   },
   {
@@ -108,7 +108,7 @@
     "slug": "config-view",
     "dirName": "261113-config-view",
     "scope": "ultra-express",
-    "status": "complete",
+    "status": "archived",
     "request": "1357c65d"
   },
   {
@@ -116,7 +116,7 @@
     "slug": "settings-view",
     "dirName": "261114-settings-view",
     "scope": "ultra-express",
-    "status": "complete",
+    "status": "archived",
     "request": "aa25414d"
   },
   {
@@ -124,7 +124,7 @@
     "slug": "project-defaults",
     "dirName": "261114-project-defaults",
     "scope": "ultra-express",
-    "status": "complete",
+    "status": "archived",
     "request": "727b5088"
   },
   {
@@ -132,7 +132,7 @@
     "slug": "intent-0-2-3-release",
     "dirName": "261114-intent-0-2-3-release",
     "scope": "ultra-express",
-    "status": "complete",
+    "status": "archived",
     "request": "f998dd5d"
   },
   {
@@ -140,7 +140,7 @@
     "slug": "custom-plans",
     "dirName": "261114-custom-plans",
     "scope": "ultra-express",
-    "status": "complete",
+    "status": "archived",
     "request": "8f017286"
   },
   {
@@ -148,7 +148,7 @@
     "slug": "agent-dialogs",
     "dirName": "261114-agent-dialogs",
     "scope": "classic",
-    "status": "complete",
+    "status": "archived",
     "request": "c1f92d61"
   },
   {
@@ -156,7 +156,7 @@
     "slug": "lcars-settings",
     "dirName": "261115-lcars-settings",
     "scope": "ultra-express",
-    "status": "complete",
+    "status": "archived",
     "request": "4b372c4b"
   },
   {
@@ -164,7 +164,7 @@
     "slug": "pipeline-cards",
     "dirName": "261115-pipeline-cards",
     "scope": "ultra-express",
-    "status": "complete",
+    "status": "archived",
     "request": "23d1f913"
   },
   {
@@ -172,7 +172,7 @@
     "slug": "release-handling",
     "dirName": "261115-release-handling",
     "scope": "ultra-express",
-    "status": "complete",
+    "status": "archived",
     "request": "026d81e9"
   },
   {
@@ -180,7 +180,7 @@
     "slug": "repo-public-ready",
     "dirName": "261115-repo-public-ready",
     "scope": "express",
-    "status": "complete",
+    "status": "archived",
     "request": "2fb4c661"
   },
   {
@@ -188,7 +188,7 @@
     "slug": "public-updater",
     "dirName": "261115-public-updater",
     "scope": "ultra-express",
-    "status": "complete",
+    "status": "archived",
     "request": "e0a30ee2"
   },
   {
@@ -196,7 +196,7 @@
     "slug": "manual-releases",
     "dirName": "261115-manual-releases",
     "scope": "express",
-    "status": "complete",
+    "status": "archived",
     "request": "eca1c669"
   },
   {
@@ -204,7 +204,7 @@
     "slug": "story-filters",
     "dirName": "261115-story-filters",
     "scope": "ultra-express",
-    "status": "complete",
+    "status": "archived",
     "request": "fc669da8"
   },
   {
@@ -212,7 +212,7 @@
     "slug": "token-detail-view",
     "dirName": "261115-token-detail-view",
     "scope": "express",
-    "status": "complete",
+    "status": "archived",
     "request": "b0c2a119"
   },
   {
@@ -220,7 +220,7 @@
     "slug": "framework-update",
     "dirName": "261116-framework-update",
     "scope": "express",
-    "status": "complete",
+    "status": "archived",
     "request": "261ed5cc"
   },
   {
@@ -228,7 +228,7 @@
     "slug": "agent-progress",
     "dirName": "261116-agent-progress",
     "scope": "express",
-    "status": "complete",
+    "status": "archived",
     "request": "ed308d3e"
   },
   {
@@ -236,7 +236,7 @@
     "slug": "token-chart-fix",
     "dirName": "261116-token-chart-fix",
     "scope": "express",
-    "status": "complete",
+    "status": "archived",
     "request": "8bed96c0"
   },
   {
@@ -244,7 +244,7 @@
     "slug": "cross-machine-cost",
     "dirName": "261116-cross-machine-cost",
     "scope": "express",
-    "status": "complete",
+    "status": "archived",
     "request": "d3bf75a2"
   },
   {
@@ -252,7 +252,7 @@
     "slug": "shared-tooltip",
     "dirName": "261116-shared-tooltip",
     "scope": "express",
-    "status": "complete",
+    "status": "archived",
     "request": "a4b03294"
   },
   {
@@ -260,7 +260,7 @@
     "slug": "team-collab-concept",
     "dirName": "261116-team-collab-concept",
     "scope": "feature",
-    "status": "complete",
+    "status": "archived",
     "request": "004ec01d"
   },
   {
@@ -268,7 +268,7 @@
     "slug": "project-velocity",
     "dirName": "261116-project-velocity",
     "scope": "express",
-    "status": "complete",
+    "status": "archived",
     "request": "3a30b6c5"
   },
   {
@@ -276,7 +276,7 @@
     "slug": "thadeus-rule-pack",
     "dirName": "261117-thadeus-rule-pack",
     "scope": "ultra-express",
-    "status": "complete",
+    "status": "archived",
     "request": "4addd383"
   },
   {
@@ -284,7 +284,7 @@
     "slug": "model-profile-switch",
     "dirName": "261117-model-profile-switch",
     "scope": "express",
-    "status": "complete",
+    "status": "archived",
     "request": "00a1f446"
   },
   {
@@ -292,7 +292,7 @@
     "slug": "release-planning-sync",
     "dirName": "261117-release-planning-sync",
     "scope": "ultra-express",
-    "status": "complete",
+    "status": "archived",
     "request": "1b87e885"
   },
   {
@@ -300,7 +300,7 @@
     "slug": "token-repricing",
     "dirName": "261117-token-repricing",
     "scope": "ultra-express",
-    "status": "complete",
+    "status": "archived",
     "request": "9290c6ec"
   },
   {
@@ -308,7 +308,7 @@
     "slug": "session-handoff-dialog",
     "dirName": "261117-session-handoff-dialog",
     "scope": "ultra-express",
-    "status": "complete",
+    "status": "archived",
     "request": "92bb6c57"
   },
   {
@@ -316,7 +316,7 @@
     "slug": "agent-activity-events",
     "dirName": "261117-agent-activity-events",
     "scope": "ultra-express",
-    "status": "complete",
+    "status": "archived",
     "request": "347dd20d"
   },
   {
@@ -324,7 +324,7 @@
     "slug": "release-0-2-9",
     "dirName": "261118-release-0-2-9",
     "scope": "ultra-express",
-    "status": "complete",
+    "status": "archived",
     "request": "7b79b4a2"
   },
   {
@@ -332,7 +332,7 @@
     "slug": "calm-pipeline-note",
     "dirName": "261118-calm-pipeline-note",
     "scope": "quick-fix",
-    "status": "complete",
+    "status": "archived",
     "request": "5985eb99"
   },
   {
@@ -340,7 +340,7 @@
     "slug": "release-row-move",
     "dirName": "261118-release-row-move",
     "scope": "quick-fix",
-    "status": "complete",
+    "status": "archived",
     "request": "43ff880c"
   },
   {
@@ -348,7 +348,7 @@
     "slug": "finished-token-history",
     "dirName": "261118-finished-token-history",
     "scope": "ultra-express",
-    "status": "complete",
+    "status": "archived",
     "request": "db1e771c"
   },
   {
@@ -356,7 +356,7 @@
     "slug": "honest-agent-progress",
     "dirName": "261118-honest-agent-progress",
     "scope": "express",
-    "status": "complete",
+    "status": "archived",
     "request": "40b66286"
   },
   {
@@ -364,7 +364,7 @@
     "slug": "planning-changes-kept",
     "dirName": "261118-planning-changes-kept",
     "scope": "express",
-    "status": "complete",
+    "status": "archived",
     "request": "04104afb"
   },
   {
@@ -372,7 +372,7 @@
     "slug": "dialog-newest-page",
     "dirName": "261118-dialog-newest-page",
     "scope": "express",
-    "status": "complete",
+    "status": "archived",
     "request": "d4daacd5"
   },
   {
@@ -380,7 +380,7 @@
     "slug": "release-0-2-10",
     "dirName": "261119-release-0-2-10",
     "scope": "ultra-express",
-    "status": "complete",
+    "status": "archived",
     "request": "3ea618a1"
   },
   {
@@ -388,7 +388,7 @@
     "slug": "one-committer-rule",
     "dirName": "261119-one-committer-rule",
     "scope": "quick-fix",
-    "status": "complete",
+    "status": "archived",
     "request": "45021390"
   },
   {
@@ -396,7 +396,7 @@
     "slug": "commit-subject-stories",
     "dirName": "261119-commit-subject-stories",
     "scope": "quick-fix",
-    "status": "complete",
+    "status": "archived",
     "request": "1aa18e98"
   },
   {
@@ -404,7 +404,7 @@
     "slug": "spec-kit-ideation",
     "dirName": "261119-spec-kit-ideation",
     "scope": "bugfix",
-    "status": "complete",
+    "status": "archived",
     "request": "f97a7d37"
   },
   {
@@ -412,7 +412,7 @@
     "slug": "release-0-2-11",
     "dirName": "261119-release-0-2-11",
     "scope": "ultra-express",
-    "status": "complete",
+    "status": "archived",
     "request": "19d3643a"
   },
   {
@@ -420,7 +420,7 @@
     "slug": "linux-update-hotfix",
     "dirName": "261119-linux-update-hotfix",
     "scope": "quick-fix",
-    "status": "complete",
+    "status": "archived",
     "request": "ae8da37b"
   },
   {
@@ -428,7 +428,7 @@
     "slug": "spec-kit-framework",
     "dirName": "261119-spec-kit-framework",
     "scope": "classic",
-    "status": "complete",
+    "status": "archived",
     "request": "d17f21c7"
   },
   {
@@ -436,7 +436,7 @@
     "slug": "release-0-2-13",
     "dirName": "261120-release-0-2-13",
     "scope": "ultra-express",
-    "status": "complete",
+    "status": "archived",
     "request": "ae36b0ab"
   },
   {
@@ -444,7 +444,7 @@
     "slug": "release-0-2-14",
     "dirName": "261122-release-0-2-14",
     "scope": "ultra-express",
-    "status": "complete",
+    "status": "archived",
     "request": "3cfbbc4a"
   },
   {
@@ -452,7 +452,7 @@
     "slug": "intent-view-fit",
     "dirName": "261122-intent-view-fit",
     "scope": "quick-fix",
-    "status": "complete",
+    "status": "archived",
     "request": "315af8b5"
   },
   {
@@ -460,7 +460,7 @@
     "slug": "dialog-newest-message",
     "dirName": "261123-dialog-newest-message",
     "scope": "quick-fix",
-    "status": "complete",
+    "status": "archived",
     "request": "0449a1d6"
   },
   {
@@ -468,7 +468,7 @@
     "slug": "dialog-project-name",
     "dirName": "261123-dialog-project-name",
     "scope": "quick-fix",
-    "status": "complete",
+    "status": "archived",
     "request": "3372b846"
   },
   {
@@ -476,7 +476,7 @@
     "slug": "rename-and-clean",
     "dirName": "261123-rename-and-clean",
     "scope": "ultra-express",
-    "status": "complete",
+    "status": "archived",
     "request": "f403d350"
   },
   {
@@ -484,7 +484,7 @@
     "slug": "release-0-2-15",
     "dirName": "261124-release-0-2-15",
     "scope": "ultra-express",
-    "status": "complete",
+    "status": "archived",
     "request": "54765877"
   },
   {
@@ -492,7 +492,7 @@
     "slug": "sync-missing-file",
     "dirName": "261124-sync-missing-file",
     "scope": "quick-fix",
-    "status": "complete",
+    "status": "archived",
     "request": "c962fa3c"
   },
   {
@@ -500,7 +500,7 @@
     "slug": "spec-kit-look-fixes",
     "dirName": "261125-spec-kit-look-fixes",
     "scope": "quick-fix",
-    "status": "complete",
+    "status": "archived",
     "request": "4b75e237"
   },
   {
@@ -508,7 +508,7 @@
     "slug": "archive-intents",
     "dirName": "261125-archive-intents",
     "scope": "ultra-express",
-    "status": "complete",
+    "status": "archived",
     "request": "ee05a454"
   },
   {
@@ -516,7 +516,7 @@
     "slug": "archive-speckit-feature",
     "dirName": "261125-archive-speckit-feature",
     "scope": "ultra-express",
-    "status": "complete",
+    "status": "archived",
     "request": "741e5896"
   },
   {
@@ -524,7 +524,7 @@
     "slug": "unstable-tests",
     "dirName": "261125-unstable-tests",
     "scope": "quick-fix",
-    "status": "complete",
+    "status": "archived",
     "request": "0c51dfe0"
   },
   {
@@ -532,7 +532,7 @@
     "slug": "change-intent-plan",
     "dirName": "261125-change-intent-plan",
     "scope": "ultra-express",
-    "status": "complete",
+    "status": "archived",
     "request": "7199e150"
   },
   {
@@ -540,7 +540,7 @@
     "slug": "tool-sign-in",
     "dirName": "261125-tool-sign-in",
     "scope": "ultra-express",
-    "status": "complete",
+    "status": "archived",
     "request": "ee51d1d1"
   },
   {
@@ -548,7 +548,7 @@
     "slug": "health-check",
     "dirName": "261125-health-check",
     "scope": "ultra-express",
-    "status": "complete",
+    "status": "archived",
     "request": "b8ab48a3"
   },
   {

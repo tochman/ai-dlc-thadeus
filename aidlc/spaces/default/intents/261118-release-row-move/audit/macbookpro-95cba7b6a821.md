@@ -568,3 +568,10 @@
 **Artifacts affected**: construction/build-and-test/test-results.md, intents.json, docs/FEATURES.md, docs/features/epic-00-fixes.md, docs/releases/0.2.10.md
 
 ---
+
+## Workflow Archived
+**Timestamp**: 2026-11-26T16:12:46Z
+**Event**: WORKFLOW_ARCHIVED
+**Stage**: build-and-test
+
+---
