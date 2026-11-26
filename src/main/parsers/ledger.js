@@ -91,7 +91,12 @@ function agentModels(workflows) {
 }
 
 function intentCost(wf, rates) {
-  const stages = rows(Object.fromEntries(entries(wf.byStage).map(([s, n]) => [s, n?.totals])));
+  // US-1302 FR2: each stage row keeps its raw tokens per model (5 m and 1 h apart, for repricing) and its agents.
+  const stages = rows(Object.fromEntries(entries(wf.byStage).map(([s, n]) => [s, n?.totals]))).map((r) => ({
+    ...r,
+    byModel: wf.byStage[r.name]?.byModel ?? {},
+    agents: rows(wf.byStage[r.name]?.byAgent).map((a) => agentName(a.name))
+  }));
   const byStage = rates ? stages.map((r) => ({ ...r, ...current(wf.byStage[r.name]?.byModel, rates) })) : stages;
   const stageModels = {};
   for (const [stage, node] of entries(wf.byStage)) {

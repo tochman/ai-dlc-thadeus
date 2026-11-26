@@ -26,6 +26,7 @@ import os from 'node:os';
 import { readTranscriptContext } from './contextSize.js';
 import { loadTokenHistory } from './tokenHistory.js';
 import { loadRework } from './rework.js'; // US-1301
+import { loadSavings, sessionCalls, setDismissed } from './savings.js'; // US-1302
 import { HANDOFF_DEFAULTS, createHandoffController } from './sessionHandoff.js';
 import { loadAgentProgress, loadSpeckitProgress } from './agentProgress.js';
 import { notifyEvent, notifyQuestions } from './notify.js';
@@ -1151,6 +1152,34 @@ const handlers = {
       : () => loadTokenHistory({ root: p.root, dirName, uuid: intent.uuid, ledger, events, projectsDir: CLAUDE_PROJECTS });
     return loadRework({ intent, events, total: total && { usd: total.usd, tokens: total.totalTokens }, loadHistory });
   },
+  // US-1302 FR1–FR7, NFR4: the project's savings hints and dismissed ids, asked for when the Savings section shows, never
+  // during the overview load. Read only (NFR1).
+  // ponytail: the audits are read again here, beside loadCrossMachineCost's own read, as intent:rework does.
+  'project:savings': async (_event, projectId, space) => {
+    const p = project(projectId);
+    const { intents } = await loadIntentList(p.root, space, []);
+    const [cost, rates] = await Promise.all([loadCost(p.root), costRates(p.root)]);
+    const ledger = cost.ledger ?? null;
+    const { summary } = await loadCrossMachineCost(p.root, space, intents, ledger, rates?.rates ?? null);
+    const events = await Promise.all(
+      intents.map((i) =>
+        loadAuditEvents(p.root, `${intentsDir(space)}/${i.dirName}`).catch((err) => {
+          console.warn(`Kunde inte läsa ${i.dirName}/audit för sparförslag:`, err.message);
+          return [];
+        })
+      )
+    );
+    return loadSavings({
+      root: p.root,
+      intents,
+      perIntent: summary?.perIntent ?? {},
+      eventsByIntent: Object.fromEntries(intents.map((i, n) => [i.dirName, events[n]])),
+      rates: rates?.rates ?? {},
+      loadCalls: (i) => sessionCalls({ ledger, uuid: i.uuid, projectsDir: CLAUDE_PROJECTS })
+    });
+  },
+  // US-1302 FR6, NFR1: dismisses or brings back one hint; the only write, to `.thadeus/savings-dismissed.json`.
+  'project:savings-dismiss': async (_event, projectId, id, on) => Object.keys(await setDismissed(project(projectId).root, id, on === true)),
   // Cached per opened project (a reopen gets a new projectId); getConfiguredModels never rejects.
   'project:models': async (_event, projectId) => {
     const p = project(projectId);
