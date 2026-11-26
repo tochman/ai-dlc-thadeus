@@ -8,7 +8,7 @@
 
 **Stories:** US-0001, US-0002, US-0003, US-0004, US-0005, US-0006, US-0007, US-0008, US-0009, US-0010, US-0011, US-0012, US-0013, US-0014, US-0015, US-0016, US-0017, US-0018, US-0019, US-0020, US-0021, US-0022, US-0023, US-0024, US-0025, US-0026, US-0027, US-0028, US-0029, US-0030, US-0031, US-0032, US-0033, US-0034, US-0035, US-0036, US-0037, US-0038, US-0039, US-0040, US-0041, US-0042, US-0043, US-0044, US-0045, US-0046, US-0047, US-0048, US-0049, US-0050, US-0051, US-0052, US-0053
 
-**Status (2026-11-25):** ✅ US-0001–US-0020 released (v0.2.3–v0.2.6). ✅ US-0021–US-0023 released in v0.2.7. ✅ US-0024 released in v0.2.8. ✅ US-0025 released in v0.2.9. ✅ US-0026 released in v0.2.9. ✅ US-0027 released in v0.2.9. ✅ US-0028 released in v0.2.10. ✅ US-0029 released in v0.2.10. ✅ US-0030 released in v0.2.10. ✅ US-0031 released in v0.2.10. ✅ US-0032 released in v0.2.11. ✅ US-0033 released in v0.2.11. ✅ US-0034 released in v0.2.12. ✅ US-0035 and US-0036 released in v0.2.13. ✅ US-0037, US-0038, US-0039, US-0040, US-0041 and US-0042 released in v0.2.14. ✅ US-0043 released in v0.2.15. ✅ US-0044 released in v0.2.15. ✅ US-0045 released in v0.2.15. ✅ US-0046 released in v0.2.15. ✅ US-0047 released in v0.3.0. ✅ US-0048 released in v0.3.0. ✅ US-0049 released in v0.3.0. 📋 US-0050, US-0051 and US-0053 planned, for v0.3.1. ✅ US-0052 done, for v0.3.1. Each story names its release.
+**Status (2026-11-26):** ✅ US-0001–US-0020 released (v0.2.3–v0.2.6). ✅ US-0021–US-0023 released in v0.2.7. ✅ US-0024 released in v0.2.8. ✅ US-0025 released in v0.2.9. ✅ US-0026 released in v0.2.9. ✅ US-0027 released in v0.2.9. ✅ US-0028 released in v0.2.10. ✅ US-0029 released in v0.2.10. ✅ US-0030 released in v0.2.10. ✅ US-0031 released in v0.2.10. ✅ US-0032 released in v0.2.11. ✅ US-0033 released in v0.2.11. ✅ US-0034 released in v0.2.12. ✅ US-0035 and US-0036 released in v0.2.13. ✅ US-0037, US-0038, US-0039, US-0040, US-0041 and US-0042 released in v0.2.14. ✅ US-0043 released in v0.2.15. ✅ US-0044 released in v0.2.15. ✅ US-0045 released in v0.2.15. ✅ US-0046 released in v0.2.15. ✅ US-0047 released in v0.3.0. ✅ US-0048 released in v0.3.0. ✅ US-0049 released in v0.3.0. 📋 US-0050 planned, for v0.3.1. ✅ US-0051, US-0052 and US-0053 done, for v0.3.1. Each story names its release.
 
 ---
 
@@ -822,15 +822,15 @@
 - **Notes:** The pipeline's stage cards are US-0412, in the same release: the audit lists them but leaves them to that story. If the approved list grows past a fix, the story moves to EPIC-04 (the project's rule).
 - **Dependencies:** US-0402 ✅, US-0417 ✅
 
-**US-0051: The Edit button in Configuration › Spec Kit does not touch the constitution panel** 📋 Planned, for v0.3.1
+**US-0051: The Edit button in Configuration › Spec Kit does not touch the constitution panel** ✅ Done, for v0.3.1
 - As a **developer**, in order to **read the constitution without a button crowding it**, I would like **a gap between the Edit button and the panel**.
 - **Epic:** EPIC-00
 - **Priority:** Low
 - **Complexity:** Small
 - **Background:** Found in v0.3.0, added 2026-11-25 at the person's request. jsdom cannot show layout, so the suite did not catch it.
 - **Acceptance Criteria:**
-  - [ ] **Given** Configuration › Spec Kit with a constitution, at 1280 and 1920, **then** there is a gap between the Edit button and the panel.
-  - [ ] A test in the built app fails without the change and passes with it; the existing suite stays green.
+  - [x] **Given** Configuration › Spec Kit with a constitution, at 1280 and 1920, **then** there is a gap between the Edit button and the panel.
+  - [x] A test in the built app fails without the change and passes with it; the existing suite stays green.
 - **Notes:** A code fix, so it runs on the `quick-fix` plan (`fix/US-0051`).
 - **Dependencies:** US-1404 ✅, US-0048 ✅
 
@@ -847,7 +847,7 @@
 - **Notes:** Only the test changes, unless the cause turns out to be in the view. It runs on the `quick-fix` plan (`fix/US-0052`).
 - **Dependencies:** none
 
-**US-0053: The planning sync shows only what is really waiting, and pushes it after a branch switch too** 📋 Planned, for v0.3.1
+**US-0053: The planning sync shows only what is really waiting, and pushes it after a branch switch too** ✅ Done, for v0.3.1
 - As a **developer**, in order to **trust what the planning sync says is waiting**, I would like **it to clear what is already on the target, and to push its own commit also when I have left `main`**.
 - **Epic:** EPIC-00
 - **Priority:** High
@@ -856,10 +856,10 @@
   - A change the app had recorded was committed and pushed outside the app (`05f124f`). `commitIn` then found nothing to commit, so the entries stayed pending (six of the ten were such files). They joined the app's next commit, which named their stories without holding any change to them (`011b158`).
   - The app committed on `main`, and the checkout moved to a story branch before the push. `sourcesOf` looks at the target only while it is checked out, so the commit was never pushed. `pushStep` then reads "nothing is ahead of origin" and drops the committed entries, though `main` is ahead.
 - **Acceptance Criteria:**
-  - [ ] **Given** a recorded change whose text is already on the target, **when** a cycle runs, **then** its entry is cleared, and no later commit names its stories.
-  - [ ] **Given** the app's commit on local `main` and a checkout on another branch, **when** a cycle runs, **then** the commit is pushed, and the entries stay until it is on origin.
-  - [ ] **Given** local `main` also holds the person's own commits, **then** they are treated the same as when `main` is checked out.
-  - [ ] **Given** a record that already holds such entries, **then** the next cycle clears them without help.
-  - [ ] A test fails without each change and passes with it; the existing suite stays green.
+  - [x] **Given** a recorded change whose text is already on the target, **when** a cycle runs, **then** its entry is cleared, and no later commit names its stories.
+  - [x] **Given** the app's commit on local `main` and a checkout on another branch, **when** a cycle runs, **then** the commit is pushed, and the entries stay until it is on origin.
+  - [x] **Given** local `main` also holds the person's own commits, **then** they are treated the same as when `main` is checked out.
+  - [x] **Given** a record that already holds such entries, **then** the next cycle clears them without help.
+  - [x] A test fails without each change and passes with it; the existing suite stays green.
 - **Notes:** A code fix, so it runs on the `quick-fix` plan (`fix/US-0053`).
 - **Dependencies:** US-0038 ✅, US-0608 ✅

@@ -532,6 +532,61 @@ describe('an old planning commit never blocks the sync (US-0038)', () => {
   });
 });
 
+// US-0053: on 2026-11-25 ten changes showed as waiting: six were committed and pushed outside the app (05f124f), and
+// the app's own commit on main was left behind when the checkout moved to a story branch before the push.
+describe('the planning sync shows only what is really waiting, and pushes after a branch switch (US-0053)', () => {
+  beforeEach(() => setup());
+  const sha = (text) => createHash('sha256').update(text, 'utf8').digest('hex');
+  const mine = EPIC_TEXT.replace('- **Priority:** High', '- **Priority:** High\n- my note');
+  /** The app records an editor save, then the person commits and pushes the same text outside the app. */
+  const committedOutside = async () => {
+    await recordContent(ctx, EPIC, mine, { expectHash: sha(EPIC_TEXT) });
+    write(EPIC, mine);
+    run(clone, 'commit', '-q', '-am', 'docs: my own commit');
+    run(clone, 'push', '-q', 'origin', 'main');
+  };
+
+  it('AC1, AC4: a recorded change already committed and pushed outside the app is cleared by the next cycle', async () => {
+    await committedOutside();
+    expect((await readRecord(userData, clone)).actions).toHaveLength(1);
+    expect(await runCycle(ctx)).toMatchObject({ pending: 0, conflicts: 0 });
+    expect((await readRecord(userData, clone)).actions).toEqual([]);
+  });
+
+  it('AC1: the next commit names only the story of the new change, not the one already committed', async () => {
+    await committedOutside();
+    await addContent(userData, clone, { file: 'docs/FEATURES.md', baseHash: sha(OVERVIEW), content: `${OVERVIEW}new line\n`, storyIds: ['US-0102'] });
+    expect(await runCycle(ctx)).toMatchObject({ pending: 0, conflicts: 0 });
+    expect(originLog()[0]).toBe('docs: update US-0102');
+  });
+
+  const offline = () => runCycle({ ...ctx, online: () => false });
+
+  it('AC2: the app commit on local main is pushed after a switch to a story branch; offline its entries stay', async () => {
+    await setRelease('US-0101', 'v1.0.0');
+    await offline(); // committed on local main, not pushed
+    storyBranch();
+    await offline();
+    expect((await readRecord(userData, clone)).actions).toMatchObject([{ kind: 'setRelease', state: 'committed' }]);
+    expect(await runCycle(ctx)).toMatchObject({ pushed: true, pending: 0 });
+    expect(originLog()[0]).toBe('docs: plan US-0101 for v1.0.0');
+    expect(run(clone, 'rev-parse', 'main')).toBe(run(origin, 'rev-parse', 'main'));
+    expect(run(clone, 'rev-parse', '--abbrev-ref', 'HEAD')).toBe('feat/US-0001');
+    expect(status()).toBe('');
+  });
+
+  it('AC3: the person own commit on local main goes with the app commit, as when main is checked out', async () => {
+    write('src.txt', 'my code\n');
+    run(clone, 'commit', '-q', '-am', 'feat: my own work');
+    await setRelease('US-0101', 'v1.0.0');
+    await offline();
+    storyBranch();
+    expect(await runCycle(ctx)).toMatchObject({ pushed: true, pending: 0 });
+    expect(originLog().slice(0, 2)).toEqual(['docs: plan US-0101 for v1.0.0', 'feat: my own work']);
+    expect(run(clone, 'rev-parse', 'main')).toBe(run(origin, 'rev-parse', 'main'));
+  });
+});
+
 describe('createScheduler (US-0607 FR3.1, FR4.1)', () => {
   const make = (over = {}) => {
     let t = 0;
