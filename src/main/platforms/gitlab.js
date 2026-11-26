@@ -40,3 +40,13 @@ export async function reviews(api, p, number) {
   const res = (await api(`${project(p)}/merge_requests/${number}/approvals`)) ?? {};
   return asList(res.approved_by).map((a) => ({ author: a.user?.username ?? null, state: 'approved', time: res.updated_at ?? null, body: '', url: null }));
 }
+
+/**
+ * US-1304 FR5.1, FR5.3: the merged merge requests into the default branch as {number, createdAt, mergedAt, changes};
+ * GitLab has no "changes requested" review, so `changes` is null. ponytail: one page of 50; follow X-Next-Page for more.
+ */
+export async function merged(api, p) {
+  const { default_branch: branch } = (await api(project(p))) ?? {};
+  const list = asList(await api(`${project(p)}/merge_requests?state=merged&target_branch=${encodeURIComponent(branch ?? '')}&per_page=50`));
+  return list.map((mr) => ({ number: mr.iid, createdAt: mr.created_at ?? null, mergedAt: mr.merged_at ?? null, changes: null }));
+}

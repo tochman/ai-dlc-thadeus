@@ -471,7 +471,7 @@
       "done": "Done",
       "released": "Released",
       "toDone": "To done",
-      "toRelease": "To release",
+      "leadTime": "Lead time",
       "from": {
         "intent": "intent",
         "git": "git"
@@ -489,7 +489,31 @@
       "unreadable": "Unreadable",
       "epic": "Epic file missing",
       "git": "Git history unavailable",
-      "features": "Feature docs missing"
+      "features": "Feature docs missing",
+      "releases": "GitHub release list unavailable (prereleases are read from GitHub only)",
+      "pulls": "Pull requests unavailable"
+    },
+    "delivery": {
+      "title": "Delivery",
+      "lead": "Lead time (median)",
+      "frequency": "Releases per month",
+      "failure": "Change failure rate",
+      "recover": "Time to recover (median)",
+      "pulls": "{count, plural, one {# merged pull request} other {# merged pull requests}}: {open} from open to merge, {rounds} review rounds (medians)",
+      "noPulls": "No pull request figures: the pull requests could not be read.",
+      "perRelease": "Per release",
+      "release": "Release",
+      "stories": "Stories",
+      "failed": "Failed",
+      "toRecover": "To recover",
+      "pullCount": "Pull requests",
+      "openToMerge": "Open to merge (median)",
+      "prerelease": "prerelease on GitHub",
+      "faultIn": "Fault in: {stories}",
+      "ok": "OK",
+      "notRecovered": "not recovered yet",
+      "withoutFaultIn": "{n, plural, one {# fix story has} other {# fix stories have}} no Fault in line and {n, plural, one {does} other {do}} not count.",
+      "sources": "Sources: feature docs and audit (lead time), git tags (releases), GitHub releases and EPIC-00 fix stories (failures), pull requests."
     }
   },
   "cost": {

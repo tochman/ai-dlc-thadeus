@@ -49,3 +49,15 @@ export async function reviews(api, p, number) {
     .filter((x) => x.approved || x.state === 'changes_requested')
     .map((x) => ({ author: x.user?.display_name ?? null, state: x.approved ? 'approved' : 'changes', time: x.participated_on ?? null, body: '', url: null }));
 }
+
+/**
+ * US-1304 FR5.1, FR5.3: the merged pull requests into the main branch as {number, createdAt, mergedAt, changes}; review
+ * rounds are not kept, so `changes` is null. ponytail: one page of 50, and `updated_on` stands in for the merge time
+ * (Bitbucket has no merged_on); read the merge commit's date if later edits skew it.
+ */
+export async function merged(api, p) {
+  const main = (await api(repo(p)))?.mainbranch?.name;
+  return values(await api(`${repo(p)}/pullrequests?state=MERGED&pagelen=50`))
+    .filter((pr) => pr.destination?.branch?.name === main)
+    .map((pr) => ({ number: pr.id, createdAt: pr.created_on ?? null, mergedAt: pr.updated_on ?? null, changes: null }));
+}

@@ -471,7 +471,7 @@
       "done": "Klar",
       "released": "Släppt",
       "toDone": "Till klar",
-      "toRelease": "Till release",
+      "leadTime": "Ledtid",
       "from": {
         "intent": "intent",
         "git": "git"
@@ -489,7 +489,31 @@
       "unreadable": "Oläslig",
       "epic": "Epic-fil saknas",
       "git": "Git-historiken saknas",
-      "features": "Feature-dokumenten saknas"
+      "features": "Feature-dokumenten saknas",
+      "releases": "GitHubs releaselista saknas (prereleaser läses bara från GitHub)",
+      "pulls": "Pull requests saknas"
+    },
+    "delivery": {
+      "title": "Leverans",
+      "lead": "Ledtid (median)",
+      "frequency": "Releaser per månad",
+      "failure": "Andel misslyckade releaser",
+      "recover": "Tid till återställning (median)",
+      "pulls": "{count, plural, one {# sammanslagen pull request} other {# sammanslagna pull requests}}: {open} från öppnad till sammanslagen, {rounds} granskningsrundor (medianer)",
+      "noPulls": "Inga pull request-siffror: pull requests kunde inte läsas.",
+      "perRelease": "Per release",
+      "release": "Release",
+      "stories": "Stories",
+      "failed": "Misslyckad",
+      "toRecover": "Till återställning",
+      "pullCount": "Pull requests",
+      "openToMerge": "Öppnad till sammanslagen (median)",
+      "prerelease": "prerelease på GitHub",
+      "faultIn": "Fel i: {stories}",
+      "ok": "OK",
+      "notRecovered": "inte återställd än",
+      "withoutFaultIn": "{n, plural, one {# fix-story saknar} other {# fix-stories saknar}} raden Fault in och räknas inte.",
+      "sources": "Källor: feature-dokumenten och audit (ledtid), git-taggar (releaser), GitHub-releaser och fix-stories i EPIC-00 (fel), pull requests."
     }
   },
   "cost": {

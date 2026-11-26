@@ -4,7 +4,7 @@
 
 ---
 
-> Small fixes the person reports while using the app: something looks off, behaves wrongly or is missing a detail. Each fix becomes a story here, so nothing reported in passing gets lost. A fix that grows into a feature moves to its topic's epic.
+> Small fixes the person reports while using the app: something looks off, behaves wrongly or is missing a detail. Each fix becomes a story here, so nothing reported in passing gets lost. A fix that grows into a feature moves to its topic's epic. A fix for a fault that shipped in a release names that release with a `- **Fault in:** vX.Y.Z` line, so the Velocity view counts it as a failed release (US-1304); a fix story without the line is not counted.
 
 **Stories:** US-0001, US-0002, US-0003, US-0004, US-0005, US-0006, US-0007, US-0008, US-0009, US-0010, US-0011, US-0012, US-0013, US-0014, US-0015, US-0016, US-0017, US-0018, US-0019, US-0020, US-0021, US-0022, US-0023, US-0024, US-0025, US-0026, US-0027, US-0028, US-0029, US-0030, US-0031, US-0032, US-0033, US-0034, US-0035, US-0036, US-0037, US-0038, US-0039, US-0040, US-0041, US-0042, US-0043, US-0044, US-0045, US-0046, US-0047, US-0048, US-0049, US-0050, US-0051, US-0052, US-0053, US-0054, US-0055, US-0056
 

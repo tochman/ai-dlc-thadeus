@@ -162,6 +162,8 @@ const m = vi.hoisted(() => {
       ]),
       listComments: vi.fn(async () => [{ author: 'anna', body: 'Nice', time: '2026-11-16T10:00:00Z', url: null }]),
       listReviews: vi.fn(async () => []),
+      listMergedPulls: vi.fn(async () => []), // US-1304
+      listReleases: vi.fn(async () => []),
       saveBitbucket: vi.fn(async () => {}),
       clearBitbucket: vi.fn(async () => {}),
       hasBitbucket: vi.fn(async () => true),
@@ -211,7 +213,13 @@ vi.mock('../../src/main/projectService.js', () => ({
   },
   inProgress: (i) => i.status !== 'complete'
 }));
-vi.mock('../../src/main/platforms/index.js', () => ({ listPulls: m.svc.listPulls, listComments: m.svc.listComments, listReviews: m.svc.listReviews }));
+vi.mock('../../src/main/platforms/index.js', () => ({
+  listPulls: m.svc.listPulls,
+  listComments: m.svc.listComments,
+  listReviews: m.svc.listReviews,
+  listMergedPulls: m.svc.listMergedPulls,
+  listReleases: m.svc.listReleases
+}));
 vi.mock('../../src/main/credentials.js', () => ({
   saveBitbucket: m.svc.saveBitbucket,
   clearBitbucket: m.svc.clearBitbucket,
@@ -1373,7 +1381,7 @@ describe('velocity (US-0303 FR3.5)', () => {
     svc.loadFeatures.mockResolvedValueOnce(features);
     svc.listReleaseTags.mockResolvedValueOnce(tags);
     svc.storyMarkerHistory.mockResolvedValueOnce('LOG');
-    expect(await call('project:velocity', {}, projectId, 'default')).toEqual({ velocity: true });
+    expect(await call('project:velocity', {}, projectId, 'default')).toMatchObject({ velocity: true, delivery: expect.any(Object) });
     expect(svc.loadIntentList).toHaveBeenLastCalledWith('/work/velocity', 'default', []);
     expect(svc.storyMarkerHistory).toHaveBeenLastCalledWith('/work/velocity', 'docs/features');
     expect(svc.loadVelocity).toHaveBeenLastCalledWith('/work/velocity', 'default', [{ dirName: 'a' }], features, {
@@ -1381,6 +1389,57 @@ describe('velocity (US-0303 FR3.5)', () => {
       history: 'LOG',
       featuresDir: 'docs/features'
     });
+  });
+
+  // US-1304 FR3.4, FR5.3, FR6.2, NFR3
+  const fixEpic = {
+    id: 'EPIC-00',
+    file: 'docs/features/epic-00-fixes.md',
+    parsed: { stories: [{ id: 'US-0057', statusText: 'Released in v0.2.0', raw: '- **Fault in:** v0.1.0' }] }
+  };
+  const deliveryTags = [
+    { name: 'v0.1.0', date: '2026-09-10' },
+    { name: 'v0.2.0', date: '2026-10-15' }
+  ];
+
+  it("project:velocity adds delivery from the tags, EPIC-00's fix stories, GitHub's releases and the merged pull requests", async () => {
+    const { projectId } = await openProject('/work/delivery');
+    svc.loadFeatures.mockResolvedValueOnce({ available: true, overviewPath: 'docs/FEATURES.md', epics: [fixEpic] });
+    svc.listReleaseTags.mockResolvedValueOnce(deliveryTags);
+    svc.listReleases.mockResolvedValueOnce([{ tag: 'v0.2.0', prerelease: true }]);
+    svc.listMergedPulls.mockResolvedValueOnce([{ number: 1, createdAt: '2026-09-01T10:00:00Z', mergedAt: '2026-09-02T10:00:00Z', changes: 1 }]);
+    svc.loadVelocity.mockResolvedValueOnce({ stories: [{ id: 'US-0101', release: 'v0.1.0', toReleaseMs: 864e5 }] });
+    const { delivery } = await call('project:velocity', {}, projectId, 'default');
+    expect(delivery.readouts).toMatchObject({ leadMs: 864e5, failureRate: 1 });
+    expect(delivery.releases.map((r) => [r.release, r.failed, r.prerelease, r.fixes])).toEqual([
+      ['v0.1.0', true, false, ['US-0057']],
+      ['v0.2.0', true, true, []]
+    ]);
+    expect(delivery.pulls).toMatchObject({ count: 1, medianRounds: 2 });
+    expect(delivery.missing).toEqual([]);
+    expect(svc.listReleases).toHaveBeenLastCalledWith(expect.objectContaining({ id: 'github' }), expect.objectContaining({ credentials: svc.loadBitbucket }));
+    expect(svc.listMergedPulls).toHaveBeenLastCalledWith(
+      expect.objectContaining({ id: 'github' }),
+      expect.objectContaining({ credentials: svc.loadBitbucket })
+    );
+  });
+
+  it('names a failing release list and pull request read as missing sources, and keeps the rest', async () => {
+    const { projectId } = await openProject('/work/delivery-offline');
+    svc.loadFeatures.mockResolvedValueOnce({ available: true, overviewPath: 'docs/FEATURES.md', epics: [fixEpic] });
+    svc.listReleaseTags.mockResolvedValueOnce(deliveryTags);
+    svc.listReleases.mockRejectedValueOnce(platformError('not-logged-in'));
+    svc.listMergedPulls.mockRejectedValueOnce(platformError('timeout'));
+    const { delivery } = await call('project:velocity', {}, projectId, 'default');
+    expect(delivery.missing).toEqual([
+      { kind: 'releases', path: 'GitHub', error: 'GitHub: not-logged-in' },
+      { kind: 'pulls', path: 'GitHub', error: 'GitHub: timeout' }
+    ]);
+    expect(delivery.readouts.failureRate).toBe(0.5); // the Fault in line still counts (FR3.4)
+    expect(delivery.pulls).toBeNull();
+    svc.listReleases.mockRejectedValueOnce(platformError('unknown-platform'));
+    const gitlab = await call('project:velocity', {}, projectId, 'default');
+    expect(gitlab.delivery.missing).toEqual([{ kind: 'releases', path: 'GitHub', error: null }]);
   });
 
   it('reads no git history without epic files', async () => {

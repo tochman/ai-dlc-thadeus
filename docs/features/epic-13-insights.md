@@ -8,7 +8,7 @@
 
 **Stories:** US-1301–US-1307
 
-**Status (2026-11-26):** ✅ US-1301 to US-1303 done, for v0.3.2. 🚧 US-1304 in progress, for v0.3.2. 📋 US-1305 planned, for v0.3.2. 📋 US-1306 and US-1307 planned, for v0.3.3.
+**Status (2026-11-26):** ✅ US-1301 to US-1304 done, for v0.3.2. 📋 US-1305 planned, for v0.3.2. 📋 US-1306 and US-1307 planned, for v0.3.3.
 
 ---
 
@@ -58,19 +58,19 @@
 - **Notes:** CSV export of these figures picks up the export deferred in US-0203.
 - **Dependencies:** US-0201, US-0209, US-0303, US-0604
 
-**US-1304: Delivery metrics from AI-DLC and git: lead time, release frequency, failure rate and recovery time** 🚧 In progress, for v0.3.2
+**US-1304: Delivery metrics from AI-DLC and git: lead time, release frequency, failure rate and recovery time** ✅ Done, for v0.3.2
 - As a **team lead**, in order to **see whether the AI work makes delivery faster and safer**, I would like **the four DORA metrics, worked out from the feature docs, the audit, the tags and the pull requests**.
 - **Epic:** EPIC-13
 - **Priority:** Medium
 - **Complexity:** Large
 - **Background:** Asked for 2026-11-18. Harness tracks DORA out of the box. For a desktop app that ships by tag (team.md, Deployment), each metric has a clear source here.
 - **Acceptance Criteria:**
-  - [ ] **Lead time:** from a story's first 🚧 (its intent's start in the audit) to the tag of the release that includes it, per story and as a median per release.
-  - [ ] **Release frequency:** `vX.Y.Z` tags per month on `main`.
-  - [ ] **Change failure rate:** the share of releases that were marked as a prerelease after publishing, or that were followed by an EPIC-00 fix story for a fault they shipped.
-  - [ ] **Time to recover:** from a release marked broken to the tag of the patch that fixes it.
-  - [ ] Pull request figures from the platform connection (US-1201): time from open to merge, and review rounds.
-  - [ ] Each figure shows its source, and says so when data is missing (for example, no platform connection). Every text goes through `t()` in Swedish and English, in the LCARS look.
+  - [x] **Lead time:** from a story's first 🚧 (its intent's start in the audit) to the tag of the release that includes it, per story and as a median per release.
+  - [x] **Release frequency:** `vX.Y.Z` tags per month on `main`.
+  - [x] **Change failure rate:** the share of releases that were marked as a prerelease after publishing, or that were followed by an EPIC-00 fix story for a fault they shipped.
+  - [x] **Time to recover:** from a release marked broken to the tag of the patch that fixes it.
+  - [x] Pull request figures from the platform connection (US-1201): time from open to merge, and review rounds.
+  - [x] Each figure shows its source, and says so when data is missing (for example, no platform connection). Every text goes through `t()` in Swedish and English, in the LCARS look.
 - **Dependencies:** US-0303, US-0605, US-1201
 
 **US-1305: Quality signals next to cost** 📋 Planned, for v0.3.2

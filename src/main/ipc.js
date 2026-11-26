@@ -58,7 +58,8 @@ import {
   storyMarkerHistory
 } from './git.js';
 import { detectPlatform } from './platforms/detect.js';
-import { listComments, listPulls, listReviews } from './platforms/index.js';
+import { listComments, listMergedPulls, listPulls, listReleases, listReviews } from './platforms/index.js';
+import { deliveryMetrics } from './parsers/delivery.js'; // US-1304
 import { clearBitbucket, hasBitbucket, loadBitbucket, saveBitbucket } from './credentials.js';
 import { collisions, loadMachines, loadOpenQuestions, matchPull, possibleCollisions, storyComments } from './teamActivity.js';
 import { readRuleStatus } from './releases.js';
@@ -1084,15 +1085,44 @@ const handlers = {
     return res;
   },
   // US-0303 FR3.5: the project's velocity from the cached intent list, the feature docs, the release tags and the epic
-  // files' git history (the folder of the first epic file; none without epic files).
+  // files' git history (the folder of the first epic file; none without epic files). US-1304 FR6: with the delivery
+  // metrics from the tags, EPIC-00's fix stories, the platform's releases and its merged pull requests.
   'project:velocity': async (_event, projectId, space) => {
     const p = project(projectId);
     const { intents } = await loadIntentList(p.root, space, []);
     const features = await loadFeatures(p.root, (await getProjectSettings(p.root)).featuresPath);
     const epicFile = features.available ? features.epics.find((e) => e.file)?.file : null;
     const featuresDir = epicFile ? path.posix.dirname(epicFile) : null;
-    const [tags, history] = await Promise.all([listReleaseTags(p.root), featuresDir ? storyMarkerHistory(p.root, featuresDir) : null]);
-    return loadVelocity(p.root, space, intents, features, { tags, history, featuresDir });
+    const platform = await platformOf(p);
+    const [tags, history, releases, pulls] = await Promise.all([
+      listReleaseTags(p.root),
+      featuresDir ? storyMarkerHistory(p.root, featuresDir) : null,
+      asValue(() => listReleases(platform, PLATFORM_DEPS)),
+      asValue(() => listMergedPulls(platform, PLATFORM_DEPS))
+    ]);
+    const velocity = await loadVelocity(p.root, space, intents, features, { tags, history, featuresDir });
+    // US-1304 FR3.4, FR5.3, NFR3: a failing platform read is a named missing source, never a broken view.
+    const missing = [
+      ['releases', releases],
+      ['pulls', pulls]
+    ]
+      .filter(([, res]) => !res.ok)
+      // GitLab and Bitbucket have no release list: the chip says prereleases come from GitHub, the "no pull requests" text would mislead.
+      .map(([kind, res]) => ({
+        kind,
+        path: platform?.name ?? 'origin',
+        error: kind === 'releases' && res.error.code === 'unknown-platform' ? null : res.error.message
+      }));
+    const fixes = (features.available && features.epics.find((e) => e.id === 'EPIC-00')?.parsed?.stories) || [];
+    const delivery = deliveryMetrics({
+      stories: velocity.stories ?? [],
+      tags,
+      fixes,
+      releases: releases.ok ? releases.value : null,
+      pulls: pulls.ok ? pulls.value : null,
+      nowMs: Date.now()
+    });
+    return { ...velocity, delivery: { ...delivery, missing } };
   },
   'project:cost': async (_event, projectId, space) => {
     const p = project(projectId);

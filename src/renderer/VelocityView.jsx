@@ -3,6 +3,7 @@
 // per intent and per story, the stories per release (FR2.3), and a sources footer that names the records it used and
 // every missing one with its path (FR4.2, FR4.3). IntentVelocity is the intent detail's Velocity tab (FR1.5), computed
 // here from the intent's events with the same pure functions. Status is always text, never colour alone (NFR2).
+// US-1304 FR6: the Delivery section with the DORA readouts, the pull request medians and a row per release.
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { intentMetrics } from '../main/parsers/velocity.js';
@@ -137,7 +138,7 @@ function StoryTable({ stories }) {
           <th scope="col">{t('velocity.stories.done')}</th>
           <th scope="col">{t('velocity.stories.released')}</th>
           <th scope="col">{t('velocity.stories.toDone')}</th>
-          <th scope="col">{t('velocity.stories.toRelease')}</th>
+          <th scope="col">{t('velocity.stories.leadTime')}</th>
         </tr>
       </thead>
       <tbody>
@@ -193,6 +194,101 @@ function Sources({ sources }) {
         </>
       )}
     </footer>
+  );
+}
+
+/** US-1304 FR6.1, FR6.2: the delivery readouts, the pull request medians, a row per release and its sources. */
+function Delivery({ delivery }) {
+  const { t, dur } = useText();
+  const { readouts: r, pulls } = delivery;
+  const num = (n, opts) => (n == null ? t('velocity.unknown') : new Intl.NumberFormat(locale(), { maximumFractionDigits: 1, ...opts }).format(n));
+  const why = (row) =>
+    [row.prerelease && t('velocity.delivery.prerelease'), row.fixes.length > 0 && t('velocity.delivery.faultIn', { stories: row.fixes.join(', ') })]
+      .filter(Boolean)
+      .join(' · ');
+  return (
+    <section className="velocity-delivery" data-testid="velocity-delivery">
+      <h3 className="section-title">{t('velocity.delivery.title')}</h3>
+      <div className="velocity-readouts">
+        <Readout label={t('velocity.delivery.lead')} value={dur(r.leadMs)} testId="velocity-delivery-lead" />
+        <Readout label={t('velocity.delivery.frequency')} value={num(r.perMonth)} testId="velocity-delivery-frequency" />
+        <Readout
+          label={t('velocity.delivery.failure')}
+          value={num(r.failureRate, { style: 'percent', maximumFractionDigits: 0 })}
+          testId="velocity-delivery-failure"
+        />
+        <Readout label={t('velocity.delivery.recover')} value={dur(r.recoverMs)} testId="velocity-delivery-recover" />
+      </div>
+      <p className="muted" data-testid="velocity-delivery-pulls">
+        {pulls
+          ? t('velocity.delivery.pulls', { count: pulls.count, open: dur(pulls.medianOpenMs), rounds: num(pulls.medianRounds) })
+          : t('velocity.delivery.noPulls')}
+      </p>
+      {delivery.releases.length > 0 && (
+        <table className="cost-table" data-testid="velocity-delivery-releases">
+          <caption>{t('velocity.delivery.perRelease')}</caption>
+          <thead>
+            <tr>
+              <th scope="col">{t('velocity.delivery.release')}</th>
+              <th scope="col">{t('velocity.delivery.stories')}</th>
+              <th scope="col">{t('velocity.delivery.lead')}</th>
+              <th scope="col">{t('velocity.delivery.failed')}</th>
+              <th scope="col">{t('velocity.delivery.toRecover')}</th>
+              <th scope="col">{t('velocity.delivery.pullCount')}</th>
+              <th scope="col">{t('velocity.delivery.openToMerge')}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {delivery.releases.map((row) => (
+              <tr key={row.release} data-testid="velocity-delivery-release">
+                <td>{row.release}</td>
+                <td>{row.stories}</td>
+                <td>{dur(row.leadMs)}</td>
+                <td>
+                  {row.failed ? (
+                    <>
+                      <span className="lcars-chip lcars-chip--warn">{t('velocity.delivery.failed')}</span>
+                      <span className="muted"> {why(row)}</span>
+                    </>
+                  ) : (
+                    <span className="lcars-chip">{t('velocity.delivery.ok')}</span>
+                  )}
+                </td>
+                <td>
+                  {!row.failed ? (
+                    '–'
+                  ) : row.recovered ? (
+                    dur(row.recoverMs)
+                  ) : (
+                    <span className="lcars-chip lcars-chip--warn">{t('velocity.delivery.notRecovered')}</span>
+                  )}
+                </td>
+                <td>{row.pulls ?? t('velocity.unknown')}</td>
+                <td>{dur(row.medianOpenMs)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+      {delivery.withoutFaultIn > 0 && (
+        <p className="muted" data-testid="velocity-delivery-nofault">
+          {t('velocity.delivery.withoutFaultIn', { n: delivery.withoutFaultIn })}
+        </p>
+      )}
+      <p className="muted" data-testid="velocity-delivery-sources">
+        {t('velocity.delivery.sources')}
+      </p>
+      {delivery.missing.length > 0 && (
+        <ul className="refresh-list" data-testid="velocity-delivery-missing">
+          {delivery.missing.map((m) => (
+            <li key={m.kind}>
+              <span className="lcars-chip lcars-chip--warn">{t(`velocity.missing.${m.kind}`)}</span> <code>{m.path}</code>
+              {m.error && <span className="muted"> · {m.error}</span>}
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
   );
 }
 
@@ -278,6 +374,7 @@ export default function VelocityView({ projectId, space }) {
                 </ul>
               </>
             )}
+            {data.delivery && <Delivery delivery={data.delivery} />}
             <Sources sources={data.sources} />
           </>
         )}

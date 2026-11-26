@@ -57,3 +57,22 @@ export async function reviews(api, p, number) {
     url: r.html_url ?? null
   }));
 }
+
+// US-1304 FR5.1: merged pull requests with the reviews that asked for changes, in one GraphQL call.
+// ponytail: the last 50 updated merged pull requests (one page); page with `after` if a team merges more between looks.
+const MERGED =
+  'query($owner:String!,$name:String!){repository(owner:$owner,name:$name){defaultBranchRef{name} pullRequests(states:MERGED,first:50,orderBy:{field:UPDATED_AT,direction:DESC}){nodes{number createdAt mergedAt baseRefName reviews(states:CHANGES_REQUESTED){totalCount}}}}}';
+
+/** US-1304 FR5.1, FR5.3: the merged pull requests into the default branch as {number, createdAt, mergedAt, changes}. */
+export async function merged(api, p) {
+  const [owner, name] = p.path.split('/');
+  const repository = (await api('graphql', ['-f', `query=${MERGED}`, '-f', `owner=${owner}`, '-f', `name=${name}`]))?.data?.repository;
+  return asList(repository?.pullRequests?.nodes)
+    .filter((pr) => pr.baseRefName === repository.defaultBranchRef?.name)
+    .map((pr) => ({ number: pr.number, createdAt: pr.createdAt ?? null, mergedAt: pr.mergedAt ?? null, changes: pr.reviews?.totalCount ?? 0 }));
+}
+
+/** US-1304 FR3.4: the releases with their prerelease mark. ponytail: one page of 50; page if older failures matter. */
+export async function releases(api, p) {
+  return asList(await api(`${repo(p)}/releases?per_page=50`)).map((r) => ({ tag: r.tag_name, prerelease: !!r.prerelease }));
+}
