@@ -4,7 +4,7 @@ import { viewFields } from '../../src/shared/frameworkViews.js';
 
 // The project data hooks and the terminals have their own tests; here only which view shows matters.
 const intents = [{ dirName: '261113-config-view', slug: 'config-view', active: true }];
-const projectHook = vi.hoisted(() => ({ extra: {} }));
+const projectHook = vi.hoisted(() => ({ extra: {}, noCost: { available: false, reason: 'Ingen ledger.' } })); // one object, as the hook's state is (US-1303 hands it up)
 vi.mock('../../src/renderer/useProject.js', () => ({
   useProject: () => ({
     space: 'default',
@@ -16,7 +16,7 @@ vi.mock('../../src/renderer/useProject.js', () => ({
     detail: null,
     newKeys: null,
     error: null,
-    cost: { available: false, reason: 'Ingen ledger.' },
+    cost: projectHook.noCost,
     models: null,
     lastIntentChangeAt: null,
     ...projectHook.extra
@@ -446,6 +446,40 @@ describe('ProjectView: lifecycle rule notice (US-0603 FR5.2, FR5.3)', () => {
     renderView('intents', { project: { ...project, detection: none } });
     await screen.findByTestId('framework-choice-root'); // US-1406
     expect(screen.queryByTestId('lifecycle-rule-notice')).toBeNull();
+  });
+});
+
+// US-1303 NFR4: the Features view rolls up the cost the cost panel already holds; the cost panel gets the stories.
+describe('ProjectView: cost per story (US-1303)', () => {
+  const total = { usd: 4, tokens: { input: 100, output: 10, cacheWrite: 0, cacheRead: 0 }, totalTokens: 110 };
+  const cost = {
+    available: true,
+    project: { total, byModel: [], byAgent: [], complete: true },
+    perIntent: { '261113-config-view': { total, byStage: [], byAgent: [], byModel: [], complete: true, rework: null } },
+    byScope: {},
+    timeline: []
+  };
+  const epic = { id: 'EPIC-13', title: 'Insights', topic: '', status: '🚧', statusKind: 'progress', file: null };
+  const features = {
+    available: true,
+    epics: [{ ...epic, parsed: { stories: [{ id: 'US-1303', title: 'Cost', status: 'progress', statusText: '🚧', total: 0, done: 0 }] } }]
+  };
+  afterEach(() => {
+    projectHook.extra = {};
+    featuresHook.extra = {};
+  });
+
+  it('shows the story’s cost in Features and the not-linked list in the cost panel, from the same loads', async () => {
+    projectHook.extra = { cost };
+    featuresHook.extra = {
+      features,
+      settings: { featureDocs: 'show', featuresPath: 'docs/FEATURES.md', harness: null },
+      delivered: { stories: { '261113-config-view': ['US-1303'], '261101-old': [] }, hand: {} }
+    };
+    const { show } = renderView('features');
+    expect((await screen.findAllByTestId('story-cost-badge'))[0].textContent).toBe('$4.00');
+    show('cost');
+    expect((await screen.findByTestId('story-cost-not-linked')).textContent).toMatch(/261101-old/);
   });
 });
 

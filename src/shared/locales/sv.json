@@ -850,6 +850,25 @@
     "noResponse": "{name} svarade inte inom {seconds} s",
     "timeout": "Fliken blev inte {target} inom {seconds} s"
   },
+  "storyCost": {
+    "label": "Kostnad",
+    "shared": "delad med {n} storys",
+    "total": "{usd} · {tokens} tokens",
+    "rework": "Omarbete: {usd} · {share} % av kostnaden",
+    "incomplete": "Ofullständig: en modell saknar pris",
+    "split": "Fördelning per stage, agent och modell",
+    "reworkColumn": "Omarbete",
+    "intents": "Intents",
+    "noCost": "ingen kostnad registrerad",
+    "reworkUnknown": "omarbete okänt",
+    "notLinked": {
+      "title": "Inte länkad till en story",
+      "pick": "Länka till story",
+      "linked": "Länkade för hand",
+      "unlink": "Ta bort länk",
+      "failed": "Länken kunde inte sparas: {error}"
+    }
+  },
   "features": {
     "source": {
       "remote": "Planering från {ref}",

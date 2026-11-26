@@ -1,0 +1,22 @@
+{
+  "stage": "code-generation",
+  "upstream_ids": ["FR1.1", "FR1.2", "FR1.3", "FR1.4", "FR2", "FR3", "FR4", "FR5", "FR6.1", "FR6.2", "FR6.3", "NFR1", "NFR2", "NFR3", "NFR4", "NFR5"],
+  "coverage": [
+    { "id": "FR1.1", "status": "OK", "target": "src/main/storyLinks.js" },
+    { "id": "FR1.2", "status": "OK", "target": "src/main/storyLinks.js" },
+    { "id": "FR1.3", "status": "OK", "target": "src/main/storyLinks.js" },
+    { "id": "FR1.4", "status": "OK", "target": "src/main/features.js" },
+    { "id": "FR2", "status": "OK", "target": "src/main/parsers/storyCost.js" },
+    { "id": "FR3", "status": "OK", "target": "src/main/parsers/storyCost.js" },
+    { "id": "FR4", "status": "OK", "target": "src/main/rework.js" },
+    { "id": "FR5", "status": "OK", "target": "src/renderer/CostPanel.jsx" },
+    { "id": "FR6.1", "status": "OK", "target": "src/renderer/FeaturesView.jsx" },
+    { "id": "FR6.2", "status": "OK", "target": "src/renderer/StoryCost.jsx" },
+    { "id": "FR6.3", "status": "OK", "target": "src/renderer/StoryCost.jsx" },
+    { "id": "NFR1", "status": "OK", "target": "tests/main/storyLinks.test.js" },
+    { "id": "NFR2", "status": "OK", "target": "tests/main/storyCost.test.js" },
+    { "id": "NFR3", "status": "OK", "target": "src/shared/locales/en.json" },
+    { "id": "NFR4", "status": "OK", "target": "src/renderer/ProjectView.jsx" },
+    { "id": "NFR5", "status": "OK", "target": "tests/renderer/StoryCost.test.jsx" }
+  ]
+}

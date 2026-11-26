@@ -5,6 +5,7 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { CostLabel, CostNotes, CostTable, MachinesLine, ModelTable, SavingsSection } from './CostTab.jsx'; // US-1302: SavingsSection
 import { DiagonalFrame, Meter, Pill, Readout, ReadoutTable, SectionHeading, SegMeter, useEntrance } from './Lcars.jsx';
+import { NotLinked } from './StoryCost.jsx'; // US-1303 FR5
 import Tooltip from './Tooltip.jsx';
 import { currentTip, formatCost, formatCostPair, formatTokens, formatUsd, shortModel, tokenBreakdown } from './format.js';
 
@@ -134,9 +135,10 @@ function readoutRows(project) {
 
 /**
  * Total and readout always show; the tables fold out. `open`/`onToggle` let the left arm's "Kostnad" block
- * drive it (FR2.2); without them the panel keeps its own state.
+ * drive it (FR2.2); without them the panel keeps its own state. US-1303 FR5: `features` and `delivered` (the stories each
+ * intent delivered, from useFeatures) give the "Not linked to a story" list.
  */
-export default function CostPanel({ cost, models, open: openProp, onToggle, projectId = null, space, onView }) {
+export default function CostPanel({ cost, models, open: openProp, onToggle, projectId = null, space, onView, features = null, delivered = null }) {
   const { t } = useTranslation();
   const [ownOpen, setOwnOpen] = useState(false);
   const entering = useEntrance('cost'); // US-0417: the shared entrance on entering Cost
@@ -198,6 +200,7 @@ export default function CostPanel({ cost, models, open: openProp, onToggle, proj
             <Mix total={project.total} scopes={scopes} totalUsd={project.total.usd} />
             {/* US-1302 FR7: every hint of the project, largest saving first. */}
             <SavingsSection projectId={projectId} space={space} onView={onView} />
+            <NotLinked projectId={projectId} space={space} delivered={delivered} features={features} />
           </>
         )}
         {/* US-0050 item 7: the tables open with the shared fold. */}

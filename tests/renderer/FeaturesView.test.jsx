@@ -188,6 +188,53 @@ describe('FeaturesView: planning source (US-0036 FR2.4, FR2.5)', () => {
   });
 });
 
+// US-1303 FR6: the cost the cost panel already holds, rolled up and shown next to the status.
+describe('FeaturesView: cost per story, epic and release (US-1303 FR6)', () => {
+  const intentCost = (usd) => ({
+    total: { usd, tokens: { input: 100, output: 10, cacheWrite: 0, cacheRead: 0 }, totalTokens: 110 },
+    byStage: [{ name: 'code-generation', usd, totalTokens: 110 }],
+    byAgent: [],
+    byModel: [],
+    complete: true,
+    rework: null
+  });
+  const cost = { available: true, perIntent: { a: intentCost(4), b: intentCost(2) } };
+  const badge = (el) => within(el).queryByTestId('story-cost-badge')?.textContent ?? null;
+
+  it('shows the cost next to the status on a story row and an epic row, nothing for a story with no intent', () => {
+    render(<FeaturesView projectId="p1" features={features} cost={cost} delivered={{ stories: { a: ['US-0101'] }, hand: {} }} />);
+    const [s1, s2] = screen.getAllByTestId('features-view-story');
+    expect(badge(s1)).toBe('$4.00');
+    expect(badge(s2)).toBeNull();
+    expect(badge(screen.getAllByTestId('features-view-epic')[0])).toBe('$4.00');
+    expect(screen.getByTestId('features-view-epic-cost')).toBeTruthy(); // the epic's detail
+    fireEvent.click(s1);
+    expect(within(screen.getByTestId('features-view-story-detail')).getByTestId('story-cost-detail')).toBeTruthy();
+  });
+
+  it('shows a release row its stories’ cost, planned and released alike', () => {
+    render(
+      <FeaturesView
+        projectId="p1"
+        features={releaseDocs()}
+        delivery="releases"
+        tab="releases"
+        cost={cost}
+        delivered={{ stories: { a: ['US-0601'], b: ['US-0603'] }, hand: {} }}
+      />
+    );
+    const rows = screen.getAllByTestId('features-view-release');
+    const of = (v) => rows.find((r) => r.textContent.startsWith(v));
+    expect(badge(of('v0.2.0'))).toBe('$4.00');
+    expect(badge(of('v0.2.5'))).toBe('$2.00');
+  });
+
+  it('shows no figures without the cost', () => {
+    render(<FeaturesView projectId="p1" features={features} delivered={{ stories: { a: ['US-0101'] }, hand: {} }} />);
+    expect(screen.queryByTestId('story-cost-badge')).toBeNull();
+  });
+});
+
 describe('FeaturesView: releases (US-0603)', () => {
   it('a story picks a release among the planned and next versions, or None, through the bridge (FR2.1, FR2.2)', async () => {
     window.bridge.setStoryRelease = vi.fn(async () => ({ ok: true }));

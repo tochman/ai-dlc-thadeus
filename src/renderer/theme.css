@@ -895,6 +895,15 @@ button.lcars-nb:hover:not(:disabled), a.lcars-nb:hover { filter: brightness(1.15
 .cost-rework { display: flex; flex-direction: column; gap: 6px; }
 .cost-rework-total { display: flex; align-items: baseline; gap: 8px; margin: 0; font-variant-numeric: tabular-nums; }
 .cost-rework-share { margin: 4px 0 0; color: var(--coral-soft); font-family: var(--font-head); letter-spacing: 0.04em; text-transform: uppercase; font-size: 13px; }
+/* US-1303 FR6: a story, epic or release figure as a flat steel readout tag beside its status; the detail as a square
+   steel-edged block; the cost panel's not-linked rows with their picker. */
+.story-cost-tag { color: var(--steel-text); font-variant-numeric: tabular-nums; }
+.story-cost { display: flex; flex-direction: column; gap: 6px; margin: 0 0 8px; padding: 6px 10px; border-left: 6px solid var(--steel); }
+.story-cost p { margin: 0; }
+.story-cost-total { font-variant-numeric: tabular-nums; }
+.story-cost-intents { margin: 0; padding: 0; list-style: none; font-size: 13px; color: var(--text-2); }
+.story-cost-links { margin-top: 12px; }
+.story-cost-link-row { display: flex; flex-wrap: wrap; align-items: center; gap: var(--gap); }
 /* US-1302 FR7: savings hints, each a steel-edged LCARS row with its saving, working, links and dismiss. */
 .cost-savings { display: flex; flex-direction: column; gap: 6px; }
 .cost-savings-list, .cost-savings-dismissed { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }

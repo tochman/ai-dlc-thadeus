@@ -103,6 +103,8 @@ contextBridge.exposeInMainWorld('bridge', {
   chooseFramework: call('project:chooseFramework'), // (projectId, framework): saves a confirmed choice, or names its setup
   loadFeatures: call('features:load'),
   getStoryLinks: call('features:storyLinks'),
+  getDeliveredStories: call('features:delivered'), // US-1303 FR1: a project id and a space; `{stories, hand}`
+  setStoryLink: call('features:setStoryLink'), // US-1303 FR5: a project id, a space, an intent dirName and story ids
   // US-0603: a story id, a version and the read hashes cross the bridge, never a path.
   setStoryRelease: call('features:setRelease'),
   // US-0605: a version (and for delete the plan's read hash), never a path.

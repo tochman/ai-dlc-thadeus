@@ -85,6 +85,7 @@ import { PLANNING_BRANCH_DEFAULT, PLANNING_PUSH_DEFAULT, getProjectSettings, get
 import { watchFiles, watchForAidlc, watchIntents, watchOpenFiles } from './watcher.js';
 import { listTree, readForEdit, writeFileSafe } from './fileWrite.js';
 import { featureWatchPaths, loadFeatures, loadPlanningFeatures, loadStoryLinks } from './features.js';
+import { loadDelivered, setHandLink } from './storyLinks.js'; // US-1303
 import { SPECKIT_WATCH_PATHS, listedFeatures, loadSpeckitFeatures } from './speckitFeatures.js';
 import { addMark, markFile, removeMark } from './speckitArchive.js'; // US-1411
 import { loadSpeckitRules } from './speckitRules.js'; // US-1404
@@ -1691,6 +1692,27 @@ const handlers = {
       String(space),
       intents.filter((i) => !i.missingOnDisk).map((i) => i.dirName)
     );
+  },
+  // US-1303 FR1: the stories each intent delivered (archived ones included) and the hand links among them, for the roll-up.
+  'features:delivered': async (_event, projectId, space) => {
+    const p = project(projectId);
+    if (!space) return { stories: {}, hand: {} };
+    const { intents } = await loadIntentList(p.root, String(space), []); // cached list
+    return loadDelivered(
+      p.root,
+      String(space),
+      intents.filter((i) => !i.missingOnDisk).map((i) => i.dirName)
+    );
+  },
+  // US-1303 FR5, NFR1: links an intent of the space to stories by hand ([] removes it); the only write, to
+  // `.thadeus/story-links.json`. The views reload through features:changed.
+  'features:setStoryLink': async (_event, projectId, space, dirName, storyIds) => {
+    const p = project(projectId);
+    const { intents } = await loadIntentList(p.root, String(space), []);
+    if (!intents.some((i) => i.dirName === dirName)) throw new Error(t('intents.rename.unknown', { name: String(dirName) })); // a real intent folder, never a typed path
+    const links = await setHandLink(p.root, dirName, storyIds);
+    sendFeaturesChanged(projectId, p);
+    return links;
   },
   'projectSettings:get': async (_event, projectId) => getProjectSettings(project(projectId).root),
   'projectSettings:set': async (_event, projectId, partial) => {

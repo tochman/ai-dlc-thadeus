@@ -265,3 +265,66 @@ describe('CostPanel savings hints (US-1302 FR2.5, FR4–FR7, NFR1–NFR3)', () =
     expect(screen.queryByTestId('cost-savings')).toBeNull();
   });
 });
+
+// US-1303 FR5: the intents that link to no story, each with a story picker; a hand link can be removed again.
+describe('CostPanel: not linked to a story (US-1303 FR5)', () => {
+  const features = {
+    available: true,
+    epics: [
+      {
+        id: 'EPIC-13',
+        parsed: {
+          stories: [
+            { id: 'US-1303', title: 'Cost per story' },
+            { id: 'US-1304', title: 'Delivery metrics' }
+          ]
+        }
+      }
+    ]
+  };
+  const delivered = {
+    stories: { '261110-epic02-finish': [], '261112-epic29-small-k2-fixes': ['US-1303'] },
+    hand: { '261112-epic29-small-k2-fixes': ['US-1303'] }
+  };
+  function renderLinks(props = {}) {
+    window.bridge = { getSavings: vi.fn(async () => ({ hints: [], dismissed: [] })), dismissSaving: vi.fn(), setStoryLink: vi.fn(async () => ({})) };
+    return render(<CostPanel cost={cost} models={models} projectId="p1" space="default" features={features} delivered={delivered} {...props} />);
+  }
+  afterEach(() => {
+    delete window.bridge;
+  });
+
+  it('lists the intent that links to no story under "Inte länkad till en story"', () => {
+    renderLinks();
+    const section = screen.getByTestId('story-cost-not-linked');
+    expect(section.textContent).toMatch(/Inte länkad till en story/);
+    const rows = within(section).getAllByTestId('story-cost-not-linked-intent');
+    expect(rows.map((r) => r.dataset.intent)).toEqual(['261110-epic02-finish']);
+  });
+
+  it('picking a story links the intent through the bridge', async () => {
+    renderLinks();
+    const picker = screen.getByTestId('story-cost-link-picker');
+    expect([...picker.options].map((o) => o.value)).toEqual(['', 'US-1303', 'US-1304']);
+    fireEvent.change(picker, { target: { value: 'US-1304' } });
+    await waitFor(() => expect(window.bridge.setStoryLink).toHaveBeenCalledWith('p1', 'default', '261110-epic02-finish', ['US-1304']));
+  });
+
+  it('a hand-linked intent can be unlinked again', async () => {
+    renderLinks();
+    fireEvent.click(screen.getByTestId('story-cost-unlink'));
+    await waitFor(() => expect(window.bridge.setStoryLink).toHaveBeenCalledWith('p1', 'default', '261112-epic29-small-k2-fixes', []));
+  });
+
+  it('says so in one line when a link cannot be saved', async () => {
+    renderLinks();
+    window.bridge.setStoryLink.mockRejectedValueOnce(new Error('disk full'));
+    fireEvent.change(screen.getByTestId('story-cost-link-picker'), { target: { value: 'US-1303' } });
+    expect((await screen.findByRole('alert')).textContent).toBe('Länken kunde inte sparas: disk full');
+  });
+
+  it('shows no section without the delivered stories', () => {
+    renderLinks({ delivered: null });
+    expect(screen.queryByTestId('story-cost-not-linked')).toBeNull();
+  });
+});

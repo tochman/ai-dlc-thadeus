@@ -429,7 +429,7 @@ function addRework(summary, intents, events, readings) {
     const cost = summary.perIntent[i.dirName];
     const r = overviewRework({ events: events[n], readings: readings[n], archived: isArchived(i), finished: isFinished(i), cost });
     if (!r) return;
-    cost.rework = { total: r.total, share: r.share, estimate: r.estimate };
+    cost.rework = { total: r.total, share: r.share, estimate: r.estimate, byStage: r.byStage, unknown: r.unknown }; // US-1303 FR4: byStage, unknown
     project.usd += r.total.usd;
     project.tokens += r.total.tokens;
     project.estimate ||= r.estimate;

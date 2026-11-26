@@ -265,4 +265,21 @@ describe('overviewRework (US-1301 FR5, NFR4)', () => {
   it('an intent without a ledger entry has no rework', () => {
     expect(overviewRework({ events, readings: [], archived: false, finished: true, cost: null })).toBeNull();
   });
+
+  // US-1303 FR4: the story split shows rework beside the cost per stage; no audit means the rework is not known.
+  it('keeps the rework per stage, and says when it is not known', () => {
+    const more = [
+      ...events,
+      start('build-and-test', 10),
+      ev('GATE_REJECTED', 12, { Stage: 'build-and-test' }),
+      ev('STAGE_REVISING', 13, { Stage: 'build-and-test' }),
+      ...approve('build-and-test', 14)
+    ];
+    const twoStages = { ...cost, byStage: [...cost.byStage, { name: 'build-and-test', usd: 2, totalTokens: 200 }] };
+    const r = overviewRework({ events: more, readings: [], archived: false, finished: true, cost: twoStages });
+    expect(r.byStage).toEqual({ 'code-generation': { usd: 4, tokens: 400 }, 'build-and-test': { usd: 1, tokens: 100 } });
+    expect(r.unknown).toBe(false);
+    const none = overviewRework({ events: [], readings: [], archived: false, finished: true, cost });
+    expect(none).toMatchObject({ byStage: {}, unknown: true });
+  });
 });
