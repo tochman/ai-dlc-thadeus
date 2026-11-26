@@ -550,5 +550,13 @@
     "scope": "ultra-express",
     "status": "complete",
     "request": "b8ab48a3"
+  },
+  {
+    "uuid": "01a216c1-3957-7fe4-914b-9856872d4f79",
+    "slug": "lcars-pipeline-cards",
+    "dirName": "261126-lcars-pipeline-cards",
+    "scope": "visual-express",
+    "status": "in-flight",
+    "request": "92405762"
   }
 ]
