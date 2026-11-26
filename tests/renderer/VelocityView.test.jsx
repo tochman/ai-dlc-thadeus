@@ -2,6 +2,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import { t } from '../../src/shared/i18n.js';
+import { formatDuration } from '../../src/renderer/format.js';
 
 vi.mock('../../src/renderer/TerminalContext.jsx', () => ({ useTerminal: () => ({ state: () => 'idle', type: () => {}, sequence: () => {} }) }));
 const { default: VelocityView } = await import('../../src/renderer/VelocityView.jsx');
@@ -192,5 +193,103 @@ describe('the Velocity tab in the intent detail (US-0303 FR1.5)', () => {
     const [stage] = within(view).getAllByTestId('velocity-stage-row');
     expect(within(stage).getByTestId('velocity-stage-waiting').textContent).toBe('1 h 0 min');
     expect(within(stage).getByTestId('velocity-stage-reviews').textContent).toBe('1');
+  });
+});
+
+// US-1304 FR1.2, FR6.1, FR6.2, NFR4: the Delivery section, every status as text.
+const D = 24 * H;
+const DELIVERED = {
+  ...VELOCITY,
+  delivery: {
+    readouts: { leadMs: 3 * D, perMonth: 1.5, failureRate: 0.5, recoverMs: 2 * D },
+    pulls: { count: 4, medianOpenMs: 5 * H, medianRounds: 2 },
+    withoutFaultIn: 3,
+    releases: [
+      {
+        release: 'v0.1.0',
+        dateMs: T0,
+        stories: 2,
+        leadMs: 3 * D,
+        failed: true,
+        prerelease: true,
+        fixes: ['US-0057'],
+        recoverMs: 2 * D,
+        recovered: true,
+        pulls: 2,
+        medianOpenMs: 5 * H
+      },
+      {
+        release: 'v0.2.0',
+        dateMs: T0 + D,
+        stories: 1,
+        leadMs: null,
+        failed: true,
+        prerelease: false,
+        fixes: ['US-0058'],
+        recoverMs: null,
+        recovered: false,
+        pulls: 1,
+        medianOpenMs: H
+      },
+      {
+        release: 'v0.3.0',
+        dateMs: T0 + 2 * D,
+        stories: 0,
+        leadMs: null,
+        failed: false,
+        prerelease: false,
+        fixes: [],
+        recoverMs: null,
+        recovered: null,
+        pulls: null,
+        medianOpenMs: null
+      }
+    ],
+    missing: [{ kind: 'releases', path: 'GitLab', error: null }]
+  }
+};
+
+describe('the Delivery section (US-1304 FR6)', () => {
+  it('shows median lead time, releases per month, change failure rate and median time to recover', async () => {
+    await renderView(DELIVERED);
+    expect(screen.getByTestId('velocity-delivery-lead').textContent).toContain(formatDuration(3 * D));
+    expect(screen.getByTestId('velocity-delivery-frequency').textContent).toContain('1,5');
+    expect(screen.getByTestId('velocity-delivery-failure').textContent).toContain('50');
+    expect(screen.getByTestId('velocity-delivery-recover').textContent).toContain(formatDuration(2 * D));
+  });
+
+  it('shows the pull request medians, and says when the pull requests are missing', async () => {
+    await renderView(DELIVERED);
+    const pulls = screen.getByTestId('velocity-delivery-pulls').textContent;
+    expect(pulls).toContain(t('velocity.delivery.pulls', { count: 4, open: formatDuration(5 * H), rounds: '2' }));
+    cleanup();
+    await renderView({ ...DELIVERED, delivery: { ...DELIVERED.delivery, pulls: null } });
+    expect(screen.getByTestId('velocity-delivery-pulls').textContent).toBe(t('velocity.delivery.noPulls'));
+  });
+
+  it('gives one row per release with failed and why, time to recover and "not recovered yet" as text', async () => {
+    await renderView(DELIVERED);
+    const [a, b, c] = screen.getAllByTestId('velocity-delivery-release');
+    expect(a.textContent).toContain(t('velocity.delivery.prerelease'));
+    expect(a.textContent).toContain('US-0057');
+    expect(a.textContent).toContain(formatDuration(2 * D));
+    expect(b.textContent).toContain(t('velocity.delivery.notRecovered'));
+    expect(b.textContent).toContain(t('velocity.unknown')); // no lead time
+    expect(c.textContent).toContain(t('velocity.delivery.ok'));
+  });
+
+  it('counts the fix stories without a Fault in line and names a missing source', async () => {
+    await renderView(DELIVERED);
+    expect(screen.getByTestId('velocity-delivery-nofault').textContent).toBe(t('velocity.delivery.withoutFaultIn', { n: 3 }));
+    const missing = screen.getByTestId('velocity-delivery-missing').textContent;
+    expect(missing).toContain(t('velocity.missing.releases'));
+    expect(missing).toContain('GitLab');
+    expect(screen.getByTestId('velocity-delivery-sources').textContent).toBe(t('velocity.delivery.sources'));
+  });
+
+  it('calls the story column "Lead time", and shows no Delivery section without delivery figures', async () => {
+    await renderView();
+    expect(screen.getByTestId('velocity-stories').querySelector('thead').textContent).toContain(t('velocity.stories.leadTime'));
+    expect(screen.queryByTestId('velocity-delivery')).toBeNull();
   });
 });

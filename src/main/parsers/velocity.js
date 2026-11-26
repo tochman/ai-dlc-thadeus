@@ -6,7 +6,7 @@ import { statusOf } from './features.js';
 import { isArchiveEvent } from '../../shared/intentArchive.js';
 
 const HEAD_LINE = /^\+\*\*(US-\d{4})\s*[:–-].*?\*\*\s*(.*)$/;
-const RELEASED = /released in (v\d+\.\d+\.\d+)/i;
+export const RELEASED = /released in (v\d+\.\d+\.\d+)/i;
 const DAY_MS = 864e5;
 
 /**
@@ -167,7 +167,7 @@ export function intentMetrics(events, { finished: stateFinished = false } = {}) 
 }
 
 /** `YYYY-MM-DD` as local midnight, or null. */
-function localDay(date) {
+export function localDay(date) {
   const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(date ?? ''));
   return m ? new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3])).getTime() : null;
 }
@@ -175,7 +175,7 @@ function localDay(date) {
 /** A positive span, else null: zero or a missing end is "unknown", never 0 (FR2.2). */
 const span = (from, to) => (from != null && to != null && to - from > 0 ? to - from : null);
 const versionParts = (v) => v.slice(1).split('.').map(Number);
-const byVersion = (a, b) => {
+export const byVersion = (a, b) => {
   const [x, y] = [versionParts(a), versionParts(b)];
   return x[0] - y[0] || x[1] - y[1] || x[2] - y[2];
 };

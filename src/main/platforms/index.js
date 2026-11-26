@@ -1,4 +1,5 @@
-// US-1201 AC-1: one interface over the three platforms: listPulls, listComments, listReviews. GitHub is read through
+// US-1201 AC-1: one interface over the three platforms: listPulls, listComments, listReviews (US-1304: listMergedPulls,
+// listReleases). GitHub is read through
 // `gh api` and GitLab through `glab api`, each with the person's own login; Bitbucket through REST with the username and
 // app password the caller passes in (`credentials`). Every call has a 15 s limit, and every failure becomes a
 // PlatformError that names the platform and what the person can do, so the rest of the app keeps working.
@@ -97,4 +98,15 @@ export async function listComments(platform, number, deps = {}) {
 export async function listReviews(platform, number, deps = {}) {
   checkNumber(number);
   return run(platform, deps, (m, api) => m.reviews(api, platform, number));
+}
+
+/** US-1304 FR5.1, FR5.3: the merged pull requests into the default branch as {number, createdAt, mergedAt, changes|null}. */
+export async function listMergedPulls(platform, deps = {}) {
+  return run(platform, deps, (m, api) => m.merged(api, platform));
+}
+
+/** US-1304 FR3.4: the releases as {tag, prerelease}; GitHub only, the other platforms are `unknown-platform`. */
+export async function listReleases(platform, deps = {}) {
+  if (!MODULES[platform?.id]?.releases) throw new PlatformError('unknown-platform', platform);
+  return run(platform, deps, (m, api) => m.releases(api, platform));
 }

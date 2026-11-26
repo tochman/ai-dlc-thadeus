@@ -4,7 +4,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { detectPlatform } from '../../src/main/platforms/detect.js';
-import { PLATFORM_TIMEOUT_MS, listComments, listPulls, listReviews } from '../../src/main/platforms/index.js';
+import { PLATFORM_TIMEOUT_MS, listComments, listMergedPulls, listPulls, listReleases, listReviews } from '../../src/main/platforms/index.js';
 
 const fixture = (name) => JSON.parse(readFileSync(path.resolve(__dirname, `../fixtures/platforms/${name}.json`), 'utf8'));
 
@@ -237,5 +237,81 @@ describe('listPulls, listComments, listReviews (US-1201 AC-1)', () => {
     await expect(listReviews(github, -1, { exec })).rejects.toThrow();
     await expect(listPulls(null, { exec })).rejects.toMatchObject({ code: 'unknown-platform' });
     expect(calls).toHaveLength(0);
+  });
+});
+
+describe('listMergedPulls and listReleases (US-1304 FR3.4, FR5.1, FR5.3)', () => {
+  it("reads GitHub's merged pull requests into the default branch in one GraphQL call, with the changes asked for", async () => {
+    const { exec, calls } = cliExec('gh', {
+      graphql: {
+        data: {
+          repository: {
+            defaultBranchRef: { name: 'main' },
+            pullRequests: {
+              nodes: [
+                { number: 58, createdAt: '2026-11-14T10:00:00Z', mergedAt: '2026-11-15T12:00:00Z', baseRefName: 'main', reviews: { totalCount: 2 } },
+                { number: 57, createdAt: '2026-11-13T10:00:00Z', mergedAt: '2026-11-13T12:00:00Z', baseRefName: 'release', reviews: { totalCount: 0 } }
+              ]
+            }
+          }
+        }
+      }
+    });
+    const github = detectPlatform('git@github.com:tochman/ai-dlc-thadeus.git');
+    expect(await listMergedPulls(github, { exec })).toEqual([{ number: 58, createdAt: '2026-11-14T10:00:00Z', mergedAt: '2026-11-15T12:00:00Z', changes: 2 }]);
+    expect(calls).toHaveLength(1);
+    expect(calls[0].args).toEqual(expect.arrayContaining(['-f', 'owner=tochman', '-f', 'name=ai-dlc-thadeus']));
+    expect(calls[0].opts.timeout).toBe(PLATFORM_TIMEOUT_MS);
+  });
+
+  it("reads GitLab's and Bitbucket's merged pull requests into the default branch, with review rounds unknown", async () => {
+    const { exec } = cliExec('glab', {
+      'projects/team%2Fdash': { default_branch: 'main' },
+      'projects/team%2Fdash/merge_requests?state=merged&target_branch=main&per_page=50': [
+        { iid: 12, created_at: '2026-11-14T10:00:00Z', merged_at: '2026-11-15T12:00:00Z' }
+      ]
+    });
+    expect(await listMergedPulls(detectPlatform('https://gitlab.com/team/dash.git'), { exec })).toEqual([
+      { number: 12, createdAt: '2026-11-14T10:00:00Z', mergedAt: '2026-11-15T12:00:00Z', changes: null }
+    ]);
+    const fetch = bitbucketFetch({
+      'repositories/team/dash': { mainbranch: { name: 'main' } },
+      'repositories/team/dash/pullrequests?state=MERGED&pagelen=50': {
+        values: [
+          { id: 7, created_on: '2026-11-14T10:00:00+00:00', updated_on: '2026-11-15T12:00:00+00:00', destination: { branch: { name: 'main' } } },
+          { id: 8, created_on: '2026-11-14T10:00:00+00:00', updated_on: '2026-11-15T12:00:00+00:00', destination: { branch: { name: 'feat/x' } } }
+        ]
+      }
+    });
+    expect(await listMergedPulls(detectPlatform('git@bitbucket.org:team/dash.git'), { fetch, credentials })).toEqual([
+      { number: 7, createdAt: '2026-11-14T10:00:00+00:00', mergedAt: '2026-11-15T12:00:00+00:00', changes: null }
+    ]);
+  });
+
+  it("reads GitHub's releases with their prerelease mark", async () => {
+    const { exec } = cliExec('gh', {
+      'repos/tochman/ai-dlc-thadeus/releases?per_page=50': [
+        { tag_name: 'v0.3.0', prerelease: false },
+        { tag_name: 'v0.2.15', prerelease: true }
+      ]
+    });
+    expect(await listReleases(detectPlatform('https://github.com/tochman/ai-dlc-thadeus'), { exec })).toEqual([
+      { tag: 'v0.3.0', prerelease: false },
+      { tag: 'v0.2.15', prerelease: true }
+    ]);
+  });
+
+  it('has no release list for GitLab, Bitbucket or plain git, and asks nothing of them', async () => {
+    const { exec, calls } = cliExec('glab', {});
+    await expect(listReleases(detectPlatform('https://gitlab.com/team/dash.git'), { exec })).rejects.toMatchObject({
+      code: 'unknown-platform',
+      platform: 'GitLab'
+    });
+    const fetch = vi.fn();
+    await expect(listReleases(detectPlatform('git@bitbucket.org:team/dash.git'), { fetch, credentials })).rejects.toMatchObject({ code: 'unknown-platform' });
+    await expect(listReleases(null, { exec })).rejects.toMatchObject({ code: 'unknown-platform' });
+    await expect(listMergedPulls(null, { exec })).rejects.toMatchObject({ code: 'unknown-platform' });
+    expect(calls).toHaveLength(0);
+    expect(fetch).not.toHaveBeenCalled();
   });
 });
