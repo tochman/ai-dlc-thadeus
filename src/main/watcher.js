@@ -1,6 +1,8 @@
 // Watches one space's intents/ folder and reports which intents changed, debounced.
 import chokidar from 'chokidar';
+import { execFile } from 'node:child_process';
 import path from 'node:path';
+import { promisify } from 'node:util';
 
 const ENGINE_DIR = '.aidlc-engine';
 const KEEP_IN_ENGINE = 'active-directive.json';
@@ -93,6 +95,71 @@ export function watchFiles({ root, paths, onChange, onError = console.error, deb
     close: async () => {
       cancel();
       await watcher.close();
+    }
+  };
+}
+
+const execFileP = promisify(execFile);
+const PULSE_KINDS = { add: 'write', change: 'write', unlink: 'delete' };
+
+/** US-0418 FR4.1: the project's git-ignored paths, relative, a folder with a trailing slash; empty when git fails. */
+async function gitIgnored(root) {
+  try {
+    const { stdout } = await execFileP('git', ['ls-files', '-oi', '--exclude-standard', '--directory'], { cwd: root, maxBuffer: 8 * 1024 * 1024 });
+    return new Set(stdout.split('\n').filter(Boolean));
+  } catch {
+    return new Set();
+  }
+}
+
+/**
+ * US-0418 FR4.1: whether git ignores a file that was new after the start list (exit 0 ignored, 1 not, else no repo).
+ * ponytail: one git process per change; a long-running `git check-ignore --stdin` if bursts of changes are ever slow.
+ */
+const gitIgnores = (root, rel) =>
+  execFileP('git', ['check-ignore', '-q', '--', rel], { cwd: root }).then(
+    () => true,
+    () => false
+  );
+
+/**
+ * US-0418 FR4.1, NFR6: every project file written (`write`) or deleted (`delete`), as `onChange({path, kind})` with a
+ * root-relative path. `.git`, `node_modules` and what git ignores are skipped and never descended.
+ * ponytail: the git-ignored list is read once at start; a .gitignore edited while it runs takes effect on the next start.
+ * ponytail: chokidar holds one handle per folder of the project; move to one recursive fs.watch if a large repo is slow.
+ */
+export function watchProjectFiles(root, onChange, onError = console.error) {
+  const base = path.resolve(root);
+  const relOf = (p) => path.relative(base, path.resolve(p)).split(path.sep).join('/');
+  let watcher = null;
+  let closed = false;
+  const ready = gitIgnored(base).then((ignored) => {
+    if (closed) return;
+    const skip = (rel) => {
+      if (!rel) return false;
+      const parts = rel.split('/');
+      if (parts.includes('.git') || parts.includes('node_modules')) return true;
+      return parts.some((_, i) => {
+        const p = parts.slice(0, i + 1).join('/');
+        return ignored.has(p) || ignored.has(`${p}/`);
+      });
+    };
+    watcher = chokidar.watch(base, { ignoreInitial: true, ignored: (p) => skip(relOf(p)) });
+    watcher.on('all', async (event, p) => {
+      const kind = PULSE_KINDS[event];
+      if (!kind) return;
+      const rel = relOf(p);
+      if (!(await gitIgnores(base, rel)) && !closed) onChange({ path: rel, kind });
+    });
+    watcher.on('error', onError);
+    return new Promise((resolve) => watcher.once('ready', () => resolve()));
+  });
+  return {
+    ready,
+    close: async () => {
+      closed = true;
+      await ready;
+      await watcher?.close();
     }
   };
 }

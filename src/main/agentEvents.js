@@ -300,9 +300,17 @@ export function createAgentEventStore({
       for (const fn of activityFns) fn(change);
     }, ACTIVITY_PUSH_MS);
   }
+  const touchFns = new Set();
   function feedActivity(raw, session, parsed) {
     const fields = KIND_ACTIVITY[parsed.kind]?.(parsed);
-    if (fields) feedFields(raw.sessionId, session, fields, Number.isFinite(raw.arrivedAtMs) ? raw.arrivedAtMs : Date.now());
+    if (!fields) return;
+    const atMs = Number.isFinite(raw.arrivedAtMs) ? raw.arrivedAtMs : Date.now();
+    feedFields(raw.sessionId, session, fields, atMs);
+    if (fields.name !== 'toolStart' && fields.name !== 'toolEnd') return;
+    // US-0418 FR3.1: the Pulse view's touches, at once and unbatched (Pulse batches its own push).
+    const { agentId = null, agentType = null, name, tool = null, toolId = null, paths = null } = fields;
+    const touch = { projectId: session.projectId, sessionId: raw.sessionId, agentId, agentType, name, tool, toolId, paths, atMs };
+    for (const fn of touchFns) fn(touch);
   }
   function feedFields(sessionId, session, fields, atMs) {
     activityState = reduceActivity(activityState, { ...fields, sessionId, tabId: session.tabId, harness: session.harness, atMs });
@@ -419,6 +427,11 @@ export function createAgentEventStore({
     onActivity(fn) {
       activityFns.add(fn);
       return () => activityFns.delete(fn);
+    },
+    /** US-0418 FR3.1: `{projectId, sessionId, agentId, agentType, name, tool, toolId, paths, atMs}` per tool start and end. */
+    onTouch(fn) {
+      touchFns.add(fn);
+      return () => touchFns.delete(fn);
     },
     list,
     harnessOf: (eventId) => events.get(eventId)?.harness ?? null,

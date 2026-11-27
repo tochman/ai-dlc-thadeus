@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { viewFields } from '../../src/shared/frameworkViews.js';
+import { t } from '../../src/shared/i18n.js';
 
 // The project data hooks and the terminals have their own tests; here only which view shows matters.
 const intents = [{ dirName: '261113-config-view', slug: 'config-view', active: true }];
@@ -326,6 +327,19 @@ describe('ProjectView: a Spec Kit project (US-1401)', () => {
     expect(shown('speckit-shell-root')).toBe(true);
     expect(screen.queryByTestId('intent-list')).toBeNull();
     expect(screen.queryByTestId('project-not-aidlc')).toBeNull();
+  });
+
+  it('shows the Pulse view alone in an AI-DLC and a Spec Kit project (US-0418 FR1.1)', async () => {
+    window.bridge.pulse = { list: vi.fn(async () => ({ agents: [], files: [], touches: [] })), onChanged: vi.fn(() => () => {}) };
+    for (const p of [project, kit]) {
+      renderView('pulse', { project: p });
+      expect(await screen.findByText(t('pulse.empty'))).toBeTruthy();
+      expect(shown('pulse-view')).toBe(true);
+      expect(shown('intent-list')).toBe(false);
+      expect(shown('speckit-shell-root')).toBe(false);
+      cleanup();
+    }
+    delete window.bridge.pulse;
   });
 
   it('falls back to the Spec Kit shell for an AI-DLC view (R-01)', async () => {

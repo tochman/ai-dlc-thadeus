@@ -2140,6 +2140,12 @@ button.tool-row-path:hover { color: var(--steel-text); }
 .velocity-chart { margin: 0; }
 .velocity-chart rect.is-intents { fill: var(--steel); }
 .velocity-chart rect.is-stories { fill: var(--steel-light); }
+/* US-0418 FR1, FR9: the Pulse canvas keeps its 3:2 shape; the arm bars are steel reads, white writes, coral deletes. */
+.pulse-canvas { display: block; width: 100%; height: auto; background: var(--bg); cursor: crosshair; }
+.pulse-bars { display: block; margin-top: 8px; }
+.pulse-bars rect.is-read { fill: var(--steel-text); }
+.pulse-bars rect.is-write { fill: var(--text); }
+.pulse-bars rect.is-delete { fill: var(--coral); }
 .velocity-chart-average { fill: none; stroke: var(--white); stroke-width: 1.5; stroke-dasharray: 4 4; vector-effect: non-scaling-stroke; } /* US-0417: coral is alert only */
 .velocity-legend { display: flex; gap: 6px; align-items: center; font-size: 12px; color: var(--muted); }
 .velocity-key { display: inline-block; width: 10px; height: 10px; margin-left: 8px; }

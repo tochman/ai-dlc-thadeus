@@ -225,6 +225,15 @@ describe('App shell', () => {
     expect(screen.getByTestId('arm-velocity').disabled).toBe(true);
   });
 
+  it('opens the Pulse view from its own arm block (US-0418 FR1.1)', async () => {
+    await renderApp({ openProjects: ['/p/aidlc-dash-a'], activeProject: '/p/aidlc-dash-a' });
+    await screen.findByTestId('project-view-switch-features');
+    fireEvent.click(screen.getByTestId('arm-pulse'));
+    expect(screen.getByTestId('arm-pulse').getAttribute('aria-current')).toBe('page');
+    expect(screen.getByTestId('project-view-p1').dataset.view).toBe('pulse');
+    expect(screen.getByRole('heading', { level: 1 }).textContent).toContain(t('app.pulse'));
+  });
+
   it('US-1401: a Spec Kit project shows the specs view and no Intents, Kostnad, Velocity, Planer or Github (AC1.1.2)', async () => {
     mockBridge({ openProjects: ['/p/kit-a'], activeProject: '/p/kit-a' });
     openAs('speckit');
@@ -242,6 +251,7 @@ describe('App shell', () => {
     for (const id of ['project-view-switch-intents', 'project-view-switch-plans', 'arm-cost', 'arm-velocity', 'arm-github']) {
       expect(screen.queryByTestId(id), id).toBeNull();
     }
+    expect(screen.getByTestId('arm-pulse').disabled).toBe(false); // US-0418 FR1.1: Pulse is every framework's
     expect(await within(screen.getByTestId('project-tabs')).findByText(t('app.featureCount', { n: 2 }))).toBeTruthy(); // US-0048 L1
     await waitFor(() => expect(window.bridge.sendMenuState).toHaveBeenLastCalledWith({ hasProject: true, framework: 'speckit', showFeatures: true }));
 

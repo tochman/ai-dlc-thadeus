@@ -126,6 +126,8 @@ contextBridge.exposeInMainWorld('bridge', {
   getAgentProgress: call('agents:progress'),
   // US-0214: a project's activity rows from the hook events (main chats and their agents), and their changes.
   agentActivity: { list: call('agentActivity:list'), onChanged: subscribe('agent:activity') },
+  // US-0418: a project's Pulse snapshot, and its batched changes ({ projectId, snapshot }).
+  pulse: { list: call('pulse:list'), onChanged: subscribe('pulse:changed') },
   // Changing AI-DLC settings (US-0902): a change is {kind, key, value, where}, never a command.
   previewConfigChange: call('config:preview'),
   applyConfigChange: call('config:apply'),

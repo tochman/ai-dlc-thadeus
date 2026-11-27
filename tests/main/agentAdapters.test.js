@@ -361,7 +361,13 @@ describe('bounded agent text (US-0030)', () => {
   });
 
   it('a tool call with no description gives no detail (FR4.2)', () => {
-    expect(pre('Read', { file_path: '/Users/dev/proj/a.js' })).toEqual({ name: 'toolStart', tool: 'Read', toolId: 'tu1' });
+    // US-0418 FR3.1: the file is kept as a project-relative path
+    expect(pre('Read', { file_path: '/Users/dev/proj/a.js' })).toEqual({
+      name: 'toolStart',
+      tool: 'Read',
+      toolId: 'tu1',
+      paths: [{ path: 'a.js', kind: 'read' }]
+    });
     expect(pre('Bash', { command: 'ls', description: '   ' })).toEqual({ name: 'toolStart', tool: 'Bash', toolId: 'tu1' });
   });
 
