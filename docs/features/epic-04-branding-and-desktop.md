@@ -424,9 +424,9 @@
   - [x] With no recorded activity, the empty ring remains visible behind a centered LCARS standby panel; the previous “no agent touched a file in the last 15 minutes” empty view is corrected.
   - [x] Hover callouts have balanced top and bottom padding.
   - [x] The stage keeps the largest size that fits above the terminal, with the footer counted and terminal appearance/opening observed after mount.
-  - [ ] In the release list, the planned v0.3.31 entry appears immediately above the v0.3.3 release.
+  - [x] In the release list, the planned v0.3.31 entry appears immediately above the v0.3.3 release.
   - [x] Under reduced motion the scope is a still frame like the ring; no new dependency.
   - [x] Every text goes through `t()` in Swedish and English, in the LCARS look.
   - [x] Build screenshots at 1280 px and 1600 px, with the terminal hidden, show both populated and empty states and are reviewed before release.
-- **Notes:** A second pass on US-0418, not a redesign of the event ring: the vendor drawing, observers and store stay as they are. The requested decorative arches were rejected and removed from scope. All view criteria are implemented and verified; terminal-hidden screenshots at 1280 px and 1600 px were reviewed for populated and empty states, including two tilt directions. Remaining: create the v0.3.31 release plan so it appears in the release list, then complete release checks.
+- **Notes:** A second pass on US-0418, not a redesign of the event ring: the vendor drawing, observers and store stay as they are. The requested decorative arches were rejected and removed from scope. All view criteria are implemented and verified; terminal-hidden screenshots at 1280 px and 1600 px were reviewed for populated and empty states, including two tilt directions. The v0.3.31 plan is in the release list. Remaining: release checks.
 - **Dependencies:** US-0418
