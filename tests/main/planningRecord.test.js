@@ -10,6 +10,7 @@ import {
   addThadeus,
   markCommitted,
   markConflict,
+  markWaiting,
   readRecord,
   recordFile,
   removeActions,
@@ -69,6 +70,21 @@ describe('planning record (US-0607 FR1.1, FR1.2)', () => {
     ]);
     await removeActions(userData, '/work/a', [a.id]);
     expect((await readRecord(userData, '/work/a')).actions.map((x) => x.id)).toEqual([b.id]);
+  });
+
+  it('US-0055 FR1: a change that could not be done again waits with its reason; committing it drops the reason', async () => {
+    const a = await addAction(userData, '/work/a', { kind: 'setRelease', storyIds: ['US-0001'], version: 'v1.0.0' });
+    const b = await addAction(userData, '/work/a', { kind: 'setRelease', storyIds: ['US-0002'], version: null });
+    await markWaiting(userData, '/work/a', [a.id], { [a.id]: 'No story US-0001' });
+    expect((await readRecord(userData, '/work/a')).actions.map((x) => [x.state, x.reason])).toEqual([
+      ['pending', 'No story US-0001'],
+      ['pending', undefined]
+    ]);
+    await markCommitted(userData, '/work/a', [a.id, b.id]);
+    expect((await readRecord(userData, '/work/a')).actions.map((x) => [x.state, x.reason])).toEqual([
+      ['committed', undefined],
+      ['committed', undefined]
+    ]);
   });
 
   // US-0608 FR2.2, FR5.1: a change that is not an action is kept as the file's new content and the hash it was based on.

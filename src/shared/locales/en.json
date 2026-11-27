@@ -993,7 +993,8 @@
         "deleteRelease": "Delete release {version}",
         "content": "Change in {file}",
         "stories": "Stories: {ids}",
-        "from": "From the app's commit {commit}."
+        "from": "From the app's commit {commit}.",
+        "failed": "Could not be done again: {reason}"
       },
       "conflict": "{file} has changed on the target as well.",
       "choose": "Keep theirs drops the app's change; Use mine writes it over the target's text.",
