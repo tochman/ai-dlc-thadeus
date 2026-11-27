@@ -252,9 +252,29 @@ function porcelainFiles(out) {
 const changedDocs = async (cwd, ctx) =>
   porcelainFiles(await git(cwd, ['--no-optional-locks', 'status', '--porcelain', '-z', '--untracked-files=all', '--', ...docPaths(ctx.featuresPath)], ctx));
 
-/** US-0606 FR2.2, FR2.5, FR4.2: commits every changed feature-doc file in `cwd`, and nothing else. */
+/**
+ * US-0056 FR1: a merge, rebase, cherry-pick or revert is in progress in `cwd` (git's own state files; `--git-path`
+ * finds them in a linked worktree too).
+ */
+async function inMerge(cwd, ctx) {
+  const names = ['MERGE_HEAD', 'CHERRY_PICK_HEAD', 'REVERT_HEAD', 'rebase-merge', 'rebase-apply'];
+  const paths = lines(await git(cwd, ['rev-parse', ...names.flatMap((n) => ['--git-path', n])], ctx));
+  for (const p of paths) if (await fs.stat(path.resolve(cwd, p)).catch(() => null)) return true;
+  return false;
+}
+
+/**
+ * US-0056 FR2: a line git writes around a conflict: starting with `<<<<<<<` or `>>>>>>>`, or exactly `=======`.
+ * ponytail: a setext heading underlined with exactly seven `=` counts too; read the index's unmerged entries if that bites.
+ */
+const hasMarkers = (text) => /^(?:<{7}|>{7}|={7}\r?$)/m.test(text);
+
+/** US-0606 FR2.2, FR2.5, FR4.2: commits every changed feature-doc file in `cwd`, and nothing else; US-0056 FR2: none with conflict markers. */
 async function commitIn(cwd, ctx, subject) {
   const files = await changedDocs(cwd, ctx);
+  const marked = [];
+  for (const f of files) if (hasMarkers((await readOrNull(cwd, f)) ?? '')) marked.push(f);
+  if (marked.length) return { committed: false, error: { kind: 'markers', files: marked } };
   return files.length ? commitFiles(cwd, ctx, files, subject) : { committed: false };
 }
 
@@ -423,22 +443,31 @@ async function restoreKeep(ctx, file, head, keep, work) {
   if (staged) await gitOk(ctx.root, ['reset', '--quiet', '--', file], ctx);
 }
 
-/** US-0608 FR2.1, FR3: every changed feature doc in the checkout that the record does not hold yet. */
+/**
+ * US-0608 FR2.1, FR3: every changed feature doc in the checkout that the record does not hold yet. US-0056 FR1: nothing
+ * while a merge is in progress; FR2: a file with conflict markers is skipped and named.
+ */
 async function recordStep(ctx) {
+  if (await inMerge(ctx.root, ctx)) return { recorded: 0, error: { kind: 'merge' } };
   const record = await readRecord(ctx.userData, ctx.root);
   const place = await placeOf(ctx, record);
   if (!place.branch) return { recorded: 0 }; // a detached HEAD: nothing is the story's or the target's
   let recorded = 0;
+  const marked = [];
   for (const file of (await changedDocs(ctx.root, ctx)).filter((f) => underDocs(ctx.featuresPath, f))) {
     const work = await readOrNull(ctx.root, file);
     if (work === null) continue; // ponytail: a removed feature doc is not recorded; git shows it as removed
+    if (hasMarkers(work)) {
+      marked.push(file);
+      continue;
+    }
     const entry = place.inPlace
       ? await recordOnTarget(ctx, record, file, work, { by: 'watcher' })
       : await recordOnStory(ctx, record, place, file, work, { by: 'watcher', restore: true });
     if (entry) recorded++;
   }
   if (recorded) scheduleCommit(ctx);
-  return { recorded };
+  return { recorded, ...(marked.length ? { error: { kind: 'markers', files: marked } } : {}) };
 }
 
 /** US-0608 FR2.1, FR3: records what the docs watcher saw (and splits it on a story branch). */
@@ -538,6 +567,7 @@ async function dropTagged(ctx, record, tags) {
  * named in the commit (US-0053 FR1).
  */
 async function replayStep(ctx) {
+  if (await inMerge(ctx.root, ctx)) return { reapplied: 0, error: { kind: 'merge' } }; // US-0056 FR1
   const tags = await listReleaseTags(ctx.root, { exec: ctx.exec });
   const record = await dropTagged(ctx, await readRecord(ctx.userData, ctx.root), tags);
   const live = record.actions.filter((a) => a.state !== 'conflict' && a.kind !== 'thadeus'); // US-0609: thadeusSync commits those
@@ -825,9 +855,10 @@ async function pushStep(ctx) {
  */
 export function runCycle(ctx) {
   return serial(ctx.root, async () => {
-    await recordStep(ctx);
+    const rec = await recordStep(ctx);
     const re = await replayStep(ctx);
-    const out = re.error ? { error: re.error } : await pushStep(ctx);
+    const error = re.error ?? rec.error; // US-0056: a merge in progress, or a file with conflict markers, holds the push
+    const out = error ? { error } : await pushStep(ctx);
     // The record is read again, so `pending` counts what is left.
     const { actions } = await readRecord(ctx.userData, ctx.root);
     return { reapplied: re.reapplied, ...out, pending: actions.length, conflicts: actions.filter((a) => a.state === 'conflict').length };

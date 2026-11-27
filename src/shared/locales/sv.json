@@ -1008,6 +1008,8 @@
         "conflictCommit": "Appens commit {commit} krockar med main i {files} och kunde inte läggas åt sidan. Inget pushades. Ta bort grenen dash/planning för att släppa den.",
         "push": "Pushen nekades: {reason}. Planeringen sparas och appen försöker igen vid nästa intervall.",
         "commit": "Planeringen kunde inte committas ({reason}): {files}. Ändringen finns kvar.",
+        "merge": "En merge, rebase eller cherry-pick pågår. Planeringssynken väntar tills den är klar.",
+        "markers": "{files} innehåller konfliktmarkeringar. Planeringssynken varken sparar eller committar filen förrän de är lösta.",
         "git": "Planeringssynken misslyckades: {reason}"
       }
     },

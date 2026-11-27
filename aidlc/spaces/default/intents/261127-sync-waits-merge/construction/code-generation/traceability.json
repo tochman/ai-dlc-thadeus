@@ -1,0 +1,9 @@
+{
+  "stage": "code-generation",
+  "upstream_ids": ["AC1", "AC2", "AC3"],
+  "coverage": [
+    { "id": "AC1", "status": "OK", "target": "src/main/planningSync.js" },
+    { "id": "AC2", "status": "OK", "target": "src/main/planningSync.js" },
+    { "id": "AC3", "status": "OK", "target": "src/main/planningSync.js" }
+  ]
+}
