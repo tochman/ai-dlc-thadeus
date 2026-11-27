@@ -6,9 +6,9 @@
 
 > Auctum AIDLC Control should look and behave like a proper Auctum desktop app wherever it shows up: in the Dock, the application menu, the window switcher, the installer and the Linux launcher. Inside the app it should feel like a living bridge console. EPIC-01 added the name, splash screen, in-app logo and the restrained LCARS theme. This epic covers the parts of the operating system that still show Electron defaults, and the motion and light that make the theme come alive without hurting readability.
 
-**Stories:** US-0401, US-0402, US-0403, US-0404, US-0405, US-0406, US-0407, US-0408, US-0409, US-0410, US-0411, US-0412, US-0413, US-0414, US-0415, US-0416, US-0417
+**Stories:** US-0401, US-0402, US-0403, US-0404, US-0405, US-0406, US-0407, US-0408, US-0409, US-0410, US-0411, US-0412, US-0413, US-0414, US-0415, US-0416, US-0417, US-0418
 
-**Status (2026-11-26):** ✅ US-0401–US-0411 released (v0.1.1–v0.2.5). ✅ US-0412 released in v0.3.1. ✅ US-0413 released in v0.2.7. ✅ US-0414 released in v0.2.8. ✅ US-0415 released in v0.2.13. ✅ US-0416 released in v0.2.14. ✅ US-0417 released in v0.2.14. Each story names its release.
+**Status (2026-11-27):** ✅ US-0401–US-0411 released (v0.1.1–v0.2.5). ✅ US-0412 released in v0.3.1. ✅ US-0413 released in v0.2.7. ✅ US-0414 released in v0.2.8. ✅ US-0415 released in v0.2.13. ✅ US-0416 released in v0.2.14. ✅ US-0417 released in v0.2.14. 📋 US-0418 planned. Each story names its release.
 
 ---
 
@@ -384,3 +384,20 @@
 - **Notes:** Runs on the `visual-express` plan (mockup first). Built before US-0416 in v0.2.14, so Settings › Tools is redesigned once, with these pieces; US-0412 (pipeline cards) uses them later.
 - **Dependencies:** US-0414, US-0415
 
+
+**US-0418: The agent ring: see every working agent and every file it touches, live, in one circle** 📋 Planned
+- As a **developer watching my agents work**, in order to **see at a glance who is working and what they read, write and delete**, I would like **a live ring view where each working agent and each file it touches appears on a circle, with a pulse from agent to file for every access**.
+- **Epic:** EPIC-04
+- **Priority:** Medium
+- **Complexity:** Large
+- **Background:** Asked for 2026-11-27, inspired by [pretty-events](https://github.com/MoulikRT/pretty-events) (MIT): a canvas that draws an event stream as a ring of segments with rays and arcs, plus small readout panels under it. Our hook activity stream (US-0214, US-0030) already reports agents and tool calls live, but not which file a tool touched: the adapters keep the tool's description, not its `file_path`.
+- **Acceptance Criteria:**
+  - [ ] **Given** a running session, **then** the main chat and each dispatched agent hold a segment of the ring, appearing when they start and fading when they stop.
+  - [ ] **Given** an agent reads, writes or deletes a file, **then** the file appears as a mark on the ring and a pulse runs from the agent to it, in a colour for the action (read steel, write white, delete coral, after US-0417's colour rule).
+  - [ ] Only the project-relative path is kept, never file content, prompt text or tool input beyond the path; a test feeds the agent-event fixtures through and asserts this.
+  - [ ] Hovering a file or agent shows its name and its last actions; clicking a file opens it in the editor (US-1001).
+  - [ ] Under the ring, small LCARS readouts: the latest actions, actions per agent, and reads/writes/deletes over time.
+  - [ ] Stays smooth with 20 agents and 500 files (files grouped by folder past a limit); drawn on a canvas with no new dependency; off under reduced motion, where it shows a still frame.
+  - [ ] Works for Claude Code and opencode sessions alike. Every text through `t()` in Swedish and English, in the LCARS look, built in our own terms (no copy of pretty-events' look or code).
+- **Notes:** Open: where it lives (proposal: a "Ring" tab in the Activity view, for the live intent and for free sessions), and how deletes are seen (a `Bash` `rm` has no file field; proposal: only tools with a file path count, deletes from git status as a follow-up). Replay of a past session can follow US-1505.
+- **Dependencies:** US-0214, US-0030, US-0417
