@@ -700,17 +700,6 @@ export default function App() {
                 {t('app.velocity')}
               </ArmBlock>
             )}
-            {/* US-0418 FR1.1: who touches which files, with a live strip while an agent works. */}
-            {active && (
-              <ArmBlock
-                current={!settingsView && view === 'pulse'}
-                strip={activeMeta.busy ? 'live' : undefined}
-                onClick={() => showView('pulse')}
-                data-testid="arm-pulse"
-              >
-                {t('app.pulse')}
-              </ArmBlock>
-            )}
             {armShows('github') && (
               <ArmBlock
                 tone="dark"

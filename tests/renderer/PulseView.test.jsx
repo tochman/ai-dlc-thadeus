@@ -10,7 +10,7 @@ vi.mock('../../src/renderer/pulse/vendor/components/ring.js', async (orig) => {
 });
 const { createRing } = await import('../../src/renderer/pulse/vendor/components/ring.js');
 const { default: PulseView } = await import('../../src/renderer/PulseView.jsx');
-const { buildScene } = await import('../../src/renderer/pulse/scene.js');
+const { buildScene, fitRing } = await import('../../src/renderer/pulse/scene.js');
 
 const MIN = 60000;
 const NOW = Date.UTC(2026, 10, 27, 12);
@@ -26,7 +26,7 @@ function stubCtx() {
     }
   );
 }
-const lines = () => ctx.calls.filter((c) => c[0] === 'lineTo').length;
+const lines = () => ctx.calls.filter((c) => c[0] === 'quadraticCurveTo').length;
 
 const SNAP = {
   agents: [
@@ -68,8 +68,8 @@ function mount(snapshot = SNAP, open = vi.fn()) {
 function pointAt(snapshot, pick) {
   const scene = buildScene(snapshot, { name: (a) => a.label ?? t('pulse.unattributed') });
   const f = scene.files.find(pick);
-  const ri = (720 - 58) * 0.31;
-  return { clientX: 540 + Math.cos(f.angle) * ri, clientY: (58 + 720) / 2 + Math.sin(f.angle) * ri };
+  const { cx, cy, ri } = fitRing(1080, 720);
+  return { clientX: cx + Math.cos(f.angle) * ri, clientY: cy + Math.sin(f.angle) * ri };
 }
 
 beforeEach(() => {
@@ -93,15 +93,38 @@ afterEach(() => {
 const settle = () => act(async () => {});
 
 describe('PulseView', () => {
-  it('shows the diagonal frame with the readouts and the latest actions (FR9)', async () => {
+  it('shows the diagonal frame with the readouts and no latest actions list (FR9, step 14)', async () => {
     mount();
     await settle();
     expect(screen.getByTestId('lcars-diagonal-frame')).toBeTruthy();
     expect(screen.getByTestId('pulse-readout-rate').textContent).toBe('1');
     expect(screen.getByTestId('pulse-readout-files').textContent).toBe('3');
     expect(screen.getByTestId('pulse-readout-busiest').textContent).toBe('main');
-    expect(screen.getAllByTestId('pulse-latest-row')).toHaveLength(3);
+    expect(screen.queryAllByTestId('pulse-latest-row')).toHaveLength(0);
     expect(screen.getByTestId('pulse-bars').querySelectorAll('rect').length).toBeGreaterThan(0);
+  });
+
+  it('fits the canvas to its frame and rebuilds the ring only when the size changes (step 10)', async () => {
+    let fire;
+    vi.stubGlobal(
+      'ResizeObserver',
+      class {
+        constructor(cb) {
+          fire = (w, h) => cb([{ contentRect: { width: w, height: h } }]);
+        }
+        observe() {}
+        disconnect() {}
+      }
+    );
+    mount();
+    await settle();
+    await act(async () => fire(600, 0));
+    const canvas = screen.getByTestId('pulse-canvas');
+    expect([canvas.width, canvas.height]).toEqual([600, 400]);
+    expect(createRing).toHaveBeenCalledTimes(2);
+    await act(async () => fire(600, 0));
+    expect(createRing).toHaveBeenCalledTimes(2);
+    vi.unstubAllGlobals();
   });
 
   it('builds the ring once and keeps it while only the touches change (FR1)', async () => {
@@ -111,7 +134,7 @@ describe('PulseView', () => {
     await act(async () => changed({ projectId: 'p1', snapshot: { ...SNAP, touches: SNAP.touches.slice(1) } }));
     await act(async () => changed({ projectId: 'other', snapshot: { agents: [], files: [], touches: [] } }));
     expect(createRing).toHaveBeenCalledTimes(1);
-    expect(screen.getAllByTestId('pulse-latest-row')).toHaveLength(2);
+    expect(screen.queryAllByTestId('pulse-latest-row')).toHaveLength(0);
   });
 
   it('draws a fresh ribbon and none once it has faded (FR3.4)', async () => {
@@ -119,7 +142,7 @@ describe('PulseView', () => {
     await settle();
     act(() => vi.advanceTimersByTime(16));
     expect(lines()).toBeGreaterThan(0);
-    act(() => vi.advanceTimersByTime(3000));
+    act(() => vi.advanceTimersByTime(5000)); // the word and its lines are gone after 4 s
     ctx.calls.length = 0;
     act(() => vi.advanceTimersByTime(16));
     expect(lines()).toBe(0);

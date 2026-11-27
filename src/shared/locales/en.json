@@ -419,19 +419,18 @@
     "skipped": "{list} {n, plural, one {stage is} other {stages are}} not included"
   },
   "pulse": {
+    "open": "Pulse ›",
     "title": "Pulse",
     "meta": "What the agents touch, live",
     "loading": "Listening for the agents…",
     "loadFailed": "The pulse could not be read: {error}",
     "empty": "No agent has touched a file in the last 15 minutes.",
-    "unattributed": "Unattributed",
+    "unattributed": "Other",
     "outside": "Outside the project",
     "folder": "{path} ({n, plural, one {# file} other {# files}})",
     "none": "none",
     "canvas": "Pulse ring with {agents, plural, one {# agent} other {# agents}} and {files, plural, one {# file} other {# files}}",
     "bars": "Last 15 minutes: {read} reads, {write} writes, {delete} deletes",
-    "latest": "Latest actions",
-    "latestLine": "{kind} · {agent} · {path}",
     "kind": {
       "read": "read",
       "write": "write",

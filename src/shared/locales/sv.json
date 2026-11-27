@@ -419,19 +419,18 @@
     "skipped": "{list} {n, plural, one {stage ingår} other {stages ingår}} inte"
   },
   "pulse": {
+    "open": "Puls ›",
     "title": "Puls",
     "meta": "Vad agenterna rör, live",
     "loading": "Lyssnar efter agenterna…",
     "loadFailed": "Pulsen kunde inte läsas: {error}",
     "empty": "Ingen agent har rört en fil de senaste 15 minuterna.",
-    "unattributed": "Okänd agent",
+    "unattributed": "Övrigt",
     "outside": "Utanför projektet",
     "folder": "{path} ({n, plural, one {# fil} other {# filer}})",
     "none": "ingen",
     "canvas": "Pulsring med {agents, plural, one {# agent} other {# agenter}} och {files, plural, one {# fil} other {# filer}}",
     "bars": "Senaste 15 minuterna: {read} läsningar, {write} skrivningar, {delete} borttagningar",
-    "latest": "Senaste händelser",
-    "latestLine": "{kind} · {agent} · {path}",
     "kind": {
       "read": "läser",
       "write": "skriver",

@@ -14,4 +14,14 @@ npx eslint src/main/pulse.js src/main/watcher.js src/main/ipc.js src/main/agentA
 npx prettier --check src/main src/renderer tests/main tests/renderer
 ```
 
+For the rework (steps 10–13), write each failing test first, then run:
+
+```
+npx vitest run tests/renderer/pulseScene.test.jsx tests/renderer/PulseView.test.jsx tests/renderer/IntentDetail.test.jsx tests/renderer/AppShell.test.jsx tests/main/i18nKeys.test.js
+npx eslint src/renderer/PulseView.jsx src/renderer/pulse src/renderer/App.jsx src/renderer/IntentDetail.jsx
+npx prettier --check src/renderer tests/renderer
+```
+
+The size checks call the fit helper directly, since jsdom has no layout.
+
 The 80% line-coverage floor applies to the full suite (`npx vitest run tests/ --coverage`), which Build and Test runs.

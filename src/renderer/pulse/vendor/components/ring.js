@@ -1,4 +1,4 @@
-// Vendored from MoulikRT/pretty-events@3f003aad4ec241761e090af0753d62984eb312a8 src/components/ring.ts (MIT, see LICENSE); types stripped, logic unchanged. US-0418 FR1.
+// Vendored from MoulikRT/pretty-events@3f003aad4ec241761e090af0753d62984eb312a8 src/components/ring.ts (MIT, see LICENSE); types stripped, logic unchanged except: the 7 px sector name is removed (scene.js draws the names, US-0418 step 11). US-0418 FR1.
 import { TAU, hex } from '../core/math.js';
 import { FONT, context, offscreen, rgba } from './canvas.js';
 
@@ -99,14 +99,6 @@ export function createRing(geo, layout, theme, rnd) {
     g.rotate(s.a0 + 0.004);
     g.fillStyle = rgba(theme.ink, 0.9);
     g.fillRect(ri + 1, -0.5, band - 2, 1);
-    g.restore();
-    g.save();
-    g.rotate(s.a0 + 0.018);
-    g.translate(ri - 6, 0);
-    g.rotate(-Math.PI / 2);
-    g.font = `bold 7px ${FONT}`;
-    g.fillStyle = rgba(theme.ink, 0.7);
-    g.fillText(`${s.name.toUpperCase()} · ${s.types.length}`, 0, 0);
     g.restore();
   }
 

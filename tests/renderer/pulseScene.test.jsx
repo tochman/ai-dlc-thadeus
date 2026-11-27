@@ -1,7 +1,21 @@
 // US-0418 FR1, FR2, FR3.4, FR7, FR8, FR9, NFR3: the Pulse adapter (scene.js) and the vendored pretty-events modules,
 // drawn against a stub 2D context so they count toward coverage.
 import { beforeAll, describe, expect, it } from 'vitest';
-import { buildScene, drawFrame, folderOf, hitTest, lcarsTheme, readouts, ringKey } from '../../src/renderer/pulse/scene.js';
+import {
+  LABEL_SPACE,
+  buildScene,
+  cloudWords,
+  drawFrame,
+  drawMarks,
+  fitRing,
+  folderOf,
+  hitTest,
+  labelTurn,
+  lcarsTheme,
+  placeCloud,
+  readouts,
+  ringKey
+} from '../../src/renderer/pulse/scene.js';
 import { createRing } from '../../src/renderer/pulse/vendor/components/ring.js';
 import { drawCallouts } from '../../src/renderer/pulse/vendor/components/callouts.js';
 import { drawTraces, drawRibbons } from '../../src/renderer/pulse/vendor/components/ribbons.js';
@@ -67,45 +81,59 @@ describe('pulse scene adapter', () => {
     expect(folderOf({ outside: true })).toBe('outside');
   });
 
-  it('makes one ring sector per agent, with unique names and Unattributed last, and one per folder (FR2)', () => {
+  it('makes the ring of folder sectors only; agents are words in the cloud (FR2, step 14)', () => {
     const scene = buildScene(SNAP, { name });
-    const producers = [...scene.layout.producers.keys()];
-    expect(producers).toEqual(['main', 'main 2', 'Unattributed']);
+    expect(scene.layout.producers.size).toBe(0);
     expect([...scene.layout.consumers.keys()].sort()).toEqual(['.', 'outside', 'src']);
     expect(ringKey(scene)).toBe(ringKey(buildScene({ ...SNAP, touches: [] }, { name })));
   });
 
-  it('turns touches into ribbon bundles sorted by time, from the agent to the file, delete as the failure (FR3.4)', () => {
+  it('turns touches into bundles sorted by time, each at its file and named by its agent, delete as the failure (FR3.4, step 14)', () => {
     const scene = buildScene(SNAP, { name });
     expect(scene.bundles.map((b) => b.kind)).toEqual(['read', 'read', 'read', 'delete', 'write']);
     const del = scene.bundles[3];
     expect(del.failed).toBe(true);
     expect(del.t0).toBe((NOW - 2000) / 1000);
-    expect(del.a0).toBeCloseTo(scene.layout.producers.get('main').mid);
+    expect(del.word).toBe('main');
     expect(del.a1).toBeCloseTo(scene.files.find((f) => f.path === 'src/gone.js').angle);
+    expect(scene.bundles.map((b) => b.word)).toEqual(['main 2', 'main', 'Unattributed', 'main', 'main']);
     const src = scene.layout.consumers.get('src');
     for (const f of scene.files.filter((x) => x.sector === 'src')) expect(f.angle).toBeGreaterThanOrEqual(src.a0);
   });
 
-  it('makes one backlog dot per file, with deleted files marked as failed (FR7.1)', () => {
-    const scene = buildScene(SNAP, { name });
-    const { created } = scene.backlog;
-    expect(created).toHaveLength(4);
-    expect(created.map((e) => e.t)).toEqual([...created.map((e) => e.t)].sort((a, b) => a - b));
-    const gone = created.find((e) => e.file.path === 'src/gone.js');
-    expect(gone.failAt).toBe(gone.t);
-    expect(created.find((e) => e.file.path === 'src/a.js').failAt).toBe(Infinity);
-  });
-
-  it('finds the file nearest the pointer, or the agent whose sector it is in, or nothing (FR8)', () => {
+  it('finds a word under the pointer first, else the nearest file, else nothing (FR8, step 14)', () => {
     const scene = buildScene(SNAP, { name });
     const f = scene.files.find((x) => x.path === 'src/a.js');
     const r = 200;
     expect(hitTest(scene, Math.cos(f.angle) * r, Math.sin(f.angle) * r, r).file).toBe(f);
-    const agent = scene.layout.producers.get('Unattributed');
-    const hit = hitTest(scene, Math.cos(agent.mid) * r, Math.sin(agent.mid) * r, r);
-    expect(hit.agent?.id ?? hit.file).toBeTruthy();
+    const word = { name: 'main', x: 0, y: 0, w: 40, h: 16 };
+    expect(hitTest(scene, 5, 3, r, [word]).word).toBe(word);
     expect(hitTest(scene, 0, 0, r)).toBeNull();
+  });
+
+  it('sizes each agent word by its touches in the last minute and fades it out four seconds after its last touch (step 14)', () => {
+    const scene = buildScene(SNAP, { name });
+    const words = cloudWords(scene.bundles, NOW);
+    expect(words.map((w) => w.name)).toEqual(['main', 'Unattributed']);
+    expect(words[0]).toMatchObject({ n: 3, kind: 'write', ids: ['a1'] });
+    expect(words[0].alpha).toBeCloseTo(0.75);
+    expect(words[0].size).toBeGreaterThan(words[1].size);
+    expect(cloudWords(scene.bundles, NOW + 4000)).toEqual([]);
+  });
+
+  it('places the words without overlap inside the ring, biggest first, and skips a word that does not fit (step 14)', () => {
+    const measure = (s, size) => s.length * size * 0.6;
+    const words = Array.from({ length: 30 }, (_, i) => ({ name: `agent-${i}`, size: 12 + (i % 5) * 4 }));
+    const ri = 150;
+    const placed = placeCloud(words, ri, measure);
+    expect(placed.length).toBeGreaterThan(3);
+    expect(placed.length).toBeLessThan(30);
+    for (const p of placed) {
+      expect(Math.hypot(Math.abs(p.x) + p.w / 2, Math.abs(p.y) + p.h / 2)).toBeLessThanOrEqual(0.7 * ri + 1e-9);
+    }
+    for (const a of placed)
+      for (const b of placed) if (a !== b) expect(Math.abs(a.x - b.x) * 2 >= a.w + b.w || Math.abs(a.y - b.y) * 2 >= a.h + b.h).toBe(true);
+    expect(placed[0].size).toBe(28);
   });
 
   it('counts touches per minute, files touched, the busiest agent and 15 one-minute bars (FR9)', () => {
@@ -122,8 +150,6 @@ describe('pulse scene adapter', () => {
   it('reads the LCARS colours from the CSS tokens as r,g,b (NFR5)', () => {
     const tokens = { '--bg': '#05060a', '--slate-1': '#11151f', '--steel-text': '#7cc0ea', '--text': '#e6e9f2', '--coral': '#ee6c56' };
     const theme = lcarsTheme((k) => tokens[k] ?? '');
-    expect(theme.read.ink).toBe('124,192,234');
-    expect(theme.write.ink).toBe('230,233,242');
     expect(theme.base.accent).toBe('238,108,86');
     expect(theme.base.card).toEqual([17, 21, 31]);
     expect(lcarsTheme(() => '').base.ink).toBe('0,0,0');
@@ -141,18 +167,21 @@ describe('drawing a frame with the vendored modules', () => {
     drawFrame(ctx, scene, ring, geo, theme, NOW, { motion: true });
     drawFrame(ctx, scene, ring, geo, theme, NOW + 16, { motion: true });
     expect(count(ctx, 'drawImage')).toBe(2);
-    expect(count(ctx, 'arc')).toBeGreaterThan(0); // the backlog dots
+    expect(count(ctx, 'arc')).toBeGreaterThan(0); // the file marks
   });
 
-  it('draws a ribbon while it is fresh and none after its fade time (FR3.4)', () => {
+  it('links a word to its file while the touch is fresh and not after (FR3.4, step 14)', () => {
     const scene = buildScene(SNAP, { name });
     const ring = createRing(geo, scene.layout, theme.base, createRandom(7));
     const fresh = stubCtx();
-    drawFrame(fresh, scene, ring, geo, theme, NOW - 500, { motion: true });
-    expect(count(fresh, 'lineTo')).toBeGreaterThan(0);
+    const cloud = drawFrame(fresh, scene, ring, geo, theme, NOW - 500, { motion: true });
+    expect(cloud.map((w) => w.name)).toContain('main');
+    expect(count(fresh, 'quadraticCurveTo')).toBeGreaterThan(0);
+    expect(count(fresh, 'lineTo')).toBe(0);
     const late = stubCtx();
-    drawFrame(late, scene, ring, geo, theme, NOW + 2000, { motion: true });
+    drawFrame(late, scene, ring, geo, theme, NOW + 5000, { motion: true }); // the word and its lines are gone after 4 s
     expect(count(late, 'lineTo')).toBe(0);
+    expect(count(late, 'quadraticCurveTo')).toBe(0);
   });
 
   it('draws no ribbons with reduced motion (NFR3)', () => {
@@ -161,6 +190,7 @@ describe('drawing a frame with the vendored modules', () => {
     const ctx = stubCtx();
     drawFrame(ctx, scene, ring, geo, theme, NOW - 500, { motion: false });
     expect(count(ctx, 'lineTo')).toBe(0);
+    expect(count(ctx, 'quadraticCurveTo')).toBe(0);
     expect(count(ctx, 'drawImage')).toBe(1);
   });
 
@@ -212,5 +242,99 @@ describe('drawing a frame with the vendored modules', () => {
     expect(() => context({ getContext: () => null })).toThrow('canvas 2d context unavailable');
     text(ctx, 0, 0, 'x', { color: 'red' });
     expect(ctx.textAlign).toBe('left');
+  });
+});
+
+describe('the rework: fit, names, colours and marks (steps 10-12)', () => {
+  const tokens = { '--bg': '#05060a', '--slate-1': '#11151f', '--steel': '#5b9bd5', '--amber': '#f2a93b', '--coral': '#ee6c56' };
+  const themes = lcarsTheme((k) => tokens[k] ?? '#808080');
+
+  it.each([
+    [1200, 700],
+    [600, 900],
+    [320, 240]
+  ])('fits the ring and its names inside %ix%i, centred (step 10)', (w, h) => {
+    const g = fitRing(w, h);
+    expect(g.ro + LABEL_SPACE + 24).toBeLessThanOrEqual(Math.min(w, h) / 2 + 1e-9);
+    expect([g.w, g.h, g.cx, g.cy]).toEqual([w, h, w / 2, h / 2]);
+    expect(g.ro).toBeCloseTo(g.ri * 1.15);
+    expect(g.ri).toBeGreaterThan(0);
+  });
+
+  it('hit-tests against the fitted ring (step 10)', () => {
+    const scene = buildScene(SNAP, { name });
+    const g = fitRing(600, 900);
+    const f = scene.files.find((x) => x.path === 'src/a.js');
+    expect(hitTest(scene, Math.cos(f.angle) * g.ri, Math.sin(f.angle) * g.ri, g.ri).file).toBe(f);
+  });
+
+  it('turns every name so it is never upside down or mirrored (step 11)', () => {
+    for (let a = 0; a < 2 * Math.PI; a += 0.1) expect(Math.cos(a + labelTurn(a))).toBeGreaterThanOrEqual(-1e-9);
+  });
+
+  it('names each recent file on the ring at 11 px, newest first, and skips the outside mark (step 14)', () => {
+    const scene = buildScene(SNAP, { name });
+    const geo = fitRing(1200, 700);
+    const ring = createRing(geo, scene.layout, themes.base, createRandom(7));
+    const ctx = stubCtx();
+    const seen = [];
+    const fill = ctx.fillText;
+    ctx.fillText = (s, ...rest) => (seen.push([s, ctx.font]), fill(s, ...rest));
+    drawFrame(ctx, scene, ring, geo, themes, NOW + 5000, { motion: false });
+    const names = seen.filter(([, font]) => font.includes('11px')).map(([s]) => s);
+    expect(names).toEqual(['a.js', 'gone.js', 'README.md']);
+  });
+
+  it('shortens a long file name with an ellipsis so it fits outside the ring (step 14)', () => {
+    const long = { path: `src/${'x'.repeat(80)}.js`, kind: 'write', weight: 1, deleted: false, lastAt: NOW, agents: ['a1'] };
+    const scene = buildScene({ agents: SNAP.agents, files: [long], touches: [] }, { name });
+    const geo = fitRing(1200, 700);
+    const ring = createRing(geo, scene.layout, themes.base, createRandom(7));
+    const ctx = stubCtx();
+    const seen = [];
+    const fill = ctx.fillText;
+    ctx.fillText = (s, ...rest) => (seen.push(s), fill(s, ...rest));
+    drawFrame(ctx, scene, ring, geo, themes, NOW, { motion: false });
+    const shown = seen.find((s) => s.startsWith('xxx'));
+    expect(shown.endsWith('…')).toBe(true);
+    expect(shown.length * 5).toBeLessThanOrEqual(LABEL_SPACE);
+  });
+
+  it('shows Unattributed only once, even for two agents with no name (step 11, step 14)', () => {
+    const snap = {
+      ...SNAP,
+      agents: [...SNAP.agents, { id: 'u2', label: null, count: 0 }],
+      touches: [...SNAP.touches, { agent: 'u2', outside: true, kind: 'read', at: NOW - 100 }]
+    };
+    const words = cloudWords(buildScene(snap, { name }).bundles, NOW);
+    expect(words.filter((w) => w.name.startsWith('Unattributed'))).toHaveLength(1);
+    expect(words.find((w) => w.name === 'Unattributed').ids).toEqual(['unattributed', 'u2']);
+  });
+
+  it('colours read steel, write amber and delete coral (step 12)', () => {
+    expect(themes.kinds).toEqual({ read: '91,155,213', write: '242,169,59', delete: '238,108,86' });
+    expect(themes.read.ink).toBe('91,155,213');
+    expect(themes.write.ink).toBe('242,169,59');
+  });
+
+  it('draws a fresh mark larger and brighter than a nine-minute-old one, and none after ten minutes (step 12)', () => {
+    const geo = fitRing(1200, 700);
+    const mark = (age) => {
+      const ctx = stubCtx();
+      const seen = [];
+      const arc = ctx.arc;
+      ctx.arc = (...a) => (seen.push({ r: a[2], alpha: Number(/,([\d.]+)\)$/.exec(ctx.fillStyle)[1]), blur: ctx.shadowBlur }), arc(...a));
+      drawMarks(ctx, [{ kind: 'write', deleted: false, angle: 1, lastAt: NOW - age }], NOW, geo, themes);
+      return seen[0];
+    };
+    const fresh = mark(0);
+    const old = mark(9 * MIN);
+    expect(fresh.r).toBeGreaterThan(old.r);
+    expect(fresh.alpha).toBeGreaterThan(old.alpha);
+    expect(fresh.blur).toBeGreaterThan(old.blur);
+    const gone = stubCtx();
+    drawMarks(gone, [{ kind: 'delete', deleted: true, angle: 1, lastAt: NOW }], NOW, geo, themes);
+    expect(gone.fillStyle).toBe('rgba(238,108,86,1)');
+    expect(mark(10 * MIN + 1)).toBeUndefined();
   });
 });

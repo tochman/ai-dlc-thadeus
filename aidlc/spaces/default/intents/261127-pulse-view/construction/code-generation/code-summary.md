@@ -19,6 +19,14 @@
 - The scene test is `tests/renderer/pulseScene.test.jsx`.
 - Vendoring replaces NFR5's no-copy clause, at the person's directive.
 
+## Added steps 10–14 (the person's requests during the build)
+
+- **Fit** (step 10): `fitRing` sizes the ring to the stage; the stage ends above the terminal panel (`.pulse-stage` min 160 px), and the canvas refits when the view or the terminal resizes.
+- **Labels and marks** (steps 11–12): names at 12 px or more, never upside down; fresh marks in LCARS colours, larger and glowing, fading over 10 minutes.
+- **Intent arm** (step 13): `arm-pulse` left the main sidebar; `intent-pulse-open` in the intent's arm opens the view.
+- **Word cloud** (step 14): folders and files on the ring with file names outside it; agents as a word cloud in the centre that fades out 4 s after the last touch. Links fly as asteroids from word to file; the radar sweep and faint word-to-file lines for the last minute stay. "Unattributed" reads "Other" / "Övrigt". Content fades in and out.
+- Checks: `pulseScene`, `PulseView` and `i18nKeys` tests, 36 of 36 pass; ESLint and Prettier clean.
+
 ## Checks
 
 - 13 targeted test files: 280 of 280 pass. ESLint is clean on every touched file. Prettier is clean.
