@@ -380,7 +380,7 @@ const DF_HAIR_IN = 'M186 280 V219 A106 106 0 0 1 217.1 143.9 L235.9 125.1 A106 1
  *          readouts?: Array<{k: import('react').ReactNode, v: import('react').ReactNode, tone?: 'steel'|'deep', strip?: string}>,
  *          arm?: import('react').ReactNode, titleRef?: object, className?: string, children?: import('react').ReactNode}} props
  */
-export function DiagonalFrame({ title, as: Title = 'h2', sub, tag, corner, footer, readouts = [], arm, titleRef, className = '', children }) {
+export function DiagonalFrame({ title, as: Title = 'h2', sub, tag, trailing, corner, footer, readouts = [], arm, titleRef, className = '', children }) {
   return (
     <section className={`lcars-df ${className}`} data-testid="lcars-diagonal-frame">
       <div className="lcars-df-in lcars-e-slide">
@@ -421,6 +421,7 @@ export function DiagonalFrame({ title, as: Title = 'h2', sub, tag, corner, foote
               <span className="lcars-tagbox">{tag}</span>
             </span>
           )}
+          {trailing != null && <span className="lcars-df-trailing">{trailing}</span>}
           <span className="lcars-sseg lcars-sseg--cap lcars-e-draw" aria-hidden="true" />
         </div>
         <span className="lcars-df-x lcars-df-hl-left" aria-hidden="true" />

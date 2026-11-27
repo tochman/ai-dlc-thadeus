@@ -10,7 +10,7 @@ vi.mock('../../src/renderer/pulse/vendor/components/ring.js', async (orig) => {
 });
 const { createRing } = await import('../../src/renderer/pulse/vendor/components/ring.js');
 const { default: PulseView } = await import('../../src/renderer/PulseView.jsx');
-const { buildScene, fitRing } = await import('../../src/renderer/pulse/scene.js');
+const { buildScene, fitRing, projectTilt, TILT } = await import('../../src/renderer/pulse/scene.js');
 
 const MIN = 60000;
 const NOW = Date.UTC(2026, 10, 27, 12);
@@ -65,11 +65,18 @@ function mount(snapshot = SNAP, open = vi.fn()) {
 }
 
 /** Points at a file's angle on the canvas (1080 x 720 logical, the stub rect is the same size). */
-function pointAt(snapshot, pick) {
+function pointAt(snapshot, pick, tilt = { yaw: 0, pitch: 0 }) {
   const scene = buildScene(snapshot, { name: (a) => a.label ?? t('pulse.unattributed') });
   const f = scene.files.find(pick);
   const { cx, cy, ri } = fitRing(1080, 720);
-  return { clientX: cx + Math.cos(f.angle) * ri, clientY: cy + Math.sin(f.angle) * ri };
+  const [x, y] = projectTilt(Math.cos(f.angle) * ri, Math.sin(f.angle) * ri * TILT, tilt);
+  return { clientX: cx + x, clientY: cy + y };
+}
+
+function pointOnRing(radius = 1) {
+  const { cx, cy, ri, ro } = fitRing(1080, 720);
+  const r = ((ri + ro) / 2) * radius;
+  return { clientX: cx + r, clientY: cy };
 }
 
 beforeEach(() => {
@@ -110,9 +117,11 @@ describe('PulseView', () => {
       'ResizeObserver',
       class {
         constructor(cb) {
-          fire = (w, h) => cb([{ contentRect: { width: w, height: h } }]);
+          this.cb = cb;
         }
-        observe() {}
+        observe(target) {
+          if (target.classList.contains('pulse-stage')) fire = (w, h) => this.cb([{ target, contentRect: { width: w, height: h } }]);
+        }
         disconnect() {}
       }
     );
@@ -155,9 +164,10 @@ describe('PulseView', () => {
       return screen.getByTestId('pulse-canvas').parentElement.style.height;
     };
     try {
-      // the foot bar's top, 900, less a gap of 14, less the stage's top, 100 (step 18: Pulse has no message row)
-      expect(await stageHeight(true)).toBe('786px');
-      expect(await stageHeight(false)).toBe('786px');
+      // the foot bar's top, 900, less a gap of 14, less the stage's top, 100 (step 18: Pulse has no message row),
+      // less the footer strip's 0 px in jsdom and its 10 px gap (US-0419)
+      expect(await stageHeight(true)).toBe('776px');
+      expect(await stageHeight(false)).toBe('776px');
     } finally {
       HTMLElement.prototype.getBoundingClientRect = orig;
       shell.remove();
@@ -165,17 +175,95 @@ describe('PulseView', () => {
     }
   });
 
-  it('goes back with its arm block and with Esc (steps 16-17)', async () => {
+  it('re-fits when the terminal is added after Astrometrics mounts (US-0419)', async () => {
+    let notify;
+    const observed = [];
+    vi.stubGlobal(
+      'ResizeObserver',
+      class {
+        constructor(cb) {
+          notify = cb;
+        }
+        observe(target) {
+          observed.push(target);
+        }
+        disconnect() {}
+      }
+    );
+    const orig = HTMLElement.prototype.getBoundingClientRect;
+    let terminal;
+    let terminalTop = 600;
+    HTMLElement.prototype.getBoundingClientRect = function () {
+      if (this.classList.contains('terminal-footbar')) return { top: terminalTop, bottom: terminalTop + 28, height: 28 };
+      return { top: 100, bottom: 100, height: 0 };
+    };
+    window.bridge = { pulse: { list: vi.fn(async () => SNAP), onChanged: vi.fn(() => () => {}) } };
+    try {
+      render(<PulseView projectId="p1" />);
+      await settle();
+      const stage = screen.getByTestId('pulse-canvas').parentElement;
+      expect(stage.style.height).toBe('160px');
+      terminal = document.createElement('section');
+      terminal.className = 'terminal-panel';
+      terminal.innerHTML = '<div class="terminal-footbar"></div>';
+      await act(async () => {
+        document.body.append(terminal);
+        await Promise.resolve();
+      });
+      expect(stage.style.height).toBe('476px');
+      terminalTop = 500;
+      await act(async () => {
+        notify(observed.map((target) => ({ target, contentRect: { width: 800, height: 400 } })));
+      });
+      expect(stage.style.height).toBe('376px');
+    } finally {
+      terminal?.remove();
+      HTMLElement.prototype.getBoundingClientRect = orig;
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it('goes back with the header pill and with Esc (US-0419)', async () => {
     const onBack = vi.fn();
     window.bridge = { pulse: { list: vi.fn(async () => SNAP), onChanged: vi.fn(() => () => {}) } };
     render(<PulseView projectId="p1" onBack={onBack} />);
     await settle();
     fireEvent.click(screen.getByTestId('pulse-back'));
     expect(screen.getByTestId('pulse-back').textContent).toBe(t('app.back'));
-    // step 17: the back button is the arm's last block, not a pill over the frame's corner
-    expect(screen.getByTestId('pulse-back').closest('.lcars-df-arm')).not.toBeNull();
+    // US-0419: Back heads the body, above the canvas, so the terminal cannot cover it.
+    expect(screen.getByTestId('pulse-back').closest('.lcars-df-top')).not.toBeNull();
+    expect(screen.getByTestId('pulse-back').closest('.lcars-df-arm')).toBeNull();
     fireEvent.keyDown(screen.getByTestId('pulse-canvas'), { key: 'Escape' });
     expect(onBack).toHaveBeenCalledTimes(2);
+  });
+
+  it('keeps Back in reach and names the state while the pulse loads or is empty (US-0419)', async () => {
+    const onBack = vi.fn();
+    window.bridge = { pulse: { list: vi.fn(async () => ({ agents: [], files: [], touches: [] })), onChanged: vi.fn(() => () => {}) } };
+    render(<PulseView projectId="p1" onBack={onBack} />);
+    await settle();
+    expect(screen.getByTestId('pulse-back').closest('.lcars-df-top')).not.toBeNull();
+    expect(screen.getByText((_, el) => el.classList.contains('lcars-tagbox')).textContent).toContain(t('pulse.idle'));
+    expect(screen.getByText((_, el) => el.classList.contains('lcars-tagbox')).textContent).toContain(t('pulse.agents', { n: 0 }));
+    expect(screen.getByTestId('pulse-canvas')).toBeTruthy();
+    // US-0419: the empty ring is an LCARS standby panel, with no row of empty bars.
+    expect(screen.getByTestId('pulse-empty')).toBeTruthy();
+    expect(screen.getByText(t('pulse.emptyTitle'))).toBeTruthy();
+    expect(screen.getByText(t('pulse.empty'))).toBeTruthy();
+    expect(screen.queryByTestId('pulse-foot')).toBeNull();
+  });
+
+  it('puts the fifteen-minute bars in the footer with their legend (US-0419)', async () => {
+    mount();
+    await settle();
+    const foot = screen.getByTestId('pulse-foot');
+    expect(foot.querySelector('[data-testid="pulse-bars"]')).not.toBeNull();
+    expect(foot.textContent).toContain(t('pulse.window'));
+    expect(foot.textContent).toContain(t('pulse.kind.read'));
+    expect(foot.textContent).toContain(t('pulse.kind.write'));
+    expect(foot.textContent).toContain(t('pulse.kind.delete'));
+    expect(screen.getByText((_, el) => el.classList.contains('lcars-tagbox')).textContent).toContain(t('pulse.live'));
+    expect(screen.getByText((_, el) => el.classList.contains('lcars-tagbox')).textContent).toContain(t('pulse.agents', { n: SNAP.agents.length }));
   });
 
   it('builds the ring once and keeps it while only the touches change (FR1)', async () => {
@@ -242,6 +330,98 @@ describe('PulseView', () => {
       pointAt(SNAP, (f) => f.path === 'src/a.js')
     );
     expect(open).toHaveBeenCalledWith('src/a.js');
+  });
+
+  it('tilts from a ring drag, captures the pointer, and keeps the orientation after release', async () => {
+    mount();
+    await settle();
+    const canvas = screen.getByTestId('pulse-canvas');
+    canvas.setPointerCapture = vi.fn();
+    canvas.releasePointerCapture = vi.fn();
+    const start = pointOnRing();
+    fireEvent.pointerDown(canvas, { ...start, pointerId: 7, button: 0, pointerType: 'mouse' });
+    fireEvent.pointerMove(canvas, { ...start, clientX: start.clientX + 48, clientY: start.clientY - 32, pointerId: 7 });
+    fireEvent.pointerUp(canvas, { ...start, clientX: start.clientX + 48, clientY: start.clientY - 32, pointerId: 7 });
+
+    expect(canvas.setPointerCapture).toHaveBeenCalledWith(7);
+    const transforms = ctx.calls.filter((call) => call[0] === 'transform');
+    expect(transforms.length).toBeGreaterThan(1);
+    expect(transforms.at(-1).slice(1, 5)).not.toEqual([1, 0, 0, 1]);
+  });
+
+  it('keeps a press-and-release below the drag threshold as a file click', async () => {
+    const open = mount();
+    await settle();
+    const canvas = screen.getByTestId('pulse-canvas');
+    const file = pointAt(SNAP, (entry) => entry.path === 'src/a.js');
+    fireEvent.pointerDown(canvas, { ...file, pointerId: 9, button: 0, pointerType: 'mouse' });
+    fireEvent.pointerUp(canvas, { ...file, pointerId: 9 });
+    fireEvent.click(canvas, file);
+    expect(open).toHaveBeenCalledWith('src/a.js');
+  });
+
+  it('opens a file at its projected location after tilting the ring', async () => {
+    const open = mount();
+    await settle();
+    const canvas = screen.getByTestId('pulse-canvas');
+    const start = pointOnRing();
+    fireEvent.pointerDown(canvas, { ...start, pointerId: 12, button: 0, pointerType: 'mouse' });
+    fireEvent.pointerMove(canvas, { ...start, clientX: start.clientX + 32, clientY: start.clientY - 20, pointerId: 12 });
+    fireEvent.pointerUp(canvas, { ...start, clientX: start.clientX + 32, clientY: start.clientY - 20, pointerId: 12 });
+    const projectedFile = pointAt(SNAP, (entry) => entry.path === 'src/a.js', { yaw: 8, pitch: 5 });
+    fireEvent.pointerDown(canvas, { ...projectedFile, pointerId: 13, button: 0, pointerType: 'mouse' });
+    fireEvent.pointerUp(canvas, { ...projectedFile, pointerId: 13 });
+    fireEvent.click(canvas, projectedFile);
+    expect(open).toHaveBeenCalledWith('src/a.js');
+  });
+
+  it('does not open a file from the click synthesized after a drag', async () => {
+    const open = mount();
+    await settle();
+    const canvas = screen.getByTestId('pulse-canvas');
+    const file = pointAt(SNAP, (entry) => entry.path === 'src/a.js');
+    fireEvent.pointerDown(canvas, { ...file, pointerId: 10, button: 0, pointerType: 'mouse' });
+    fireEvent.pointerMove(canvas, { ...file, clientX: file.clientX + 12, pointerId: 10 });
+    fireEvent.pointerMove(canvas, { ...file, pointerId: 10 });
+    fireEvent.pointerUp(canvas, { ...file, pointerId: 10 });
+    fireEvent.click(canvas, file);
+    expect(open).not.toHaveBeenCalled();
+  });
+
+  it('does not begin a tilt drag away from the ring', async () => {
+    mount();
+    await settle();
+    const canvas = screen.getByTestId('pulse-canvas');
+    canvas.setPointerCapture = vi.fn();
+    fireEvent.pointerDown(canvas, { clientX: 540, clientY: 245, pointerId: 8, button: 0, pointerType: 'mouse' });
+    expect(canvas.setPointerCapture).not.toHaveBeenCalled();
+  });
+
+  it('ends a cancelled drag without resetting tilt or keeping pointer capture', async () => {
+    mount();
+    await settle();
+    const canvas = screen.getByTestId('pulse-canvas');
+    canvas.setPointerCapture = vi.fn();
+    canvas.hasPointerCapture = vi.fn(() => true);
+    canvas.releasePointerCapture = vi.fn();
+    const start = pointOnRing();
+    fireEvent.pointerDown(canvas, { ...start, pointerId: 11, button: 0, pointerType: 'mouse' });
+    fireEvent.pointerMove(canvas, { ...start, clientX: start.clientX + 32, pointerId: 11 });
+    fireEvent.pointerCancel(canvas, { ...start, clientX: start.clientX + 32, pointerId: 11 });
+
+    expect(canvas.releasePointerCapture).toHaveBeenCalledWith(11);
+    const transform = ctx.calls
+      .filter((call) => call[0] === 'transform')
+      .at(-1)
+      .slice(1, 5);
+    expect(transform).not.toEqual([1, 0, 0, 1]);
+    fireEvent.pointerMove(canvas, { ...start, clientX: start.clientX + 80, pointerId: 11 });
+    expect(
+      ctx.calls
+        .filter((call) => call[0] === 'transform')
+        .at(-1)
+        .slice(1, 5)
+    ).toEqual(transform);
   });
 
   it('names a grouped folder mark with its file count and does not open it (FR7.2, FR8.2)', async () => {

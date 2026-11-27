@@ -123,11 +123,11 @@ describe('IntentDetail head, one control per state (US-0037)', () => {
     expect(screen.getByTestId('intent-parked').textContent).toBe('Parkerad vid Functional Design');
   });
 
-  it('the intent arm has a Pulse block below the tokens that opens the Pulse view (US-0418 step 13)', () => {
+  it('the intent arm has an Astrometrics block below the tokens that opens its view (US-0418 step 13, US-0419)', () => {
     const onView = vi.fn();
     render(<IntentDetail projectId="p1" detail={detailOf()} intent={base} activeDirName={DIR} cost={cost} models={null} onView={onView} />);
     const open = screen.getByTestId('intent-pulse-open');
-    expect(open.textContent).toBe('Puls ›');
+    expect(open.textContent).toBe('Astrometrik ›');
     fireEvent.click(open);
     expect(onView).toHaveBeenCalledWith('pulse');
   });

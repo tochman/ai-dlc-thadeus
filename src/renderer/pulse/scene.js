@@ -12,6 +12,38 @@ const MIN = 60000;
 const FADE = 10 * MIN; // FR7.1: a file mark fades out over 10 minutes
 /** Room outside the ring's outer edge for the vendor scale: its ticks end at ro+21, its numbers sit at ro+24. */
 export const LABEL_SPACE = 28;
+/** US-0419: vertical projection of the scope ring, leaving its text upright in screen space. */
+export const TILT = 0.62;
+export const MAX_VIEW_TILT = 25;
+
+/** Clamp the two view angles to keep the ring readable. */
+export function clampTilt(tilt = {}) {
+  const clamp = (n) => Math.max(-MAX_VIEW_TILT, Math.min(MAX_VIEW_TILT, Number.isFinite(n) ? n : 0));
+  return { yaw: clamp(tilt.yaw), pitch: clamp(tilt.pitch) };
+}
+
+/** Project a point on the ring plane with an orthographic two-axis tilt. */
+export function projectTilt(x, y, tilt = {}) {
+  const { yaw, pitch } = clampTilt(tilt);
+  const yawRad = (yaw * Math.PI) / 180;
+  const pitchRad = (pitch * Math.PI) / 180;
+  const shearX = Math.sin(yawRad) * 0.35;
+  const shearY = Math.sin(pitchRad) * 0.35;
+  return [Math.cos(yawRad) * x + shearX * y, shearY * x + Math.cos(pitchRad) * y];
+}
+
+/** Invert projectTilt for hover and file hit-testing. */
+export function unprojectTilt(x, y, tilt = {}) {
+  const { yaw, pitch } = clampTilt(tilt);
+  const yawRad = (yaw * Math.PI) / 180;
+  const pitchRad = (pitch * Math.PI) / 180;
+  const a = Math.cos(yawRad);
+  const b = Math.sin(yawRad) * 0.35;
+  const c = Math.sin(pitchRad) * 0.35;
+  const d = Math.cos(pitchRad);
+  const determinant = a * d - b * c;
+  return [(d * x - b * y) / determinant, (a * y - c * x) / determinant];
+}
 const MARGIN = 4; // step 15: as small as it can be
 const FADE_IN = 1500; // a word fades in over 1.5 s from its first touch
 const WORD_LIFE = 4000; // and out over 4 s after its last
@@ -125,7 +157,7 @@ export function placeCloud(words, ri, measure) {
 /** Steps 10, 15: a centred ring that fits a w x h canvas with its scale and a 4 px margin. */
 export function fitRing(w, h) {
   const ri = Math.max(1, (Math.min(w, h) / 2 - LABEL_SPACE - MARGIN) / 1.15);
-  return { w, h, cx: w / 2, cy: h / 2, ri, ro: ri * 1.15, facing: null };
+  return { w, h, cx: w / 2, cy: h * 0.34, ri, ro: ri * 1.15, facing: null };
 }
 
 /** Step 11: the turn that sets a name along the ring at angle `a` so it never reads upside down or mirrored. */
@@ -135,12 +167,14 @@ export const labelTurn = (a) => (Math.sin(a) > 0 ? -Math.PI / 2 : Math.PI / 2);
 export const ringKey = (scene) => scene.layout.sectors.map((s) => `${s.kind}:${s.name}`).join('|');
 
 /** FR8: what the pointer at (x, y), relative to the ring's centre, is over: a placed word, else a file, else nothing. */
-export function hitTest(scene, x, y, ri, words = []) {
+export function hitTest(scene, x, y, ri, words = [], tilt = {}) {
+  [x, y] = unprojectTilt(x, y, tilt);
   const word = words.find((w) => Math.abs(x - w.x) <= w.w / 2 && Math.abs(y - w.y) <= w.h / 2);
   if (word) return { word };
-  const d = Math.hypot(x, y);
+  const projectedY = y / TILT;
+  const d = Math.hypot(x, projectedY);
   if (d < ri * 0.5 || d > ri * 1.4) return null;
-  const a = wrap(Math.atan2(y, x));
+  const a = wrap(Math.atan2(projectedY, x));
   let best = null;
   let gap = 0.04;
   for (const f of scene.files) {
@@ -148,6 +182,13 @@ export function hitTest(scene, x, y, ri, words = []) {
     if (g < gap) [best, gap] = [f, g];
   }
   return best ? { file: best } : null;
+}
+
+/** True when a pointer lies on the ring band or its adjacent instrument ticks after undoing both projections. */
+export function isOnRing(x, y, geo, tilt = {}) {
+  const [localX, projectedY] = unprojectTilt(x, y, tilt);
+  const radius = Math.hypot(localX, projectedY / TILT);
+  return radius >= geo.ri - 4 && radius <= geo.ro + 12;
 }
 
 /** FR9: touches in the last minute, files touched, the busiest agent and 15 one-minute bars by kind. */
@@ -222,17 +263,21 @@ function fileLabel(ctx, f, band) {
 /** Steps 14, 15: the latest file names at 11 px, along the radius just inside the ring (outside the word cloud), newest first and never upside down. */
 function drawFileNames(ctx, files, now, geo, themes) {
   const recent = files.filter((f) => !f.outside && now - f.lastAt < FADE).sort((a, b) => b.lastAt - a.lastAt);
-  ctx.font = `11px ${FONT}`;
+  ctx.font = `12px ${FONT}`; // US-0419: one step larger than the first pass
   ctx.textBaseline = 'middle';
   const edge = geo.ri - 6;
   const band = edge - 0.7 * geo.ri; // the word cloud keeps within 0.7·ri
   for (const f of recent.slice(0, NAMES)) {
-    const right = Math.cos(f.angle) >= 0;
+    const x = Math.cos(f.angle) * edge;
+    const y = Math.sin(f.angle) * edge * TILT;
+    const screenAngle = Math.atan2(Math.sin(f.angle) * TILT, Math.cos(f.angle));
+    const right = x >= 0;
     ctx.save();
-    ctx.rotate(f.angle + (right ? 0 : Math.PI));
+    ctx.translate(x, y);
+    ctx.rotate(screenAngle + (right ? 0 : Math.PI));
     ctx.textAlign = right ? 'right' : 'left';
-    ctx.fillStyle = rgba(colourOf(f, themes), 0.25 + 0.65 * (1 - (now - f.lastAt) / FADE));
-    ctx.fillText(fileLabel(ctx, f, band), (right ? 1 : -1) * edge, 0);
+    ctx.fillStyle = rgba(colourOf(f, themes), 0.32 + 0.62 * (1 - (now - f.lastAt) / FADE));
+    ctx.fillText(fileLabel(ctx, f, band), 0, 0);
     ctx.restore();
   }
 }
@@ -250,6 +295,53 @@ function drawWords(ctx, placed, themes) {
     ctx.fillText(w.name, w.x, w.y);
   }
   ctx.shadowBlur = 0;
+}
+
+/**
+ * US-0419: the LCARS scope behind the ring. Range rings, a dashed crosshair and an outer bezel in the theme's steel,
+ * faint enough to stay behind the data; it gives the body the shape of an instrument instead of empty space.
+ */
+function drawScope(ctx, geo, themes) {
+  const ink = themes.base.ink;
+  const { ri, ro } = geo;
+  ctx.save();
+  ctx.lineWidth = 1;
+  for (const f of [0.4, 0.7]) {
+    ctx.strokeStyle = rgba(ink, 0.09);
+    ctx.beginPath();
+    ctx.arc(0, 0, ri * f, 0, TAU);
+    ctx.stroke();
+  }
+  // A thin solid crosshair: filled strips keep the frame free of path lines, so a still frame draws none.
+  const span = ro + 22;
+  ctx.fillStyle = rgba(ink, 0.07);
+  ctx.fillRect(-span, -0.5, span * 2, 1);
+  ctx.fillRect(-0.5, -span, 1, span * 2);
+  ctx.strokeStyle = rgba(ink, 0.14);
+  ctx.beginPath();
+  ctx.arc(0, 0, ro + 2, 0, TAU);
+  ctx.stroke();
+  ctx.restore();
+}
+
+/** US-0419: four corner brackets, in canvas coordinates, so the field reads as a display. */
+function drawBrackets(ctx, geo, themes) {
+  const ink = themes.base.ink;
+  const m = 12;
+  const arm = 26;
+  const t = 2;
+  ctx.save();
+  ctx.fillStyle = rgba(ink, 0.18);
+  for (const [x, y, dx, dy] of [
+    [m, m, 1, 1],
+    [geo.w - m, m, -1, 1],
+    [m, geo.h - m, 1, -1],
+    [geo.w - m, geo.h - m, -1, -1]
+  ]) {
+    ctx.fillRect(dx > 0 ? x : x - arm, y - (dy > 0 ? 0 : t), arm, t);
+    ctx.fillRect(x - (dx > 0 ? 0 : t), dy > 0 ? y : y - arm, t, arm);
+  }
+  ctx.restore();
 }
 
 /** Motion only: a soft radar sweep turning inside the ring. */
@@ -275,10 +367,11 @@ function drawTraces(ctx, scene, placed, geo, themes, now) {
     const w = byName.get(b.word);
     if (!w || b.at > now || now - b.at >= MIN) continue;
     const c = bend(b.a1, geo.ri);
+    c[1] *= TILT;
     ctx.strokeStyle = rgba(colourOf(b, themes), 0.18 * w.alpha);
     ctx.beginPath();
     ctx.moveTo(w.x, w.y);
-    ctx.quadraticCurveTo(c[0], c[1], Math.cos(b.a1) * geo.ri, Math.sin(b.a1) * geo.ri);
+    ctx.quadraticCurveTo(c[0], c[1], Math.cos(b.a1) * geo.ri, Math.sin(b.a1) * geo.ri * TILT);
     ctx.stroke();
   }
 }
@@ -300,8 +393,9 @@ function drawAsteroids(ctx, scene, placed, ring, geo, themes, now) {
     const q = 1 - (1 - p) * (1 - p); // eases out as it nears the ring
     const rgb = colourOf(b, themes);
     const a = [from.x, from.y];
-    const end = [Math.cos(b.a1) * geo.ri, Math.sin(b.a1) * geo.ri];
+    const end = [Math.cos(b.a1) * geo.ri, Math.sin(b.a1) * geo.ri * TILT];
     const c = bend(b.a1, geo.ri);
+    c[1] *= TILT;
     // The trail: the curve from the word up to the rock (de Casteljau split at q), fading as the flight ends.
     const head = at(a, c, end, q);
     ctx.strokeStyle = rgba(rgb, 0.25 * (1 - p));
@@ -361,7 +455,7 @@ const TIP_WRAP = 220;
  * One frame. `now` is in milliseconds; with motion off (NFR3) nothing flies or pulses and the cloud stands still.
  * Returns the placed words, for hit-testing.
  */
-export function drawFrame(ctx, scene, ring, geo, themes, now, { motion, hover } = {}) {
+export function drawFrame(ctx, scene, ring, geo, themes, now, { motion, hover, tilt = {} } = {}) {
   const t = now / 1000;
   const measure = (s, size) => {
     ctx.font = `bold ${size}px ${FONT}`;
@@ -371,17 +465,39 @@ export function drawFrame(ctx, scene, ring, geo, themes, now, { motion, hover } 
   ctx.save();
   ctx.fillStyle = themes.base.bg;
   ctx.fillRect(0, 0, geo.w, geo.h);
+  drawBrackets(ctx, geo, themes); // US-0419
   ctx.translate(geo.cx, geo.cy);
-  ring.draw(ctx, 0); // ponytail: the ring stands still; pretty-events' ringRotation is there if a slow spin is wanted
-  if (motion) drawSweep(ctx, geo, themes, t);
-  if (motion) ring.pulse(ctx, t, 1, Math.min(1, scene.bundles.filter((b) => b.at <= now && now - b.at < MIN).length / 30));
+  const xAxis = projectTilt(1, 0, tilt);
+  const yAxis = projectTilt(0, 1, tilt);
+  ctx.save();
+  ctx.transform(xAxis[0], xAxis[1], yAxis[0], yAxis[1], 0, 0);
+  ctx.save();
+  ctx.scale(1, TILT);
+  drawScope(ctx, geo, themes); // US-0419
+  ctx.shadowColor = rgba(themes.base.ink, 0.45);
+  ctx.shadowBlur = 18;
+  ctx.shadowOffsetY = 12;
+  ring.draw(ctx, 0); // US-0419: projected into an ellipse, with a soft instrument shadow for depth
+  ctx.shadowColor = 'transparent';
+  ctx.shadowBlur = 0;
+  ctx.shadowOffsetY = 0;
   drawMarks(ctx, scene.files, now, geo, themes);
+  ctx.restore();
+  if (motion) {
+    ctx.save();
+    ctx.scale(1, TILT);
+    drawSweep(ctx, geo, themes, t);
+    ring.pulse(ctx, t, 1, Math.min(1, scene.bundles.filter((b) => b.at <= now && now - b.at < MIN).length / 30));
+    ctx.restore();
+  }
   drawFileNames(ctx, scene.files, now, geo, themes);
   if (motion) drawTraces(ctx, scene, placed, geo, themes, now);
   drawWords(ctx, placed, themes);
   if (motion) drawAsteroids(ctx, scene, placed, ring, geo, themes, now);
+  ctx.restore();
   if (hover) {
-    const anchor = hover.at ?? [Math.cos(hover.angle) * geo.ri, Math.sin(hover.angle) * geo.ri];
+    const anchorAt = hover.at ?? [Math.cos(hover.angle) * geo.ri, Math.sin(hover.angle) * geo.ri * TILT];
+    const anchor = projectTilt(...anchorAt, tilt);
     const out = anchor[0] >= 0;
     const box = [anchor[0] + (out ? 1 : -1) * (geo.ro - geo.ri + 40), anchor[1] - 20];
     const callout = { t0: t - 1, t1: t + 1, alert: hover.alert, title: wrapPath(hover.title, TIP_WRAP, (l) => measure(l, 7.5)), lines: hover.lines };

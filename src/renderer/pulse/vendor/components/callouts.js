@@ -19,7 +19,7 @@ export function drawCallouts(ctx, callouts, t, resolve, theme) {
     const tw = Math.max(...titles.map((l) => ctx.measureText(l).width));
     ctx.font = `9px ${FONT}`;
     const bw = Math.max(tw, ...c.lines.map((l) => ctx.measureText(l).width)) + 24;
-    const bh = 20 + extra + c.lines.length * 13;
+    const bh = 30 + extra + c.lines.length * 13;
     const bx = right ? x - bw : x;
     ctx.globalAlpha = alpha;
     ctx.strokeStyle = rgba(color, 0.6);

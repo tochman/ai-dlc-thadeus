@@ -3,11 +3,12 @@
 // canvas callout and as text for screen readers (FR8.1); clicking a file opens it in the editor (FR8.2); the arm shows
 // the readouts and fifteen one-minute bars of reads, writes and deletes (FR9). With reduced motion the canvas is drawn
 // once per change as a still frame (NFR3). Step 10: the canvas takes its frame's content size and the ring is fitted to it.
+// US-0419: Back and the live state sit in the LCARS title bar, bars are the footer, and the stage counts both when it fits.
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { DiagonalFrame, useEntrance } from './Lcars.jsx';
+import { DiagonalFrame, Pill, useEntrance } from './Lcars.jsx';
 import { useEditor } from './editor/EditorContext.jsx';
-import { buildScene, drawFrame, fitRing, hitTest, lcarsTheme, readouts, ringKey } from './pulse/scene.js';
+import { buildScene, clampTilt, drawFrame, fitRing, hitTest, isOnRing, lcarsTheme, readouts, ringKey } from './pulse/scene.js';
 import { createRing } from './pulse/vendor/components/ring.js';
 import { createRandom } from './pulse/vendor/core/random.js';
 
@@ -16,6 +17,8 @@ const START = { w: 1080, h: 720 };
 const TIP_LINES = 3;
 const STAGE_MIN = 160;
 const BAR_H = 40;
+const DRAG_THRESHOLD = 4;
+const DEGREES_PER_DRAG_PIXEL = 0.25;
 
 const errorText = (err) => String(err?.message ?? err).replace(/^Error invoking remote method '[^']+': (Error: )?/, '');
 const keyOf = (x) => (x.outside ? 'outside' : x.path);
@@ -57,6 +60,9 @@ export default function PulseView({ projectId, onBack }) {
   const [snap, setSnap] = useState(null);
   const [error, setError] = useState(null);
   const [hover, setHover] = useState(null);
+  const [tilt, setTilt] = useState({ yaw: 0, pitch: 0 });
+  const dragRef = useRef(null);
+  const suppressClickRef = useRef(false);
   const canvasRef = useRef(null);
   const ringRef = useRef(null);
   const stageRef = useRef(null);
@@ -113,7 +119,8 @@ export default function PulseView({ projectId, onBack }) {
 
   // Step 10: follow the frame's content size. A frame with no height yet gets a 3:2 canvas.
   // ponytail: canvas pixels are CSS pixels, so it is soft on retina screens; scale by devicePixelRatio if that shows.
-  const hasCanvas = Boolean(snap) && !(snap.files.length === 0 && snap.touches.length === 0);
+  // US-0419: the ring is always drawn, even with nothing on it; the standby panel sits inside it.
+  const hasCanvas = Boolean(snap);
   useEffect(() => {
     const box = stageRef.current;
     if (!box || typeof ResizeObserver === 'undefined') return undefined;
@@ -123,6 +130,7 @@ export default function PulseView({ projectId, onBack }) {
     view = view ?? document.documentElement;
     // Step 16: the stage runs down to the terminal's foot bar, open or closed; the open terminal is drawn over it
     // (theme.css), so the ring keeps one size whatever the terminal does. Step 18: Pulse has no latest-message row.
+    // US-0419: the footer strip sits below the stage, so its height is taken off the stage, not the frame's padding.
     const frame = box.closest('.pulse-view') ?? box;
     const fit = () => {
       const foot = document.querySelector('.terminal-footbar');
@@ -130,20 +138,42 @@ export default function PulseView({ projectId, onBack }) {
         ? foot.getBoundingClientRect().top - 14
         : view.getBoundingClientRect().bottom - (parseFloat(getComputedStyle(view).paddingBottom) || 0);
       const b = box.getBoundingClientRect();
-      const below = frame.getBoundingClientRect().bottom - b.bottom;
+      const strip = frame.querySelector('.pulse-foot');
+      const below = strip ? strip.getBoundingClientRect().height + 10 : 0;
       box.style.height = `${Math.max(STAGE_MIN, Math.floor(bottom - b.top - below))}px`;
     };
+    const strip = frame.querySelector('.pulse-foot');
+    let panel = null;
     const ro = new ResizeObserver((entries) => {
-      const entry = entries.find((e) => e.target !== view);
-      if (!entry) return fit();
+      if (entries.some((e) => e.target !== box)) fit();
+      const entry = entries.find((e) => e.target === box);
+      if (!entry) return; // the view, the footer or the terminal moved: only the fit changes
       const w = Math.round(entry.contentRect.width);
       const h = Math.round(entry.contentRect.height) || Math.round((w * 2) / 3);
       if (w > 0) setSize((s) => (s.w === w && s.h === h ? s : { w, h }));
     });
     fit();
+    // The footer's height is only known once it is laid out; one frame later and on every resize of it, fit again.
+    const raf = requestAnimationFrame(fit);
     ro.observe(box);
     ro.observe(view);
-    return () => ro.disconnect();
+    if (strip) ro.observe(strip);
+    const observeTerminal = () => {
+      const current = document.querySelector('.terminal-panel');
+      if (current && current !== panel) {
+        panel = current;
+        ro.observe(panel); // catches terminal open/close after this view has mounted
+        fit();
+      }
+    };
+    observeTerminal();
+    const mo = new MutationObserver(observeTerminal);
+    mo.observe(document.documentElement, { childList: true, subtree: true });
+    return () => {
+      cancelAnimationFrame(raf);
+      ro.disconnect();
+      mo.disconnect();
+    };
   }, [hasCanvas]);
 
   useEffect(() => {
@@ -154,7 +184,7 @@ export default function PulseView({ projectId, onBack }) {
     if (ringRef.current?.key !== key) ringRef.current = { key, ring: createRing(geo, scene.layout, themes.base, createRandom(7)) };
     const { ring } = ringRef.current;
     const motion = document.documentElement.dataset.motion === 'full';
-    const frame = () => (cloudRef.current = drawFrame(ctx, scene, ring, geo, themes, Date.now(), { motion, hover: tip }));
+    const frame = () => (cloudRef.current = drawFrame(ctx, scene, ring, geo, themes, Date.now(), { motion, hover: tip, tilt }));
     frame();
     if (!motion) return undefined; // NFR3: one still frame per change
     let id = requestAnimationFrame(function tick() {
@@ -162,20 +192,63 @@ export default function PulseView({ projectId, onBack }) {
       id = requestAnimationFrame(tick);
     });
     return () => cancelAnimationFrame(id);
-  }, [scene, themes, tip, geo]);
+  }, [scene, themes, tip, geo, tilt]);
 
-  /** The pointer in ring coordinates; the canvas keeps its aspect ratio, so one scale holds for both axes. */
-  const at = (e) => {
+  /** Pointer coordinates relative to the ring centre in canvas CSS-pixel coordinates. */
+  const canvasPoint = (e) => {
     const rect = e.currentTarget.getBoundingClientRect();
     const s = geo.w / (rect.width || geo.w);
-    return hitTest(scene, (e.clientX - rect.left) * s - geo.cx, (e.clientY - rect.top) * s - geo.cy, geo.ri, cloudRef.current);
+    return [(e.clientX - rect.left) * s - geo.cx, (e.clientY - rect.top) * s - geo.cy];
+  };
+  /** The pointer in canvas coordinates; hitTest inverts the current view and ellipse projections. */
+  const at = (e) => {
+    const [x, y] = canvasPoint(e);
+    return scene && hitTest(scene, x, y, geo.ri, cloudRef.current, tilt);
+  };
+  const onPointerDown = (e) => {
+    if (!scene || e.button !== 0) return;
+    const [x, y] = canvasPoint(e);
+    if (!isOnRing(x, y, geo, tilt)) return;
+    suppressClickRef.current = false;
+    dragRef.current = { pointerId: e.pointerId, startX: e.clientX, startY: e.clientY, initialTilt: tilt, dragging: false };
+    e.currentTarget.setPointerCapture?.(e.pointerId);
+  };
+  const onPointerMove = (e) => {
+    const drag = dragRef.current;
+    if (drag && drag.pointerId === e.pointerId) {
+      const dx = e.clientX - drag.startX;
+      const dy = e.clientY - drag.startY;
+      if (!drag.dragging && Math.hypot(dx, dy) <= DRAG_THRESHOLD) {
+        setHover(at(e));
+        return;
+      }
+      drag.dragging = true;
+      setHover(null);
+      setTilt(clampTilt({ yaw: drag.initialTilt.yaw + dx * DEGREES_PER_DRAG_PIXEL, pitch: drag.initialTilt.pitch - dy * DEGREES_PER_DRAG_PIXEL }));
+      return;
+    }
+    setHover(at(e));
+  };
+  const finishDrag = (e) => {
+    const drag = dragRef.current;
+    if (!drag || drag.pointerId !== e.pointerId) return;
+    dragRef.current = null;
+    suppressClickRef.current = drag.dragging;
+    if (!drag.dragging) setHover(at(e));
+    if (e.currentTarget.hasPointerCapture?.(e.pointerId)) e.currentTarget.releasePointerCapture(e.pointerId);
   };
   const onClick = (e) => {
+    if (suppressClickRef.current) {
+      suppressClickRef.current = false;
+      e.preventDefault();
+      return;
+    }
     const f = at(e)?.file; // FR8.2: the outside mark, deleted files and folder marks have nothing to open.
     if (f && !f.outside && !f.deleted && !f.folder) editor?.open(f.path);
   };
 
   const r = snap && readouts(snap, Date.now(), name);
+  const working = Boolean(snap?.agents.some((a) => a.active));
   const frameReadouts = r
     ? [
         { k: t('pulse.readout.rate'), v: <span data-testid="pulse-readout-rate">{r.perMinute}</span>, tone: 'steel', strip: 'live' },
@@ -184,24 +257,23 @@ export default function PulseView({ projectId, onBack }) {
       ]
     : [];
   const empty = snap && snap.files.length === 0 && snap.touches.length === 0;
+  const hasTouches = Boolean(snap?.touches.length);
 
   return (
     <section className={`pulse-view${entering ? ' is-entering' : ''}`} data-testid="pulse-view" onKeyDown={(e) => e.key === 'Escape' && onBack?.()}>
-      {/* step 17: back is the arm's last block, like the sidebar's buttons, not a pill over the frame's corner */}
+      {/* US-0419: Back rides the title bar's right end, clear of the elbow and the thin line; the state rides its tag. */}
       <DiagonalFrame
         title={t('pulse.title')}
         sub={t('pulse.meta')}
-        readouts={frameReadouts}
-        arm={
-          <>
-            {r && <Bars bars={r.bars} />}
-            {onBack && (
-              <button type="button" className="lcars-dblk lcars-dblk--steel pulse-back" onClick={onBack} data-testid="pulse-back">
-                {t('app.back')}
-              </button>
-            )}
-          </>
+        tag={snap ? `${t(working ? 'pulse.live' : 'pulse.idle')} · ${t('pulse.agents', { n: snap.agents.length })}` : undefined}
+        trailing={
+          onBack && (
+            <Pill className="pulse-back" onClick={onBack} data-testid="pulse-back">
+              {t('app.back')}
+            </Pill>
+          )
         }
+        readouts={frameReadouts}
       >
         {error && (
           <p className="banner banner-error" role="alert">
@@ -209,8 +281,7 @@ export default function PulseView({ projectId, onBack }) {
           </p>
         )}
         {!snap && !error && <p className="muted">{t('pulse.loading')}</p>}
-        {empty && <p className="muted">{t('pulse.empty')}</p>}
-        {snap && !empty && (
+        {snap && (
           <>
             <div className="pulse-stage" ref={stageRef}>
               <canvas
@@ -221,15 +292,51 @@ export default function PulseView({ projectId, onBack }) {
                 role="img"
                 aria-label={t('pulse.canvas', { agents: snap.agents.length, files: snap.files.length })}
                 data-testid="pulse-canvas"
-                onPointerMove={(e) => setHover(at(e))}
-                onPointerLeave={() => setHover(null)}
+                onPointerDown={onPointerDown}
+                onPointerMove={onPointerMove}
+                onPointerUp={finishDrag}
+                onPointerCancel={finishDrag}
+                onLostPointerCapture={finishDrag}
+                onPointerLeave={() => !dragRef.current && setHover(null)}
                 onClick={onClick}
               />
+              {empty && (
+                <div className="pulse-empty" data-testid="pulse-empty">
+                  <span className="pulse-empty-state" aria-hidden="true">
+                    <i />
+                    {t('pulse.idle')}
+                  </span>
+                  <p className="pulse-empty-title">{t('pulse.emptyTitle')}</p>
+                  <p className="pulse-empty-text">{t('pulse.empty')}</p>
+                  <p className="pulse-empty-hint">{t('pulse.emptyHint')}</p>
+                </div>
+              )}
             </div>
             <p className="sr-only" aria-live="polite" data-testid="pulse-tooltip">
               {tip ? [tip.title, ...tip.lines].join(' · ') : ''}
             </p>
           </>
+        )}
+        {/* US-0419: the bars are a footer readout, under the canvas, where the terminal cannot hide them. */}
+        {r && hasTouches && (
+          <div className="pulse-foot" data-testid="pulse-foot">
+            <span className="pulse-foot-label">{t('pulse.window')}</span>
+            <Bars bars={r.bars} />
+            <span className="pulse-legend" aria-hidden="true">
+              <span>
+                <i className="pulse-key pulse-key--read" />
+                {t('pulse.kind.read')}
+              </span>
+              <span>
+                <i className="pulse-key pulse-key--write" />
+                {t('pulse.kind.write')}
+              </span>
+              <span>
+                <i className="pulse-key pulse-key--delete" />
+                {t('pulse.kind.delete')}
+              </span>
+            </span>
+          </div>
         )}
       </DiagonalFrame>
     </section>

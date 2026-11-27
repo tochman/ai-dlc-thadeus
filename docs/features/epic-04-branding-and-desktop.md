@@ -6,9 +6,9 @@
 
 > Auctum AIDLC Control should look and behave like a proper Auctum desktop app wherever it shows up: in the Dock, the application menu, the window switcher, the installer and the Linux launcher. Inside the app it should feel like a living bridge console. EPIC-01 added the name, splash screen, in-app logo and the restrained LCARS theme. This epic covers the parts of the operating system that still show Electron defaults, and the motion and light that make the theme come alive without hurting readability.
 
-**Stories:** US-0401, US-0402, US-0403, US-0404, US-0405, US-0406, US-0407, US-0408, US-0409, US-0410, US-0411, US-0412, US-0413, US-0414, US-0415, US-0416, US-0417, US-0418
+**Stories:** US-0401, US-0402, US-0403, US-0404, US-0405, US-0406, US-0407, US-0408, US-0409, US-0410, US-0411, US-0412, US-0413, US-0414, US-0415, US-0416, US-0417, US-0418, US-0419
 
-**Status (2026-11-27):** ✅ US-0401–US-0411 released (v0.1.1–v0.2.5). ✅ US-0412 released in v0.3.1. ✅ US-0413 released in v0.2.7. ✅ US-0414 released in v0.2.8. ✅ US-0415 released in v0.2.13. ✅ US-0416 released in v0.2.14. ✅ US-0417 released in v0.2.14. ✅ US-0418 released in v0.3.3. Each story names its release.
+**Status (2026-11-27):** ✅ US-0401–US-0411 released (v0.1.1–v0.2.5). ✅ US-0412 released in v0.3.1. ✅ US-0413 released in v0.2.7. ✅ US-0414 released in v0.2.8. ✅ US-0415 released in v0.2.13. ✅ US-0416 released in v0.2.14. ✅ US-0417 released in v0.2.14. ✅ US-0418 released in v0.3.3. 🚧 US-0419 in progress, for v0.3.31. Each story names its release.
 
 ---
 
@@ -403,3 +403,30 @@
   - [x] Every text through `t()` in Swedish and English, in the LCARS look, built in our own terms (no copy of pretty-events' look or code).
 - **Notes:** Decided 2026-11-27: the file observer runs only while an agent is running or an intent or Spec Kit flow is active, to spare the disk. Replay of a past session can follow US-1505. Free sessions show once EPIC-15 lands; before that, sessions without an intent show as "Main".
 - **Dependencies:** US-0214, US-0030, US-0417
+
+
+**US-0419: Astrometrics, second pass: an LCARS instrument view** 🚧 In progress, for v0.3.31
+- As a **developer watching my agents work**, in order to **read activity as part of the console and understand an idle project without losing my way out**, I would like **Astrometrics to present the activity ring as a dimensional LCARS instrument, show its empty state clearly, and keep Back in reach**.
+- **Epic:** EPIC-04
+- **Priority:** Medium
+- **Complexity:** Medium
+- **Background:** Asked for 2026-11-27, right after v0.3.3. The first Pulse pass put Back at the bottom of the left arm, below the fifteen-minute bars. With the terminal open at 1280 px that block sits behind the terminal panel, so the only way out is Esc. The body is also a large empty black field, so the ring floats instead of reading as an instrument. Reviewed on the built app at 1280 and 1600 px.
+- **Acceptance Criteria:**
+  - [x] The view is named **Astrometrics** in English and **Astrometrik** in Swedish, including its navigation entry and title; internal `pulse` identifiers remain stable.
+  - [x] Back is a pill in the LCARS frame's title bar, clear of the elbow and hairline, and stays visible with the terminal open or closed; Esc still goes back.
+  - [x] The frame tag carries live/idle state and agent count; the arm keeps rate, files and busiest readouts.
+  - [x] The fifteen-minute bars sit in a footer strip under the canvas with a reads/writes/deletes legend, above the terminal.
+  - [x] The canvas draws a faint LCARS scope behind the ring: concentric range rings, a crosshair and corner brackets in the theme's steel.
+  - [x] The ring is projected into a shallow ellipse with subtle shadow depth; names and agent labels remain readable and correctly hit-tested.
+  - [x] Dragging within the ring tilts its canvas view in bounded horizontal and vertical directions; the chosen orientation remains on release, while a click without a drag still opens a file.
+  - [x] The ring sits higher in the stage to reduce the top gap; labels, hover targets and the footer remain aligned and unobscured.
+  - [x] File names on the ring are one step larger and brighter, and still cut to the band.
+  - [x] With no recorded activity, the empty ring remains visible behind a centered LCARS standby panel; the previous “no agent touched a file in the last 15 minutes” empty view is corrected.
+  - [x] Hover callouts have balanced top and bottom padding.
+  - [x] The stage keeps the largest size that fits above the terminal, with the footer counted and terminal appearance/opening observed after mount.
+  - [x] In the release list, the planned v0.3.31 entry appears immediately above the v0.3.3 release.
+  - [x] Under reduced motion the scope is a still frame like the ring; no new dependency.
+  - [x] Every text goes through `t()` in Swedish and English, in the LCARS look.
+  - [x] Build screenshots at 1280 px and 1600 px, with the terminal hidden, show both populated and empty states and are reviewed before release.
+- **Notes:** A second pass on US-0418, not a redesign of the event ring: the vendor drawing, observers and store stay as they are. The requested decorative arches were rejected and removed from scope. All view criteria are implemented and verified; terminal-hidden screenshots at 1280 px and 1600 px were reviewed for populated and empty states, including two tilt directions. The v0.3.31 plan is in the release list. Remaining: release checks.
+- **Dependencies:** US-0418
