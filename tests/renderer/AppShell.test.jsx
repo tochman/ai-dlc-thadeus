@@ -225,6 +225,12 @@ describe('App shell', () => {
     expect(screen.getByTestId('arm-velocity').disabled).toBe(true);
   });
 
+  it('the main sidebar has no Pulse block; Pulse opens from the intent arm (US-0418 step 13)', async () => {
+    await renderApp({ openProjects: ['/p/aidlc-dash-a'], activeProject: '/p/aidlc-dash-a' });
+    await screen.findByTestId('project-view-switch-features');
+    expect(screen.queryByTestId('arm-pulse')).toBeNull();
+  });
+
   it('US-1401: a Spec Kit project shows the specs view and no Intents, Kostnad, Velocity, Planer or Github (AC1.1.2)', async () => {
     mockBridge({ openProjects: ['/p/kit-a'], activeProject: '/p/kit-a' });
     openAs('speckit');
@@ -242,6 +248,7 @@ describe('App shell', () => {
     for (const id of ['project-view-switch-intents', 'project-view-switch-plans', 'arm-cost', 'arm-velocity', 'arm-github']) {
       expect(screen.queryByTestId(id), id).toBeNull();
     }
+    expect(screen.queryByTestId('arm-pulse')).toBeNull(); // US-0418 step 13: Pulse lives in the intent arm
     expect(await within(screen.getByTestId('project-tabs')).findByText(t('app.featureCount', { n: 2 }))).toBeTruthy(); // US-0048 L1
     await waitFor(() => expect(window.bridge.sendMenuState).toHaveBeenLastCalledWith({ hasProject: true, framework: 'speckit', showFeatures: true }));
 

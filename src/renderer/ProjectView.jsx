@@ -9,6 +9,7 @@ import CostPanel from './CostPanel.jsx';
 import RefreshPanel from './RefreshPanel.jsx';
 import MachinesView from './MachinesView.jsx';
 import VelocityView from './VelocityView.jsx';
+import PulseView from './PulseView.jsx';
 import SetupAidlc from './SetupAidlc.jsx';
 import TerminalPanel from './TerminalPanel.jsx';
 import LatestMessageStrip from './LatestMessageStrip.jsx'; // US-0506 u3
@@ -437,7 +438,7 @@ function ProjectContent({
   // One view at a time: Features needs the feature docs, the rest the framework; otherwise its default view shows
   // (US-0901 FR1.1, US-1401 R-01). Configuration holds the project's own settings for every project, and the AI-DLC
   // configuration in an AI-DLC one (US-0012).
-  const view = shownViews(project.detection.views, showFeatures).includes(chosenView) ? chosenView : defaultView;
+  const view = chosenView === 'pulse' || shownViews(project.detection.views, showFeatures).includes(chosenView) ? chosenView : defaultView; // US-0418 FR1.1
   const configSection = sectionsFor(framework).includes(section) ? section : 'docs';
   const aidlcShown = view === 'config' && configSection === 'aidlc';
   // US-0905: Configuration › AI-DLC has two sub-views, its settings and the plans.
@@ -495,7 +496,7 @@ function ProjectContent({
           )}
           {justSetUp && <SetupDone onClose={() => setJustSetUp(false)} onFeatureDocs={featureDocsChoice ? setupDocs : undefined} />}
           {/* Kept mounted while Features or Configuration is shown, so the intents view keeps its state (FR2.1). */}
-          <div className="project-mode" hidden={['features', 'config', 'editor'].includes(view)}>
+          <div className="project-mode" hidden={['features', 'config', 'editor', 'pulse'].includes(view)}>
             {framework === 'speckit' && <SpeckitShell projectId={project.projectId} onMeta={onMeta} />}
             {onAidlc && (
               <AidlcProject
@@ -522,6 +523,8 @@ function ProjectContent({
               />
             )}
           </div>
+          {/* US-0418 FR1.1: Pulse is every framework's, so it sits beside the framework's own views. */}
+          {view === 'pulse' && <PulseView projectId={project.projectId} onBack={() => onView?.('intents')} />}
           {view === 'features' && (
             <FeaturesView
               projectId={project.projectId}
@@ -615,7 +618,7 @@ function ProjectContent({
           )}
         </div>
         {onAidlc && <AddHarnessDialog open={addingHarness} onClose={() => setAddingHarness(false)} setupProps={setupProps} />}
-        <LatestMessageStrip projectId={project.projectId} onOpenReply={onOpenReply} />
+        {view !== 'pulse' && <LatestMessageStrip projectId={project.projectId} onOpenReply={onOpenReply} />}
         <TerminalPanel projectId={project.projectId} visible={visible} onChooseHarness={() => openAgentSettings(false)} onOpenTools={onOpenTools} />
       </div>
     </EditorCtx.Provider>

@@ -155,6 +155,7 @@
     "open": "+ Open",
     "cost": "Cost",
     "velocity": "Velocity",
+    "pulse": "Pulse",
     "github": "Version control",
     "settings": "Settings",
     "config": "Configuration",
@@ -416,6 +417,31 @@
     "noStages": "aidlc-state.md is missing or has no stages yet.",
     "noGraph": "Timings are kept only on the machine that ran the work. Status comes from aidlc-state.md.",
     "skipped": "{list} {n, plural, one {stage is} other {stages are}} not included"
+  },
+  "pulse": {
+    "open": "Pulse ›",
+    "title": "Pulse",
+    "meta": "What the agents touch, live",
+    "loading": "Listening for the agents…",
+    "loadFailed": "The pulse could not be read: {error}",
+    "empty": "No agent has touched a file in the last 15 minutes.",
+    "main": "Main agent",
+    "unattributed": "Other",
+    "outside": "Outside the project",
+    "folder": "{path} ({n, plural, one {# file} other {# files}})",
+    "none": "none",
+    "canvas": "Pulse ring with {agents, plural, one {# agent} other {# agents}} and {files, plural, one {# file} other {# files}}",
+    "bars": "Last 15 minutes: {read} reads, {write} writes, {delete} deletes",
+    "kind": {
+      "read": "read",
+      "write": "write",
+      "delete": "delete"
+    },
+    "readout": {
+      "rate": "Last minute",
+      "files": "Files",
+      "busiest": "Busiest"
+    }
   },
   "velocity": {
     "title": "Velocity",

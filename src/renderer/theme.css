@@ -700,14 +700,17 @@ button.lcars-nb:hover:not(:disabled), a.lcars-nb:hover { filter: brightness(1.15
   padding: 20px;
   display: grid;
   grid-template-columns: var(--arm) minmax(0, 1fr);
-  grid-template-rows: 64px minmax(0, 1fr) auto auto;
+  /* US-0418 step 16: the head row ends at the title hairline, so the main view scrolls away right under it; the 64 px
+     corner block hangs below the row into the arm column, and the arm starts under it. */
+  --head: calc(var(--bar-med) + var(--gap) + 1px);
+  grid-template-rows: var(--head) minmax(0, 1fr) auto auto;
   grid-template-areas: 'head head' 'arm main' 'msg msg' 'term term';
   gap: 14px 16px;
 }
 /* US-0018: the latest agent message, one line above the hidden terminal. Without it the message row is dropped, so
    no empty row costs a gap. */
 .app:not(:has(.latest-message)) {
-  grid-template-rows: 64px minmax(0, 1fr) auto;
+  grid-template-rows: var(--head) minmax(0, 1fr) auto;
   grid-template-areas: 'head head' 'arm main' 'term term';
 }
 .latest-message {
@@ -723,7 +726,7 @@ button.lcars-nb:hover:not(:disabled), a.lcars-nb:hover { filter: brightness(1.15
 .latest-message-line { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
 .latest-message-tab { color: var(--steel-text); font-family: var(--font-head); text-transform: uppercase; letter-spacing: 0.06em; }
 
-.app-header { grid-area: head; display: flex; gap: var(--gap); min-width: 0; height: 64px; }
+.app-header { grid-area: head; display: flex; gap: var(--gap); min-width: 0; }
 .app-brand {
   width: var(--arm);
   height: 64px;
@@ -768,7 +771,7 @@ button.lcars-nb:hover:not(:disabled), a.lcars-nb:hover { filter: brightness(1.15
 .docs-dialog { width: min(860px, 90vw); max-height: 85vh; overflow-y: auto; }
 
 /* Left arm: projects and views as labelled blocks (FR2.2). */
-.app-arm { grid-area: arm; display: flex; flex-direction: column; gap: var(--gap); min-height: 0; overflow-y: auto; overflow-x: hidden; scrollbar-width: none; }
+.app-arm { grid-area: arm; margin-top: calc(64px - var(--head)); display: flex; flex-direction: column; gap: var(--gap); min-height: 0; overflow-y: auto; overflow-x: hidden; scrollbar-width: none; }
 /* US-0417: every arm block keeps an 11 px lane at its left edge for its state strip (5 px strip, 6 px gap). */
 .app-arm > .arm-project, .app-arm > .lcars-block, .app-arm > .arm-foot { margin-left: 11px; }
 .arm-project.is-active::before { content: ''; position: absolute; left: -11px; top: 0; bottom: 0; width: 5px; background: var(--steel); }
@@ -2140,6 +2143,18 @@ button.tool-row-path:hover { color: var(--steel-text); }
 .velocity-chart { margin: 0; }
 .velocity-chart rect.is-intents { fill: var(--steel); }
 .velocity-chart rect.is-stories { fill: var(--steel-light); }
+/* US-0418 FR1, FR9: the Pulse canvas keeps its 3:2 shape; the arm bars are steel reads, white writes, coral deletes. */
+/* US-0418 step 16: the ring keeps one size down to the terminal's foot bar; the open terminal and the latest message
+   are drawn over it. The frame starts nearer its top bar and keeps less room below, so the ring fits the view. */
+.app:has(.pulse-view) .terminal-panel { position: relative; z-index: 2; background: var(--bg); }
+.pulse-back { border: 0; cursor: pointer; color: var(--bg); font-family: var(--font-head); text-transform: uppercase; letter-spacing: 0.06em; text-align: right; align-content: end; min-height: 48px; }
+.pulse-view .lcars-df-in { --df-top: 104px; min-height: 420px; }
+.pulse-stage { height: 62vh; min-height: 160px; } /* PulseView sets the height to fit the view */
+.pulse-canvas { display: block; width: 100%; height: 100%; background: var(--bg); cursor: crosshair; }
+.pulse-bars { display: block; margin-top: 8px; }
+.pulse-bars rect.is-read { fill: var(--steel-text); }
+.pulse-bars rect.is-write { fill: var(--text); }
+.pulse-bars rect.is-delete { fill: var(--coral); }
 .velocity-chart-average { fill: none; stroke: var(--white); stroke-width: 1.5; stroke-dasharray: 4 4; vector-effect: non-scaling-stroke; } /* US-0417: coral is alert only */
 .velocity-legend { display: flex; gap: 6px; align-items: center; font-size: 12px; color: var(--muted); }
 .velocity-key { display: inline-block; width: 10px; height: 10px; margin-left: 8px; }

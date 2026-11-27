@@ -431,7 +431,8 @@ export default function App() {
   const showFeatures = activeMeta.showFeatures === true;
   // One view at a time. Features needs the feature docs (US-0901 FR1.1); a view not offered falls back to the default (R-01).
   const views = shownViews(active?.detection.views, showFeatures);
-  const offers = (id) => views.includes(id);
+  // US-0418 FR1.1: Pulse watches every open project, whatever its framework, so it sits outside the views table.
+  const offers = (id) => (id === 'pulse' && active !== null) || views.includes(id);
   const defaultView = active?.detection.defaultView ?? 'intents';
   const view = offers(activeUi.view) ? activeUi.view : defaultView;
   const firstLabel = { intents: t('app.intents'), specs: t('app.specs') }[defaultView] ?? t('app.setup');
@@ -444,6 +445,7 @@ export default function App() {
       editor: t('app.editor'),
       cost: t('app.cost'),
       velocity: t('app.velocity'),
+      pulse: t('app.pulse'),
       github: t('app.github')
     }[view] ?? firstLabel;
 

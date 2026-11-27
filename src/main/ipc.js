@@ -83,7 +83,8 @@ import { checkSignIn } from './signIn.js'; // US-0804
 import { checkProgram, errorText as checkError, programCommand, projectCommand, projectPlan } from './aidlcUpdate.js';
 import { setupHarness } from '../shared/harnesses.js';
 import { PLANNING_BRANCH_DEFAULT, PLANNING_PUSH_DEFAULT, getProjectSettings, getSettings, setProjectSettings, setSettings, settingsNow } from './settings.js';
-import { watchFiles, watchForAidlc, watchIntents, watchOpenFiles } from './watcher.js';
+import { watchFiles, watchForAidlc, watchIntents, watchOpenFiles, watchProjectFiles } from './watcher.js';
+import { createPulseHub, wirePulse } from './pulse.js'; // US-0418
 import { listTree, readForEdit, writeFileSafe } from './fileWrite.js';
 import { featureWatchPaths, loadFeatures, loadPlanningFeatures, loadStoryLinks } from './features.js';
 import { loadDelivered, setHandLink } from './storyLinks.js'; // US-1303
@@ -517,6 +518,7 @@ let agent = null;
 let installer = null;
 let handoff = null; // US-0213
 let agentStore = null;
+let pulseHub = null; // US-0418
 
 /** BR7.15: the harnesses a project uses: its folder markers, or an agent tab of it opened in this app run. */
 async function usedHarnesses(projectId) {
@@ -589,6 +591,15 @@ function agentWiring() {
   store.onActivity((change) => {
     for (const p of projects.values()) if (!p.sender.isDestroyed()) p.sender.send('agent:activity', change);
   });
+  // US-0418 FR3, FR4: the Pulse view's touches per project, one batched push per 2 s to the project's window.
+  pulseHub = createPulseHub({
+    watch: (root, onChange) => watchProjectFiles(root, onChange, (err) => console.warn(`[pulse] watch failed for ${root}:`, err.code ?? err.message)),
+    push: (projectId, snapshot) => {
+      const p = projects.get(projectId);
+      if (p && !p.sender.isDestroyed()) p.sender.send('pulse:changed', { projectId, snapshot });
+    }
+  });
+  wirePulse({ events: store, hub: pulseHub, rootOf: (projectId) => projects.get(projectId)?.root ?? null });
   return agent;
 }
 
@@ -1029,6 +1040,7 @@ const handlers = {
     const p = projects.get(projectId);
     if (!p) return;
     projects.delete(projectId);
+    pulseHub?.drop(projectId); // US-0418 NFR6: its observer stops with it
     killProjectSessions(projectId);
     if (!p.sender.isDestroyed()) p.sender.send('questions:changed', allQuestions()); // its questions leave the popup
     await closeWatcher(p);
@@ -1258,6 +1270,11 @@ const handlers = {
   'agentActivity:list': async (_event, projectId) => {
     project(projectId); // an unknown project is refused
     return agentStore?.activity(projectId) ?? [];
+  },
+  // US-0418 FR9.2: the project's Pulse snapshot now (agents, file marks, 15 minutes of touches); read-only.
+  'pulse:list': async (_event, projectId) => {
+    project(projectId); // an unknown project is refused
+    return pulseHub?.list(projectId) ?? null;
   },
   // Changing AI-DLC settings (EPIC-09 US-0902). The renderer sends only {kind, key, value, where}; aidlcWrite
   // checks it against the fixed tables before anything runs, and refuses any other field (NFR4).

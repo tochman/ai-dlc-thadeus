@@ -670,6 +670,39 @@ describe('activity (US-0214)', () => {
     expect(JSON.stringify(activity)).not.toContain('npm test');
   });
 
+  it('hands every tool start and end to onTouch at once, with its agent and paths (US-0418 FR3.1)', () => {
+    const touches = [];
+    const off = store.onTouch((t) => touches.push(t));
+    start();
+    hook('s1', {
+      hook_event_name: 'PreToolUse',
+      tool_name: 'Read',
+      tool_use_id: 't1',
+      agent_id: 'ag1',
+      agent_type: 'Explore',
+      tool_input: { file_path: '/p/a.js' },
+      cwd: '/p'
+    });
+    hook('s1', { hook_event_name: 'PostToolUse', tool_use_id: 't1' });
+    hook('s1', { hook_event_name: 'SubagentStart', agent_id: 'ag2' });
+    expect(touches).toEqual([
+      expect.objectContaining({
+        projectId: 'p1',
+        sessionId: 's1',
+        agentId: 'ag1',
+        agentType: 'Explore',
+        name: 'toolStart',
+        tool: 'Read',
+        toolId: 't1',
+        paths: [{ path: 'a.js', kind: 'read' }]
+      }),
+      expect.objectContaining({ projectId: 'p1', sessionId: 's1', agentId: null, name: 'toolEnd', toolId: 't1', paths: null })
+    ]);
+    off();
+    hook('s1', { hook_event_name: 'PostToolUse', tool_use_id: 't2' });
+    expect(touches).toHaveLength(2);
+  });
+
   it('shows a dispatched agent within 2 s of its start and drops it within 2 s of its end (FR2.3)', () => {
     start();
     hook('s1', { hook_event_name: 'SubagentStart', agent_id: 'ag1', agent_type: 'aidlc-developer-agent' });

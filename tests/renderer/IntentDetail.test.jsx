@@ -123,6 +123,15 @@ describe('IntentDetail head, one control per state (US-0037)', () => {
     expect(screen.getByTestId('intent-parked').textContent).toBe('Parkerad vid Functional Design');
   });
 
+  it('the intent arm has a Pulse block below the tokens that opens the Pulse view (US-0418 step 13)', () => {
+    const onView = vi.fn();
+    render(<IntentDetail projectId="p1" detail={detailOf()} intent={base} activeDirName={DIR} cost={cost} models={null} onView={onView} />);
+    const open = screen.getByTestId('intent-pulse-open');
+    expect(open.textContent).toBe('Puls ›');
+    fireEvent.click(open);
+    expect(onView).toHaveBeenCalledWith('pulse');
+  });
+
   it('the progress row says a parked intent is parked at its stage, not "Pågår" (FR3.3)', () => {
     show(parkedIntent);
     const row = screen.getByTestId('intent-progress');

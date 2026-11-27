@@ -10,9 +10,12 @@
 //
 // US-0030 FR1.1, FR2.1, FR4.1, NFR1: a permission names the agent that asked; an activity tool start carries two bounded
 // texts, a tool call's description (`detail`) and the Agent tool's task (`task`, with `taskType`).
+//
+// US-0418 FR3.1, FR5: a tool start also carries `paths`, the project-relative files it touches (pulse.js pulsePaths).
 import { cleanLine, cutGraphemes, stripUnsafe, visibleText } from '../shared/agentText.js';
 import { t } from '../shared/i18n.js';
 import { opencodeContext } from './contextSize.js';
+import { pulsePaths } from './pulse.js';
 
 export const MAX_TEXT_BYTES = 65_536;
 /** SD12: the fixed reason Claude Code gets with a deny; never agent text. */
@@ -302,7 +305,8 @@ function agentLine(value, cwd) {
 function claudeToolStart(p) {
   const input = isObject(p.tool_input) ? p.tool_input : {};
   const detail = agentLine(input.description, p.cwd);
-  const fields = { name: 'toolStart', tool: ident(p.tool_name), toolId: ident(p.tool_use_id), detail };
+  const paths = pulsePaths(p.tool_name, input, p.cwd, p.cwd); // US-0418 FR3.1: Claude Code's cwd is the project
+  const fields = { name: 'toolStart', tool: ident(p.tool_name), toolId: ident(p.tool_use_id), detail, paths };
   return AGENT_TOOLS.has(p.tool_name) ? { ...fields, task: detail, taskType: ident(input.subagent_type) } : fields;
 }
 
@@ -333,7 +337,12 @@ function claudeActivity(body) {
 
 /** opencode V2 activity events, by type; `final` for the text and reasoning streams comes from the type's last part. */
 const OPENCODE_ACTIVITY = {
-  'session.tool.input.started': (d) => ({ name: 'toolStart', tool: ident(d.tool ?? d.name), toolId: ident(d.callID ?? d.toolCallID ?? d.id) }),
+  'session.tool.input.started': (d) => ({
+    name: 'toolStart',
+    tool: ident(d.tool ?? d.name),
+    toolId: ident(d.callID ?? d.toolCallID ?? d.id),
+    paths: pulsePaths(d.tool ?? d.name, d.input ?? d.args, d.cwd ?? null, d.cwd ?? null) // US-0418 FR6.1
+  }),
   'session.tool.success': (d) => ({ name: 'toolEnd', toolId: ident(d.callID ?? d.toolCallID ?? d.id) }),
   'session.tool.failed': (d) => ({ name: 'toolEnd', toolId: ident(d.callID ?? d.toolCallID ?? d.id) }),
   'session.status': (d) => ({ name: isObject(d.status) && d.status.type === 'idle' ? 'idle' : 'busy' }),

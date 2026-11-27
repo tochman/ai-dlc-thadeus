@@ -94,7 +94,7 @@ export async function localClone(root, shardSources) {
     if (err.code !== 'ENOENT') console.warn(`Kunde inte läsa ${CLONE_ID_PATH}:`, err.message);
     return '';
   });
-  const cloneId = text.trim();
+  const cloneId = text.split('\n')[0].trim(); // newer AI-DLC writes the host on a second line
   if (!cloneId) return null;
   const own = shardSources.map(shardName).find((s) => s.cloneId === cloneId);
   const host =

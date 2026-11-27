@@ -305,14 +305,22 @@ export default function IntentDetail({
   const scope = state?.scope ?? intent?.scope ?? '–';
   const plan = state?.plan ?? scope;
   // Live tokens under the readouts while the work runs (EPIC-02 US-0207); a finished intent opens Activity from a block (US-0208 FR5).
-  const arm = live ? (
-    <TokenView cost={cost} dirName={detail.dirName} live onOpen={openTokens('side')} ref={tokensRef} />
-  ) : (
-    intentCost && (
-      <Block as="button" ref={tokensRef} tone="dark" size="sm" onClick={openTokens('side')} data-testid="token-view-open">
-        {t('tokenDetail.openShort')}
+  // US-0418 step 13: the Pulse view opens from the intent's arm, below the tokens.
+  const arm = (
+    <>
+      {live ? (
+        <TokenView cost={cost} dirName={detail.dirName} live onOpen={openTokens('side')} ref={tokensRef} />
+      ) : (
+        intentCost && (
+          <Block as="button" ref={tokensRef} tone="dark" size="sm" onClick={openTokens('side')} data-testid="token-view-open">
+            {t('tokenDetail.openShort')}
+          </Block>
+        )
+      )}
+      <Block as="button" tone="dark" size="sm" onClick={() => onView?.('pulse')} data-testid="intent-pulse-open">
+        {t('pulse.open')}
       </Block>
-    )
+    </>
   );
 
   return (

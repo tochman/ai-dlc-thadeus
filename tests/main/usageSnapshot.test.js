@@ -99,4 +99,10 @@ describe('localClone (US-0209 FR2.1)', () => {
     vi.spyOn(os, 'hostname').mockReturnValue('Thomas-MacBook.local');
     expect(await localClone(root, ['hostb-bbbbbbbbbbbb.md'])).toEqual({ host: 'thomas-macbook', cloneId: 'aaaaaaaaaaaa' });
   });
+
+  it('reads only the first line, since newer AI-DLC writes the host on a second line', async () => {
+    await fs.mkdir(path.join(root, 'aidlc'), { recursive: true });
+    await fs.writeFile(path.join(root, 'aidlc/.aidlc-clone-id'), 'aaaaaaaaaaaa\nmy-mac\n');
+    expect(await localClone(root, ['my-mac-aaaaaaaaaaaa.md'])).toEqual({ host: 'my-mac', cloneId: 'aaaaaaaaaaaa' });
+  });
 });
