@@ -428,5 +428,5 @@
   - [x] Under reduced motion the scope is a still frame like the ring; no new dependency.
   - [x] Every text goes through `t()` in Swedish and English, in the LCARS look.
   - [x] Build screenshots at 1280 px and 1600 px, with the terminal hidden, show both populated and empty states and are reviewed before release.
-- **Notes:** A second pass on US-0418, not a redesign of the event ring: the vendor drawing, observers and store stay as they are. The requested decorative arches were rejected and removed from scope. All view criteria are implemented and verified; terminal-hidden screenshots at 1280 px and 1600 px were reviewed for populated and empty states, including two tilt directions. The v0.3.31 plan is in the release list. Remaining: local `.dmg` hand check, release PR, and tag.
+- **Notes:** A second pass on US-0418, not a redesign of the event ring: the vendor drawing, observers and store stay as they are. The requested decorative arches were rejected and removed from scope. All view criteria are implemented and verified; terminal-hidden screenshots at 1280 px and 1600 px were reviewed for populated and empty states, including two tilt directions. The v0.3.31 plan is in the release list. The person confirmed the local `.dmg` hand check passed on 2026-11-27. Remaining: release PR and tag.
 - **Dependencies:** US-0418
