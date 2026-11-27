@@ -8,7 +8,7 @@
 
 **Stories:** US-0401, US-0402, US-0403, US-0404, US-0405, US-0406, US-0407, US-0408, US-0409, US-0410, US-0411, US-0412, US-0413, US-0414, US-0415, US-0416, US-0417, US-0418, US-0419
 
-**Status (2026-11-27):** ✅ US-0401–US-0411 released (v0.1.1–v0.2.5). ✅ US-0412 released in v0.3.1. ✅ US-0413 released in v0.2.7. ✅ US-0414 released in v0.2.8. ✅ US-0415 released in v0.2.13. ✅ US-0416 released in v0.2.14. ✅ US-0417 released in v0.2.14. ✅ US-0418 released in v0.3.3. 🚧 US-0419 in progress, for v0.3.31. Each story names its release.
+**Status (2026-11-27):** ✅ US-0401–US-0411 released (v0.1.1–v0.2.5). ✅ US-0412 released in v0.3.1. ✅ US-0413 released in v0.2.7. ✅ US-0414 released in v0.2.8. ✅ US-0415 released in v0.2.13. ✅ US-0416 released in v0.2.14. ✅ US-0417 released in v0.2.14. ✅ US-0418 released in v0.3.3. ✅ US-0419 released in v0.3.31. Each story names its release.
 
 ---
 
@@ -405,7 +405,7 @@
 - **Dependencies:** US-0214, US-0030, US-0417
 
 
-**US-0419: Astrometrics, second pass: an LCARS instrument view** ✅ Done, for v0.3.31
+**US-0419: Astrometrics, second pass: an LCARS instrument view** ✅ Released in v0.3.31
 - As a **developer watching my agents work**, in order to **read activity as part of the console and understand an idle project without losing my way out**, I would like **Astrometrics to present the activity ring as a dimensional LCARS instrument, show its empty state clearly, and keep Back in reach**.
 - **Epic:** EPIC-04
 - **Priority:** Medium
@@ -428,5 +428,5 @@
   - [x] Under reduced motion the scope is a still frame like the ring; no new dependency.
   - [x] Every text goes through `t()` in Swedish and English, in the LCARS look.
   - [x] Build screenshots at 1280 px and 1600 px, with the terminal hidden, show both populated and empty states and are reviewed before release.
-- **Notes:** A second pass on US-0418, not a redesign of the event ring: the vendor drawing, observers and store stay as they are. The requested decorative arches were rejected and removed from scope. All view criteria are implemented and verified; terminal-hidden screenshots at 1280 px and 1600 px were reviewed for populated and empty states, including two tilt directions. The v0.3.31 plan is in the release list. The person confirmed the local `.dmg` hand check passed on 2026-11-27. Remaining: release PR and tag.
+- **Notes:** A second pass on US-0418, not a redesign of the event ring: the vendor drawing, observers and store stay as they are. The requested decorative arches were rejected and removed from scope. All view criteria are implemented and verified; terminal-hidden screenshots at 1280 px and 1600 px were reviewed for populated and empty states, including two tilt directions. The v0.3.31 plan is in the release list. The person confirmed the local `.dmg` hand check passed on 2026-11-28. Remaining: release PR and tag.
 - **Dependencies:** US-0418
