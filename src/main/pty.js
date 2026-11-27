@@ -1,9 +1,11 @@
-// Terminal sessions per project: the agent (the chosen harness's CLI) and a login shell, both in the project root.
+// Terminal sessions per project: the agent (the chosen harness's CLI, or the project's own agent command, US-0806) and
+// a login shell, both in the project root.
 // node-pty is loaded on the first spawn, not at import: a native binary that cannot load on this
 // system (e.g. built against a newer glibc) must break the terminal tab, not the whole app.
 import { randomUUID } from 'node:crypto';
 import { t } from '../shared/i18n.js';
-import { selectableHarness } from '../shared/harnesses.js';
+import { AGENT_COMMAND_MAX, checkAgentCommand, selectableHarness } from '../shared/harnesses.js';
+import { runFixed } from './exec.js';
 import { setToolPaths, shellPath, toolPath } from './tools.js';
 
 const sessions = new Map(); // id -> { proc, projectId, kind, sender, taps }
@@ -26,13 +28,18 @@ export function shellCommand(file) {
   return /^[A-Za-z0-9_./-]+$/.test(file) ? file : `'${file.replace(/'/g, `'\\''`)}'`;
 }
 
-function shellArgs(kind, harness) {
+function shellArgs(kind, harness, command) {
   // -i makes zsh/bash read the interactive rc files (nvm usually lives in .zshrc), -l the login profile.
   if (kind === 'agent') {
     // The command comes from the fixed table, looked up by a validated id; the renderer never sends one (FR3.3, NFR4).
     const h = selectableHarness(harness);
     if (!h) throw new Error(t('errors.unknownHarness', { id: String(harness) }));
-    return ['-l', '-i', '-c', shellCommand(toolPath(h.cli))]; // a chosen CLI path wins (US-0405 FR2.4)
+    if (command === undefined) return ['-l', '-i', '-c', shellCommand(toolPath(h.cli))]; // a chosen CLI path wins (US-0405 FR2.4)
+    // US-0806 FR2.1, FR3.3: the project's saved command, read in main (ipc) and checked again here, so only the
+    // allowed characters ever reach the shell.
+    const check = checkAgentCommand(command);
+    if (!check.ok) throw new Error(t(`errors.agentCommand.${check.reason}`, { char: check.char, max: AGENT_COMMAND_MAX }));
+    return ['-l', '-i', '-c', check.command];
   }
   if (kind === 'shell') return ['-l'];
   throw new Error(t('errors.unknownTerminal', { kind: String(kind) }));
@@ -57,11 +64,12 @@ const compactEnv = (harness, tokens) =>
 
 /**
  * @param {object} options `env` holds the agent channel variables (US-0506 u1, agent tabs only); `onExit` is called
- *   with { id, exitCode, signal } when the process exits (RD5)
+ *   with { id, exitCode, signal } when the process exits (RD5); `command` is the project's saved agent command
+ *   (US-0806 FR2.1), undefined for the table CLI
  */
-export async function spawnSession({ projectId, root, kind, harness, cols, rows, toolPaths: paths, sender, env, onExit, autoCompactWindow }) {
+export async function spawnSession({ projectId, root, kind, harness, command, cols, rows, toolPaths: paths, sender, env, onExit, autoCompactWindow }) {
   if (paths) setToolPaths(paths); // the saved paths at spawn time, so the two tabs use them (US-0405 FR2.4)
-  const args = shellArgs(kind, harness); // validate before loading the native module
+  const args = shellArgs(kind, harness, command); // validate before loading the native module
   const { spawn: spawnPty } = await loadPty();
   const shell = shellPath(); // a saved shell path wins, else $SHELL (US-0405 FR2.2)
   const proc = spawnPty(shell, args, {
@@ -87,6 +95,25 @@ export async function spawnSession({ projectId, root, kind, harness, cols, rows,
     onExit?.({ id, exitCode, signal });
   });
   return id;
+}
+
+// US-0806 FR4.1: a fixed script; the word is its $1, never part of the script text. A leading ~/ is expanded by hand,
+// since the quoted $1 is not. ponytail: ~user/ is not expanded and counts as not found; FR3.1 allows it only by accident.
+const FIND_SCRIPT = 'p=$1; case $p in "~/"*) p=$HOME/${p#"~/"};; esac; command -v -- "$p"';
+const FIND_TIMEOUT_MS = 20000; // an interactive login shell with nvm can take seconds, as for the PATH read
+
+/**
+ * US-0806 FR4.1, NFR3: whether `word` (the first word of a saved agent command) runs in the login shell, with one
+ * `command -v` in `root`. Any failure (not found, timeout, no shell) counts as not found, so nothing is started.
+ * The shell sets its own PATH, so no separate PATH read runs. `exec` is injectable for tests.
+ */
+export async function agentCommandFound(word, root, { exec } = {}) {
+  try {
+    await runFixed(shellPath(), ['-l', '-i', '-c', FIND_SCRIPT, '_', String(word)], { cwd: root, exec, path: process.env.PATH, timeout: FIND_TIMEOUT_MS });
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 /** US-0513 FR1.4: whether the project has an agent tab running, whatever it does. */

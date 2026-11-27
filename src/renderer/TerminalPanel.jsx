@@ -24,9 +24,10 @@ const errorText = (err) => String(err?.message ?? err).replace(/^Error invoking 
  * The agent tab passes its harness id (main looks up the command) and the harness's `quietMs` (US-0801 FR4.3);
  * `name` is what the texts call the tab. `tab` is the key it registers under (`agent:<id>` or `shell`, US-0803)
  * and `testId` the suffix of its data-testids. `onStart` is called after each successful start, Restart included, and
- * is not waited for (US-0804 FR4.1).
+ * is not waited for (US-0804 FR4.1). When main answers that the project's agent command is not found, nothing starts and
+ * `onOpenSettings` opens the project's terminal settings (US-0806 FR4.2).
  */
-function TermSession({ projectId, kind, tab = kind, testId = kind, harness, quietMs, name, shown, register, onInput, onStart }) {
+function TermSession({ projectId, kind, tab = kind, testId = kind, harness, quietMs, name, shown, register, onInput, onStart, onOpenSettings }) {
   const { t } = useTranslation();
   const hostRef = useRef(null);
   const termRef = useRef(null);
@@ -39,6 +40,7 @@ function TermSession({ projectId, kind, tab = kind, testId = kind, harness, quie
   const [activity] = useState(() => createActivity({ quietMs }));
   const [exited, setExited] = useState(null);
   const [error, setError] = useState(null);
+  const [notFound, setNotFound] = useState(null); // US-0806 FR4.2: the first word main could not find
   const [dropping, setDropping] = useState(false);
 
   // Dropped files (an image for Claude Code, say) are typed in as their quoted paths, without Enter. The default
@@ -67,9 +69,15 @@ function TermSession({ projectId, kind, tab = kind, testId = kind, harness, quie
   const spawn = useCallback(async () => {
     setExited(null);
     setError(null);
+    setNotFound(null);
     const term = termRef.current;
     try {
-      idRef.current = await bridge.ptySpawn({ projectId, kind, harness, cols: term.cols, rows: term.rows });
+      const started = await bridge.ptySpawn({ projectId, kind, harness, cols: term.cols, rows: term.rows });
+      if (started?.notFound) {
+        setNotFound(started.notFound); // US-0806 FR4.1: main started nothing
+        return false;
+      }
+      idRef.current = started;
       activity.onData(); // counts as busy until the first quiet period
       onStartRef.current?.();
       return true;
@@ -174,6 +182,19 @@ function TermSession({ projectId, kind, tab = kind, testId = kind, harness, quie
 
   return (
     <div className="term-session" hidden={!shown}>
+      {notFound && (
+        <div className="term-status" role="status">
+          <span data-testid={`terminal-panel-not-found-${testId}`}>{t('terminal.notFound', { command: notFound })}</span>
+          {onOpenSettings && (
+            <button className="btn btn-accent" onClick={onOpenSettings} data-testid={`terminal-panel-open-settings-${testId}`}>
+              {t('terminal.openSettings')}
+            </button>
+          )}
+          <button className="btn" onClick={spawn} data-testid={`terminal-panel-restart-${testId}`}>
+            {t('terminal.restart')}
+          </button>
+        </div>
+      )}
       {(exited !== null || error) && (
         <div className="term-status" role="status">
           <span>{error ? t('terminal.startFailed', { kind: name, error }) : t('terminal.exited', { kind: name, code: String(exited) })}</span>
@@ -197,13 +218,12 @@ function TermSession({ projectId, kind, tab = kind, testId = kind, harness, quie
 /**
  * The quick commands (FR4.1) as a tiny select in the dark segment of the bar above the terminal, so they take no row
  * of their own. A pick types the command into the agent tab without Enter and the select goes back to its placeholder.
- * Renders nothing when the harness has no command.
+ * A harness without AI-DLC commands (Codex, Kiro, Cursor, Copilot) shows them all disabled, with the reason (US-0806 FR5.2).
  */
 function QuickSelect({ harness, onPick }) {
   const { t } = useTranslation();
   const name = harness?.name ?? t('terminal.agent');
   const items = QUICK_COMMANDS.map((suffix) => ({ suffix, cmd: harnessCommand(harness, suffix) }));
-  if (!items.some(({ cmd }) => cmd)) return null;
   // A disabled <option> cannot host a DOM tooltip, so its reason joins the list's own (US-0414 FR2.5).
   const tip = [t('terminal.quickTitle', { harness: name }), items.some(({ cmd }) => !cmd) && t('terminal.noCommand', { harness: name })]
     .filter(Boolean)
@@ -403,6 +423,7 @@ export default function TerminalPanel({ projectId, visible, onChooseHarness, onO
                   register={terminal.register}
                   onInput={() => terminal.input(tab)}
                   onStart={() => signIn.start(tab, h.id)}
+                  onOpenSettings={onChooseHarness}
                 />
               );
             })}

@@ -40,34 +40,23 @@ function Prerequisites({ info }) {
 function HarnessSelect({ value, onChange, detected, add, disabled }) {
   const { t } = useTranslation();
   const byId = Object.fromEntries((detected ?? []).map((d) => [d.id, d]));
-  const entry = setupHarness(value);
+  // All six run in the agent tab (US-0806 FR1.4), so no harness carries a "files only" note any more.
   return (
-    <>
-      <label className="field">
-        <span className="field-label">{t('setup.harnessLabel')}</span>
-        <select className="lcars-select" value={value} onChange={(e) => onChange(e.target.value)} disabled={disabled} data-testid="setup-harness">
-          {HARNESSES.filter((h) => h.setupId).map((h) => {
-            const found = byId[h.id];
-            const installed = add && found?.installed;
-            const notes = [
-              installed && t('setup.harnessInstalled'),
-              found?.cli && t(found.cli.found ? 'setup.cliFound' : 'setup.cliNotFound'),
-              !h.selectable && t('setup.filesOnly')
-            ].filter(Boolean);
-            return (
-              <option key={h.id} value={h.id} disabled={installed}>
-                {notes.length ? `${h.label} (${notes.join(', ')})` : h.label}
-              </option>
-            );
-          })}
-        </select>
-      </label>
-      {entry && !entry.selectable && (
-        <p className="muted" role="note" data-testid="setup-harness-note">
-          {t('setup.notRunnable')}
-        </p>
-      )}
-    </>
+    <label className="field">
+      <span className="field-label">{t('setup.harnessLabel')}</span>
+      <select className="lcars-select" value={value} onChange={(e) => onChange(e.target.value)} disabled={disabled} data-testid="setup-harness">
+        {HARNESSES.filter((h) => h.setupId).map((h) => {
+          const found = byId[h.id];
+          const installed = add && found?.installed;
+          const notes = [installed && t('setup.harnessInstalled'), found?.cli && t(found.cli.found ? 'setup.cliFound' : 'setup.cliNotFound')].filter(Boolean);
+          return (
+            <option key={h.id} value={h.id} disabled={installed}>
+              {notes.length ? `${h.label} (${notes.join(', ')})` : h.label}
+            </option>
+          );
+        })}
+      </select>
+    </label>
   );
 }
 

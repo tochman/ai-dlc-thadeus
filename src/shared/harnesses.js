@@ -1,9 +1,11 @@
 // The fixed harness table (EPIC-08 US-0801). Pure, so main (pty, detection, settings) and the renderer
 // (tab label, commands) read the same entries. Only `selectable` ids ever reach the pty (FR3.3, NFR4).
+// All six can run the agent tab (US-0806 FR1.4); `cli` is the default agent command (FR1.2), which a project may
+// replace with its own, checked by checkAgentCommand (FR3).
 //
 // Adding a harness: one entry here with its folder markers, its CLI and its `commands` (the way it runs
-// AI-DLC); set `selectable: true` once the agent tab has been checked against it. `quietMs` overrides the
-// shared 1.5 s quiet rule that marks the tab as ready (FR4.3).
+// AI-DLC). Empty `commands` means the app types no AI-DLC command into its tab (US-0806 FR5.2). `quietMs` overrides
+// the shared 1.5 s quiet rule that marks the tab as ready (FR4.3).
 
 export const HARNESSES = [
   {
@@ -34,16 +36,16 @@ export const HARNESSES = [
     // later. A 4 s quiet keeps "ready" from firing before that.
     quietMs: 4000
   },
-  { id: 'codex', setupId: 'codex', label: 'Codex', name: 'Codex', cli: 'codex', selectable: false, markers: { dirs: ['.codex'] }, commands: {} },
-  { id: 'kiro', setupId: 'kiro', label: 'Kiro', name: 'Kiro', cli: 'kiro-cli', selectable: false, markers: { dirs: ['.kiro'] }, commands: {} },
+  { id: 'codex', setupId: 'codex', label: 'Codex', name: 'Codex', cli: 'codex', selectable: true, markers: { dirs: ['.codex'] }, commands: {} },
+  { id: 'kiro', setupId: 'kiro', label: 'Kiro', name: 'Kiro', cli: 'kiro-cli', selectable: true, markers: { dirs: ['.kiro'] }, commands: {} },
   // perAgentModels: false — the session or IDE picker chooses the model (US-0901 FR4.4).
   {
     id: 'cursor',
     setupId: 'cursor',
     label: 'Cursor',
     name: 'Cursor',
-    cli: null,
-    selectable: false,
+    cli: 'cursor-agent',
+    selectable: true,
     perAgentModels: false,
     markers: { dirs: ['.cursor'] },
     commands: {}
@@ -53,8 +55,8 @@ export const HARNESSES = [
     setupId: 'copilot',
     label: 'GitHub Copilot',
     name: 'Copilot',
-    cli: null,
-    selectable: false,
+    cli: 'copilot',
+    selectable: true,
     perAgentModels: false,
     // .github/ alone is any GitHub repo; only AI-DLC's own files there count.
     markers: { dirs: ['.github/skills/aidlc'], files: ['.github/hooks/aidlc.json'] },
@@ -109,4 +111,29 @@ export function scopesDir(entry) {
 export function harnessCommand(harness, suffix = '') {
   const base = harness?.commands?.aidlc;
   return base ? base + suffix : null;
+}
+
+/** US-0806 FR1.2: the harness's usual agent command (its table CLI), or null for an unknown id. */
+export function defaultAgentCommand(id) {
+  return selectableHarness(id)?.cli ?? null;
+}
+
+export const AGENT_COMMAND_MAX = 500;
+// FR3.1: letters, digits, space and - _ . / = : @ , + ~. Nothing the shell would read as more than words.
+const COMMAND_CHAR = /[\p{L}\p{N} \-_./=:@,+~]/u;
+
+/**
+ * US-0806 FR3.1, FR3.2: whether `text` may be a project's agent command. `{ ok: true, command }` (trimmed), or
+ * `{ ok: false, reason }` with reason `empty`, `tooLong`, `lineBreak`, `control` or `char` (with the first `char`
+ * that is not allowed). Main runs it again before every start (FR3.3), so the shell only ever sees these characters.
+ */
+export function checkAgentCommand(text) {
+  const command = typeof text === 'string' ? text.trim() : '';
+  if (!command) return { ok: false, reason: 'empty' };
+  if (command.length > AGENT_COMMAND_MAX) return { ok: false, reason: 'tooLong' };
+  if (/[\r\n]/.test(command)) return { ok: false, reason: 'lineBreak' };
+  // eslint-disable-next-line no-control-regex -- control characters are exactly what this refuses
+  if (/[\u0000-\u001f\u007f]/.test(command)) return { ok: false, reason: 'control' };
+  const char = [...command].find((c) => !COMMAND_CHAR.test(c));
+  return char ? { ok: false, reason: 'char', char } : { ok: true, command };
 }

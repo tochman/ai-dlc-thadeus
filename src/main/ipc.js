@@ -91,7 +91,17 @@ import { SPECKIT_WATCH_PATHS, listedFeatures, loadSpeckitFeatures } from './spec
 import { addMark, markFile, removeMark } from './speckitArchive.js'; // US-1411
 import { loadSpeckitRules } from './speckitRules.js'; // US-1404
 import { switchFramework, switchPreview, switchTarget } from './frameworkSwitch.js'; // US-1407
-import { hasAgentSession, killAllSessions, killProjectSessions, killSession, resizeSession, spawnSession, tapOutput, writeSession } from './pty.js';
+import {
+  agentCommandFound,
+  hasAgentSession,
+  killAllSessions,
+  killProjectSessions,
+  killSession,
+  resizeSession,
+  spawnSession,
+  tapOutput,
+  writeSession
+} from './pty.js';
 import { createAgentChannel } from './agentChannel.js';
 import { createHookInstaller, hooksHandlers, statusPusher } from './agentHooks.js';
 import { adapters } from './agentAdapters.js';
@@ -1756,7 +1766,8 @@ const handlers = {
       modelProfiles: partial?.modelProfiles, // US-0210 FR1.5
       planningBranch: partial?.planningBranch, // the docs branch for a protected main (US-0607 FR3.3)
       ratesPath: partial?.ratesPath, // the project's rate table (US-0211 FR1.2)
-      handoff: partial?.handoff // the session handoff (US-0213 FR6.1), checked in settings.js
+      handoff: partial?.handoff, // the session handoff (US-0213 FR6.1), checked in settings.js
+      agentCommands: partial?.agentCommands // the agent command per harness (US-0806 FR1.3), checked in settings.js
     });
     await syncFeaturesWatch(projectId);
     sendFeaturesChanged(projectId, p); // the open view reloads with the new setting
@@ -1765,18 +1776,23 @@ const handlers = {
   // `harness` is only an id; pty.js refuses any id outside the fixed table (US-0801 NFR4).
   // The saved tool paths come along, so both tabs start the chosen binary (US-0405 FR2.4).
   // An agent tab with current hooks also gets its channel session (US-0506 u1 RD5); agentIpc decides.
+  // US-0806 NFR1: an agent tab's command is the one saved for its harness, read here; the tab never sends one. Before it
+  // starts, one `command -v` checks its first word; a missing one starts nothing and answers { notFound } (FR4.1, NFR3).
   'pty:spawn': async (event, { projectId, kind, harness, cols, rows }) => {
     const { toolPaths } = await getSettings();
     const p = project(projectId);
     const root = p.root;
-    const { handoff: h } = await getProjectSettings(root); // US-0213 FR6.3: off unless turned on
+    const { handoff: h, agentCommands } = await getProjectSettings(root); // US-0213 FR6.3: off unless turned on
     const autoCompactWindow = h?.autoCompactWindow ? h.threshold : undefined;
+    const command = kind === 'agent' ? agentCommands?.[harness] : undefined;
+    const word = command?.split(' ')[0];
+    if (command && !(await agentCommandFound(word, root))) return { notFound: word };
     if (kind === 'agent' && !p.agentTabs.has(harness)) {
       p.agentTabs.add(harness); // BR7.15: a harness with an agent tab in this run is used
       installer?.refresh(projectId).catch((err) => console.error('[agent-hooks] status failed:', err.code ?? err.message));
     }
     return agentWiring().spawn({ projectId, root, kind, harness }, (extra) =>
-      spawnSession({ projectId, root, kind, harness, cols, rows, toolPaths, sender: event.sender, autoCompactWindow, ...extra })
+      spawnSession({ projectId, root, kind, harness, command, cols, rows, toolPaths, sender: event.sender, autoCompactWindow, ...extra })
     );
   },
   // US-0506 u3 BR6.6, SD10: the person's input moves the tab's open reply on, in the same call, before it is written.

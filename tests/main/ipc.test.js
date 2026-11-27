@@ -144,6 +144,7 @@ const m = vi.hoisted(() => {
       killSession: vi.fn(),
       resizeSession: vi.fn(),
       spawnSession: vi.fn(async () => 'pty-1'),
+      agentCommandFound: vi.fn(async () => true),
       writeSession: vi.fn(),
       applyMenu: vi.fn(),
       parseMenuState: vi.fn((raw) => (raw && typeof raw === 'object' ? raw : null)),
@@ -374,6 +375,7 @@ vi.mock('../../src/main/agentIpc.js', async (importOriginal) => {
 vi.mock('../../src/main/intentArchive.js', () => ({ archiveIntents: m.svc.archiveIntents, unarchiveIntent: m.svc.unarchiveIntent }));
 vi.mock('../../src/main/archiveCommit.js', () => ({ beforeArchive: m.svc.beforeArchive, commitArchive: m.svc.commitArchive }));
 vi.mock('../../src/main/pty.js', () => ({
+  agentCommandFound: m.svc.agentCommandFound,
   hasAgentSession: m.svc.hasAgentSession,
   killAllSessions: m.svc.killAllSessions,
   killProjectSessions: m.svc.killProjectSessions,
@@ -1641,6 +1643,44 @@ describe('terminal, window and menu', () => {
     expect(svc.resizeSession).toHaveBeenCalledWith('pty-1', 100, 30);
     expect(svc.killSession).toHaveBeenCalledWith('pty-1');
     await expect(call('pty:spawn', event, { projectId: 'nope' })).rejects.toThrow(/Okänt projekt/);
+  });
+
+  // US-0806: the agent command comes from the project settings in main, checked once before the tab starts.
+  it('pty:spawn reads the saved command in main, never from the tab, and checks its first word once (NFR1, NFR3, FR2.1)', async () => {
+    const { projectId, event } = await openProject('/work/cmd');
+    svc.getProjectSettings.mockResolvedValueOnce({ featureDocs: 'show', agentCommands: { codex: 'codex --full-auto', claude: 'claude --x' } });
+    svc.agentCommandFound.mockClear();
+    const sent = { projectId, kind: 'agent', harness: 'codex', command: 'rm -rf ~', cols: 80, rows: 24 };
+    expect(await call('pty:spawn', event, sent)).toBe('pty-1');
+    expect(svc.agentCommandFound).toHaveBeenCalledTimes(1);
+    expect(svc.agentCommandFound).toHaveBeenCalledWith('codex', '/work/cmd');
+    expect(svc.spawnSession).toHaveBeenLastCalledWith(expect.objectContaining({ harness: 'codex', command: 'codex --full-auto', root: '/work/cmd' }));
+  });
+
+  it('pty:spawn starts nothing and answers notFound when the first word is missing (FR4.1)', async () => {
+    const { projectId, event } = await openProject('/work/nf');
+    svc.getProjectSettings.mockResolvedValueOnce({ featureDocs: 'show', agentCommands: { kiro: '~/bin/my-cli -p x=1' } });
+    svc.agentCommandFound.mockResolvedValueOnce(false);
+    svc.spawnSession.mockClear();
+    expect(await call('pty:spawn', event, { projectId, kind: 'agent', harness: 'kiro', cols: 80, rows: 24 })).toEqual({ notFound: '~/bin/my-cli' });
+    expect(svc.spawnSession).not.toHaveBeenCalled();
+  });
+
+  it('pty:spawn checks nothing without a saved command, and never for the shell tab (FR2.2, NFR3)', async () => {
+    const { projectId, event } = await openProject('/work/nc');
+    svc.agentCommandFound.mockClear();
+    await call('pty:spawn', event, { projectId, kind: 'agent', harness: 'claude', cols: 80, rows: 24 });
+    expect(svc.spawnSession.mock.calls.at(-1)[0].command).toBeUndefined();
+    svc.getProjectSettings.mockResolvedValueOnce({ featureDocs: 'show', agentCommands: { claude: 'claude --x' } });
+    await call('pty:spawn', event, { projectId, kind: 'shell', cols: 80, rows: 24 });
+    expect(svc.spawnSession.mock.calls.at(-1)[0].command).toBeUndefined();
+    expect(svc.agentCommandFound).not.toHaveBeenCalled();
+  });
+
+  it('projectSettings:set passes the agent commands on to settings.js, which checks them (US-0806 FR3.2, NFR1)', async () => {
+    const { projectId } = await openProject('/work/psc');
+    await call('projectSettings:set', {}, projectId, { agentCommands: { codex: 'codex --full-auto' } });
+    expect(svc.setProjectSettings).toHaveBeenLastCalledWith('/work/psc', expect.objectContaining({ agentCommands: { codex: 'codex --full-auto' } }));
   });
 
   it('toggles and reports fullscreen', async () => {

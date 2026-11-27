@@ -197,3 +197,14 @@ describe('sendHandoff', () => {
     expect(write).not.toHaveBeenCalled();
   });
 });
+
+// US-0806 FR5.3: Resume for a tab whose harness has no AI-DLC command gives the reason instead of typing.
+describe('Resume gating for the four harnesses without AI-DLC commands (US-0806 FR5.2, FR5.3)', () => {
+  it('Codex, Kiro, Cursor and Copilot give the "no command" reason; Claude Code and opencode none', async () => {
+    const { missingCommandReason } = await import('../../src/renderer/ResumeButton.jsx');
+    const { selectableHarness } = await import('../../src/shared/harnesses.js');
+    expect(missingCommandReason({ harness: selectableHarness('codex') })).toBe('Codex har inget AI-DLC-kommando i appens tabell, så inget skrivs in.');
+    for (const id of ['kiro', 'cursor', 'copilot']) expect(missingCommandReason({ harness: selectableHarness(id) })).toMatch(/inget AI-DLC-kommando/);
+    for (const id of ['claude', 'opencode']) expect(missingCommandReason({ harness: selectableHarness(id) })).toBeNull();
+  });
+});

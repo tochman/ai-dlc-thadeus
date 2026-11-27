@@ -6,7 +6,7 @@ import path from 'node:path';
 import { DEFAULT_FEATURES_PATH, isValidFeaturesPath } from './parsers/features.js';
 import { DELIVERY, isValidBranchName } from './parsers/releases.js';
 import { LANGUAGE_SETTINGS, t } from '../shared/i18n.js';
-import { HARNESSES, selectableHarness } from '../shared/harnesses.js';
+import { AGENT_COMMAND_MAX, HARNESSES, checkAgentCommand, selectableHarness } from '../shared/harnesses.js';
 import { TOOL_IDS, isStoredPath } from './tools.js';
 import { checkModelProfiles, sanitizeModelProfiles } from './modelProfiles.js';
 import { isValidRatesPath } from './modelRates.js';
@@ -95,15 +95,41 @@ function checkHandoff(partial) {
   if (!ok) throw new Error(t('errors.invalidValue', { what: 'handoff', value: JSON.stringify(partial) ?? String(partial) }));
 }
 
+const isObject = (v) => v && typeof v === 'object' && !Array.isArray(v);
+
+/** US-0806 FR1.3, FR3.3: the saved agent commands, per known harness id; an invalid one is dropped, so its default applies. */
+function sanitizeAgentCommands(raw) {
+  if (!isObject(raw)) return {};
+  return Object.fromEntries(
+    HARNESSES.map((h) => [h.id, checkAgentCommand(raw[h.id])])
+      .filter(([, c]) => c.ok)
+      .map(([id, c]) => [id, c.command])
+  );
+}
+
+/** US-0806 FR3.2: a saved change is `{ <harness id>: command | null }`; anything else is refused, naming the problem. */
+function checkAgentCommands(partial) {
+  if (!isObject(partial)) throw new Error(t('errors.invalidValue', { what: 'agentCommands', value: JSON.stringify(partial) ?? String(partial) }));
+  for (const [id, command] of Object.entries(partial)) {
+    if (!selectableHarness(id)) throw new Error(t('errors.unknownHarness', { id }));
+    if (command === null) continue; // cleared: the default applies (FR1.2)
+    const check = checkAgentCommand(command);
+    if (!check.ok) throw new Error(t(`errors.agentCommand.${check.reason}`, { char: check.char, max: AGENT_COMMAND_MAX }));
+  }
+}
+
 /** Per-project settings keyed by project root (EPIC-06 FR3.4); invalid values fall back to the defaults. */
 function sanitizeProject(raw) {
   const tabs = sanitizeHarnessTabs(raw?.harnessTabs);
+  const agentCommands = sanitizeAgentCommands(raw?.agentCommands);
   return {
     featureDocs: FEATURE_DOCS.has(raw?.featureDocs) ? raw.featureDocs : PROJECT_DEFAULTS.featureDocs,
     featuresPath: isValidFeaturesPath(raw?.featuresPath) ? raw.featuresPath : PROJECT_DEFAULTS.featuresPath,
     // "Agent-terminal" (EPIC-08 US-0801 FR2.3); left out when invalid, so the detected default applies.
     ...(selectableHarness(raw?.harness) ? { harness: raw.harness } : {}),
     ...(tabs ? { harnessTabs: tabs } : {}),
+    // The agent command per harness (US-0806 FR1.3); left out when empty, so each table default applies.
+    ...(Object.keys(agentCommands).length ? { agentCommands } : {}),
     // "Releases / Continuous deployment" (US-0603 FR1.1); left out when unset or invalid, so DELIVERY_DEFAULT applies.
     ...(DELIVERY.includes(raw?.delivery) ? { delivery: raw.delivery } : {}),
     // "Model profiles" (US-0210 FR1.5); left out until saved.
@@ -206,7 +232,7 @@ export async function getProjectSettings(root) {
   return (await getSettings()).projectSettings[root] ?? { ...PROJECT_DEFAULTS };
 }
 
-/** @returns {Promise<{featureDocs: 'auto'|'show'|'hide', featuresPath: string, harness?: 'claude'|'opencode'}>} */
+/** @returns {Promise<{featureDocs: 'auto'|'show'|'hide', featuresPath: string, harness?: string, agentCommands?: Object<string, string>}>} */
 export async function setProjectSettings(root, partial) {
   if (typeof root !== 'string' || !root) throw new Error(t('errors.projectRootMissing'));
   if (partial?.harness !== undefined && !selectableHarness(partial.harness)) {
@@ -236,13 +262,16 @@ export async function setProjectSettings(root, partial) {
     throw new Error(t('errors.invalidValue', { what: 'ratesPath', value: String(partial.ratesPath) }));
   }
   if (partial?.handoff !== undefined) checkHandoff(partial.handoff);
+  if (partial?.agentCommands !== undefined) checkAgentCommands(partial.agentCommands);
   const given = Object.fromEntries(Object.entries(partial ?? {}).filter(([, v]) => v !== undefined));
   const next = await update((cur) => {
     const was = cur.projectSettings[root] ?? PROJECT_DEFAULTS;
     // US-0210: modelProfiles is merged per key, so the view's save and main's `active` never overwrite each other.
     const profiles = given.modelProfiles ? { modelProfiles: { ...was.modelProfiles, ...given.modelProfiles } } : {};
     const handoff = given.handoff ? { handoff: { ...was.handoff, ...given.handoff } } : {}; // US-0213: merged per key too
-    return { ...cur, projectSettings: { ...cur.projectSettings, [root]: { ...was, ...given, ...profiles, ...handoff } } };
+    // US-0806: merged per harness; a null clears that one when sanitize drops it.
+    const commands = given.agentCommands ? { agentCommands: { ...was.agentCommands, ...given.agentCommands } } : {};
+    return { ...cur, projectSettings: { ...cur.projectSettings, [root]: { ...was, ...given, ...profiles, ...handoff, ...commands } } };
   });
   return next.projectSettings[root];
 }

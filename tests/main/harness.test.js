@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import { HARNESSES, detectHarnesses, resolveHarness, selectableHarness } from '../../src/main/harness.js';
-import { defaultSetupHarness, setupHarness } from '../../src/shared/harnesses.js';
+import { checkAgentCommand, defaultAgentCommand, defaultSetupHarness, setupHarness } from '../../src/shared/harnesses.js';
 
 const TMP = path.resolve(__dirname, '../.tmp/harness');
 
@@ -57,7 +57,7 @@ describe('detectHarnesses (EPIC-08 US-0801 FR1)', () => {
     expect(found.claude.cli).toEqual({ found: true, version: '2.1.0 (Claude Code)' });
     expect(found.opencode.cli).toEqual({ found: true, version: 'opencode v2.1.4' });
     expect(found.codex.cli).toEqual({ found: false, version: null });
-    expect(found.cursor.cli).toBeNull(); // no CLI to probe
+    expect(found.cursor.cli).toEqual({ found: false, version: null }); // cursor-agent is probed too (US-0806 FR1.2)
   });
 });
 
@@ -66,18 +66,21 @@ describe('resolveHarness and the table (FR2.1, FR2.2, FR3.3)', () => {
 
   it('defaults to the only installed selectable harness, else Claude Code, and keeps a valid choice', () => {
     expect(resolveHarness(undefined, det('opencode'))).toBe('opencode');
-    expect(resolveHarness(undefined, det('opencode', 'codex'))).toBe('opencode'); // codex is not selectable
+    expect(resolveHarness(undefined, det('codex'))).toBe('codex'); // US-0806 FR1.4: codex can run the tab
+    expect(resolveHarness(undefined, det('opencode', 'codex'))).toBe('claude'); // two installed: Claude Code
     expect(resolveHarness(undefined, det('claude', 'opencode'))).toBe('claude');
     expect(resolveHarness(undefined, det())).toBe('claude');
     expect(resolveHarness(undefined, null)).toBe('claude'); // detection not done
     expect(resolveHarness('opencode', det('claude'))).toBe('opencode');
-    expect(resolveHarness('codex', det('opencode'))).toBe('opencode'); // not selectable: default applies
+    expect(resolveHarness('codex', det('opencode'))).toBe('codex'); // a saved choice is kept (US-0806 FR1.4)
+    expect(resolveHarness('bogus', det('opencode'))).toBe('opencode'); // unknown: the default applies
     expect(resolveHarness('rm -rf /', det())).toBe('claude');
   });
 
-  it('only claude and opencode are selectable', () => {
-    expect(HARNESSES.filter((h) => h.selectable).map((h) => h.id)).toEqual(['claude', 'opencode']);
-    expect(selectableHarness('kiro')).toBeNull();
+  it('all six harnesses are selectable for the agent tab, and nothing else is (US-0806 FR1.4)', () => {
+    expect(HARNESSES.filter((h) => h.selectable).map((h) => h.id)).toEqual(['claude', 'opencode', 'codex', 'kiro', 'cursor', 'copilot']);
+    expect(selectableHarness('kiro')?.id).toBe('kiro');
+    expect(selectableHarness('bogus')).toBeNull();
     expect(selectableHarness({ id: 'claude' })).toBeNull();
   });
 
@@ -94,5 +97,60 @@ describe('resolveHarness and the table (FR2.1, FR2.2, FR3.3)', () => {
     expect(defaultSetupHarness([])).toBe('claude');
     expect(defaultSetupHarness(null)).toBe('claude');
     expect(defaultSetupHarness([d('claude', { cli: true, installed: true }), d('opencode', { cli: true })], { add: true })).toBe('opencode');
+  });
+});
+
+describe('the agent command per harness (US-0806 FR1.2, FR3.1, FR3.2)', () => {
+  it('defaultAgentCommand gives each harness its usual command, and null for anything else (FR1.2)', () => {
+    expect(['claude', 'opencode', 'codex', 'kiro', 'cursor', 'copilot'].map(defaultAgentCommand)).toEqual([
+      'claude',
+      'opencode',
+      'codex',
+      'kiro-cli',
+      'cursor-agent',
+      'copilot'
+    ]);
+    expect(defaultAgentCommand('bogus')).toBeNull();
+    expect(defaultAgentCommand({ id: 'claude' })).toBeNull();
+  });
+
+  it('accepts a program with arguments from the allowed characters, trimmed (FR3.1)', () => {
+    expect(checkAgentCommand('codex --full-auto')).toEqual({ ok: true, command: 'codex --full-auto' });
+    expect(checkAgentCommand('~/bin/my-cli -p x=1')).toEqual({ ok: true, command: '~/bin/my-cli -p x=1' });
+    expect(checkAgentCommand('  claude --model sonnet  ')).toEqual({ ok: true, command: 'claude --model sonnet' });
+    expect(checkAgentCommand('a_b.c:d@e,f+g Åäö 9')).toMatchObject({ ok: true });
+    expect(checkAgentCommand('x'.repeat(500))).toMatchObject({ ok: true });
+  });
+
+  it('refuses each shell character, naming it (FR3.2)', () => {
+    for (const [text, char] of [
+      ['claude; rm -rf ~', ';'],
+      ['a|b', '|'],
+      ['a & b', '&'],
+      ['$(x)', '$'],
+      ['`x`', '`'],
+      ['a < b', '<'],
+      ['a > b', '>'],
+      ['"a"', '"'],
+      ["'a'", "'"],
+      ['a*', '*']
+    ]) {
+      expect(checkAgentCommand(text)).toEqual({ ok: false, reason: 'char', char });
+    }
+  });
+
+  it('refuses a line break and a control character, each with its own reason (FR3.2)', () => {
+    expect(checkAgentCommand('a\nb')).toEqual({ ok: false, reason: 'lineBreak' });
+    expect(checkAgentCommand('a\rb')).toEqual({ ok: false, reason: 'lineBreak' });
+    expect(checkAgentCommand('a\tb')).toEqual({ ok: false, reason: 'control' });
+    expect(checkAgentCommand('a\u0007b')).toEqual({ ok: false, reason: 'control' });
+  });
+
+  it('refuses an empty or blank text, a non-string and more than 500 characters (FR3.2)', () => {
+    expect(checkAgentCommand('')).toEqual({ ok: false, reason: 'empty' });
+    expect(checkAgentCommand('   ')).toEqual({ ok: false, reason: 'empty' });
+    expect(checkAgentCommand(null)).toEqual({ ok: false, reason: 'empty' });
+    expect(checkAgentCommand(42)).toEqual({ ok: false, reason: 'empty' });
+    expect(checkAgentCommand('x'.repeat(501))).toEqual({ ok: false, reason: 'tooLong' });
   });
 });
