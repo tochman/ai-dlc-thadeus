@@ -8,7 +8,7 @@
 
 **Stories:** US-0001, US-0002, US-0003, US-0004, US-0005, US-0006, US-0007, US-0008, US-0009, US-0010, US-0011, US-0012, US-0013, US-0014, US-0015, US-0016, US-0017, US-0018, US-0019, US-0020, US-0021, US-0022, US-0023, US-0024, US-0025, US-0026, US-0027, US-0028, US-0029, US-0030, US-0031, US-0032, US-0033, US-0034, US-0035, US-0036, US-0037, US-0038, US-0039, US-0040, US-0041, US-0042, US-0043, US-0044, US-0045, US-0046, US-0047, US-0048, US-0049, US-0050, US-0051, US-0052, US-0053, US-0054, US-0055, US-0056
 
-**Status (2026-11-27):** ✅ US-0001–US-0020 released (v0.2.3–v0.2.6). ✅ US-0021–US-0023 released in v0.2.7. ✅ US-0024 released in v0.2.8. ✅ US-0025 released in v0.2.9. ✅ US-0026 released in v0.2.9. ✅ US-0027 released in v0.2.9. ✅ US-0028 released in v0.2.10. ✅ US-0029 released in v0.2.10. ✅ US-0030 released in v0.2.10. ✅ US-0031 released in v0.2.10. ✅ US-0032 released in v0.2.11. ✅ US-0033 released in v0.2.11. ✅ US-0034 released in v0.2.12. ✅ US-0035 and US-0036 released in v0.2.13. ✅ US-0037, US-0038, US-0039, US-0040, US-0041 and US-0042 released in v0.2.14. ✅ US-0043 released in v0.2.15. ✅ US-0044 released in v0.2.15. ✅ US-0045 released in v0.2.15. ✅ US-0046 released in v0.2.15. ✅ US-0047 released in v0.3.0. ✅ US-0048 released in v0.3.0. ✅ US-0049 released in v0.3.0. ✅ US-0050, US-0051, US-0052, US-0053 and US-0054 released in v0.3.1. ✅ US-0055 done, for v0.3.2. 🚧 US-0056 in progress, for v0.3.2. Each story names its release.
+**Status (2026-11-27):** ✅ US-0001–US-0020 released (v0.2.3–v0.2.6). ✅ US-0021–US-0023 released in v0.2.7. ✅ US-0024 released in v0.2.8. ✅ US-0025 released in v0.2.9. ✅ US-0026 released in v0.2.9. ✅ US-0027 released in v0.2.9. ✅ US-0028 released in v0.2.10. ✅ US-0029 released in v0.2.10. ✅ US-0030 released in v0.2.10. ✅ US-0031 released in v0.2.10. ✅ US-0032 released in v0.2.11. ✅ US-0033 released in v0.2.11. ✅ US-0034 released in v0.2.12. ✅ US-0035 and US-0036 released in v0.2.13. ✅ US-0037, US-0038, US-0039, US-0040, US-0041 and US-0042 released in v0.2.14. ✅ US-0043 released in v0.2.15. ✅ US-0044 released in v0.2.15. ✅ US-0045 released in v0.2.15. ✅ US-0046 released in v0.2.15. ✅ US-0047 released in v0.3.0. ✅ US-0048 released in v0.3.0. ✅ US-0049 released in v0.3.0. ✅ US-0050, US-0051, US-0052, US-0053 and US-0054 released in v0.3.1. ✅ US-0055 done, for v0.3.2. ✅ US-0056 done, for v0.3.2. Each story names its release.
 
 ---
 
@@ -891,15 +891,15 @@
   - [x] An action that clashed in the replay is handled the same way.
 - **Dependencies:** US-0053
 
-**US-0056: The planning sync never commits a file in the middle of a merge** 🚧 In progress, for v0.3.2
+**US-0056: The planning sync never commits a file in the middle of a merge** ✅ Done, for v0.3.2
 - As a **developer**, in order to **merge `main` into a story branch while the app is open without breaking `main`**, I would like **the planning sync to wait while a merge or rebase is in progress, and to never record a file that holds conflict markers**.
 - **Epic:** EPIC-00
 - **Priority:** High
 - **Complexity:** Small
 - **Background:** Found 2026-11-26 during US-1301. `main` was merged into `feat/US-1301`, and `docs/FEATURES.md` conflicted. Two seconds later the planning sync read the file with its conflict markers as a change to the feature docs. It committed and pushed that text to `main` as `f56b8f7 docs: update the feature docs`, and then put its own copy of the EPIC-13 row back on the branch, so the row stood there twice. `src/main/planningSync.js` checks for neither `MERGE_HEAD` (or a rebase in progress) nor conflict markers. `main` was fixed by hand.
 - **Acceptance Criteria:**
-  - [ ] **Given** a merge, rebase or cherry-pick in progress in the checkout, **when** a planning cycle runs, **then** it records, commits and pushes nothing, and it says it waits for the merge.
-  - [ ] **Given** a planning file whose text holds a line starting with `<<<<<<<`, `=======` or `>>>>>>>`, **then** it is never recorded or committed, and the app names the file.
-  - [ ] **Given** the merge is finished, **then** the next cycle runs as before, and the story's file is not changed back.
+  - [x] **Given** a merge, rebase or cherry-pick in progress in the checkout, **when** a planning cycle runs, **then** it records, commits and pushes nothing, and it says it waits for the merge.
+  - [x] **Given** a planning file whose text holds a line starting with `<<<<<<<`, `=======` or `>>>>>>>`, **then** it is never recorded or committed, and the app names the file.
+  - [x] **Given** the merge is finished, **then** the next cycle runs as before, and the story's file is not changed back.
 - **Dependencies:** US-0053, US-0608
 

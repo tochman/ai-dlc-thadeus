@@ -628,7 +628,7 @@
     "slug": "sync-waits-merge",
     "dirName": "261127-sync-waits-merge",
     "scope": "quick-fix",
-    "status": "in-flight",
+    "status": "complete",
     "request": "0261c94d"
   }
 ]
