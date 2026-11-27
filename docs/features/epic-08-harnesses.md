@@ -8,7 +8,7 @@
 
 **Stories:** US-0801, US-0802, US-0803, US-0804, US-0805, US-0806
 
-**Status (2026-11-27):** ✅ US-0801–US-0803 released (v0.2.1–v0.2.3). ✅ US-0804 released in v0.3.1. ✅ US-0805 released in v0.3.1. ✅ US-0806 done, for v0.3.2. Each story names its release.
+**Status (2026-11-27):** ✅ US-0801–US-0803 released (v0.2.1–v0.2.3). ✅ US-0804 released in v0.3.1. ✅ US-0805 released in v0.3.1. ✅ US-0806 released in v0.3.2. Each story names its release.
 
 ---
 
@@ -95,14 +95,14 @@
 
 ---
 
-**US-0806: Run any harness in the agent terminal with a custom command per project** ✅ Done, for v0.3.2
+**US-0806: Run any harness in the agent terminal with a custom command per project** ✅ Released in v0.3.2
 - As a **developer who uses Codex, Kiro, Cursor or Copilot with AI-DLC**, in order to **work in the app with the harness the project is set up for**, I would like to **choose a custom command for the agent terminal in a project's terminal settings**.
 - **Epic:** EPIC-08
 - **Priority:** Medium
 - **Complexity:** Medium
 - **Background:** Asked for 2026-11-15: setup supports six harnesses (Claude Code, opencode, Codex, Kiro, Cursor, GitHub Copilot), while the embedded agent terminal runs only `claude` and `opencode`. "Supporting custom CLI commands per project in the terminal settings would let users run any agent harness seamlessly."
 - **Acceptance Criteria:**
-  - [ ] **Given** a project's terminal settings, **when** I enter a command (for example `codex` or `kiro-cli chat`), **then** new agent tabs in that project start it in the project folder instead of `claude` or `opencode`.
+  - [x] **Given** a project's terminal settings, **when** I enter a command (for example `codex` or `kiro-cli chat`), **then** new agent tabs in that project start it in the project folder instead of `claude` or `opencode`.
   - [x] The project's harness picker offers the other set-up harnesses with their usual command filled in (`codex`, `kiro-cli`, …), which I can change.
   - [x] The command runs as given through the login shell, as the agent tab does today; it is saved per project and kept after a restart.
   - [x] **Given** a command that is not found, **then** the tab says so and points to the terminal settings.
