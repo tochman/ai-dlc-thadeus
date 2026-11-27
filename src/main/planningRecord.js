@@ -134,9 +134,13 @@ export const resolveEntry = (userData, root, id, patch) =>
 /** US-0607 FR1.2: actions leave the record only once their change is on the remote target. */
 export const removeActions = (userData, root, ids) => update(userData, root, (r) => ({ ...r, actions: r.actions.filter((a) => !ids.includes(a.id)) }));
 
-/** US-0606 FR2.1: actions whose change is in a local commit. */
+/** US-0606 FR2.1: actions whose change is in a local commit. US-0055 FR1: a commit drops the reason it waited for. */
 export const markCommitted = (userData, root, ids) =>
-  update(userData, root, (r) => ({ ...r, actions: r.actions.map((a) => (ids.includes(a.id) ? { ...a, state: 'committed' } : a)) }));
+  update(userData, root, (r) => ({ ...r, actions: r.actions.map((a) => (ids.includes(a.id) ? { ...a, state: 'committed', reason: undefined } : a)) })); // undefined is not written
+
+/** US-0055 FR1: changes that could not be done again wait, each with its reason (`reasons`: id → text). */
+export const markWaiting = (userData, root, ids, reasons) =>
+  update(userData, root, (r) => ({ ...r, actions: r.actions.map((a) => (ids.includes(a.id) ? { ...a, state: 'pending', reason: reasons[a.id] } : a)) }));
 
 /** US-0607 FR3.3: whether the project's `main` is protected, once known. */
 export const setProtectedMain = (userData, root, value) => update(userData, root, (r) => ({ ...r, protectedMain: value }));

@@ -993,7 +993,8 @@
         "deleteRelease": "Ta bort release {version}",
         "content": "Ändring i {file}",
         "stories": "Storys: {ids}",
-        "from": "Från appens commit {commit}."
+        "from": "Från appens commit {commit}.",
+        "failed": "Kunde inte göras igen: {reason}"
       },
       "conflict": "{file} har ändrats även på målet.",
       "choose": "Behåll deras släpper appens ändring; Använd min skriver den över målets text.",

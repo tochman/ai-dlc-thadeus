@@ -550,6 +550,12 @@ describe('FeaturesView: every planning change is kept (US-0608)', () => {
     expect(screen.getByTestId('planning-error').textContent).toMatch(/^Offline\./);
   });
 
+  it('US-0055 AC1: a change that could not be done again shows its reason in its line', async () => {
+    waiting({ ...ASSIGN, reason: 'Storyn US-0604 finns inte.' });
+    render(<FeaturesView projectId="p1" features={docs} delivery="releases" tab="releases" />);
+    expect((await screen.findByTestId('planning-entry')).textContent).toMatch(/Release v0\.2\.7.*Storys: US-0604.*Storyn US-0604 finns inte\./);
+  });
+
   it('shows the waiting list beside the story-detail picker too (FR7.1)', async () => {
     waiting(ASSIGN);
     render(<FeaturesView projectId="p1" features={docs} delivery="releases" tab="epics" />);

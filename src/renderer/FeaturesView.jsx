@@ -228,6 +228,7 @@ function entryText(t, e) {
     e.kind === 'content' ? t('features.planning.entry.content', { file: e.file }) : t(`features.planning.entry.${e.kind}`, { version: e.version ?? 'none' });
   const parts = [what, ...(e.storyIds?.length ? [t('features.planning.entry.stories', { ids: e.storyIds.join(', ') })] : [])];
   if (e.from) parts.push(t('features.planning.entry.from', { commit: e.from }));
+  if (e.reason) parts.push(t('features.planning.entry.failed', { reason: e.reason })); // US-0055 FR1
   return parts.join(' · ');
 }
 

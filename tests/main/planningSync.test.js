@@ -8,7 +8,7 @@ import { promises as fs, chmodSync, existsSync, readFileSync, writeFileSync } fr
 import os from 'node:os';
 import path from 'node:path';
 import { loadFeatures } from '../../src/main/features.js';
-import { addContent, readRecord, setProtectedMain } from '../../src/main/planningRecord.js';
+import { addAction, addContent, readRecord, setProtectedMain } from '../../src/main/planningRecord.js';
 import {
   createScheduler,
   planAction,
@@ -21,6 +21,17 @@ import {
   subjectOf,
   waitingList
 } from '../../src/main/planningSync.js';
+
+// US-0055 AC3: a release action whose target moved on clashes (`{conflict}`); real files cannot make a replay clash, so
+// setStoryRelease answers a conflict for the story in `clash.id`, and runs as it is for every other story.
+const clash = vi.hoisted(() => ({ id: null }));
+vi.mock('../../src/main/releases.js', async (orig) => {
+  const real = await orig();
+  return {
+    ...real,
+    setStoryRelease: (root, rel, args) => (args.storyId === clash.id ? { conflict: 'docs/FEATURES.md' } : real.setStoryRelease(root, rel, args))
+  };
+});
 
 const env = { ...process.env, GIT_AUTHOR_NAME: 'T', GIT_AUTHOR_EMAIL: 't@example.com', GIT_COMMITTER_NAME: 'T', GIT_COMMITTER_EMAIL: 't@example.com' };
 const run = (cwd, ...args) => execFileSync('git', ['-c', 'init.defaultBranch=main', ...args], { cwd, env, encoding: 'utf8' }).trim();
@@ -584,6 +595,46 @@ describe('the planning sync shows only what is really waiting, and pushes after 
     expect(await runCycle(ctx)).toMatchObject({ pushed: true, pending: 0 });
     expect(originLog().slice(0, 2)).toEqual(['docs: plan US-0101 for v1.0.0', 'feat: my own work']);
     expect(run(clone, 'rev-parse', 'main')).toBe(run(origin, 'rev-parse', 'main'));
+  });
+});
+
+// US-0055: a cycle replayed one action and failed another; the real commit marked both committed and the push dropped both.
+describe('a change that could not be done again keeps waiting after a real commit (US-0055)', () => {
+  beforeEach(() => setup());
+  afterEach(() => (clash.id = null));
+  const offline = () => runCycle({ ...ctx, online: () => false });
+  const states = async () => (await readRecord(userData, clone)).actions.map((a) => [a.storyIds[0], a.state, a.reason ?? null]);
+  /** US-0101 is planned in place; the second action cannot be done: US-0999 is no story, US-0102 clashes (AC3). */
+  const twoActions = async (other) => {
+    await setRelease('US-0101', 'v1.0.0');
+    await addAction(userData, clone, { kind: 'setRelease', storyIds: [other], version: 'v1.0.0' });
+  };
+
+  it('AC1: after the commit only the replayed change is committed; the failed one waits with its reason', async () => {
+    vi.spyOn(console, 'warn').mockImplementation(() => {});
+    await twoActions('US-0999');
+    await offline();
+    expect(run(clone, 'log', '-1', '--format=%s')).toBe('docs: plan US-0101 for v1.0.0');
+    expect(await states()).toEqual([
+      ['US-0101', 'committed', null],
+      ['US-0999', 'pending', expect.stringContaining('US-0999')]
+    ]);
+  });
+
+  it('AC2: after the push the failed change is still in the waiting list with its reason', async () => {
+    vi.spyOn(console, 'warn').mockImplementation(() => {});
+    await twoActions('US-0999');
+    expect(await runCycle(ctx)).toMatchObject({ pushed: true, pending: 1 });
+    expect(originLog()[0]).toBe('docs: plan US-0101 for v1.0.0');
+    expect((await waitingList(ctx)).entries).toMatchObject([{ storyIds: ['US-0999'], state: 'pending', reason: expect.stringContaining('US-0999') }]);
+  });
+
+  it('AC3: a clashed action waits the same way, with the clash as its reason', async () => {
+    vi.spyOn(console, 'warn').mockImplementation(() => {});
+    clash.id = 'US-0102';
+    await twoActions('US-0102');
+    expect(await runCycle(ctx)).toMatchObject({ pushed: true, pending: 1 });
+    expect((await waitingList(ctx)).entries).toMatchObject([{ storyIds: ['US-0102'], state: 'pending', reason: expect.stringContaining('docs/FEATURES.md') }]);
   });
 });
 

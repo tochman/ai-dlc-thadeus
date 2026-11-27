@@ -22,6 +22,7 @@ import {
   addContent,
   markCommitted,
   markConflict,
+  markWaiting,
   readRecord,
   removeActions,
   resolveEntry,
@@ -183,7 +184,10 @@ async function applyContent(cwd, ctx, entry) {
   return { changed: true };
 }
 
-/** Every entry again in `cwd`: file contents first (they hold the actions' writes made before them), then actions. */
+/**
+ * Every entry again in `cwd`: file contents first (they hold the actions' writes made before them), then actions.
+ * US-0055 FR1: `failed` holds `{id, reason}` for an action that threw (its message) or clashed (the file it clashed in).
+ */
 async function replayIn(cwd, ctx, entries, tags) {
   const changed = [];
   const conflicts = [];
@@ -195,13 +199,13 @@ async function replayIn(cwd, ctx, entries, tags) {
       res = e.kind === 'content' ? await applyContent(cwd, ctx, e) : await applyAction(cwd, e, { featuresPath: ctx.featuresPath, tags });
     } catch (err) {
       console.warn(`Planeringsändringen ${e.kind} ${e.version ?? e.file} kunde inte göras igen:`, err.message);
-      failed.push(e.id);
+      failed.push({ id: e.id, reason: err.message });
       continue;
     }
     if (res.conflict && e.kind === 'content') conflicts.push(e.id);
     else if (res.conflict) {
       console.warn(`Planeringsåtgärden ${e.kind} ${e.version} krockar med ${res.conflict}; den görs vid nästa cykel.`);
-      failed.push(e.id);
+      failed.push({ id: e.id, reason: res.conflict });
     } else if (res.changed) changed.push(e);
   }
   return { changed, conflicts, failed };
@@ -556,10 +560,19 @@ async function replayStep(ctx) {
     const conflicts = clashes.filter((id) => !stale.includes(id));
     if (stale.length) await removeActions(ctx.userData, ctx.root, stale);
     if (conflicts.length) await markConflict(ctx.userData, ctx.root, conflicts);
-    const going = rest.filter((a) => !clashes.includes(a.id) && (a.state === 'pending' || changed.includes(a)));
+    // US-0055 FR1: a change that could not be done again is left out of the commit and waits with its reason.
+    const notDone = [...clashes, ...failed.map((f) => f.id)];
+    if (failed.length)
+      await markWaiting(
+        ctx.userData,
+        ctx.root,
+        failed.map((f) => f.id),
+        Object.fromEntries(failed.map((f) => [f.id, f.reason]))
+      );
+    const going = rest.filter((a) => !notDone.includes(a.id) && (a.state === 'pending' || changed.includes(a)));
     const commit = quiet ? await commitIn(cwd, ctx, subjectOf(going)) : { committed: false };
     // US-0053 FR1: nothing to commit means every replayed change is already at HEAD (an action applied outside the app).
-    const already = quiet && !commit.committed && !commit.error ? going.filter((a) => a.state === 'pending' && !failed.includes(a.id)) : [];
+    const already = quiet && !commit.committed && !commit.error ? going.filter((a) => a.state === 'pending') : [];
     const committed = [...done, ...(commit.committed ? going : already)];
     if (committed.length)
       await markCommitted(
@@ -602,7 +615,10 @@ export function resolvePlanning(ctx, id, choice) {
   });
 }
 
-/** US-0608 FR7.1: what waits, each with its stories and where it goes; a conflict carries the app's text ("Open both"). */
+/**
+ * US-0608 FR7.1: what waits, each with its stories and where it goes; a conflict carries the app's text ("Open both").
+ * US-0055 FR1: a change that could not be done again carries its `reason`.
+ */
 export async function waitingList(ctx) {
   const record = await readRecord(ctx.userData, ctx.root);
   const target = await targetOf(ctx, record).catch(() => MAIN);
@@ -614,6 +630,7 @@ export async function waitingList(ctx) {
     file: a.file ?? null,
     state: a.state,
     ...(a.state === 'conflict' ? { content: a.content } : {}),
+    ...(a.reason ? { reason: a.reason } : {}), // US-0055 FR1: why it could not be done again
     ...(a.from ? { from: a.from } : {}) // US-0038 FR1.4: the app commit it was set aside from
   }));
   return { target: `origin/${target}`, entries };
