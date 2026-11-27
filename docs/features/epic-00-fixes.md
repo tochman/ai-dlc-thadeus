@@ -6,9 +6,9 @@
 
 > Small fixes the person reports while using the app: something looks off, behaves wrongly or is missing a detail. Each fix becomes a story here, so nothing reported in passing gets lost. A fix that grows into a feature moves to its topic's epic. A fix for a fault that shipped in a release names that release with a `- **Fault in:** vX.Y.Z` line, so the Velocity view counts it as a failed release (US-1304); a fix story without the line is not counted.
 
-**Stories:** US-0001, US-0002, US-0003, US-0004, US-0005, US-0006, US-0007, US-0008, US-0009, US-0010, US-0011, US-0012, US-0013, US-0014, US-0015, US-0016, US-0017, US-0018, US-0019, US-0020, US-0021, US-0022, US-0023, US-0024, US-0025, US-0026, US-0027, US-0028, US-0029, US-0030, US-0031, US-0032, US-0033, US-0034, US-0035, US-0036, US-0037, US-0038, US-0039, US-0040, US-0041, US-0042, US-0043, US-0044, US-0045, US-0046, US-0047, US-0048, US-0049, US-0050, US-0051, US-0052, US-0053, US-0054, US-0055, US-0056
+**Stories:** US-0001, US-0002, US-0003, US-0004, US-0005, US-0006, US-0007, US-0008, US-0009, US-0010, US-0011, US-0012, US-0013, US-0014, US-0015, US-0016, US-0017, US-0018, US-0019, US-0020, US-0021, US-0022, US-0023, US-0024, US-0025, US-0026, US-0027, US-0028, US-0029, US-0030, US-0031, US-0032, US-0033, US-0034, US-0035, US-0036, US-0037, US-0038, US-0039, US-0040, US-0041, US-0042, US-0043, US-0044, US-0045, US-0046, US-0047, US-0048, US-0049, US-0050, US-0051, US-0052, US-0053, US-0054, US-0055, US-0056, US-0057
 
-**Status (2026-11-27):** ✅ US-0001–US-0020 released (v0.2.3–v0.2.6). ✅ US-0021–US-0023 released in v0.2.7. ✅ US-0024 released in v0.2.8. ✅ US-0025 released in v0.2.9. ✅ US-0026 released in v0.2.9. ✅ US-0027 released in v0.2.9. ✅ US-0028 released in v0.2.10. ✅ US-0029 released in v0.2.10. ✅ US-0030 released in v0.2.10. ✅ US-0031 released in v0.2.10. ✅ US-0032 released in v0.2.11. ✅ US-0033 released in v0.2.11. ✅ US-0034 released in v0.2.12. ✅ US-0035 and US-0036 released in v0.2.13. ✅ US-0037, US-0038, US-0039, US-0040, US-0041 and US-0042 released in v0.2.14. ✅ US-0043 released in v0.2.15. ✅ US-0044 released in v0.2.15. ✅ US-0045 released in v0.2.15. ✅ US-0046 released in v0.2.15. ✅ US-0047 released in v0.3.0. ✅ US-0048 released in v0.3.0. ✅ US-0049 released in v0.3.0. ✅ US-0050, US-0051, US-0052, US-0053 and US-0054 released in v0.3.1. ✅ US-0055 released in v0.3.2. ✅ US-0056 released in v0.3.2. Each story names its release.
+**Status (2026-11-27):** ✅ US-0001–US-0020 released (v0.2.3–v0.2.6). ✅ US-0021–US-0023 released in v0.2.7. ✅ US-0024 released in v0.2.8. ✅ US-0025 released in v0.2.9. ✅ US-0026 released in v0.2.9. ✅ US-0027 released in v0.2.9. ✅ US-0028 released in v0.2.10. ✅ US-0029 released in v0.2.10. ✅ US-0030 released in v0.2.10. ✅ US-0031 released in v0.2.10. ✅ US-0032 released in v0.2.11. ✅ US-0033 released in v0.2.11. ✅ US-0034 released in v0.2.12. ✅ US-0035 and US-0036 released in v0.2.13. ✅ US-0037, US-0038, US-0039, US-0040, US-0041 and US-0042 released in v0.2.14. ✅ US-0043 released in v0.2.15. ✅ US-0044 released in v0.2.15. ✅ US-0045 released in v0.2.15. ✅ US-0046 released in v0.2.15. ✅ US-0047 released in v0.3.0. ✅ US-0048 released in v0.3.0. ✅ US-0049 released in v0.3.0. ✅ US-0050, US-0051, US-0052, US-0053 and US-0054 released in v0.3.1. ✅ US-0055 released in v0.3.2. ✅ US-0056 released in v0.3.2. 📋 US-0057 planned. Each story names its release.
 
 ---
 
@@ -903,3 +903,15 @@
   - [x] **Given** the merge is finished, **then** the next cycle runs as before, and the story's file is not changed back.
 - **Dependencies:** US-0053, US-0608
 
+
+**US-0057: The frame-timing check in the built-app tests gives the same answer on a slow machine** 📋 Planned
+- As a **developer releasing the app**, in order to **not have a release stopped by a slow CI machine**, I would like **the US-0050 (b) frame-timing check to measure in a way that a single slow run cannot fail, while still catching a real slowdown**.
+- **Epic:** EPIC-00
+- **Priority:** Medium
+- **Complexity:** Small
+- **Background:** Found 2026-11-27 while releasing v0.3.3. `tests/e2e/motion.spec.js` (US-0050 (b)) takes the p95 of one ~150-frame run and fails above 20 ms. On GitHub's macOS machines the p95 was 16.7–18.8 ms in the PR runs, but 21.1 and then 20.4 ms in the `v0.3.3` tag's run, on the same files that passed on the release PR. The `build-mac` job was re-run to get the release out. The check sits too close to its limit to be trusted.
+- **Acceptance Criteria:**
+  - [ ] **Given** the check runs, **then** it measures several entries (for example three) and compares their median p95 with the limit, so one slow run alone does not fail it.
+  - [ ] The 20 ms limit stays as it is.
+  - [ ] **Given** a real slowdown (every run over 20 ms), **then** the check still fails, and the log shows each run's p95.
+- **Dependencies:** US-0050, US-0608
