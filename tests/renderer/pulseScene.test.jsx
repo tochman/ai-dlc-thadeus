@@ -119,12 +119,13 @@ describe('pulse scene adapter', () => {
     expect(words[0]).toMatchObject({ n: 3, kind: 'write', ids: ['a1'] });
     expect(words[0].alpha).toBeCloseTo(0.75);
     expect(words[0].size).toBeGreaterThan(words[1].size);
+    expect(words.map((w) => w.size)).toEqual([16, 12]); // step 18: smaller centre labels, 10 px + 2 per touch, at most 18
     expect(cloudWords(scene.bundles, NOW + 4000)).toEqual([]);
   });
 
   it('places the words without overlap inside the ring, biggest first, and skips a word that does not fit (step 14)', () => {
     const measure = (s, size) => s.length * size * 0.6;
-    const words = Array.from({ length: 30 }, (_, i) => ({ name: `agent-${i}`, size: 12 + (i % 5) * 4 }));
+    const words = Array.from({ length: 30 }, (_, i) => ({ name: `agent-${i}`, size: 10 + (i % 5) * 2 }));
     const ri = 150;
     const placed = placeCloud(words, ri, measure);
     expect(placed.length).toBeGreaterThan(3);
@@ -134,7 +135,7 @@ describe('pulse scene adapter', () => {
     }
     for (const a of placed)
       for (const b of placed) if (a !== b) expect(Math.abs(a.x - b.x) * 2 >= a.w + b.w || Math.abs(a.y - b.y) * 2 >= a.h + b.h).toBe(true);
-    expect(placed[0].size).toBe(28);
+    expect(placed[0].size).toBe(18);
   });
 
   it('counts touches per minute, files touched, the busiest agent and 15 one-minute bars (FR9)', () => {

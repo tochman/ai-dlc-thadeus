@@ -94,7 +94,7 @@ export function cloudWords(bundles, now) {
     .map((w) => ({
       ...w,
       alpha: (1 - (now - w.last) / WORD_LIFE) * Math.min(1, (now - w.first) / FADE_IN),
-      size: Math.min(28, 14 + 4 * w.n)
+      size: Math.min(18, 10 + 2 * w.n) // step 18: smaller centre labels
     }))
     .sort((x, y) => x.first - y.first);
 }

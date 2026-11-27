@@ -135,14 +135,14 @@ describe('PulseView', () => {
         disconnect() {}
       }
     );
-    const rects = { 'terminal-footbar': { top: 900, height: 28 }, 'latest-message': { top: 850, height: 30 } };
+    const rects = { 'terminal-footbar': { top: 900, height: 28 } };
     const orig = HTMLElement.prototype.getBoundingClientRect;
     HTMLElement.prototype.getBoundingClientRect = function () {
       const key = Object.keys(rects).find((k) => this.classList.contains(k));
       return { top: 100, bottom: 100, height: 0, ...rects[key] };
     };
     const shell = document.createElement('div');
-    shell.innerHTML = '<p class="latest-message"></p><section class="terminal-panel"><div class="terminal-footbar"></div></section>';
+    shell.innerHTML = '<section class="terminal-panel"><div class="terminal-footbar"></div></section>';
     document.body.append(shell);
     const term = shell.querySelector('.terminal-panel');
     const stageHeight = async (collapsed) => {
@@ -155,9 +155,9 @@ describe('PulseView', () => {
       return screen.getByTestId('pulse-canvas').parentElement.style.height;
     };
     try {
-      // the foot bar's top, 900, less a gap, the message row and its gap (14 + 30 + 14), less the stage's top, 100
-      expect(await stageHeight(true)).toBe('742px');
-      expect(await stageHeight(false)).toBe('742px');
+      // the foot bar's top, 900, less a gap of 14, less the stage's top, 100 (step 18: Pulse has no message row)
+      expect(await stageHeight(true)).toBe('786px');
+      expect(await stageHeight(false)).toBe('786px');
     } finally {
       HTMLElement.prototype.getBoundingClientRect = orig;
       shell.remove();
@@ -165,13 +165,15 @@ describe('PulseView', () => {
     }
   });
 
-  it('goes back with its back pill and with Esc (step 16)', async () => {
+  it('goes back with its arm block and with Esc (steps 16-17)', async () => {
     const onBack = vi.fn();
     window.bridge = { pulse: { list: vi.fn(async () => SNAP), onChanged: vi.fn(() => () => {}) } };
     render(<PulseView projectId="p1" onBack={onBack} />);
     await settle();
     fireEvent.click(screen.getByTestId('pulse-back'));
     expect(screen.getByTestId('pulse-back').textContent).toBe(t('app.back'));
+    // step 17: the back button is the arm's last block, not a pill over the frame's corner
+    expect(screen.getByTestId('pulse-back').closest('.lcars-df-arm')).not.toBeNull();
     fireEvent.keyDown(screen.getByTestId('pulse-canvas'), { key: 'Escape' });
     expect(onBack).toHaveBeenCalledTimes(2);
   });

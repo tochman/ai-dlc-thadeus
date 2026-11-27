@@ -5,7 +5,7 @@
 // once per change as a still frame (NFR3). Step 10: the canvas takes its frame's content size and the ring is fitted to it.
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { DiagonalFrame, Pill, useEntrance } from './Lcars.jsx';
+import { DiagonalFrame, useEntrance } from './Lcars.jsx';
 import { useEditor } from './editor/EditorContext.jsx';
 import { buildScene, drawFrame, fitRing, hitTest, lcarsTheme, readouts, ringKey } from './pulse/scene.js';
 import { createRing } from './pulse/vendor/components/ring.js';
@@ -121,15 +121,13 @@ export default function PulseView({ projectId, onBack }) {
     let view = box.parentElement;
     while (view && !view.classList.contains('project-mode') && !/(auto|scroll)/.test(getComputedStyle(view).overflowY)) view = view.parentElement;
     view = view ?? document.documentElement;
-    // Step 16: the stage runs down to the terminal's foot bar, open or closed; the open terminal and the latest message
-    // row are drawn over it (theme.css), so the ring keeps one size whatever the terminal does.
-    // ponytail: a latest message that appears later is picked up on the next resize only.
+    // Step 16: the stage runs down to the terminal's foot bar, open or closed; the open terminal is drawn over it
+    // (theme.css), so the ring keeps one size whatever the terminal does. Step 18: Pulse has no latest-message row.
     const frame = box.closest('.pulse-view') ?? box;
     const fit = () => {
       const foot = document.querySelector('.terminal-footbar');
-      const msg = document.querySelector('.latest-message');
       const bottom = foot
-        ? foot.getBoundingClientRect().top - 14 - (msg ? msg.getBoundingClientRect().height + 14 : 0)
+        ? foot.getBoundingClientRect().top - 14
         : view.getBoundingClientRect().bottom - (parseFloat(getComputedStyle(view).paddingBottom) || 0);
       const b = box.getBoundingClientRect();
       const below = frame.getBoundingClientRect().bottom - b.bottom;
@@ -189,12 +187,22 @@ export default function PulseView({ projectId, onBack }) {
 
   return (
     <section className={`pulse-view${entering ? ' is-entering' : ''}`} data-testid="pulse-view" onKeyDown={(e) => e.key === 'Escape' && onBack?.()}>
-      <DiagonalFrame title={t('pulse.title')} sub={t('pulse.meta')} readouts={frameReadouts} arm={r && <Bars bars={r.bars} />}>
-        {onBack && (
-          <Pill tone="quiet" onClick={onBack} data-testid="pulse-back">
-            {t('app.back')}
-          </Pill>
-        )}
+      {/* step 17: back is the arm's last block, like the sidebar's buttons, not a pill over the frame's corner */}
+      <DiagonalFrame
+        title={t('pulse.title')}
+        sub={t('pulse.meta')}
+        readouts={frameReadouts}
+        arm={
+          <>
+            {r && <Bars bars={r.bars} />}
+            {onBack && (
+              <button type="button" className="lcars-dblk lcars-dblk--steel pulse-back" onClick={onBack} data-testid="pulse-back">
+                {t('app.back')}
+              </button>
+            )}
+          </>
+        }
+      >
         {error && (
           <p className="banner banner-error" role="alert">
             {error}

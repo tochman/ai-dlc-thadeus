@@ -342,6 +342,27 @@ describe('ProjectView: a Spec Kit project (US-1401)', () => {
     delete window.bridge.pulse;
   });
 
+  it('leaves the latest-message strip out of Pulse, so the grid keeps no empty row (US-0418 step 18)', async () => {
+    window.bridge.pulse = { list: vi.fn(async () => ({ agents: [], files: [], touches: [] })), onChanged: vi.fn(() => () => {}) };
+    window.bridge.agentEvents = {
+      latest: vi.fn(async () => ({
+        tabId: 'agent:claude',
+        harness: 'claude',
+        text: 'Hej',
+        arrivedAt: '2026-11-14T10:05:00.000Z',
+        status: 'waiting',
+        eventId: 'r1'
+      })),
+      onChanged: vi.fn(() => () => {})
+    };
+    renderView('pulse', { project });
+    expect(await screen.findByText(t('pulse.empty'))).toBeTruthy();
+    await waitFor(() => expect(window.bridge.agentEvents.latest).not.toHaveBeenCalled());
+    expect(screen.queryByTestId('latest-message-strip')).toBeNull();
+    delete window.bridge.pulse;
+    delete window.bridge.agentEvents;
+  });
+
   it('falls back to the Spec Kit shell for an AI-DLC view (R-01)', async () => {
     for (const view of ['intents', 'cost', 'github', 'plans']) {
       renderView(view, { project: kit });

@@ -618,7 +618,7 @@ function ProjectContent({
           )}
         </div>
         {onAidlc && <AddHarnessDialog open={addingHarness} onClose={() => setAddingHarness(false)} setupProps={setupProps} />}
-        <LatestMessageStrip projectId={project.projectId} onOpenReply={onOpenReply} />
+        {view !== 'pulse' && <LatestMessageStrip projectId={project.projectId} onOpenReply={onOpenReply} />}
         <TerminalPanel projectId={project.projectId} visible={visible} onChooseHarness={() => openAgentSettings(false)} onOpenTools={onOpenTools} />
       </div>
     </EditorCtx.Provider>
