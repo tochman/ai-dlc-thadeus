@@ -1008,6 +1008,8 @@
         "conflictCommit": "The app's commit {commit} conflicts with main in {files} and could not be set aside. Nothing was pushed. Delete the branch dash/planning to drop it.",
         "push": "The push was refused: {reason}. The planning is kept and the app tries again at the next interval.",
         "commit": "The planning could not be committed ({reason}): {files}. The change is kept.",
+        "merge": "A merge, rebase or cherry-pick is in progress. The planning sync waits until it is finished.",
+        "markers": "{files} holds conflict markers. The planning sync does not record or commit it until they are resolved.",
         "git": "The planning sync failed: {reason}"
       }
     },

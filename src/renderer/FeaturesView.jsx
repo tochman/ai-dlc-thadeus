@@ -212,10 +212,11 @@ const hashesOf = (f) => JSON.stringify([f?.overviewHash ?? null, (f?.epics ?? []
 
 /**
  * US-0607 FR3.5, US-0606 FR4.2: one sentence for a planning error from main ({kind, reason?, files?, commit?}). US-0038
- * FR1.4: a conflict that names its app commit says which one blocks and what to do.
+ * FR1.4: a conflict that names its app commit says which one blocks and what to do. US-0056 FR1, FR2: a merge in
+ * progress, and a file with conflict markers by its name.
  */
 function planningErrorText(t, error) {
-  const kind = ['offline', 'conflict', 'push', 'commit'].includes(error?.kind) ? error.kind : 'git';
+  const kind = ['offline', 'conflict', 'push', 'commit', 'merge', 'markers'].includes(error?.kind) ? error.kind : 'git';
   const key = kind === 'conflict' && error.commit ? 'conflictCommit' : kind;
   return t(`features.planning.error.${key}`, { reason: error?.reason ?? '', files: (error?.files ?? []).join(', '), commit: error?.commit ?? '' });
 }

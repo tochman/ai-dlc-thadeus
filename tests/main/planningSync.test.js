@@ -638,6 +638,65 @@ describe('a change that could not be done again keeps waiting after a real commi
   });
 });
 
+// US-0056: `main` was merged into a story branch and stopped on docs/FEATURES.md; the sync recorded the conflicted file
+// and committed its markers to main (f56b8f7), then put the row back on the branch.
+describe('the planning sync never commits a file in the middle of a merge (US-0056)', () => {
+  beforeEach(() => setup());
+  const sha = (text) => createHash('sha256').update(text, 'utf8').digest('hex');
+  const row = (s) => OVERVIEW.replace('📋 US-0101 and US-0102 planned', s);
+  const MARKED = `${OVERVIEW}<<<<<<< HEAD\nmine\n=======\ntheirs\n>>>>>>> other\n`;
+  /** origin's main and the story branch change the same row; `how` (merge, rebase, cherry-pick) then stops on it. */
+  const conflicted = async (how) => {
+    await moveMain('docs/FEATURES.md', row('main side'));
+    storyBranch();
+    write('docs/FEATURES.md', row('story side'));
+    run(clone, 'commit', '-q', '-am', 'docs: story side');
+    run(clone, 'fetch', '-q', 'origin');
+    expect(() => execFileSync('git', [how, 'origin/main'], { cwd: clone, env, stdio: 'ignore' })).toThrow();
+    return read('docs/FEATURES.md');
+  };
+
+  it.each(['merge', 'rebase', 'cherry-pick'])('AC1: with a %s in progress a cycle records, commits and pushes nothing, and says it waits', async (how) => {
+    const text = await conflicted(how);
+    const before = { origin: run(origin, 'rev-parse', 'main'), main: run(clone, 'rev-parse', 'main') };
+    expect(await runCycle(ctx)).toMatchObject({ error: { kind: 'merge' } });
+    expect((await readRecord(userData, clone)).actions).toEqual([]);
+    expect({ origin: run(origin, 'rev-parse', 'main'), main: run(clone, 'rev-parse', 'main') }).toEqual(before);
+    expect(read('docs/FEATURES.md')).toBe(text);
+  });
+
+  it('AC2: on main a feature doc with conflict markers is not recorded or committed, and is named', async () => {
+    write('docs/FEATURES.md', MARKED);
+    const head = run(clone, 'rev-parse', 'HEAD');
+    expect(await runCycle(ctx)).toMatchObject({ error: { kind: 'markers', files: ['docs/FEATURES.md'] } });
+    expect((await readRecord(userData, clone)).actions).toEqual([]);
+    expect(run(clone, 'rev-parse', 'HEAD')).toBe(head);
+    expect(read('docs/FEATURES.md')).toBe(MARKED);
+  });
+
+  it('AC2: an editor save with conflict markers is replayed but never committed, and the file is named', async () => {
+    await recordContent(ctx, 'docs/FEATURES.md', MARKED, { expectHash: sha(OVERVIEW) });
+    const head = run(clone, 'rev-parse', 'HEAD');
+    expect(await runCycle(ctx)).toMatchObject({ error: { kind: 'markers', files: ['docs/FEATURES.md'] } });
+    expect(run(clone, 'rev-parse', 'HEAD')).toBe(head);
+    expect(originLog()).toEqual(['start']);
+    expect((await readRecord(userData, clone)).actions).toMatchObject([{ kind: 'content', state: 'pending' }]);
+  });
+
+  it('AC3: once the merge is committed the next cycle runs as before and leaves the story file as merged', async () => {
+    await conflicted('merge');
+    await runCycle(ctx);
+    const merged = row('both sides');
+    write('docs/FEATURES.md', merged);
+    run(clone, 'commit', '-q', '-am', 'merge main');
+    const res = await runCycle(ctx);
+    expect(res.error).toBeUndefined();
+    expect((await readRecord(userData, clone)).actions).toEqual([]);
+    expect(read('docs/FEATURES.md')).toBe(merged);
+    expect(status()).toBe('');
+  });
+});
+
 describe('createScheduler (US-0607 FR3.1, FR4.1)', () => {
   const make = (over = {}) => {
     let t = 0;

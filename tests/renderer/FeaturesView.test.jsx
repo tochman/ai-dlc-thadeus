@@ -466,6 +466,20 @@ describe('FeaturesView: planning sync (US-0607 FR4)', () => {
     expect((await screen.findByTestId('planning-pr-offer')).textContent).toMatch(/docs\/planning/);
   });
 
+  it('says the sync waits for a merge, and names a file with conflict markers (US-0056 AC1, AC2)', async () => {
+    status({ pending: 0, error: { kind: 'merge' } });
+    show();
+    expect((await screen.findByTestId('planning-error')).textContent).toBe(
+      'En merge, rebase eller cherry-pick pågår. Planeringssynken väntar tills den är klar.'
+    );
+    cleanup();
+    status({ pending: 0, error: { kind: 'markers', files: ['docs/FEATURES.md'] } });
+    show();
+    expect((await screen.findByTestId('planning-error')).textContent).toBe(
+      'docs/FEATURES.md innehåller konfliktmarkeringar. Planeringssynken varken sparar eller committar filen förrän de är lösta.'
+    );
+  });
+
   it('a commit a hook refuses names the reason and the files, and unlocks the list (FR4.2)', async () => {
     window.bridge.setStoryRelease = vi.fn(async () => ({
       ok: false,

@@ -1,0 +1,1 @@
+"US-0056: The planning sync never commits a file in the middle of a merge. Wait while a merge, rebase or cherry-pick is in progress; never record or commit a planning file holding conflict markers, and name the file. See docs/features/epic-00-fixes.md US-0056."
