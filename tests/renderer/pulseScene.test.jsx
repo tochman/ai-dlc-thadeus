@@ -253,9 +253,9 @@ describe('the rework: fit, names, colours and marks (steps 10-12)', () => {
     [1200, 700],
     [600, 900],
     [320, 240]
-  ])('fits the ring and its names inside %ix%i, centred (step 10)', (w, h) => {
+  ])('fits the ring and its scale inside %ix%i, centred, with a 4 px margin (steps 10, 15)', (w, h) => {
     const g = fitRing(w, h);
-    expect(g.ro + LABEL_SPACE + 24).toBeLessThanOrEqual(Math.min(w, h) / 2 + 1e-9);
+    expect(g.ro + LABEL_SPACE + 4).toBeCloseTo(Math.min(w, h) / 2);
     expect([g.w, g.h, g.cx, g.cy]).toEqual([w, h, w / 2, h / 2]);
     expect(g.ro).toBeCloseTo(g.ri * 1.15);
     expect(g.ri).toBeGreaterThan(0);
@@ -272,20 +272,26 @@ describe('the rework: fit, names, colours and marks (steps 10-12)', () => {
     for (let a = 0; a < 2 * Math.PI; a += 0.1) expect(Math.cos(a + labelTurn(a))).toBeGreaterThanOrEqual(-1e-9);
   });
 
-  it('names each recent file on the ring at 11 px, newest first, and skips the outside mark (step 14)', () => {
+  it('names each recent file inside the ring at 11 px, newest first, and skips the outside mark (steps 14, 15)', () => {
     const scene = buildScene(SNAP, { name });
     const geo = fitRing(1200, 700);
     const ring = createRing(geo, scene.layout, themes.base, createRandom(7));
     const ctx = stubCtx();
     const seen = [];
     const fill = ctx.fillText;
-    ctx.fillText = (s, ...rest) => (seen.push([s, ctx.font]), fill(s, ...rest));
+    ctx.fillText = (s, x, ...rest) => (seen.push([s, ctx.font, x, ctx.textAlign]), fill(s, x, ...rest));
     drawFrame(ctx, scene, ring, geo, themes, NOW + 5000, { motion: false });
-    const names = seen.filter(([, font]) => font.includes('11px')).map(([s]) => s);
-    expect(names).toEqual(['a.js', 'gone.js', 'README.md']);
+    const names = seen.filter(([, font]) => font.includes('11px'));
+    expect(names.map(([s]) => s)).toEqual(['a.js', 'gone.js', 'README.md']);
+    for (const [s, , x, align] of names) {
+      // The text runs from just inside the ring's inner edge towards the centre, and stops before the word cloud.
+      expect(Math.abs(x)).toBeLessThan(geo.ri);
+      expect(Math.abs(x) - s.length * 5).toBeGreaterThanOrEqual(0.7 * geo.ri);
+      expect(align).toBe(x > 0 ? 'right' : 'left');
+    }
   });
 
-  it('shortens a long file name with an ellipsis so it fits outside the ring (step 14)', () => {
+  it('shortens a long file name with an ellipsis so it fits the band inside the ring (steps 14, 15)', () => {
     const long = { path: `src/${'x'.repeat(80)}.js`, kind: 'write', weight: 1, deleted: false, lastAt: NOW, agents: ['a1'] };
     const scene = buildScene({ agents: SNAP.agents, files: [long], touches: [] }, { name });
     const geo = fitRing(1200, 700);
@@ -297,7 +303,8 @@ describe('the rework: fit, names, colours and marks (steps 10-12)', () => {
     drawFrame(ctx, scene, ring, geo, themes, NOW, { motion: false });
     const shown = seen.find((s) => s.startsWith('xxx'));
     expect(shown.endsWith('…')).toBe(true);
-    expect(shown.length * 5).toBeLessThanOrEqual(LABEL_SPACE);
+    expect(shown.length * 5).toBeLessThanOrEqual(0.3 * geo.ri);
+    expect(shown.length * 5).toBeGreaterThan(0.3 * geo.ri - 20);
   });
 
   it('shows Unattributed only once, even for two agents with no name (step 11, step 14)', () => {

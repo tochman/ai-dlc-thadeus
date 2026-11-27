@@ -127,6 +127,46 @@ describe('PulseView', () => {
     vi.unstubAllGlobals();
   });
 
+  it('runs the stage under an open terminal, to its hidden-terminal size (step 15)', async () => {
+    vi.stubGlobal(
+      'ResizeObserver',
+      class {
+        observe() {}
+        disconnect() {}
+      }
+    );
+    const rects = { 'project-mode': { top: 0, bottom: 800 }, 'terminal-panel': { top: 560, height: 240 }, 'terminal-footbar': { height: 28 } };
+    const orig = HTMLElement.prototype.getBoundingClientRect;
+    HTMLElement.prototype.getBoundingClientRect = function () {
+      const key = Object.keys(rects).find((k) => this.classList.contains(k));
+      return { top: 100, bottom: 100, height: 0, ...rects[key] };
+    };
+    const term = document.createElement('section');
+    term.className = 'terminal-panel';
+    term.innerHTML = '<div class="terminal-footbar"></div>';
+    document.body.append(term);
+    const stageHeight = async (collapsed) => {
+      cleanup();
+      term.classList.toggle('is-collapsed', collapsed);
+      window.bridge = { pulse: { list: vi.fn(async () => SNAP), onChanged: vi.fn(() => () => {}) } };
+      render(
+        <div className="project-mode">
+          <PulseView projectId="p1" />
+        </div>
+      );
+      await settle();
+      return screen.getByTestId('pulse-canvas').parentElement.style.height;
+    };
+    try {
+      expect(await stageHeight(true)).toBe('700px'); // the view's bottom, 800, less the stage's top, 100
+      expect(await stageHeight(false)).toBe('912px'); // plus the open terminal's 240 less its 28 px foot bar
+    } finally {
+      HTMLElement.prototype.getBoundingClientRect = orig;
+      term.remove();
+      vi.unstubAllGlobals();
+    }
+  });
+
   it('builds the ring once and keeps it while only the touches change (FR1)', async () => {
     mount();
     await settle();
@@ -212,6 +252,13 @@ describe('PulseView', () => {
       pointAt(snap, (f) => f.folder === true)
     );
     expect(open).not.toHaveBeenCalled();
+  });
+
+  it('names the main session "main agent", not "other" (step 15)', async () => {
+    mount({ ...SNAP, agents: [{ id: 'main:s1', label: null, group: null, active: true, count: 9 }, ...SNAP.agents] });
+    await settle();
+    expect(screen.getByTestId('pulse-readout-busiest').textContent).toBe(t('pulse.main'));
+    expect(t('pulse.main')).toBe('Huvudagent');
   });
 
   it('says so when nothing has been touched yet, and when the snapshot cannot be read', async () => {

@@ -10,14 +10,13 @@ import { FONT, rgba } from './vendor/components/canvas.js';
 
 const MIN = 60000;
 const FADE = 10 * MIN; // FR7.1: a file mark fades out over 10 minutes
-/** Room outside the ring's outer edge for the tick labels and the file names. */
+/** Room outside the ring's outer edge for the vendor scale: its ticks end at ro+21, its numbers sit at ro+24. */
 export const LABEL_SPACE = 28;
-const MARGIN = 24;
+const MARGIN = 4; // step 15: as small as it can be
 const FADE_IN = 1500; // a word fades in over 1.5 s from its first touch
 const WORD_LIFE = 4000; // and out over 4 s after its last
 const LINK = 1500; // an asteroid flies for 1.5 s
 const NAMES = 24; // the most file names drawn at once
-const NAME_MAX = 24; // a file name up to 24 characters is shown whole
 
 /** FR5.2, FR7: the top folder of a file, "." for root files, "outside" for the outside mark. */
 export function folderOf(file) {
@@ -123,7 +122,7 @@ export function placeCloud(words, ri, measure) {
   return placed;
 }
 
-/** Steps 10, 14: a centred ring that fits a w x h canvas with its names and a margin. */
+/** Steps 10, 15: a centred ring that fits a w x h canvas with its scale and a 4 px margin. */
 export function fitRing(w, h) {
   const ri = Math.max(1, (Math.min(w, h) / 2 - LABEL_SPACE - MARGIN) / 1.15);
   return { w, h, cx: w / 2, cy: h / 2, ri, ro: ri * 1.15, facing: null };
@@ -210,28 +209,30 @@ export function drawMarks(ctx, files, now, geo, themes) {
 
 const colourOf = (x, themes) => (x.deleted || x.kind === 'delete' ? themes.base.accent : (themes.kinds?.[x.kind] ?? themes.base.ink));
 
-/** A file's shown name: its base name, or `path/` for a folder mark; a name over 24 characters is cut with '…' to fit. */
-function fileLabel(ctx, f) {
+/** A file's shown name: its base name, or `path/` for a folder mark, cut with '…' when wider than `band`. */
+function fileLabel(ctx, f, band) {
   const label = f.folder ? `${f.path}/` : f.path.slice(f.path.lastIndexOf('/') + 1);
-  if (label.length <= NAME_MAX) return label;
-  // ponytail: a long name is cut to the label band's width, which is short; show it whole in the hover tip.
+  if (ctx.measureText(label).width <= band) return label;
+  // ponytail: a long name is cut to the band inside the ring; the hover tip shows it whole.
   let cut = label;
-  while (cut.length > 1 && ctx.measureText(`${cut}…`).width > LABEL_SPACE) cut = cut.slice(0, -1);
+  while (cut.length > 1 && ctx.measureText(`${cut}…`).width > band) cut = cut.slice(0, -1);
   return `${cut}…`;
 }
 
-/** Step 14: the latest file names at 11 px, along the radius just outside the ring, newest first and never upside down. */
+/** Steps 14, 15: the latest file names at 11 px, along the radius just inside the ring (outside the word cloud), newest first and never upside down. */
 function drawFileNames(ctx, files, now, geo, themes) {
   const recent = files.filter((f) => !f.outside && now - f.lastAt < FADE).sort((a, b) => b.lastAt - a.lastAt);
   ctx.font = `11px ${FONT}`;
   ctx.textBaseline = 'middle';
+  const edge = geo.ri - 6;
+  const band = edge - 0.7 * geo.ri; // the word cloud keeps within 0.7·ri
   for (const f of recent.slice(0, NAMES)) {
     const right = Math.cos(f.angle) >= 0;
     ctx.save();
     ctx.rotate(f.angle + (right ? 0 : Math.PI));
-    ctx.textAlign = right ? 'left' : 'right';
+    ctx.textAlign = right ? 'right' : 'left';
     ctx.fillStyle = rgba(colourOf(f, themes), 0.25 + 0.65 * (1 - (now - f.lastAt) / FADE));
-    ctx.fillText(fileLabel(ctx, f), (right ? 1 : -1) * (geo.ro + 6), 0);
+    ctx.fillText(fileLabel(ctx, f, band), (right ? 1 : -1) * edge, 0);
     ctx.restore();
   }
 }

@@ -425,6 +425,7 @@
     "loading": "Listening for the agents…",
     "loadFailed": "The pulse could not be read: {error}",
     "empty": "No agent has touched a file in the last 15 minutes.",
+    "main": "Main agent",
     "unattributed": "Other",
     "outside": "Outside the project",
     "folder": "{path} ({n, plural, one {# file} other {# files}})",

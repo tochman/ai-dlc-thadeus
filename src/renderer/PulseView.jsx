@@ -64,7 +64,8 @@ export default function PulseView({ projectId }) {
   const [size, setSize] = useState(START);
   const geo = useMemo(() => fitRing(size.w, size.h), [size]);
   const entering = useEntrance(`pulse:${projectId}`);
-  const name = useCallback((a) => a.label ?? t('pulse.unattributed'), [t]);
+  // US-0418 step 15: the main session has no agent type; name it, so "other" stays for changes no one can be tied to.
+  const name = useCallback((a) => a.label ?? t(a.id.startsWith('main:') ? 'pulse.main' : 'pulse.unattributed'), [t]);
   const kind = useCallback((k) => t(`pulse.kind.${k}`), [t]);
 
   useEffect(() => {
@@ -116,16 +117,20 @@ export default function PulseView({ projectId }) {
   useEffect(() => {
     const box = stageRef.current;
     if (!box || typeof ResizeObserver === 'undefined') return undefined;
-    // The stage fills what is left of the scrolling view below it, so the whole ring shows without scrolling.
+    // The stage fills what is left of the project view below it, so the whole ring shows without scrolling.
     let view = box.parentElement;
-    while (view && !/(auto|scroll)/.test(getComputedStyle(view).overflowY)) view = view.parentElement;
+    while (view && !view.classList.contains('project-mode') && !/(auto|scroll)/.test(getComputedStyle(view).overflowY)) view = view.parentElement;
     view = view ?? document.documentElement;
-    // Step 14: the stage ends where the view ends or the terminal starts, whichever is higher, less the frame's own bands below it.
+    // Step 15: the stage keeps its hidden-terminal size and runs under an open terminal, which is drawn on top (theme.css).
     const frame = box.closest('.pulse-view') ?? box;
     const term = document.querySelector('.terminal-panel');
+    const under = () => {
+      if (!term || term.classList.contains('is-collapsed')) return 0;
+      return term.getBoundingClientRect().height - (term.querySelector('.terminal-footbar')?.getBoundingClientRect().height ?? 0);
+    };
     const fit = () => {
       const pad = parseFloat(getComputedStyle(view).paddingBottom) || 0;
-      const bottom = Math.min(view.getBoundingClientRect().bottom, term?.getBoundingClientRect().top ?? Infinity) - pad;
+      const bottom = view.getBoundingClientRect().bottom + under() - pad;
       const b = box.getBoundingClientRect();
       const below = frame.getBoundingClientRect().bottom - b.bottom;
       box.style.height = `${Math.max(STAGE_MIN, Math.floor(bottom - b.top - below))}px`;

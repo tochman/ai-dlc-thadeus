@@ -32,3 +32,10 @@
 - 13 targeted test files: 280 of 280 pass. ESLint is clean on every touched file. Prettier is clean.
 - One existing Spec Kit test failed once in a combined run, then passed on rerun.
 - Coverage is not measured yet; Build and Test runs the full suite with `--coverage`.
+
+## Added step 15 (the person's request during the build)
+
+- The main session is named "Main agent" / "Huvudagent" (`pulse.main`); "Other" stays for changes no one can be tied to.
+- File names sit inside the ring, outside the word cloud, and are cut with '…' to fit that band. The margin around the ring is 4 px.
+- The ring runs on under the terminal: the stage keeps its hidden-terminal height and an open terminal is drawn over it (`fit()` in `PulseView.jsx`, two rules in `theme.css`).
+- Checks: `pulseScene` and `PulseView` tests, 34 of 34 pass; ESLint and Prettier clean.

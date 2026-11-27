@@ -425,6 +425,7 @@
     "loading": "Lyssnar efter agenterna…",
     "loadFailed": "Pulsen kunde inte läsas: {error}",
     "empty": "Ingen agent har rört en fil de senaste 15 minuterna.",
+    "main": "Huvudagent",
     "unattributed": "Övrigt",
     "outside": "Utanför projektet",
     "folder": "{path} ({n, plural, one {# fil} other {# filer}})",
