@@ -8,7 +8,7 @@
 
 **Stories:** US-0501–US-0513
 
-**Status (2026-11-25):** ✅ US-0501–US-0503, US-0505 and US-0506 released (v0.2.0–v0.2.5). ✅ US-0504 released in v0.2.7. ✅ US-0507 released in v0.2.8. ✅ US-0508 released in v0.2.15. ✅ US-0509 released in v0.3.1. ✅ US-0510 released in v0.2.13. 📋 US-0511 and US-0512 planned, for v0.3.4. ✅ US-0513 released in v0.3.1. Each story names its release.
+**Status (2026-11-25):** ✅ US-0501–US-0503, US-0505 and US-0506 released (v0.2.0–v0.2.5). ✅ US-0504 released in v0.2.7. ✅ US-0507 released in v0.2.8. ✅ US-0508 released in v0.2.15. ✅ US-0509 released in v0.3.1. ✅ US-0510 released in v0.2.13. 📋 US-0511 and US-0512 planned, for v0.3.5. ✅ US-0513 released in v0.3.1. Each story names its release.
 
 ---
 
@@ -202,7 +202,7 @@
 - **Notes:** AI-DLC parks only at a clean stage boundary; the app shows its refusal rather than working around it.
 - **Dependencies:** US-0501
 
-**US-0511: Go back here: resume from a stage with a new instruction** 📋 Planned, for v0.3.4
+**US-0511: Go back here: resume from a stage with a new instruction** 📋 Planned, for v0.3.5
 - As a **developer**, in order to **send the work back to a stage with a better instruction, without losing what came before it**, I would like **a "Go back here" action on a stage, with a preview of what will be redone, that types the right request into the agent tab for me**.
 - **Epic:** EPIC-05
 - **Priority:** High
@@ -219,7 +219,7 @@
   - [ ] Not offered for skipped stages. Every text through `t()` in Swedish and English, in the LCARS look.
 - **Dependencies:** US-0501, US-0510
 
-**US-0512: Fix this: hand a NOT-READY finding or a logged error straight to the agent** 📋 Planned, for v0.3.4
+**US-0512: Fix this: hand a NOT-READY finding or a logged error straight to the agent** 📋 Planned, for v0.3.5
 - As a **developer**, in order to **hand a finding or an error straight back to the agent**, I would like **a "Fix this" button next to it that types a precise request, with the right file and context, into the agent tab**.
 - **Epic:** EPIC-05
 - **Priority:** Medium

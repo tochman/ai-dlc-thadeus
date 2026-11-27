@@ -8,7 +8,7 @@
 
 **Stories:** US-0301–US-0308
 
-**Status (2026-11-24):** ✅ US-0301–US-0302 released in v0.2.0. ✅ US-0303 released in v0.2.9. 📋 US-0304 planned, for v0.3.3. 📋 US-0305–US-0307 planned, for v0.3.5. 📋 US-0308 planned, for v0.3.6. Each story names its release.
+**Status (2026-11-24):** ✅ US-0301–US-0302 released in v0.2.0. ✅ US-0303 released in v0.2.9. 📋 US-0304 planned, for v0.3.4. 📋 US-0305–US-0307 planned, for v0.3.6. 📋 US-0308 planned, for v0.3.7. Each story names its release.
 
 **Dependency choice (Q1):** `@tanstack/react-virtual` `3.14.24`, pinned exactly. Hand-rolled windowing with variable row heights, measurement after expand and scroll anchoring would be more code to keep correct than this small, well-maintained library.
 
@@ -55,7 +55,7 @@
   - [x] Every text goes through `t()` in Swedish and English.
 - **Dependencies:** US-0104, US-0201 (cost per run, shown beside velocity)
 
-**US-0304: Intent spans: one shared reading of the audit log** 📋 Planned, for v0.3.3
+**US-0304: Intent spans: one shared reading of the audit log** 📋 Planned, for v0.3.4
 - As a **developer of THADEUS**, in order to **build every time based view on one agreed reading of the audit log**, I would like **one pure module that turns an intent's audit events into spans, and says what the intent looked like at any moment**.
 - **Epic:** EPIC-03
 - **Priority:** High
@@ -71,7 +71,7 @@
   - [ ] Unknown events and blocks without a timestamp never throw. The module has no `fs` or Electron imports and at least 90% line coverage. `loadIntentDetail` adds `detail.spans`.
 - **Dependencies:** US-0104, US-0507
 
-**US-0305: Waterfall: stages, units and agents on one time axis, with waiting time and cost** 📋 Planned, for v0.3.5
+**US-0305: Waterfall: stages, units and agents on one time axis, with waiting time and cost** 📋 Planned, for v0.3.6
 - As a **developer**, in order to **see where an intent's time went, and how much of it was waiting for me**, I would like **a waterfall of every stage, unit and agent on one time axis, with waiting time marked inside each bar and the cost drawn underneath**.
 - **Epic:** EPIC-03
 - **Priority:** High
@@ -88,7 +88,7 @@
   - [ ] Drawn with the `@visx/*` packages already installed. Keyboard and screen reader access, colour never the only signal, every text through `t()` in Swedish and English, in the LCARS look.
 - **Dependencies:** US-0304, US-0301, US-0208, US-0215
 
-**US-0306: Live unit graph: node states, agents, cost and edge pulses** 📋 Planned, for v0.3.5
+**US-0306: Live unit graph: node states, agents, cost and edge pulses** 📋 Planned, for v0.3.6
 - As a **developer**, in order to **see Construction at work in one glance**, I would like **the unit graph to show each unit's state, agent and cost live, with edges lighting up as work moves on**.
 - **Epic:** EPIC-03
 - **Priority:** Medium
@@ -104,7 +104,7 @@
 - **Notes:** Moving the graph onto the plan designer's canvas (US-0906) is a later choice, not part of this story.
 - **Dependencies:** US-0304
 
-**US-0307: Timeline lenses: Compact, Timeline and Full, with event groups** 📋 Planned, for v0.3.5
+**US-0307: Timeline lenses: Compact, Timeline and Full, with event groups** 📋 Planned, for v0.3.6
 - As a **developer**, in order to **read an intent's history at the level of detail I need right now**, I would like **the Timeline to offer three lenses and to group events that belong together**.
 - **Epic:** EPIC-03
 - **Priority:** Medium
@@ -120,7 +120,7 @@
   - [ ] Grouping is a pure function in `src/shared/eventGroups.js` with its own tests. Every text through `t()` in Swedish and English, in the LCARS look.
 - **Dependencies:** US-0304, US-0301
 
-**US-0308: Bridge replay: scrub through an intent's history and watch it play back** 📋 Planned, for v0.3.6
+**US-0308: Bridge replay: scrub through an intent's history and watch it play back** 📋 Planned, for v0.3.7
 - As a **developer, or someone showing AI-DLC to others**, in order to **understand and show how an intent unfolded**, I would like **a replay mode that plays the intent's history back, with a scrubber I can drag, play and step through**.
 - **Epic:** EPIC-03
 - **Priority:** Medium

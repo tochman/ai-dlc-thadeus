@@ -8,7 +8,7 @@
 
 **Stories:** US-1301–US-1307
 
-**Status (2026-11-26):** ✅ US-1301, US-1302, US-1303, US-1304 and US-1305 released in v0.3.2. 📋 US-1306 and US-1307 planned, for v0.3.3.
+**Status (2026-11-26):** ✅ US-1301, US-1302, US-1303, US-1304 and US-1305 released in v0.3.2. 📋 US-1306 and US-1307 planned, for v0.3.4.
 
 ---
 
@@ -86,7 +86,7 @@
   - [x] Every text goes through `t()` in Swedish and English, in the LCARS look.
 - **Dependencies:** US-1301, US-1304
 
-**US-1306: The AI share of delivered code** 📋 Planned, for v0.3.3
+**US-1306: The AI share of delivered code** 📋 Planned, for v0.3.4
 - As a **team lead**, in order to **know how much of what we ship comes from AI-DLC work**, I would like **each merged pull request, story and release to show how much of its changed code came from AI-DLC work and how much was edited by hand**.
 - **Epic:** EPIC-13
 - **Priority:** Medium
@@ -100,7 +100,7 @@
   - [ ] Every text goes through `t()` in Swedish and English, in the LCARS look.
 - **Dependencies:** US-1201, US-1303
 
-**US-1307: Insights for a team: the same figures per person and machine** 📋 Planned, for v0.3.3
+**US-1307: Insights for a team: the same figures per person and machine** 📋 Planned, for v0.3.4
 - As a **team lead**, in order to **share what works and help where it does not**, I would like **the insights broken down by person and by machine, presented as coaching and not as surveillance**.
 - **Epic:** EPIC-13
 - **Priority:** Low
