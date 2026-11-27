@@ -8,7 +8,7 @@
 
 **Stories:** US-0401, US-0402, US-0403, US-0404, US-0405, US-0406, US-0407, US-0408, US-0409, US-0410, US-0411, US-0412, US-0413, US-0414, US-0415, US-0416, US-0417, US-0418
 
-**Status (2026-11-27):** ✅ US-0401–US-0411 released (v0.1.1–v0.2.5). ✅ US-0412 released in v0.3.1. ✅ US-0413 released in v0.2.7. ✅ US-0414 released in v0.2.8. ✅ US-0415 released in v0.2.13. ✅ US-0416 released in v0.2.14. ✅ US-0417 released in v0.2.14. 🚧 US-0418 in progress, for v0.3.3. Each story names its release.
+**Status (2026-11-27):** ✅ US-0401–US-0411 released (v0.1.1–v0.2.5). ✅ US-0412 released in v0.3.1. ✅ US-0413 released in v0.2.7. ✅ US-0414 released in v0.2.8. ✅ US-0415 released in v0.2.13. ✅ US-0416 released in v0.2.14. ✅ US-0417 released in v0.2.14. ✅ US-0418 done, for v0.3.3. Each story names its release.
 
 ---
 
@@ -385,21 +385,21 @@
 - **Dependencies:** US-0414, US-0415
 
 
-**US-0418: Pulse: see every working agent and every file it touches, live, in one circle** 🚧 In progress, for v0.3.3
+**US-0418: Pulse: see every working agent and every file it touches, live, in one circle** ✅ Done, for v0.3.3
 - As a **developer watching my agents work**, in order to **see at a glance who is working in the project and what they read, write and delete**, I would like **a live Pulse view where every working agent and every file it touches appears on a circle, with a pulse from agent to file for every access**.
 - **Epic:** EPIC-04
 - **Priority:** Medium
 - **Complexity:** Large
 - **Background:** Asked for 2026-11-27, inspired by [pretty-events](https://github.com/MoulikRT/pretty-events) (MIT): a canvas that draws an event stream as a ring of segments with rays and arcs, plus small readout panels under it. Decided the same day: Pulse is its own view on the app's left arm, for the whole project (every intent and every free session), so it does not crowd the Activity view, which is already full of data and stays per intent. Two observers feed it, since neither sees everything alone: the hook observer (the activity stream from US-0214 and US-0030, which knows the agent and sees reads, but today drops the tool's file path), and a file observer (`chokidar`, already used by `src/main/watcher.js`), which sees every create, change and delete, including a shell `rm` and the person's own edits, but not reads and not who made them.
 - **Acceptance Criteria:**
-  - [ ] A Pulse block on the app's left arm opens the view; it shows a live dot while any agent works.
-  - [ ] **Given** running sessions, **then** the main chat and each dispatched agent hold a segment of the ring, grouped by intent or free session, appearing when they start and fading when they stop.
-  - [ ] Hook observer: **given** a Read, Write, Edit or MultiEdit call (Claude Code) or its opencode match, **then** the adapter keeps the project-relative file path, and the file appears as a mark with a pulse from the agent, coloured by action (read steel, write white, delete coral, after US-0417's colour rule).
-  - [ ] File observer: **given** a file is created, changed or deleted in the project (not `.git`, `node_modules` or ignored files), **then** it pulses too; it is credited to the agent whose shell command was running at that moment, otherwise to an "Unattributed" segment. A change the hook observer already showed is not shown twice.
-  - [ ] Only project-relative paths are kept, never file content, prompt text or other tool input; a test feeds the agent-event fixtures through and asserts this.
-  - [ ] Hovering a file or agent shows its name and last actions; clicking a file opens it in the editor (US-1001).
-  - [ ] Under the ring, small LCARS readouts: the latest actions, actions per agent, and reads/writes/deletes over time.
-  - [ ] Stays smooth with 20 agents and 500 files (files grouped by folder past a limit); drawn on a canvas with no new dependency; under reduced motion it shows a still frame.
-  - [ ] Every text through `t()` in Swedish and English, in the LCARS look, built in our own terms (no copy of pretty-events' look or code).
+  - [x] A Pulse block on the app's left arm opens the view; it shows a live dot while any agent works.
+  - [x] **Given** running sessions, **then** the main chat and each dispatched agent hold a segment of the ring, grouped by intent or free session, appearing when they start and fading when they stop.
+  - [x] Hook observer: **given** a Read, Write, Edit or MultiEdit call (Claude Code) or its opencode match, **then** the adapter keeps the project-relative file path, and the file appears as a mark with a pulse from the agent, coloured by action (read steel, write white, delete coral, after US-0417's colour rule).
+  - [x] File observer: **given** a file is created, changed or deleted in the project (not `.git`, `node_modules` or ignored files), **then** it pulses too; it is credited to the agent whose shell command was running at that moment, otherwise to an "Unattributed" segment. A change the hook observer already showed is not shown twice.
+  - [x] Only project-relative paths are kept, never file content, prompt text or other tool input; a test feeds the agent-event fixtures through and asserts this.
+  - [x] Hovering a file or agent shows its name and last actions; clicking a file opens it in the editor (US-1001).
+  - [x] Under the ring, small LCARS readouts: the latest actions, actions per agent, and reads/writes/deletes over time.
+  - [x] Stays smooth with 20 agents and 500 files (files grouped by folder past a limit); drawn on a canvas with no new dependency; under reduced motion it shows a still frame.
+  - [x] Every text through `t()` in Swedish and English, in the LCARS look, built in our own terms (no copy of pretty-events' look or code).
 - **Notes:** Decided 2026-11-27: the file observer runs only while an agent is running or an intent or Spec Kit flow is active, to spare the disk. Replay of a past session can follow US-1505. Free sessions show once EPIC-15 lands; before that, sessions without an intent show as "Main".
 - **Dependencies:** US-0214, US-0030, US-0417
