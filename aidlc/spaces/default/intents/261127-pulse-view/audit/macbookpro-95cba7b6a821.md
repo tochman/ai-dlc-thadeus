@@ -3380,3 +3380,26 @@
 **Details**: grep -n "14\|cloud" aidlc/spaces/default/intents/261127-pulse-view/construction/code-generation/code-summary.md | head; npx eslint src/renderer/pulse/scene.js s; the Code Generation step went out of date
 
 ---
+
+## Question Shown
+**Timestamp**: 2026-11-27T16:22:33Z
+**Event**: QUESTION_SHOWN
+**Question Id**: 9706a813
+**Question Type**: gate
+**Question Chat**: 166b26e8-dfdc-4c0f-b8f8-9b25f0b01198
+**Question Shows**: sha256:cdb18a69427167e90a119df357b3c6073ba7bcbe35b399dea3982df3ad0bec81
+**Stage**: code-generation
+
+---
+
+## Plan Approval Blocked
+**Timestamp**: 2026-11-27T16:22:38Z
+**Event**: PLAN_APPROVAL_BLOCKED
+**Guard**: plan-approval-guard
+**Reason**: plan-approval
+**Tool**: Bash
+**Session**: a6266993-d245-49d6-9c1c-354013aefcd4
+**Stage**: code-generation
+**Unit**: (missing marker)
+
+---
