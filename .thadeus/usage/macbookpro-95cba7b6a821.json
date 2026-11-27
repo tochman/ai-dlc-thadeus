@@ -18929,13 +18929,13 @@
     },
     "01a21d45-152d-73d7-ac7b-5e1dda761ae0": {
       "totals": {
-        "usd": 91.6641714000001,
+        "usd": 92.40303040000009,
         "tokens": {
-          "input": 1500,
-          "output": 443408,
+          "input": 1512,
+          "output": 445398,
           "cacheCreate5m": 1537032,
-          "cacheCreate1h": 7673450,
-          "cacheRead": 68586257
+          "cacheCreate1h": 7747929,
+          "cacheRead": 69102152
         }
       },
       "byStage": {
@@ -19115,36 +19115,36 @@
         },
         "deployment-execution": {
           "totals": {
-            "usd": 1.1111522,
+            "usd": 1.8500112,
             "tokens": {
-              "input": 38,
-              "output": 5755,
+              "input": 50,
+              "output": 7745,
               "cacheCreate5m": 0,
-              "cacheCreate1h": 79797,
-              "cacheRead": 1787621
+              "cacheCreate1h": 154276,
+              "cacheRead": 2303516
             }
           },
           "byModel": {
             "opus-5-5": {
-              "usd": 1.1111522,
+              "usd": 1.8500112,
               "tokens": {
-                "input": 38,
-                "output": 5755,
+                "input": 50,
+                "output": 7745,
                 "cacheCreate5m": 0,
-                "cacheCreate1h": 79797,
-                "cacheRead": 1787621
+                "cacheCreate1h": 154276,
+                "cacheRead": 2303516
               }
             }
           },
           "byAgent": {
             "main": {
-              "usd": 1.1111522,
+              "usd": 1.8500112,
               "tokens": {
-                "input": 38,
-                "output": 5755,
+                "input": 50,
+                "output": 7745,
                 "cacheCreate5m": 0,
-                "cacheCreate1h": 79797,
-                "cacheRead": 1787621
+                "cacheCreate1h": 154276,
+                "cacheRead": 2303516
               }
             }
           }
@@ -19152,13 +19152,13 @@
       },
       "byModel": {
         "opus-5-5": {
-          "usd": 91.6641714000001,
+          "usd": 92.40303040000009,
           "tokens": {
-            "input": 1500,
-            "output": 443408,
+            "input": 1512,
+            "output": 445398,
             "cacheCreate5m": 1537032,
-            "cacheCreate1h": 7673450,
-            "cacheRead": 68586257
+            "cacheCreate1h": 7747929,
+            "cacheRead": 69102152
           }
         },
         "<synthetic>": {
@@ -19174,13 +19174,13 @@
       },
       "byAgent": {
         "main": {
-          "usd": 77.7401776000001,
+          "usd": 78.47903660000009,
           "tokens": {
-            "input": 1108,
-            "output": 305329,
+            "input": 1120,
+            "output": 307319,
             "cacheCreate5m": 0,
-            "cacheCreate1h": 7673450,
-            "cacheRead": 51207828
+            "cacheCreate1h": 7747929,
+            "cacheRead": 51723723
           }
         },
         "aidlc-developer-agent": {
@@ -19201,6 +19201,80 @@
             "cacheCreate5m": 207360,
             "cacheCreate1h": 0,
             "cacheRead": 652434
+          }
+        }
+      }
+    },
+    "01a21f5d-524a-726e-9e76-1b7605fb65ce": {
+      "totals": {
+        "usd": 6.283668,
+        "tokens": {
+          "input": 62,
+          "output": 12849,
+          "cacheCreate5m": 0,
+          "cacheCreate1h": 686365,
+          "cacheRead": 2677600
+        }
+      },
+      "byStage": {
+        "code-generation": {
+          "totals": {
+            "usd": 6.283668,
+            "tokens": {
+              "input": 62,
+              "output": 12849,
+              "cacheCreate5m": 0,
+              "cacheCreate1h": 686365,
+              "cacheRead": 2677600
+            }
+          },
+          "byModel": {
+            "opus-5-5": {
+              "usd": 6.283668,
+              "tokens": {
+                "input": 62,
+                "output": 12849,
+                "cacheCreate5m": 0,
+                "cacheCreate1h": 686365,
+                "cacheRead": 2677600
+              }
+            }
+          },
+          "byAgent": {
+            "main": {
+              "usd": 6.283668,
+              "tokens": {
+                "input": 62,
+                "output": 12849,
+                "cacheCreate5m": 0,
+                "cacheCreate1h": 686365,
+                "cacheRead": 2677600
+              }
+            }
+          }
+        }
+      },
+      "byModel": {
+        "opus-5-5": {
+          "usd": 6.283668,
+          "tokens": {
+            "input": 62,
+            "output": 12849,
+            "cacheCreate5m": 0,
+            "cacheCreate1h": 686365,
+            "cacheRead": 2677600
+          }
+        }
+      },
+      "byAgent": {
+        "main": {
+          "usd": 6.283668,
+          "tokens": {
+            "input": 62,
+            "output": 12849,
+            "cacheCreate5m": 0,
+            "cacheCreate1h": 686365,
+            "cacheRead": 2677600
           }
         }
       }
