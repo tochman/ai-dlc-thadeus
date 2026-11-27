@@ -120,14 +120,17 @@ describe('ProjectSettingsView (Configuration › Feature docs and Agent, US-0012
     expect(screen.getByTestId('project-settings-rates-path').value).toBe('config/rates.json');
   });
 
-  it('lists the harnesses, disables the unsupported ones, and saves opencode for this project (US-0801 FR2.1, FR2.3)', async () => {
+  it('lists all six harnesses as choices, Codex too, and saves opencode for this project (US-0801 FR2.1, FR2.3; US-0806 FR1.4)', async () => {
     render(<ProjectSettingsView section="agent" projectId="p1" settings={settings} harness="claude" harnesses={detected} />);
     const select = screen.getByTestId('project-settings-harness');
     expect(select.value).toBe('claude');
     expect([...select.options].map((o) => [o.textContent, o.disabled])).toEqual([
       ['Claude Code (2.1.0 (Claude Code))', false],
       ['opencode (opencode v2.1.4)', false],
-      ['Codex (stöds inte än)', true] // detected, not selectable; undetected ones are not listed
+      ['Codex (hittades inte)', false],
+      ['Kiro (hittades inte)', false],
+      ['Cursor', false],
+      ['GitHub Copilot', false]
     ]);
 
     fireEvent.change(select, { target: { value: 'opencode' } });
@@ -168,9 +171,53 @@ describe('ProjectSettingsView (Configuration › Feature docs and Agent, US-0012
     expect(window.bridge.setProjectSettings).toHaveBeenCalledWith('p1', { harnessTabs: ['claude', 'opencode'] });
     cleanup();
 
-    const onlyClaude = detected.map((d) => (d.id === 'opencode' ? { ...d, installed: false } : d));
+    const onlyClaude = detected.map((d) => (d.id === 'claude' ? d : { ...d, installed: false })); // Codex can run a tab too (US-0806)
     render(<ProjectSettingsView section="agent" projectId="p1" settings={settings} harness="claude" harnesses={onlyClaude} />);
     expect(screen.queryByTestId('project-settings-tabs')).toBeNull();
+  });
+
+  // US-0806: the agent command per harness, in Configuration › Agent.
+  const agentView = (extra = {}, props = {}) =>
+    render(<ProjectSettingsView section="agent" projectId="p1" settings={{ ...settings, ...extra }} harness="claude" harnesses={detected} {...props} />);
+  const field = (id) => screen.getByTestId(`project-settings-agent-command-${id}`);
+
+  it('shows a command field for the chosen harness and each harness in its tabs, prefilled with its default (FR1.1, FR1.2)', () => {
+    agentView({ harnessTabs: ['claude', 'opencode'], agentCommands: { opencode: 'opencode --port 4096' } });
+    expect(field('claude').value).toBe('claude');
+    expect(field('opencode').value).toBe('opencode --port 4096');
+    expect(field('claude').className).toContain('lcars-input');
+    expect(screen.getByText('Agentkommando för Claude Code')).toBeTruthy();
+    expect(screen.queryByTestId('project-settings-agent-command-codex')).toBeNull(); // not chosen, not a tab
+    fireEvent.change(screen.getByTestId('project-settings-harness'), { target: { value: 'codex' } });
+    expect(field('codex').value).toBe('codex'); // the harness being chosen gets its field at once
+  });
+
+  it('saves only a changed command, per harness (FR1.1)', async () => {
+    agentView();
+    fireEvent.change(field('claude'), { target: { value: 'claude --model sonnet' } });
+    fireEvent.click(screen.getByTestId('project-settings-save'));
+    await screen.findByTestId('project-settings-saved');
+    expect(window.bridge.setProjectSettings).toHaveBeenCalledWith('p1', { agentCommands: { claude: 'claude --model sonnet' } });
+  });
+
+  it('clearing a saved command, or typing the default back, saves null so the default applies (FR1.2)', async () => {
+    agentView({ harnessTabs: ['claude', 'opencode'], agentCommands: { claude: 'claude --x', opencode: 'opencode --y' } });
+    fireEvent.change(field('claude'), { target: { value: '  ' } });
+    fireEvent.change(field('opencode'), { target: { value: 'opencode' } });
+    fireEvent.click(screen.getByTestId('project-settings-save'));
+    await screen.findByTestId('project-settings-saved');
+    expect(window.bridge.setProjectSettings).toHaveBeenCalledWith('p1', { agentCommands: { claude: null, opencode: null } });
+  });
+
+  it("a refused command shows main's message and the field keeps what was typed (FR3.2)", async () => {
+    window.bridge.setProjectSettings.mockRejectedValueOnce(
+      new Error("Error invoking remote method 'projectSettings:set': Error: Agentkommandot får inte innehålla tecknet ;")
+    );
+    agentView();
+    fireEvent.change(field('claude'), { target: { value: 'claude; rm -rf ~' } });
+    fireEvent.click(screen.getByTestId('project-settings-save'));
+    expect((await screen.findByRole('alert')).textContent).toBe('Agentkommandot får inte innehålla tecknet ;');
+    expect(field('claude').value).toBe('claude; rm -rf ~');
   });
 
   it('"Lägg till harness…" names the installed harnesses and opens setup in add mode (US-0802 FR3.1)', () => {

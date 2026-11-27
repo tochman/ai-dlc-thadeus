@@ -84,7 +84,7 @@ describe('project settings', () => {
     expect(await getProjectSettings('/p/b')).not.toHaveProperty('harness'); // project B keeps the default
     await setProjectSettings('/p/b', { featureDocs: 'show' });
     expect((await getSettings()).projectSettings['/p/a'].harness).toBe('opencode'); // read back from the file
-    await expect(setProjectSettings('/p/a', { harness: 'codex' })).rejects.toThrow(/codex/);
+    await expect(setProjectSettings('/p/a', { harness: 'bogus' })).rejects.toThrow(/bogus/);
     await expect(setProjectSettings('/p/a', { harness: 'claude; rm -rf /' })).rejects.toThrow();
 
     await fs.writeFile(FILE, JSON.stringify({ projectSettings: { '/p/a': { harness: 'bogus' }, '/p/b': { harness: 'claude' } } }));
@@ -205,13 +205,55 @@ describe('project settings', () => {
       harnessTabs: ['claude', 'opencode']
     });
     expect((await getSettings()).projectSettings['/p/a'].harnessTabs).toEqual(['claude', 'opencode']);
-    await expect(setProjectSettings('/p/a', { harnessTabs: ['claude', 'codex'] })).rejects.toThrow(/codex/);
+    await expect(setProjectSettings('/p/a', { harnessTabs: ['claude', 'bogus'] })).rejects.toThrow(/bogus/);
     await expect(setProjectSettings('/p/a', { harnessTabs: [] })).rejects.toThrow();
 
     await fs.writeFile(FILE, JSON.stringify({ projectSettings: { '/p/a': { harnessTabs: ['bogus'] }, '/p/b': { harnessTabs: ['opencode', 'x'] } } }));
     const s = await getSettings();
     expect(s.projectSettings['/p/a']).not.toHaveProperty('harnessTabs'); // US-0801's single choice applies
     expect(s.projectSettings['/p/b'].harnessTabs).toEqual(['opencode']);
+  });
+
+  // US-0806: the agent command per harness and project.
+  it('keeps an agent command per harness and project, read back from the file (US-0806 FR1.3)', async () => {
+    expect((await getProjectSettings('/p/c')).agentCommands).toBeUndefined(); // the table default applies
+    expect(await setProjectSettings('/p/c', { agentCommands: { codex: '  codex --full-auto ' } })).toMatchObject({
+      agentCommands: { codex: 'codex --full-auto' }
+    });
+    await setProjectSettings('/p/c', { agentCommands: { claude: 'claude --model sonnet' } }); // merged per harness
+    await setProjectSettings('/p/d', { featureDocs: 'show' });
+    expect((await getSettings()).projectSettings['/p/c'].agentCommands).toEqual({ codex: 'codex --full-auto', claude: 'claude --model sonnet' });
+    expect((await getProjectSettings('/p/d')).agentCommands).toBeUndefined(); // another project keeps the default
+  });
+
+  it('null for a harness clears its command, so the default applies again (US-0806 FR1.2)', async () => {
+    await setProjectSettings('/p/c', { agentCommands: { codex: 'codex --full-auto', kiro: 'kiro-cli chat' } });
+    expect((await setProjectSettings('/p/c', { agentCommands: { codex: null } })).agentCommands).toEqual({ kiro: 'kiro-cli chat' });
+    expect((await setProjectSettings('/p/c', { agentCommands: { kiro: null } })).agentCommands).toBeUndefined();
+  });
+
+  it('refuses an invalid command with a message naming the problem and saves nothing (US-0806 FR3.2)', async () => {
+    await setProjectSettings('/p/c', { agentCommands: { codex: 'codex' } });
+    await expect(setProjectSettings('/p/c', { agentCommands: { codex: 'claude; rm -rf ~' } })).rejects.toThrow(/;/);
+    await expect(setProjectSettings('/p/c', { agentCommands: { codex: '   ' } })).rejects.toThrow(/tomt/);
+    await expect(setProjectSettings('/p/c', { agentCommands: { codex: 'x'.repeat(501) } })).rejects.toThrow(/500/);
+    await expect(setProjectSettings('/p/c', { agentCommands: { codex: 'a\nb' } })).rejects.toThrow(/radbrytning/);
+    await expect(setProjectSettings('/p/c', { agentCommands: { codex: 'ok', kiro: '$(x)' } })).rejects.toThrow(/\$/);
+    await expect(setProjectSettings('/p/c', { agentCommands: 'codex' })).rejects.toThrow(/agentCommands/);
+    expect((await getProjectSettings('/p/c')).agentCommands).toEqual({ codex: 'codex' }); // nothing of the refused saves
+  });
+
+  it('refuses an unknown harness id, and drops an invalid saved command on read (US-0806 FR1.3, FR3.3)', async () => {
+    await expect(setProjectSettings('/p/c', { agentCommands: { bogus: 'x' } })).rejects.toThrow(/bogus/);
+    await fs.writeFile(
+      FILE,
+      JSON.stringify({
+        projectSettings: { '/p/c': { agentCommands: { codex: 'codex; rm -rf ~', kiro: 'kiro-cli', bogus: 'x' } }, '/p/d': { agentCommands: 'x' } }
+      })
+    );
+    const { projectSettings } = await getSettings();
+    expect(projectSettings['/p/c'].agentCommands).toEqual({ kiro: 'kiro-cli' });
+    expect(projectSettings['/p/d']).not.toHaveProperty('agentCommands');
   });
 
   // US-0210 FR1.5, AC1.1.4–AC1.1.6: the model profiles per project.

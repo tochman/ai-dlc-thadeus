@@ -91,10 +91,10 @@ describe('SetupAidlc', () => {
     expect([...select.options].map((o) => o.textContent)).toEqual([
       'Claude Code (kommandot hittades)',
       'opencode (kommandot hittades)',
-      'Codex (kommandot hittades inte, bara filer)',
-      'Kiro (kommandot hittades inte, bara filer)',
-      'Cursor (bara filer)',
-      'GitHub Copilot (bara filer)'
+      'Codex (kommandot hittades inte)',
+      'Kiro (kommandot hittades inte)',
+      'Cursor',
+      'GitHub Copilot'
     ]);
     expect(screen.queryByTestId('setup-harness-note')).toBeNull();
 
@@ -102,7 +102,8 @@ describe('SetupAidlc', () => {
     await waitFor(() => expect(window.bridge.getSetupInfo).toHaveBeenLastCalledWith('p1', { harness: 'opencode' }));
 
     fireEvent.change(screen.getByTestId('setup-harness'), { target: { value: 'kiro' } });
-    expect((await screen.findByTestId('setup-harness-note')).textContent).toBe('Installerar AI-DLC:s filer; kan inte köras i agent-fliken än.');
+    await waitFor(() => expect(window.bridge.getSetupInfo).toHaveBeenLastCalledWith('p1', { harness: 'kiro' }));
+    expect(screen.queryByTestId('setup-harness-note')).toBeNull(); // Kiro runs in the agent tab too (US-0806 FR1.4)
   });
 
   it('shows the failed step and the CLI error, and offers the switch after a successful opencode setup (US-0802 FR2.2, FR4.2)', async () => {

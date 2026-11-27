@@ -40,7 +40,7 @@ vi.mock('../../src/renderer/TerminalContext.jsx', async (importOriginal) => {
   const real = await importOriginal();
   return { ...real, useTerminal: () => ({ ...real.useTerminal(), type: typed }) };
 });
-const { default: ProjectView } = await import('../../src/renderer/ProjectView.jsx');
+const { default: ProjectView, harnessProblem } = await import('../../src/renderer/ProjectView.jsx');
 
 const detectionOf = (framework) => ({
   framework,
@@ -528,5 +528,22 @@ describe('ProjectView: Lägg till harness', () => {
     });
     await waitFor(() => expect(dialog.open).toBe(false));
     expect(screen.queryByTestId('setup-add-harness')).toBeNull();
+  });
+});
+
+// US-0806 FR4.1: with the project's own command the table CLI need not be on the PATH; main checks the command instead.
+describe('harnessProblem with an agent command (US-0806)', () => {
+  const t = (key) => key;
+  const codex = { id: 'codex', label: 'Codex', cli: 'codex' };
+  const missing = [{ id: 'codex', installed: true, cli: { found: false, version: null } }];
+
+  it('a missing table CLI stops the tab only while no command is saved', () => {
+    expect(harnessProblem(codex, missing, t)).toBe('terminal.cliMissing');
+    expect(harnessProblem(codex, missing, t, 'npx codex')).toBeNull();
+  });
+
+  it('a harness not installed here still stops the tab, command or not', () => {
+    const other = [{ id: 'claude', installed: true, cli: { found: true } }];
+    expect(harnessProblem(codex, other, t, 'npx codex')).toBe('terminal.notInstalled');
   });
 });

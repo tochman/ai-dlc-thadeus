@@ -161,7 +161,7 @@ describe('TerminalPanel', () => {
     }
   });
 
-  it('hides the quick commands on the shell tab, when collapsed and for a harness without commands', async () => {
+  it('hides the quick commands on the shell tab and when collapsed', async () => {
     await renderPanel();
     fireEvent.click(screen.getByTestId('terminal-panel-tab-shell'));
     expect(screen.queryByTestId('terminal-panel-quick-select')).toBeNull();
@@ -170,9 +170,56 @@ describe('TerminalPanel', () => {
     fireEvent.click(screen.getByTestId('terminal-panel-toggle'));
     expect(screen.queryByTestId('terminal-panel-quick-select')).toBeNull();
     cleanup();
+  });
 
-    await renderPanel({ harness: { ...harness('claude'), commands: {} } });
-    expect(screen.queryByTestId('terminal-panel-quick-select')).toBeNull();
+  // US-0806: the four harnesses without AI-DLC commands, and the not-found answer from main.
+  it('a Codex tab shows the quick commands as not available, with the reason in the list tooltip (US-0806 FR5.2)', async () => {
+    await renderPanel({ harness: harness('codex') });
+    const quick = screen.getAllByTestId('terminal-panel-quick-command');
+    expect(quick.map((o) => [o.textContent, o.disabled])).toEqual([
+      ['--status', true],
+      ['--doctor', true],
+      ['continue', true]
+    ]);
+    fireEvent.focus(screen.getByTestId('terminal-panel-quick-select'));
+    expect(screen.getByRole('tooltip').textContent).toContain('Codex har inget AI-DLC-kommando i appens tabell, så inget skrivs in.');
+    await act(async () => fireEvent.change(screen.getByTestId('terminal-panel-quick-select'), { target: { value: '' } }));
+    expect(window.bridge.ptyWrite).not.toHaveBeenCalled(); // nothing is typed into a Codex tab
+  });
+
+  it('names each agent tab after its harness, whatever command it runs (US-0806 FR2.3)', async () => {
+    await renderPanel({ harness: harness('codex') });
+    expect(screen.getByTestId('terminal-panel-name-agent').textContent).toBe('Codex');
+    expect(window.bridge.ptySpawn).toHaveBeenCalledWith(expect.objectContaining({ kind: 'agent', harness: 'codex' }));
+    expect(window.bridge.ptySpawn.mock.calls.every(([a]) => !('command' in a))).toBe(true); // main reads the command (NFR1)
+    cleanup();
+    await renderPanel({ harness: harness('claude') });
+    expect(screen.getByTestId('terminal-panel-name-agent').textContent).toBe('Claude');
+  });
+
+  it('a notFound answer starts nothing, says so in one sentence and offers the terminal settings (US-0806 FR4.1, FR4.2)', async () => {
+    const onChooseHarness = vi.fn();
+    window.bridge.ptySpawn.mockImplementation(async ({ kind }) => (kind === 'agent' ? { notFound: 'my-cli' } : `pty-${kind}`));
+    try {
+      render(
+        <TerminalProvider>
+          <Grab />
+          <TerminalPanel projectId="p1" visible onChooseHarness={onChooseHarness} />
+        </TerminalProvider>
+      );
+      act(() => terminal.setAgent({ harness: harness('codex') }));
+      const line = await screen.findByTestId('terminal-panel-not-found-agent');
+      expect(line.textContent).toBe('Kommandot my-cli hittades inte, så inget startades.');
+      expect(terminal.running()).toBe(false); // no session: nothing runs
+      expect(screen.getByTestId('terminal-panel-state-agent').textContent).not.toBe('Arbetar');
+      const open = screen.getByTestId('terminal-panel-open-settings-agent');
+      expect(open.textContent).toBe('Öppna terminalinställningarna');
+      fireEvent.click(open);
+      expect(onChooseHarness).toHaveBeenCalledTimes(1);
+      expect(await act(() => terminal.type('agent', 'x'))).toBe(false); // nothing to type into
+    } finally {
+      window.bridge.ptySpawn.mockImplementation(async ({ kind }) => `pty-${kind}`);
+    }
   });
 
   it('starts nothing and offers another harness when the chosen one cannot run (FR5.1)', async () => {

@@ -4,7 +4,7 @@ import { useEffect, useEffectEvent, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { isValidFeaturesPath } from '../main/parsers/features.js';
 import { isValidRatesPath } from '../main/reprice.js';
-import { HARNESSES, selectableHarness } from '../shared/harnesses.js';
+import { HARNESSES, defaultAgentCommand, selectableHarness } from '../shared/harnesses.js';
 import { useTerminal } from './TerminalContext.jsx';
 import AgentHooksSection from './AgentHooksSection.jsx'; // US-0506 u4
 import { DELIVERY, DELIVERY_DEFAULT, PLANNING_BRANCH_DEFAULT, isValidBranchName } from '../main/parsers/releases.js';
@@ -20,17 +20,26 @@ const MODES = ['auto', 'show', 'hide'];
  */
 export { AIDLC_SECTIONS, PROJECT_SECTIONS } from '../shared/frameworkViews.js';
 
-/**
- * The "Agent-terminal" options (US-0801 FR2.1): the selectable harnesses with their CLI version, and the
- * detected ones that are not supported yet, disabled.
- */
+/** The "Agent-terminal" options (US-0801 FR2.1): every harness, all six selectable (US-0806 FR1.4), with its CLI version. */
 function harnessOptions(detected, t) {
   const byId = Object.fromEntries((detected ?? []).map((d) => [d.id, d]));
-  return HARNESSES.filter((h) => h.selectable || byId[h.id]?.installed || byId[h.id]?.cli?.found).map((h) => {
+  return HARNESSES.filter((h) => h.selectable).map((h) => {
     const cli = byId[h.id]?.cli;
-    const note = !h.selectable ? t('settings.project.harnessUnsupported') : cli?.found ? cli.version : cli ? t('settings.project.harnessNotFound') : null;
-    return { id: h.id, disabled: !h.selectable, text: note ? `${h.label} (${note})` : h.label };
+    const note = cli?.found ? cli.version : cli ? t('settings.project.harnessNotFound') : null;
+    return { id: h.id, text: note ? `${h.label} (${note})` : h.label };
   });
+}
+
+/**
+ * US-0806 FR1.1, FR1.2: the agent command fields, keyed by harness id, prefilled with the saved command or the default.
+ * What a field saves: its trimmed text, or null (the default applies) when it is empty or the default.
+ */
+const commandsOf = (ids, saved) => Object.fromEntries(ids.map((id) => [id, saved?.[id] ?? defaultAgentCommand(id)]));
+function changedCommands(form, saved) {
+  const changed = Object.entries(form)
+    .map(([id, text]) => [id, text.trim() && text.trim() !== defaultAgentCommand(id) ? text.trim() : null])
+    .filter(([id, want]) => want !== (saved?.[id] ?? null));
+  return changed.length ? Object.fromEntries(changed) : null;
 }
 
 /**
@@ -225,7 +234,10 @@ function DocsSection({ projectId, settings, onSetup, motion }) {
   );
 }
 
-/** Agent: the harness the agent tab runs (US-0801), the tabs side by side (US-0803) and the app's hooks (US-0506 u4). */
+/**
+ * Agent: the harness the agent tab runs (US-0801), the tabs side by side (US-0803), each one's agent command (US-0806 FR1.1)
+ * and the app's hooks (US-0506 u4).
+ */
 function AgentSection({ projectId, settings, harness, harnesses, onAddHarness, agentHooksFocus, motion }) {
   const { t } = useTranslation();
   const terminal = useTerminal();
@@ -234,10 +246,12 @@ function AgentSection({ projectId, settings, harness, harnesses, onAddHarness, a
   const savedTabs = settings.harnessTabs ?? (harness ? [harness] : []);
   const [chosen, setChosen] = useState(harness);
   const [tabs, setTabs] = useState(savedTabs);
+  const [commands, setCommands] = useState({}); // US-0806: only the fields typed in; the rest show the saved value
   const { save, saving, status, clear } = useSectionSave(projectId);
   const load = () => {
     setChosen(harness);
     setTabs(savedTabs);
+    setCommands({});
   };
   const reset = () => {
     load();
@@ -246,7 +260,12 @@ function AgentSection({ projectId, settings, harness, harnesses, onAddHarness, a
   // Detection finished, or the saved values after a save: compared by content, as the list is new on every render.
   const loadSaved = useEffectEvent(load);
   const savedKey = savedTabs.join();
-  useEffect(() => loadSaved(), [harness, savedKey]);
+  const savedCommands = settings.agentCommands;
+  const commandsKey = JSON.stringify(savedCommands ?? {});
+  useEffect(() => loadSaved(), [harness, savedKey, commandsKey]);
+  // A field for the harness being chosen and for each tab, in table order (FR1.1).
+  const commandIds = HARNESSES.map((h) => h.id).filter((id) => id === chosen || (runnable.length > 1 ? tabs : []).includes(id));
+  const form = { ...commandsOf(commandIds, savedCommands), ...Object.fromEntries(Object.entries(commands).filter(([id]) => commandIds.includes(id))) };
 
   function submit(e) {
     e.preventDefault();
@@ -254,7 +273,8 @@ function AgentSection({ projectId, settings, harness, harnesses, onAddHarness, a
     const switching = chosen && chosen !== harness;
     if (switching && !confirmHarnessSwitch(terminal, harness, chosen, t)) return;
     const tabsChanged = runnable.length > 1 && tabs.length > 0 && tabs.join() !== savedTabs.join();
-    save({ ...(switching ? { harness: chosen } : {}), ...(tabsChanged ? { harnessTabs: tabs } : {}) });
+    const agentCommands = changedCommands(form, savedCommands); // main checks them and names a refused one (FR3.2)
+    save({ ...(switching ? { harness: chosen } : {}), ...(tabsChanged ? { harnessTabs: tabs } : {}), ...(agentCommands ? { agentCommands } : {}) });
   }
 
   return (
@@ -272,7 +292,7 @@ function AgentSection({ projectId, settings, harness, harnesses, onAddHarness, a
             >
               {!harness && <option value="">{t('terminal.checking')}</option>}
               {harnessOptions(harnesses, t).map((o) => (
-                <option key={o.id} value={o.id} disabled={o.disabled}>
+                <option key={o.id} value={o.id}>
                   {o.text}
                 </option>
               ))}
@@ -297,6 +317,21 @@ function AgentSection({ projectId, settings, harness, harnesses, onAddHarness, a
               <span className="muted">{t('settings.project.tabsHelp')}</span>
             </fieldset>
           )}
+          {harness &&
+            commandIds.map((id) => (
+              <label key={id} className="field">
+                <span className="field-label">{t('settings.project.agentCommandLabel', { harness: selectableHarness(id).label })}</span>
+                <input
+                  type="text"
+                  className="lcars-input"
+                  value={form[id]}
+                  onChange={(e) => setCommands((cur) => ({ ...cur, [id]: e.target.value }))}
+                  spellCheck={false}
+                  data-testid={`project-settings-agent-command-${id}`}
+                />
+                <span className="muted">{t('settings.project.agentCommandHelp')}</span>
+              </label>
+            ))}
           {onAddHarness && (
             <p className="settings-setup">
               <span className="muted" data-testid="project-settings-installed-harnesses">

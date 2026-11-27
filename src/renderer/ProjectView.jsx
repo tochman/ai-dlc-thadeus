@@ -36,10 +36,13 @@ import { isArchived } from '../shared/intentArchive.js'; // US-0513
 
 const AIDLC_TABS = ['settings', 'plans']; // US-0905: the sub-views of Configuration › AI-DLC
 
-/** Why the chosen harness cannot start, in one sentence, or null (US-0801 FR5.1). */
-function harnessProblem(entry, detected, t) {
+/**
+ * Why the chosen harness cannot start, in one sentence, or null (US-0801 FR5.1). With the project's own agent command
+ * the table CLI need not be on the PATH: main checks that command's first word when the tab starts (US-0806 FR4.1).
+ */
+export function harnessProblem(entry, detected, t, command) {
   const found = detected.find((d) => d.id === entry.id);
-  if (found?.cli && !found.cli.found) return t('terminal.cliMissing', { harness: entry.label, cli: entry.cli });
+  if (!command && found?.cli && !found.cli.found) return t('terminal.cliMissing', { harness: entry.label, cli: entry.cli });
   // A project with no harness at all is one AI-DLC is not set up in yet; the CLI then starts as before.
   if (!found?.installed && detected.some((d) => d.installed)) return t('terminal.notInstalled', { harness: entry.label });
   return null;
@@ -384,8 +387,11 @@ function ProjectContent({
   const preferred = tabIds ? (tabIds.includes(settings.harness) ? settings.harness : tabIds[0]) : settings.harness;
   const harnessId = settingsLoaded && detected ? resolveHarness(preferred, detected) : null;
   const harness = harnessId ? selectableHarness(harnessId) : null;
-  const problem = harness ? harnessProblem(harness, detected, t) : null;
-  const extras = (harness && tabIds ? tabIds.filter((id) => id !== harness.id) : []).map(selectableHarness).filter((h) => h && !harnessProblem(h, detected, t));
+  const commands = settings.agentCommands ?? {}; // US-0806
+  const problem = harness ? harnessProblem(harness, detected, t, commands[harness.id]) : null;
+  const extras = (harness && tabIds ? tabIds.filter((id) => id !== harness.id) : [])
+    .map(selectableHarness)
+    .filter((h) => h && !harnessProblem(h, detected, t, commands[h.id]));
   const extrasKey = extras.map((h) => h.id).join();
   const reportAgent = useEffectEvent(() => {
     terminal.setAgent({ harness, problem, extras });

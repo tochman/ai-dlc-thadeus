@@ -1,0 +1,26 @@
+{
+  "stage": "code-generation",
+  "upstream_ids": ["FR1.1", "FR1.2", "FR1.3", "FR1.4", "FR2.1", "FR2.2", "FR2.3", "FR3.1", "FR3.2", "FR3.3", "FR4.1", "FR4.2", "FR5.1", "FR5.2", "FR5.3", "FR6.1", "FR6.2", "NFR1", "NFR2", "NFR3"],
+  "coverage": [
+    { "id": "FR1.1", "status": "OK", "target": "src/renderer/ProjectSettingsView.jsx" },
+    { "id": "FR1.2", "status": "OK", "target": "src/shared/harnesses.js" },
+    { "id": "FR1.3", "status": "OK", "target": "src/main/settings.js" },
+    { "id": "FR1.4", "status": "OK", "target": "src/shared/harnesses.js" },
+    { "id": "FR2.1", "status": "OK", "target": "src/main/pty.js" },
+    { "id": "FR2.2", "status": "OK", "target": "tests/main/pty.test.js" },
+    { "id": "FR2.3", "status": "OK", "target": "tests/renderer/TerminalPanel.test.jsx" },
+    { "id": "FR3.1", "status": "OK", "target": "src/shared/harnesses.js" },
+    { "id": "FR3.2", "status": "OK", "target": "src/main/settings.js" },
+    { "id": "FR3.3", "status": "OK", "target": "src/main/pty.js" },
+    { "id": "FR4.1", "status": "OK", "target": "src/main/ipc.js" },
+    { "id": "FR4.2", "status": "OK", "target": "src/renderer/TerminalPanel.jsx" },
+    { "id": "FR5.1", "status": "OK", "target": "src/shared/harnesses.js" },
+    { "id": "FR5.2", "status": "OK", "target": "src/renderer/TerminalPanel.jsx" },
+    { "id": "FR5.3", "status": "OK", "target": "tests/renderer/terminalControl.test.jsx" },
+    { "id": "FR6.1", "status": "OK", "target": "src/shared/locales/en.json" },
+    { "id": "FR6.2", "status": "OK", "target": "src/renderer/ProjectSettingsView.jsx" },
+    { "id": "NFR1", "status": "OK", "target": "src/main/ipc.js" },
+    { "id": "NFR2", "status": "OK", "target": "tests/main/harness.test.js" },
+    { "id": "NFR3", "status": "OK", "target": "tests/main/ipc.test.js" }
+  ]
+}

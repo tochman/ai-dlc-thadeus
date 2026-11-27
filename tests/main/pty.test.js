@@ -59,7 +59,7 @@ describe('pty lazy loading (FR2)', () => {
       ['-l', '-i', '-c', 'claude'],
       ['-l', '-i', '-c', 'opencode']
     ]);
-    for (const harness of ['codex', 'claude; rm -rf ~', undefined, { id: 'claude' }]) {
+    for (const harness of ['bogus', 'claude; rm -rf ~', undefined, { id: 'claude' }]) {
       await expect(pty.spawnSession({ ...spawnArgs, kind: 'agent', harness })).rejects.toThrow(/harness/);
     }
     await expect(pty.spawnSession({ ...spawnArgs, kind: 'claude' })).rejects.toThrow(/terminaltyp/); // the old kind is gone
@@ -121,6 +121,61 @@ describe('pty lazy loading (FR2)', () => {
     await pty.spawnSession({ ...spawnArgs, kind: 'agent', harness: 'claude', toolPaths: { claude: '/Applications/Claude Code/claude' } });
     expect(working.spawn.mock.calls[4][1][3]).toBe("'/Applications/Claude Code/claude'");
     pty.killAllSessions();
+  });
+});
+
+describe('the agent command per project (US-0806 FR2, FR3.3, FR4.1)', () => {
+  it('runs a saved command through the login shell in the project folder (FR2.1)', async () => {
+    const working = fakePty();
+    vi.doMock('node-pty', () => working);
+    const pty = await import('../../src/main/pty.js');
+    await pty.spawnSession({ ...spawnArgs, root: '/work/proj', kind: 'agent', harness: 'codex', command: 'codex --full-auto' });
+    await pty.spawnSession({ ...spawnArgs, kind: 'agent', harness: 'claude', command: '~/bin/my-cli -p x=1', toolPaths: { claude: '/opt/claude' } });
+    const [first, second] = working.spawn.mock.calls;
+    expect(first[1]).toEqual(['-l', '-i', '-c', 'codex --full-auto']);
+    expect(first[2].cwd).toBe('/work/proj');
+    expect(second[1]).toEqual(['-l', '-i', '-c', '~/bin/my-cli -p x=1']); // the saved command wins over the tool path
+    pty.killAllSessions();
+  });
+
+  it('without a saved command the table CLI starts, with the chosen tool path (FR2.2)', async () => {
+    const working = fakePty();
+    vi.doMock('node-pty', () => working);
+    const pty = await import('../../src/main/pty.js');
+    for (const harness of ['codex', 'kiro', 'cursor', 'copilot']) await pty.spawnSession({ ...spawnArgs, kind: 'agent', harness });
+    await pty.spawnSession({ ...spawnArgs, kind: 'agent', harness: 'claude', command: undefined, toolPaths: { claude: '/opt/claude' } });
+    expect(working.spawn.mock.calls.map((c) => c[1][3])).toEqual(['codex', 'kiro-cli', 'cursor-agent', 'copilot', '/opt/claude']);
+    pty.killAllSessions();
+  });
+
+  it('a command that fails the check throws before node-pty loads (FR3.3)', async () => {
+    const factory = vi.fn(fakePty);
+    vi.doMock('node-pty', factory);
+    const pty = await import('../../src/main/pty.js');
+    for (const command of ['claude; rm -rf ~', '$(x)', 'a\nb', '', 'x'.repeat(501)]) {
+      await expect(pty.spawnSession({ ...spawnArgs, kind: 'agent', harness: 'claude', command })).rejects.toThrow(/Agentkommandot/);
+    }
+    expect(factory).not.toHaveBeenCalled();
+  });
+
+  it('agentCommandFound runs one fixed command -v script in the login shell, the word as $1 (FR4.1, NFR3)', async () => {
+    const pty = await import('../../src/main/pty.js');
+    const exec = vi.fn(async () => '/usr/bin/codex\n');
+    expect(await pty.agentCommandFound('codex', '/work/proj', { exec })).toBe(true);
+    expect(exec).toHaveBeenCalledTimes(1); // no separate PATH read: the login shell sets its own
+    const [file, args, options] = exec.mock.calls[0];
+    expect(file).toBe(process.env.SHELL || (process.platform === 'darwin' ? '/bin/zsh' : '/bin/bash'));
+    expect(args.slice(0, 3)).toEqual(['-l', '-i', '-c']);
+    expect(args[3]).toMatch(/command -v -- "\$p"/);
+    expect(args.slice(4)).toEqual(['_', 'codex']); // a positional argument, never spliced into the script
+    expect(options.cwd).toBe('/work/proj');
+
+    const missing = vi.fn(async () => {
+      throw Object.assign(new Error('exit 1'), { code: 1 });
+    });
+    expect(await pty.agentCommandFound('nope', '/work/proj', { exec: missing })).toBe(false);
+    await expect(pty.agentCommandFound('a;b', '/work/proj', { exec })).resolves.toBe(true); // still only $1: the shell never parses it
+    expect(exec.mock.calls[1][1][3]).toBe(args[3]);
   });
 });
 
