@@ -5,7 +5,7 @@
 // once per change as a still frame (NFR3). Step 10: the canvas takes its frame's content size and the ring is fitted to it.
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { DiagonalFrame, useEntrance } from './Lcars.jsx';
+import { DiagonalFrame, Pill, useEntrance } from './Lcars.jsx';
 import { useEditor } from './editor/EditorContext.jsx';
 import { buildScene, drawFrame, fitRing, hitTest, lcarsTheme, readouts, ringKey } from './pulse/scene.js';
 import { createRing } from './pulse/vendor/components/ring.js';
@@ -51,7 +51,7 @@ function Bars({ bars }) {
   );
 }
 
-export default function PulseView({ projectId }) {
+export default function PulseView({ projectId, onBack }) {
   const { t } = useTranslation();
   const editor = useEditor();
   const [snap, setSnap] = useState(null);
@@ -121,22 +121,22 @@ export default function PulseView({ projectId }) {
     let view = box.parentElement;
     while (view && !view.classList.contains('project-mode') && !/(auto|scroll)/.test(getComputedStyle(view).overflowY)) view = view.parentElement;
     view = view ?? document.documentElement;
-    // Step 15: the stage keeps its hidden-terminal size and runs under an open terminal, which is drawn on top (theme.css).
+    // Step 16: the stage runs down to the terminal's foot bar, open or closed; the open terminal and the latest message
+    // row are drawn over it (theme.css), so the ring keeps one size whatever the terminal does.
+    // ponytail: a latest message that appears later is picked up on the next resize only.
     const frame = box.closest('.pulse-view') ?? box;
-    const term = document.querySelector('.terminal-panel');
-    const under = () => {
-      if (!term || term.classList.contains('is-collapsed')) return 0;
-      return term.getBoundingClientRect().height - (term.querySelector('.terminal-footbar')?.getBoundingClientRect().height ?? 0);
-    };
     const fit = () => {
-      const pad = parseFloat(getComputedStyle(view).paddingBottom) || 0;
-      const bottom = view.getBoundingClientRect().bottom + under() - pad;
+      const foot = document.querySelector('.terminal-footbar');
+      const msg = document.querySelector('.latest-message');
+      const bottom = foot
+        ? foot.getBoundingClientRect().top - 14 - (msg ? msg.getBoundingClientRect().height + 14 : 0)
+        : view.getBoundingClientRect().bottom - (parseFloat(getComputedStyle(view).paddingBottom) || 0);
       const b = box.getBoundingClientRect();
       const below = frame.getBoundingClientRect().bottom - b.bottom;
       box.style.height = `${Math.max(STAGE_MIN, Math.floor(bottom - b.top - below))}px`;
     };
     const ro = new ResizeObserver((entries) => {
-      const entry = entries.find((e) => e.target !== view && e.target !== term);
+      const entry = entries.find((e) => e.target !== view);
       if (!entry) return fit();
       const w = Math.round(entry.contentRect.width);
       const h = Math.round(entry.contentRect.height) || Math.round((w * 2) / 3);
@@ -145,7 +145,6 @@ export default function PulseView({ projectId }) {
     fit();
     ro.observe(box);
     ro.observe(view);
-    if (term) ro.observe(term); // the terminal opens, closes or is resized
     return () => ro.disconnect();
   }, [hasCanvas]);
 
@@ -189,8 +188,13 @@ export default function PulseView({ projectId }) {
   const empty = snap && snap.files.length === 0 && snap.touches.length === 0;
 
   return (
-    <section className={`pulse-view${entering ? ' is-entering' : ''}`} data-testid="pulse-view">
+    <section className={`pulse-view${entering ? ' is-entering' : ''}`} data-testid="pulse-view" onKeyDown={(e) => e.key === 'Escape' && onBack?.()}>
       <DiagonalFrame title={t('pulse.title')} sub={t('pulse.meta')} readouts={frameReadouts} arm={r && <Bars bars={r.bars} />}>
+        {onBack && (
+          <Pill tone="quiet" onClick={onBack} data-testid="pulse-back">
+            {t('app.back')}
+          </Pill>
+        )}
         {error && (
           <p className="banner banner-error" role="alert">
             {error}

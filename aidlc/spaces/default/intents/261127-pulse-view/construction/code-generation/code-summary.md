@@ -39,3 +39,11 @@
 - File names sit inside the ring, outside the word cloud, and are cut with '…' to fit that band. The margin around the ring is 4 px.
 - The ring runs on under the terminal: the stage keeps its hidden-terminal height and an open terminal is drawn over it (`fit()` in `PulseView.jsx`, two rules in `theme.css`).
 - Checks: `pulseScene` and `PulseView` tests, 34 of 34 pass; ESLint and Prettier clean.
+
+## Added step 16 (the person's request during the build)
+
+- The ring has one size: the stage runs to the terminal's foot bar, and an open terminal and the latest message are drawn over it (`fit()` in `PulseView.jsx`, z-index rules in `theme.css`).
+- A back Pill (`pulse-back`) and Esc return to the intents view.
+- Long paths in the hover callout wrap after slashes (`wrapPath` in `scene.js`, multi-line titles in `callouts.js`).
+- The main header's head row uses `--head`, which fixes the band where content was cut off under the hairline when scrolling.
+- Checks: tests for PulseView, pulseScene, AppShell, ProjectView and i18nKeys pass; ESLint and Prettier are clean.

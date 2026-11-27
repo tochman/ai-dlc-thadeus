@@ -524,7 +524,7 @@ function ProjectContent({
             )}
           </div>
           {/* US-0418 FR1.1: Pulse is every framework's, so it sits beside the framework's own views. */}
-          {view === 'pulse' && <PulseView projectId={project.projectId} />}
+          {view === 'pulse' && <PulseView projectId={project.projectId} onBack={() => onView?.('intents')} />}
           {view === 'features' && (
             <FeaturesView
               projectId={project.projectId}

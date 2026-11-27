@@ -345,6 +345,18 @@ function drawAsteroids(ctx, scene, placed, ring, geo, themes, now) {
   ctx.shadowBlur = 0;
 }
 
+/** US-0418 step 16: a long path broken after its slashes so each line fits `max`; a part with no slash stays whole. */
+export function wrapPath(text, max, measure) {
+  const lines = [];
+  for (const part of String(text).split(/(?<=\/)/)) {
+    if (lines.length && measure(lines.at(-1) + part) <= max) lines[lines.length - 1] += part;
+    else lines.push(part);
+  }
+  return lines;
+}
+
+const TIP_WRAP = 220;
+
 /**
  * One frame. `now` is in milliseconds; with motion off (NFR3) nothing flies or pulses and the cloud stands still.
  * Returns the placed words, for hit-testing.
@@ -372,7 +384,7 @@ export function drawFrame(ctx, scene, ring, geo, themes, now, { motion, hover } 
     const anchor = hover.at ?? [Math.cos(hover.angle) * geo.ri, Math.sin(hover.angle) * geo.ri];
     const out = anchor[0] >= 0;
     const box = [anchor[0] + (out ? 1 : -1) * (geo.ro - geo.ri + 40), anchor[1] - 20];
-    const callout = { t0: t - 1, t1: t + 1, alert: hover.alert, title: hover.title, lines: hover.lines };
+    const callout = { t0: t - 1, t1: t + 1, alert: hover.alert, title: wrapPath(hover.title, TIP_WRAP, (l) => measure(l, 7.5)), lines: hover.lines };
     drawCallouts(ctx, [callout], t, () => ({ anchor, box, right: !out }), themes.base);
   }
   ctx.restore();

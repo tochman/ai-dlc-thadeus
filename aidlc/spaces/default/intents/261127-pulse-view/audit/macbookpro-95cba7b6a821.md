@@ -4067,3 +4067,590 @@
 **Details**: <project-dir>/EOF; the Code Generation step went out of date
 
 ---
+
+## Human Turn
+**Timestamp**: 2026-11-27T16:40:58Z
+**Event**: HUMAN_TURN
+**Session**: 3d11c798-e28f-4fb2-b7e3-cf3146f5c2be
+**Origin**: person
+**Source**: typed
+**Message Id**: d7222d14
+**Questions Digest**: {"file":"aidlc/spaces/default/intents/261127-pulse-view/construction/code-generation/code-generation-questions.md","entries":{"Plan Approval":"6132305a7740eec4"}}
+
+---
+
+## Session Compacted
+**Timestamp**: 2026-11-27T16:41:04Z
+**Event**: SESSION_COMPACTED
+**Current Stage**: code-generation
+**State Validity**: valid
+
+---
+
+## Subagent Completed
+**Timestamp**: 2026-11-27T16:41:31Z
+**Event**: SUBAGENT_COMPLETED
+**Agent Type**: unknown
+**Agent ID**: a1563639016eb41d0
+**Message**: <analysis>\nSession continued after an earlier compaction, starting with `/aidlc --resume` on intent 261127-pulse-view (US-0418, Pulse view, scope ultra-express) in code-generation.\n\n1. Rule loading. A
+
+---
+
+## Guard Stood Aside
+**Timestamp**: 2026-11-27T16:41:48Z
+**Event**: GUARD_STOOD_ASIDE
+**Guard**: plan-approval
+**Authority**: grant
+**Grant**: turn-marker
+**Actor**: main
+**Stage**: code-generation
+**Tool**: Bash
+**Details**: cat src/renderer/PulseView.jsx && sed -n 540,580p src/renderer/TokenDetail.jsx && grep -rn "PulseView\|'pulse'" src/renderer --include=*.jsx | grep -v "^src/ren; the Code Generation step went out of date
+
+---
+
+## Session Compacted
+**Timestamp**: 2026-11-27T16:42:05Z
+**Event**: SESSION_COMPACTED
+**Current Stage**: code-generation
+**State Validity**: valid
+
+---
+
+## Subagent Completed
+**Timestamp**: 2026-11-27T16:42:32Z
+**Event**: SUBAGENT_COMPLETED
+**Agent Type**: unknown
+**Agent ID**: a82bf45b8299b2e6f
+**Message**: <analysis>\nSince the last summary I viewed the three screenshots again. I read `PulseView.jsx`, the back control in `TokenDetail.jsx`, how `ProjectView.jsx` routes the views, and the Pulse CSS in `the
+
+---
+
+## Guard Stood Aside
+**Timestamp**: 2026-11-27T16:42:46Z
+**Event**: GUARD_STOOD_ASIDE
+**Guard**: plan-approval
+**Authority**: grant
+**Grant**: turn-marker
+**Actor**: main
+**Stage**: code-generation
+**Tool**: Bash
+**Details**: sed -n 2120,2220p src/renderer/theme.css; grep -n "fitRing\|LABEL_SPACE\|MARGIN" src/renderer/pulse/scene.js; grep -n "PulseView" src/renderer/ProjectView.jsx; ; the Code Generation step went out of date
+
+---
+
+## Guard Stood Aside
+**Timestamp**: 2026-11-27T16:42:57Z
+**Event**: GUARD_STOOD_ASIDE
+**Guard**: plan-approval
+**Authority**: grant
+**Grant**: turn-marker
+**Actor**: main
+**Stage**: code-generation
+**Tool**: Bash
+**Details**: sed -n 1,30p src/renderer/pulse/scene.js; sed -n 115,140p src/renderer/pulse/scene.js; grep -n "1.15\|ri \*\|ri\*" src/renderer/pulse/scene.js src/renderer/puls; the Code Generation step went out of date
+
+---
+
+## Guard Stood Aside
+**Timestamp**: 2026-11-27T16:43:16Z
+**Event**: GUARD_STOOD_ASIDE
+**Guard**: plan-approval
+**Authority**: grant
+**Grant**: turn-marker
+**Actor**: main
+**Stage**: code-generation
+**Tool**: Bash
+**Details**: grep -n "^\.project-mode\|\.project-mode {\|^\.lcars-df {\|^\.lcars-df-in {\|^\.lcars-df-body\|\.lcars-df-arm {\|^\.app {\|grid-template-areas" src/renderer/the; the Code Generation step went out of date
+
+---
+
+## Guard Stood Aside
+**Timestamp**: 2026-11-27T16:43:37Z
+**Event**: GUARD_STOOD_ASIDE
+**Guard**: plan-approval
+**Authority**: grant
+**Grant**: turn-marker
+**Actor**: main
+**Stage**: code-generation
+**Tool**: Bash
+**Details**: sed -n 540,572p src/renderer/TokenDetail.jsx; grep -n "onBack\|backTo\|prevView\|setView\|'pulse'" src/renderer/ProjectView.jsx | head -30; grep -n "'pulse'" sr; the Code Generation step went out of date
+
+---
+
+## Session Compacted
+**Timestamp**: 2026-11-27T16:43:44Z
+**Event**: SESSION_COMPACTED
+**Current Stage**: code-generation
+**State Validity**: valid
+
+---
+
+## Subagent Completed
+**Timestamp**: 2026-11-27T16:44:12Z
+**Event**: SUBAGENT_COMPLETED
+**Agent Type**: unknown
+**Agent ID**: ae58021ec9e246886
+**Message**: <analysis>\nThis is a continuation after an earlier compaction. Since then I have only read code; nothing has been edited yet for step 16. Here is what I've learned:\n\n- PulseView.jsx: in the fit effect
+
+---
+
+## Human Turn
+**Timestamp**: 2026-11-27T16:44:14Z
+**Event**: HUMAN_TURN
+**Session**: 3d11c798-e28f-4fb2-b7e3-cf3146f5c2be
+**Origin**: person
+**Source**: typed
+**Message Id**: c957cb78
+**Questions Digest**: {"file":"aidlc/spaces/default/intents/261127-pulse-view/construction/code-generation/code-generation-questions.md","entries":{"Plan Approval":"6132305a7740eec4"}}
+
+---
+
+## Guard Stood Aside
+**Timestamp**: 2026-11-27T16:44:46Z
+**Event**: GUARD_STOOD_ASIDE
+**Guard**: plan-approval
+**Authority**: grant
+**Grant**: turn-marker
+**Actor**: main
+**Stage**: code-generation
+**Tool**: Bash
+**Details**: grep -n '"back"\|"pulse": {' src/shared/locales/en.json src/shared/locales/sv.json; grep -n "onView\b\|onView=" src/renderer/ProjectView.jsx | head; grep -n "de; the Code Generation step went out of date
+
+---
+
+## Guard Stood Aside
+**Timestamp**: 2026-11-27T16:44:54Z
+**Event**: GUARD_STOOD_ASIDE
+**Guard**: plan-approval
+**Authority**: grant
+**Grant**: turn-marker
+**Actor**: main
+**Stage**: code-generation
+**Tool**: Bash
+**Details**: sed -n 125,170p tests/renderer/PulseView.test.jsx; sed -n 195,232p tests/renderer/pulseScene.test.jsx; sed -n 165,172p src/shared/locales/en.json; sed -n 2135,2; the Code Generation step went out of date
+
+---
+
+## Guard Stood Aside
+**Timestamp**: 2026-11-27T16:45:04Z
+**Event**: GUARD_STOOD_ASIDE
+**Guard**: plan-approval
+**Authority**: grant
+**Grant**: turn-marker
+**Actor**: main
+**Stage**: code-generation
+**Tool**: Bash
+**Details**: sed -n 530,560p src/renderer/App.jsx; grep -n "backLabel\|onBack" src/renderer/App.jsx | head; grep -n "'pulse'" src/renderer/*.jsx | head; the Code Generation step went out of date
+
+---
+
+## Guard Stood Aside
+**Timestamp**: 2026-11-27T16:45:15Z
+**Event**: GUARD_STOOD_ASIDE
+**Guard**: plan-approval
+**Authority**: grant
+**Grant**: turn-marker
+**Actor**: main
+**Stage**: code-generation
+**Tool**: Bash
+**Details**: sed -n 540,572p src/renderer/TokenDetail.jsx; grep -n "^export function Pill\|^export function DiagonalFrame" -A12 src/renderer/Lcars.jsx | head -40; sed -n 600; the Code Generation step went out of date
+
+---
+
+## Session Compacted
+**Timestamp**: 2026-11-27T16:45:16Z
+**Event**: SESSION_COMPACTED
+**Current Stage**: code-generation
+**State Validity**: valid
+
+---
+
+## Subagent Completed
+**Timestamp**: 2026-11-27T16:45:41Z
+**Event**: SUBAGENT_COMPLETED
+**Agent Type**: unknown
+**Agent ID**: abaf504ed0faf0439
+**Message**: <analysis>\nI'm continuing the US-0418 Pulse rework (step 16) from the earlier summary. The person has added a new request: wrap long paths in the hover popups. Their screenshots show that the callout 
+
+---
+
+## Human Turn
+**Timestamp**: 2026-11-27T16:45:57Z
+**Event**: HUMAN_TURN
+**Session**: 3d11c798-e28f-4fb2-b7e3-cf3146f5c2be
+**Origin**: person
+**Source**: typed
+**Message Id**: 6a94d0fd
+**Questions Digest**: {"file":"aidlc/spaces/default/intents/261127-pulse-view/construction/code-generation/code-generation-questions.md","entries":{"Plan Approval":"6132305a7740eec4"}}
+
+---
+
+## Guard Stood Aside
+**Timestamp**: 2026-11-27T16:46:19Z
+**Event**: GUARD_STOOD_ASIDE
+**Guard**: plan-approval
+**Authority**: grant
+**Grant**: turn-marker
+**Actor**: main
+**Stage**: code-generation
+**Tool**: Bash
+**Details**: sed -n 695,830p src/renderer/theme.css; grep -n "intent-detail\b\|\.intent-detail {" src/renderer/theme.css | head; the Code Generation step went out of date
+
+---
+
+## Session Compacted
+**Timestamp**: 2026-11-27T16:46:20Z
+**Event**: SESSION_COMPACTED
+**Current Stage**: code-generation
+**State Validity**: valid
+
+---
+
+## Subagent Completed
+**Timestamp**: 2026-11-27T16:46:49Z
+**Event**: SUBAGENT_COMPLETED
+**Agent Type**: unknown
+**Agent ID**: aec93d983aa61f0d3
+**Message**: <analysis>\nI'm continuing the rework for US-0418, the Pulse view, in AI-DLC Code Generation. Nothing has been edited yet. In this part of the session I read the code I need: TokenDetail.jsx (how its b
+
+---
+
+## Guard Stood Aside
+**Timestamp**: 2026-11-27T16:47:06Z
+**Event**: GUARD_STOOD_ASIDE
+**Guard**: plan-approval
+**Authority**: grant
+**Grant**: turn-marker
+**Actor**: main
+**Stage**: code-generation
+**Tool**: Bash
+**Details**: grep -n "project-main\|project-mode\|className=\"app-header\|app-title-rule\|lcars-df-title\|lcars-df-head" src/renderer/*.jsx | head -20; sed -n 590,640p src/r; the Code Generation step went out of date
+
+---
+
+## Guard Stood Aside
+**Timestamp**: 2026-11-27T16:47:16Z
+**Event**: GUARD_STOOD_ASIDE
+**Guard**: plan-approval
+**Authority**: grant
+**Grant**: turn-marker
+**Actor**: main
+**Stage**: code-generation
+**Tool**: Bash
+**Details**: sed -n 544,600p src/renderer/App.jsx; sed -n 478,500p src/renderer/ProjectView.jsx; grep -n "app-header-main\|\.app-title\b\|app-title-bar\|--bar:" src/renderer; the Code Generation step went out of date
+
+---
+
+## Guard Stood Aside
+**Timestamp**: 2026-11-27T16:47:27Z
+**Event**: GUARD_STOOD_ASIDE
+**Guard**: plan-approval
+**Authority**: grant
+**Grant**: turn-marker
+**Actor**: main
+**Stage**: code-generation
+**Tool**: Bash
+**Details**: sed -n 515,535p src/renderer/ProjectView.jsx; grep -n "pulse-view\|\.pulse-" src/renderer/theme.css; the Code Generation step went out of date
+
+---
+
+## Guard Stood Aside
+**Timestamp**: 2026-11-27T16:47:57Z
+**Event**: GUARD_STOOD_ASIDE
+**Guard**: plan-approval
+**Authority**: grant
+**Grant**: turn-marker
+**Actor**: main
+**Stage**: code-generation
+**Tool**: Bash
+**Details**: sed -n 60,100p src/renderer/theme.css | grep -n "\-\-"; grep -n "lcars-segbar--window\|level-window\|\.lcars-segbar\b\|segbar.*window" src/renderer/theme.css | ; the Code Generation step went out of date
+
+---
+
+## Guard Stood Aside
+**Timestamp**: 2026-11-27T16:48:12Z
+**Event**: GUARD_STOOD_ASIDE
+**Guard**: plan-approval
+**Authority**: grant
+**Grant**: turn-marker
+**Actor**: main
+**Stage**: code-generation
+**Tool**: Bash
+**Details**: cat src/renderer/pulse/vendor/components/callouts.js; sed -n 340,385p src/renderer/pulse/scene.js; grep -n "Escape\|onKeyDown\|tabIndex" src/renderer/TokenDetai; the Code Generation step went out of date
+
+---
+
+## Session Compacted
+**Timestamp**: 2026-11-27T16:48:13Z
+**Event**: SESSION_COMPACTED
+**Current Stage**: code-generation
+**State Validity**: valid
+
+---
+
+## Human Turn
+**Timestamp**: 2026-11-27T16:48:36Z
+**Event**: HUMAN_TURN
+**Session**: 3d11c798-e28f-4fb2-b7e3-cf3146f5c2be
+**Origin**: person
+**Source**: typed
+**Message Id**: 34b122e1
+**Questions Digest**: {"file":"aidlc/spaces/default/intents/261127-pulse-view/construction/code-generation/code-generation-questions.md","entries":{"Plan Approval":"6132305a7740eec4"}}
+
+---
+
+## Subagent Completed
+**Timestamp**: 2026-11-27T16:48:39Z
+**Event**: SUBAGENT_COMPLETED
+**Agent Type**: unknown
+**Agent ID**: ad1fb05bbd3b1fdbb
+**Message**: <analysis>\nI need to summarize where things stand: the step-16 rework plan, plus what I found about the header-scroll layout since the last summary. No edits have been made yet. File contents and test
+
+---
+
+## Guard Stood Aside
+**Timestamp**: 2026-11-27T16:48:53Z
+**Event**: GUARD_STOOD_ASIDE
+**Guard**: plan-approval
+**Authority**: grant
+**Grant**: turn-marker
+**Actor**: main
+**Stage**: code-generation
+**Tool**: Bash
+**Details**: sed -n 540,575p src/renderer/TokenDetail.jsx; sed -n 520,532p src/renderer/ProjectView.jsx; sed -n 2140,2150p src/renderer/theme.css; sed -n 695,712p src/render; the Code Generation step went out of date
+
+---
+
+## Session Compacted
+**Timestamp**: 2026-11-27T16:49:07Z
+**Event**: SESSION_COMPACTED
+**Current Stage**: code-generation
+**State Validity**: valid
+
+---
+
+## Subagent Completed
+**Timestamp**: 2026-11-27T16:49:35Z
+**Event**: SUBAGENT_COMPLETED
+**Agent Type**: unknown
+**Agent ID**: a33050c13904bee5c
+**Message**: <analysis>\nContinuing step 16 of US-0418 code-generation rework. No edits made yet. The new user message changes item (a): the ring's size must not depend on the terminal at all. The terminal is alway
+
+---
+
+## Session Compacted
+**Timestamp**: 2026-11-27T16:50:02Z
+**Event**: SESSION_COMPACTED
+**Current Stage**: code-generation
+**State Validity**: valid
+
+---
+
+## Subagent Completed
+**Timestamp**: 2026-11-27T16:50:28Z
+**Event**: SUBAGENT_COMPLETED
+**Agent Type**: unknown
+**Agent ID**: ae9cb1b7a0d659581
+**Message**: <analysis>\nAfter the last compaction I read the CSS for `.lcars-df-in`, the `.app` grid, the header, the arm, the terminal and the step-15 Pulse rules. I also grepped TerminalPanel.jsx, ProjectView.js
+
+---
+
+## Guard Stood Aside
+**Timestamp**: 2026-11-27T16:50:41Z
+**Event**: GUARD_STOOD_ASIDE
+**Guard**: plan-approval
+**Authority**: grant
+**Grant**: turn-marker
+**Actor**: main
+**Stage**: code-generation
+**Tool**: Bash
+**Details**: grep -n "grid-template\|latest-message\|\.terminal-footbar\b\|\.terminal-footbar {" src/renderer/theme.css | head -30; sed -n 595,612p src/renderer/theme.css; s; the Code Generation step went out of date
+
+---
+
+## Guard Stood Aside
+**Timestamp**: 2026-11-27T16:50:56Z
+**Event**: GUARD_STOOD_ASIDE
+**Guard**: plan-approval
+**Authority**: grant
+**Grant**: turn-marker
+**Actor**: main
+**Stage**: code-generation
+**Tool**: Bash
+**Details**: grep -n "overflow-y: auto\|overflow: auto" src/renderer/theme.css | head -20; grep -n "^\.project-main\|^\.project-view\|^\.app-main\|^\.project-mode" src/rende; the Code Generation step went out of date
+
+---
+
+## Session Compacted
+**Timestamp**: 2026-11-27T16:51:33Z
+**Event**: SESSION_COMPACTED
+**Current Stage**: code-generation
+**State Validity**: valid
+
+---
+
+## Subagent Completed
+**Timestamp**: 2026-11-27T16:52:03Z
+**Event**: SUBAGENT_COMPLETED
+**Agent Type**: unknown
+**Agent ID**: a5b95f4c2f7be66c8
+**Message**: <analysis>\nSince the last summary I only read files; nothing has been edited yet. What the reads found:\n\n- **Grid order.** In `.app`, the `msg` row sits above `term`: the areas are 'head head' 'arm ma
+
+---
+
+## Guard Stood Aside
+**Timestamp**: 2026-11-27T16:52:20Z
+**Event**: GUARD_STOOD_ASIDE
+**Guard**: plan-approval
+**Authority**: grant
+**Grant**: turn-marker
+**Actor**: main
+**Stage**: code-generation
+**Tool**: Bash
+**Details**: <project-dir>/e.key; the Code Generation step went out of date
+
+---
+
+## Session Start
+**Timestamp**: 2026-11-27T16:52:31Z
+**Event**: SESSION_STARTED
+**Source**: startup
+**Session**: 911eedab-1244-4bd1-b4cf-e4234e84e8af
+
+---
+
+## Guard Stood Aside
+**Timestamp**: 2026-11-27T16:52:36Z
+**Event**: GUARD_STOOD_ASIDE
+**Guard**: plan-approval
+**Authority**: grant
+**Grant**: turn-marker
+**Actor**: main
+**Stage**: code-generation
+**Tool**: Bash
+**Details**: cat src/renderer/pulse/vendor/components/callouts.js; sed -n 340,385p src/renderer/pulse/scene.js; grep -n "drawCallouts\|^import\|^export" src/renderer/pulse/s; the Code Generation step went out of date
+
+---
+
+## Human Turn
+**Timestamp**: 2026-11-27T16:52:49Z
+**Event**: HUMAN_TURN
+**Session**: 911eedab-1244-4bd1-b4cf-e4234e84e8af
+**Origin**: person
+**Source**: typed
+**Reply**: command
+**Message Id**: 3f708ec1
+**Questions Digest**: {"file":"aidlc/spaces/default/intents/261127-pulse-view/construction/code-generation/code-generation-questions.md","entries":{"Plan Approval":"6132305a7740eec4"}}
+
+---
+
+## Guard Stood Aside
+**Timestamp**: 2026-11-27T16:53:24Z
+**Event**: GUARD_STOOD_ASIDE
+**Guard**: plan-approval
+**Authority**: instruction
+**Grant**: none
+**Actor**: main
+**Stage**: code-generation
+**Tool**: Bash
+**Details**: sed -n 690,720p src/renderer/theme.css; sed -n 765,780p src/renderer/theme.css; grep -n "pulse-view\|Step 15\|step 15\|intent-df .lcars-df-in\|is-fullscreen\|--
+
+---
+
+## Session Compacted
+**Timestamp**: 2026-11-27T16:53:26Z
+**Event**: SESSION_COMPACTED
+**Current Stage**: code-generation
+**State Validity**: valid
+
+---
+
+## Guard Stood Aside
+**Timestamp**: 2026-11-27T16:53:34Z
+**Event**: GUARD_STOOD_ASIDE
+**Guard**: plan-approval
+**Authority**: instruction
+**Grant**: none
+**Actor**: main
+**Stage**: code-generation
+**Tool**: Bash
+**Details**: sed -n 721,764p src/renderer/theme.css; grep -n "app-head\|app-brand\|app-main\|grid-area: main\|grid-area: head" src/renderer/theme.css | head -30; sed -n 595,
+
+---
+
+## Subagent Completed
+**Timestamp**: 2026-11-27T16:53:38Z
+**Event**: SUBAGENT_COMPLETED
+**Agent Type**: unknown
+**Agent ID**: ad156311002f68f0c
+**Message**: <analysis>\nThe user typed `/aidlc --resume`. I ran `aidlc engine orchestrate next --resume`. It returned rules in two load-steering parts, and I continued through both. The final directive was a run-s
+
+---
+
+## Guard Stood Aside
+**Timestamp**: 2026-11-27T16:54:09Z
+**Event**: GUARD_STOOD_ASIDE
+**Guard**: plan-approval
+**Authority**: instruction
+**Grant**: none
+**Actor**: main
+**Stage**: code-generation
+**Tool**: Bash
+**Details**: sed -n 515,530p src/renderer/ProjectView.jsx; grep -n "project-body\|project-mode {\|\.project-mode\b" src/renderer/theme.css | head
+
+---
+
+## Session Compacted
+**Timestamp**: 2026-11-27T16:55:03Z
+**Event**: SESSION_COMPACTED
+**Current Stage**: code-generation
+**State Validity**: valid
+
+---
+
+## Subagent Completed
+**Timestamp**: 2026-11-27T16:55:21Z
+**Event**: SUBAGENT_COMPLETED
+**Agent Type**: unknown
+**Agent ID**: aad6450124ca4c43f
+**Message**: <analysis>\nStep 16 rework items (a) to (e) are implemented. Tests, ESLint and Prettier pass; Prettier was rerun on PulseView.jsx. Still left: append step 16 to the plan doc and code-summary.md, report
+
+---
+
+## Guard Stood Aside
+**Timestamp**: 2026-11-27T16:55:36Z
+**Event**: GUARD_STOOD_ASIDE
+**Guard**: plan-approval
+**Authority**: instruction
+**Grant**: none
+**Actor**: main
+**Stage**: code-generation
+**Tool**: Bash
+**Details**: cat >> code-generation-plan.md <<'EOF'\n16. [x] **One ring size, a way back, wrapped paths, header scroll band, Red/Green/Refactor** (the person's request during
+
+---
+
+## Question Shown
+**Timestamp**: 2026-11-27T16:55:44Z
+**Event**: QUESTION_SHOWN
+**Question Id**: a532e23e
+**Question Type**: gate
+**Question Chat**: 3d11c798-e28f-4fb2-b7e3-cf3146f5c2be
+**Question Shows**: sha256:7a0b5e59966a4493bed448e7ca98f2958af6df752dd24559593d704d6042444f
+**Stage**: code-generation
+
+---
+
+## Guard Stood Aside
+**Timestamp**: 2026-11-27T16:55:58Z
+**Event**: GUARD_STOOD_ASIDE
+**Guard**: plan-approval
+**Authority**: instruction
+**Grant**: none
+**Actor**: main
+**Stage**: code-generation
+**Tool**: Bash
+**Details**: <project-dir>/EOF
+
+---

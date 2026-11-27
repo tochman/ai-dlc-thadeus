@@ -127,7 +127,7 @@ describe('PulseView', () => {
     vi.unstubAllGlobals();
   });
 
-  it('runs the stage under an open terminal, to its hidden-terminal size (step 15)', async () => {
+  it('keeps the stage the same size with the terminal open or closed, down to the foot bar (step 16)', async () => {
     vi.stubGlobal(
       'ResizeObserver',
       class {
@@ -135,36 +135,45 @@ describe('PulseView', () => {
         disconnect() {}
       }
     );
-    const rects = { 'project-mode': { top: 0, bottom: 800 }, 'terminal-panel': { top: 560, height: 240 }, 'terminal-footbar': { height: 28 } };
+    const rects = { 'terminal-footbar': { top: 900, height: 28 }, 'latest-message': { top: 850, height: 30 } };
     const orig = HTMLElement.prototype.getBoundingClientRect;
     HTMLElement.prototype.getBoundingClientRect = function () {
       const key = Object.keys(rects).find((k) => this.classList.contains(k));
       return { top: 100, bottom: 100, height: 0, ...rects[key] };
     };
-    const term = document.createElement('section');
-    term.className = 'terminal-panel';
-    term.innerHTML = '<div class="terminal-footbar"></div>';
-    document.body.append(term);
+    const shell = document.createElement('div');
+    shell.innerHTML = '<p class="latest-message"></p><section class="terminal-panel"><div class="terminal-footbar"></div></section>';
+    document.body.append(shell);
+    const term = shell.querySelector('.terminal-panel');
     const stageHeight = async (collapsed) => {
       cleanup();
       term.classList.toggle('is-collapsed', collapsed);
+      term.style.height = collapsed ? '28px' : '240px';
       window.bridge = { pulse: { list: vi.fn(async () => SNAP), onChanged: vi.fn(() => () => {}) } };
-      render(
-        <div className="project-mode">
-          <PulseView projectId="p1" />
-        </div>
-      );
+      render(<PulseView projectId="p1" />);
       await settle();
       return screen.getByTestId('pulse-canvas').parentElement.style.height;
     };
     try {
-      expect(await stageHeight(true)).toBe('700px'); // the view's bottom, 800, less the stage's top, 100
-      expect(await stageHeight(false)).toBe('912px'); // plus the open terminal's 240 less its 28 px foot bar
+      // the foot bar's top, 900, less a gap, the message row and its gap (14 + 30 + 14), less the stage's top, 100
+      expect(await stageHeight(true)).toBe('742px');
+      expect(await stageHeight(false)).toBe('742px');
     } finally {
       HTMLElement.prototype.getBoundingClientRect = orig;
-      term.remove();
+      shell.remove();
       vi.unstubAllGlobals();
     }
+  });
+
+  it('goes back with its back pill and with Esc (step 16)', async () => {
+    const onBack = vi.fn();
+    window.bridge = { pulse: { list: vi.fn(async () => SNAP), onChanged: vi.fn(() => () => {}) } };
+    render(<PulseView projectId="p1" onBack={onBack} />);
+    await settle();
+    fireEvent.click(screen.getByTestId('pulse-back'));
+    expect(screen.getByTestId('pulse-back').textContent).toBe(t('app.back'));
+    fireEvent.keyDown(screen.getByTestId('pulse-canvas'), { key: 'Escape' });
+    expect(onBack).toHaveBeenCalledTimes(2);
   });
 
   it('builds the ring once and keeps it while only the touches change (FR1)', async () => {

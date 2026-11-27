@@ -13,6 +13,7 @@ import {
   labelTurn,
   lcarsTheme,
   placeCloud,
+  wrapPath,
   readouts,
   ringKey
 } from '../../src/renderer/pulse/scene.js';
@@ -202,6 +203,27 @@ describe('drawing a frame with the vendored modules', () => {
     drawFrame(ctx, scene, ring, geo, theme, NOW, { motion: true, hover });
     const texts = ctx.calls.filter((c) => c[0] === 'fillText').map((c) => c[1]);
     expect(texts).toEqual(expect.arrayContaining(['SRC/A.JS', 'write · main']));
+  });
+
+  it('wraps a long path at its slashes, and a word with no slash stays whole (step 16)', () => {
+    const measure = (s) => s.length * 5;
+    expect(wrapPath('src/renderer/pulse/scene.js', 70, measure)).toEqual(['src/renderer/', 'pulse/scene.js']);
+    expect(wrapPath('short.js', 70, measure)).toEqual(['short.js']);
+    expect(wrapPath('averyveryverylongname', 20, measure)).toEqual(['averyveryverylongname']);
+  });
+
+  it('draws a long hover title on several lines and moves the body down to match (step 16)', () => {
+    const scene = buildScene(SNAP, { name });
+    const ring = createRing(geo, scene.layout, theme.base, createRandom(7));
+    const ctx = stubCtx();
+    const long = `${'docs/features/'.repeat(4)}epic-04.md`;
+    drawFrame(ctx, scene, ring, geo, theme, NOW, { motion: false, hover: { angle: 1, title: long, lines: ['write · main'] } });
+    const texts = ctx.calls.filter((c) => c[0] === 'fillText');
+    const title = texts.filter((c) => String(c[1]).startsWith('docs/') || c[1] === 'epic-04.md');
+    expect(title.length).toBeGreaterThan(1);
+    expect(title.map((c) => c[1]).join('')).toBe(long);
+    const body = texts.find((c) => c[1] === 'write · main');
+    expect(body[3]).toBeGreaterThan(title.at(-1)[3]);
   });
 
   it('keeps the other vendored helpers working: geometry, layout, rotation, traces, callouts, math and canvas', () => {
