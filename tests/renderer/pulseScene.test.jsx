@@ -3,6 +3,7 @@
 import { beforeAll, describe, expect, it } from 'vitest';
 import {
   LABEL_SPACE,
+  TILT,
   buildScene,
   cloudWords,
   drawFrame,
@@ -12,6 +13,9 @@ import {
   hitTest,
   labelTurn,
   lcarsTheme,
+  projectTilt,
+  unprojectTilt,
+  clampTilt,
   placeCloud,
   wrapPath,
   readouts,
@@ -106,7 +110,8 @@ describe('pulse scene adapter', () => {
     const scene = buildScene(SNAP, { name });
     const f = scene.files.find((x) => x.path === 'src/a.js');
     const r = 200;
-    expect(hitTest(scene, Math.cos(f.angle) * r, Math.sin(f.angle) * r, r).file).toBe(f);
+    expect(TILT).toBeLessThan(1);
+    expect(hitTest(scene, Math.cos(f.angle) * r, Math.sin(f.angle) * r * TILT, r).file).toBe(f);
     const word = { name: 'main', x: 0, y: 0, w: 40, h: 16 };
     expect(hitTest(scene, 5, 3, r, [word]).word).toBe(word);
     expect(hitTest(scene, 0, 0, r)).toBeNull();
@@ -158,6 +163,25 @@ describe('pulse scene adapter', () => {
   });
 });
 
+describe('tilt projection', () => {
+  it('keeps neutral tilt unchanged and maps both directions to a bounded plane tilt', () => {
+    expect(projectTilt(100, 50, { yaw: 0, pitch: 0 })).toEqual([100, 50]);
+    expect(projectTilt(100, 0, { yaw: 20, pitch: 0 })[0]).toBeLessThan(100);
+    expect(projectTilt(0, 100, { yaw: 0, pitch: 20 })[1]).toBeLessThan(100);
+    expect(projectTilt(0, 100, { yaw: 20, pitch: 0 })[0]).toBeGreaterThan(0);
+    expect(projectTilt(0, 100, { yaw: -20, pitch: 0 })[0]).toBeLessThan(0);
+    expect(clampTilt({ yaw: 90, pitch: -90 })).toEqual({ yaw: 25, pitch: -25 });
+  });
+
+  it('maps projected coordinates back to the original point', () => {
+    const tilt = { yaw: -18, pitch: 22 };
+    const projected = projectTilt(73, -41, tilt);
+    const restored = unprojectTilt(...projected, tilt);
+    expect(restored[0]).toBeCloseTo(73);
+    expect(restored[1]).toBeCloseTo(-41);
+  });
+});
+
 describe('drawing a frame with the vendored modules', () => {
   const geo = frameGeometry({ width: 1080, height: 720, hero: 'orbit', panels: '0' });
   const theme = lcarsTheme(() => '#808080');
@@ -170,6 +194,33 @@ describe('drawing a frame with the vendored modules', () => {
     drawFrame(ctx, scene, ring, geo, theme, NOW + 16, { motion: true });
     expect(count(ctx, 'drawImage')).toBe(2);
     expect(count(ctx, 'arc')).toBeGreaterThan(0); // the file marks
+  });
+
+  it('does not draw the rejected decorative arches (US-0419)', () => {
+    const scene = buildScene(SNAP, { name });
+    const ring = createRing(geo, scene.layout, theme.base, createRandom(7));
+    const ctx = stubCtx();
+    drawFrame(ctx, scene, ring, geo, theme, NOW, { motion: false });
+    expect(count(ctx, 'bezierCurveTo')).toBe(0);
+    expect(ctx.calls.some((call) => call[0] === 'setLineDash')).toBe(false);
+  });
+
+  it('applies the optional view tilt to the full map canvas layer', () => {
+    const scene = buildScene(SNAP, { name });
+    const ring = createRing(geo, scene.layout, theme.base, createRandom(7));
+    const ctx = stubCtx();
+    drawFrame(ctx, scene, ring, geo, theme, NOW, { motion: false, tilt: { yaw: 20, pitch: -10 } });
+    const transforms = ctx.calls.filter((call) => call[0] === 'transform');
+    expect(transforms).toHaveLength(1);
+    expect(transforms[0][1]).not.toBe(1);
+  });
+
+  it('hit-tests the same file after the view tilt is inverted', () => {
+    const scene = buildScene(SNAP, { name });
+    const f = scene.files.find((file) => file.path === 'src/a.js');
+    const tilt = { yaw: -18, pitch: 22 };
+    const point = projectTilt(Math.cos(f.angle) * geo.ri, Math.sin(f.angle) * geo.ri * TILT, tilt);
+    expect(hitTest(scene, ...point, geo.ri, [], tilt)?.file).toBe(f);
   });
 
   it('links a word to its file while the touch is fresh and not after (FR3.4, step 14)', () => {
@@ -204,6 +255,19 @@ describe('drawing a frame with the vendored modules', () => {
     drawFrame(ctx, scene, ring, geo, theme, NOW, { motion: true, hover });
     const texts = ctx.calls.filter((c) => c[0] === 'fillText').map((c) => c[1]);
     expect(texts).toEqual(expect.arrayContaining(['SRC/A.JS', 'write · main']));
+  });
+
+  it('gives callouts bottom padding equal to the title baseline inset (US-0419)', () => {
+    const ctx = stubCtx();
+    drawCallouts(ctx, [{ t0: 0, t1: 10, title: ['FILE'], lines: ['write · main'] }], 5, () => ({ anchor: [0, 0], box: [10, 20], right: false }), {
+      accent: '255,0,0',
+      ink: '255,255,255',
+      panel: '0,0,0'
+    });
+
+    const [, , top, , height] = ctx.calls.find((call) => call[0] === 'fillRect');
+    const body = ctx.calls.find((call) => call[0] === 'fillText' && call[1] === 'write · main');
+    expect(top + height - body[3]).toBe(14);
   });
 
   it('wraps a long path at its slashes, and a word with no slash stays whole (step 16)', () => {
@@ -279,7 +343,7 @@ describe('the rework: fit, names, colours and marks (steps 10-12)', () => {
   ])('fits the ring and its scale inside %ix%i, centred, with a 4 px margin (steps 10, 15)', (w, h) => {
     const g = fitRing(w, h);
     expect(g.ro + LABEL_SPACE + 4).toBeCloseTo(Math.min(w, h) / 2);
-    expect([g.w, g.h, g.cx, g.cy]).toEqual([w, h, w / 2, h / 2]);
+    expect([g.w, g.h, g.cx, g.cy]).toEqual([w, h, w / 2, h * 0.34]);
     expect(g.ro).toBeCloseTo(g.ri * 1.15);
     expect(g.ri).toBeGreaterThan(0);
   });
@@ -288,14 +352,14 @@ describe('the rework: fit, names, colours and marks (steps 10-12)', () => {
     const scene = buildScene(SNAP, { name });
     const g = fitRing(600, 900);
     const f = scene.files.find((x) => x.path === 'src/a.js');
-    expect(hitTest(scene, Math.cos(f.angle) * g.ri, Math.sin(f.angle) * g.ri, g.ri).file).toBe(f);
+    expect(hitTest(scene, Math.cos(f.angle) * g.ri, Math.sin(f.angle) * g.ri * TILT, g.ri).file).toBe(f);
   });
 
   it('turns every name so it is never upside down or mirrored (step 11)', () => {
     for (let a = 0; a < 2 * Math.PI; a += 0.1) expect(Math.cos(a + labelTurn(a))).toBeGreaterThanOrEqual(-1e-9);
   });
 
-  it('names each recent file inside the ring at 11 px, newest first, and skips the outside mark (steps 14, 15)', () => {
+  it('names each recent file inside the ring at 12 px, newest first, and skips the outside mark (steps 14, 15, US-0419)', () => {
     const scene = buildScene(SNAP, { name });
     const geo = fitRing(1200, 700);
     const ring = createRing(geo, scene.layout, themes.base, createRandom(7));
@@ -304,14 +368,10 @@ describe('the rework: fit, names, colours and marks (steps 10-12)', () => {
     const fill = ctx.fillText;
     ctx.fillText = (s, x, ...rest) => (seen.push([s, ctx.font, x, ctx.textAlign]), fill(s, x, ...rest));
     drawFrame(ctx, scene, ring, geo, themes, NOW + 5000, { motion: false });
-    const names = seen.filter(([, font]) => font.includes('11px'));
+    const names = seen.filter(([, font]) => font.includes('12px'));
     expect(names.map(([s]) => s)).toEqual(['a.js', 'gone.js', 'README.md']);
-    for (const [s, , x, align] of names) {
-      // The text runs from just inside the ring's inner edge towards the centre, and stops before the word cloud.
-      expect(Math.abs(x)).toBeLessThan(geo.ri);
-      expect(Math.abs(x) - s.length * 5).toBeGreaterThanOrEqual(0.7 * geo.ri);
-      expect(align).toBe(x > 0 ? 'right' : 'left');
-    }
+    expect(names.every(([, , x]) => x === 0)).toBe(true); // placed at projected anchors, with text kept upright
+    expect(ctx.calls.filter((call) => call[0] === 'translate').length).toBeGreaterThanOrEqual(names.length);
   });
 
   it('shortens a long file name with an ellipsis so it fits the band inside the ring (steps 14, 15)', () => {

@@ -131,6 +131,16 @@ describe('releaseOptions', () => {
 });
 
 describe('buildReleases', () => {
+  it('places the 0.3.31 release directly above 0.3.3 in the Releases list (US-0419)', () => {
+    const list = buildReleases(
+      [],
+      [{ name: 'v0.3.3', date: '2026-11-20' }],
+      ['v0.3.4', 'v0.3.5', 'v0.3.6', 'v0.3.7', 'v0.3.31'].map((version) => PLAN(version))
+    );
+    const versions = list.map((release) => release.version);
+    expect(versions.indexOf('v0.3.31')).toBe(versions.indexOf('v0.3.3') - 1);
+  });
+
   it('lists each release from markers and tags, newest first, with the tag date and its stories (FR3.2)', () => {
     const list = buildReleases(epicsOf(EPIC), TAGS);
     expect(list.map((r) => [r.version, r.released, r.date, r.stories.map((s) => s.story.id)])).toEqual([

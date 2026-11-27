@@ -23,6 +23,9 @@ const byVersionDesc = (a, b) => {
   const [x, y] = [semver(a), semver(b)];
   return y[0] - x[0] || y[1] - x[1] || y[2] - x[2];
 };
+// US-0419: keep the Releases view's visible version labels in descending display order (so v0.3.31 follows v0.3.4–7
+// and sits directly above v0.3.3); next-version calculation remains numeric semver in byVersionDesc.
+const byReleaseLabelDesc = (a, b) => b.localeCompare(a);
 
 /** US-0603 FR2.1, FR3.2: the planned and the released version in a status text, each 'vX.Y.Z' or null. */
 export function releaseOf(text) {
@@ -121,7 +124,7 @@ export function buildReleases(epics, tags, plans = []) {
     if (!map.has(version)) map.set(version, []);
     map.get(version).push({ epicId, story, stale: !released && dates.has(version) });
   }
-  return [...map.keys()].sort(byVersionDesc).map((version) => ({
+  return [...map.keys()].sort(byReleaseLabelDesc).map((version) => ({
     version,
     released: dates.has(version) || map.get(version).some(({ story }) => releaseOf(story.statusText).released === version),
     date: dates.get(version) ?? null,

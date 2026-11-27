@@ -2147,11 +2147,33 @@ button.tool-row-path:hover { color: var(--steel-text); }
 /* US-0418 step 16: the ring keeps one size down to the terminal's foot bar; the open terminal and the latest message
    are drawn over it. The frame starts nearer its top bar and keeps less room below, so the ring fits the view. */
 .app:has(.pulse-view) .terminal-panel { position: relative; z-index: 2; background: var(--bg); }
-.pulse-back { border: 0; cursor: pointer; color: var(--bg); font-family: var(--font-head); text-transform: uppercase; letter-spacing: 0.06em; text-align: right; align-content: end; min-height: 48px; }
+/* US-0419: Back is in the frame's title bar, clear of the elbow and hairline. */
+.lcars-df-trailing { display: flex; align-items: center; justify-content: flex-end; flex: 0 0 auto; }
+.pulse-back { flex: none; min-width: 96px; height: 32px; padding: 0 18px 3px; border: 0; border-radius: 16px 0 0 16px; background: var(--steel-deep); color: var(--text); font-family: var(--font-head); font-size: 14px; letter-spacing: 0.06em; text-transform: uppercase; }
+.pulse-back:hover { background: var(--steel); color: var(--bg); }
+.pulse-chips { align-items: center; }
+/* US-0419: the quiet ring gets an LCARS standby panel, not a line of grey text in an empty field. */
+.pulse-stage { position: relative; }
+.pulse-empty { position: absolute; left: 50%; top: 42%; transform: translate(-50%, -50%); display: flex; flex-direction: column; align-items: flex-start; gap: 6px; width: min(620px, calc(100% - 48px)); padding: 20px 24px 22px; background: color-mix(in srgb, var(--slate-2) 94%, transparent); border-left: 4px solid var(--steel-deep); box-shadow: 0 12px 36px var(--bg); }
+.pulse-empty-state { display: inline-flex; align-items: center; gap: 8px; font-family: var(--font-head); font-size: 12px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--steel-text); }
+.pulse-empty-state i { width: 9px; height: 9px; border-radius: 50%; background: var(--slate-4); }
+.pulse-empty-title { margin: 4px 0 0; font-family: var(--font-head); font-size: 26px; letter-spacing: 0.04em; color: var(--steel-light); }
+.pulse-empty-text { margin: 0; color: var(--text-2); }
+.pulse-empty-hint { margin: 0; font-size: 13px; color: var(--muted); }
+/* US-0419: the fifteen-minute bars are a footer strip under the canvas, with the action colours named. */
+.pulse-foot { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin-top: 10px; padding: 8px 12px 8px 0; background: var(--slate-2); border-left: 4px solid var(--steel-deep); }
+.pulse-foot-label { flex: none; padding-left: 10px; font-family: var(--font-head); font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--steel-text); }
+.pulse-foot .pulse-bars { flex: 1 1 220px; min-width: 0; margin: 0; }
+.pulse-legend { flex: none; display: flex; align-items: center; gap: 12px; font-size: 12px; letter-spacing: 0.05em; text-transform: uppercase; color: var(--muted); }
+.pulse-key { display: inline-block; width: 9px; height: 9px; margin-right: 5px; }
+.pulse-key--read { background: var(--steel-text); }
+.pulse-key--write { background: var(--text); }
+.pulse-key--delete { background: var(--coral); }
 .pulse-view .lcars-df-in { --df-top: 104px; min-height: 420px; }
+@media (max-width: 1400px) { .pulse-view .lcars-df-top .lcars-seg-lab, .pulse-view .lcars-df-top .lcars-seg-lab + .lcars-sseg { display: none; } }
 .pulse-stage { height: 62vh; min-height: 160px; } /* PulseView sets the height to fit the view */
 .pulse-canvas { display: block; width: 100%; height: 100%; background: var(--bg); cursor: crosshair; }
-.pulse-bars { display: block; margin-top: 8px; }
+.pulse-bars { display: block; }
 .pulse-bars rect.is-read { fill: var(--steel-text); }
 .pulse-bars rect.is-write { fill: var(--text); }
 .pulse-bars rect.is-delete { fill: var(--coral); }
