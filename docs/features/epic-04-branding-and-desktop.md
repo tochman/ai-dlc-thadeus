@@ -405,7 +405,7 @@
 - **Dependencies:** US-0214, US-0030, US-0417
 
 
-**US-0419: Astrometrics, second pass: an LCARS instrument view** 🚧 In progress, for v0.3.31
+**US-0419: Astrometrics, second pass: an LCARS instrument view** ✅ Done, for v0.3.31
 - As a **developer watching my agents work**, in order to **read activity as part of the console and understand an idle project without losing my way out**, I would like **Astrometrics to present the activity ring as a dimensional LCARS instrument, show its empty state clearly, and keep Back in reach**.
 - **Epic:** EPIC-04
 - **Priority:** Medium
@@ -428,5 +428,5 @@
   - [x] Under reduced motion the scope is a still frame like the ring; no new dependency.
   - [x] Every text goes through `t()` in Swedish and English, in the LCARS look.
   - [x] Build screenshots at 1280 px and 1600 px, with the terminal hidden, show both populated and empty states and are reviewed before release.
-- **Notes:** A second pass on US-0418, not a redesign of the event ring: the vendor drawing, observers and store stay as they are. The requested decorative arches were rejected and removed from scope. All view criteria are implemented and verified; terminal-hidden screenshots at 1280 px and 1600 px were reviewed for populated and empty states, including two tilt directions. The v0.3.31 plan is in the release list. Remaining: release checks.
+- **Notes:** A second pass on US-0418, not a redesign of the event ring: the vendor drawing, observers and store stay as they are. The requested decorative arches were rejected and removed from scope. All view criteria are implemented and verified; terminal-hidden screenshots at 1280 px and 1600 px were reviewed for populated and empty states, including two tilt directions. The v0.3.31 plan is in the release list. Remaining: local `.dmg` hand check, release PR, and tag.
 - **Dependencies:** US-0418
