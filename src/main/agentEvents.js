@@ -124,6 +124,8 @@ export function createAgentEventStore({
   settings = () => ({})
 }) {
   const sessions = new Map(); // sessionId -> { projectId, tabId, harness, waitSeconds }
+  const importedActivity = new Set(); // opencode database events already folded into the activity reducer
+  const importedSessions = new Map(); // projectId -> session ids created by database activity
   const events = new Map(); // eventId -> event
   const changed = new Set();
   const added = new Set();
@@ -423,6 +425,34 @@ export function createAgentEventStore({
     },
     /** US-0214 FR2, FR3: the activity rows of a project now (main chats, their agents). */
     activity: activityOf,
+    /** US-0058 FR1, FR3: fold a text-free persisted opencode tool event through the shared activity and touch paths. */
+    ingestActivity({ projectId, ...activity }) {
+      if (activity.harness !== 'opencode' || !Number.isFinite(activity.atMs) || !activity.sessionId || !activity.name) return;
+      const dedupeKey = `${projectId}:${activity.sessionId}:${activity.agentId ?? ''}:${activity.toolId ?? ''}:${activity.name}:${activity.atMs}`;
+      if (importedActivity.has(dedupeKey)) return;
+      importedActivity.add(dedupeKey);
+      if (importedActivity.size > 20000) importedActivity.delete(importedActivity.values().next().value);
+      const session = sessions.get(activity.sessionId) ?? { projectId, tabId: 'agent:opencode', harness: 'opencode', waitSeconds: 0 };
+      sessions.set(activity.sessionId, session);
+      if (!importedSessions.has(projectId)) importedSessions.set(projectId, new Set());
+      importedSessions.get(projectId).add(activity.sessionId);
+      feedActivity({ sessionId: activity.sessionId, arrivedAtMs: activity.atMs }, session, { kind: 'activity', activity });
+    },
+    /** US-0058 FR1, FR3: remove database-derived rows and dedupe keys when their project closes. */
+    clearImportedActivity(projectId) {
+      for (const sessionId of importedSessions.get(projectId) ?? []) {
+        if (sessions.get(sessionId)?.projectId === projectId) sessions.delete(sessionId);
+        activityState = dropSession(activityState, sessionId);
+      }
+      importedSessions.delete(projectId);
+      for (const key of importedActivity) if (key.startsWith(`${projectId}:`)) importedActivity.delete(key);
+      const timers = activityTimers.get(projectId);
+      if (timers) {
+        clearTimeout(timers.push);
+        clearTimeout(timers.idle);
+        activityTimers.delete(projectId);
+      }
+    },
     /** US-0214 FR2.3: { projectId, rows } within ACTIVITY_PUSH_MS of a change, and again when a row turns idle. */
     onActivity(fn) {
       activityFns.add(fn);

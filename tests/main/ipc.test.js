@@ -46,6 +46,7 @@ const m = vi.hoisted(() => {
         local: { host: 'hosta', cloneId: 'aaaaaaaaaaaa' }
       })),
       readOpencodeMessages: vi.fn(async () => []), // US-0058: never the real opencode.db
+      readOpencodeActivityRecords: vi.fn(async () => ({ sessions: [], parts: [], messages: [] })), // US-0058
       loadVelocity: vi.fn(async () => ({ velocity: true })), // US-0303
       // US-0211: the current rate table with its sources and notes.
       loadRates: vi.fn(async () => ({ rates: { 'opus-5-5': { input: 1 } }, sources: { 'opus-5-5': 'app' }, notes: [], asOf: '2026-11-17' })),
@@ -236,7 +237,10 @@ vi.mock('../../src/main/teamActivity.js', async (importOriginal) => ({
 vi.mock('../../src/main/usageSnapshot.js', () => ({ USAGE_DIR: '.thadeus/usage', snapshotOf: m.svc.snapshotOf, writeSnapshot: m.svc.writeSnapshot }));
 vi.mock('../../src/main/notify.js', () => ({ notifyQuestions: m.svc.notifyQuestions, notifyEvent: m.svc.notifyEvent }));
 vi.mock('../../src/main/parsers/ledger.js', () => ({ agentName: m.svc.agentName, summarizeLedger: m.svc.summarizeLedger }));
-vi.mock('../../src/main/opencodeDb.js', () => ({ readOpencodeMessages: m.svc.readOpencodeMessages }));
+vi.mock('../../src/main/opencodeDb.js', () => ({
+  readOpencodeMessages: m.svc.readOpencodeMessages,
+  readOpencodeActivityRecords: m.svc.readOpencodeActivityRecords
+}));
 vi.mock('../../src/main/models.js', () => ({ getConfiguredModels: m.svc.getConfiguredModels }));
 vi.mock('../../src/main/modelRates.js', () => ({ loadRates: m.svc.loadRates }));
 vi.mock('../../src/main/aidlcConfig.js', () => ({
@@ -523,6 +527,31 @@ describe('projects', () => {
     expect(sender.send).toHaveBeenCalledWith('questions:changed', expect.any(Array));
     await expect(call('project:spaces', {}, projectId)).rejects.toThrow(/Okänt projekt/);
     await expect(call('project:close', {}, projectId)).resolves.toBeUndefined();
+  });
+
+  it('does not import opencode activity when its project closes during the database read', async () => {
+    let finishRead;
+    svc.readOpencodeActivityRecords.mockReturnValueOnce(new Promise((resolve) => (finishRead = resolve)));
+    const { projectId, sender } = await openProject('/work/close-during-opencode-read');
+
+    await call('project:close', {}, projectId);
+    const otherProject = await openProject('/work/other-open-project');
+    finishRead({
+      sessions: [{ id: 'oc-session', directory: '/work/close-during-opencode-read', parent_id: null, agent: 'build' }],
+      parts: [
+        {
+          id: 'call-1',
+          session_id: 'oc-session',
+          type: 'tool',
+          data: { tool: 'read', callID: 'call-1', state: { status: 'completed', time: { start: 1, end: 2 }, input: {} } }
+        }
+      ],
+      messages: []
+    });
+    await new Promise((resolve) => setTimeout(resolve, 300));
+
+    expect(sender.send).not.toHaveBeenCalledWith('agent:activity', expect.anything());
+    expect(otherProject.sender.send).not.toHaveBeenCalledWith('agent:activity', expect.objectContaining({ projectId }));
   });
 
   it('picks a folder from the saved default, or returns null when cancelled', async () => {

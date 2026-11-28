@@ -1,0 +1,12 @@
+{
+  "stage": "code-generation",
+  "upstream_ids": ["AC1", "AC2", "AC3", "AC4", "AC5"],
+  "coverage": [
+    { "id": "AC1", "status": "OK", "target": "docs/features/epic-00-fixes.md" },
+    { "id": "AC2", "status": "OK", "target": "src/main/opencodeActivity.js" },
+    { "id": "AC3", "status": "OK", "target": "src/main/parsers/opencodeUsage.js" },
+    { "id": "AC4", "status": "OK", "target": "src/main/pulse.js" },
+    { "id": "AC5", "status": "OK", "target": "tests/main/opencodeActivity.test.js" }
+  ],
+  "reverse": []
+}

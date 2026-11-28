@@ -83,7 +83,7 @@
 - [ ] nfr-requirements — SKIP
 - [ ] nfr-design — SKIP
 - [ ] infrastructure-design — SKIP
-- [-] code-generation — EXECUTE
+- [?] code-generation — EXECUTE
 - [ ] build-and-test — EXECUTE
 - [ ] ci-pipeline — SKIP
 
@@ -101,7 +101,7 @@
 - **Current Stage**: code-generation
 - **Next Stage**: build-and-test
 - **Status**: Running
-- **Last Updated**: 2026-11-28T07:30:16Z
+- **Last Updated**: 2026-11-28T09:07:54Z
 
 ## Session Resume Point
 - **Last Completed Stage**: state-init

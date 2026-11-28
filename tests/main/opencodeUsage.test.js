@@ -5,7 +5,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { DatabaseSync } from 'node:sqlite';
 import { opencodeNodes } from '../../src/main/parsers/opencodeUsage.js';
-import { readOpencodeMessages } from '../../src/main/opencodeDb.js';
+import { readOpencodeActivityRecords, readOpencodeMessages } from '../../src/main/opencodeDb.js';
 
 const msg = (at, extra = {}) => ({
   at,
@@ -78,5 +78,43 @@ describe('readOpencodeMessages (US-0058 FR1, NFR1)', () => {
 
   it('gives [] when there is no database, and never throws', async () => {
     expect(await readOpencodeMessages('/p', '/nowhere/opencode.db')).toEqual([]);
+    expect(await readOpencodeActivityRecords('/p', '/nowhere/opencode.db')).toEqual({ sessions: [], parts: [], messages: [] });
+  });
+
+  it('reads only tool timeline records and session ownership fields from the read-only database', async () => {
+    dir = mkdtempSync(path.join(os.tmpdir(), 'oc-'));
+    const file = path.join(dir, 'opencode.db');
+    const db = new DatabaseSync(file);
+    db.exec(
+      'CREATE TABLE session_v2 (id TEXT, directory TEXT, parent_id TEXT, agent TEXT); CREATE TABLE part (id TEXT, session_id TEXT, type TEXT, data TEXT); CREATE TABLE session_message (id TEXT, session_id TEXT, type TEXT, data TEXT)'
+    );
+    db.exec("INSERT INTO session_v2 VALUES ('s1', '/p', NULL, 'build'), ('s2', '/other', NULL, 'other')");
+    const ins = db.prepare('INSERT INTO part VALUES (?, ?, ?, ?)');
+    ins.run(
+      'call',
+      's1',
+      'tool',
+      JSON.stringify({
+        tool: 'read',
+        callID: 'call',
+        state: { status: 'completed', time: { start: 10, end: 20 }, input: { filePath: '/p/a.js', text: 'private' } }
+      })
+    );
+    ins.run('other', 's2', 'tool', JSON.stringify({ tool: 'read', state: { status: 'completed', time: { start: 1, end: 2 }, input: {} } }));
+    db.prepare('INSERT INTO session_message VALUES (?, ?, ?, ?)').run(
+      'm1',
+      's1',
+      'assistant',
+      JSON.stringify({ time: { created: 5, streamed: 25 }, text: 'private' })
+    );
+    db.close();
+
+    const result = await readOpencodeActivityRecords('/p', file);
+    expect(result.sessions).toEqual([{ id: 's1', directory: '/p', parent_id: null, agent: 'build' }]);
+    expect(result.parts).toHaveLength(1);
+    expect(result.parts[0]).toMatchObject({ id: 'call', session_id: 's1', type: 'tool' });
+    expect(result.messages).toHaveLength(1);
+    expect(result.messages[0]).toMatchObject({ id: 'm1', session_id: 's1' });
+    expect(JSON.stringify(result)).toContain('private');
   });
 });
