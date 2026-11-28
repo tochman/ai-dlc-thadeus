@@ -6,9 +6,9 @@
 
 > AI-DLC runs on several AI coding tools ("harnesses"): Claude Code, opencode, Codex CLI, Kiro CLI, Cursor and GitHub Copilot. Each keeps its own engine folder (`.claude/`, `.aidlc/` for opencode, `.codex/`, `.kiro/`, `.cursor/`) beside the shared `aidlc/` workspace. The console is built around Claude today: the terminal tab runs `claude`, and setup runs `aidlc config --harness claude`. This epic lets the person choose another harness, for example opencode, per project, while the dashboard itself keeps working the same, since it reads the shared `aidlc/` records.
 
-**Stories:** US-0801, US-0802, US-0803, US-0804, US-0805, US-0806
+**Stories:** US-0801, US-0802, US-0803, US-0804, US-0805, US-0806, US-0807
 
-**Status (2026-11-27):** ✅ US-0801–US-0803 released (v0.2.1–v0.2.3). ✅ US-0804 released in v0.3.1. ✅ US-0805 released in v0.3.1. ✅ US-0806 released in v0.3.2. Each story names its release.
+**Status (2026-11-28):** ✅ US-0801–US-0803 released (v0.2.1–v0.2.3). ✅ US-0804 released in v0.3.1. ✅ US-0805 released in v0.3.1. ✅ US-0806 released in v0.3.2. 📋 US-0807 planned, for v0.3.32. Each story names its release.
 
 ---
 
@@ -111,3 +111,18 @@
 - **Notes:**
   - **Where.** `HARNESSES` in `src/shared/harnesses.js` (Codex and Kiro are `selectable: false` today), the agent tab start in main, the project settings.
 - **Dependencies:** US-0801, US-0803
+
+**US-0807: Start an intent in one harness, park it, and pick it up in another** 📋 Planned, for v0.3.32
+- As a **developer who uses more than one harness**, in order to **move work to the tool that fits the next step, or carry on when one tool is out of quota**, I would like to **start an intent in Claude Code, park it at any stage, and resume it in another harness (for example opencode), with the app noticing the switch**.
+- **Epic:** EPIC-08
+- **Priority:** Medium
+- **Complexity:** Medium (to be confirmed)
+- **Background:** Asked for 2026-11-28: "we need to be able to start an intent in Claude, park it at any stage, and pick it up in a different harness. and preferably detect that this is happening". Both harnesses work on the shared `aidlc/` records (US-0803), but a handoff between them has not been tested and is not shown.
+- **Acceptance Criteria:**
+  - [ ] **Given** an intent started in Claude Code and parked at any stage, **when** I resume it in another set-up harness (opencode first), **then** it carries on from the parked stage with its state, decisions and stage documents, and nothing is redone or lost.
+  - [ ] The same holds the other way (opencode to Claude Code) and when it is parked mid-stage, not only between stages.
+  - [ ] The resume button and the agent dialog offer resuming a parked intent in each harness the project has set up.
+  - [ ] **Given** an intent resumed in a different harness than the one that parked it, **then** the app detects it and shows it in one line on the intent (for example "Parked in Claude Code, resumed in opencode"), and the audit log holds the switch.
+  - [ ] Cost, Velocity and Activity count each harness's part of the intent under that harness (needs US-0058).
+  - [ ] Every text goes through `t()` in Swedish and English, and the UI follows LCARS.
+- **Dependencies:** US-0803, US-0501, US-0058

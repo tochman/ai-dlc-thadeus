@@ -6,9 +6,9 @@
 
 > Auctum AIDLC Control should look and behave like a proper Auctum desktop app wherever it shows up: in the Dock, the application menu, the window switcher, the installer and the Linux launcher. Inside the app it should feel like a living bridge console. EPIC-01 added the name, splash screen, in-app logo and the restrained LCARS theme. This epic covers the parts of the operating system that still show Electron defaults, and the motion and light that make the theme come alive without hurting readability.
 
-**Stories:** US-0401, US-0402, US-0403, US-0404, US-0405, US-0406, US-0407, US-0408, US-0409, US-0410, US-0411, US-0412, US-0413, US-0414, US-0415, US-0416, US-0417, US-0418, US-0419
+**Stories:** US-0401, US-0402, US-0403, US-0404, US-0405, US-0406, US-0407, US-0408, US-0409, US-0410, US-0411, US-0412, US-0413, US-0414, US-0415, US-0416, US-0417, US-0418, US-0419, US-0420
 
-**Status (2026-11-28):** ✅ US-0401–US-0411 released (v0.1.1–v0.2.5). ✅ US-0412 released in v0.3.1. ✅ US-0413 released in v0.2.7. ✅ US-0414 released in v0.2.8. ✅ US-0415 released in v0.2.13. ✅ US-0416 released in v0.2.14. ✅ US-0417 released in v0.2.14. ✅ US-0418 released in v0.3.3. ✅ US-0419 released in v0.3.31. Each story names its release.
+**Status (2026-11-28):** ✅ US-0401–US-0411 released (v0.1.1–v0.2.5). ✅ US-0412 released in v0.3.1. ✅ US-0413 released in v0.2.7. ✅ US-0414 released in v0.2.8. ✅ US-0415 released in v0.2.13. ✅ US-0416 released in v0.2.14. ✅ US-0417 released in v0.2.14. ✅ US-0418 released in v0.3.3. ✅ US-0419 released in v0.3.31. 📋 US-0420 planned, for v0.3.32. Each story names its release.
 
 ---
 
@@ -430,3 +430,19 @@
   - [x] Build screenshots at 1280 px and 1600 px, with the terminal hidden, show both populated and empty states and are reviewed before release.
 - **Notes:** A second pass on US-0418, not a redesign of the event ring: the vendor drawing, observers and store stay as they are. The requested decorative arches were rejected and removed from scope. All view criteria are implemented and verified; terminal-hidden screenshots at 1280 px and 1600 px were reviewed for populated and empty states, including two tilt directions. The v0.3.31 plan is in the release list. The person confirmed the local `.dmg` hand check passed on 2026-11-28. v0.3.31 is published; remaining: verify the update is offered to an earlier install and About shows 0.3.31.
 - **Dependencies:** US-0418
+
+
+**US-0420: Astrometrics at project level, with the harness behind each action** 📋 Planned, for v0.3.32
+- As a **developer running agents in more than one harness**, in order to **see all activity in the project in one place and know which tool did what**, I would like **Astrometrics to be a project-level view that covers every intent and free session, and marks each agent and action with the harness it came from**.
+- **Epic:** EPIC-04
+- **Priority:** Medium
+- **Complexity:** Medium
+- **Background:** Asked for 2026-11-28. Astrometrics is reached from the intent view today, so it reads as if it belonged to one intent, while the activity it shows is the whole project's. With opencode sessions feeding activity (US-0058) and intents moving between harnesses (US-0807), the view also needs to say which harness each piece of activity came from.
+- **Acceptance Criteria:**
+  - [ ] Astrometrics is opened from project level on the app's left arm, not from inside an intent; the intent view no longer holds it.
+  - [ ] **Given** activity from several intents and free sessions, **then** the view shows all of it, grouped by intent or free session, whichever intent is selected.
+  - [ ] **Given** activity from Claude Code, opencode or another supported harness, **then** each agent segment carries its harness (name and LCARS colour tag), and the hover callout and the latest-actions readout name it.
+  - [ ] A harness legend shows the harnesses seen in the window; activity whose harness is unknown shows as "Unknown", never dropped.
+  - [ ] An intent that changed harness mid-way (US-0807) shows its segments under each harness they ran in.
+  - [ ] Every text goes through `t()` in Swedish and English, in the LCARS look; no new dependency.
+- **Dependencies:** US-0419, US-0058
