@@ -6,9 +6,9 @@
 
 > Many projects describe their product in a feature document: an overview (`docs/FEATURES.md`) listing epics, and one file per epic (`docs/features/epic-XX-*.md`) with user stories, acceptance criteria and status. The format is not part of AI-DLC, but it works well together with it: the feature docs say *what* and *why*, and AI-DLC's records say *how* and *when*. The console should offer this format when a project is set up, and let people read and follow it next to the AI-DLC work.
 
-**Stories:** US-0601, US-0602, US-0603, US-0604, US-0605, US-0606, US-0607, US-0608, US-0609
+**Stories:** US-0601, US-0602, US-0603, US-0604, US-0605, US-0606, US-0607, US-0608, US-0609, US-0610
 
-**Status (2026-11-20):** ✅ US-0601–US-0603 released (v0.2.0–v0.2.5). ✅ US-0604 and US-0605 released in v0.2.7. ✅ US-0606 and US-0607 released in v0.2.9. ✅ US-0608 released in v0.2.10. ✅ US-0609 released in v0.2.13. Each story names its release.
+**Status (2026-11-28):** ✅ US-0601–US-0603 released (v0.2.0–v0.2.5). ✅ US-0604 and US-0605 released in v0.2.7. ✅ US-0606 and US-0607 released in v0.2.9. ✅ US-0608 released in v0.2.10. ✅ US-0609 released in v0.2.13. 📋 US-0610 planned. Each story names its release.
 
 **Decisions:**
 - **Q1 (where the view lives):** a switch "Intents | Features" at the top of the project view. Features replaces the sidebar and content area; the terminal stays.
@@ -194,3 +194,21 @@
   - [x] Every text goes through `t()` in Swedish and English, in the LCARS look.
 - **Notes:** Builds on US-0608's record and commit path (`src/main/planningRecord.js`, `src/main/planningSync.js`); the writers are `src/main/tokenReadings.js`, `src/main/usageSnapshot.js` and `src/main/agentHooks.js`. Until it ships, the project rule in `aidlc/spaces/default/memory/project.md` (Way of Working, 2026-11-18) asks for the intent's `.thadeus` files to be committed by hand when an intent finishes.
 - **Dependencies:** US-0608, US-0607, US-0208, US-0213
+
+
+**US-0610: The planning views show every change at once, whatever branch is checked out and whether or not it is synced yet** 📋 Planned
+- As a **developer planning releases while a story branch is checked out**, in order to **trust what the release list and feature views show at any moment**, I would like **every planning change I make to show at once, with its sync state, and other people's pushed changes to show up live, without the app touching my branch**.
+- **Epic:** EPIC-06
+- **Priority:** High
+- **Complexity:** Medium
+- **Background:** Raised 2026-11-28 after several rounds of assigning stories and other edits that seemed to have no effect (US-0059 is the first reported symptom). The write side already keeps every change in the local record (US-0607, US-0608) and commits it on `dash/planning` without touching the checkout (US-0606). The read side (US-0036) shows `origin/main` with the branch's own story blocks on top. So a change that is still pending in the record, committed but not pushed, or waiting on a pull request to a protected `main` is not shown until it lands on `origin/main`. Agreed approach: one read model in layers, built in memory and never written into the checkout.
+- **Acceptance Criteria:**
+  - [ ] Base layer: the views read `origin/main` (or the docs branch when `main` is protected), as today.
+  - [ ] **Given** a planning change in the local record that is not on the base yet (pending, committed on `dash/planning`, pushed or waiting on a pull request), **when** a planning view reads, **then** the change is applied on top in memory and shows at once; it leaves this layer once the base holds it.
+  - [ ] The checked-out branch's own story blocks stay on top as today; nothing is written into the checkout beyond them.
+  - [ ] Live updates: the views read again when the record changes, when a git ref moves (local `main`, `dash/planning`, `origin/*`), and after a regular background fetch, so a teammate's pushed change shows without a restart or a branch switch.
+  - [ ] Each changed story and release plan row shows where it stands: saved here, committed, pushed or waiting on a pull request, or on main; a conflict is flagged and shows both versions, as the record keeps them.
+  - [ ] **Given** a story branch is checked out, **when** a story is added to a release from the release list, **then** it shows in that release at once (US-0059 is closed by this).
+  - [ ] Every text goes through `t()` in Swedish and English, in the LCARS look; no new dependency.
+- **Notes:** Out of scope: a teammate's changes that are not pushed yet; git carries only what is pushed, and showing them would need a shared store outside git.
+- **Dependencies:** US-0036, US-0606, US-0607, US-0608
