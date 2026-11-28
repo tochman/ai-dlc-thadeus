@@ -45,6 +45,7 @@ const m = vi.hoisted(() => {
         summary: ledger ? { project: { total: { usd: 3 } }, perIntent: {} } : null,
         local: { host: 'hosta', cloneId: 'aaaaaaaaaaaa' }
       })),
+      readOpencodeMessages: vi.fn(async () => []), // US-0058: never the real opencode.db
       loadVelocity: vi.fn(async () => ({ velocity: true })), // US-0303
       // US-0211: the current rate table with its sources and notes.
       loadRates: vi.fn(async () => ({ rates: { 'opus-5-5': { input: 1 } }, sources: { 'opus-5-5': 'app' }, notes: [], asOf: '2026-11-17' })),
@@ -235,6 +236,7 @@ vi.mock('../../src/main/teamActivity.js', async (importOriginal) => ({
 vi.mock('../../src/main/usageSnapshot.js', () => ({ USAGE_DIR: '.thadeus/usage', snapshotOf: m.svc.snapshotOf, writeSnapshot: m.svc.writeSnapshot }));
 vi.mock('../../src/main/notify.js', () => ({ notifyQuestions: m.svc.notifyQuestions, notifyEvent: m.svc.notifyEvent }));
 vi.mock('../../src/main/parsers/ledger.js', () => ({ agentName: m.svc.agentName, summarizeLedger: m.svc.summarizeLedger }));
+vi.mock('../../src/main/opencodeDb.js', () => ({ readOpencodeMessages: m.svc.readOpencodeMessages }));
 vi.mock('../../src/main/models.js', () => ({ getConfiguredModels: m.svc.getConfiguredModels }));
 vi.mock('../../src/main/modelRates.js', () => ({ loadRates: m.svc.loadRates }));
 vi.mock('../../src/main/aidlcConfig.js', () => ({
@@ -574,7 +576,7 @@ describe('projects', () => {
     const ledger = { workflows: {} };
     svc.loadCost.mockResolvedValueOnce({ available: true, ledger });
     await call('project:cost', {}, projectId, 'default');
-    expect(svc.loadCrossMachineCost).toHaveBeenLastCalledWith('/work/snap', 'default', [], ledger, { 'opus-5-5': { input: 1 } });
+    expect(svc.loadCrossMachineCost).toHaveBeenLastCalledWith('/work/snap', 'default', [], ledger, { 'opus-5-5': { input: 1 } }, []);
     expect(svc.snapshotOf).toHaveBeenLastCalledWith(ledger, { host: 'hosta', cloneId: 'aaaaaaaaaaaa' });
     expect(svc.writeSnapshot).toHaveBeenLastCalledWith('/work/snap', expect.objectContaining({ cloneId: 'aaaaaaaaaaaa' }));
   });
@@ -600,6 +602,27 @@ describe('projects', () => {
     expect(cost).toMatchObject({ available: true, project: expect.any(Object) });
     expect(cost.rates).toBeNull();
     expect(svc.loadCrossMachineCost.mock.calls.at(-1)[4]).toBeNull();
+  });
+
+  it("passes opencode's messages on and sums its usage into this machine's readings, even without a ledger (US-0058 FR1)", async () => {
+    const { projectId } = await openProject('/work/oc');
+    const messages = [{ at: 1, agent: 'build', model: 'm', cost: 0, tokens: {} }];
+    svc.readOpencodeMessages.mockResolvedValueOnce(messages);
+    const node = { totals: { usd: 1 } };
+    svc.loadCrossMachineCost.mockResolvedValueOnce({
+      summary: { project: { total: { usd: 1 } }, perIntent: {} },
+      local: null,
+      opencode: { 'intent:u1': node }
+    });
+    svc.loadIntentList.mockResolvedValueOnce({ intents: [{ dirName: 'a', status: 'in-flight' }] });
+    svc.summarizeLedger.mockClear();
+    const cost = await call('project:cost', {}, projectId, 'default');
+    expect(cost.available).toBe(true);
+    expect(svc.loadCrossMachineCost.mock.calls.at(-1)[5]).toBe(messages);
+    const [ledger, intents] = svc.summarizeLedger.mock.calls.at(-1);
+    expect(ledger.workflows['intent:u1']).toEqual(node);
+    expect(intents[0].uuid).toBe('dir:a'); // an intent without a uuid is keyed by its folder, as the cost service keys it
+    expect(svc.writeSnapshot).not.toHaveBeenLastCalledWith('/work/oc', expect.anything());
   });
 
   it('caches the configured models and the harness detection per project', async () => {

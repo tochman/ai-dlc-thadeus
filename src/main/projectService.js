@@ -11,6 +11,7 @@ import { unitStatuses } from './parsers/units.js';
 import { pendingQuestions } from './questions.js';
 import { agentName, summarizeLedger } from './parsers/ledger.js';
 import { addTree, mergeIntentCosts, shardCosts } from './parsers/auditCost.js';
+import { opencodeNodes } from './parsers/opencodeUsage.js';
 import { localClone, readSnapshots } from './usageSnapshot.js';
 import { intentMetrics, parseMarkerHistory, projectMetrics, storyMetrics } from './parsers/velocity.js';
 import { parkedFromAudit } from './intentPark.js';
@@ -376,9 +377,11 @@ function projectMachines(parts, hasLedger, local) {
  * and the project get `machines` and `partial`. An intent without a uuid is matched by its folder (shard rows only).
  * @param {object|null} ledger this machine's parsed usage-ledger.json, or null when it has none
  * @param {Record<string, object>|null} [rates] US-0211 FR2: the current rate table; every figure also gets `currentUsd`
- * @returns {Promise<{summary: object|null, local: {host: string, cloneId: string}|null}>} summary null: no cost anywhere
+ * @param {object[]} [opencodeMessages] US-0058 FR1: this machine's opencode messages (readOpencodeMessages), added per intent
+ * @returns {Promise<{summary: object|null, local: {host: string, cloneId: string}|null, opencode: Record<string, object>}>} summary
+ *   null: no cost anywhere; `opencode` the opencode nodes by ledger key ("intent:<uuid>")
  */
-export async function loadCrossMachineCost(root, space, intents, ledger, rates = null) {
+export async function loadCrossMachineCost(root, space, intents, ledger, rates = null, opencodeMessages = []) {
   assertName(space, 'space');
   const events = await Promise.all(intents.map((i) => auditEventsOrEmpty(root, `${intentsDir(space)}/${i.dirName}`)));
   const shards = events.map(shardCosts);
@@ -388,19 +391,24 @@ export async function loadCrossMachineCost(root, space, intents, ledger, rates =
   );
   const snaps = await readSnapshots(root);
   const keyed = intents.map((i) => ({ ...i, uuid: i.uuid ?? `dir:${i.dirName}` }));
+  const opencode = opencodeNodes(
+    opencodeMessages,
+    keyed.map((i, n) => ({ key: `intent:${i.uuid}`, events: events[n] })),
+    rates
+  );
   const workflows = { ...ledger?.workflows };
   const merged = {};
   let extra = null;
   keyed.forEach((intent, n) => {
     const key = `intent:${intent.uuid}`;
     const snapshots = snaps.filter((s) => s.intents[intent.uuid]).map((s) => ({ host: s.host, cloneId: s.cloneId, node: s.intents[intent.uuid] }));
-    const m = mergeIntentCosts({ ledgerNode: ledger?.workflows?.[key] ?? null, local, shards: shards[n], snapshots, rates });
+    const m = mergeIntentCosts({ ledgerNode: ledger?.workflows?.[key] ?? null, local, shards: shards[n], snapshots, rates, opencode: opencode[key] ?? null });
     if (!m) return;
     workflows[key] = m.node;
     extra = addTree(extra, m.extra);
     merged[intent.dirName] = m;
   });
-  if (!ledger && !extra) return { summary: null, local };
+  if (!ledger && !extra) return { summary: null, local, opencode };
 
   const all = { ...ledger, workflows };
   for (const k of ['totals', 'byModel', 'byAgent']) all[k] = addTree(ledger?.[k], extra?.[k]);
@@ -418,7 +426,7 @@ export async function loadCrossMachineCost(root, space, intents, ledger, rates =
   const readings = await Promise.all(intents.map((i) => readReadings(root, i.dirName).catch(() => [])));
   addRework(summary, intents, events, readings);
   await addQuality(root, space, summary, intents, events);
-  return { summary, local };
+  return { summary, local, opencode };
 }
 
 /** US-1305 FR1.7, NFR2: a file that cannot be read is named in the log and counts as missing; it never breaks the view. */

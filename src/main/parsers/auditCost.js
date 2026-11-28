@@ -93,15 +93,18 @@ const usd = (node) => zero(node?.totals?.usd);
  * in `local`) counts from the ledger when it has the intent, else from its own shard rows (FR2.2). Every other machine
  * counts from its snapshot or its shard rows, whichever total is larger, never both (FR3.4, assumption).
  * @param {{ledgerNode: object|null, local: {host: string, cloneId: string}|null,
- *          shards: {host: string, cloneId: string, node: object}[], snapshots: {host: string, cloneId: string, node: object}[]}} opts
- * @returns {{node: object, extra: object|null, machines: {host: string|null, local: boolean, source: 'ledger'|'snapshot'|'audit', usd: number}[],
+ *          shards: {host: string, cloneId: string, node: object}[], snapshots: {host: string, cloneId: string, node: object}[],
+ *          opencode?: object|null}} opts `opencode`: this machine's opencode node (US-0058)
+ * @returns {{node: object, extra: object|null, machines: {host: string|null, local: boolean, source: 'ledger'|'snapshot'|'audit'|'opencode', usd: number}[],
  *            partial: boolean}|null} `extra` is the part the ledger does not hold; null when no machine has a cost
  */
-export function mergeIntentCosts({ ledgerNode, local, shards = [], snapshots = [], rates = null }) {
+export function mergeIntentCosts({ ledgerNode, local, shards = [], snapshots = [], rates = null, opencode = null }) {
   const own = local ? shards.find((s) => s.cloneId === local.cloneId) : null;
   const parts = [];
   if (ledgerNode) parts.push({ host: local?.host ?? own?.host ?? null, local: true, source: 'ledger', node: ledgerNode });
   else if (own) parts.push({ host: own.host, local: true, source: 'audit', node: own.node });
+  // US-0058 FR1: this machine's opencode work, read from opencode.db; the ledger never holds it, so it is added.
+  if (opencode) parts.push({ host: local?.host ?? own?.host ?? null, local: true, source: 'opencode', node: opencode });
 
   const others = new Map(); // cloneId -> part; a snapshot is offered first, so a tie keeps it
   const offer = (s, source) => {
