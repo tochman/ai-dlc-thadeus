@@ -8,7 +8,7 @@
 
 **Stories:** US-0601, US-0602, US-0603, US-0604, US-0605, US-0606, US-0607, US-0608, US-0609, US-0610
 
-**Status (2026-11-28):** ✅ US-0601–US-0603 released (v0.2.0–v0.2.5). ✅ US-0604 and US-0605 released in v0.2.7. ✅ US-0606 and US-0607 released in v0.2.9. ✅ US-0608 released in v0.2.10. ✅ US-0609 released in v0.2.13. 📋 US-0610 planned. Each story names its release.
+**Status (2026-11-28):** ✅ US-0601–US-0603 released (v0.2.0–v0.2.5). ✅ US-0604 and US-0605 released in v0.2.7. ✅ US-0606 and US-0607 released in v0.2.9. ✅ US-0608 released in v0.2.10. ✅ US-0609 released in v0.2.13. 📋 US-0610 planned, for v0.3.32. Each story names its release.
 
 **Decisions:**
 - **Q1 (where the view lives):** a switch "Intents | Features" at the top of the project view. Features replaces the sidebar and content area; the terminal stays.
@@ -196,7 +196,7 @@
 - **Dependencies:** US-0608, US-0607, US-0208, US-0213
 
 
-**US-0610: The planning views show every change at once, whatever branch is checked out and whether or not it is synced yet** 📋 Planned
+**US-0610: The planning views show every change at once, whatever branch is checked out and whether or not it is synced yet** 📋 Planned, for v0.3.32
 - As a **developer planning releases while a story branch is checked out**, in order to **trust what the release list and feature views show at any moment**, I would like **every planning change I make to show at once, with its sync state, and other people's pushed changes to show up live, without the app touching my branch**.
 - **Epic:** EPIC-06
 - **Priority:** High
