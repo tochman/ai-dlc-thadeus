@@ -87,15 +87,19 @@
 
 ## Steps
 
-1. **Runner.** Confirm the commands in `unit-test-instructions.md` run (vitest 5.1, `main` and `renderer` projects).
-2. **Set the story to 🚧** in the epic file, the epic's Status line and `FEATURES.md`.
-3. **Rules, FR1.1, FR1.2, FR2.2 — Red.** `tests/main/planDesign.test.js`: nodes in graph order with on/off; an unknown stage, a move out of order, an initialization stage turned off and an empty plan are each refused with a reason key. **Green:** `src/shared/planDesign.js` (`designOf`, `checkStageEdit`). **Refactor.**
-4. **Spec Kit rules, FR2.3 — Red.** Same file: a hook on a spine step is allowed; a hook on an unknown step, an unsafe command, an unknown extension, and removing a spine step are refused. **Green:** `checkHookEdit`, `SPECKIT_SPINE`. **Refactor.**
-5. **AI-DLC writer, FR2.1, FR3.1, FR3.2, FR4.1 — Red.** `tests/main/plans.test.js`: `planEditDiff` with `{stages}` changes only the grid block and lists the diff; a refused edit throws its reason; apply refuses a file changed since the preview; apply recompiles. **Green:** extend `planEditDiff`, `previewPlanEdit` and `applyPlanEdit`. **Refactor.**
-6. **Spec Kit writer, FR3.1, FR3.3, FR4.1 — Red.** `tests/main/speckitHooksEdit.test.js`: the preview shows the diff and writes nothing; apply writes `.specify/extensions.yml` with comments kept; apply refuses a changed file; a path out of the root is refused. **Green:** `src/main/speckitHooksEdit.js` (`previewHookEdit`, `applyHookEdit`). **Refactor.**
-7. **Bridge.** Add `previewHookEdit` and `applyHookEdit` to `ipc.js` and `preload/index.js`, with a test beside the existing ipc tests.
-8. **Designer, FR1.1, FR2.1, FR2.2, FR3.1, FR4.1, NFR1–NFR3 — Red.** `tests/renderer/PlanDesigner.test.jsx`: stage blocks in order with off shown; the defaults side panel; toggle, add and remove each lead to the preview, and nothing is applied before Apply; a refused edit shows its reason in a live region; keyboard toggle and move with Space and arrow keys; no animation under reduced motion; the plan reloads on `onConfigChanged`. **Green:** `src/renderer/PlanDesigner.jsx`, opened from `PlansView.jsx`, reusing `ChangePanel`. **Refactor.**
-9. **Spec Kit designer, FR2.3 — Red.** Same test file: the spine is shown locked, hooks show before or after their step, adding and removing a hook goes through the preview. **Green:** the Spec Kit branch of `PlanDesigner.jsx`, opened from the Spec Kit rules view. **Refactor.**
-10. **Texts and look.** Every text through `t()` with keys in `sv.json` and `en.json`; LCARS blocks; `data-testid` values `plan-designer-<role>`; module headers name `US-0906 FR…`.
-11. **Checks.** Run the targeted tests, ESLint and Prettier on the touched files.
-12. **Docs.** Tick the met acceptance criteria and set the story to ✅ after Build and Test.
+- [x] 1. **Runner.** Confirm the commands in `unit-test-instructions.md` run (vitest 5.1, `main` and `renderer` projects).
+- [x] 2. **Set the story to 🚧** in the epic file, the epic's Status line and `FEATURES.md`.
+- [x] 3. **Rules, FR1.1, FR1.2, FR2.2 — Red.** `tests/main/planDesign.test.js`: nodes in graph order with on/off; an unknown stage, a move out of order, an initialization stage turned off and an empty plan are each refused with a reason key. **Green:** `src/shared/planDesign.js` (`designOf`, `checkStageEdit`). **Refactor.**
+- [x] 4. **Spec Kit rules, FR2.3 — Red.** Same file: a hook on a spine step is allowed; a hook on an unknown step, an unsafe command, an unknown extension, and removing a spine step are refused. **Green:** `checkHookEdit`, `SPECKIT_SPINE`. **Refactor.**
+- [x] 5. **AI-DLC writer, FR2.1, FR3.1, FR3.2, FR4.1 — Red.** `tests/main/plans.test.js`: `planEditDiff` with `{stages}` changes only the grid block and lists the diff; a refused edit throws its reason; apply refuses a file changed since the preview; apply recompiles. **Green:** extend `planEditDiff`, `previewPlanEdit` and `applyPlanEdit`. **Refactor.**
+- [x] 6. **Spec Kit writer, FR3.1, FR3.3, FR4.1 — Red.** `tests/main/speckitHooksEdit.test.js`: the preview shows the diff and writes nothing; apply writes `.specify/extensions.yml` with comments kept; apply refuses a changed file; a path out of the root is refused. **Green:** `src/main/speckitHooksEdit.js` (`previewHookEdit`, `applyHookEdit`). **Refactor.**
+- [x] 7. **Bridge.** Add `previewHookEdit` and `applyHookEdit` to `ipc.js` and `preload/index.js`, with a test beside the existing ipc tests.
+- [x] 8. **Designer, FR1.1, FR2.1, FR2.2, FR3.1, FR4.1, NFR1–NFR3 — Red.** `tests/renderer/PlanDesigner.test.jsx`: stage blocks in order with off shown; the defaults side panel; toggle, add and remove each lead to the preview, and nothing is applied before Apply; a refused edit shows its reason in a live region; keyboard toggle and move with Space and arrow keys; no animation under reduced motion; the plan reloads on `onConfigChanged`. **Green:** `src/renderer/PlanDesigner.jsx`, opened from `PlansView.jsx`, reusing `ChangePanel`. **Refactor.**
+- [x] 9. **Spec Kit designer, FR2.3 — Red.** Same test file: the spine is shown locked, hooks show before or after their step, adding and removing a hook goes through the preview. **Green:** the Spec Kit branch of `PlanDesigner.jsx`, opened from the Spec Kit rules view. **Refactor.**
+- [x] 10. **Texts and look.** Every text through `t()` with keys in `sv.json` and `en.json`; LCARS blocks; `data-testid` values `plan-designer-<role>`; module headers name `US-0906 FR…`.
+- [x] 11. **Checks.** Run the targeted tests, ESLint and Prettier on the touched files.
+- [ ] 12. **Docs.** Tick the met acceptance criteria and set the story to ✅ after Build and Test.
+
+## Progress
+
+Steps 1–11 are done and their targeted tests, ESLint and Prettier pass on the touched files. Step 12 waits for Build and Test. Code Generation is paused after the build, before the code summary, the review and the completion gate; `/aidlc --resume` continues there.
