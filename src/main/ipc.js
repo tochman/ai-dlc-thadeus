@@ -37,7 +37,7 @@ import { readReadings, readingOf, recordReading } from './tokenReadings.js';
 import { createSpeckitTokens } from './speckitTokens.js';
 import { USAGE_DIR, snapshotOf, writeSnapshot } from './usageSnapshot.js';
 import { CONFIG_WATCH_PATHS, checkHarness, getAidlcConfig } from './aidlcConfig.js';
-import { applyPlanEdit, deletePlan, listPlans, planStages, previewPlanEdit, savePlan } from './plans.js';
+import { applyPlanEdit, deletePlan, listPlans, planDesignGraph, planStages, previewPlanEdit, savePlan } from './plans.js';
 import { apply as applyConfigChange, applyGuardLock, preview as previewConfigChange, previewGuardLock } from './aidlcWrite.js';
 import { applyCostRules, costRulesStatus, previewCostRules } from './costRules.js';
 import { applyModelChange, checkDrift, estimateCost, ledgerRows, modelOptions, previewModelChange, pricesFromLedger } from './modelChoice.js';
@@ -91,6 +91,7 @@ import { loadDelivered, setHandLink } from './storyLinks.js'; // US-1303
 import { SPECKIT_WATCH_PATHS, listedFeatures, loadSpeckitFeatures } from './speckitFeatures.js';
 import { addMark, markFile, removeMark } from './speckitArchive.js'; // US-1411
 import { loadSpeckitRules } from './speckitRules.js'; // US-1404
+import { applyHookEdit, previewHookEdit } from './speckitHooksEdit.js'; // US-0906
 import { switchFramework, switchPreview, switchTarget } from './frameworkSwitch.js'; // US-1407
 import {
   agentCommandFound,
@@ -1338,6 +1339,11 @@ const handlers = {
     checkHarness(harness, await p.harnesses);
     return planStages(p.root, harness, name);
   },
+  'plans:graph': async (_event, projectId, harness) => {
+    const p = project(projectId);
+    checkHarness(harness, await p.harnesses);
+    return planDesignGraph(p.root, harness);
+  },
   'plans:save': async (_event, projectId, name) => {
     const p = project(projectId);
     const result = await savePlan(p.root, name);
@@ -1482,6 +1488,30 @@ const handlers = {
     const p = project(projectId);
     if (p.framework !== 'speckit') throw new Error(t('errors.notSpeckitProject'));
     return loadSpeckitRules(p.root);
+  },
+  // US-0906 FR3.1, FR3.3, FR4.1: only the selected Spec Kit project can preview/apply its hook edits.
+  'speckit:hooksPreview': async (_event, projectId, edit) => {
+    const p = project(projectId);
+    if (p.framework !== 'speckit') throw new Error(t('errors.notSpeckitProject'));
+    const safeEdit = {
+      action: edit?.action,
+      extension: edit?.extension,
+      command: edit?.command,
+      when: edit?.when,
+      target: edit?.target,
+      mode: edit?.mode
+    };
+    const shown = await previewHookEdit(p.root, safeEdit);
+    p.speckitHookEdit = { edit: safeEdit, before: shown.before };
+    return { file: shown.file, diff: shown.diff };
+  },
+  'speckit:hooksApply': async (_event, projectId) => {
+    const p = project(projectId);
+    if (p.framework !== 'speckit') throw new Error(t('errors.notSpeckitProject'));
+    if (!p.speckitHookEdit) throw new Error(t('errors.previewFirst'));
+    const { edit, before } = p.speckitHookEdit;
+    p.speckitHookEdit = null;
+    return applyHookEdit(p.root, edit, before);
   },
   // US-0608 FR2.2, AC1.2.1: a feature doc is in the planning record before it is written; the watcher records it too, should this fail.
   'file:write': async (_event, projectId, rel, content, expect) => {

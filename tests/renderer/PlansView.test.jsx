@@ -3,6 +3,7 @@ import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-li
 import { selectableHarness } from '../../src/shared/harnesses.js';
 
 let terminal;
+let configListeners;
 vi.mock('../../src/renderer/TerminalContext.jsx', () => ({ useTerminal: () => terminal }));
 const { default: PlansView } = await import('../../src/renderer/PlansView.jsx');
 
@@ -45,15 +46,28 @@ const list = (overrides = {}) => ({
 });
 
 beforeEach(() => {
+  configListeners = [];
   terminal = { harness: selectableHarness('claude'), type: vi.fn(async () => true) };
   window.bridge = {
     listPlans: vi.fn(async () => list()),
-    getPlanStages: vi.fn(async () => ({ execute: ['requirements-analysis', 'code-generation'], skip: ['market-research'] })),
+    getPlanStages: vi.fn(async () => ({
+      execute: ['requirements-analysis', 'code-generation'],
+      skip: ['market-research'],
+      ordered: ['requirements-analysis', 'market-research', 'code-generation']
+    })),
+    getPlanDesignGraph: vi.fn(async () => [
+      { slug: 'requirements-analysis', phase: 'inception' },
+      { slug: 'market-research', phase: 'ideation' },
+      { slug: 'code-generation', phase: 'construction' }
+    ]),
     savePlan: vi.fn(async () => ({ ok: true, output: 'saved' })),
     previewPlanEdit: vi.fn(),
     applyPlanEdit: vi.fn(),
     deletePlan: vi.fn(),
-    onConfigChanged: vi.fn(() => () => {})
+    onConfigChanged: vi.fn((listener) => {
+      configListeners.push(listener);
+      return () => {};
+    })
   };
 });
 afterEach(cleanup);
@@ -80,6 +94,28 @@ describe('PlansView (EPIC-09 US-0903)', () => {
     expect(window.bridge.getPlanStages).toHaveBeenCalledWith('p1', 'claude', 'bugfix');
     expect((await screen.findByTestId('plans-stages-execute')).textContent).toBe('Körs (2)requirements-analysiscode-generation');
     expect(screen.getByTestId('plans-stages-skip').textContent).toBe('Hoppas över (1)market-research');
+  });
+
+  it('opens the visual designer for an own plan with framework rules', async () => {
+    renderView();
+    fireEvent.click(within(await plan('ultra-express')).getByTestId('plan-designer-open'));
+    expect(await screen.findByTestId('plan-designer-root')).toBeTruthy();
+    expect(window.bridge.getPlanDesignGraph).toHaveBeenCalledWith('p1', 'claude');
+  });
+
+  it('reloads the selected plan stages when its configuration changes', async () => {
+    renderView();
+    fireEvent.click(within(await plan('ultra-express')).getByTestId('plan-designer-open'));
+    expect(await screen.findByTestId('plan-designer-root')).toBeTruthy();
+    window.bridge.getPlanStages.mockResolvedValue({
+      execute: ['requirements-analysis'],
+      skip: ['market-research', 'code-generation'],
+      ordered: ['requirements-analysis', 'market-research', 'code-generation']
+    });
+    configListeners.forEach((listener) => listener({ projectId: 'p1' }));
+
+    await waitFor(() => expect(window.bridge.getPlanStages).toHaveBeenCalledTimes(2));
+    await waitFor(() => expect(screen.getByTestId('plan-designer-toggle-code-generation').getAttribute('aria-pressed')).toBe('false'));
   });
 
   // US-0050 item 7: an opened plan's stages unfold with the shared fold.

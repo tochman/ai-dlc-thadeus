@@ -129,7 +129,20 @@ export async function planStages(root, harness, name) {
   const stages = texts.map((text) => text && gridOf(text)).find(Boolean) ?? (await compiledGrids(root, harness))[name]?.stages;
   if (!stages) throw new Error(t('errors.planNotFound', { name }));
   const entries = Object.entries(stages);
-  return { execute: entries.filter(([, v]) => v === 'EXECUTE').map(([k]) => k), skip: entries.filter(([, v]) => v !== 'EXECUTE').map(([k]) => k) };
+  return {
+    execute: entries.filter(([, v]) => v === 'EXECUTE').map(([k]) => k),
+    skip: entries.filter(([, v]) => v !== 'EXECUTE').map(([k]) => k),
+    ordered: entries.map(([k]) => k)
+  };
+}
+
+/** US-0906 FR1.2, FR2.2: the installed framework's ordered stage definitions, never a renderer-supplied graph. */
+export async function planDesignGraph(root, harness) {
+  const dir = setupHarness(harness)?.markers?.dirs?.[0];
+  if (!dir) throw new Error(t('errors.invalidValue', { what: 'harness', value: String(harness) }));
+  const result = await readJsonSafe(root, `${dir}/tools/data/stage-graph.json`);
+  if (!result.ok || !Array.isArray(result.value)) throw new Error(t('errors.missingField', { field: `${dir}/tools/data/stage-graph.json` }));
+  return result.value.filter((stage) => typeof stage?.slug === 'string').map(({ slug, phase }) => ({ slug, phase: String(phase ?? '') }));
 }
 
 /** Runs `aidlc <args>`; the CLI's output, or its error as a value. */
@@ -214,6 +227,25 @@ const FORMAT = {
  */
 export function planEditDiff(text, edit) {
   if (typeof text !== 'string' || !edit || typeof edit !== 'object') throw new Error(t('errors.invalidValue', { what: 'plan', value: String(edit) }));
+  if (edit.stages !== undefined) {
+    if (
+      !edit.stages ||
+      typeof edit.stages !== 'object' ||
+      Array.isArray(edit.stages) ||
+      Object.values(edit.stages).some((value) => !['EXECUTE', 'SKIP'].includes(value)) ||
+      !Object.values(edit.stages).includes('EXECUTE')
+    )
+      throw new Error(t('errors.invalidValue', { what: 'stages', value: String(edit.stages) }));
+    const match = /<!-- BEGIN aidlc composed-scope-grid[^>]*-->\s*\n\s*```json\s*\n([\s\S]*?)\n\s*```/.exec(text);
+    if (!match) throw new Error(t('errors.missingField', { field: 'composed scope grid' }));
+    const current = JSON.parse(match[1]);
+    const replacement = JSON.stringify({ ...current, stages: edit.stages }, null, 2);
+    const diff = Object.keys({ ...current.stages, ...edit.stages })
+      .filter((stage) => current.stages?.[stage] !== edit.stages[stage])
+      .flatMap((stage) => [`- "${stage}": "${current.stages?.[stage] ?? 'SKIP'}"`, `+ "${stage}": "${edit.stages[stage] ?? 'SKIP'}"`])
+      .join('\n');
+    return { next: text.replace(match[1], replacement), diff };
+  }
   const lines = text.split('\n');
   const end = lines.findIndex((l, i) => i > 0 && l.trim() === '---');
   const marker = lines.findIndex((l) => l.startsWith(GRID_MARKER));

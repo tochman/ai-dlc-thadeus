@@ -8,6 +8,7 @@ import { harnessCommand } from '../shared/harnesses.js';
 import { quoted } from '../shared/planChange.js'; // US-0509 NFR1: no control character reaches the agent line
 import { validPlanName } from '../shared/planName.js';
 import { ChangePanel } from './ConfigEdit.jsx';
+import PlanDesigner from './PlanDesigner.jsx'; // US-0906
 import { useTerminal } from './TerminalContext.jsx';
 
 const DEPTHS = ['Minimal', 'Standard', 'Comprehensive'];
@@ -189,14 +190,17 @@ export default function PlansView({ projectId, visible, harness }) {
     }
   }, [visible, load]);
 
-  async function openPlan(name) {
-    if (open?.name === name) return setOpen(null);
-    setOpen({ name, stages: {} });
+  async function openPlan(name, designing = false) {
+    if (open?.name === name) {
+      if (designing) return setOpen((current) => ({ ...current, designing: true }));
+      return setOpen(null);
+    }
+    setOpen({ name, stages: {}, graph: [], designing });
     try {
-      const stages = await window.bridge.getPlanStages(projectId, harness, name);
-      setOpen((o) => (o?.name === name ? { name, stages } : o));
+      const [stages, graph] = await Promise.all([window.bridge.getPlanStages(projectId, harness, name), window.bridge.getPlanDesignGraph(projectId, harness)]);
+      setOpen((o) => (o?.name === name ? { name, stages, graph, designing: o.designing } : o));
     } catch (err) {
-      setOpen((o) => (o?.name === name ? { name, stages: { error: errorText(err) } } : o));
+      setOpen((o) => (o?.name === name ? { name, stages: { error: errorText(err) }, graph: [], designing: o.designing } : o));
     }
   }
 
@@ -316,6 +320,11 @@ export default function PlansView({ projectId, visible, harness }) {
                     {t('plans.steps')}
                   </button>
                   {p.own && (
+                    <button className="btn" onClick={() => openPlan(p.name, true)} data-testid="plan-designer-open">
+                      {t('planDesigner.title')}
+                    </button>
+                  )}
+                  {p.own && (
                     <>
                       <button className="btn" onClick={() => setAction({ kind: 'edit', plan: p })} data-testid="plans-edit-open">
                         {t('plans.edit')}
@@ -355,6 +364,18 @@ export default function PlansView({ projectId, visible, harness }) {
                 {open?.name === p.name && (
                   <div className="lcars-reveal">
                     <Stages stages={open.stages} />
+                    {open.designing && p.own && !open.stages.error && open.stages.ordered && (
+                      <PlanDesigner
+                        projectId={projectId}
+                        planName={p.name}
+                        framework="aidlc"
+                        harness={harness}
+                        graph={open.graph}
+                        stages={Object.fromEntries(open.stages.ordered.map((slug) => [slug, open.stages.execute.includes(slug) ? 'EXECUTE' : 'SKIP']))}
+                        defaults={{ ...p.defaults, depth: p.depth }}
+                        onReload={load}
+                      />
+                    )}
                   </div>
                 )}
               </li>
