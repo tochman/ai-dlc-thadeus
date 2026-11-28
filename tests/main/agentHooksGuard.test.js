@@ -1,6 +1,6 @@
 // US-0506 u4 RD30, SD35, NFR4.9: the commands a real Install writes, run as Claude Code runs them, with the app absent.
 // Real time (the `scripts` project, after the others), under sh and dash.
-import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import { spawnSync } from 'node:child_process';
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
@@ -10,6 +10,9 @@ import { removeProject, tempProject } from '../helpers/agentHooksFixtures.js';
 
 let root, commands;
 const noWatch = () => ({ ready: Promise.resolve(), close: async () => {} });
+// The full matrix intentionally launches hundreds of real shells; do not let Vitest's 5 s default retry an otherwise
+// healthy case just because the test matrix itself takes longer than five seconds on a loaded machine.
+vi.setConfig({ testTimeout: 30_000 });
 
 beforeAll(async () => {
   root = await tempProject('a b "c" $d-');
@@ -40,11 +43,12 @@ describe('the installed commands (RD30)', () => {
       if (name === 'dialog.sh deleted') await fs.rm(path.join(root, FILES.script), { force: true });
       for (const cmd of commands) {
         for (let i = 0; i < 20; i++) {
-          const t0 = performance.now();
-          const run = spawnSync(shell, ['-c', cmd], { env: { PATH: process.env.PATH, ...env() } });
-          const ms = performance.now() - t0;
+          // Bound the child itself. Timing spawnSync from the parent also counts time the parent is descheduled after
+          // the child exited, creating false >100 ms failures under load; spawnSync's timeout preserves RD30's hard
+          // wall-clock limit for the installed command without attributing parent scheduling pauses to the hook.
+          const run = spawnSync(shell, ['-c', cmd], { env: { PATH: process.env.PATH, ...env() }, timeout: 100 });
+          expect(run.error?.code).not.toBe('ETIMEDOUT');
           expect({ status: run.status, out: run.stdout.length, err: run.stderr.length }).toEqual({ status: 0, out: 0, err: 0 });
-          expect(ms).toBeLessThan(100);
         }
       }
     });
