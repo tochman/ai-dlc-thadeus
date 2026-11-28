@@ -8,7 +8,7 @@
 
 **Stories:** US-0801, US-0802, US-0803, US-0804, US-0805, US-0806, US-0807
 
-**Status (2026-11-28):** ✅ US-0801–US-0803 released (v0.2.1–v0.2.3). ✅ US-0804 released in v0.3.1. ✅ US-0805 released in v0.3.1. ✅ US-0806 released in v0.3.2. 📋 US-0807 planned. Each story names its release.
+**Status (2026-11-28):** ✅ US-0801–US-0803 released (v0.2.1–v0.2.3). ✅ US-0804 released in v0.3.1. ✅ US-0805 released in v0.3.1. ✅ US-0806 released in v0.3.2. 📋 US-0807 planned, for v0.3.32. Each story names its release.
 
 ---
 
@@ -112,7 +112,7 @@
   - **Where.** `HARNESSES` in `src/shared/harnesses.js` (Codex and Kiro are `selectable: false` today), the agent tab start in main, the project settings.
 - **Dependencies:** US-0801, US-0803
 
-**US-0807: Start an intent in one harness, park it, and pick it up in another** 📋 Planned
+**US-0807: Start an intent in one harness, park it, and pick it up in another** 📋 Planned, for v0.3.32
 - As a **developer who uses more than one harness**, in order to **move work to the tool that fits the next step, or carry on when one tool is out of quota**, I would like to **start an intent in Claude Code, park it at any stage, and resume it in another harness (for example opencode), with the app noticing the switch**.
 - **Epic:** EPIC-08
 - **Priority:** Medium
