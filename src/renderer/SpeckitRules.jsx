@@ -6,6 +6,7 @@ import { useTranslation } from 'react-i18next';
 import { useEditor } from './editor/EditorContext.jsx';
 import { FileView } from './ArtifactReader.jsx';
 import SpeckitCommandButton from './SpeckitCommandButton.jsx';
+import PlanDesigner from './PlanDesigner.jsx'; // US-0906 FR2.3
 
 const errorText = (err) => String(err?.message ?? err).replace(/^Error invoking remote method '[^']+': (Error: )?/, '');
 // NFR3.4: the one path this view hands the editor, a constant, never one taken from the result.
@@ -146,6 +147,7 @@ export default function SpeckitRules({ projectId }) {
                 {t('speckit.rules.skipped', { count: result.skipped })}
               </p>
             )}
+            <PlanDesigner projectId={projectId} planName="speckit" framework="speckit" extensions={result.extensions} onReload={load} />
           </section>
 
           {result.errors.length > 0 && (

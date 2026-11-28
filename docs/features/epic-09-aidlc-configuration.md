@@ -26,7 +26,7 @@
 
 **Stories:** US-0901–US-0907
 
-**Status (2026-11-24):** ✅ US-0901–US-0904 released (v0.2.2–v0.2.4). ✅ US-0905 released in v0.2.14. 📋 US-0906 planned, for v0.3.4. 📋 US-0907 planned, for v0.3.5. Each story names its release.
+**Status (2026-11-28):** ✅ US-0901–US-0904 released (v0.2.2–v0.2.4). ✅ US-0905 released in v0.2.14. 🚧 US-0906 in progress, for v0.3.4. 📋 US-0907 planned, for v0.3.5. Each story names its release.
 
 ---
 
@@ -195,7 +195,7 @@ The CLI refuses a harness that the project hasn't installed.
 - **Notes:** Moves the view only; nothing about plans changes. Added to v0.2.14 on 2026-11-22, ahead of US-1401 (v0.3.0): on `main` the move is made where the left arm is built today, and the Spec Kit criterion holds trivially until US-1401 lands; US-1401's shared view list (`src/shared/frameworkViews.js`, on the Spec Kit branches) must then carry Plans under Configuration.
 - **Dependencies:** US-0903
 
-**US-0906: Visual plan designer: drag and drop custom plans for AI-DLC and Spec Kit** 📋 Planned, for v0.3.4
+**US-0906: Visual plan designer: drag and drop custom plans for AI-DLC and Spec Kit** 🚧 In progress, for v0.3.4
 - As a **developer**, in order to **shape how the agents work on my project without writing plan files by hand**, I would like **to design custom plans on a canvas, by dragging, toggling and configuring steps, and save them to the project**.
 - **Epic:** EPIC-09
 - **Priority:** High

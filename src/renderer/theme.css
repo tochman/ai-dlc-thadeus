@@ -2248,3 +2248,20 @@ a.lcars-pill { text-decoration: none; }
 .lcars-key--done { background: var(--slate-5); }
 .story-comment-author { color: var(--steel-light); }
 .story-comment-text { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+
+/* US-0906: plan steps read as a single LCARS pipeline; state is conveyed by both the label and the strip. */
+.plan-designer { display: flex; flex-direction: column; gap: var(--gap-m); }
+.plan-designer-layout { display: grid; grid-template-columns: minmax(0, 2fr) minmax(220px, 1fr); gap: var(--gap-l); }
+.plan-designer-stages, .plan-designer-spine, .plan-designer-hooks { display: flex; flex-direction: column; gap: var(--gap); margin: 0; padding: 0; list-style: none; }
+.plan-designer-stage, .plan-designer-spine > li, .plan-designer-hooks > li { display: flex; align-items: center; gap: var(--gap); min-height: 42px; padding: var(--gap); background: var(--slate-1); border-left: 6px solid var(--slate-4); color: var(--text); }
+.plan-designer-stage.is-on { border-left-color: var(--steel); }
+.plan-designer-stage.is-off { border-left-color: var(--slate-3); opacity: .78; }
+.plan-designer-stage > code, .plan-designer-hooks > li > span:first-child { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.plan-designer-defaults { padding: var(--gap-m); border-left: 6px solid var(--amber); background: var(--slate-1); }
+.plan-designer-defaults dl { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: var(--gap); }
+.plan-designer-defaults dt { color: var(--text-2); }
+.plan-designer-defaults dd { margin: 0; color: var(--steel-text); }
+.plan-designer-hook-form { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: var(--gap-m); align-items: end; margin-top: var(--gap-m); }
+.plan-designer-preview pre { max-height: 280px; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; }
+@media (max-width: 720px) { .plan-designer-layout { grid-template-columns: 1fr; } .plan-designer-stage { flex-wrap: wrap; } }
+@media (prefers-reduced-motion: reduce) { .plan-designer *, .plan-designer *::before, .plan-designer *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; } }

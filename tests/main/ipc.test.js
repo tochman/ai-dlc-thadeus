@@ -67,6 +67,7 @@ const m = vi.hoisted(() => {
       deletePlan: vi.fn(async () => ({ ok: true })),
       listPlans: vi.fn(async () => []),
       planStages: vi.fn(async () => ['s']),
+      planDesignGraph: vi.fn(async () => [{ slug: 'workspace-scaffold', phase: 'initialization' }]),
       previewPlanEdit: vi.fn(async () => ({ before: 'b', file: 'f', diff: 'd' })),
       savePlan: vi.fn(async () => ({ ok: true })),
       applyConfigChange: vi.fn(async () => ({ ok: true })),
@@ -135,6 +136,8 @@ const m = vi.hoisted(() => {
         hooksChecked: true,
         errors: []
       })),
+      previewHookEdit: vi.fn(async () => ({ file: '.specify/extensions.yml', before: 'old', next: 'new', diff: 'diff' })),
+      applyHookEdit: vi.fn(async () => ({ file: '.specify/extensions.yml', ok: true })),
       loadFeatures: vi.fn(async () => ({ epics: [] })),
       loadStoryLinks: vi.fn(async () => ({})),
       loadDelivered: vi.fn(async () => ({ stories: {}, hand: {} })), // US-1303
@@ -246,6 +249,7 @@ vi.mock('../../src/main/plans.js', () => ({
   applyPlanEdit: m.svc.applyPlanEdit,
   deletePlan: m.svc.deletePlan,
   listPlans: m.svc.listPlans,
+  planDesignGraph: m.svc.planDesignGraph,
   planStages: m.svc.planStages,
   previewPlanEdit: m.svc.previewPlanEdit,
   savePlan: m.svc.savePlan
@@ -347,6 +351,7 @@ vi.mock('../../src/main/speckitFeatures.js', async (importOriginal) => ({
 }));
 vi.mock('../../src/main/speckitArchive.js', async (importOriginal) => ({ ...(await importOriginal()), addMark: m.svc.addMark, removeMark: m.svc.removeMark }));
 vi.mock('../../src/main/speckitRules.js', () => ({ loadSpeckitRules: m.svc.loadSpeckitRules }));
+vi.mock('../../src/main/speckitHooksEdit.js', () => ({ previewHookEdit: m.svc.previewHookEdit, applyHookEdit: m.svc.applyHookEdit }));
 vi.mock('../../src/main/projectFile.js', async (importOriginal) => ({ ...(await importOriginal()), writeProjectFile: m.svc.writeProjectFile }));
 // US-0606/US-0607: the planning sync runs real git; here only its calls are checked, with the real scheduler.
 vi.mock('../../src/main/planningSync.js', async (importOriginal) => ({
@@ -705,6 +710,7 @@ describe('AI-DLC configuration and plans', () => {
     svc.loadIntentList.mockResolvedValueOnce({ intents: [{ active: true, dirName: 'd', scope: 'feature' }] });
     expect(await call('plans:list', {}, projectId, 'claude')).toEqual({ plans: [], active: { dirName: 'd', slug: null, plan: null, scope: 'feature' } });
     expect(await call('plans:stages', {}, projectId, 'claude', 'p')).toEqual(['s']);
+    expect(await call('plans:graph', {}, projectId, 'claude')).toEqual([{ slug: 'workspace-scaffold', phase: 'initialization' }]);
     expect(await call('plans:save', {}, projectId, 'p')).toEqual({ ok: true });
     await expect(call('plans:applyEdit', {}, projectId)).rejects.toThrow();
     await call('plans:previewEdit', {}, projectId, 'p', { description: 'x', depth: 'standard', keywords: [], other: 'dropped' });
@@ -864,6 +870,20 @@ describe('Spec Kit features', () => {
     svc.loadSpeckitRules.mockClear();
     await expect(call('speckit:rules', {}, other.projectId)).rejects.toThrow();
     expect(svc.loadSpeckitRules).not.toHaveBeenCalled();
+  });
+
+  it('previews and applies Spec Kit hooks only for a Spec Kit project, using the stored preview', async () => {
+    const { projectId } = await openProject('/work/kit-hooks', KIT);
+    const edit = { action: 'add', extension: 'git', command: 'git.push', when: 'before', target: 'plan' };
+    expect(await call('speckit:hooksPreview', {}, projectId, edit)).toEqual({ file: '.specify/extensions.yml', diff: 'diff' });
+    expect(svc.previewHookEdit).toHaveBeenLastCalledWith('/work/kit-hooks', edit);
+    expect(await call('speckit:hooksApply', {}, projectId)).toEqual({ file: '.specify/extensions.yml', ok: true });
+    expect(svc.applyHookEdit).toHaveBeenLastCalledWith('/work/kit-hooks', edit, 'old');
+    await expect(call('speckit:hooksApply', {}, projectId)).rejects.toThrow();
+
+    const other = await openProject('/work/kit-hooks-other');
+    await expect(call('speckit:hooksPreview', {}, other.projectId, edit)).rejects.toThrow();
+    expect(svc.previewHookEdit).toHaveBeenCalledTimes(1);
   });
 
   it('watches specs/**, the .specify files and the extension folders of a Spec Kit project, pushes speckit:changed, and closes it with the project', async () => {

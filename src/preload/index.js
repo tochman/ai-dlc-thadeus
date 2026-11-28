@@ -140,6 +140,7 @@ contextBridge.exposeInMainWorld('bridge', {
   // Plans (US-0903): a plan name and the three editable fields cross the bridge, never a path or a command.
   listPlans: call('plans:list'),
   getPlanStages: call('plans:stages'),
+  getPlanDesignGraph: call('plans:graph'), // US-0906: graph supplied by the selected framework
   savePlan: call('plans:save'),
   previewPlanEdit: call('plans:previewEdit'),
   applyPlanEdit: call('plans:applyEdit'),
@@ -169,6 +170,8 @@ contextBridge.exposeInMainWorld('bridge', {
   unarchiveSpeckitFeature: call('speckit:unarchive'),
   onSpeckitChanged: subscribe('speckit:changed'), // US-1402 BR6.7: { projectId, paths }
   speckitRules: call('speckit:rules'), // US-1404 FR7 (C6): the constitution, extensions and hooks, read-only
+  previewSpeckitHookEdit: call('speckit:hooksPreview'), // US-0906 FR3.1: edit data only; never a path
+  applySpeckitHookEdit: call('speckit:hooksApply'), // US-0906 FR3.3: apply the stored preview
   onProjectChanged: subscribe('project:changed'),
   onProjectDetected: subscribe('project:detected'),
   onWatchError: subscribe('project:watchError'),
