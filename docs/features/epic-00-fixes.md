@@ -6,9 +6,9 @@
 
 > Small fixes the person reports while using the app: something looks off, behaves wrongly or is missing a detail. Each fix becomes a story here, so nothing reported in passing gets lost. A fix that grows into a feature moves to its topic's epic. A fix for a fault that shipped in a release names that release with a `- **Fault in:** vX.Y.Z` line, so the Velocity view counts it as a failed release (US-1304); a fix story without the line is not counted.
 
-**Stories:** US-0001, US-0002, US-0003, US-0004, US-0005, US-0006, US-0007, US-0008, US-0009, US-0010, US-0011, US-0012, US-0013, US-0014, US-0015, US-0016, US-0017, US-0018, US-0019, US-0020, US-0021, US-0022, US-0023, US-0024, US-0025, US-0026, US-0027, US-0028, US-0029, US-0030, US-0031, US-0032, US-0033, US-0034, US-0035, US-0036, US-0037, US-0038, US-0039, US-0040, US-0041, US-0042, US-0043, US-0044, US-0045, US-0046, US-0047, US-0048, US-0049, US-0050, US-0051, US-0052, US-0053, US-0054, US-0055, US-0056, US-0057, US-0058
+**Stories:** US-0001, US-0002, US-0003, US-0004, US-0005, US-0006, US-0007, US-0008, US-0009, US-0010, US-0011, US-0012, US-0013, US-0014, US-0015, US-0016, US-0017, US-0018, US-0019, US-0020, US-0021, US-0022, US-0023, US-0024, US-0025, US-0026, US-0027, US-0028, US-0029, US-0030, US-0031, US-0032, US-0033, US-0034, US-0035, US-0036, US-0037, US-0038, US-0039, US-0040, US-0041, US-0042, US-0043, US-0044, US-0045, US-0046, US-0047, US-0048, US-0049, US-0050, US-0051, US-0052, US-0053, US-0054, US-0055, US-0056, US-0057, US-0058, US-0059
 
-**Status (2026-11-28):** ✅ US-0001–US-0020 released (v0.2.3–v0.2.6). ✅ US-0021–US-0023 released in v0.2.7. ✅ US-0024 released in v0.2.8. ✅ US-0025 released in v0.2.9. ✅ US-0026 released in v0.2.9. ✅ US-0027 released in v0.2.9. ✅ US-0028 released in v0.2.10. ✅ US-0029 released in v0.2.10. ✅ US-0030 released in v0.2.10. ✅ US-0031 released in v0.2.10. ✅ US-0032 released in v0.2.11. ✅ US-0033 released in v0.2.11. ✅ US-0034 released in v0.2.12. ✅ US-0035 and US-0036 released in v0.2.13. ✅ US-0037, US-0038, US-0039, US-0040, US-0041 and US-0042 released in v0.2.14. ✅ US-0043 released in v0.2.15. ✅ US-0044 released in v0.2.15. ✅ US-0045 released in v0.2.15. ✅ US-0046 released in v0.2.15. ✅ US-0047 released in v0.3.0. ✅ US-0048 released in v0.3.0. ✅ US-0049 released in v0.3.0. ✅ US-0050, US-0051, US-0052, US-0053 and US-0054 released in v0.3.1. ✅ US-0055 released in v0.3.2. ✅ US-0056 released in v0.3.2. 📋 US-0057 planned. 📋 US-0058 planned, for v0.3.32. Each story names its release.
+**Status (2026-11-28):** ✅ US-0001–US-0020 released (v0.2.3–v0.2.6). ✅ US-0021–US-0023 released in v0.2.7. ✅ US-0024 released in v0.2.8. ✅ US-0025 released in v0.2.9. ✅ US-0026 released in v0.2.9. ✅ US-0027 released in v0.2.9. ✅ US-0028 released in v0.2.10. ✅ US-0029 released in v0.2.10. ✅ US-0030 released in v0.2.10. ✅ US-0031 released in v0.2.10. ✅ US-0032 released in v0.2.11. ✅ US-0033 released in v0.2.11. ✅ US-0034 released in v0.2.12. ✅ US-0035 and US-0036 released in v0.2.13. ✅ US-0037, US-0038, US-0039, US-0040, US-0041 and US-0042 released in v0.2.14. ✅ US-0043 released in v0.2.15. ✅ US-0044 released in v0.2.15. ✅ US-0045 released in v0.2.15. ✅ US-0046 released in v0.2.15. ✅ US-0047 released in v0.3.0. ✅ US-0048 released in v0.3.0. ✅ US-0049 released in v0.3.0. ✅ US-0050, US-0051, US-0052, US-0053 and US-0054 released in v0.3.1. ✅ US-0055 released in v0.3.2. ✅ US-0056 released in v0.3.2. 📋 US-0057 planned. 📋 US-0058 planned, for v0.3.32. 📋 US-0059 planned. Each story names its release.
 
 ---
 
@@ -929,3 +929,17 @@
   - [ ] **Given** that opencode session, **then** it shows in Astrometrics.
   - [ ] A failing test shows the missing opencode activity before the fix, and passes after it.
 - **Dependencies:** US-0506, US-0214
+
+**US-0059: A story added to a release from a story branch shows in the release list** 📋 Planned
+- As a **developer planning a release while a story branch is checked out**, in order to **see what goes into the release**, I would like **a story I pick in a planned release's "Add story…" list to show in that release right away**.
+- **Epic:** EPIC-00
+- **Priority:** High
+- **Complexity:** Small (to be confirmed by the investigation)
+- **Background:** Reported 2026-11-28 with a screenshot: picking a story in "Add story…" under the planned release v0.3.32 has no visible effect; the release still says "0 stories". The project was on the story branch `feat/US-0906`. A first look: the pick is saved. The app wrote US-0058 into `docs/releases/0.3.32.md`, marked it "for v0.3.32" and committed it straight to `main` (`b2a262c`, US-0032). But the branch's working tree has neither the plan nor the change, and the release list reads from it, so nothing shows. The commit subject also names the story twice ("plan US-0058, US-0058 for v0.3.32"). The picker is `releases-add-story` in `src/renderer/FeaturesView.jsx`.
+- **Acceptance Criteria:**
+  - [ ] The cause is confirmed and written down in this story's Notes before the fix.
+  - [ ] **Given** a story branch is checked out, **when** I pick a story in "Add story…", **then** the story shows in that release and its count goes up, the same as on `main`.
+  - [ ] The change still reaches `main` once, as today, and the story branch's pull request does not undo it.
+  - [ ] The app's commit names each story once.
+  - [ ] A failing test shows the missing story before the fix, and passes after it.
+- **Dependencies:** US-0605, US-0032, US-0609
