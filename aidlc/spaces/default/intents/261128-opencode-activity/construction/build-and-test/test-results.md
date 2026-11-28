@@ -6,9 +6,9 @@
 
 ## Full suite and coverage
 
-`npx vitest run tests/ --coverage`: exit 0; **215 files passed, 3,334 tests passed, 1 skipped**; duration 382.60 seconds. Coverage: **94.47% lines** (13,692 / 14,492), above the 80% floor. The run printed empty-bare-repository warnings from intentional Git fixtures and jsdom canvas-not-implemented messages; neither caused test failures.
+`npx vitest run tests/ --coverage`: exit 0; **215 files passed, 3,334 tests passed, 1 skipped**; duration 385.41 seconds on the post-`main`-sync verification run. Coverage: **94.48% lines** (13,693 / 14,492), above the 80% floor. The run printed empty-bare-repository warnings from intentional Git fixtures and jsdom canvas-not-implemented messages; neither caused test failures.
 
-The earlier 300-second attempts hit the command runner's time limit, not a Vitest-reported test failure. The complete run took 382.60 seconds.
+The earlier 300-second attempts hit the command runner's time limit, not a Vitest-reported test failure. Full runs completed in 382.60 seconds before merging the latest `main` change and 385.41 seconds after.
 
 ## Timing-test diagnosis and change
 
@@ -27,8 +27,8 @@ Before the change, a no-retry run failed two 100 ms wall-time assertions at 120.
 | Target ID | Source | Expected | Actual | Evidence | Owning Stage | Verdict |
 |---|---|---|---|---|---|---|
 | BT1 | `build-instructions.md` — build | Build exits 0 | Passed | `npx electron-vite build` | Build and Test | Met |
-| BT2 | `build-instructions.md` — full suite | Full suite passes | 3,334 passed, 1 skipped, 0 failed | `npx vitest run tests/ --coverage` | Build and Test | Met |
-| BT3 | Team Testing Posture | At least 80% line coverage | 94.47% | Coverage summary, 13,692 / 14,492 lines | Build and Test | Met |
+| BT2 | `build-instructions.md` — full suite | Full suite passes | 3,334 passed, 1 skipped, 0 failed | Post-main-sync `npx vitest run tests/ --coverage`; 385.41 s | Build and Test | Met |
+| BT3 | Team Testing Posture | At least 80% line coverage | 94.48% | Coverage summary, 13,693 / 14,492 lines | Build and Test | Met |
 | BT4 | Project Mandated | ESLint and Prettier pass | Both passed | `npm run lint`; `npm run format:check` | Build and Test | Met |
 | BT5 | Testing Contract — CI | CI runs before merge | N/A | This plan runs no CI Pipeline | Build and Test | N/A |
 
