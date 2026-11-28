@@ -83,6 +83,49 @@ afterEach(() => {
 });
 
 describe('order and lifecycle', () => {
+  it('ingests opencode database activity through the shared rows and Pulse touch stream without text', () => {
+    const activity = [];
+    const touches = [];
+    store.onActivity((change) => activity.push(change));
+    store.onTouch((touch) => touches.push(touch));
+    store.ingestActivity({
+      projectId: 'p1',
+      sessionId: 'oc1',
+      harness: 'opencode',
+      atMs: Date.now(),
+      name: 'toolStart',
+      tool: 'read',
+      toolId: 'call-1',
+      paths: [{ path: 'src/a.js', kind: 'read' }]
+    });
+
+    expect(store.activity('p1')).toMatchObject([{ sessionId: 'oc1', harness: 'opencode', kind: 'main', state: 'tool', tool: 'read' }]);
+    expect(touches).toMatchObject([{ projectId: 'p1', sessionId: 'oc1', name: 'toolStart', tool: 'read', paths: [{ path: 'src/a.js', kind: 'read' }] }]);
+    expect(JSON.stringify({ activity, touches })).not.toContain('text');
+    store.ingestActivity({
+      projectId: 'p1',
+      sessionId: 'oc1',
+      harness: 'opencode',
+      atMs: Date.now(),
+      name: 'toolStart',
+      tool: 'read',
+      toolId: 'call-1',
+      paths: [{ path: 'src/a.js', kind: 'read' }]
+    });
+    expect(touches).toHaveLength(1);
+  });
+
+  it('clears imported opencode activity and deduplication state when its project closes', () => {
+    const item = { projectId: 'p1', sessionId: 'oc1', harness: 'opencode', atMs: Date.now(), name: 'toolStart', tool: 'read', toolId: 'call-1' };
+    store.ingestActivity(item);
+
+    store.clearImportedActivity('p1');
+
+    expect(store.activity('p1')).toEqual([]);
+    store.ingestActivity(item);
+    expect(store.activity('p1')).toMatchObject([{ sessionId: 'oc1', harness: 'opencode', state: 'tool', tool: 'read' }]);
+  });
+
   it('lists events from three sessions by arrival, then tab, then seq, never by name (NFR5.9, BR2.1, SCD2)', () => {
     start('s1', { tabId: 'agent:b' });
     start('s2', { tabId: 'agent:a' });

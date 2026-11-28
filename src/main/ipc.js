@@ -31,6 +31,9 @@ import { HANDOFF_DEFAULTS, createHandoffController } from './sessionHandoff.js';
 import { loadAgentProgress, loadSpeckitProgress } from './agentProgress.js';
 import { notifyEvent, notifyQuestions } from './notify.js';
 import { agentName, summarizeLedger } from './parsers/ledger.js';
+import { addTree } from './parsers/auditCost.js';
+import { readOpencodeActivityRecords, readOpencodeMessages } from './opencodeDb.js';
+import { opencodeActivityEvents } from './opencodeActivity.js';
 import { getConfiguredModels } from './models.js';
 import { loadRates } from './modelRates.js';
 import { readReadings, readingOf, recordReading } from './tokenReadings.js';
@@ -130,6 +133,16 @@ const EXTERNAL_URLS = {
 // projectId -> { root, framework, space, watcher, setupWatcher, speckitWatcher, featuresWatcher, featuresKey, configWatcher, sender,
 //   models, setupInfo, harnesses, modelOptions, guardLock }
 const projects = new Map();
+const opencodeActivityTimers = new Map();
+
+/** US-0058 FR1, FR3: refresh supported database activity without asking the shared opencode server for app env vars. */
+async function refreshOpencodeActivity(projectId) {
+  const p = projects.get(projectId);
+  if (!p || !agentStore) return;
+  const records = await readOpencodeActivityRecords(p.root);
+  if (projects.get(projectId) !== p || !agentStore) return;
+  for (const activity of opencodeActivityEvents(records, p.root)) agentStore.ingestActivity({ projectId, ...activity });
+}
 
 // The app updater (EPIC-04 US-0407); download progress reaches every window as `update:state`.
 const updater = createUpdater({
@@ -1033,6 +1046,11 @@ const handlers = {
     watchThadeusFiles(projectId); // US-0609 FR3.1
     // US-0506 u4 PD31: the hooks status is computed after the first render and pushed as agent-hooks:changed.
     agentWiring();
+    refreshOpencodeActivity(projectId).catch((err) => console.warn(`[opencode] activity refresh failed for ${root}:`, err.message));
+    opencodeActivityTimers.set(
+      projectId,
+      setInterval(() => refreshOpencodeActivity(projectId).catch((err) => console.warn(`[opencode] activity refresh failed for ${root}:`, err.message)), 10_000)
+    );
     installer.openProject(projectId, root).catch((err) => console.error(`[agent-hooks] status failed for ${root}:`, err.code ?? err.message));
     return { projectId, root, name: path.basename(root), detection };
   },
@@ -1040,8 +1058,11 @@ const handlers = {
     const p = projects.get(projectId);
     if (!p) return;
     projects.delete(projectId);
+    clearInterval(opencodeActivityTimers.get(projectId));
+    opencodeActivityTimers.delete(projectId);
     pulseHub?.drop(projectId); // US-0418 NFR6: its observer stops with it
     killProjectSessions(projectId);
+    agentStore?.clearImportedActivity(projectId); // US-0058: persisted opencode rows are scoped to the open project
     if (!p.sender.isDestroyed()) p.sender.send('questions:changed', allQuestions()); // its questions leave the popup
     await closeWatcher(p);
   },
@@ -1153,13 +1174,22 @@ const handlers = {
     const { ledger = null, ...rest } = cost;
     const rates = await costRates(p.root);
     // US-0209: every machine's cost (ledger, audit shard rows, snapshots); a fresh clone without a ledger still has one (FR1.4).
-    const { summary, local } = await loadCrossMachineCost(p.root, space, intents, ledger, rates?.rates ?? null);
+    // US-0058 FR1: opencode's own usage on this machine, which no ledger records.
+    const messages = await readOpencodeMessages(p.root);
+    const { summary, local, opencode = {} } = await loadCrossMachineCost(p.root, space, intents, ledger, rates?.rates ?? null, messages);
     if (!summary) return cost;
-    if (ledger) {
-      // US-0209 FR3.1: this machine's snapshot, written only when it changed; never awaited, like the readings below.
-      if (local) writeSnapshot(p.root, snapshotOf(ledger, local)).catch((err) => console.error('Kunde inte spara kostnadssnapshot:', err.message));
-      // A reading per running intent for the token detail view, from this machine's ledger only (US-0208 FR2, NFR2; US-0209 assumption).
-      const own = summarizeLedger(ledger, intents);
+    // US-0209 FR3.1: this machine's snapshot, written only when it changed; never awaited, like the readings below.
+    // ponytail: the snapshot stays ledger-only, so another clone does not see this machine's opencode usage yet.
+    if (ledger && local) writeSnapshot(p.root, snapshotOf(ledger, local)).catch((err) => console.error('Kunde inte spara kostnadssnapshot:', err.message));
+    if (ledger || Object.keys(opencode).length) {
+      // A reading per running intent for the token detail view, from this machine's ledger and opencode only (US-0208 FR2,
+      // NFR2; US-0209 assumption; US-0058 FR1).
+      const workflows = { ...ledger?.workflows };
+      for (const [k, node] of Object.entries(opencode)) workflows[k] = addTree(workflows[k], node);
+      const own = summarizeLedger(
+        { ...ledger, workflows },
+        intents.map((i) => ({ ...i, uuid: i.uuid ?? `dir:${i.dirName}` }))
+      );
       const now = Date.now();
       for (const i of intents) {
         const reading = i.status === 'in-flight' ? readingOf(own.perIntent[i.dirName], now) : null;
@@ -1198,7 +1228,7 @@ const handlers = {
     if (!intent) return null;
     const [cost, events] = await Promise.all([loadCost(p.root), loadAuditEvents(p.root, `${intentsDir(space)}/${dirName}`)]);
     const ledger = cost.ledger ?? null;
-    const total = (await loadCrossMachineCost(p.root, space, [intent], ledger, null)).summary?.perIntent?.[dirName]?.total;
+    const total = (await loadCrossMachineCost(p.root, space, [intent], ledger, null, await readOpencodeMessages(p.root))).summary?.perIntent?.[dirName]?.total;
     const live = intent.status === 'in-flight' || (isArchived(intent) && !isFinished(intent));
     const loadHistory = live
       ? async () => ({ source: 'recorded', readings: await readReadings(p.root, dirName) })
@@ -1213,7 +1243,7 @@ const handlers = {
     const { intents } = await loadIntentList(p.root, space, []);
     const [cost, rates] = await Promise.all([loadCost(p.root), costRates(p.root)]);
     const ledger = cost.ledger ?? null;
-    const { summary } = await loadCrossMachineCost(p.root, space, intents, ledger, rates?.rates ?? null);
+    const { summary } = await loadCrossMachineCost(p.root, space, intents, ledger, rates?.rates ?? null, await readOpencodeMessages(p.root));
     const events = await Promise.all(
       intents.map((i) =>
         loadAuditEvents(p.root, `${intentsDir(space)}/${i.dirName}`).catch((err) => {

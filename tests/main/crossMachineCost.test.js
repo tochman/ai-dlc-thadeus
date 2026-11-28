@@ -59,6 +59,19 @@ describe('mergeIntentCosts (US-0209 FR1.4, FR2, FR3.4, FR4.2)', () => {
     expect(mergeIntentCosts({ ledgerNode, local: A, shards, snapshots: [] }).machines[0].currentUsd).toBeUndefined();
   });
 
+  it("US-0058 FR1: adds this machine's opencode usage as its own part, beside the ledger", () => {
+    const opencode = { totals: { usd: 0.25, tokens: {} }, byStage: {}, byModel: { m: { usd: 0.25, tokens: {} } }, byAgent: {} };
+    const m = mergeIntentCosts({ ledgerNode, local: A, shards: [], snapshots: [], opencode });
+    expect(m.node.totals.usd).toBe(4.25);
+    expect(m.extra.totals.usd).toBe(0.25);
+    expect(hosts(m)).toEqual([
+      ['hosta', true, 'ledger'],
+      ['hosta', true, 'opencode']
+    ]);
+    expect(m.partial).toBe(false);
+    expect(mergeIntentCosts({ ledgerNode: null, local: null, opencode }).node.totals.usd).toBe(0.25);
+  });
+
   it('gives null when no machine has any cost, and treats every shard as another machine without a clone id', () => {
     expect(mergeIntentCosts({ ledgerNode: null, local: A, shards: [], snapshots: [] })).toBeNull();
     const m = mergeIntentCosts({ ledgerNode: null, local: null, shards, snapshots: [] });
@@ -205,6 +218,23 @@ describe('loadCrossMachineCost (US-0209 FR1.4, FR2, FR4.2)', () => {
       expect(two.quality.loopBacks).toBeNull();
       expect(warn.mock.calls.some((c) => String(c[0]).includes('test-results.md'))).toBe(true);
     });
+  });
+
+  it('US-0058 FR1: counts opencode messages for an intent that has no ledger and no cost rows, and returns them by key', async () => {
+    const dir = path.join(root, 'aidlc/spaces/default/intents/261116-empty/audit');
+    await fs.mkdir(dir, { recursive: true });
+    const row = (ts, event, stage) => `## E\n**Timestamp**: ${ts}\n**Event**: ${event}\n${stage ? `**Stage**: ${stage}\n` : ''}\n---\n\n`;
+    await fs.writeFile(
+      path.join(dir, 'hosta-aaaaaaaaaaaa.md'),
+      `# AI-DLC Audit Log\n\n${row('2026-11-20T09:00:00Z', 'WORKFLOW_STARTED')}${row('2026-11-20T09:01:00Z', 'STAGE_STARTED', 'code-generation')}`
+    );
+    const at = Date.parse('2026-11-20T09:30:00Z');
+    const messages = [{ at, agent: 'build', model: 'free-model', cost: 0, tokens: { input: 7, output: 3, cache: { read: 90 } } }];
+    const { summary, opencode } = await loadCrossMachineCost(root, 'default', [intents[2]], null, null, messages);
+    const empty = summary.perIntent['261116-empty'];
+    expect(empty.tokens).toMatchObject({ input: 7, output: 3, cacheRead: 90 });
+    expect(empty.machines.map((x) => x.source)).toEqual(['opencode']);
+    expect(opencode['intent:0000-none'].totals.tokens.input).toBe(7);
   });
 
   it('gives no summary when there is no ledger and no cost row anywhere', async () => {

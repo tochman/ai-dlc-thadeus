@@ -8,7 +8,7 @@
 
 **Stories:** US-0001, US-0002, US-0003, US-0004, US-0005, US-0006, US-0007, US-0008, US-0009, US-0010, US-0011, US-0012, US-0013, US-0014, US-0015, US-0016, US-0017, US-0018, US-0019, US-0020, US-0021, US-0022, US-0023, US-0024, US-0025, US-0026, US-0027, US-0028, US-0029, US-0030, US-0031, US-0032, US-0033, US-0034, US-0035, US-0036, US-0037, US-0038, US-0039, US-0040, US-0041, US-0042, US-0043, US-0044, US-0045, US-0046, US-0047, US-0048, US-0049, US-0050, US-0051, US-0052, US-0053, US-0054, US-0055, US-0056, US-0057, US-0058, US-0059
 
-**Status (2026-11-28):** ✅ US-0001–US-0020 released (v0.2.3–v0.2.6). ✅ US-0021–US-0023 released in v0.2.7. ✅ US-0024 released in v0.2.8. ✅ US-0025 released in v0.2.9. ✅ US-0026 released in v0.2.9. ✅ US-0027 released in v0.2.9. ✅ US-0028 released in v0.2.10. ✅ US-0029 released in v0.2.10. ✅ US-0030 released in v0.2.10. ✅ US-0031 released in v0.2.10. ✅ US-0032 released in v0.2.11. ✅ US-0033 released in v0.2.11. ✅ US-0034 released in v0.2.12. ✅ US-0035 and US-0036 released in v0.2.13. ✅ US-0037, US-0038, US-0039, US-0040, US-0041 and US-0042 released in v0.2.14. ✅ US-0043 released in v0.2.15. ✅ US-0044 released in v0.2.15. ✅ US-0045 released in v0.2.15. ✅ US-0046 released in v0.2.15. ✅ US-0047 released in v0.3.0. ✅ US-0048 released in v0.3.0. ✅ US-0049 released in v0.3.0. ✅ US-0050, US-0051, US-0052, US-0053 and US-0054 released in v0.3.1. ✅ US-0055 released in v0.3.2. ✅ US-0056 released in v0.3.2. 📋 US-0057 planned. 📋 US-0058 planned, for v0.3.32. 📋 US-0059 planned. 📋 US-0060 planned. Each story names its release.
+**Status (2026-11-28):** ✅ US-0001–US-0020 released (v0.2.3–v0.2.6). ✅ US-0021–US-0023 released in v0.2.7. ✅ US-0024 released in v0.2.8. ✅ US-0025 released in v0.2.9. ✅ US-0026 released in v0.2.9. ✅ US-0027 released in v0.2.9. ✅ US-0028 released in v0.2.10. ✅ US-0029 released in v0.2.10. ✅ US-0030 released in v0.2.10. ✅ US-0031 released in v0.2.10. ✅ US-0032 released in v0.2.11. ✅ US-0033 released in v0.2.11. ✅ US-0034 released in v0.2.12. ✅ US-0035 and US-0036 released in v0.2.13. ✅ US-0037, US-0038, US-0039, US-0040, US-0041 and US-0042 released in v0.2.14. ✅ US-0043 released in v0.2.15. ✅ US-0044 released in v0.2.15. ✅ US-0045 released in v0.2.15. ✅ US-0046 released in v0.2.15. ✅ US-0047 released in v0.3.0. ✅ US-0048 released in v0.3.0. ✅ US-0049 released in v0.3.0. ✅ US-0050, US-0051, US-0052, US-0053 and US-0054 released in v0.3.1. ✅ US-0055 released in v0.3.2. ✅ US-0056 released in v0.3.2. 📋 US-0057 planned. ✅ US-0058 done, for v0.3.32. 📋 US-0059 planned. 📋 US-0060 planned. Each story names its release.
 
 ---
 
@@ -916,18 +916,19 @@
   - [ ] **Given** a real slowdown (every run over 20 ms), **then** the check still fails, and the log shows each run's p95.
 - **Dependencies:** US-0050, US-0608
 
-**US-0058: Agent activity from opencode sessions shows in Cost, Velocity, Activity and Astrometrics** 📋 Planned, for v0.3.32
+**US-0058: Agent activity from opencode sessions shows in Cost, Velocity, Activity and Astrometrics** ✅ Done, for v0.3.32
 - As a **developer who runs agents in opencode**, in order to **see all my agent work, not only Claude Code's**, I would like **activity from opencode sessions to be picked up and shown in Cost, Velocity, Activity and Astrometrics, the same as Claude Code sessions**.
 - **Epic:** EPIC-00
 - **Priority:** High
-- **Complexity:** Small (to be confirmed by the investigation)
-- **Background:** Reported 2026-11-28: "we are NOT picking up agent activity from opencode sessions. Not in Cost, velocity, activity or astrometrics." Not yet investigated. The app reaches opencode through its plugin `.opencode/plugins/thadeus-dialog.js` (written by `src/main/agentHooks.js`); the cause may sit in what that plugin reports, where it writes, or how the views read it.
+- **Complexity:** Small
+- **Background:** Reported 2026-11-28: "we are NOT picking up agent activity from opencode sessions. Not in Cost, velocity, activity or astrometrics." The cause and fix are recorded in Notes.
 - **Acceptance Criteria:**
-  - [ ] The cause is found and written down in this story's Notes before the fix.
-  - [ ] **Given** an agent works in an opencode session, **then** its activity shows in the Activity view, the same as a Claude Code session's.
-  - [ ] **Given** that opencode session uses tokens, **then** they are counted in Cost and Velocity.
-  - [ ] **Given** that opencode session, **then** it shows in Astrometrics.
-  - [ ] A failing test shows the missing opencode activity before the fix, and passes after it.
+  - [x] The cause is found and written down in this story's Notes before the fix.
+  - [x] **Given** an agent works in an opencode session, **then** its activity shows in the Activity view, the same as a Claude Code session's.
+  - [x] **Given** that opencode session uses tokens, **then** they are counted in Cost and Velocity.
+  - [x] **Given** that opencode session, **then** it shows in Astrometrics.
+  - [x] A failing test shows the missing opencode activity before the fix, and passes after it.
+- **Notes:** Cause (found 2026-11-28, opencode 2.1.4): opencode 2 runs plugins inside a shared `opencode serve` process that it starts on its own. The TUI only connects to it, so the plugin never sees `THADEUS_SESSION_DIR` and stays silent. AI-DLC has no opencode ledger writer either. Cost reads opencode's own database `~/.local/share/opencode/opencode.db` read-only (`src/main/opencodeDb.js`), attributing messages to the intent whose audit was active when recorded (`src/main/parsers/opencodeUsage.js`). Velocity continues to read the audit and Git. Activity and Astrometrics map the database's persisted assistant/tool timeline into text-free shared Activity events and supported project-relative Pulse touches; project close removes imported rows and deduplication state. Regression tests cover timestamp mapping, privacy, project scoping and close-during-refresh. The failing-test criterion is covered by mapper and IPC/store regressions; the full Build and Test suite passed. The timing-test reliability follow-up is recorded in this intent's `construction/build-and-test/test-results.md`.
 - **Dependencies:** US-0506, US-0214
 
 **US-0059: A story added to a release from a story branch shows in the release list** 📋 Planned
